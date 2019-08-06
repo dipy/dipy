@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Continuous and analytical diffusion signal modelling with 3D-SHORE</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_shore.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="continuous-and-analytical-diffusion-signal-modelling-with-3d-shore">
+<span id="example-reconst-shore"></span><h1>Continuous and analytical diffusion signal modelling with 3D-SHORE<a class="headerlink" href="#continuous-and-analytical-diffusion-signal-modelling-with-3d-shore" title="Permalink to this headline">¶</a></h1>
+<p>We show how to model the diffusion signal as a linear combination
+of continuous functions from the SHORE basis <a class="reference internal" href="#merlet2013" id="id1"><span>[Merlet2013]</span></a>.
+We also compute the analytical Orientation Distribution Function (ODF).</p>
+<p>First import the necessary modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.shore</span> <span class="k">import</span> <span class="n">ShoreModel</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_isbi2013_2shell</span><span class="p">,</span> <span class="n">read_isbi2013_2shell</span><span class="p">,</span> <span class="n">get_sphere</span>
+</pre></div>
+</div>
+<p>Download and read the data for this tutorial.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fetch_isbi2013_2shell()</span></code> provides data from the <a class="reference external" href="http://hardi.epfl.ch/static/events/2013_ISBI/">ISBI HARDI contest 2013</a> acquired for two shells at
+b-values 1500 <span class="math notranslate nohighlight">\(s/mm^2\)</span> and 2500 <span class="math notranslate nohighlight">\(s/mm^2\)</span>.</p>
+<p>The six parameters of these two functions define the ROI where to reconstruct
+the data. They respectively correspond to <code class="docutils literal notranslate"><span class="pre">(xmin,xmax,ymin,ymax,zmin,zmax)</span></code>
+with x, y, z and the three axis defining the spatial positions of the voxels.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_isbi2013_2shell</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_isbi2013_2shell</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">data_small</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">10</span><span class="p">:</span><span class="mi">40</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span><span class="mi">40</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">data</span></code> contains the voxel data and <code class="docutils literal notranslate"><span class="pre">gtab</span></code> contains a <code class="docutils literal notranslate"><span class="pre">GradientTable</span></code>
+object (gradient information e.g. b-values). For example, to show the b-values
+it is possible to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Instantiate the SHORE Model.</p>
+<p><code class="docutils literal notranslate"><span class="pre">radial_order</span></code> is the radial order of the SHORE basis.</p>
+<p><code class="docutils literal notranslate"><span class="pre">zeta</span></code> is the scale factor of the SHORE basis.</p>
+<p><code class="docutils literal notranslate"><span class="pre">lambdaN</span></code> and <code class="docutils literal notranslate"><span class="pre">lambdaL</span></code> are the radial and angular regularization
+constants, respectively.</p>
+<p>For details regarding these four parameters see <a class="reference internal" href="#cheng2011" id="id2"><span>[Cheng2011]</span></a> and <a class="reference internal" href="#merlet2013" id="id3"><span>[Merlet2013]</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radial_order</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">zeta</span> <span class="o">=</span> <span class="mi">700</span>
+<span class="n">lambdaN</span> <span class="o">=</span> <span class="mf">1e-8</span>
+<span class="n">lambdaL</span> <span class="o">=</span> <span class="mf">1e-8</span>
+<span class="n">asm</span> <span class="o">=</span> <span class="n">ShoreModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                 <span class="n">zeta</span><span class="o">=</span><span class="n">zeta</span><span class="p">,</span> <span class="n">lambdaN</span><span class="o">=</span><span class="n">lambdaN</span><span class="p">,</span> <span class="n">lambdaL</span><span class="o">=</span><span class="n">lambdaL</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Fit the SHORE model to the data</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">asmfit</span> <span class="o">=</span> <span class="n">asm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load an odf reconstruction sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compute the ODFs</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">odf</span> <span class="o">=</span> <span class="n">asmfit</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;odf.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">odf</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Display the ODFs</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">sfu</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">odf_slicer</span><span class="p">(</span><span class="n">odf</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">:],</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;plasma&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">sfu</span><span class="o">.</span><span class="n">RotateX</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">sfu</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sfu</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;odfs.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/odfs.png" src="../_images/odfs.png" />
+<p class="caption"><span class="caption-text">Orientation distribution functions.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="merlet2013"><span class="brackets">Merlet2013</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>)</span></dt>
+<dd><p>Merlet S. et al., “Continuous diffusion signal, EAP and ODF
+estimation via Compressive Sensing in diffusion MRI”, Medical Image
+Analysis, 2013.</p>
+</dd>
+<dt class="label" id="cheng2011"><span class="brackets"><a class="fn-backref" href="#id2">Cheng2011</a></span></dt>
+<dd><p>Cheng J. et al., “Theoretical Analysis and Pratical Insights on
+EAP Estimation via Unified HARDI Framework”, MICCAI workshop on
+Computational Diffusion MRI, 2011.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/4233a945193ae61dd31bbe7dafb85055/reconst_shore.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

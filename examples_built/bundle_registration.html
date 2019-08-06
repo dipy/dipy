@@ -1,0 +1,218 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/bundle_registration.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="direct-bundle-registration">
+<span id="example-bundle-registration"></span><h1>Direct Bundle Registration<a class="headerlink" href="#direct-bundle-registration" title="Permalink to this headline">¶</a></h1>
+<p>This example explains how you can register two bundles from two different
+subjects directly in the space of streamlines <a class="reference internal" href="#garyfallidis15" id="id1"><span>[Garyfallidis15]</span></a>, <a class="reference internal" href="#garyfallidis14" id="id2"><span>[Garyfallidis14]</span></a>.</p>
+<p>To show the concept we will use two pre-saved cingulum bundles. The algorithm
+used here is called Streamline-based Linear Registration (SLR) <a class="reference internal" href="#garyfallidis15" id="id3"><span>[Garyfallidis15]</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">two_cingulum_bundles</span>
+
+<span class="n">cb_subj1</span><span class="p">,</span> <span class="n">cb_subj2</span> <span class="o">=</span> <span class="n">two_cingulum_bundles</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">dipy.align.streamlinear</span> <span class="k">import</span> <span class="n">StreamlineLinearRegistration</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">set_number_of_points</span>
+</pre></div>
+</div>
+<p>An important step before running the registration is to resample the
+streamlines so that they both have the same number of points per streamline.
+Here we will use 20 points. This step is not optional. Inputting streamlines
+with different number of points will break the theoretical advantages of using
+the SLR as explained in <a class="reference internal" href="#garyfallidis15" id="id4"><span>[Garyfallidis15]</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cb_subj1</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">cb_subj1</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="n">cb_subj2</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">cb_subj2</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s say now that we want to move the <code class="docutils literal notranslate"><span class="pre">cb_subj2</span></code> (moving) so that it can be
+aligned with <code class="docutils literal notranslate"><span class="pre">cb_subj1</span></code> (static). Here is how this is done.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">srr</span> <span class="o">=</span> <span class="n">StreamlineLinearRegistration</span><span class="p">()</span>
+
+<span class="n">srm</span> <span class="o">=</span> <span class="n">srr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">static</span><span class="o">=</span><span class="n">cb_subj1</span><span class="p">,</span> <span class="n">moving</span><span class="o">=</span><span class="n">cb_subj2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After the optimization is finished we can apply the transformation to
+<code class="docutils literal notranslate"><span class="pre">cb_subj2</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cb_subj2_aligned</span> <span class="o">=</span> <span class="n">srm</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">cb_subj2</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">show_both_bundles</span><span class="p">(</span><span class="n">bundles</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">bundle</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bundles</span><span class="p">):</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">colors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">lines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">bundle</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="n">lines_actor</span><span class="o">.</span><span class="n">RotateX</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+        <span class="n">lines_actor</span><span class="o">.</span><span class="n">RotateZ</span><span class="p">(</span><span class="mi">90</span><span class="p">)</span>
+        <span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lines_actor</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="n">fname</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">900</span><span class="p">,</span> <span class="mi">900</span><span class="p">))</span>
+
+
+<span class="n">show_both_bundles</span><span class="p">([</span><span class="n">cb_subj1</span><span class="p">,</span> <span class="n">cb_subj2</span><span class="p">],</span>
+                  <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">orange</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">red</span><span class="p">],</span>
+                  <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;before_registration.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/before_registration.png" src="../_images/before_registration.png" />
+<p class="caption"><span class="caption-text">Before bundle registration.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">show_both_bundles</span><span class="p">([</span><span class="n">cb_subj1</span><span class="p">,</span> <span class="n">cb_subj2_aligned</span><span class="p">],</span>
+                  <span class="n">colors</span><span class="o">=</span><span class="p">[</span><span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">orange</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">red</span><span class="p">],</span>
+                  <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">fname</span><span class="o">=</span><span class="s1">&#39;after_registration.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/after_registration.png" src="../_images/after_registration.png" />
+<p class="caption"><span class="caption-text">After bundle registration.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>As you can see the two cingulum bundles are well aligned although they contain
+many streamlines of different length and shape.</p>
+<dl class="citation">
+<dt class="label" id="garyfallidis15"><span class="brackets">Garyfallidis15</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>)</span></dt>
+<dd><p>Garyfallidis et al., “Robust and efficient linear
+registration of white-matter fascicles in the space
+of streamlines”, Neuroimage, 117:124-140, 2015.</p>
+</dd>
+<dt class="label" id="garyfallidis14"><span class="brackets"><a class="fn-backref" href="#id2">Garyfallidis14</a></span></dt>
+<dd><p>Garyfallidis et al., “Direct native-space fiber bundle
+alignment for group comparisons”, ISMRM, 2014.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/4db9c1e110061f6a5d1c80508ec9367b/bundle_registration.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

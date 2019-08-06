@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tractography Clustering - Available Metrics</a><ul>
+<li><a class="reference internal" href="#average-of-pointwise-euclidean-metric">Average of Pointwise Euclidean Metric</a></li>
+<li><a class="reference internal" href="#sum-of-pointwise-euclidean-metric">Sum of Pointwise Euclidean Metric</a></li>
+<li><a class="reference internal" href="#cosine-metric">Cosine Metric</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/segment_clustering_metrics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tractography-clustering-available-metrics">
+<span id="example-segment-clustering-metrics"></span><h1>Tractography Clustering - Available Metrics<a class="headerlink" href="#tractography-clustering-available-metrics" title="Permalink to this headline">¶</a></h1>
+<p>This page lists available metrics that can be used by the tractography
+clustering framework. For every metric a brief description is provided
+explaining: what it does, when it’s useful and how to use it. If you are not
+familiar with the tractography clustering framework, check this tutorial
+<a class="reference internal" href="segment_extending_clustering_framework.html#clustering-framework"><span class="std std-ref">Clustering framework</span></a>.</p>
+<div class="contents local topic" id="available-metrics">
+<p class="topic-title first">Available Metrics</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#average-of-pointwise-euclidean-metric" id="id3">Average of Pointwise Euclidean Metric</a></p></li>
+<li><p><a class="reference internal" href="#sum-of-pointwise-euclidean-metric" id="id4">Sum of Pointwise Euclidean Metric</a></p></li>
+<li><p><a class="reference internal" href="#cosine-metric" id="id5">Cosine Metric</a></p></li>
+</ul>
+</div>
+<p><strong>Note</strong>:
+All examples assume a function <cite>get_streamlines</cite> exists. We defined here a
+simple function to do so. It imports the necessary modules and load a small
+streamline bundle.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_streamlines</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+    <span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_tractogram</span>
+
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;fornix&#39;</span><span class="p">)</span>
+    <span class="n">fornix</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;same&#39;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">fornix</span><span class="o">.</span><span class="n">streamlines</span>
+</pre></div>
+</div>
+<div class="section" id="average-of-pointwise-euclidean-metric">
+<span id="clustering-examples-averagepointwiseeuclideanmetric"></span><h2><a class="toc-backref" href="#id3">Average of Pointwise Euclidean Metric</a><a class="headerlink" href="#average-of-pointwise-euclidean-metric" title="Permalink to this headline">¶</a></h2>
+<p><strong>What:</strong> Instances of <cite>AveragePointwiseEuclideanMetric</cite> first compute the
+pointwise Euclidean distance between two sequences <em>of same length</em> then
+return the average of those distances. This metric takes as inputs two features
+that are sequences containing the same number of elements.</p>
+<p><strong>When:</strong> By default the <cite>QuickBundles</cite> clustering will resample your
+streamlines on-the-fly so they have 12 points. If for some reason you want
+to avoid this and you made sure all your streamlines have already the same
+number of points, you can manually provide an instance of
+<cite>AveragePointwiseEuclideanMetric</cite> to <cite>QuickBundles</cite>. Since the default
+<cite>Feature</cite> is the <cite>IdentityFeature</cite> the streamlines won’t be resampled thus
+saving some computational time.</p>
+<p><strong>Note:</strong> Inputs must be sequences of same length.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">AveragePointwiseEuclideanMetric</span>
+
+<span class="c1"># Get some streamlines.</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">get_streamlines</span><span class="p">()</span>  <span class="c1"># Previously defined.</span>
+
+<span class="c1"># Make sure our streamlines have the same number of points.</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">set_number_of_points</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">nb_points</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="c1"># Create the instance of `AveragePointwiseEuclideanMetric` to use.</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">AveragePointwiseEuclideanMetric</span><span class="p">()</span>
+<span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Nb. clusters:&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cluster sizes:&quot;</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">clusters</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Nb</span><span class="o">.</span> <span class="n">clusters</span><span class="p">:</span> <span class="mi">4</span>
+
+<span class="n">Cluster</span> <span class="n">sizes</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">191</span><span class="p">,</span> <span class="mi">44</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="sum-of-pointwise-euclidean-metric">
+<span id="clustering-examples-sumpointwiseeuclideanmetric"></span><h2><a class="toc-backref" href="#id4">Sum of Pointwise Euclidean Metric</a><a class="headerlink" href="#sum-of-pointwise-euclidean-metric" title="Permalink to this headline">¶</a></h2>
+<p><strong>What:</strong> Instances of <cite>SumPointwiseEuclideanMetric</cite> first compute the
+pointwise Euclidean distance between two sequences <em>of same length</em> then
+return the sum of those distances.</p>
+<p><strong>When:</strong> This metric mainly exists because it is used internally by
+<cite>AveragePointwiseEuclideanMetric</cite>.</p>
+<p><strong>Note:</strong> Inputs must be sequences of same length.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">SumPointwiseEuclideanMetric</span>
+
+<span class="c1"># Get some streamlines.</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">get_streamlines</span><span class="p">()</span>  <span class="c1"># Previously defined.</span>
+
+<span class="c1"># Make sure our streamlines have the same number of points.</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">set_number_of_points</span>
+<span class="n">nb_points</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">nb_points</span><span class="o">=</span><span class="n">nb_points</span><span class="p">)</span>
+
+<span class="c1"># Create the instance of `SumPointwiseEuclideanMetric` to use.</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">SumPointwiseEuclideanMetric</span><span class="p">()</span>
+<span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">10.</span><span class="o">*</span><span class="n">nb_points</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Nb. clusters:&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Cluster sizes:&quot;</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">clusters</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Nb</span><span class="o">.</span> <span class="n">clusters</span><span class="p">:</span> <span class="mi">4</span>
+
+<span class="n">Cluster</span> <span class="n">sizes</span><span class="p">:</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">191</span><span class="p">,</span> <span class="mi">44</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="cosine-metric">
+<h2><a class="toc-backref" href="#id5">Cosine Metric</a><a class="headerlink" href="#cosine-metric" title="Permalink to this headline">¶</a></h2>
+<p><strong>What:</strong> Instances of <cite>CosineMetric</cite> compute the cosine distance between two
+vectors (for more information see the
+<a class="reference external" href="https://en.wikipedia.org/wiki/Cosine_similarity">wiki page</a>).</p>
+<p><strong>When:</strong> This metric can be useful when you <em>only</em> need information about the
+orientation of a streamline.</p>
+<p><strong>Note:</strong> Inputs must be vectors (i.e. 1D array).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">VectorOfEndpointsFeature</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">CosineMetric</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Get some streamlines.</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">get_streamlines</span><span class="p">()</span>  <span class="c1"># Previously defined.</span>
+
+<span class="n">feature</span> <span class="o">=</span> <span class="n">VectorOfEndpointsFeature</span><span class="p">()</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">CosineMetric</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+<span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+
+<span class="c1"># Color each streamline according to the cluster they belong to.</span>
+<span class="n">colormap</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">create_colormap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">)))</span>
+<span class="n">colormap_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">streamlines</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">clusters</span><span class="p">,</span> <span class="n">colormap</span><span class="p">):</span>
+    <span class="n">colormap_full</span><span class="p">[</span><span class="n">cluster</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span>
+
+<span class="c1"># Visualization</span>
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">window</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap_full</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;cosine_metric.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/cosine_metric.png" src="../_images/cosine_metric.png" />
+<p class="caption"><span class="caption-text">Showing the streamlines colored according to their orientation.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
+<dl class="citation">
+<dt class="label" id="garyfallidis12"><span class="brackets">Garyfallidis12</span></dt>
+<dd><p>Garyfallidis E. et al., QuickBundles a method for
+tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/933f6b45906c1940e473ee93446636de/segment_clustering_metrics.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

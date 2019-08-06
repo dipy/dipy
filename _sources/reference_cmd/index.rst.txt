@@ -1,0 +1,29 @@
+Command Line Utilities Reference
+================================
+
+.. toctree::
+
+   dipy_fit_dti.rst
+   dipy_recobundles.rst
+   dipy_fit_csa.rst
+   dipy_slr.rst
+   dipy_ba.rst
+   dipy_fit_dki.rst
+   dipy_lmm.rst
+   dipy_median_otsu.rst
+   dipy_nlmeans.rst
+   dipy_horizon.rst
+   dipy_fit_mapmri.rst
+   dipy_mask.rst
+   dipy_align_syn.rst
+   dipy_align_affine.rst
+   dipy_info.rst
+   dipy_fit_csd.rst
+   dipy_reslice.rst
+   dipy_track_pft.rst
+   dipy_apply_transform.rst
+   dipy_fetch.rst
+   dipy_track_local.rst
+   dipy_labelsbundles.rst
+   dipy_snr_in_cc.rst
+   dipy_fit_ivim.rst

@@ -1,0 +1,52 @@
+
+========================
+dipy_fit_mapmri
+========================
+
+usage: dipy_fit_mapmri [-h] [--b0_threshold float] [--laplacian] [--positivity]
+                     [--bval_threshold float] [--save_metrics [str [str ...]]]
+                     [--laplacian_weighting float] [--radial_order int]
+                     [--out_dir str] [--out_rtop str] [--out_lapnorm str]
+                     [--out_msd str] [--out_qiv str] [--out_rtap str]
+                     [--out_rtpp str] [--out_ng str] [--out_perng str]
+                     [--out_parng str]
+                     data_files bvals_files bvecs_files small_delta big_delta
+
+Workflow for fitting the MAPMRI model (with optional Laplacian regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp, non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti format in input files provided by `data_files` and saves the nifti files to an output directory specified by `out_dir`.
+
+In order for the MAPMRI workflow to work in the way intended either the Laplacian or positivity or both must be set to True.
+
+positional arguments:
+  data_files            Path to the input volume.
+  bvals_files           Path to the bval files.
+  bvecs_files           Path to the bvec files.
+  small_delta           Small delta value used in generation of gradient table of provided bval and bvec.
+  big_delta             Big delta value used in generation of gradient table of provided bval and bvec.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --b0_threshold float  Threshold used to find b=0 directions (default 0.0)
+  --laplacian           Regularize using the Laplacian of the MAP-MRI basis (default True)
+  --positivity          Constrain the propagator to be positive. (default True)
+  --bval_threshold float
+                        Sets the b-value threshold to be used in the scale factor estimation. In order for the estimated non-Gaussianity to have meaning this value should set to a lower value (b<2000 s/mm^2) such that the scale factors are estimated on signal points that reasonably represent the spins at Gaussian diffusion. (default: 2000)
+  --save_metrics [str [str ...]]
+                        List of metrics to save. Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp, ng, perng, parng (default: [] (all))
+  --laplacian_weighting float
+                        Weighting value used in fitting the MAPMRI model in the Laplacian and both model types. (default: 0.05)
+  --radial_order int    Even value used to set the order of the basis (default: 6)
+
+output arguments(optional):
+  --out_dir str         Output directory (default: input file directory)
+  --out_rtop str        Name of the rtop to be saved
+  --out_lapnorm str     Name of the norm of Laplacian signal to be saved
+  --out_msd str         Name of the msd to be saved
+  --out_qiv str         Name of the qiv to be saved
+  --out_rtap str        Name of the rtap to be saved
+  --out_rtpp str        Name of the rtpp to be saved
+  --out_ng str          Name of the Non-Gaussianity to be saved
+  --out_perng str       Name of the Non-Gaussianity perpendicular to be saved
+  --out_parng str       Name of the Non-Gaussianity parallel to be saved
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

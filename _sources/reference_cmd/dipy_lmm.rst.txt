@@ -1,0 +1,23 @@
+
+========================
+dipy_lmm
+========================
+
+usage: dipy_lmm [-h] [--no_disks int] [--out_dir str] h5_files
+
+Workflow of linear Mixed Models.
+
+Applies linear Mixed Models on bundles of subjects and saves the results in a directory specified by ``out_dir``.
+
+positional arguments:
+  h5_files        Path to the input metric files. This path may contain wildcards to process multiple inputs at once. 
+
+optional arguments:
+  -h, --help      show this help message and exit
+  --no_disks int  Number of disks used for dividing bundle into disks. (Default 100) 
+
+output arguments(optional):
+  --out_dir str   Output directory (default input file directory)
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

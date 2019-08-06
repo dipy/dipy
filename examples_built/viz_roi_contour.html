@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/viz_roi_contour.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="visualization-of-roi-surface-rendered-with-streamlines">
+<span id="example-viz-roi-contour"></span><h1>Visualization of ROI Surface Rendered with Streamlines<a class="headerlink" href="#visualization-of-roi-surface-rendered-with-streamlines" title="Permalink to this headline">¶</a></h1>
+<p>Here is a simple tutorial following the probabilistic CSA Tracking Example in
+which we generate a dataset of streamlines from a corpus callosum ROI, and
+then display them with the seed ROI rendered in 3D with 50% transparency.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_stanford_labels</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.shm</span> <span class="k">import</span> <span class="n">CsaOdfModel</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">default_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.stopping_criterion</span> <span class="k">import</span> <span class="n">ThresholdStoppingCriterion</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking</span> <span class="k">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.local_tracking</span> <span class="k">import</span> <span class="n">LocalTracking</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">actor</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">colormap</span> <span class="k">as</span> <span class="n">cmap</span>
+</pre></div>
+</div>
+<p>First, we need to generate some streamlines. For a more complete
+description of these steps, please refer to the CSA Probabilistic Tracking
+Tutorial.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span>
+
+<span class="n">white_matter</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">csa_model</span> <span class="o">=</span> <span class="n">CsaOdfModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">sh_order</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="n">csa_peaks</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">csa_model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">default_sphere</span><span class="p">,</span>
+                             <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span>
+                             <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+                             <span class="n">mask</span><span class="o">=</span><span class="n">white_matter</span><span class="p">)</span>
+
+<span class="n">stopping_criterion</span> <span class="o">=</span> <span class="n">ThresholdStoppingCriterion</span><span class="p">(</span><span class="n">csa_peaks</span><span class="o">.</span><span class="n">gfa</span><span class="p">,</span> <span class="o">.</span><span class="mi">25</span><span class="p">)</span>
+
+<span class="n">seed_mask</span> <span class="o">=</span> <span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span>
+<span class="n">seeds</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">seeds_from_mask</span><span class="p">(</span><span class="n">seed_mask</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Initialization of LocalTracking. The computation happens in the next step.</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">csa_peaks</span><span class="p">,</span> <span class="n">stopping_criterion</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span>
+                            <span class="n">step_size</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Compute streamlines and store as a list.</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will create a streamline actor from the streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamlines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">cmap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Next, we create a surface actor from the corpus callosum seed ROI. We
+provide the ROI data, the affine, the color in [R,G,B], and the opacity as
+a decimal between zero and one. Here, we set the color as blue/green with
+50% opacity.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">surface_opacity</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">surface_color</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+<span class="n">seedroi_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">contour_from_roi</span><span class="p">(</span><span class="n">seed_mask</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span>
+                                       <span class="n">surface_color</span><span class="p">,</span> <span class="n">surface_opacity</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we initialize a ‘’Renderer’’ object and add both actors
+to the rendering.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">ren</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">streamlines_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">seedroi_actor</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you uncomment the following line, the rendering will pop up in an
+interactive window.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;contour_from_roi_tutorial.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1200</span><span class="p">,</span> <span class="mi">900</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id1">
+<img alt="../_images/contour_from_roi_tutorial.png" src="../_images/contour_from_roi_tutorial.png" />
+<p class="caption"><span class="caption-text"><strong>A top view of corpus callosum streamlines with the blue transparent
+seed ROI in the center</strong>.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/dae4fbf14d504e7afe4565ef6f203e31/viz_roi_contour.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

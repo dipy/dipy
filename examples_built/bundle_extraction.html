@@ -1,0 +1,316 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Automatic Fiber Bundle Extraction with RecoBundles</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/bundle_extraction.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="automatic-fiber-bundle-extraction-with-recobundles">
+<span id="example-bundle-extraction"></span><h1>Automatic Fiber Bundle Extraction with RecoBundles<a class="headerlink" href="#automatic-fiber-bundle-extraction-with-recobundles" title="Permalink to this headline">¶</a></h1>
+<p>This example explains how we can use RecoBundles <a class="reference internal" href="#garyfallidis17" id="id1"><span>[Garyfallidis17]</span></a> to
+extract bundles from tractograms.</p>
+<p>First import the necessary modules.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data.fetcher</span> <span class="k">import</span> <span class="n">get_two_hcp842_bundles</span>
+<span class="kn">from</span> <span class="nn">dipy.data.fetcher</span> <span class="k">import</span> <span class="p">(</span><span class="n">fetch_target_tractogram_hcp</span><span class="p">,</span>
+                               <span class="n">fetch_bundle_atlas_hcp842</span><span class="p">,</span>
+                               <span class="n">get_bundle_atlas_hcp842</span><span class="p">,</span>
+                               <span class="n">get_target_tractogram_hcp</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.bundles</span> <span class="k">import</span> <span class="n">RecoBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.align.streamlinear</span> <span class="k">import</span> <span class="n">whole_brain_slr</span>
+<span class="kn">from</span> <span class="nn">fury</span> <span class="k">import</span> <span class="n">actor</span><span class="p">,</span> <span class="n">window</span>
+<span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_trk</span><span class="p">,</span> <span class="n">save_trk</span>
+<span class="kn">from</span> <span class="nn">dipy.io.utils</span> <span class="k">import</span> <span class="n">create_tractogram_header</span>
+</pre></div>
+</div>
+<p>Download and read data for this tutorial</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">target_file</span><span class="p">,</span> <span class="n">target_folder</span> <span class="o">=</span> <span class="n">fetch_target_tractogram_hcp</span><span class="p">()</span>
+<span class="n">atlas_file</span><span class="p">,</span> <span class="n">atlas_folder</span> <span class="o">=</span> <span class="n">fetch_bundle_atlas_hcp842</span><span class="p">()</span>
+
+<span class="n">atlas_file</span><span class="p">,</span> <span class="n">all_bundles_files</span> <span class="o">=</span> <span class="n">get_bundle_atlas_hcp842</span><span class="p">()</span>
+<span class="n">target_file</span> <span class="o">=</span> <span class="n">get_target_tractogram_hcp</span><span class="p">()</span>
+
+<span class="n">sft_atlas</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">atlas_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">atlas</span> <span class="o">=</span> <span class="n">sft_atlas</span><span class="o">.</span><span class="n">streamlines</span>
+<span class="n">atlas_header</span> <span class="o">=</span> <span class="n">create_tractogram_header</span><span class="p">(</span><span class="n">atlas_file</span><span class="p">,</span>
+                                        <span class="o">*</span><span class="n">sft_atlas</span><span class="o">.</span><span class="n">space_attribute</span><span class="p">)</span>
+
+<span class="n">sft_target</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">target_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">target</span> <span class="o">=</span> <span class="n">sft_target</span><span class="o">.</span><span class="n">streamlines</span>
+<span class="n">target_header</span> <span class="o">=</span> <span class="n">create_tractogram_header</span><span class="p">(</span><span class="n">atlas_file</span><span class="p">,</span>
+                                         <span class="o">*</span><span class="n">sft_atlas</span><span class="o">.</span><span class="n">space_attribute</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>let’s visualize atlas tractogram and target tractogram before registration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">atlas</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractograms_initial.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/tractograms_initial.png" src="../_images/tractograms_initial.png" />
+<p class="caption"><span class="caption-text">Atlas and target before registration.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>We will register target tractogram to model atlas’ space using streamlinear
+registeration (SLR) <a class="reference internal" href="bundle_registration.html#garyfallidis15" id="id2"><span>[Garyfallidis15]</span></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">moved</span><span class="p">,</span> <span class="n">transform</span><span class="p">,</span> <span class="n">qb_centroids1</span><span class="p">,</span> <span class="n">qb_centroids2</span> <span class="o">=</span> <span class="n">whole_brain_slr</span><span class="p">(</span>
+    <span class="n">atlas</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="s1">&#39;affine&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">progressive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We save the transform generated in this registration, so that we can use
+it in the bundle profiles example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;slr_transform.npy&quot;</span><span class="p">,</span> <span class="n">transform</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>let’s visualize atlas tractogram and target tractogram after registration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">atlas</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">moved</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractograms_after_registration.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/tractograms_after_registration.png" src="../_images/tractograms_after_registration.png" />
+<p class="caption"><span class="caption-text">Atlas and target after registration.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<p>Read AF left and CST left bundles from already fetched atlas data to use them
+as model bundles</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model_af_l_file</span><span class="p">,</span> <span class="n">model_cst_l_file</span> <span class="o">=</span> <span class="n">get_two_hcp842_bundles</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Extracting bundles using recobundles <a class="reference internal" href="#garyfallidis17" id="id3"><span>[Garyfallidis17]</span></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sft_af_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">model_af_l_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">model_af_l</span> <span class="o">=</span> <span class="n">sft_af_l</span><span class="o">.</span><span class="n">streamlines</span>
+
+<span class="n">rb</span> <span class="o">=</span> <span class="n">RecoBundles</span><span class="p">(</span><span class="n">moved</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">recognized_af_l</span><span class="p">,</span> <span class="n">af_l_labels</span> <span class="o">=</span> <span class="n">rb</span><span class="o">.</span><span class="n">recognize</span><span class="p">(</span><span class="n">model_bundle</span><span class="o">=</span><span class="n">model_af_l</span><span class="p">,</span>
+                                            <span class="n">model_clust_thr</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span>
+                                            <span class="n">reduction_thr</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                            <span class="n">reduction_distance</span><span class="o">=</span><span class="s1">&#39;mam&#39;</span><span class="p">,</span>
+                                            <span class="n">slr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                            <span class="n">slr_metric</span><span class="o">=</span><span class="s1">&#39;asymmetric&#39;</span><span class="p">,</span>
+                                            <span class="n">pruning_distance</span><span class="o">=</span><span class="s1">&#39;mam&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>let’s visualize extracted Arcuate Fasciculus Left bundle and model bundle
+together</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">model_af_l</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">7</span><span class="p">,</span> <span class="o">.</span><span class="mi">26</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">recognized_af_l</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">set_camera</span><span class="p">(</span><span class="n">focal_point</span><span class="o">=</span><span class="p">(</span><span class="mf">320.21296692</span><span class="p">,</span> <span class="mf">21.28884506</span><span class="p">,</span>  <span class="mf">17.2174015</span><span class="p">),</span>
+               <span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="mf">2.11</span><span class="p">,</span> <span class="mf">200.46</span><span class="p">,</span> <span class="mf">250.44</span><span class="p">),</span> <span class="n">view_up</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.028</span><span class="p">,</span> <span class="mf">0.18</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;AF_L_recognized_bundle.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/AF_L_recognized_bundle.png" src="../_images/AF_L_recognized_bundle.png" />
+<p class="caption"><span class="caption-text">Extracted Arcuate Fasciculus Left bundle and model bundle</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>Save the bundle as a trk file. Rather than saving the recognized streamlines
+in the space of the atlas, we save the streamlines that are in the original
+space of the subject anatomy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reco_af_l</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="n">af_l_labels</span><span class="p">],</span> <span class="n">target_header</span><span class="p">,</span>
+                               <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">reco_af_l</span><span class="p">,</span> <span class="s2">&quot;AF_L.trk&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">sft_cst_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">model_cst_l_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">model_cst_l</span> <span class="o">=</span> <span class="n">sft_cst_l</span><span class="o">.</span><span class="n">streamlines</span>
+
+<span class="n">recognized_cst_l</span><span class="p">,</span> <span class="n">cst_l_labels</span> <span class="o">=</span> <span class="n">rb</span><span class="o">.</span><span class="n">recognize</span><span class="p">(</span><span class="n">model_bundle</span><span class="o">=</span><span class="n">model_cst_l</span><span class="p">,</span>
+                                              <span class="n">model_clust_thr</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span>
+                                              <span class="n">reduction_thr</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                                              <span class="n">reduction_distance</span><span class="o">=</span><span class="s1">&#39;mam&#39;</span><span class="p">,</span>
+                                              <span class="n">slr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                              <span class="n">slr_metric</span><span class="o">=</span><span class="s1">&#39;asymmetric&#39;</span><span class="p">,</span>
+                                              <span class="n">pruning_distance</span><span class="o">=</span><span class="s1">&#39;mam&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>let’s visualize extracted Corticospinal Tract (CST) Left bundle and model
+bundle together</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">model_cst_l</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">7</span><span class="p">,</span> <span class="o">.</span><span class="mi">26</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">recognized_cst_l</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="p">(</span><span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="o">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">set_camera</span><span class="p">(</span><span class="n">focal_point</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">18.17281532</span><span class="p">,</span> <span class="o">-</span><span class="mf">19.55606842</span><span class="p">,</span> <span class="mf">6.92485857</span><span class="p">),</span>
+               <span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">360.11</span><span class="p">,</span> <span class="o">-</span><span class="mf">340.46</span><span class="p">,</span> <span class="o">-</span><span class="mf">40.44</span><span class="p">),</span>
+               <span class="n">view_up</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.03</span><span class="p">,</span> <span class="mf">0.028</span><span class="p">,</span> <span class="mf">0.89</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;CST_L_recognized_bundle.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id7">
+<img alt="../_images/CST_L_recognized_bundle.png" src="../_images/CST_L_recognized_bundle.png" />
+<p class="caption"><span class="caption-text">Extracted Corticospinal Tract (CST) Left bundle and model bundle</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+<p>Save the bundle as a trk file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">reco_cst_l</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">target</span><span class="p">[</span><span class="n">cst_l_labels</span><span class="p">],</span> <span class="n">target_header</span><span class="p">,</span>
+                                <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">reco_cst_l</span><span class="p">,</span> <span class="s2">&quot;CST_L.trk&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="garyfallidis17"><span class="brackets">Garyfallidis17</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>)</span></dt>
+<dd><p>Garyfallidis et al. Recognition of white matter
+bundles using local and global streamline-based registration
+and clustering, Neuroimage, 2017.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/9e2cbc5c5fa85aa87daeeb09eb9cb092/bundle_extraction.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

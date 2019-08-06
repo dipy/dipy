@@ -1,0 +1,257 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DKI MultiTensor Simulation</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/simulate_dki.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dki-multitensor-simulation">
+<span id="simulate-dki"></span><span id="example-simulate-dki"></span><h1>DKI MultiTensor Simulation<a class="headerlink" href="#dki-multitensor-simulation" title="Permalink to this headline">¶</a></h1>
+<p>In this example we show how to simulate the Diffusion Kurtosis Imaging (DKI)
+data of a single voxel. DKI captures information about the non-Gaussian
+properties of water diffusion which is a consequence of the existence of tissue
+barriers and compartments. In these simulations compartmental heterogeneity is
+taken into account by modeling different compartments for the intra- and
+extra-cellular media of two populations of fibers. These simulations are
+performed according to <a class="reference internal" href="#rnh2015" id="id1"><span>[RNH2015]</span></a>.</p>
+<p>We first import all relevant modules.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">dipy.sims.voxel</span> <span class="k">import</span> <span class="p">(</span><span class="n">multi_tensor_dki</span><span class="p">,</span> <span class="n">single_tensor</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="kn">from</span> <span class="nn">dipy.io.gradients</span> <span class="k">import</span> <span class="n">read_bvals_bvecs</span>
+<span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.dti</span> <span class="k">import</span> <span class="p">(</span><span class="n">decompose_tensor</span><span class="p">,</span> <span class="n">from_lower_triangular</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For the simulation we will need a GradientTable with the b-values and
+b-vectors. Here we use the GradientTable of the sample <a class="reference external" href="http://dipy.org">DIPY</a> dataset
+<code class="docutils literal notranslate"><span class="pre">small_64D</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fimg</span><span class="p">,</span> <span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;small_64D&#39;</span><span class="p">)</span>
+<span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span> <span class="o">=</span> <span class="n">read_bvals_bvecs</span><span class="p">(</span><span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>DKI requires data from more than one non-zero b-value. Since the dataset
+<code class="docutils literal notranslate"><span class="pre">small_64D</span></code> was acquired with one non-zero b-value we artificially produce a
+second non-zero b-value.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvals</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">bvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">bvecs</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The b-values and gradient directions are then converted to DIPY’s
+<code class="docutils literal notranslate"><span class="pre">GradientTable</span></code> format.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">mevals</span></code> we save the eigenvalues of each tensor. To simulate crossing
+fibers with two different media (representing intra and extra-cellular media),
+a total of four components have to be taken in to account (i.e. the first two
+compartments correspond to the intra and extra cellular media for the first
+fiber population while the others correspond to the media of the second fiber
+population)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mevals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.00099</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00226</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00099</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00226</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">angles</span></code> we save in polar coordinates (<span class="math notranslate nohighlight">\(\theta, \phi\)</span>) the principal
+axis of each compartment tensor. To simulate crossing fibers at 70:math:<cite>^{circ}</cite>
+the compartments of the first fiber are aligned to the X-axis while the
+compartments of the second fiber are aligned to the X-Z plane with an angular
+deviation of 70:math:<cite>^{circ}</cite> from the first one.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">angles</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">fractions</span></code> we save the percentage of the contribution of each
+compartment, which is computed by multiplying the percentage of contribution
+of each fiber population and the water fraction of each different medium</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fie</span> <span class="o">=</span> <span class="mf">0.49</span>  <span class="c1"># intra-axonal water fraction</span>
+<span class="n">fractions</span> <span class="o">=</span> <span class="p">[</span><span class="n">fie</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fie</span><span class="p">)</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="n">fie</span><span class="o">*</span><span class="mi">50</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">fie</span><span class="p">)</span><span class="o">*</span><span class="mi">50</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Having defined the parameters for all tissue compartments, the elements of the
+diffusion tensor (DT), the elements of the kurtosis tensor (KT) and the DW
+signals simulated from the DKI model can be obtain using the function
+<code class="docutils literal notranslate"><span class="pre">multi_tensor_dki</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">signal_dki</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">kt</span> <span class="o">=</span> <span class="n">multi_tensor_dki</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">mevals</span><span class="p">,</span> <span class="n">S0</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">angles</span><span class="o">=</span><span class="n">angles</span><span class="p">,</span>
+                                      <span class="n">fractions</span><span class="o">=</span><span class="n">fractions</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can also add Rician noise with a specific SNR.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">signal_noisy</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">kt</span> <span class="o">=</span> <span class="n">multi_tensor_dki</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">mevals</span><span class="p">,</span> <span class="n">S0</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                                        <span class="n">angles</span><span class="o">=</span><span class="n">angles</span><span class="p">,</span> <span class="n">fractions</span><span class="o">=</span><span class="n">fractions</span><span class="p">,</span>
+                                        <span class="n">snr</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For comparison purposes, we also compute the DW signal if only the diffusion
+tensor components are taken into account. For this we use DIPY’s function
+<code class="docutils literal notranslate"><span class="pre">single_tensor</span></code> which requires that dt is decomposed into its eigenvalues and
+eigenvectors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dt_evals</span><span class="p">,</span> <span class="n">dt_evecs</span> <span class="o">=</span> <span class="n">decompose_tensor</span><span class="p">(</span><span class="n">from_lower_triangular</span><span class="p">(</span><span class="n">dt</span><span class="p">))</span>
+<span class="n">signal_dti</span> <span class="o">=</span> <span class="n">single_tensor</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">S0</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">evals</span><span class="o">=</span><span class="n">dt_evals</span><span class="p">,</span> <span class="n">evecs</span><span class="o">=</span><span class="n">dt_evecs</span><span class="p">,</span>
+                           <span class="n">snr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, we can visualize the values of the different version of simulated
+signals for all assumed gradient directions and bvalues.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">signal_dti</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;noiseless dti&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">signal_dki</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;noiseless dki&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">signal_noisy</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;with noise&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;simulated_dki_signal.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id3">
+<img alt="../_images/simulated_dki_signal.png" src="../_images/simulated_dki_signal.png" />
+<p class="caption"><span class="caption-text">Simulated signals obtain from the DTI and DKI models.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<p>Non-Gaussian diffusion properties in tissues are responsible to smaller signal
+attenuations for larger bvalues when compared to signal attenuations from free
+Gaussian water diffusion. This feature can be shown from the figure above,
+since signals simulated from the DKI models reveals larger DW signal
+intensities than the signals obtained only from the diffusion tensor
+components.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="rnh2015"><span class="brackets"><a class="fn-backref" href="#id1">RNH2015</a></span></dt>
+<dd><p>R. Neto Henriques et al., “Exploring the 3D geometry of the
+diffusion kurtosis tensor - Impact on the development of robust tractography
+procedures and novel biomarkers”, NeuroImage (2015) 111, 85-99.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/3a1a3270fd10e7db18e81044b7f3e7ec/simulate_dki.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1696 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="stats" href="dipy.stats.html" />
+    <link rel="prev" title="segment" href="dipy.segment.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.stats.html" title="stats"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy.segment.html" title="segment"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sims</span></code></a><ul>
+<li><a class="reference internal" href="#module-dipy.sims.phantom">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sims.phantom</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.sims.voxel">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sims.voxel</span></code></a><ul>
+<li><a class="reference internal" href="#add-noise">add_noise</a></li>
+<li><a class="reference internal" href="#diff2eigenvectors">diff2eigenvectors</a></li>
+<li><a class="reference internal" href="#get-fnames">get_fnames</a></li>
+<li><a class="reference internal" href="#gradient-table">gradient_table</a></li>
+<li><a class="reference internal" href="#orbital-phantom">orbital_phantom</a></li>
+<li><a class="reference internal" href="#single-tensor">single_tensor</a></li>
+<li><a class="reference internal" href="#vec2vec-rotmat">vec2vec_rotmat</a></li>
+<li><a class="reference internal" href="#id9">add_noise</a></li>
+<li><a class="reference internal" href="#all-tensor-evecs">all_tensor_evecs</a></li>
+<li><a class="reference internal" href="#callaghan-perpendicular">callaghan_perpendicular</a></li>
+<li><a class="reference internal" href="#cylinders-and-ball-soderman">cylinders_and_ball_soderman</a></li>
+<li><a class="reference internal" href="#dki-design-matrix">dki_design_matrix</a></li>
+<li><a class="reference internal" href="#dki-signal">dki_signal</a></li>
+<li><a class="reference internal" href="#dot">dot</a></li>
+<li><a class="reference internal" href="#gaussian-parallel">gaussian_parallel</a></li>
+<li><a class="reference internal" href="#kurtosis-element">kurtosis_element</a></li>
+<li><a class="reference internal" href="#multi-tensor">multi_tensor</a></li>
+<li><a class="reference internal" href="#multi-tensor-dki">multi_tensor_dki</a></li>
+<li><a class="reference internal" href="#multi-tensor-msd">multi_tensor_msd</a></li>
+<li><a class="reference internal" href="#multi-tensor-odf">multi_tensor_odf</a></li>
+<li><a class="reference internal" href="#multi-tensor-pdf">multi_tensor_pdf</a></li>
+<li><a class="reference internal" href="#multi-tensor-rtop">multi_tensor_rtop</a></li>
+<li><a class="reference internal" href="#id27">single_tensor</a></li>
+<li><a class="reference internal" href="#single-tensor-msd">single_tensor_msd</a></li>
+<li><a class="reference internal" href="#single-tensor-odf">single_tensor_odf</a></li>
+<li><a class="reference internal" href="#single-tensor-pdf">single_tensor_pdf</a></li>
+<li><a class="reference internal" href="#single-tensor-rtop">single_tensor_rtop</a></li>
+<li><a class="reference internal" href="#sphere2cart">sphere2cart</a></li>
+<li><a class="reference internal" href="#sticks-and-ball">sticks_and_ball</a></li>
+<li><a class="reference internal" href="#id35">vec2vec_rotmat</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy.segment.html"
+                        title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">segment</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.stats.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">stats</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.sims.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy.sims">
+<span id="sims"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">sims</span></code><a class="headerlink" href="#module-dipy.sims" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+</tbody>
+</table>
+<div class="section" id="module-dipy.sims.phantom">
+<span id="module-sims-phantom"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sims.phantom</span></code><a class="headerlink" href="#module-dipy.sims.phantom" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.phantom.add_noise" title="dipy.sims.phantom.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a>(vol[, snr, S0, noise_type])</p></td>
+<td><p>Add noise of specified distribution to a 4D array.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.phantom.diff2eigenvectors" title="dipy.sims.phantom.diff2eigenvectors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diff2eigenvectors</span></code></a>(dx, dy, dz)</p></td>
+<td><p>numerical derivatives 2 eigenvectors</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.phantom.get_fnames" title="dipy.sims.phantom.get_fnames"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_fnames</span></code></a>([name])</p></td>
+<td><p>provides filenames of some test datasets or other useful parametrisations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.phantom.gradient_table" title="dipy.sims.phantom.gradient_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gradient_table</span></code></a>(bvals[, bvecs, big_delta, …])</p></td>
+<td><p>A general function for creating diffusion MR gradients.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.phantom.orbital_phantom" title="dipy.sims.phantom.orbital_phantom"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orbital_phantom</span></code></a>([gtab, evals, func, t, …])</p></td>
+<td><p>Create a phantom based on a 3-D orbit <code class="docutils literal notranslate"><span class="pre">f(t)</span> <span class="pre">-&gt;</span> <span class="pre">(x,y,z)</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.phantom.single_tensor" title="dipy.sims.phantom.single_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor</span></code></a>(gtab[, S0, evals, evecs, snr])</p></td>
+<td><p>Simulated Q-space signal with a single tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.phantom.vec2vec_rotmat" title="dipy.sims.phantom.vec2vec_rotmat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vec2vec_rotmat</span></code></a>(u, v)</p></td>
+<td><p>rotation matrix from 2 unit vectors</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.sims.voxel">
+<span id="module-sims-voxel"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">sims.voxel</span></code><a class="headerlink" href="#module-dipy.sims.voxel" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.add_noise" title="dipy.sims.voxel.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a>(signal, snr, S0[, noise_type])</p></td>
+<td><p>Add noise of specified distribution to the signal from a single voxel.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.all_tensor_evecs" title="dipy.sims.voxel.all_tensor_evecs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_tensor_evecs</span></code></a>(e0)</p></td>
+<td><p>Given the principle tensor axis, return the array of all eigenvectors column-wise (or, the rotation matrix that orientates the tensor).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.callaghan_perpendicular" title="dipy.sims.voxel.callaghan_perpendicular"><code class="xref py py-obj docutils literal notranslate"><span class="pre">callaghan_perpendicular</span></code></a>(q, radius)</p></td>
+<td><p>Calculates the perpendicular diffusion signal E(q) in a cylinder of radius R using the Soderman model <a class="reference internal" href="#r16c3255383f0-1" id="id1">[1]</a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.cylinders_and_ball_soderman" title="dipy.sims.voxel.cylinders_and_ball_soderman"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cylinders_and_ball_soderman</span></code></a>(gtab, tau[, …])</p></td>
+<td><p>Calculates the three-dimensional signal attenuation E(q) originating from within a cylinder of radius R using the Soderman approximation <a class="reference internal" href="#re2fab78a2424-1" id="id2">[1]</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.dki_design_matrix" title="dipy.sims.voxel.dki_design_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dki_design_matrix</span></code></a>(gtab)</p></td>
+<td><p>Construct B design matrix for DKI.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.dki_signal" title="dipy.sims.voxel.dki_signal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dki_signal</span></code></a>(gtab, dt, kt[, S0, snr])</p></td>
+<td><p>Simulated signal based on the diffusion and diffusion kurtosis tensors of a single voxel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.dot" title="dipy.sims.voxel.dot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dot</span></code></a>(a, b[, out])</p></td>
+<td><p>Dot product of two arrays.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.gaussian_parallel" title="dipy.sims.voxel.gaussian_parallel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gaussian_parallel</span></code></a>(q, tau[, D])</p></td>
+<td><p>Calculates the parallel Gaussian diffusion signal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.kurtosis_element" title="dipy.sims.voxel.kurtosis_element"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kurtosis_element</span></code></a>(D_comps, frac, ind_i, …)</p></td>
+<td><p>Computes the diffusion kurtosis tensor element (with indexes i, j, k and l) based on the individual diffusion tensor components of a multicompartmental model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor" title="dipy.sims.voxel.multi_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor</span></code></a>(gtab, mevals[, S0, angles, …])</p></td>
+<td><p>Simulate a Multi-Tensor signal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor_dki" title="dipy.sims.voxel.multi_tensor_dki"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor_dki</span></code></a>(gtab, mevals[, S0, angles, …])</p></td>
+<td><p>Simulate the diffusion-weight signal, diffusion and kurtosis tensors based on the DKI model</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor_msd" title="dipy.sims.voxel.multi_tensor_msd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor_msd</span></code></a>(mf[, mevals, tau])</p></td>
+<td><p>Simulate a Multi-Tensor rtop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor_odf" title="dipy.sims.voxel.multi_tensor_odf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor_odf</span></code></a>(odf_verts, mevals, angles, …)</p></td>
+<td><p>Simulate a Multi-Tensor ODF.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor_pdf" title="dipy.sims.voxel.multi_tensor_pdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor_pdf</span></code></a>(pdf_points, mevals, angles, …)</p></td>
+<td><p>Simulate a Multi-Tensor ODF.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.multi_tensor_rtop" title="dipy.sims.voxel.multi_tensor_rtop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multi_tensor_rtop</span></code></a>(mf[, mevals, tau])</p></td>
+<td><p>Simulate a Multi-Tensor rtop.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.single_tensor" title="dipy.sims.voxel.single_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor</span></code></a>(gtab[, S0, evals, evecs, snr])</p></td>
+<td><p>Simulated Q-space signal with a single tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.single_tensor_msd" title="dipy.sims.voxel.single_tensor_msd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor_msd</span></code></a>([evals, tau])</p></td>
+<td><p>Simulate a Multi-Tensor rtop.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.single_tensor_odf" title="dipy.sims.voxel.single_tensor_odf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor_odf</span></code></a>(r[, evals, evecs])</p></td>
+<td><p>Simulated ODF with a single tensor.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.single_tensor_pdf" title="dipy.sims.voxel.single_tensor_pdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor_pdf</span></code></a>(r[, evals, evecs, tau])</p></td>
+<td><p>Simulated ODF with a single tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.single_tensor_rtop" title="dipy.sims.voxel.single_tensor_rtop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">single_tensor_rtop</span></code></a>([evals, tau])</p></td>
+<td><p>Simulate a Single-Tensor rtop.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.sphere2cart" title="dipy.sims.voxel.sphere2cart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sphere2cart</span></code></a>(r, theta, phi)</p></td>
+<td><p>Spherical to Cartesian coordinates</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.sims.voxel.sticks_and_ball" title="dipy.sims.voxel.sticks_and_ball"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sticks_and_ball</span></code></a>(gtab[, d, S0, angles, …])</p></td>
+<td><p>Simulate the signal for a Sticks &amp; Ball model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.sims.voxel.vec2vec_rotmat" title="dipy.sims.voxel.vec2vec_rotmat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vec2vec_rotmat</span></code></a>(u, v)</p></td>
+<td><p>rotation matrix from 2 unit vectors</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="add-noise">
+<h3>add_noise<a class="headerlink" href="#add-noise" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.add_noise">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">add_noise</code><span class="sig-paren">(</span><em class="sig-param">vol</em>, <em class="sig-param">snr=1.0</em>, <em class="sig-param">S0=None</em>, <em class="sig-param">noise_type='rician'</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.add_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add noise of specified distribution to a 4D array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vol</strong><span class="classifier">array, shape (X,Y,Z,W)</span></dt><dd><p>Diffusion measurements in <cite>W</cite> directions at each <code class="docutils literal notranslate"><span class="pre">(X,</span> <span class="pre">Y,</span> <span class="pre">Z)</span></code> voxel
+position.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float, optional</span></dt><dd><p>The desired signal-to-noise ratio.  (See notes below.)</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float, optional</span></dt><dd><p>Reference signal for specifying <cite>snr</cite> (defaults to 1).</p>
+</dd>
+<dt><strong>noise_type</strong><span class="classifier">string, optional</span></dt><dd><p>The distribution of noise added. Can be either ‘gaussian’ for Gaussian
+distributed noise, ‘rician’ for Rice-distributed noise (default) or
+‘rayleigh’ for a Rayleigh distribution.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>vol</strong><span class="classifier">array, same shape as vol</span></dt><dd><p>Volume with added noise.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>SNR is defined here, following <a class="reference internal" href="#ra8cfe81751ec-1" id="id3">[1]</a>, as <code class="docutils literal notranslate"><span class="pre">S0</span> <span class="pre">/</span> <span class="pre">sigma</span></code>, where <code class="docutils literal notranslate"><span class="pre">sigma</span></code> is
+the standard deviation of the two Gaussian distributions forming the real
+and imaginary components of the Rician noise distribution (see <a class="reference internal" href="#ra8cfe81751ec-2" id="id4">[2]</a>).</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="ra8cfe81751ec-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id5">2</a>)</span></dt>
+<dd><p>Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
+fast and robust q-ball imaging. MRM, 58: 497-510</p>
+</dd>
+<dt class="label" id="ra8cfe81751ec-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id6">2</a>)</span></dt>
+<dd><p>Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
+data. MRM 34: 910-914.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">800</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">signal_w_noise</span> <span class="o">=</span> <span class="n">add_noise</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">noise_type</span><span class="o">=</span><span class="s1">&#39;rician&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="diff2eigenvectors">
+<h3>diff2eigenvectors<a class="headerlink" href="#diff2eigenvectors" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.diff2eigenvectors">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">diff2eigenvectors</code><span class="sig-paren">(</span><em class="sig-param">dx</em>, <em class="sig-param">dy</em>, <em class="sig-param">dz</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.diff2eigenvectors" title="Permalink to this definition">¶</a></dt>
+<dd><p>numerical derivatives 2 eigenvectors</p>
+</dd></dl>
+
+</div>
+<div class="section" id="get-fnames">
+<h3>get_fnames<a class="headerlink" href="#get-fnames" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.get_fnames">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">get_fnames</code><span class="sig-paren">(</span><em class="sig-param">name='small_64D'</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.get_fnames" title="Permalink to this definition">¶</a></dt>
+<dd><p>provides filenames of some test datasets or other useful parametrisations</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>the filename/s of which dataset to return, one of:
+‘small_64D’ small region of interest nifti,bvecs,bvals 64 directions
+‘small_101D’ small region of interest nifti,bvecs,bvals 101 directions
+‘aniso_vox’ volume with anisotropic voxel size as Nifti
+‘fornix’ 300 tracks in Trackvis format (from Pittsburgh</p>
+<blockquote>
+<div><p>Brain Competition)</p>
+</div></blockquote>
+<dl class="simple">
+<dt>‘gqi_vectors’ the scanner wave vectors needed for a GQI acquisitions</dt><dd><p>of 101 directions tested on Siemens 3T Trio</p>
+</dd>
+</dl>
+<p>‘small_25’ small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+‘test_piesno’ slice of N=8, K=14 diffusion data
+‘reg_c’ small 2D image used for validating registration
+‘reg_o’ small 2D image used for validation registration
+‘cb_2’ two vectorized cingulum bundles</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>fnames</strong><span class="classifier">tuple</span></dt><dd><p>filenames for dataset</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fimg</span><span class="p">,</span><span class="n">fbvals</span><span class="p">,</span><span class="n">fbvecs</span><span class="o">=</span><span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;small_101D&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">fbvals</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvecs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">fbvecs</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">img</span><span class="o">=</span><span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fimg</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">=</span><span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">102</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">102</span><span class="p">,)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvecs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">102</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="gradient-table">
+<h3>gradient_table<a class="headerlink" href="#gradient-table" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.gradient_table">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">gradient_table</code><span class="sig-paren">(</span><em class="sig-param">bvals</em>, <em class="sig-param">bvecs=None</em>, <em class="sig-param">big_delta=None</em>, <em class="sig-param">small_delta=None</em>, <em class="sig-param">b0_threshold=50</em>, <em class="sig-param">atol=0.01</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.gradient_table" title="Permalink to this definition">¶</a></dt>
+<dd><p>A general function for creating diffusion MR gradients.</p>
+<p>It reads, loads and prepares scanner parameters like the b-values and
+b-vectors so that they can be useful during the reconstruction process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>bvals</strong><span class="classifier">can be any of the four options</span></dt><dd><ol class="arabic simple">
+<li><p>an array of shape (N,) or (1, N) or (N, 1) with the b-values.</p></li>
+<li><p>a path for the file which contains an array like the above (1).</p></li>
+<li><p>an array of shape (N, 4) or (4, N). Then this parameter is
+considered to be a b-table which contains both bvals and bvecs. In
+this case the next parameter is skipped.</p></li>
+<li><p>a path for the file which contains an array like the one at (3).</p></li>
+</ol>
+</dd>
+<dt><strong>bvecs</strong><span class="classifier">can be any of two options</span></dt><dd><ol class="arabic simple">
+<li><p>an array of shape (N, 3) or (3, N) with the b-vectors.</p></li>
+<li><p>a path for the file which contains an array like the previous.</p></li>
+</ol>
+</dd>
+<dt><strong>big_delta</strong><span class="classifier">float</span></dt><dd><p>acquisition pulse separation time in seconds (default None)</p>
+</dd>
+<dt><strong>small_delta</strong><span class="classifier">float</span></dt><dd><p>acquisition pulse duration time in seconds (default None)</p>
+</dd>
+<dt><strong>b0_threshold</strong><span class="classifier">float</span></dt><dd><p>All b-values with values less than or equal to <cite>bo_threshold</cite> are
+considered as b0s i.e. without diffusion weighting.</p>
+</dd>
+<dt><strong>atol</strong><span class="classifier">float</span></dt><dd><p>All b-vectors need to be unit vectors up to a tolerance.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>gradients</strong><span class="classifier">GradientTable</span></dt><dd><p>A GradientTable with all the gradient information.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<ol class="arabic simple">
+<li><p>Often b0s (b-values which correspond to images without diffusion
+weighting) have 0 values however in some cases the scanner cannot
+provide b0s of an exact 0 value and it gives a bit higher values
+e.g. 6 or 12. This is the purpose of the b0_threshold in the __init__.</p></li>
+<li><p>We assume that the minimum number of b-values is 7.</p></li>
+<li><p>B-vectors should be unit vectors.</p></li>
+</ol>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span> <span class="o">=</span> <span class="mi">1500</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sq2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="n">sq2</span><span class="p">,</span> <span class="n">sq2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="n">sq2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sq2</span><span class="p">],</span>
+<span class="gp">... </span>                  <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">sq2</span><span class="p">,</span> <span class="n">sq2</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gt</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gt</span><span class="o">.</span><span class="n">bvecs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">bvecs</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gt</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gt</span><span class="o">.</span><span class="n">bvecs</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">bvecs</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="orbital-phantom">
+<h3>orbital_phantom<a class="headerlink" href="#orbital-phantom" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.orbital_phantom">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">orbital_phantom</code><span class="sig-paren">(</span><em class="sig-param">gtab=None</em>, <em class="sig-param">evals=array([0.0015</em>, <em class="sig-param">0.0004</em>, <em class="sig-param">0.0004])</em>, <em class="sig-param">func=None</em>, <em class="sig-param">t=array([0.</em>, <em class="sig-param">0.00628947</em>, <em class="sig-param">0.01257895</em>, <em class="sig-param">0.01886842</em>, <em class="sig-param">0.0251579</em>, <em class="sig-param">0.03144737</em>, <em class="sig-param">0.03773685</em>, <em class="sig-param">0.04402632</em>, <em class="sig-param">0.0503158</em>, <em class="sig-param">0.05660527</em>, <em class="sig-param">0.06289475</em>, <em class="sig-param">0.06918422</em>, <em class="sig-param">0.0754737</em>, <em class="sig-param">0.08176317</em>, <em class="sig-param">0.08805265</em>, <em class="sig-param">0.09434212</em>, <em class="sig-param">0.1006316</em>, <em class="sig-param">0.10692107</em>, <em class="sig-param">0.11321055</em>, <em class="sig-param">0.11950002</em>, <em class="sig-param">0.1257895</em>, <em class="sig-param">0.13207897</em>, <em class="sig-param">0.13836845</em>, <em class="sig-param">0.14465792</em>, <em class="sig-param">0.15094739</em>, <em class="sig-param">0.15723687</em>, <em class="sig-param">0.16352634</em>, <em class="sig-param">0.16981582</em>, <em class="sig-param">0.17610529</em>, <em class="sig-param">0.18239477</em>, <em class="sig-param">0.18868424</em>, <em class="sig-param">0.19497372</em>, <em class="sig-param">0.20126319</em>, <em class="sig-param">0.20755267</em>, <em class="sig-param">0.21384214</em>, <em class="sig-param">0.22013162</em>, <em class="sig-param">0.22642109</em>, <em class="sig-param">0.23271057</em>, <em class="sig-param">0.23900004</em>, <em class="sig-param">0.24528952</em>, <em class="sig-param">0.25157899</em>, <em class="sig-param">0.25786847</em>, <em class="sig-param">0.26415794</em>, <em class="sig-param">0.27044742</em>, <em class="sig-param">0.27673689</em>, <em class="sig-param">0.28302637</em>, <em class="sig-param">0.28931584</em>, <em class="sig-param">0.29560531</em>, <em class="sig-param">0.30189479</em>, <em class="sig-param">0.30818426</em>, <em class="sig-param">0.31447374</em>, <em class="sig-param">0.32076321</em>, <em class="sig-param">0.32705269</em>, <em class="sig-param">0.33334216</em>, <em class="sig-param">0.33963164</em>, <em class="sig-param">0.34592111</em>, <em class="sig-param">0.35221059</em>, <em class="sig-param">0.35850006</em>, <em class="sig-param">0.36478954</em>, <em class="sig-param">0.37107901</em>, <em class="sig-param">0.37736849</em>, <em class="sig-param">0.38365796</em>, <em class="sig-param">0.38994744</em>, <em class="sig-param">0.39623691</em>, <em class="sig-param">0.40252639</em>, <em class="sig-param">0.40881586</em>, <em class="sig-param">0.41510534</em>, <em class="sig-param">0.42139481</em>, <em class="sig-param">0.42768429</em>, <em class="sig-param">0.43397376</em>, <em class="sig-param">0.44026323</em>, <em class="sig-param">0.44655271</em>, <em class="sig-param">0.45284218</em>, <em class="sig-param">0.45913166</em>, <em class="sig-param">0.46542113</em>, <em class="sig-param">0.47171061</em>, <em class="sig-param">0.47800008</em>, <em class="sig-param">0.48428956</em>, <em class="sig-param">0.49057903</em>, <em class="sig-param">0.49686851</em>, <em class="sig-param">0.50315798</em>, <em class="sig-param">0.50944746</em>, <em class="sig-param">0.51573693</em>, <em class="sig-param">0.52202641</em>, <em class="sig-param">0.52831588</em>, <em class="sig-param">0.53460536</em>, <em class="sig-param">0.54089483</em>, <em class="sig-param">0.54718431</em>, <em class="sig-param">0.55347378</em>, <em class="sig-param">0.55976326</em>, <em class="sig-param">0.56605273</em>, <em class="sig-param">0.57234221</em>, <em class="sig-param">0.57863168</em>, <em class="sig-param">0.58492115</em>, <em class="sig-param">0.59121063</em>, <em class="sig-param">0.5975001</em>, <em class="sig-param">0.60378958</em>, <em class="sig-param">0.61007905</em>, <em class="sig-param">0.61636853</em>, <em class="sig-param">0.622658</em>, <em class="sig-param">0.62894748</em>, <em class="sig-param">0.63523695</em>, <em class="sig-param">0.64152643</em>, <em class="sig-param">0.6478159</em>, <em class="sig-param">0.65410538</em>, <em class="sig-param">0.66039485</em>, <em class="sig-param">0.66668433</em>, <em class="sig-param">0.6729738</em>, <em class="sig-param">0.67926328</em>, <em class="sig-param">0.68555275</em>, <em class="sig-param">0.69184223</em>, <em class="sig-param">0.6981317</em>, <em class="sig-param">0.70442118</em>, <em class="sig-param">0.71071065</em>, <em class="sig-param">0.71700013</em>, <em class="sig-param">0.7232896</em>, <em class="sig-param">0.72957907</em>, <em class="sig-param">0.73586855</em>, <em class="sig-param">0.74215802</em>, <em class="sig-param">0.7484475</em>, <em class="sig-param">0.75473697</em>, <em class="sig-param">0.76102645</em>, <em class="sig-param">0.76731592</em>, <em class="sig-param">0.7736054</em>, <em class="sig-param">0.77989487</em>, <em class="sig-param">0.78618435</em>, <em class="sig-param">0.79247382</em>, <em class="sig-param">0.7987633</em>, <em class="sig-param">0.80505277</em>, <em class="sig-param">0.81134225</em>, <em class="sig-param">0.81763172</em>, <em class="sig-param">0.8239212</em>, <em class="sig-param">0.83021067</em>, <em class="sig-param">0.83650015</em>, <em class="sig-param">0.84278962</em>, <em class="sig-param">0.8490791</em>, <em class="sig-param">0.85536857</em>, <em class="sig-param">0.86165805</em>, <em class="sig-param">0.86794752</em>, <em class="sig-param">0.87423699</em>, <em class="sig-param">0.88052647</em>, <em class="sig-param">0.88681594</em>, <em class="sig-param">0.89310542</em>, <em class="sig-param">0.89939489</em>, <em class="sig-param">0.90568437</em>, <em class="sig-param">0.91197384</em>, <em class="sig-param">0.91826332</em>, <em class="sig-param">0.92455279</em>, <em class="sig-param">0.93084227</em>, <em class="sig-param">0.93713174</em>, <em class="sig-param">0.94342122</em>, <em class="sig-param">0.94971069</em>, <em class="sig-param">0.95600017</em>, <em class="sig-param">0.96228964</em>, <em class="sig-param">0.96857912</em>, <em class="sig-param">0.97486859</em>, <em class="sig-param">0.98115807</em>, <em class="sig-param">0.98744754</em>, <em class="sig-param">0.99373702</em>, <em class="sig-param">1.00002649</em>, <em class="sig-param">1.00631597</em>, <em class="sig-param">1.01260544</em>, <em class="sig-param">1.01889491</em>, <em class="sig-param">1.02518439</em>, <em class="sig-param">1.03147386</em>, <em class="sig-param">1.03776334</em>, <em class="sig-param">1.04405281</em>, <em class="sig-param">1.05034229</em>, <em class="sig-param">1.05663176</em>, <em class="sig-param">1.06292124</em>, <em class="sig-param">1.06921071</em>, <em class="sig-param">1.07550019</em>, <em class="sig-param">1.08178966</em>, <em class="sig-param">1.08807914</em>, <em class="sig-param">1.09436861</em>, <em class="sig-param">1.10065809</em>, <em class="sig-param">1.10694756</em>, <em class="sig-param">1.11323704</em>, <em class="sig-param">1.11952651</em>, <em class="sig-param">1.12581599</em>, <em class="sig-param">1.13210546</em>, <em class="sig-param">1.13839494</em>, <em class="sig-param">1.14468441</em>, <em class="sig-param">1.15097389</em>, <em class="sig-param">1.15726336</em>, <em class="sig-param">1.16355283</em>, <em class="sig-param">1.16984231</em>, <em class="sig-param">1.17613178</em>, <em class="sig-param">1.18242126</em>, <em class="sig-param">1.18871073</em>, <em class="sig-param">1.19500021</em>, <em class="sig-param">1.20128968</em>, <em class="sig-param">1.20757916</em>, <em class="sig-param">1.21386863</em>, <em class="sig-param">1.22015811</em>, <em class="sig-param">1.22644758</em>, <em class="sig-param">1.23273706</em>, <em class="sig-param">1.23902653</em>, <em class="sig-param">1.24531601</em>, <em class="sig-param">1.25160548</em>, <em class="sig-param">1.25789496</em>, <em class="sig-param">1.26418443</em>, <em class="sig-param">1.27047391</em>, <em class="sig-param">1.27676338</em>, <em class="sig-param">1.28305286</em>, <em class="sig-param">1.28934233</em>, <em class="sig-param">1.29563181</em>, <em class="sig-param">1.30192128</em>, <em class="sig-param">1.30821075</em>, <em class="sig-param">1.31450023</em>, <em class="sig-param">1.3207897</em>, <em class="sig-param">1.32707918</em>, <em class="sig-param">1.33336865</em>, <em class="sig-param">1.33965813</em>, <em class="sig-param">1.3459476</em>, <em class="sig-param">1.35223708</em>, <em class="sig-param">1.35852655</em>, <em class="sig-param">1.36481603</em>, <em class="sig-param">1.3711055</em>, <em class="sig-param">1.37739498</em>, <em class="sig-param">1.38368445</em>, <em class="sig-param">1.38997393</em>, <em class="sig-param">1.3962634</em>, <em class="sig-param">1.40255288</em>, <em class="sig-param">1.40884235</em>, <em class="sig-param">1.41513183</em>, <em class="sig-param">1.4214213</em>, <em class="sig-param">1.42771078</em>, <em class="sig-param">1.43400025</em>, <em class="sig-param">1.44028973</em>, <em class="sig-param">1.4465792</em>, <em class="sig-param">1.45286867</em>, <em class="sig-param">1.45915815</em>, <em class="sig-param">1.46544762</em>, <em class="sig-param">1.4717371</em>, <em class="sig-param">1.47802657</em>, <em class="sig-param">1.48431605</em>, <em class="sig-param">1.49060552</em>, <em class="sig-param">1.496895</em>, <em class="sig-param">1.50318447</em>, <em class="sig-param">1.50947395</em>, <em class="sig-param">1.51576342</em>, <em class="sig-param">1.5220529</em>, <em class="sig-param">1.52834237</em>, <em class="sig-param">1.53463185</em>, <em class="sig-param">1.54092132</em>, <em class="sig-param">1.5472108</em>, <em class="sig-param">1.55350027</em>, <em class="sig-param">1.55978975</em>, <em class="sig-param">1.56607922</em>, <em class="sig-param">1.5723687</em>, <em class="sig-param">1.57865817</em>, <em class="sig-param">1.58494765</em>, <em class="sig-param">1.59123712</em>, <em class="sig-param">1.59752659</em>, <em class="sig-param">1.60381607</em>, <em class="sig-param">1.61010554</em>, <em class="sig-param">1.61639502</em>, <em class="sig-param">1.62268449</em>, <em class="sig-param">1.62897397</em>, <em class="sig-param">1.63526344</em>, <em class="sig-param">1.64155292</em>, <em class="sig-param">1.64784239</em>, <em class="sig-param">1.65413187</em>, <em class="sig-param">1.66042134</em>, <em class="sig-param">1.66671082</em>, <em class="sig-param">1.67300029</em>, <em class="sig-param">1.67928977</em>, <em class="sig-param">1.68557924</em>, <em class="sig-param">1.69186872</em>, <em class="sig-param">1.69815819</em>, <em class="sig-param">1.70444767</em>, <em class="sig-param">1.71073714</em>, <em class="sig-param">1.71702662</em>, <em class="sig-param">1.72331609</em>, <em class="sig-param">1.72960557</em>, <em class="sig-param">1.73589504</em>, <em class="sig-param">1.74218451</em>, <em class="sig-param">1.74847399</em>, <em class="sig-param">1.75476346</em>, <em class="sig-param">1.76105294</em>, <em class="sig-param">1.76734241</em>, <em class="sig-param">1.77363189</em>, <em class="sig-param">1.77992136</em>, <em class="sig-param">1.78621084</em>, <em class="sig-param">1.79250031</em>, <em class="sig-param">1.79878979</em>, <em class="sig-param">1.80507926</em>, <em class="sig-param">1.81136874</em>, <em class="sig-param">1.81765821</em>, <em class="sig-param">1.82394769</em>, <em class="sig-param">1.83023716</em>, <em class="sig-param">1.83652664</em>, <em class="sig-param">1.84281611</em>, <em class="sig-param">1.84910559</em>, <em class="sig-param">1.85539506</em>, <em class="sig-param">1.86168454</em>, <em class="sig-param">1.86797401</em>, <em class="sig-param">1.87426349</em>, <em class="sig-param">1.88055296</em>, <em class="sig-param">1.88684243</em>, <em class="sig-param">1.89313191</em>, <em class="sig-param">1.89942138</em>, <em class="sig-param">1.90571086</em>, <em class="sig-param">1.91200033</em>, <em class="sig-param">1.91828981</em>, <em class="sig-param">1.92457928</em>, <em class="sig-param">1.93086876</em>, <em class="sig-param">1.93715823</em>, <em class="sig-param">1.94344771</em>, <em class="sig-param">1.94973718</em>, <em class="sig-param">1.95602666</em>, <em class="sig-param">1.96231613</em>, <em class="sig-param">1.96860561</em>, <em class="sig-param">1.97489508</em>, <em class="sig-param">1.98118456</em>, <em class="sig-param">1.98747403</em>, <em class="sig-param">1.99376351</em>, <em class="sig-param">2.00005298</em>, <em class="sig-param">2.00634246</em>, <em class="sig-param">2.01263193</em>, <em class="sig-param">2.01892141</em>, <em class="sig-param">2.02521088</em>, <em class="sig-param">2.03150035</em>, <em class="sig-param">2.03778983</em>, <em class="sig-param">2.0440793</em>, <em class="sig-param">2.05036878</em>, <em class="sig-param">2.05665825</em>, <em class="sig-param">2.06294773</em>, <em class="sig-param">2.0692372</em>, <em class="sig-param">2.07552668</em>, <em class="sig-param">2.08181615</em>, <em class="sig-param">2.08810563</em>, <em class="sig-param">2.0943951</em>, <em class="sig-param">2.10068458</em>, <em class="sig-param">2.10697405</em>, <em class="sig-param">2.11326353</em>, <em class="sig-param">2.119553</em>, <em class="sig-param">2.12584248</em>, <em class="sig-param">2.13213195</em>, <em class="sig-param">2.13842143</em>, <em class="sig-param">2.1447109</em>, <em class="sig-param">2.15100038</em>, <em class="sig-param">2.15728985</em>, <em class="sig-param">2.16357932</em>, <em class="sig-param">2.1698688</em>, <em class="sig-param">2.17615827</em>, <em class="sig-param">2.18244775</em>, <em class="sig-param">2.18873722</em>, <em class="sig-param">2.1950267</em>, <em class="sig-param">2.20131617</em>, <em class="sig-param">2.20760565</em>, <em class="sig-param">2.21389512</em>, <em class="sig-param">2.2201846</em>, <em class="sig-param">2.22647407</em>, <em class="sig-param">2.23276355</em>, <em class="sig-param">2.23905302</em>, <em class="sig-param">2.2453425</em>, <em class="sig-param">2.25163197</em>, <em class="sig-param">2.25792145</em>, <em class="sig-param">2.26421092</em>, <em class="sig-param">2.2705004</em>, <em class="sig-param">2.27678987</em>, <em class="sig-param">2.28307935</em>, <em class="sig-param">2.28936882</em>, <em class="sig-param">2.2956583</em>, <em class="sig-param">2.30194777</em>, <em class="sig-param">2.30823724</em>, <em class="sig-param">2.31452672</em>, <em class="sig-param">2.32081619</em>, <em class="sig-param">2.32710567</em>, <em class="sig-param">2.33339514</em>, <em class="sig-param">2.33968462</em>, <em class="sig-param">2.34597409</em>, <em class="sig-param">2.35226357</em>, <em class="sig-param">2.35855304</em>, <em class="sig-param">2.36484252</em>, <em class="sig-param">2.37113199</em>, <em class="sig-param">2.37742147</em>, <em class="sig-param">2.38371094</em>, <em class="sig-param">2.39000042</em>, <em class="sig-param">2.39628989</em>, <em class="sig-param">2.40257937</em>, <em class="sig-param">2.40886884</em>, <em class="sig-param">2.41515832</em>, <em class="sig-param">2.42144779</em>, <em class="sig-param">2.42773727</em>, <em class="sig-param">2.43402674</em>, <em class="sig-param">2.44031622</em>, <em class="sig-param">2.44660569</em>, <em class="sig-param">2.45289516</em>, <em class="sig-param">2.45918464</em>, <em class="sig-param">2.46547411</em>, <em class="sig-param">2.47176359</em>, <em class="sig-param">2.47805306</em>, <em class="sig-param">2.48434254</em>, <em class="sig-param">2.49063201</em>, <em class="sig-param">2.49692149</em>, <em class="sig-param">2.50321096</em>, <em class="sig-param">2.50950044</em>, <em class="sig-param">2.51578991</em>, <em class="sig-param">2.52207939</em>, <em class="sig-param">2.52836886</em>, <em class="sig-param">2.53465834</em>, <em class="sig-param">2.54094781</em>, <em class="sig-param">2.54723729</em>, <em class="sig-param">2.55352676</em>, <em class="sig-param">2.55981624</em>, <em class="sig-param">2.56610571</em>, <em class="sig-param">2.57239519</em>, <em class="sig-param">2.57868466</em>, <em class="sig-param">2.58497414</em>, <em class="sig-param">2.59126361</em>, <em class="sig-param">2.59755308</em>, <em class="sig-param">2.60384256</em>, <em class="sig-param">2.61013203</em>, <em class="sig-param">2.61642151</em>, <em class="sig-param">2.62271098</em>, <em class="sig-param">2.62900046</em>, <em class="sig-param">2.63528993</em>, <em class="sig-param">2.64157941</em>, <em class="sig-param">2.64786888</em>, <em class="sig-param">2.65415836</em>, <em class="sig-param">2.66044783</em>, <em class="sig-param">2.66673731</em>, <em class="sig-param">2.67302678</em>, <em class="sig-param">2.67931626</em>, <em class="sig-param">2.68560573</em>, <em class="sig-param">2.69189521</em>, <em class="sig-param">2.69818468</em>, <em class="sig-param">2.70447416</em>, <em class="sig-param">2.71076363</em>, <em class="sig-param">2.71705311</em>, <em class="sig-param">2.72334258</em>, <em class="sig-param">2.72963206</em>, <em class="sig-param">2.73592153</em>, <em class="sig-param">2.742211</em>, <em class="sig-param">2.74850048</em>, <em class="sig-param">2.75478995</em>, <em class="sig-param">2.76107943</em>, <em class="sig-param">2.7673689</em>, <em class="sig-param">2.77365838</em>, <em class="sig-param">2.77994785</em>, <em class="sig-param">2.78623733</em>, <em class="sig-param">2.7925268</em>, <em class="sig-param">2.79881628</em>, <em class="sig-param">2.80510575</em>, <em class="sig-param">2.81139523</em>, <em class="sig-param">2.8176847</em>, <em class="sig-param">2.82397418</em>, <em class="sig-param">2.83026365</em>, <em class="sig-param">2.83655313</em>, <em class="sig-param">2.8428426</em>, <em class="sig-param">2.84913208</em>, <em class="sig-param">2.85542155</em>, <em class="sig-param">2.86171103</em>, <em class="sig-param">2.8680005</em>, <em class="sig-param">2.87428998</em>, <em class="sig-param">2.88057945</em>, <em class="sig-param">2.88686892</em>, <em class="sig-param">2.8931584</em>, <em class="sig-param">2.89944787</em>, <em class="sig-param">2.90573735</em>, <em class="sig-param">2.91202682</em>, <em class="sig-param">2.9183163</em>, <em class="sig-param">2.92460577</em>, <em class="sig-param">2.93089525</em>, <em class="sig-param">2.93718472</em>, <em class="sig-param">2.9434742</em>, <em class="sig-param">2.94976367</em>, <em class="sig-param">2.95605315</em>, <em class="sig-param">2.96234262</em>, <em class="sig-param">2.9686321</em>, <em class="sig-param">2.97492157</em>, <em class="sig-param">2.98121105</em>, <em class="sig-param">2.98750052</em>, <em class="sig-param">2.99379</em>, <em class="sig-param">3.00007947</em>, <em class="sig-param">3.00636895</em>, <em class="sig-param">3.01265842</em>, <em class="sig-param">3.0189479</em>, <em class="sig-param">3.02523737</em>, <em class="sig-param">3.03152684</em>, <em class="sig-param">3.03781632</em>, <em class="sig-param">3.04410579</em>, <em class="sig-param">3.05039527</em>, <em class="sig-param">3.05668474</em>, <em class="sig-param">3.06297422</em>, <em class="sig-param">3.06926369</em>, <em class="sig-param">3.07555317</em>, <em class="sig-param">3.08184264</em>, <em class="sig-param">3.08813212</em>, <em class="sig-param">3.09442159</em>, <em class="sig-param">3.10071107</em>, <em class="sig-param">3.10700054</em>, <em class="sig-param">3.11329002</em>, <em class="sig-param">3.11957949</em>, <em class="sig-param">3.12586897</em>, <em class="sig-param">3.13215844</em>, <em class="sig-param">3.13844792</em>, <em class="sig-param">3.14473739</em>, <em class="sig-param">3.15102687</em>, <em class="sig-param">3.15731634</em>, <em class="sig-param">3.16360582</em>, <em class="sig-param">3.16989529</em>, <em class="sig-param">3.17618476</em>, <em class="sig-param">3.18247424</em>, <em class="sig-param">3.18876371</em>, <em class="sig-param">3.19505319</em>, <em class="sig-param">3.20134266</em>, <em class="sig-param">3.20763214</em>, <em class="sig-param">3.21392161</em>, <em class="sig-param">3.22021109</em>, <em class="sig-param">3.22650056</em>, <em class="sig-param">3.23279004</em>, <em class="sig-param">3.23907951</em>, <em class="sig-param">3.24536899</em>, <em class="sig-param">3.25165846</em>, <em class="sig-param">3.25794794</em>, <em class="sig-param">3.26423741</em>, <em class="sig-param">3.27052689</em>, <em class="sig-param">3.27681636</em>, <em class="sig-param">3.28310584</em>, <em class="sig-param">3.28939531</em>, <em class="sig-param">3.29568479</em>, <em class="sig-param">3.30197426</em>, <em class="sig-param">3.30826374</em>, <em class="sig-param">3.31455321</em>, <em class="sig-param">3.32084268</em>, <em class="sig-param">3.32713216</em>, <em class="sig-param">3.33342163</em>, <em class="sig-param">3.33971111</em>, <em class="sig-param">3.34600058</em>, <em class="sig-param">3.35229006</em>, <em class="sig-param">3.35857953</em>, <em class="sig-param">3.36486901</em>, <em class="sig-param">3.37115848</em>, <em class="sig-param">3.37744796</em>, <em class="sig-param">3.38373743</em>, <em class="sig-param">3.39002691</em>, <em class="sig-param">3.39631638</em>, <em class="sig-param">3.40260586</em>, <em class="sig-param">3.40889533</em>, <em class="sig-param">3.41518481</em>, <em class="sig-param">3.42147428</em>, <em class="sig-param">3.42776376</em>, <em class="sig-param">3.43405323</em>, <em class="sig-param">3.44034271</em>, <em class="sig-param">3.44663218</em>, <em class="sig-param">3.45292166</em>, <em class="sig-param">3.45921113</em>, <em class="sig-param">3.4655006</em>, <em class="sig-param">3.47179008</em>, <em class="sig-param">3.47807955</em>, <em class="sig-param">3.48436903</em>, <em class="sig-param">3.4906585</em>, <em class="sig-param">3.49694798</em>, <em class="sig-param">3.50323745</em>, <em class="sig-param">3.50952693</em>, <em class="sig-param">3.5158164</em>, <em class="sig-param">3.52210588</em>, <em class="sig-param">3.52839535</em>, <em class="sig-param">3.53468483</em>, <em class="sig-param">3.5409743</em>, <em class="sig-param">3.54726378</em>, <em class="sig-param">3.55355325</em>, <em class="sig-param">3.55984273</em>, <em class="sig-param">3.5661322</em>, <em class="sig-param">3.57242168</em>, <em class="sig-param">3.57871115</em>, <em class="sig-param">3.58500063</em>, <em class="sig-param">3.5912901</em>, <em class="sig-param">3.59757958</em>, <em class="sig-param">3.60386905</em>, <em class="sig-param">3.61015852</em>, <em class="sig-param">3.616448</em>, <em class="sig-param">3.62273747</em>, <em class="sig-param">3.62902695</em>, <em class="sig-param">3.63531642</em>, <em class="sig-param">3.6416059</em>, <em class="sig-param">3.64789537</em>, <em class="sig-param">3.65418485</em>, <em class="sig-param">3.66047432</em>, <em class="sig-param">3.6667638</em>, <em class="sig-param">3.67305327</em>, <em class="sig-param">3.67934275</em>, <em class="sig-param">3.68563222</em>, <em class="sig-param">3.6919217</em>, <em class="sig-param">3.69821117</em>, <em class="sig-param">3.70450065</em>, <em class="sig-param">3.71079012</em>, <em class="sig-param">3.7170796</em>, <em class="sig-param">3.72336907</em>, <em class="sig-param">3.72965855</em>, <em class="sig-param">3.73594802</em>, <em class="sig-param">3.7422375</em>, <em class="sig-param">3.74852697</em>, <em class="sig-param">3.75481644</em>, <em class="sig-param">3.76110592</em>, <em class="sig-param">3.76739539</em>, <em class="sig-param">3.77368487</em>, <em class="sig-param">3.77997434</em>, <em class="sig-param">3.78626382</em>, <em class="sig-param">3.79255329</em>, <em class="sig-param">3.79884277</em>, <em class="sig-param">3.80513224</em>, <em class="sig-param">3.81142172</em>, <em class="sig-param">3.81771119</em>, <em class="sig-param">3.82400067</em>, <em class="sig-param">3.83029014</em>, <em class="sig-param">3.83657962</em>, <em class="sig-param">3.84286909</em>, <em class="sig-param">3.84915857</em>, <em class="sig-param">3.85544804</em>, <em class="sig-param">3.86173752</em>, <em class="sig-param">3.86802699</em>, <em class="sig-param">3.87431647</em>, <em class="sig-param">3.88060594</em>, <em class="sig-param">3.88689542</em>, <em class="sig-param">3.89318489</em>, <em class="sig-param">3.89947436</em>, <em class="sig-param">3.90576384</em>, <em class="sig-param">3.91205331</em>, <em class="sig-param">3.91834279</em>, <em class="sig-param">3.92463226</em>, <em class="sig-param">3.93092174</em>, <em class="sig-param">3.93721121</em>, <em class="sig-param">3.94350069</em>, <em class="sig-param">3.94979016</em>, <em class="sig-param">3.95607964</em>, <em class="sig-param">3.96236911</em>, <em class="sig-param">3.96865859</em>, <em class="sig-param">3.97494806</em>, <em class="sig-param">3.98123754</em>, <em class="sig-param">3.98752701</em>, <em class="sig-param">3.99381649</em>, <em class="sig-param">4.00010596</em>, <em class="sig-param">4.00639544</em>, <em class="sig-param">4.01268491</em>, <em class="sig-param">4.01897439</em>, <em class="sig-param">4.02526386</em>, <em class="sig-param">4.03155334</em>, <em class="sig-param">4.03784281</em>, <em class="sig-param">4.04413228</em>, <em class="sig-param">4.05042176</em>, <em class="sig-param">4.05671123</em>, <em class="sig-param">4.06300071</em>, <em class="sig-param">4.06929018</em>, <em class="sig-param">4.07557966</em>, <em class="sig-param">4.08186913</em>, <em class="sig-param">4.08815861</em>, <em class="sig-param">4.09444808</em>, <em class="sig-param">4.10073756</em>, <em class="sig-param">4.10702703</em>, <em class="sig-param">4.11331651</em>, <em class="sig-param">4.11960598</em>, <em class="sig-param">4.12589546</em>, <em class="sig-param">4.13218493</em>, <em class="sig-param">4.13847441</em>, <em class="sig-param">4.14476388</em>, <em class="sig-param">4.15105336</em>, <em class="sig-param">4.15734283</em>, <em class="sig-param">4.16363231</em>, <em class="sig-param">4.16992178</em>, <em class="sig-param">4.17621126</em>, <em class="sig-param">4.18250073</em>, <em class="sig-param">4.1887902</em>, <em class="sig-param">4.19507968</em>, <em class="sig-param">4.20136915</em>, <em class="sig-param">4.20765863</em>, <em class="sig-param">4.2139481</em>, <em class="sig-param">4.22023758</em>, <em class="sig-param">4.22652705</em>, <em class="sig-param">4.23281653</em>, <em class="sig-param">4.239106</em>, <em class="sig-param">4.24539548</em>, <em class="sig-param">4.25168495</em>, <em class="sig-param">4.25797443</em>, <em class="sig-param">4.2642639</em>, <em class="sig-param">4.27055338</em>, <em class="sig-param">4.27684285</em>, <em class="sig-param">4.28313233</em>, <em class="sig-param">4.2894218</em>, <em class="sig-param">4.29571128</em>, <em class="sig-param">4.30200075</em>, <em class="sig-param">4.30829023</em>, <em class="sig-param">4.3145797</em>, <em class="sig-param">4.32086918</em>, <em class="sig-param">4.32715865</em>, <em class="sig-param">4.33344812</em>, <em class="sig-param">4.3397376</em>, <em class="sig-param">4.34602707</em>, <em class="sig-param">4.35231655</em>, <em class="sig-param">4.35860602</em>, <em class="sig-param">4.3648955</em>, <em class="sig-param">4.37118497</em>, <em class="sig-param">4.37747445</em>, <em class="sig-param">4.38376392</em>, <em class="sig-param">4.3900534</em>, <em class="sig-param">4.39634287</em>, <em class="sig-param">4.40263235</em>, <em class="sig-param">4.40892182</em>, <em class="sig-param">4.4152113</em>, <em class="sig-param">4.42150077</em>, <em class="sig-param">4.42779025</em>, <em class="sig-param">4.43407972</em>, <em class="sig-param">4.4403692</em>, <em class="sig-param">4.44665867</em>, <em class="sig-param">4.45294815</em>, <em class="sig-param">4.45923762</em>, <em class="sig-param">4.4655271</em>, <em class="sig-param">4.47181657</em>, <em class="sig-param">4.47810604</em>, <em class="sig-param">4.48439552</em>, <em class="sig-param">4.49068499</em>, <em class="sig-param">4.49697447</em>, <em class="sig-param">4.50326394</em>, <em class="sig-param">4.50955342</em>, <em class="sig-param">4.51584289</em>, <em class="sig-param">4.52213237</em>, <em class="sig-param">4.52842184</em>, <em class="sig-param">4.53471132</em>, <em class="sig-param">4.54100079</em>, <em class="sig-param">4.54729027</em>, <em class="sig-param">4.55357974</em>, <em class="sig-param">4.55986922</em>, <em class="sig-param">4.56615869</em>, <em class="sig-param">4.57244817</em>, <em class="sig-param">4.57873764</em>, <em class="sig-param">4.58502712</em>, <em class="sig-param">4.59131659</em>, <em class="sig-param">4.59760607</em>, <em class="sig-param">4.60389554</em>, <em class="sig-param">4.61018502</em>, <em class="sig-param">4.61647449</em>, <em class="sig-param">4.62276396</em>, <em class="sig-param">4.62905344</em>, <em class="sig-param">4.63534291</em>, <em class="sig-param">4.64163239</em>, <em class="sig-param">4.64792186</em>, <em class="sig-param">4.65421134</em>, <em class="sig-param">4.66050081</em>, <em class="sig-param">4.66679029</em>, <em class="sig-param">4.67307976</em>, <em class="sig-param">4.67936924</em>, <em class="sig-param">4.68565871</em>, <em class="sig-param">4.69194819</em>, <em class="sig-param">4.69823766</em>, <em class="sig-param">4.70452714</em>, <em class="sig-param">4.71081661</em>, <em class="sig-param">4.71710609</em>, <em class="sig-param">4.72339556</em>, <em class="sig-param">4.72968504</em>, <em class="sig-param">4.73597451</em>, <em class="sig-param">4.74226399</em>, <em class="sig-param">4.74855346</em>, <em class="sig-param">4.75484294</em>, <em class="sig-param">4.76113241</em>, <em class="sig-param">4.76742188</em>, <em class="sig-param">4.77371136</em>, <em class="sig-param">4.78000083</em>, <em class="sig-param">4.78629031</em>, <em class="sig-param">4.79257978</em>, <em class="sig-param">4.79886926</em>, <em class="sig-param">4.80515873</em>, <em class="sig-param">4.81144821</em>, <em class="sig-param">4.81773768</em>, <em class="sig-param">4.82402716</em>, <em class="sig-param">4.83031663</em>, <em class="sig-param">4.83660611</em>, <em class="sig-param">4.84289558</em>, <em class="sig-param">4.84918506</em>, <em class="sig-param">4.85547453</em>, <em class="sig-param">4.86176401</em>, <em class="sig-param">4.86805348</em>, <em class="sig-param">4.87434296</em>, <em class="sig-param">4.88063243</em>, <em class="sig-param">4.88692191</em>, <em class="sig-param">4.89321138</em>, <em class="sig-param">4.89950086</em>, <em class="sig-param">4.90579033</em>, <em class="sig-param">4.9120798</em>, <em class="sig-param">4.91836928</em>, <em class="sig-param">4.92465875</em>, <em class="sig-param">4.93094823</em>, <em class="sig-param">4.9372377</em>, <em class="sig-param">4.94352718</em>, <em class="sig-param">4.94981665</em>, <em class="sig-param">4.95610613</em>, <em class="sig-param">4.9623956</em>, <em class="sig-param">4.96868508</em>, <em class="sig-param">4.97497455</em>, <em class="sig-param">4.98126403</em>, <em class="sig-param">4.9875535</em>, <em class="sig-param">4.99384298</em>, <em class="sig-param">5.00013245</em>, <em class="sig-param">5.00642193</em>, <em class="sig-param">5.0127114</em>, <em class="sig-param">5.01900088</em>, <em class="sig-param">5.02529035</em>, <em class="sig-param">5.03157983</em>, <em class="sig-param">5.0378693</em>, <em class="sig-param">5.04415878</em>, <em class="sig-param">5.05044825</em>, <em class="sig-param">5.05673772</em>, <em class="sig-param">5.0630272</em>, <em class="sig-param">5.06931667</em>, <em class="sig-param">5.07560615</em>, <em class="sig-param">5.08189562</em>, <em class="sig-param">5.0881851</em>, <em class="sig-param">5.09447457</em>, <em class="sig-param">5.10076405</em>, <em class="sig-param">5.10705352</em>, <em class="sig-param">5.113343</em>, <em class="sig-param">5.11963247</em>, <em class="sig-param">5.12592195</em>, <em class="sig-param">5.13221142</em>, <em class="sig-param">5.1385009</em>, <em class="sig-param">5.14479037</em>, <em class="sig-param">5.15107985</em>, <em class="sig-param">5.15736932</em>, <em class="sig-param">5.1636588</em>, <em class="sig-param">5.16994827</em>, <em class="sig-param">5.17623775</em>, <em class="sig-param">5.18252722</em>, <em class="sig-param">5.1888167</em>, <em class="sig-param">5.19510617</em>, <em class="sig-param">5.20139564</em>, <em class="sig-param">5.20768512</em>, <em class="sig-param">5.21397459</em>, <em class="sig-param">5.22026407</em>, <em class="sig-param">5.22655354</em>, <em class="sig-param">5.23284302</em>, <em class="sig-param">5.23913249</em>, <em class="sig-param">5.24542197</em>, <em class="sig-param">5.25171144</em>, <em class="sig-param">5.25800092</em>, <em class="sig-param">5.26429039</em>, <em class="sig-param">5.27057987</em>, <em class="sig-param">5.27686934</em>, <em class="sig-param">5.28315882</em>, <em class="sig-param">5.28944829</em>, <em class="sig-param">5.29573777</em>, <em class="sig-param">5.30202724</em>, <em class="sig-param">5.30831672</em>, <em class="sig-param">5.31460619</em>, <em class="sig-param">5.32089567</em>, <em class="sig-param">5.32718514</em>, <em class="sig-param">5.33347462</em>, <em class="sig-param">5.33976409</em>, <em class="sig-param">5.34605356</em>, <em class="sig-param">5.35234304</em>, <em class="sig-param">5.35863251</em>, <em class="sig-param">5.36492199</em>, <em class="sig-param">5.37121146</em>, <em class="sig-param">5.37750094</em>, <em class="sig-param">5.38379041</em>, <em class="sig-param">5.39007989</em>, <em class="sig-param">5.39636936</em>, <em class="sig-param">5.40265884</em>, <em class="sig-param">5.40894831</em>, <em class="sig-param">5.41523779</em>, <em class="sig-param">5.42152726</em>, <em class="sig-param">5.42781674</em>, <em class="sig-param">5.43410621</em>, <em class="sig-param">5.44039569</em>, <em class="sig-param">5.44668516</em>, <em class="sig-param">5.45297464</em>, <em class="sig-param">5.45926411</em>, <em class="sig-param">5.46555359</em>, <em class="sig-param">5.47184306</em>, <em class="sig-param">5.47813254</em>, <em class="sig-param">5.48442201</em>, <em class="sig-param">5.49071148</em>, <em class="sig-param">5.49700096</em>, <em class="sig-param">5.50329043</em>, <em class="sig-param">5.50957991</em>, <em class="sig-param">5.51586938</em>, <em class="sig-param">5.52215886</em>, <em class="sig-param">5.52844833</em>, <em class="sig-param">5.53473781</em>, <em class="sig-param">5.54102728</em>, <em class="sig-param">5.54731676</em>, <em class="sig-param">5.55360623</em>, <em class="sig-param">5.55989571</em>, <em class="sig-param">5.56618518</em>, <em class="sig-param">5.57247466</em>, <em class="sig-param">5.57876413</em>, <em class="sig-param">5.58505361</em>, <em class="sig-param">5.59134308</em>, <em class="sig-param">5.59763256</em>, <em class="sig-param">5.60392203</em>, <em class="sig-param">5.61021151</em>, <em class="sig-param">5.61650098</em>, <em class="sig-param">5.62279046</em>, <em class="sig-param">5.62907993</em>, <em class="sig-param">5.6353694</em>, <em class="sig-param">5.64165888</em>, <em class="sig-param">5.64794835</em>, <em class="sig-param">5.65423783</em>, <em class="sig-param">5.6605273</em>, <em class="sig-param">5.66681678</em>, <em class="sig-param">5.67310625</em>, <em class="sig-param">5.67939573</em>, <em class="sig-param">5.6856852</em>, <em class="sig-param">5.69197468</em>, <em class="sig-param">5.69826415</em>, <em class="sig-param">5.70455363</em>, <em class="sig-param">5.7108431</em>, <em class="sig-param">5.71713258</em>, <em class="sig-param">5.72342205</em>, <em class="sig-param">5.72971153</em>, <em class="sig-param">5.736001</em>, <em class="sig-param">5.74229048</em>, <em class="sig-param">5.74857995</em>, <em class="sig-param">5.75486943</em>, <em class="sig-param">5.7611589</em>, <em class="sig-param">5.76744838</em>, <em class="sig-param">5.77373785</em>, <em class="sig-param">5.78002732</em>, <em class="sig-param">5.7863168</em>, <em class="sig-param">5.79260627</em>, <em class="sig-param">5.79889575</em>, <em class="sig-param">5.80518522</em>, <em class="sig-param">5.8114747</em>, <em class="sig-param">5.81776417</em>, <em class="sig-param">5.82405365</em>, <em class="sig-param">5.83034312</em>, <em class="sig-param">5.8366326</em>, <em class="sig-param">5.84292207</em>, <em class="sig-param">5.84921155</em>, <em class="sig-param">5.85550102</em>, <em class="sig-param">5.8617905</em>, <em class="sig-param">5.86807997</em>, <em class="sig-param">5.87436945</em>, <em class="sig-param">5.88065892</em>, <em class="sig-param">5.8869484</em>, <em class="sig-param">5.89323787</em>, <em class="sig-param">5.89952735</em>, <em class="sig-param">5.90581682</em>, <em class="sig-param">5.9121063</em>, <em class="sig-param">5.91839577</em>, <em class="sig-param">5.92468524</em>, <em class="sig-param">5.93097472</em>, <em class="sig-param">5.93726419</em>, <em class="sig-param">5.94355367</em>, <em class="sig-param">5.94984314</em>, <em class="sig-param">5.95613262</em>, <em class="sig-param">5.96242209</em>, <em class="sig-param">5.96871157</em>, <em class="sig-param">5.97500104</em>, <em class="sig-param">5.98129052</em>, <em class="sig-param">5.98757999</em>, <em class="sig-param">5.99386947</em>, <em class="sig-param">6.00015894</em>, <em class="sig-param">6.00644842</em>, <em class="sig-param">6.01273789</em>, <em class="sig-param">6.01902737</em>, <em class="sig-param">6.02531684</em>, <em class="sig-param">6.03160632</em>, <em class="sig-param">6.03789579</em>, <em class="sig-param">6.04418527</em>, <em class="sig-param">6.05047474</em>, <em class="sig-param">6.05676422</em>, <em class="sig-param">6.06305369</em>, <em class="sig-param">6.06934316</em>, <em class="sig-param">6.07563264</em>, <em class="sig-param">6.08192211</em>, <em class="sig-param">6.08821159</em>, <em class="sig-param">6.09450106</em>, <em class="sig-param">6.10079054</em>, <em class="sig-param">6.10708001</em>, <em class="sig-param">6.11336949</em>, <em class="sig-param">6.11965896</em>, <em class="sig-param">6.12594844</em>, <em class="sig-param">6.13223791</em>, <em class="sig-param">6.13852739</em>, <em class="sig-param">6.14481686</em>, <em class="sig-param">6.15110634</em>, <em class="sig-param">6.15739581</em>, <em class="sig-param">6.16368529</em>, <em class="sig-param">6.16997476</em>, <em class="sig-param">6.17626424</em>, <em class="sig-param">6.18255371</em>, <em class="sig-param">6.18884319</em>, <em class="sig-param">6.19513266</em>, <em class="sig-param">6.20142214</em>, <em class="sig-param">6.20771161</em>, <em class="sig-param">6.21400108</em>, <em class="sig-param">6.22029056</em>, <em class="sig-param">6.22658003</em>, <em class="sig-param">6.23286951</em>, <em class="sig-param">6.23915898</em>, <em class="sig-param">6.24544846</em>, <em class="sig-param">6.25173793</em>, <em class="sig-param">6.25802741</em>, <em class="sig-param">6.26431688</em>, <em class="sig-param">6.27060636</em>, <em class="sig-param">6.27689583</em>, <em class="sig-param">6.28318531])</em>, <em class="sig-param">datashape=(64</em>, <em class="sig-param">64</em>, <em class="sig-param">64</em>, <em class="sig-param">65)</em>, <em class="sig-param">origin=(32</em>, <em class="sig-param">32</em>, <em class="sig-param">32)</em>, <em class="sig-param">scale=(25</em>, <em class="sig-param">25</em>, <em class="sig-param">25)</em>, <em class="sig-param">angles=array([0.</em>, <em class="sig-param">0.2026834</em>, <em class="sig-param">0.40536679</em>, <em class="sig-param">0.60805019</em>, <em class="sig-param">0.81073359</em>, <em class="sig-param">1.01341699</em>, <em class="sig-param">1.21610038</em>, <em class="sig-param">1.41878378</em>, <em class="sig-param">1.62146718</em>, <em class="sig-param">1.82415057</em>, <em class="sig-param">2.02683397</em>, <em class="sig-param">2.22951737</em>, <em class="sig-param">2.43220076</em>, <em class="sig-param">2.63488416</em>, <em class="sig-param">2.83756756</em>, <em class="sig-param">3.04025096</em>, <em class="sig-param">3.24293435</em>, <em class="sig-param">3.44561775</em>, <em class="sig-param">3.64830115</em>, <em class="sig-param">3.85098454</em>, <em class="sig-param">4.05366794</em>, <em class="sig-param">4.25635134</em>, <em class="sig-param">4.45903473</em>, <em class="sig-param">4.66171813</em>, <em class="sig-param">4.86440153</em>, <em class="sig-param">5.06708493</em>, <em class="sig-param">5.26976832</em>, <em class="sig-param">5.47245172</em>, <em class="sig-param">5.67513512</em>, <em class="sig-param">5.87781851</em>, <em class="sig-param">6.08050191</em>, <em class="sig-param">6.28318531])</em>, <em class="sig-param">radii=array([0.2</em>, <em class="sig-param">0.56</em>, <em class="sig-param">0.92</em>, <em class="sig-param">1.28</em>, <em class="sig-param">1.64</em>, <em class="sig-param">2.  ])</em>, <em class="sig-param">S0=100.0</em>, <em class="sig-param">snr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.orbital_phantom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a phantom based on a 3-D orbit <code class="docutils literal notranslate"><span class="pre">f(t)</span> <span class="pre">-&gt;</span> <span class="pre">(x,y,z)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Gradient table of measurement directions.</p>
+</dd>
+<dt><strong>evals</strong><span class="classifier">array, shape (3,)</span></dt><dd><p>Tensor eigenvalues.</p>
+</dd>
+<dt><strong>func</strong><span class="classifier">user defined function f(t)-&gt;(x,y,z)</span></dt><dd><p>It could be desirable for <code class="docutils literal notranslate"><span class="pre">-1=&lt;x,y,z</span> <span class="pre">&lt;=1</span></code>.
+If None creates a circular orbit.</p>
+</dd>
+<dt><strong>t</strong><span class="classifier">array, shape (K,)</span></dt><dd><p>Represents time for the orbit. Default is
+<code class="docutils literal notranslate"><span class="pre">np.linspace(0,</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">np.pi,</span> <span class="pre">1000)</span></code>.</p>
+</dd>
+<dt><strong>datashape</strong><span class="classifier">array, shape (X,Y,Z,W)</span></dt><dd><p>Size of the output simulated data</p>
+</dd>
+<dt><strong>origin</strong><span class="classifier">tuple, shape (3,)</span></dt><dd><p>Define the center for the volume</p>
+</dd>
+<dt><strong>scale</strong><span class="classifier">tuple, shape (3,)</span></dt><dd><p>Scale the function before applying to the grid</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">array, shape (L,)</span></dt><dd><p>Density angle points, always perpendicular to the first eigen vector
+Default np.linspace(0, 2 * np.pi, 32).</p>
+</dd>
+<dt><strong>radii</strong><span class="classifier">array, shape (M,)</span></dt><dd><p>Thickness radii.  Default <code class="docutils literal notranslate"><span class="pre">np.linspace(0.2,</span> <span class="pre">2,</span> <span class="pre">6)</span></code>.
+angles and radii define the total thickness options</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">double, optional</span></dt><dd><p>Maximum simulated signal. Default 100.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float, optional</span></dt><dd><p>The signal to noise ratio set to apply Rician noise to the data.
+Default is to not add noise at all.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">array, shape (datashape)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#dipy.sims.phantom.add_noise" title="dipy.sims.phantom.add_noise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_noise</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
+<span class="gp">... </span>   <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">... </span>   <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+<span class="gp">... </span>   <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="gp">... </span>   <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">orbital_phantom</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="single-tensor">
+<h3>single_tensor<a class="headerlink" href="#single-tensor" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.single_tensor">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">single_tensor</code><span class="sig-paren">(</span><em class="sig-param">gtab</em>, <em class="sig-param">S0=1</em>, <em class="sig-param">evals=None</em>, <em class="sig-param">evecs=None</em>, <em class="sig-param">snr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.single_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulated Q-space signal with a single tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Measurement directions.</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">double,</span></dt><dd><p>Strength of signal in the presence of no diffusion gradient (also
+called the <code class="docutils literal notranslate"><span class="pre">b=0</span></code> value).</p>
+</dd>
+<dt><strong>evals</strong><span class="classifier">(3,) ndarray</span></dt><dd><p>Eigenvalues of the diffusion tensor.  By default, values typical for
+prolate white matter are used.</p>
+</dd>
+<dt><strong>evecs</strong><span class="classifier">(3, 3) ndarray</span></dt><dd><p>Eigenvectors of the tensor.  You can also think of this as a rotation
+matrix that transforms the direction of the tensor. The eigenvectors
+need to be column wise.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  None implies no noise.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal: <code class="docutils literal notranslate"><span class="pre">S(q,</span> <span class="pre">tau)</span> <span class="pre">=</span> <span class="pre">S_0</span> <span class="pre">e^(-b</span> <span class="pre">g^T</span> <span class="pre">R</span> <span class="pre">D</span> <span class="pre">R.T</span> <span class="pre">g)</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r858ac5922351-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dd><p>M. Descoteaux, “High Angular Resolution Diffusion MRI: from Local
+Estimation to Segmentation and Tractography”, PhD thesis,
+University of Nice-Sophia Antipolis, p. 42, 2008.</p>
+</dd>
+<dt class="label" id="r858ac5922351-2"><span class="brackets"><a class="fn-backref" href="#id8">2</a></span></dt>
+<dd><p>E. Stejskal and J. Tanner, “Spin diffusion measurements: spin echos
+in the presence of a time-dependent field gradient”, Journal of
+Chemical Physics, nr. 42, pp. 288–292, 1965.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="vec2vec-rotmat">
+<h3>vec2vec_rotmat<a class="headerlink" href="#vec2vec-rotmat" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.phantom.vec2vec_rotmat">
+<code class="sig-prename descclassname">dipy.sims.phantom.</code><code class="sig-name descname">vec2vec_rotmat</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.phantom.vec2vec_rotmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>rotation matrix from 2 unit vectors</p>
+<p>u, v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to
+v.</p>
+<p>In general there are many rotations that will map u to v. If S is any
+rotation using v as an axis then R.S will also map u to v since (S.R)u =
+S(Ru) = Sv = v.  The rotation R returned by vec2vec_rotmat leaves fixed the
+perpendicular to the plane spanned by u and v.</p>
+<p>The transpose of R will align v to u.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>u</strong><span class="classifier">array, shape(3,)</span></dt><dd></dd>
+<dt><strong>v</strong><span class="classifier">array, shape(3,)</span></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>R</strong><span class="classifier">array, shape(3,3)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.geometry</span> <span class="k">import</span> <span class="n">vec2vec_rotmat</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">v</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">R</span><span class="o">=</span><span class="n">vec2vec_rotmat</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">u</span><span class="p">)</span>
+<span class="go">array([ 0.,  1.,  0.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+<span class="go">array([ 1.,  0.,  0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id9">
+<h3>add_noise<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.add_noise">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">add_noise</code><span class="sig-paren">(</span><em class="sig-param">signal</em>, <em class="sig-param">snr</em>, <em class="sig-param">S0</em>, <em class="sig-param">noise_type='rician'</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.add_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add noise of specified distribution to the signal from a single voxel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>signal</strong><span class="classifier">1-d ndarray</span></dt><dd><p>The signal in the voxel.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>The desired signal-to-noise ratio. (See notes below.)
+If <cite>snr</cite> is None, return the signal as-is.</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float</span></dt><dd><p>Reference signal for specifying <cite>snr</cite>.</p>
+</dd>
+<dt><strong>noise_type</strong><span class="classifier">string, optional</span></dt><dd><p>The distribution of noise added. Can be either ‘gaussian’ for Gaussian
+distributed noise, ‘rician’ for Rice-distributed noise (default) or
+‘rayleigh’ for a Rayleigh distribution.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>signal</strong><span class="classifier">array, same shape as the input</span></dt><dd><p>Signal with added noise.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>SNR is defined here, following <a class="reference internal" href="#rb9d9ab9d2d88-1" id="id10">[1]</a>, as <code class="docutils literal notranslate"><span class="pre">S0</span> <span class="pre">/</span> <span class="pre">sigma</span></code>, where <code class="docutils literal notranslate"><span class="pre">sigma</span></code> is
+the standard deviation of the two Gaussian distributions forming the real
+and imaginary components of the Rician noise distribution (see <a class="reference internal" href="#rb9d9ab9d2d88-2" id="id11">[2]</a>).</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rb9d9ab9d2d88-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id10">1</a>,<a href="#id12">2</a>)</span></dt>
+<dd><p>Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
+fast and robust q-ball imaging. MRM, 58: 497-510</p>
+</dd>
+<dt class="label" id="rb9d9ab9d2d88-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id11">1</a>,<a href="#id13">2</a>)</span></dt>
+<dd><p>Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
+data. MRM 34: 910-914.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">800</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">signal_w_noise</span> <span class="o">=</span> <span class="n">add_noise</span><span class="p">(</span><span class="n">signal</span><span class="p">,</span> <span class="mf">10.</span><span class="p">,</span> <span class="mf">100.</span><span class="p">,</span> <span class="n">noise_type</span><span class="o">=</span><span class="s1">&#39;rician&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="all-tensor-evecs">
+<h3>all_tensor_evecs<a class="headerlink" href="#all-tensor-evecs" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.all_tensor_evecs">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">all_tensor_evecs</code><span class="sig-paren">(</span><em class="sig-param">e0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.all_tensor_evecs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given the principle tensor axis, return the array of all
+eigenvectors column-wise (or, the rotation matrix that orientates the
+tensor).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>e0</strong><span class="classifier">(3,) ndarray</span></dt><dd><p>Principle tensor axis.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>evecs</strong><span class="classifier">(3,3) ndarray</span></dt><dd><p>Tensor eigenvectors, arranged column-wise.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="callaghan-perpendicular">
+<h3>callaghan_perpendicular<a class="headerlink" href="#callaghan-perpendicular" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.callaghan_perpendicular">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">callaghan_perpendicular</code><span class="sig-paren">(</span><em class="sig-param">q</em>, <em class="sig-param">radius</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.callaghan_perpendicular" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the perpendicular diffusion signal E(q) in a cylinder of
+radius R using the Soderman model <a class="reference internal" href="#r16c3255383f0-1" id="id14">[1]</a>. Assumes that the pulse length
+is infinitely short and the diffusion time is infinitely long.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>q</strong><span class="classifier">array, shape (N,)</span></dt><dd><p>q-space value in 1/mm</p>
+</dd>
+<dt><strong>radius</strong><span class="classifier">float</span></dt><dd><p>cylinder radius in mm</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>E</strong><span class="classifier">array, shape (N,)</span></dt><dd><p>signal attenuation</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r16c3255383f0-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id14">2</a>,<a href="#id15">3</a>)</span></dt>
+<dd><p>Söderman, Olle, and Bengt Jönsson. “Restricted diffusion in
+cylindrical geometry.” Journal of Magnetic Resonance, Series A
+117.1 (1995): 94-97.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="cylinders-and-ball-soderman">
+<h3>cylinders_and_ball_soderman<a class="headerlink" href="#cylinders-and-ball-soderman" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.cylinders_and_ball_soderman">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">cylinders_and_ball_soderman</code><span class="sig-paren">(</span><em class="sig-param">gtab, tau, radii=[0.005, 0.005], D=0.0007, S0=1.0, angles=[(0, 0), (90, 0)], fractions=[35, 35], snr=20</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.cylinders_and_ball_soderman" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the three-dimensional signal attenuation E(q) originating
+from within a cylinder of radius R using the Soderman approximation <a class="reference internal" href="#re2fab78a2424-1" id="id16">[1]</a>.
+The diffusion signal is assumed to be separable perpendicular and parallel
+to the cylinder axis <a class="reference internal" href="#re2fab78a2424-2" id="id17">[2]</a>.
+This function is basically an extension of the ball and stick model.
+Setting the radius to zero makes them equivalent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Signal measurement directions.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float</span></dt><dd><p>diffusion time in s</p>
+</dd>
+<dt><strong>radii</strong><span class="classifier">float</span></dt><dd><p>cylinder radius in mm</p>
+</dd>
+<dt><strong>D</strong><span class="classifier">float</span></dt><dd><p>diffusion constant</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float</span></dt><dd><p>Unweighted signal value.</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">array (K,2) or (K, 3)</span></dt><dd><p>List of K polar angles (in degrees) for the sticks or array of K
+sticks as unit vectors.</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">[float]</span></dt><dd><p>Percentage of each stick.  Remainder to 100 specifies isotropic
+component.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  If set to None, no
+noise is added.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>E</strong><span class="classifier">array, shape (N,)</span></dt><dd><p>signal attenuation</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="re2fab78a2424-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id16">2</a>,<a href="#id18">3</a>)</span></dt>
+<dd><p>Söderman, Olle, and Bengt Jönsson. “Restricted diffusion in
+cylindrical geometry.” Journal of Magnetic Resonance, Series A
+117.1 (1995): 94-97.</p>
+</dd>
+<dt class="label" id="re2fab78a2424-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id17">1</a>,<a href="#id19">2</a>)</span></dt>
+<dd><p>Assaf, Yaniv, et al. “New modeling and experimental framework to
+characterize hindered and restricted water diffusion in brain white
+matter.” Magnetic Resonance in Medicine 52.5 (2004): 965-978.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="dki-design-matrix">
+<h3>dki_design_matrix<a class="headerlink" href="#dki-design-matrix" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.dki_design_matrix">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">dki_design_matrix</code><span class="sig-paren">(</span><em class="sig-param">gtab</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.dki_design_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct B design matrix for DKI.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Measurement directions.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>B</strong><span class="classifier">array (N, 22)</span></dt><dd><p>Design matrix or B matrix for the DKI model
+B[j, :] = (Bxx, Bxy, Bzz, Bxz, Byz, Bzz,</p>
+<blockquote>
+<div><p>Bxxxx, Byyyy, Bzzzz, Bxxxy, Bxxxz,
+Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
+Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
+BlogS0)</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="dki-signal">
+<h3>dki_signal<a class="headerlink" href="#dki-signal" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.dki_signal">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">dki_signal</code><span class="sig-paren">(</span><em class="sig-param">gtab</em>, <em class="sig-param">dt</em>, <em class="sig-param">kt</em>, <em class="sig-param">S0=150</em>, <em class="sig-param">snr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.dki_signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulated signal based on the diffusion and diffusion kurtosis
+tensors of a single voxel. Simulations are preformed assuming the DKI
+model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Measurement directions.</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">(6,) ndarray</span></dt><dd><p>Elements of the diffusion tensor.</p>
+</dd>
+<dt><strong>kt</strong><span class="classifier">(15, ) ndarray</span></dt><dd><p>Elements of the diffusion kurtosis tensor.</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float (optional)</span></dt><dd><p>Strength of signal in the presence of no diffusion gradient.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float (optional)</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  None implies no noise.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal based on the DKI model:</p>
+</dd>
+<dt><strong>.. math::</strong></dt><dd><p>S=S_{0}e^{-bD+frac{1}{6}b^{2}D^{2}K}</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rf3e80b34d88e-1"><span class="brackets"><a class="fn-backref" href="#id20">1</a></span></dt>
+<dd><p>R. Neto Henriques et al., “Exploring the 3D geometry of the
+diffusion kurtosis tensor - Impact on the development of robust
+tractography procedures and novel biomarkers”, NeuroImage (2015)
+111, 85-99.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="dot">
+<h3>dot<a class="headerlink" href="#dot" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.dot">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">dot</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">out=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dot product of two arrays. Specifically,</p>
+<ul>
+<li><p>If both <cite>a</cite> and <cite>b</cite> are 1-D arrays, it is inner product of vectors
+(without complex conjugation).</p></li>
+<li><p>If both <cite>a</cite> and <cite>b</cite> are 2-D arrays, it is matrix multiplication,
+but using <code class="xref py py-func docutils literal notranslate"><span class="pre">matmul()</span></code> or <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">&#64;</span> <span class="pre">b</span></code> is preferred.</p></li>
+<li><p>If either <cite>a</cite> or <cite>b</cite> is 0-D (scalar), it is equivalent to <code class="xref py py-func docutils literal notranslate"><span class="pre">multiply()</span></code>
+and using <code class="docutils literal notranslate"><span class="pre">numpy.multiply(a,</span> <span class="pre">b)</span></code> or <code class="docutils literal notranslate"><span class="pre">a</span> <span class="pre">*</span> <span class="pre">b</span></code> is preferred.</p></li>
+<li><p>If <cite>a</cite> is an N-D array and <cite>b</cite> is a 1-D array, it is a sum product over
+the last axis of <cite>a</cite> and <cite>b</cite>.</p></li>
+<li><p>If <cite>a</cite> is an N-D array and <cite>b</cite> is an M-D array (where <code class="docutils literal notranslate"><span class="pre">M&gt;=2</span></code>), it is a
+sum product over the last axis of <cite>a</cite> and the second-to-last axis of <cite>b</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,:]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="n">k</span><span class="p">,:,</span><span class="n">m</span><span class="p">])</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>a</strong><span class="classifier">array_like</span></dt><dd><p>First argument.</p>
+</dd>
+<dt><strong>b</strong><span class="classifier">array_like</span></dt><dd><p>Second argument.</p>
+</dd>
+<dt><strong>out</strong><span class="classifier">ndarray, optional</span></dt><dd><p>Output argument. This must have the exact kind that would be returned
+if it was not used. In particular, it must have the right type, must be
+C-contiguous, and its dtype must be the dtype that would be returned
+for <cite>dot(a,b)</cite>. This is a performance feature. Therefore, if these
+conditions are not met, an exception is raised, instead of attempting
+to be flexible.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">ndarray</span></dt><dd><p>Returns the dot product of <cite>a</cite> and <cite>b</cite>.  If <cite>a</cite> and <cite>b</cite> are both
+scalars or both 1-D arrays then a scalar is returned; otherwise
+an array is returned.
+If <cite>out</cite> is given, then it is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ValueError</strong></dt><dd><p>If the last dimension of <cite>a</cite> is not the same size as
+the second-to-last dimension of <cite>b</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">vdot</span></code></dt><dd><p>Complex-conjugating dot product.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">tensordot</span></code></dt><dd><p>Sum products over arbitrary axes.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">einsum</span></code></dt><dd><p>Einstein summation convention.</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">matmul</span></code></dt><dd><p>‘&#64;’ operator as method with out parameter.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="go">12</span>
+</pre></div>
+</div>
+<p>Neither argument is complex-conjugated:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">([</span><span class="mi">2</span><span class="n">j</span><span class="p">,</span> <span class="mi">3</span><span class="n">j</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="n">j</span><span class="p">,</span> <span class="mi">3</span><span class="n">j</span><span class="p">])</span>
+<span class="go">(-13+0j)</span>
+</pre></div>
+</div>
+<p>For 2-D arrays it is the matrix product:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="go">array([[4, 1],</span>
+<span class="go">       [2, 2]])</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="mi">5</span><span class="o">*</span><span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">4</span><span class="o">*</span><span class="mi">5</span><span class="o">*</span><span class="mi">6</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+<span class="go">499128</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">sum</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">,:]</span> <span class="o">*</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,:,</span><span class="mi">2</span><span class="p">])</span>
+<span class="go">499128</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="gaussian-parallel">
+<h3>gaussian_parallel<a class="headerlink" href="#gaussian-parallel" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.gaussian_parallel">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">gaussian_parallel</code><span class="sig-paren">(</span><em class="sig-param">q</em>, <em class="sig-param">tau</em>, <em class="sig-param">D=0.0007</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.gaussian_parallel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the parallel Gaussian diffusion signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>q</strong><span class="classifier">array, shape (N,)</span></dt><dd><p>q-space value in 1/mm</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float</span></dt><dd><p>diffusion time in s</p>
+</dd>
+<dt><strong>D</strong><span class="classifier">float</span></dt><dd><p>diffusion constant</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>E</strong><span class="classifier">array, shape (N,)</span></dt><dd><p>signal attenuation</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="kurtosis-element">
+<h3>kurtosis_element<a class="headerlink" href="#kurtosis-element" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.kurtosis_element">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">kurtosis_element</code><span class="sig-paren">(</span><em class="sig-param">D_comps</em>, <em class="sig-param">frac</em>, <em class="sig-param">ind_i</em>, <em class="sig-param">ind_j</em>, <em class="sig-param">ind_k</em>, <em class="sig-param">ind_l</em>, <em class="sig-param">DT=None</em>, <em class="sig-param">MD=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.kurtosis_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the diffusion kurtosis tensor element (with indexes i, j, k
+and l) based on the individual diffusion tensor components of a
+multicompartmental model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>D_comps</strong><span class="classifier">(K,3,3) ndarray</span></dt><dd><p>Diffusion tensors for all K individual compartment of the
+multicompartmental model.</p>
+</dd>
+<dt><strong>frac</strong><span class="classifier">[float]</span></dt><dd><p>Percentage of the contribution of each tensor. The sum of fractions
+should be equal to 100%.</p>
+</dd>
+<dt><strong>ind_i</strong><span class="classifier">int</span></dt><dd><p>Element’s index i (0 for x, 1 for y, 2 for z)</p>
+</dd>
+<dt><strong>ind_j</strong><span class="classifier">int</span></dt><dd><p>Element’s index j (0 for x, 1 for y, 2 for z)</p>
+</dd>
+<dt><strong>ind_k</strong><span class="classifier">int</span></dt><dd><p>Element’s index k (0 for x, 1 for y, 2 for z)</p>
+</dd>
+<dt><strong>ind_l: int</strong></dt><dd><p>Elements index l (0 for x, 1 for y, 2 for z)</p>
+</dd>
+<dt><strong>DT</strong><span class="classifier">(3,3) ndarray (optional)</span></dt><dd><p>Voxel’s global diffusion tensor.</p>
+</dd>
+<dt><strong>MD</strong><span class="classifier">float (optional)</span></dt><dd><p>Voxel’s global mean diffusivity.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>wijkl</strong><span class="classifier">float</span></dt><dd><p>kurtosis tensor element of index i, j, k, l</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>wijkl is calculated using equation 8 given in <a class="reference internal" href="#rdbe8ff920d54-1" id="id21">[1]</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rdbe8ff920d54-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id21">1</a>,<a href="#id22">2</a>)</span></dt>
+<dd><p>R. Neto Henriques et al., “Exploring the 3D geometry of the
+diffusion kurtosis tensor - Impact on the development of robust
+tractography procedures and novel biomarkers”, NeuroImage (2015)
+111, 85-99.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor">
+<h3>multi_tensor<a class="headerlink" href="#multi-tensor" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor</code><span class="sig-paren">(</span><em class="sig-param">gtab, mevals, S0=1.0, angles=[(0, 0), (90, 0)], fractions=[50, 50], snr=20</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd></dd>
+<dt><strong>mevals</strong><span class="classifier">array (K, 3)</span></dt><dd><p>each tensor’s eigenvalues in each row</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float</span></dt><dd><p>Unweighted signal value (b0 signal).</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">array (K,2) or (K,3)</span></dt><dd><p>List of K tensor directions in polar angles (in degrees) or unit
+vectors</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">float</span></dt><dd><p>Percentage of the contribution of each tensor. The sum of fractions
+should be equal to 100%.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  If set to None, no
+noise is added.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal.</p>
+</dd>
+<dt><strong>sticks</strong><span class="classifier">(M,3)</span></dt><dd><p>Sticks in cartesian coordinates.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.sims.voxel</span> <span class="k">import</span> <span class="n">multi_tensor</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.io.gradients</span> <span class="k">import</span> <span class="n">read_bvals_bvecs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fimg</span><span class="p">,</span> <span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;small_101D&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span> <span class="o">=</span> <span class="n">read_bvals_bvecs</span><span class="p">(</span><span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mevals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(([</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">],[</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">e1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span> <span class="o">=</span> <span class="n">multi_tensor</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">mevals</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor-dki">
+<h3>multi_tensor_dki<a class="headerlink" href="#multi-tensor-dki" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor_dki">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor_dki</code><span class="sig-paren">(</span><em class="sig-param">gtab, mevals, S0=1.0, angles=[(90.0, 0.0), (90.0, 0.0)], fractions=[50, 50], snr=20</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor_dki" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate the diffusion-weight signal, diffusion and kurtosis tensors
+based on the DKI model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd></dd>
+<dt><strong>mevals</strong><span class="classifier">array (K, 3)</span></dt><dd><p>eigenvalues of the diffusion tensor for each individual compartment</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float (optional)</span></dt><dd><p>Unweighted signal value (b0 signal).</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">array (K,2) or (K,3) (optional)</span></dt><dd><p>List of K tensor directions of the diffusion tensor of each compartment
+in polar angles (in degrees) or unit vectors</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">float (K,) (optional)</span></dt><dd><p>Percentage of the contribution of each tensor. The sum of fractions
+should be equal to 100%.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float (optional)</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  If set to None, no
+noise is added.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal based on the DKI model.</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">(6,)</span></dt><dd><p>elements of the diffusion tensor.</p>
+</dd>
+<dt><strong>kt</strong><span class="classifier">(15,)</span></dt><dd><p>elements of the kurtosis tensor.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Simulations are based on multicompartmental models which assumes that
+tissue is well described by impermeable diffusion compartments
+characterized by their only diffusion tensor. Since simulations are based
+on the DKI model, coefficients larger than the fourth order of the signal’s
+taylor expansion approximation are neglected.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r2c19a1917a3c-1"><span class="brackets"><a class="fn-backref" href="#id23">1</a></span></dt>
+<dd><p>R. Neto Henriques et al., “Exploring the 3D geometry of the
+diffusion kurtosis tensor - Impact on the development of robust
+tractography procedures and novel biomarkers”, NeuroImage (2015)
+111, 85-99.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.sims.voxel</span> <span class="k">import</span> <span class="n">multi_tensor_dki</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.io.gradients</span> <span class="k">import</span> <span class="n">read_bvals_bvecs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fimg</span><span class="p">,</span> <span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;small_64D&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span> <span class="o">=</span> <span class="n">read_bvals_bvecs</span><span class="p">(</span><span class="n">fbvals</span><span class="p">,</span> <span class="n">fbvecs</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvals_2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvals</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bvecs_2s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">bvecs</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals_2s</span><span class="p">,</span> <span class="n">bvecs_2s</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mevals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.00099</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],[</span><span class="mf">0.00226</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">S</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">kt</span> <span class="o">=</span>  <span class="n">multi_tensor_dki</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">mevals</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor-msd">
+<h3>multi_tensor_msd<a class="headerlink" href="#multi-tensor-msd" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor_msd">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor_msd</code><span class="sig-paren">(</span><em class="sig-param">mf</em>, <em class="sig-param">mevals=None</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor_msd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor rtop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mf</strong><span class="classifier">sequence of floats, bounded [0,1]</span></dt><dd><p>Percentages of the fractions for each tensor.</p>
+</dd>
+<dt><strong>mevals</strong><span class="classifier">sequence of 1D arrays,</span></dt><dd><p>Eigen-values for each tensor.  By default, values typical for prolate
+white matter are used.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>msd</strong><span class="classifier">float,</span></dt><dd><p>Mean square displacement.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="ra0578d0ca42a-1"><span class="brackets"><a class="fn-backref" href="#id24">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and Its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor-odf">
+<h3>multi_tensor_odf<a class="headerlink" href="#multi-tensor-odf" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor_odf">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor_odf</code><span class="sig-paren">(</span><em class="sig-param">odf_verts</em>, <em class="sig-param">mevals</em>, <em class="sig-param">angles</em>, <em class="sig-param">fractions</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor_odf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor ODF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>odf_verts</strong><span class="classifier">(N,3) ndarray</span></dt><dd><p>Vertices of the reconstruction sphere.</p>
+</dd>
+<dt><strong>mevals</strong><span class="classifier">sequence of 1D arrays,</span></dt><dd><p>Eigen-values for each tensor.</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">sequence of 2d tuples,</span></dt><dd><p>Sequence of principal directions for each tensor in polar angles
+or cartesian unit coordinates.</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">sequence of floats,</span></dt><dd><p>Percentages of the fractions for each tensor.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>ODF</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Orientation distribution function.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Simulate a MultiTensor ODF with two peaks and calculate its exact ODF.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.sims.voxel</span> <span class="k">import</span> <span class="n">multi_tensor_odf</span><span class="p">,</span> <span class="n">all_tensor_evecs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">default_sphere</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vertices</span><span class="p">,</span> <span class="n">faces</span> <span class="o">=</span> <span class="n">default_sphere</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span> <span class="n">default_sphere</span><span class="o">.</span><span class="n">faces</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mevals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(([</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">],[</span><span class="mf">0.0015</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">,</span> <span class="mf">0.0003</span><span class="p">]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">angles</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">odf</span> <span class="o">=</span> <span class="n">multi_tensor_odf</span><span class="p">(</span><span class="n">vertices</span><span class="p">,</span> <span class="n">mevals</span><span class="p">,</span> <span class="n">angles</span><span class="p">,</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor-pdf">
+<h3>multi_tensor_pdf<a class="headerlink" href="#multi-tensor-pdf" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor_pdf">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor_pdf</code><span class="sig-paren">(</span><em class="sig-param">pdf_points</em>, <em class="sig-param">mevals</em>, <em class="sig-param">angles</em>, <em class="sig-param">fractions</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor_pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor ODF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pdf_points</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>Points to evaluate the PDF.</p>
+</dd>
+<dt><strong>mevals</strong><span class="classifier">sequence of 1D arrays,</span></dt><dd><p>Eigen-values for each tensor.  By default, values typical for prolate
+white matter are used.</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">sequence,</span></dt><dd><p>Sequence of principal directions for each tensor in polar angles
+or cartesian unit coordinates.</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">sequence of floats,</span></dt><dd><p>Percentages of the fractions for each tensor.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pdf</strong><span class="classifier">(N,) ndarray,</span></dt><dd><p>Probability density function of the water displacement.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc689307ee495-1"><span class="brackets"><a class="fn-backref" href="#id25">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="multi-tensor-rtop">
+<h3>multi_tensor_rtop<a class="headerlink" href="#multi-tensor-rtop" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.multi_tensor_rtop">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">multi_tensor_rtop</code><span class="sig-paren">(</span><em class="sig-param">mf</em>, <em class="sig-param">mevals=None</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.multi_tensor_rtop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor rtop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mf</strong><span class="classifier">sequence of floats, bounded [0,1]</span></dt><dd><p>Percentages of the fractions for each tensor.</p>
+</dd>
+<dt><strong>mevals</strong><span class="classifier">sequence of 1D arrays,</span></dt><dd><p>Eigen-values for each tensor.  By default, values typical for prolate
+white matter are used.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>rtop</strong><span class="classifier">float,</span></dt><dd><p>Return to origin probability.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc96e34bb10c1-1"><span class="brackets"><a class="fn-backref" href="#id26">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and Its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id27">
+<h3>single_tensor<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.single_tensor">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">single_tensor</code><span class="sig-paren">(</span><em class="sig-param">gtab</em>, <em class="sig-param">S0=1</em>, <em class="sig-param">evals=None</em>, <em class="sig-param">evecs=None</em>, <em class="sig-param">snr=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.single_tensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulated Q-space signal with a single tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Measurement directions.</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">double,</span></dt><dd><p>Strength of signal in the presence of no diffusion gradient (also
+called the <code class="docutils literal notranslate"><span class="pre">b=0</span></code> value).</p>
+</dd>
+<dt><strong>evals</strong><span class="classifier">(3,) ndarray</span></dt><dd><p>Eigenvalues of the diffusion tensor.  By default, values typical for
+prolate white matter are used.</p>
+</dd>
+<dt><strong>evecs</strong><span class="classifier">(3, 3) ndarray</span></dt><dd><p>Eigenvectors of the tensor.  You can also think of this as a rotation
+matrix that transforms the direction of the tensor. The eigenvectors
+need to be column wise.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  None implies no noise.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal: <code class="docutils literal notranslate"><span class="pre">S(q,</span> <span class="pre">tau)</span> <span class="pre">=</span> <span class="pre">S_0</span> <span class="pre">e^(-b</span> <span class="pre">g^T</span> <span class="pre">R</span> <span class="pre">D</span> <span class="pre">R.T</span> <span class="pre">g)</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r33603d57b825-1"><span class="brackets"><a class="fn-backref" href="#id28">1</a></span></dt>
+<dd><p>M. Descoteaux, “High Angular Resolution Diffusion MRI: from Local
+Estimation to Segmentation and Tractography”, PhD thesis,
+University of Nice-Sophia Antipolis, p. 42, 2008.</p>
+</dd>
+<dt class="label" id="r33603d57b825-2"><span class="brackets"><a class="fn-backref" href="#id29">2</a></span></dt>
+<dd><p>E. Stejskal and J. Tanner, “Spin diffusion measurements: spin echos
+in the presence of a time-dependent field gradient”, Journal of
+Chemical Physics, nr. 42, pp. 288–292, 1965.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="single-tensor-msd">
+<h3>single_tensor_msd<a class="headerlink" href="#single-tensor-msd" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.single_tensor_msd">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">single_tensor_msd</code><span class="sig-paren">(</span><em class="sig-param">evals=None</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.single_tensor_msd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Multi-Tensor rtop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>evals</strong><span class="classifier">1D arrays,</span></dt><dd><p>Eigen-values for the tensor.  By default, values typical for prolate
+white matter are used.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>msd</strong><span class="classifier">float,</span></dt><dd><p>Mean square displacement.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="re546f6d4f85b-1"><span class="brackets"><a class="fn-backref" href="#id30">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and Its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="single-tensor-odf">
+<h3>single_tensor_odf<a class="headerlink" href="#single-tensor-odf" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.single_tensor_odf">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">single_tensor_odf</code><span class="sig-paren">(</span><em class="sig-param">r</em>, <em class="sig-param">evals=None</em>, <em class="sig-param">evecs=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.single_tensor_odf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulated ODF with a single tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>r</strong><span class="classifier">(N,3) or (M,N,3) ndarray</span></dt><dd><p>Measurement positions in (x, y, z), either as a list or on a grid.</p>
+</dd>
+<dt><strong>evals</strong><span class="classifier">(3,)</span></dt><dd><p>Eigenvalues of diffusion tensor.  By default, use values typical for
+prolate white matter.</p>
+</dd>
+<dt><strong>evecs</strong><span class="classifier">(3, 3) ndarray</span></dt><dd><p>Eigenvectors of the tensor, written column-wise.  You can also think
+of these as the rotation matrix that determines the orientation of
+the diffusion tensor.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>ODF</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>The diffusion probability at <code class="docutils literal notranslate"><span class="pre">r</span></code> after time <code class="docutils literal notranslate"><span class="pre">tau</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r3b7be155f682-1"><span class="brackets"><a class="fn-backref" href="#id31">1</a></span></dt>
+<dd><p>Aganj et al., “Reconstruction of the Orientation Distribution
+Function in Single- and Multiple-Shell q-Ball Imaging Within
+Constant Solid Angle”, Magnetic Resonance in Medicine, nr. 64,
+pp. 554–566, 2010.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="single-tensor-pdf">
+<h3>single_tensor_pdf<a class="headerlink" href="#single-tensor-pdf" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.single_tensor_pdf">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">single_tensor_pdf</code><span class="sig-paren">(</span><em class="sig-param">r</em>, <em class="sig-param">evals=None</em>, <em class="sig-param">evecs=None</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.single_tensor_pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulated ODF with a single tensor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>r</strong><span class="classifier">(N,3) or (M,N,3) ndarray</span></dt><dd><p>Measurement positions in (x, y, z), either as a list or on a grid.</p>
+</dd>
+<dt><strong>evals</strong><span class="classifier">(3,)</span></dt><dd><p>Eigenvalues of diffusion tensor.  By default, use values typical for
+prolate white matter.</p>
+</dd>
+<dt><strong>evecs</strong><span class="classifier">(3, 3) ndarray</span></dt><dd><p>Eigenvectors of the tensor.  You can also think of these as the
+rotation matrix that determines the orientation of the diffusion
+tensor.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pdf</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>The diffusion probability at <code class="docutils literal notranslate"><span class="pre">r</span></code> after time <code class="docutils literal notranslate"><span class="pre">tau</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r9b4d3e28979e-1"><span class="brackets"><a class="fn-backref" href="#id32">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and Its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="single-tensor-rtop">
+<h3>single_tensor_rtop<a class="headerlink" href="#single-tensor-rtop" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.single_tensor_rtop">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">single_tensor_rtop</code><span class="sig-paren">(</span><em class="sig-param">evals=None</em>, <em class="sig-param">tau=0.025330295910584444</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.single_tensor_rtop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate a Single-Tensor rtop.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>evals</strong><span class="classifier">1D arrays,</span></dt><dd><p>Eigen-values for the tensor.  By default, values typical for prolate
+white matter are used.</p>
+</dd>
+<dt><strong>tau</strong><span class="classifier">float,</span></dt><dd><p>diffusion time. By default the value that makes q=sqrt(b).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>rtop</strong><span class="classifier">float,</span></dt><dd><p>Return to origin probability.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="raad40b85a7cb-1"><span class="brackets"><a class="fn-backref" href="#id33">1</a></span></dt>
+<dd><p>Cheng J., “Estimation and Processing of Ensemble Average Propagator
+and Its Features in Diffusion MRI”, PhD Thesis, 2012.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="sphere2cart">
+<h3>sphere2cart<a class="headerlink" href="#sphere2cart" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.sphere2cart">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">sphere2cart</code><span class="sig-paren">(</span><em class="sig-param">r</em>, <em class="sig-param">theta</em>, <em class="sig-param">phi</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.sphere2cart" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spherical to Cartesian coordinates</p>
+<p>This is the standard physics convention where <cite>theta</cite> is the
+inclination (polar) angle, and <cite>phi</cite> is the azimuth angle.</p>
+<p>Imagine a sphere with center (0,0,0).  Orient it with the z axis
+running south-north, the y axis running west-east and the x axis
+from posterior to anterior.  <cite>theta</cite> (the inclination angle) is the
+angle to rotate from the z-axis (the zenith) around the y-axis,
+towards the x axis.  Thus the rotation is counter-clockwise from the
+point of view of positive y.  <cite>phi</cite> (azimuth) gives the angle of
+rotation around the z-axis towards the y axis.  The rotation is
+counter-clockwise from the point of view of positive z.</p>
+<p>Equivalently, given a point P on the sphere, with coordinates x, y,
+z, <cite>theta</cite> is the angle between P and the z-axis, and <cite>phi</cite> is
+the angle between the projection of P onto the XY plane, and the X
+axis.</p>
+<p>Geographical nomenclature designates theta as ‘co-latitude’, and phi
+as ‘longitude’</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>r</strong><span class="classifier">array_like</span></dt><dd><p>radius</p>
+</dd>
+<dt><strong>theta</strong><span class="classifier">array_like</span></dt><dd><p>inclination or polar angle</p>
+</dd>
+<dt><strong>phi</strong><span class="classifier">array_like</span></dt><dd><p>azimuth angle</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>x coordinate(s) in Cartesion space</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">array</span></dt><dd><p>y coordinate(s) in Cartesian space</p>
+</dd>
+<dt><strong>z</strong><span class="classifier">array</span></dt><dd><p>z coordinate</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>See these pages:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://en.wikipedia.org/wiki/Spherical_coordinate_system">http://en.wikipedia.org/wiki/Spherical_coordinate_system</a></p></li>
+<li><p><a class="reference external" href="http://mathworld.wolfram.com/SphericalCoordinates.html">http://mathworld.wolfram.com/SphericalCoordinates.html</a></p></li>
+</ul>
+<p>for excellent discussion of the many different conventions
+possible.  Here we use the physics conventions, used in the
+wikipedia page.</p>
+<p>Derivations of the formulae are simple. Consider a vector x, y, z of
+length r (norm of x, y, z).  The inclination angle (theta) can be
+found from: cos(theta) == z / r -&gt; z == r * cos(theta).  This gives
+the hypotenuse of the projection onto the XY plane, which we will
+call Q. Q == r*sin(theta). Now x / Q == cos(phi) -&gt; x == r *
+sin(theta) * cos(phi) and so on.</p>
+<p>We have deliberately named this function <code class="docutils literal notranslate"><span class="pre">sphere2cart</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">sph2cart</span></code> to distinguish it from the Matlab function of that
+name, because the Matlab function uses an unusual convention for the
+angles that we did not want to replicate.  The Matlab function is
+trivial to implement with the formulae given in the Matlab help.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="sticks-and-ball">
+<h3>sticks_and_ball<a class="headerlink" href="#sticks-and-ball" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.sticks_and_ball">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">sticks_and_ball</code><span class="sig-paren">(</span><em class="sig-param">gtab, d=0.0015, S0=1.0, angles=[(0, 0), (90, 0)], fractions=[35, 35], snr=20</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.sticks_and_ball" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate the signal for a Sticks &amp; Ball model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>gtab</strong><span class="classifier">GradientTable</span></dt><dd><p>Signal measurement directions.</p>
+</dd>
+<dt><strong>d</strong><span class="classifier">float</span></dt><dd><p>Diffusivity value.</p>
+</dd>
+<dt><strong>S0</strong><span class="classifier">float</span></dt><dd><p>Unweighted signal value.</p>
+</dd>
+<dt><strong>angles</strong><span class="classifier">array (K,2) or (K, 3)</span></dt><dd><p>List of K polar angles (in degrees) for the sticks or array of K
+sticks as unit vectors.</p>
+</dd>
+<dt><strong>fractions</strong><span class="classifier">float</span></dt><dd><p>Percentage of each stick.  Remainder to 100 specifies isotropic
+component.</p>
+</dd>
+<dt><strong>snr</strong><span class="classifier">float</span></dt><dd><p>Signal to noise ratio, assuming Rician noise.  If set to None, no
+noise is added.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>S</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>Simulated signal.</p>
+</dd>
+<dt><strong>sticks</strong><span class="classifier">(M,3)</span></dt><dd><p>Sticks in cartesian coordinates.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r8d243290f5cf-1"><span class="brackets"><a class="fn-backref" href="#id34">1</a></span></dt>
+<dd><p>Behrens et al., “Probabilistic diffusion
+tractography with multiple fiber orientations:  what can we gain?”,
+Neuroimage, 2007.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id35">
+<h3>vec2vec_rotmat<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.sims.voxel.vec2vec_rotmat">
+<code class="sig-prename descclassname">dipy.sims.voxel.</code><code class="sig-name descname">vec2vec_rotmat</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.sims.voxel.vec2vec_rotmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>rotation matrix from 2 unit vectors</p>
+<p>u, v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to
+v.</p>
+<p>In general there are many rotations that will map u to v. If S is any
+rotation using v as an axis then R.S will also map u to v since (S.R)u =
+S(Ru) = Sv = v.  The rotation R returned by vec2vec_rotmat leaves fixed the
+perpendicular to the plane spanned by u and v.</p>
+<p>The transpose of R will align v to u.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>u</strong><span class="classifier">array, shape(3,)</span></dt><dd></dd>
+<dt><strong>v</strong><span class="classifier">array, shape(3,)</span></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>R</strong><span class="classifier">array, shape(3,3)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.geometry</span> <span class="k">import</span> <span class="n">vec2vec_rotmat</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">v</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">R</span><span class="o">=</span><span class="n">vec2vec_rotmat</span><span class="p">(</span><span class="n">u</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">u</span><span class="p">)</span>
+<span class="go">array([ 0.,  1.,  0.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">R</span><span class="o">.</span><span class="n">T</span><span class="p">,</span><span class="n">v</span><span class="p">)</span>
+<span class="go">array([ 1.,  0.,  0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.stats.html" title="stats"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy.segment.html" title="segment"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

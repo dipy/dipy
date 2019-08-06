@@ -1,0 +1,49 @@
+
+========================
+dipy_fit_dki
+========================
+
+usage: dipy_fit_dki [-h] [--b0_threshold float]
+                     [--save_metrics [str [str ...]]] [--out_dir str]
+                     [--out_dt_tensor str] [--out_fa str] [--out_ga str]
+                     [--out_rgb str] [--out_md str] [--out_ad str]
+                     [--out_rd str] [--out_mode str] [--out_evec str]
+                     [--out_eval str] [--out_dk_tensor str] [--out_mk str]
+                     [--out_ak str] [--out_rk str]
+                     input_files bvalues_files bvectors_files mask_files
+
+Workflow for Diffusion Kurtosis reconstruction and for computing DKI metrics. Performs a DKI reconstruction on the files by 'globing' ``input_files`` and saves the DKI metrics in a directory specified by ``out_dir``.
+
+positional arguments:
+  input_files           Path to the input volumes. This path may contain wildcards to process multiple inputs at once.
+  bvalues_files         Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+  bvectors_files        Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+  mask_files            Path to the input masks. This path may contain wildcards to use multiple masks at once. (default: No mask used)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --b0_threshold float  Threshold used to find b=0 directions (default 0.0)
+  --save_metrics [str [str ...]]
+                        List of metrics to save. Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval (default [] (all))
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_dt_tensor str   Name of the tensors volume to be saved (default: 'dti_tensors.nii.gz')
+  --out_fa str          Name of the tensors volume to be saved (default 'dki_tensors.nii.gz')
+  --out_ga str          Name of the fractional anisotropy volume to be saved (default 'fa.nii.gz')
+  --out_rgb str         Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+  --out_md str          Name of the color fa volume to be saved (default 'rgb.nii.gz')
+  --out_ad str          Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+  --out_rd str          Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+  --out_mode str        Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+  --out_evec str        Name of the mode volume to be saved (default 'mode.nii.gz')
+  --out_eval str        Name of the eigenvectors volume to be saved (default 'evecs.nii.gz')
+  --out_dk_tensor str   Name of the eigenvalues to be saved (default 'evals.nii.gz')
+  --out_mk str          Name of the mean kurtosis to be saved (default: 'mk.nii.gz')
+  --out_ak str          Name of the axial kurtosis to be saved (default: 'ak.nii.gz')
+  --out_rk str          Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
+
+References: 
+.. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.   Estimation of tensors and tensor-derived measures in diffusional   kurtosis imaging. Magn Reson Med. 65(3), 823-836
+.. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,   and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The   Quantification of Non-Gaussian Water Diffusion by Means of Magnetic   Resonance Imaging. MRM 53 (6):1432-40.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

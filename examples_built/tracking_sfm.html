@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tracking with the Sparse Fascicle Model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/tracking_sfm.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tracking-with-the-sparse-fascicle-model">
+<span id="sfm-track"></span><span id="example-tracking-sfm"></span><h1>Tracking with the Sparse Fascicle Model<a class="headerlink" href="#tracking-with-the-sparse-fascicle-model" title="Permalink to this headline">¶</a></h1>
+<p>Tracking requires a per-voxel model. Here, the model is the Sparse Fascicle
+Model (SFM), described in <a class="reference internal" href="#rokem2015" id="id1"><span>[Rokem2015]</span></a>. This model reconstructs the diffusion
+signal as a combination of the signals from different fascicles (see also
+<a class="reference internal" href="sfm_reconst.html#sfm-reconst"><span class="std std-ref">Reconstruction with the Sparse Fascicle Model</span></a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_sphere</span><span class="p">,</span> <span class="n">read_stanford_labels</span><span class="p">,</span> <span class="n">read_stanford_t1</span>
+<span class="kn">from</span> <span class="nn">dipy.direction.peaks</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">save_trk</span>
+<span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.csdeconv</span> <span class="k">import</span> <span class="n">auto_response</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst</span> <span class="k">import</span> <span class="n">sfm</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking</span> <span class="k">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.local_tracking</span> <span class="k">import</span> <span class="n">LocalTracking</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="p">(</span><span class="n">select_random_set_of_streamlines</span><span class="p">,</span>
+                                      <span class="n">transform_streamlines</span><span class="p">,</span>
+                                      <span class="n">Streamlines</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.stopping_criterion</span> <span class="k">import</span> <span class="n">ThresholdStoppingCriterion</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">colormap</span><span class="p">,</span> <span class="n">has_fury</span>
+<span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">inv</span>
+</pre></div>
+</div>
+<p>To begin, we read the Stanford HARDI data set into memory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>This data set provides a label map (generated using <a class="reference external" href="https://surfer.nmr.mgh.harvard.edu/">FreeSurfer</a>), in which the white matter voxels are
+labeled as either 1 or 2:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">white_matter</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first step in tracking is generating a model from which tracking directions
+can be extracted in every voxel.</p>
+<p>For the SFM, this requires first that we define a canonical response function
+that will be used to deconvolve the signal in every voxel</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">response</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">=</span> <span class="n">auto_response</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">roi_radius</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fa_thr</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We initialize an SFM model object, using this response function and using the
+default sphere (362  vertices, symmetrically distributed on the surface of the
+sphere):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">()</span>
+<span class="n">sf_model</span> <span class="o">=</span> <span class="n">sfm</span><span class="o">.</span><span class="n">SparseFascicleModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                                   <span class="n">l1_ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                                   <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We fit this model to the data in each voxel in the white-matter mask, so that
+we can use these directions in tracking:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pnm</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">sf_model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">sphere</span><span class="p">,</span>
+                       <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                       <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                       <span class="n">mask</span><span class="o">=</span><span class="n">white_matter</span><span class="p">,</span>
+                       <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A ThresholdStoppingCriterion object is used to segment the data to track only
+through areas in which the Generalized Fractional Anisotropy (GFA) is
+sufficiently high.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">stopping_criterion</span> <span class="o">=</span> <span class="n">ThresholdStoppingCriterion</span><span class="p">(</span><span class="n">pnm</span><span class="o">.</span><span class="n">gfa</span><span class="p">,</span> <span class="o">.</span><span class="mi">25</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Tracking will be started from a set of seeds evenly distributed in the white
+matter:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seeds</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">seeds_from_mask</span><span class="p">(</span><span class="n">white_matter</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>For the sake of brevity, we will take only the first 1000 seeds, generating
+only 1000 streamlines. Remove this line to track from many more points in all
+of the white matter</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">seeds</span> <span class="o">=</span> <span class="n">seeds</span><span class="p">[:</span><span class="mi">1000</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We now have the necessary components to construct a tracking pipeline and
+execute the tracking</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">pnm</span><span class="p">,</span> <span class="n">stopping_criterion</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span>
+                                     <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we will create a visualization of these streamlines, relative to this
+subject’s T1-weighted anatomy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t1</span> <span class="o">=</span> <span class="n">read_stanford_t1</span><span class="p">()</span>
+<span class="n">t1_data</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">t1_aff</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">affine</span>
+<span class="n">color</span> <span class="o">=</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To speed up visualization, we will select a random sub-set of streamlines to
+display. This is particularly important, if you track from seeds throughout the
+entire white matter, generating many streamlines. In this case, for
+demonstration purposes, we subselect 900 streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plot_streamlines</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="mi">900</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">streamlines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span>
+        <span class="nb">list</span><span class="p">(</span><span class="n">transform_streamlines</span><span class="p">(</span><span class="n">plot_streamlines</span><span class="p">,</span> <span class="n">inv</span><span class="p">(</span><span class="n">t1_aff</span><span class="p">))),</span>
+        <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+    <span class="n">vol_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">slicer</span><span class="p">(</span><span class="n">t1_data</span><span class="p">)</span>
+
+    <span class="n">vol_actor</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">vol_actor2</span> <span class="o">=</span> <span class="n">vol_actor</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">vol_actor2</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">35</span><span class="p">)</span>
+
+    <span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">streamlines_actor</span><span class="p">)</span>
+    <span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor</span><span class="p">)</span>
+    <span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor2</span><span class="p">)</span>
+
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_sfm.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/tractogram_sfm.png" src="../_images/tractogram_sfm.png" />
+<p class="caption"><span class="caption-text"><strong>Sparse Fascicle Model tracks</strong></span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>Finally, we can save these streamlines to a ‘trk’ file, for use in other
+software, or for further analysis.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_sfm_detr.trk&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="rokem2015"><span class="brackets"><a class="fn-backref" href="#id1">Rokem2015</a></span></dt>
+<dd><p>Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell (2015). Evaluating
+the accuracy of diffusion MRI models in white matter. PLoS ONE 10(4):
+e0123272. doi:10.1371/journal.pone.0123272</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/e6720cced1b6495ee3230ecbe8abf1bc/tracking_sfm.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

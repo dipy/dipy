@@ -1,0 +1,763 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`data`
+===========
+.. automodule:: dipy.data
+
+.. currentmodule:: dipy.data
+.. autosummary::
+
+   DataError
+   GradientTable
+   HemiSphere
+   Sphere
+   as_native_array
+   dirname
+   dsi_deconv_voxels
+   dsi_voxels
+   fetch_bundle_atlas_hcp842
+   fetch_bundle_fa_hcp
+   fetch_bundles_2_subjects
+   fetch_cenir_multib
+   fetch_cfin_multib
+   fetch_gold_standard_io
+   fetch_isbi2013_2shell
+   fetch_ivim
+   fetch_mni_template
+   fetch_scil_b0
+   fetch_sherbrooke_3shell
+   fetch_stanford_hardi
+   fetch_stanford_labels
+   fetch_stanford_pve_maps
+   fetch_stanford_t1
+   fetch_syn_data
+   fetch_taiwan_ntu_dsi
+   fetch_target_tractogram_hcp
+   fetch_tissue_data
+   get_3shell_gtab
+   get_bundle_atlas_hcp842
+   get_cmap
+   get_fnames
+   get_gtab_taiwan_dsi
+   get_isbi2013_2shell_gtab
+   get_sim_voxels
+   get_skeleton
+   get_sphere
+   get_target_tractogram_hcp
+   gradient_table
+   load
+   loads_compat
+   matlab_life_results
+   mrtrix_spherical_functions
+   pjoin
+   read_bundles_2_subjects
+   read_cenir_multib
+   read_cfin_dwi
+   read_cfin_t1
+   read_isbi2013_2shell
+   read_ivim
+   read_mni_template
+   read_scil_b0
+   read_sherbrooke_3shell
+   read_stanford_hardi
+   read_stanford_labels
+   read_stanford_pve_maps
+   read_stanford_t1
+   read_syn_data
+   read_taiwan_ntu_dsi
+   read_tissue_data
+   relist_streamlines
+   sticks_and_ball
+   two_cingulum_bundles
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`data.fetcher`
+---------------------------
+.. automodule:: dipy.data.fetcher
+
+.. currentmodule:: dipy.data.fetcher
+.. autosummary::
+
+   FetcherError
+   check_md5
+   copyfileobj
+   copyfileobj_withprogress
+   fetch_bundle_atlas_hcp842
+   fetch_bundle_fa_hcp
+   fetch_bundles_2_subjects
+   fetch_cenir_multib
+   fetch_cfin_multib
+   fetch_data
+   fetch_file_formats
+   fetch_gold_standard_io
+   fetch_isbi2013_2shell
+   fetch_ivim
+   fetch_mni_template
+   fetch_qtdMRI_test_retest_2subjects
+   fetch_scil_b0
+   fetch_sherbrooke_3shell
+   fetch_stanford_hardi
+   fetch_stanford_labels
+   fetch_stanford_pve_maps
+   fetch_stanford_t1
+   fetch_syn_data
+   fetch_taiwan_ntu_dsi
+   fetch_target_tractogram_hcp
+   fetch_tissue_data
+   get_bundle_atlas_hcp842
+   get_file_formats
+   get_target_tractogram_hcp
+   get_two_hcp842_bundles
+   gradient_table
+   gradient_table_from_gradient_strength_bvecs
+   md5
+   pjoin
+   read_bundles_2_subjects
+   read_bvals_bvecs
+   read_cenir_multib
+   read_cfin_dwi
+   read_cfin_t1
+   read_isbi2013_2shell
+   read_ivim
+   read_mni_template
+   read_qtdMRI_test_retest_2subjects
+   read_scil_b0
+   read_sherbrooke_3shell
+   read_siemens_scil_b0
+   read_stanford_hardi
+   read_stanford_labels
+   read_stanford_pve_maps
+   read_stanford_t1
+   read_syn_data
+   read_taiwan_ntu_dsi
+   read_tissue_data
+   update_progressbar
+   urlopen
+
+
+.. currentmodule:: dipy.data
+
+
+:class:`DataError`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DataError
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`GradientTable`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: GradientTable
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`HemiSphere`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: HemiSphere
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Sphere`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Sphere
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+as_native_array
+~~~~~~~~~~~~~~~
+
+.. autofunction:: as_native_array
+
+dirname
+~~~~~~~
+
+.. autofunction:: dirname
+
+dsi_deconv_voxels
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: dsi_deconv_voxels
+
+dsi_voxels
+~~~~~~~~~~
+
+.. autofunction:: dsi_voxels
+
+fetch_bundle_atlas_hcp842
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundle_atlas_hcp842
+
+fetch_bundle_fa_hcp
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundle_fa_hcp
+
+fetch_bundles_2_subjects
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundles_2_subjects
+
+fetch_cenir_multib
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_cenir_multib
+
+fetch_cfin_multib
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_cfin_multib
+
+fetch_gold_standard_io
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_gold_standard_io
+
+fetch_isbi2013_2shell
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_isbi2013_2shell
+
+fetch_ivim
+~~~~~~~~~~
+
+.. autofunction:: fetch_ivim
+
+fetch_mni_template
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_mni_template
+
+fetch_scil_b0
+~~~~~~~~~~~~~
+
+.. autofunction:: fetch_scil_b0
+
+fetch_sherbrooke_3shell
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_sherbrooke_3shell
+
+fetch_stanford_hardi
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_hardi
+
+fetch_stanford_labels
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_labels
+
+fetch_stanford_pve_maps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_pve_maps
+
+fetch_stanford_t1
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_t1
+
+fetch_syn_data
+~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_syn_data
+
+fetch_taiwan_ntu_dsi
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_taiwan_ntu_dsi
+
+fetch_target_tractogram_hcp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_target_tractogram_hcp
+
+fetch_tissue_data
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_tissue_data
+
+get_3shell_gtab
+~~~~~~~~~~~~~~~
+
+.. autofunction:: get_3shell_gtab
+
+get_bundle_atlas_hcp842
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_bundle_atlas_hcp842
+
+get_cmap
+~~~~~~~~
+
+.. autofunction:: get_cmap
+
+get_fnames
+~~~~~~~~~~
+
+.. autofunction:: get_fnames
+
+get_gtab_taiwan_dsi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_gtab_taiwan_dsi
+
+get_isbi2013_2shell_gtab
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_isbi2013_2shell_gtab
+
+get_sim_voxels
+~~~~~~~~~~~~~~
+
+.. autofunction:: get_sim_voxels
+
+get_skeleton
+~~~~~~~~~~~~
+
+.. autofunction:: get_skeleton
+
+get_sphere
+~~~~~~~~~~
+
+.. autofunction:: get_sphere
+
+get_target_tractogram_hcp
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_target_tractogram_hcp
+
+gradient_table
+~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table
+
+load
+~~~~
+
+.. autofunction:: load
+
+loads_compat
+~~~~~~~~~~~~
+
+.. autofunction:: loads_compat
+
+matlab_life_results
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: matlab_life_results
+
+mrtrix_spherical_functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mrtrix_spherical_functions
+
+pjoin
+~~~~~
+
+.. autofunction:: pjoin
+
+read_bundles_2_subjects
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_bundles_2_subjects
+
+read_cenir_multib
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_cenir_multib
+
+read_cfin_dwi
+~~~~~~~~~~~~~
+
+.. autofunction:: read_cfin_dwi
+
+read_cfin_t1
+~~~~~~~~~~~~
+
+.. autofunction:: read_cfin_t1
+
+read_isbi2013_2shell
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_isbi2013_2shell
+
+read_ivim
+~~~~~~~~~
+
+.. autofunction:: read_ivim
+
+read_mni_template
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_mni_template
+
+read_scil_b0
+~~~~~~~~~~~~
+
+.. autofunction:: read_scil_b0
+
+read_sherbrooke_3shell
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_sherbrooke_3shell
+
+read_stanford_hardi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_hardi
+
+read_stanford_labels
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_labels
+
+read_stanford_pve_maps
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_pve_maps
+
+read_stanford_t1
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_t1
+
+read_syn_data
+~~~~~~~~~~~~~
+
+.. autofunction:: read_syn_data
+
+read_taiwan_ntu_dsi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_taiwan_ntu_dsi
+
+read_tissue_data
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_tissue_data
+
+relist_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: relist_streamlines
+
+sticks_and_ball
+~~~~~~~~~~~~~~~
+
+.. autofunction:: sticks_and_ball
+
+two_cingulum_bundles
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: two_cingulum_bundles
+
+
+.. currentmodule:: dipy.data.fetcher
+
+
+:class:`FetcherError`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: FetcherError
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+check_md5
+~~~~~~~~~
+
+.. autofunction:: check_md5
+
+copyfileobj
+~~~~~~~~~~~
+
+.. autofunction:: copyfileobj
+
+copyfileobj_withprogress
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: copyfileobj_withprogress
+
+fetch_bundle_atlas_hcp842
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundle_atlas_hcp842
+
+fetch_bundle_fa_hcp
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundle_fa_hcp
+
+fetch_bundles_2_subjects
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_bundles_2_subjects
+
+fetch_cenir_multib
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_cenir_multib
+
+fetch_cfin_multib
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_cfin_multib
+
+fetch_data
+~~~~~~~~~~
+
+.. autofunction:: fetch_data
+
+fetch_file_formats
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_file_formats
+
+fetch_gold_standard_io
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_gold_standard_io
+
+fetch_isbi2013_2shell
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_isbi2013_2shell
+
+fetch_ivim
+~~~~~~~~~~
+
+.. autofunction:: fetch_ivim
+
+fetch_mni_template
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_mni_template
+
+fetch_qtdMRI_test_retest_2subjects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_qtdMRI_test_retest_2subjects
+
+fetch_scil_b0
+~~~~~~~~~~~~~
+
+.. autofunction:: fetch_scil_b0
+
+fetch_sherbrooke_3shell
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_sherbrooke_3shell
+
+fetch_stanford_hardi
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_hardi
+
+fetch_stanford_labels
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_labels
+
+fetch_stanford_pve_maps
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_pve_maps
+
+fetch_stanford_t1
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_stanford_t1
+
+fetch_syn_data
+~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_syn_data
+
+fetch_taiwan_ntu_dsi
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_taiwan_ntu_dsi
+
+fetch_target_tractogram_hcp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_target_tractogram_hcp
+
+fetch_tissue_data
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_tissue_data
+
+get_bundle_atlas_hcp842
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_bundle_atlas_hcp842
+
+get_file_formats
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_file_formats
+
+get_target_tractogram_hcp
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_target_tractogram_hcp
+
+get_two_hcp842_bundles
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_two_hcp842_bundles
+
+gradient_table
+~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table
+
+gradient_table_from_gradient_strength_bvecs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table_from_gradient_strength_bvecs
+
+md5
+~~~
+
+.. autofunction:: md5
+
+pjoin
+~~~~~
+
+.. autofunction:: pjoin
+
+read_bundles_2_subjects
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_bundles_2_subjects
+
+read_bvals_bvecs
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_bvals_bvecs
+
+read_cenir_multib
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_cenir_multib
+
+read_cfin_dwi
+~~~~~~~~~~~~~
+
+.. autofunction:: read_cfin_dwi
+
+read_cfin_t1
+~~~~~~~~~~~~
+
+.. autofunction:: read_cfin_t1
+
+read_isbi2013_2shell
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_isbi2013_2shell
+
+read_ivim
+~~~~~~~~~
+
+.. autofunction:: read_ivim
+
+read_mni_template
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_mni_template
+
+read_qtdMRI_test_retest_2subjects
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_qtdMRI_test_retest_2subjects
+
+read_scil_b0
+~~~~~~~~~~~~
+
+.. autofunction:: read_scil_b0
+
+read_sherbrooke_3shell
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_sherbrooke_3shell
+
+read_siemens_scil_b0
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_siemens_scil_b0
+
+read_stanford_hardi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_hardi
+
+read_stanford_labels
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_labels
+
+read_stanford_pve_maps
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_pve_maps
+
+read_stanford_t1
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_t1
+
+read_syn_data
+~~~~~~~~~~~~~
+
+.. autofunction:: read_syn_data
+
+read_taiwan_ntu_dsi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_taiwan_ntu_dsi
+
+read_tissue_data
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_tissue_data
+
+update_progressbar
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: update_progressbar
+
+urlopen
+~~~~~~~
+
+.. autofunction:: urlopen
+

@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Reconstruction with the Sparse Fascicle Model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/sfm_reconst.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruction-with-the-sparse-fascicle-model">
+<span id="sfm-reconst"></span><span id="example-sfm-reconst"></span><h1>Reconstruction with the Sparse Fascicle Model<a class="headerlink" href="#reconstruction-with-the-sparse-fascicle-model" title="Permalink to this headline">¶</a></h1>
+<p>In this example, we will use the Sparse Fascicle Model (SFM) <a class="reference internal" href="tracking_sfm.html#rokem2015" id="id1"><span>[Rokem2015]</span></a>, to
+reconstruct the fiber Orientation Distribution Function (fODF) in every voxel.</p>
+<p>First, we import the modules we will use in this example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dipy.reconst.sfm</span> <span class="k">as</span> <span class="nn">sfm</span>
+<span class="kn">import</span> <span class="nn">dipy.data</span> <span class="k">as</span> <span class="nn">dpd</span>
+<span class="kn">import</span> <span class="nn">dipy.direction.peaks</span> <span class="k">as</span> <span class="nn">dpp</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+</pre></div>
+</div>
+<p>For the purpose of this example, we will use the Stanford HARDI dataset (150
+directions, single b-value of 2000 <span class="math notranslate nohighlight">\(s/mm^2\)</span>) that can be automatically
+downloaded. If you have not yet downloaded this data-set in one of the other
+examples, you will need to be connected to the internet the first time you run
+this example. The data will be stored for subsequent runs, and for use with
+other examples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_stanford_hardi</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_stanford_hardi</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>Reconstruction of the fiber ODF in each voxel guides subsequent tracking
+steps. Here, the model is the Sparse Fascicle Model, described in
+<a class="reference internal" href="kfold_xval.html#rokem2014" id="id2"><span>[Rokem2014]</span></a>. This model reconstructs the diffusion signal as a combination of
+the signals from different fascicles. This model can be written as:</p>
+<div class="math notranslate nohighlight">
+\[y = X\beta\]</div>
+<p>Where <span class="math notranslate nohighlight">\(y\)</span> is the signal and <span class="math notranslate nohighlight">\(\beta\)</span> are weights on different points in the
+sphere. The columns of the design matrix, <span class="math notranslate nohighlight">\(X\)</span> are the signals in each point in
+the measurement that would be predicted if there was a fascicle oriented in the
+direction represented by that column. Typically, the signal used for this
+kernel will be a prolate tensor with axial diffusivity 3-5 times higher than
+its radial diffusivity. The exact numbers can also be estimated from examining
+parts of the brain in which there is known to be only one fascicle (e.g. in
+corpus callosum).</p>
+<p>Sparsity constraints on the fiber ODF (<span class="math notranslate nohighlight">\(\beta\)</span>) are set through the Elastic Net
+algorihtm <a class="reference internal" href="#zou2005" id="id3"><span>[Zou2005]</span></a>.</p>
+<p>Elastic Net optimizes the following cost function:</p>
+<div class="math notranslate nohighlight">
+\[\sum_{i=1}^{n}{(y_i - \hat{y}_i)^2} + \alpha (\lambda \sum_{j=1}^{m}{w_j}+(1-\lambda) \sum_{j=1}^{m}{w^2_j}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{y}\)</span> is the signal predicted for a particular setting of <span class="math notranslate nohighlight">\(\beta\)</span>,
+such that the left part of this expression is the squared loss function;
+<span class="math notranslate nohighlight">\(\alpha\)</span> is a parameter that sets the balance between the squared loss on
+the data, and the regularization constraints. The regularization parameter
+<span class="math notranslate nohighlight">\(\lambda\)</span> sets the <cite>l1_ratio</cite>, which controls the balance between L1-sparsity
+(low sum of weights), and low L2-sparsity (low sum-of-squares of the weights).</p>
+<p>Just like Constrained Spherical Deconvolution (see <a class="reference internal" href="reconst_csd.html#reconst-csd"><span class="std std-ref">Reconstruction with Constrained Spherical Deconvolution</span></a>), the SFM
+requires the definition of a response function. We’ll take advantage of the
+automated algorithm in the <code class="xref py py-mod docutils literal notranslate"><span class="pre">csdeconv</span></code> module to find this response
+function:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.csdeconv</span> <span class="k">import</span> <span class="n">auto_response</span>
+<span class="n">response</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">=</span> <span class="n">auto_response</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">roi_radius</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fa_thr</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">response</span></code> return value contains two entries. The first is an array with
+the eigenvalues of the response function and the second is the average S0 for
+this response.</p>
+<p>It is a very good practice to always validate the result of <code class="docutils literal notranslate"><span class="pre">auto_response</span></code>.
+For, this purpose we can print it and have a look at its values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(array([ 0.0014,  0.00029,  0.00029]), 416.206)</p>
+<p>We initialize an SFM model object, using these values. We will use the default
+sphere (362  vertices, symmetrically distributed on the surface of the sphere),
+as a set of putative fascicle directions that are considered in the model</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">dpd</span><span class="o">.</span><span class="n">get_sphere</span><span class="p">()</span>
+<span class="n">sf_model</span> <span class="o">=</span> <span class="n">sfm</span><span class="o">.</span><span class="n">SparseFascicleModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                                   <span class="n">l1_ratio</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+                                   <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>For the purpose of the example, we will consider a small volume of data
+containing parts of the corpus callosum and of the centrum semiovale</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data_small</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">20</span><span class="p">:</span><span class="mi">50</span><span class="p">,</span> <span class="mi">55</span><span class="p">:</span><span class="mi">85</span><span class="p">,</span> <span class="mi">38</span><span class="p">:</span><span class="mi">39</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Fitting the model to this small volume of data, we calculate the ODF of this
+model on the sphere, and plot it.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sf_fit</span> <span class="o">=</span> <span class="n">sf_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+<span class="n">sf_odf</span> <span class="o">=</span> <span class="n">sf_fit</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">)</span>
+
+<span class="n">fodf_spheres</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">odf_slicer</span><span class="p">(</span><span class="n">sf_odf</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;plasma&#39;</span><span class="p">)</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fodf_spheres</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving illustration as sf_odfs.png&#39;</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;sf_odfs.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can extract the peaks from the ODF, and plot these as well</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sf_peaks</span> <span class="o">=</span> <span class="n">dpp</span><span class="o">.</span><span class="n">peaks_from_model</span><span class="p">(</span><span class="n">sf_model</span><span class="p">,</span>
+                                <span class="n">data_small</span><span class="p">,</span>
+                                <span class="n">sphere</span><span class="p">,</span>
+                                <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                                <span class="n">return_sh</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="n">window</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+<span class="n">fodf_peaks</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">peak_slicer</span><span class="p">(</span><span class="n">sf_peaks</span><span class="o">.</span><span class="n">peak_dirs</span><span class="p">,</span> <span class="n">sf_peaks</span><span class="o">.</span><span class="n">peak_values</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fodf_peaks</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving illustration as sf_peaks.png&#39;</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;sf_peaks.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, we plot both the peaks and the ODFs, overlayed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fodf_spheres</span><span class="o">.</span><span class="n">GetProperty</span><span class="p">()</span><span class="o">.</span><span class="n">SetOpacity</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">fodf_spheres</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving illustration as sf_both.png&#39;</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;sf_both.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/sf_both.png" src="../_images/sf_both.png" />
+<p class="caption"><span class="caption-text">SFM Peaks and ODFs.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>To see how to use this information in tracking, proceed to <a class="reference internal" href="tracking_sfm.html#sfm-track"><span class="std std-ref">Tracking with the Sparse Fascicle Model</span></a>.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="rokem2015"><span class="brackets"><a class="fn-backref" href="#id1">Rokem2015</a></span></dt>
+<dd><p>Ariel Rokem, Jason D. Yeatman, Franco Pestilli, Kendrick
+N. Kay, Aviv Mezer, Stefan van der Walt, Brian A. Wandell
+(2015). Evaluating the accuracy of diffusion MRI models in white
+matter. PLoS ONE 10(4): e0123272. doi:10.1371/journal.pone.0123272</p>
+</dd>
+<dt class="label" id="zou2005"><span class="brackets"><a class="fn-backref" href="#id3">Zou2005</a></span></dt>
+<dd><p>Zou H, Hastie T (2005). Regularization and variable
+selection via the elastic net. J R Stat Soc B:301-320</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/0738969566330d34f66b6b94700acd35/sfm_reconst.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

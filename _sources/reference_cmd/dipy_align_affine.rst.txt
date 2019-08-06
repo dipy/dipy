@@ -1,0 +1,41 @@
+
+========================
+dipy_align_affine
+========================
+
+usage: dipy_align_affine [-h] [--transform str] [--nbins int]
+                     [--sampling_prop int] [--metric str]
+                     [--level_iters [int [int ...]]]
+                     [--sigmas [float [float ...]]]
+                     [--factors [float [float ...]]] [--progressive]
+                     [--save_metric] [--out_dir str] [--out_moved str]
+                     [--out_affine str] [--out_quality str]
+                     static_img_files moving_img_files
+
+positional arguments:
+  static_img_files      Path to the static image file. 
+  moving_img_files      Path to the moving image file. 
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --transform str       com: center of mass, trans: translation, rigid: rigid body  affine: full affine including translation, rotation, shearing and  scaling (default 'affine'). 
+  --nbins int           Number of bins to discretize the joint and marginal PDF  (default '32'). 
+  --sampling_prop int   Number ([0-100]) of voxels for calculating the PDF.  'None' implies all voxels (default 'None'). 
+  --metric str          Similarity metric for gathering mutual information  (default 'mi' , Mutual Information metric). 
+  --level_iters [int [int ...]]
+                        The number of iterations at each scale of the scale space.  `level_iters[0]` corresponds to the coarsest scale,  `level_iters[-1]` the finest, where n is the length of the   sequence. By default, a 3-level scale space with iterations   sequence equal to [10000, 1000, 100] will be used. 
+  --sigmas [float [float ...]]
+                        Custom smoothing parameter to build the scale space (one parameter  for each scale). By default, the sequence of sigmas will be  [3, 1, 0]. 
+  --factors [float [float ...]]
+                        Custom scale factors to build the scale space (one factor for each  scale). By default, the sequence of factors will be [4, 2, 1]. 
+  --progressive         Enable/Disable the progressive registration (default 'True'). 
+  --save_metric         If true, quality assessment metric are saved in 'quality_metric.txt' (default 'False'). 
+
+output arguments(optional):
+  --out_dir str         Directory to save the transformed image and the affine matrix  (default ''). 
+  --out_moved str       Name for the saved transformed image  (default 'moved.nii.gz'). 
+  --out_affine str      Name for the saved affine matrix  (default 'affine.txt'). 
+  --out_quality str     Name of the file containing the saved quality  metric (default 'quality_metric.txt').
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

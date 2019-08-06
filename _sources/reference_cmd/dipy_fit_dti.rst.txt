@@ -1,0 +1,48 @@
+
+========================
+dipy_fit_dti
+========================
+
+usage: dipy_fit_dti [-h] [--b0_threshold float] [--bvecs_tol float]
+                     [--save_metrics [str [str ...]]] [--out_dir str]
+                     [--out_tensor str] [--out_fa str] [--out_ga str]
+                     [--out_rgb str] [--out_md str] [--out_ad str]
+                     [--out_rd str] [--out_mode str] [--out_evec str]
+                     [--out_eval str] [--nifti_tensor]
+                     input_files bvalues_files bvectors_files mask_files
+
+Workflow for tensor reconstruction and for computing DTI metrics. using Weighted Least-Squares. Performs a tensor reconstruction on the files by 'globing' ``input_files`` and saves the DTI metrics in a directory specified by ``out_dir``.
+
+positional arguments:
+  input_files           Path to the input volumes. This path may contain wildcards to process multiple inputs at once.
+  bvalues_files         Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+  bvectors_files        Path to the bvectors files. This path may contain wildcards to use multiple bvectors files at once.
+  mask_files            Path to the input masks. This path may contain wildcards to use multiple masks at once.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --b0_threshold float  Threshold used to find b=0 directions (default 0.0)
+  --bvecs_tol float     Threshold used to check that norm(bvec) = 1 +/- bvecs_tol b-vectors are unit vectors (default 0.01)
+  --save_metrics [str [str ...]]
+                        List of metrics to save. Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval (default [] (all))
+  --nifti_tensor        Whether the tensor is saved in the standard Nifti format or in an alternate format that is used by other software (e.g., FSL): a 4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension. Default: True
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_tensor str      Name of the tensors volume to be saved (default 'tensors.nii.gz'). Per default, this will be saved following the nifti standard: with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If `nifti_tensor` is False, this will be saved in an alternate format that is used by other software (e.g., FSL): a 4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
+  --out_fa str          Name of the fractional anisotropy volume to be saved (default 'fa.nii.gz')
+  --out_ga str          Name of the geodesic anisotropy volume to be saved (default 'ga.nii.gz')
+  --out_rgb str         Name of the color fa volume to be saved (default 'rgb.nii.gz')
+  --out_md str          Name of the mean diffusivity volume to be saved (default 'md.nii.gz')
+  --out_ad str          Name of the axial diffusivity volume to be saved (default 'ad.nii.gz')
+  --out_rd str          Name of the radial diffusivity volume to be saved (default 'rd.nii.gz')
+  --out_mode str        Name of the mode volume to be saved (default 'mode.nii.gz')
+  --out_evec str        Name of the eigenvectors volume to be saved (default 'evecs.nii.gz')
+  --out_eval str        Name of the eigenvalues to be saved (default 'evals.nii.gz')
+
+References: 
+.. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of   the effective self-diffusion tensor from the NMR spin echo. J Magn   Reson B 103, 247-254.
+.. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and   physiological features of tissues elucidated by quantitative   diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+.. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust   estimation of tensors by outlier rejection. MRM 53: 1088-1095
+.. [4] hung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap   approaches for estimation of uncertainties of DTI parameters.   NeuroImage 33, 531-541.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

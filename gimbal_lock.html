@@ -1,0 +1,210 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Gimbal lock</a><ul>
+<li><a class="reference internal" href="#mathematics-of-gimbal-lock">Mathematics of gimbal lock</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/gimbal_lock.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="gimbal-lock">
+<span id="id1"></span><h1>Gimbal lock<a class="headerlink" href="#gimbal-lock" title="Permalink to this headline">¶</a></h1>
+<p>See also: <a class="reference external" href="http://en.wikipedia.org/wiki/Gimbal_lock">http://en.wikipedia.org/wiki/Gimbal_lock</a></p>
+<p>Euler angles have a major deficiency, and that is, that it is possible,
+in some rotation sequences, to reach a situation where two of the three
+Euler angles cause rotation around the same axis of the object.  In the
+case below, rotation around the <span class="math notranslate nohighlight">\(x\)</span> axis becomes indistinguishable in
+its effect from rotation around the <span class="math notranslate nohighlight">\(z\)</span> axis, so the <span class="math notranslate nohighlight">\(z\)</span> and <span class="math notranslate nohighlight">\(x\)</span> axis
+angles collapse into one transformation, and the rotation reduces from
+three degrees of freedom to two.</p>
+<p>Imagine that we are using the Euler angle convention of starting with a
+rotation around the <span class="math notranslate nohighlight">\(x\)</span> axis, followed by the <span class="math notranslate nohighlight">\(y\)</span> axis, followed by the
+<span class="math notranslate nohighlight">\(z\)</span> axis.</p>
+<p>Here we see a Spitfire aircraft, flying across the screen.  The <span class="math notranslate nohighlight">\(x\)</span> axis
+is left to right (tail to nose), the <span class="math notranslate nohighlight">\(y\)</span> axis is from the left wing tip
+to the right wing tip (going away from the screen), and the <span class="math notranslate nohighlight">\(z\)</span> axis is
+from bottom to top:</p>
+<img alt="images/spitfire_0.png" src="images/spitfire_0.png" />
+<p>Imagine we wanted to do a slight roll with the left wing tilting down
+(rotation about <span class="math notranslate nohighlight">\(x\)</span>) like this:</p>
+<img alt="images/spitfire_x.png" src="images/spitfire_x.png" />
+<p>followed by a violent pitch so we are pointing straight up (rotation
+around <span class="math notranslate nohighlight">\(y\)</span> axis):</p>
+<img alt="images/spitfire_y.png" src="images/spitfire_y.png" />
+<p>Now we’d like to do a turn of the nose towards the viewer (and the tail
+away from the viewer):</p>
+<img alt="images/spitfire_hoped.png" src="images/spitfire_hoped.png" />
+<p>But, wait, let’s go back over that again.  Look at the result of the
+rotation around the <span class="math notranslate nohighlight">\(y\)</span> axis.  Notice that the <span class="math notranslate nohighlight">\(x\)</span> axis, as was, is now
+aligned with the <span class="math notranslate nohighlight">\(z\)</span> axis, as it is now.  Rotating around the <span class="math notranslate nohighlight">\(z\)</span> axis
+will have exactly the same effect as adding an extra rotation around the
+<span class="math notranslate nohighlight">\(x\)</span> axis at the beginning.  That means that, when there is a <span class="math notranslate nohighlight">\(y\)</span> axis
+rotation that rotates the <span class="math notranslate nohighlight">\(x\)</span> axis onto the <span class="math notranslate nohighlight">\(z\)</span> axis (a rotation of
+<span class="math notranslate nohighlight">\(\pm\pi/2\)</span> around the <span class="math notranslate nohighlight">\(y\)</span> axis) - the <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> axes are “locked”
+together.</p>
+<div class="section" id="mathematics-of-gimbal-lock">
+<h2>Mathematics of gimbal lock<a class="headerlink" href="#mathematics-of-gimbal-lock" title="Permalink to this headline">¶</a></h2>
+<p>We see gimbal lock for this type of Euler axis convention, when
+<span class="math notranslate nohighlight">\(\cos(\beta) = 0\)</span>, where <span class="math notranslate nohighlight">\(\beta\)</span> is the angle of rotation around the <span class="math notranslate nohighlight">\(y\)</span>
+axis.  By “this type of convention” we mean using rotation around all 3
+of the <span class="math notranslate nohighlight">\(x\)</span>, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(z\)</span> axes, rather than using the same axis twice -
+e.g. the physics convention of <span class="math notranslate nohighlight">\(z\)</span> followed by <span class="math notranslate nohighlight">\(x\)</span> followed by <span class="math notranslate nohighlight">\(z\)</span> axis
+rotation (the physics convention has different properties to its gimbal
+lock).</p>
+<p>We can show how gimbal lock works by creating a rotation matrix for the
+three component rotations. Recall that, for a rotation of <span class="math notranslate nohighlight">\(\alpha\)</span>
+radians around <span class="math notranslate nohighlight">\(x\)</span>, followed by a rotation <span class="math notranslate nohighlight">\(\beta\)</span> around <span class="math notranslate nohighlight">\(y\)</span>, followed
+by rotation <span class="math notranslate nohighlight">\(\gamma\)</span> around <span class="math notranslate nohighlight">\(z\)</span>, the rotation matrix <span class="math notranslate nohighlight">\(R\)</span> is:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R = \left(\begin{smallmatrix}\operatorname{cos}\left(\beta\right) \operatorname{cos}\left(\gamma\right) &amp; - \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) + \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\beta\right) &amp; \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) + \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\beta\right)\\\operatorname{cos}\left(\beta\right) \operatorname{sin}\left(\gamma\right) &amp; \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\beta\right) \operatorname{sin}\left(\gamma\right) &amp;- \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) + \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\beta\right) \operatorname{sin}\left(\gamma\right)\\- \operatorname{sin}\left(\beta\right) &amp; \operatorname{cos}\left(\beta\right) \operatorname{sin}\left(\alpha\right) &amp; \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\beta\right)\end{smallmatrix}\right)\end{split}\]</div>
+<p>When <span class="math notranslate nohighlight">\(\cos(\beta) = 0\)</span>, <span class="math notranslate nohighlight">\(\sin(\beta) = \pm1\)</span> and <span class="math notranslate nohighlight">\(R\)</span> simplifies to:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R = \left(\begin{smallmatrix}0 &amp; - \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) + \pm{1} \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) &amp; \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) + \pm{1} \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right)\\0 &amp; \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \pm{1} \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) &amp; - \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) + \pm{1} \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right)\\- \pm{1} &amp; 0 &amp; 0\end{smallmatrix}\right)\end{split}\]</div>
+<p>When <span class="math notranslate nohighlight">\(\sin(\beta) = 1\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R = \left(\begin{smallmatrix}0 &amp; \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) - \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) &amp; \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right)\\0 &amp; \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) &amp; \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) - \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right)\\-1 &amp; 0 &amp; 0\end{smallmatrix}\right)\end{split}\]</div>
+<p>From the <a class="reference external" href="http://en.wikipedia.org/wiki/List_of_trigonometric_identities#Angle_sum_and_difference_identities">angle sum and difference identities</a>
+(see also <a class="reference external" href="http://www.themathpage.com/atrig/sum-proof.htm">geometric proof</a>, <a class="reference external" href="http://mathworld.wolfram.com/TrigonometricAdditionFormulas.html">Mathworld treatment</a>) we
+remind ourselves that, for any two angles <span class="math notranslate nohighlight">\(\alpha\)</span> and <span class="math notranslate nohighlight">\(\beta\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}\sin(\alpha \pm \beta) = \sin \alpha \cos \beta \pm \cos \alpha \sin \beta \,\\\cos(\alpha \pm \beta) = \cos \alpha \cos \beta \mp \sin \alpha \sin \beta\end{aligned}\end{align} \]</div>
+<p>We can rewrite <span class="math notranslate nohighlight">\(R\)</span> as:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R = \left(\begin{smallmatrix}0 &amp; V_{1} &amp; V_{2}\\0 &amp; V_{2} &amp; - V_{1}\\-1 &amp; 0 &amp; 0\end{smallmatrix}\right)\end{split}\]</div>
+<p>where:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}V_1 = \operatorname{cos}\left(\gamma\right) \operatorname{sin}\left(\alpha\right) - \operatorname{cos}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) = \sin(\alpha - \gamma) \,\\V_2 =  \operatorname{cos}\left(\alpha\right) \operatorname{cos}\left(\gamma\right) + \operatorname{sin}\left(\alpha\right) \operatorname{sin}\left(\gamma\right) = \cos(\alpha - \gamma)\end{aligned}\end{align} \]</div>
+<p>We immediately see that <span class="math notranslate nohighlight">\(\alpha\)</span> and <span class="math notranslate nohighlight">\(\gamma\)</span> are going to lead the same
+transformation - the mathematical expression of the observation on the
+spitfire above, that rotation around the <span class="math notranslate nohighlight">\(x\)</span> axis is equivalent to
+rotation about the <span class="math notranslate nohighlight">\(z\)</span> axis.</p>
+<p>It’s easy to do the same set of reductions, with the same conclusion,
+for the case where <span class="math notranslate nohighlight">\(\sin(\beta) = -1\)</span> - see
+<a class="reference external" href="http://www.gregslabaugh.name/publications/euler.pdf">http://www.gregslabaugh.name/publications/euler.pdf</a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

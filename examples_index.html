@@ -1,0 +1,501 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="A note about the examples" href="note_about_examples.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="note_about_examples.html" title="A note about the examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="#">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Examples</a><ul>
+<li><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li><a class="reference internal" href="#preprocessing">Preprocessing</a><ul>
+<li><a class="reference internal" href="#gradients-spheres">Gradients &amp; Spheres</a></li>
+<li><a class="reference internal" href="#brain-extraction">Brain Extraction</a></li>
+<li><a class="reference internal" href="#basic-snr-estimation">Basic SNR estimation</a></li>
+<li><a class="reference internal" href="#denoising">Denoising</a></li>
+<li><a class="reference internal" href="#reslice">Reslice</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#reconstruction">Reconstruction</a><ul>
+<li><a class="reference internal" href="#constrained-spherical-deconvolution">Constrained Spherical Deconvolution</a></li>
+<li><a class="reference internal" href="#fiber-orientation-estimated-using-continuous-axially-symmetric-tensors">Fiber Orientation Estimated using Continuous Axially Symmetric Tensors</a></li>
+<li><a class="reference internal" href="#simple-harmonic-oscillator-based-reconstruction-and-estimation">Simple Harmonic Oscillator based Reconstruction and Estimation</a></li>
+<li><a class="reference internal" href="#mean-apparent-propagator-map-mri">Mean Apparent Propagator (MAP)-MRI</a></li>
+<li><a class="reference internal" href="#studying-diffusion-time-dependence-using-qt-dmri">Studying diffusion time-dependence using qt-dMRI</a></li>
+<li><a class="reference internal" href="#diffusion-tensor-imaging">Diffusion Tensor Imaging</a></li>
+<li><a class="reference internal" href="#free-water-diffusion-tensor-imaging">Free-water Diffusion Tensor Imaging</a></li>
+<li><a class="reference internal" href="#diffusion-kurtosis-imaging">Diffusion Kurtosis Imaging</a></li>
+<li><a class="reference internal" href="#white-matter-tract-integrity-model">White Matter Tract Integrity Model</a></li>
+<li><a class="reference internal" href="#q-ball-constant-solid-angle">Q-Ball Constant Solid Angle</a></li>
+<li><a class="reference internal" href="#diffusion-spectrum-imaging">Diffusion Spectrum Imaging</a></li>
+<li><a class="reference internal" href="#generalized-q-sampling-imaging">Generalized Q-Sampling Imaging</a></li>
+<li><a class="reference internal" href="#dsi-with-deconvolution">DSI with Deconvolution</a></li>
+<li><a class="reference internal" href="#sparse-fascicle-model">Sparse Fascicle Model</a></li>
+<li><a class="reference internal" href="#intravoxel-incoherent-motion-ivim">Intravoxel incoherent motion (IVIM)</a></li>
+<li><a class="reference internal" href="#statistical-evaluation">Statistical evaluation</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#contextual-enhancement">Contextual enhancement</a></li>
+<li><a class="reference internal" href="#fiber-tracking">Fiber tracking</a></li>
+<li><a class="reference internal" href="#fiber-tracking-evaluation">Fiber tracking evaluation</a></li>
+<li><a class="reference internal" href="#streamline-analysis-and-connectivity">Streamline analysis and connectivity</a></li>
+<li><a class="reference internal" href="#registration">Registration</a><ul>
+<li><a class="reference internal" href="#image-based-registration">Image-based Registration</a></li>
+<li><a class="reference internal" href="#streamline-based-registration">Streamline-based Registration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#segmentation">Segmentation</a><ul>
+<li><a class="reference internal" href="#streamline-clustering">Streamline Clustering</a></li>
+<li><a class="reference internal" href="#brain-segmentation">Brain Segmentation</a></li>
+<li><a class="reference internal" href="#tissue-classification">Tissue Classification</a></li>
+<li><a class="reference internal" href="#bundle-extraction">Bundle Extraction</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#simulations">Simulations</a></li>
+<li><a class="reference internal" href="#multiprocessing">Multiprocessing</a></li>
+<li><a class="reference internal" href="#file-formats">File Formats</a></li>
+<li><a class="reference internal" href="#visualization">Visualization</a></li>
+<li><a class="reference internal" href="#workflows">Workflows</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="previous chapter">Installation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="note_about_examples.html"
+                        title="next chapter">A note about the examples</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/examples_index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="examples">
+<span id="id1"></span><h1><a class="toc-backref" href="#id2">Examples</a><a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="note_about_examples.html">A note about the examples</a></li>
+</ul>
+</div>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#examples" id="id2">Examples</a></p>
+<ul>
+<li><p><a class="reference internal" href="#quick-start" id="id3">Quick Start</a></p></li>
+<li><p><a class="reference internal" href="#preprocessing" id="id4">Preprocessing</a></p></li>
+<li><p><a class="reference internal" href="#reconstruction" id="id5">Reconstruction</a></p></li>
+<li><p><a class="reference internal" href="#contextual-enhancement" id="id6">Contextual enhancement</a></p></li>
+<li><p><a class="reference internal" href="#fiber-tracking" id="id7">Fiber tracking</a></p></li>
+<li><p><a class="reference internal" href="#fiber-tracking-evaluation" id="id8">Fiber tracking evaluation</a></p></li>
+<li><p><a class="reference internal" href="#streamline-analysis-and-connectivity" id="id9">Streamline analysis and connectivity</a></p></li>
+<li><p><a class="reference internal" href="#registration" id="id10">Registration</a></p></li>
+<li><p><a class="reference internal" href="#segmentation" id="id11">Segmentation</a></p></li>
+<li><p><a class="reference internal" href="#simulations" id="id12">Simulations</a></p></li>
+<li><p><a class="reference internal" href="#multiprocessing" id="id13">Multiprocessing</a></p></li>
+<li><p><a class="reference internal" href="#file-formats" id="id14">File Formats</a></p></li>
+<li><p><a class="reference internal" href="#visualization" id="id15">Visualization</a></p></li>
+<li><p><a class="reference internal" href="#workflows" id="id16">Workflows</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="quick-start">
+<h2><a class="toc-backref" href="#id3">Quick Start</a><a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/quick_start.html#example-quick-start"><span class="std std-ref">Getting started with DIPY</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_introduction_eudx.html#example-tracking-introduction-eudx"><span class="std std-ref">Introduction to Basic Tracking</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="preprocessing">
+<h2><a class="toc-backref" href="#id4">Preprocessing</a><a class="headerlink" href="#preprocessing" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="gradients-spheres">
+<h3>Gradients &amp; Spheres<a class="headerlink" href="#gradients-spheres" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/gradients_spheres.html#example-gradients-spheres"><span class="std std-ref">Gradients and Spheres</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="brain-extraction">
+<h3>Brain Extraction<a class="headerlink" href="#brain-extraction" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/brain_extraction_dwi.html#example-brain-extraction-dwi"><span class="std std-ref">Brain segmentation with median_otsu</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="basic-snr-estimation">
+<h3>Basic SNR estimation<a class="headerlink" href="#basic-snr-estimation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/snr_in_cc.html#example-snr-in-cc"><span class="std std-ref">SNR estimation for Diffusion-Weighted Images</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="denoising">
+<h3>Denoising<a class="headerlink" href="#denoising" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/denoise_nlmeans.html#example-denoise-nlmeans"><span class="std std-ref">Denoise images using Non-Local Means (NLMEANS)</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/denoise_localpca.html#example-denoise-localpca"><span class="std std-ref">Denoise images using Local PCA via empirical thresholds</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/denoise_mppca.html#example-denoise-mppca"><span class="std std-ref">Denoise images using the Marcenko-Pastur PCA algorithm</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/denoise_gibbs.html#example-denoise-gibbs"><span class="std std-ref">Suppress Gibbs oscillations</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="reslice">
+<h3>Reslice<a class="headerlink" href="#reslice" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reslice_datasets.html#example-reslice-datasets"><span class="std std-ref">Reslice diffusion datasets</span></a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="reconstruction">
+<h2><a class="toc-backref" href="#id5">Reconstruction</a><a class="headerlink" href="#reconstruction" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="constrained-spherical-deconvolution">
+<h3>Constrained Spherical Deconvolution<a class="headerlink" href="#constrained-spherical-deconvolution" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_csd.html#example-reconst-csd"><span class="std std-ref">Reconstruction with Constrained Spherical Deconvolution</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="fiber-orientation-estimated-using-continuous-axially-symmetric-tensors">
+<h3>Fiber Orientation Estimated using Continuous Axially Symmetric Tensors<a class="headerlink" href="#fiber-orientation-estimated-using-continuous-axially-symmetric-tensors" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_forecast.html#example-reconst-forecast"><span class="std std-ref">Crossing invariant fiber response function with FORECAST model</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="simple-harmonic-oscillator-based-reconstruction-and-estimation">
+<h3>Simple Harmonic Oscillator based Reconstruction and Estimation<a class="headerlink" href="#simple-harmonic-oscillator-based-reconstruction-and-estimation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_shore.html#example-reconst-shore"><span class="std std-ref">Continuous and analytical diffusion signal modelling with 3D-SHORE</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/reconst_shore_metrics.html#example-reconst-shore-metrics"><span class="std std-ref">Calculate SHORE scalar maps</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="mean-apparent-propagator-map-mri">
+<h3>Mean Apparent Propagator (MAP)-MRI<a class="headerlink" href="#mean-apparent-propagator-map-mri" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_mapmri.html#example-reconst-mapmri"><span class="std std-ref">Continuous and analytical diffusion signal modelling with MAPMRI</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="studying-diffusion-time-dependence-using-qt-dmri">
+<h3>Studying diffusion time-dependence using qt-dMRI<a class="headerlink" href="#studying-diffusion-time-dependence-using-qt-dmri" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_qtdmri.html#example-reconst-qtdmri"><span class="std std-ref">Estimating diffusion time dependent q-space indices using qt-dMRI</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="diffusion-tensor-imaging">
+<h3>Diffusion Tensor Imaging<a class="headerlink" href="#diffusion-tensor-imaging" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_dti.html#example-reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/restore_dti.html#example-restore-dti"><span class="std std-ref">Using the RESTORE algorithm for robust tensor fitting</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="free-water-diffusion-tensor-imaging">
+<h3>Free-water Diffusion Tensor Imaging<a class="headerlink" href="#free-water-diffusion-tensor-imaging" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_fwdti.html#example-reconst-fwdti"><span class="std std-ref">Using the free water elimination model to remove DTI free water contamination</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="diffusion-kurtosis-imaging">
+<h3>Diffusion Kurtosis Imaging<a class="headerlink" href="#diffusion-kurtosis-imaging" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_dki.html#example-reconst-dki"><span class="std std-ref">Reconstruction of the diffusion signal with the kurtosis tensor model</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/reconst_msdki.html#example-reconst-msdki"><span class="std std-ref">Mean signal diffusion kurtosis imaging (MSDKI)</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="white-matter-tract-integrity-model">
+<h3>White Matter Tract Integrity Model<a class="headerlink" href="#white-matter-tract-integrity-model" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_dki_micro.html#example-reconst-dki-micro"><span class="std std-ref">Reconstruction of the diffusion signal with the WMTI model</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="q-ball-constant-solid-angle">
+<h3>Q-Ball Constant Solid Angle<a class="headerlink" href="#q-ball-constant-solid-angle" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_csa.html#example-reconst-csa"><span class="std std-ref">Reconstruct with Constant Solid Angle (Q-Ball)</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="diffusion-spectrum-imaging">
+<h3>Diffusion Spectrum Imaging<a class="headerlink" href="#diffusion-spectrum-imaging" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_dsi.html#example-reconst-dsi"><span class="std std-ref">Reconstruct with Diffusion Spectrum Imaging</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/reconst_dsi_metrics.html#example-reconst-dsi-metrics"><span class="std std-ref">Calculate DSI-based scalar maps</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="generalized-q-sampling-imaging">
+<h3>Generalized Q-Sampling Imaging<a class="headerlink" href="#generalized-q-sampling-imaging" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_gqi.html#example-reconst-gqi"><span class="std std-ref">Reconstruct with Generalized Q-Sampling Imaging</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="dsi-with-deconvolution">
+<h3>DSI with Deconvolution<a class="headerlink" href="#dsi-with-deconvolution" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_dsid.html#example-reconst-dsid"><span class="std std-ref">DSI Deconvolution vs DSI</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="sparse-fascicle-model">
+<h3>Sparse Fascicle Model<a class="headerlink" href="#sparse-fascicle-model" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/sfm_reconst.html#example-sfm-reconst"><span class="std std-ref">Reconstruction with the Sparse Fascicle Model</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="intravoxel-incoherent-motion-ivim">
+<h3>Intravoxel incoherent motion (IVIM)<a class="headerlink" href="#intravoxel-incoherent-motion-ivim" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_ivim.html#example-reconst-ivim"><span class="std std-ref">Intravoxel incoherent motion</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="statistical-evaluation">
+<h3>Statistical evaluation<a class="headerlink" href="#statistical-evaluation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/kfold_xval.html#example-kfold-xval"><span class="std std-ref">K-fold cross-validation for model comparison</span></a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="contextual-enhancement">
+<h2><a class="toc-backref" href="#id6">Contextual enhancement</a><a class="headerlink" href="#contextual-enhancement" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/contextual_enhancement.html#example-contextual-enhancement"><span class="std std-ref">Crossing-preserving contextual enhancement</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/fiber_to_bundle_coherence.html#example-fiber-to-bundle-coherence"><span class="std std-ref">Fiber to bundle coherence measures</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="fiber-tracking">
+<h2><a class="toc-backref" href="#id7">Fiber tracking</a><a class="headerlink" href="#fiber-tracking" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/tracking_introduction_eudx.html#example-tracking-introduction-eudx"><span class="std std-ref">Introduction to Basic Tracking</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_deterministic.html#example-tracking-deterministic"><span class="std std-ref">An introduction to the Deterministic Maximum Direction Getter</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_probabilistic.html#example-tracking-probabilistic"><span class="std std-ref">An introduction to the Probabilistic Direction Getter</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_bootstrap_peaks.html#example-tracking-bootstrap-peaks"><span class="std std-ref">Bootstrap and Closest Peak Direction Getters Example</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_stopping_criterion.html#example-tracking-stopping-criterion"><span class="std std-ref">Using Various Stopping Criterion for Tractography</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_pft.html#example-tracking-pft"><span class="std std-ref">Particle Filtering Tractography</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/tracking_sfm.html#example-tracking-sfm"><span class="std std-ref">Tracking with the Sparse Fascicle Model</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="fiber-tracking-evaluation">
+<h2><a class="toc-backref" href="#id8">Fiber tracking evaluation</a><a class="headerlink" href="#fiber-tracking-evaluation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/linear_fascicle_evaluation.html#example-linear-fascicle-evaluation"><span class="std std-ref">Linear fascicle evaluation (LiFE)</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="streamline-analysis-and-connectivity">
+<h2><a class="toc-backref" href="#id9">Streamline analysis and connectivity</a><a class="headerlink" href="#streamline-analysis-and-connectivity" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/streamline_tools.html#example-streamline-tools"><span class="std std-ref">Connectivity Matrices, ROI Intersections and Density Maps</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/streamline_length.html#example-streamline-length"><span class="std std-ref">Streamline length and size reduction</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/cluster_confidence.html#example-cluster-confidence"><span class="std std-ref">Calculation of Outliers with Cluster Confidence Index</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/path_length_map.html#example-path-length-map"><span class="std std-ref">Calculate Path Length Map</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/afq_tract_profiles.html#example-afq-tract-profiles"><span class="std std-ref">Extracting AFQ tract profiles from segmented bundles</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="registration">
+<h2><a class="toc-backref" href="#id10">Registration</a><a class="headerlink" href="#registration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="image-based-registration">
+<h3>Image-based Registration<a class="headerlink" href="#image-based-registration" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/affine_registration_3d.html#example-affine-registration-3d"><span class="std std-ref">Affine Registration in 3D</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/syn_registration_2d.html#example-syn-registration-2d"><span class="std std-ref">Symmetric Diffeomorphic Registration in 2D</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/syn_registration_3d.html#example-syn-registration-3d"><span class="std std-ref">Symmetric Diffeomorphic Registration in 3D</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/register_binary_fuzzy.html#example-register-binary-fuzzy"><span class="std std-ref">Diffeomorphic Registration with binary and fuzzy images</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="streamline-based-registration">
+<h3>Streamline-based Registration<a class="headerlink" href="#streamline-based-registration" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/bundle_registration.html#example-bundle-registration"><span class="std std-ref">Direct Bundle Registration</span></a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="segmentation">
+<h2><a class="toc-backref" href="#id11">Segmentation</a><a class="headerlink" href="#segmentation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="streamline-clustering">
+<h3>Streamline Clustering<a class="headerlink" href="#streamline-clustering" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/segment_quickbundles.html#example-segment-quickbundles"><span class="std std-ref">Tractography Clustering with QuickBundles</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/segment_extending_clustering_framework.html#example-segment-extending-clustering-framework"><span class="std std-ref">Enhancing QuickBundles with different metrics and features</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/segment_clustering_features.html#example-segment-clustering-features"><span class="std std-ref">Tractography Clustering - Available Features</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/segment_clustering_metrics.html#example-segment-clustering-metrics"><span class="std std-ref">Tractography Clustering - Available Metrics</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="brain-segmentation">
+<h3>Brain Segmentation<a class="headerlink" href="#brain-segmentation" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/brain_extraction_dwi.html#example-brain-extraction-dwi"><span class="std std-ref">Brain segmentation with median_otsu</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="tissue-classification">
+<h3>Tissue Classification<a class="headerlink" href="#tissue-classification" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/tissue_classification.html#example-tissue-classification"><span class="std std-ref">Tissue Classification of a T1-weighted Structural Image</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="bundle-extraction">
+<h3>Bundle Extraction<a class="headerlink" href="#bundle-extraction" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/bundle_extraction.html#example-bundle-extraction"><span class="std std-ref">Automatic Fiber Bundle Extraction with RecoBundles</span></a></p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="simulations">
+<h2><a class="toc-backref" href="#id12">Simulations</a><a class="headerlink" href="#simulations" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/simulate_multi_tensor.html#example-simulate-multi-tensor"><span class="std std-ref">MultiTensor Simulation</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/reconst_dsid.html#example-reconst-dsid"><span class="std std-ref">DSI Deconvolution vs DSI</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/simulate_dki.html#example-simulate-dki"><span class="std std-ref">DKI MultiTensor Simulation</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="multiprocessing">
+<h2><a class="toc-backref" href="#id13">Multiprocessing</a><a class="headerlink" href="#multiprocessing" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/reconst_csd_parallel.html#example-reconst-csd-parallel"><span class="std std-ref">Parallel reconstruction using CSD</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/reconst_csa_parallel.html#example-reconst-csa-parallel"><span class="std std-ref">Parallel reconstruction using Q-Ball</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="file-formats">
+<h2><a class="toc-backref" href="#id14">File Formats</a><a class="headerlink" href="#file-formats" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/streamline_formats.html#example-streamline-formats"><span class="std std-ref">Read/Write streamline files</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="visualization">
+<h2><a class="toc-backref" href="#id15">Visualization</a><a class="headerlink" href="#visualization" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/viz_advanced.html#example-viz-advanced"><span class="std std-ref">Advanced interactive visualization</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/viz_slice.html#example-viz-slice"><span class="std std-ref">Simple volume slicing</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/viz_bundles.html#example-viz-bundles"><span class="std std-ref">Visualize bundles and metrics on bundles</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/viz_roi_contour.html#example-viz-roi-contour"><span class="std std-ref">Visualization of ROI Surface Rendered with Streamlines</span></a></p></li>
+</ul>
+</div>
+<div class="section" id="workflows">
+<h2><a class="toc-backref" href="#id16">Workflows</a><a class="headerlink" href="#workflows" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="examples_built/workflow_creation.html#example-workflow-creation"><span class="std std-ref">Creating a new workflow.</span></a></p></li>
+<li><p><a class="reference internal" href="examples_built/combined_workflow_creation.html#example-combined-workflow-creation"><span class="std std-ref">Creating a new combined workflow</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="note_about_examples.html" title="A note about the examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="#">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

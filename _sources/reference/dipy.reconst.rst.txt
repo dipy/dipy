@@ -1,0 +1,3806 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`reconst`
+==============
+.. automodule:: dipy.reconst
+
+.. currentmodule:: dipy.reconst
+.. autosummary::
+
+   bench
+   test
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.base`
+---------------------------
+.. automodule:: dipy.reconst.base
+
+.. currentmodule:: dipy.reconst.base
+.. autosummary::
+
+   ReconstFit
+   ReconstModel
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks`
+---------------------------------
+.. automodule:: dipy.reconst.benchmarks
+
+.. currentmodule:: dipy.reconst.benchmarks
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks.bench_bounding_box`
+----------------------------------------------------
+.. automodule:: dipy.reconst.benchmarks.bench_bounding_box
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_bounding_box
+.. autosummary::
+
+   bench_bounding_box
+   bounding_box
+   measure
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks.bench_csd`
+-------------------------------------------
+.. automodule:: dipy.reconst.benchmarks.bench_csd
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_csd
+.. autosummary::
+
+   ConstrainedSphericalDeconvModel
+   GradientTable
+   bench_csdeconv
+   num_grad
+   read_stanford_labels
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks.bench_peaks`
+---------------------------------------------
+.. automodule:: dipy.reconst.benchmarks.bench_peaks
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_peaks
+.. autosummary::
+
+   bench_local_maxima
+   local_maxima
+   measure
+   unique_edges
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks.bench_squash`
+----------------------------------------------
+.. automodule:: dipy.reconst.benchmarks.bench_squash
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_squash
+.. autosummary::
+
+   bench_quick_squash
+   measure
+   ndindex
+   old_squash
+   quick_squash
+   reduce
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.benchmarks.bench_vec_val_sum`
+---------------------------------------------------
+.. automodule:: dipy.reconst.benchmarks.bench_vec_val_sum
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_vec_val_sum
+.. autosummary::
+
+   bench_vec_val_vect
+   measure
+   randn
+   vec_val_vect
+   with_einsum
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.cache`
+----------------------------
+.. automodule:: dipy.reconst.cache
+
+.. currentmodule:: dipy.reconst.cache
+.. autosummary::
+
+   Cache
+   auto_attr
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.cross_validation`
+---------------------------------------
+.. automodule:: dipy.reconst.cross_validation
+
+.. currentmodule:: dipy.reconst.cross_validation
+.. autosummary::
+
+   coeff_of_determination
+   kfold_xval
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.csdeconv`
+-------------------------------
+.. automodule:: dipy.reconst.csdeconv
+
+.. currentmodule:: dipy.reconst.csdeconv
+.. autosummary::
+
+   AxSymShResponse
+   ConstrainedSDTModel
+   ConstrainedSphericalDeconvModel
+   SphHarmFit
+   SphHarmModel
+   TensorModel
+   auto_response
+   cart2sphere
+   csdeconv
+   estimate_response
+   fa_inferior
+   fa_superior
+   fa_trace_to_lambdas
+   forward_sdeconv_mat
+   forward_sdt_deconv_mat
+   fractional_anisotropy
+   get_sphere
+   lazy_index
+   lpn
+   multi_voxel_fit
+   ndindex
+   odf_deconv
+   odf_sh_to_sharp
+   peaks_from_model
+   quad
+   real_sph_harm
+   real_sym_sh_basis
+   recursive_response
+   response_from_mask
+   sh_to_rh
+   single_tensor
+   sph_harm_ind_list
+   vec2vec_rotmat
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.dki`
+--------------------------
+.. automodule:: dipy.reconst.dki
+
+.. currentmodule:: dipy.reconst.dki
+.. autosummary::
+
+   DiffusionKurtosisFit
+   DiffusionKurtosisModel
+   ReconstModel
+   TensorFit
+   Wcons
+   Wrotate
+   Wrotate_element
+   apparent_kurtosis_coef
+   axial_kurtosis
+   carlson_rd
+   carlson_rf
+   cart2sphere
+   check_multi_b
+   decompose_tensor
+   design_matrix
+   directional_diffusion
+   directional_diffusion_variance
+   directional_kurtosis
+   dki_prediction
+   from_lower_triangular
+   get_sphere
+   kurtosis_maximum
+   local_maxima
+   lower_triangular
+   mean_diffusivity
+   mean_kurtosis
+   ndindex
+   ols_fit_dki
+   radial_kurtosis
+   sphere2cart
+   split_dki_param
+   vec_val_vect
+   wls_fit_dki
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.dki_micro`
+--------------------------------
+.. automodule:: dipy.reconst.dki_micro
+
+.. currentmodule:: dipy.reconst.dki_micro
+.. autosummary::
+
+   DiffusionKurtosisFit
+   DiffusionKurtosisModel
+   KurtosisMicrostructuralFit
+   KurtosisMicrostructureModel
+   axial_diffusivity
+   axonal_water_fraction
+   decompose_tensor
+   diffusion_components
+   directional_diffusion
+   directional_kurtosis
+   dkimicro_prediction
+   dti_design_matrix
+   from_lower_triangular
+   get_sphere
+   kurtosis_maximum
+   lower_triangular
+   mean_diffusivity
+   ndindex
+   radial_diffusivity
+   split_dki_param
+   tortuosity
+   trace
+   vec_val_vect
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.dsi`
+--------------------------
+.. automodule:: dipy.reconst.dsi
+
+.. currentmodule:: dipy.reconst.dsi
+.. autosummary::
+
+   Cache
+   DiffusionSpectrumDeconvFit
+   DiffusionSpectrumDeconvModel
+   DiffusionSpectrumFit
+   DiffusionSpectrumModel
+   OdfFit
+   OdfModel
+   LR_deconv
+   create_qspace
+   create_qtable
+   fftn
+   fftshift
+   gen_PSF
+   half_to_full_qspace
+   hanning_filter
+   ifftshift
+   map_coordinates
+   multi_voxel_fit
+   pdf_interp_coords
+   pdf_odf
+   project_hemisph_bvecs
+   threshold_propagator
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.dti`
+--------------------------
+.. automodule:: dipy.reconst.dti
+
+.. currentmodule:: dipy.reconst.dti
+.. autosummary::
+
+   ReconstModel
+   TensorFit
+   TensorModel
+   apparent_diffusion_coef
+   auto_attr
+   axial_diffusivity
+   color_fa
+   decompose_tensor
+   design_matrix
+   determinant
+   deviatoric
+   eig_from_lo_tri
+   fractional_anisotropy
+   from_lower_triangular
+   geodesic_anisotropy
+   get_sphere
+   gradient_table
+   isotropic
+   iter_fit_tensor
+   linearity
+   lower_triangular
+   mean_diffusivity
+   mode
+   nlls_fit_tensor
+   norm
+   ols_fit_tensor
+   pinv
+   planarity
+   quantize_evecs
+   radial_diffusivity
+   restore_fit_tensor
+   sphericity
+   tensor_prediction
+   trace
+   vec_val_vect
+   vector_norm
+   wls_fit_tensor
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.forecast`
+-------------------------------
+.. automodule:: dipy.reconst.forecast
+
+.. currentmodule:: dipy.reconst.forecast
+.. autosummary::
+
+   Cache
+   ForecastFit
+   ForecastModel
+   OdfFit
+   OdfModel
+   cart2sphere
+   csdeconv
+   find_signal_means
+   forecast_error_func
+   forecast_matrix
+   lb_forecast
+   leastsq
+   multi_voxel_fit
+   optional_package
+   psi_l
+   real_sph_harm
+   rho_matrix
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.fwdti`
+----------------------------
+.. automodule:: dipy.reconst.fwdti
+
+.. currentmodule:: dipy.reconst.fwdti
+.. autosummary::
+
+   FreeWaterTensorFit
+   FreeWaterTensorModel
+   ReconstModel
+   TensorFit
+   check_multi_b
+   cholesky_to_lower_triangular
+   decompose_tensor
+   design_matrix
+   from_lower_triangular
+   fwdti_prediction
+   lower_triangular
+   lower_triangular_to_cholesky
+   multi_voxel_fit
+   ndindex
+   nls_fit_tensor
+   nls_iter
+   vec_val_vect
+   wls_fit_tensor
+   wls_iter
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.gqi`
+--------------------------
+.. automodule:: dipy.reconst.gqi
+
+.. currentmodule:: dipy.reconst.gqi
+.. autosummary::
+
+   Cache
+   GeneralizedQSamplingFit
+   GeneralizedQSamplingModel
+   OdfFit
+   OdfModel
+   equatorial_maximum
+   equatorial_zone_vertices
+   gfa
+   local_maxima
+   multi_voxel_fit
+   normalize_qa
+   npa
+   odf_sum
+   patch_maximum
+   patch_sum
+   patch_vertices
+   polar_zone_vertices
+   remove_similar_vertices
+   squared_radial_component
+   triple_odf_maxima
+   upper_hemi_map
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.ivim`
+---------------------------
+.. automodule:: dipy.reconst.ivim
+
+.. currentmodule:: dipy.reconst.ivim
+.. autosummary::
+
+   IvimFit
+   IvimModelTRR
+   IvimModelVP
+   ReconstModel
+   IvimModel
+   differential_evolution
+   f_D_star_error
+   f_D_star_prediction
+   ivim_model_selector
+   ivim_prediction
+   least_squares
+   multi_voxel_fit
+   optional_package
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.mapmri`
+-----------------------------
+.. automodule:: dipy.reconst.mapmri
+
+.. currentmodule:: dipy.reconst.mapmri
+.. autosummary::
+
+   Cache
+   MapmriFit
+   MapmriModel
+   Optimizer
+   ReconstFit
+   ReconstModel
+   b_mat
+   b_mat_isotropic
+   binomialfloat
+   cart2sphere
+   create_rspace
+   delta
+   factorial2
+   gcv_cost_function
+   generalized_crossvalidation
+   generalized_crossvalidation_array
+   genlaguerre
+   gradient_table
+   hermite
+   isotropic_scale_factor
+   map_laplace_s
+   map_laplace_t
+   map_laplace_u
+   mapmri_STU_reg_matrices
+   mapmri_index_matrix
+   mapmri_isotropic_K_mu_dependent
+   mapmri_isotropic_K_mu_independent
+   mapmri_isotropic_M_mu_dependent
+   mapmri_isotropic_M_mu_independent
+   mapmri_isotropic_index_matrix
+   mapmri_isotropic_laplacian_reg_matrix
+   mapmri_isotropic_laplacian_reg_matrix_from_index_matrix
+   mapmri_isotropic_odf_matrix
+   mapmri_isotropic_odf_sh_matrix
+   mapmri_isotropic_phi_matrix
+   mapmri_isotropic_psi_matrix
+   mapmri_isotropic_radial_pdf_basis
+   mapmri_isotropic_radial_signal_basis
+   mapmri_laplacian_reg_matrix
+   mapmri_odf_matrix
+   mapmri_phi_1d
+   mapmri_phi_matrix
+   mapmri_psi_1d
+   mapmri_psi_matrix
+   mfactorial
+   multi_voxel_fit
+   optional_package
+   real_sph_harm
+   sfactorial
+   sph_harm_ind_list
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.mcsd`
+---------------------------
+.. automodule:: dipy.reconst.mcsd
+
+.. currentmodule:: dipy.reconst.mcsd
+.. autosummary::
+
+   MSDeconvFit
+   MultiShellDeconvModel
+   MultiShellResponse
+   QpFitter
+   multi_tissue_basis
+   multi_voxel_fit
+   optional_package
+   solve_qp
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.msdki`
+----------------------------
+.. automodule:: dipy.reconst.msdki
+
+.. currentmodule:: dipy.reconst.msdki
+.. autosummary::
+
+   MeanDiffusionKurtosisFit
+   MeanDiffusionKurtosisModel
+   ReconstModel
+   auto_attr
+   check_multi_b
+   design_matrix
+   mean_signal_bvalue
+   msdki_prediction
+   ndindex
+   round_bvals
+   unique_bvals
+   wls_fit_msdki
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.multi_voxel`
+----------------------------------
+.. automodule:: dipy.reconst.multi_voxel
+
+.. currentmodule:: dipy.reconst.multi_voxel
+.. autosummary::
+
+   CallableArray
+   MultiVoxelFit
+   ReconstFit
+   as_strided
+   multi_voxel_fit
+   ndindex
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.odf`
+--------------------------
+.. automodule:: dipy.reconst.odf
+
+.. currentmodule:: dipy.reconst.odf
+.. autosummary::
+
+   OdfFit
+   OdfModel
+   ReconstFit
+   ReconstModel
+   gfa
+   minmax_normalize
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.qtdmri`
+-----------------------------
+.. automodule:: dipy.reconst.qtdmri
+
+.. currentmodule:: dipy.reconst.qtdmri
+.. autosummary::
+
+   Cache
+   QtdmriFit
+   QtdmriModel
+   GCV_cost_function
+   H
+   angular_basis_EAP_opt
+   angular_basis_opt
+   cart2sphere
+   create_rt_space_grid
+   design_matrix_spatial
+   elastic_crossvalidation
+   factorial
+   factorial2
+   fmin_l_bfgs_b
+   generalized_crossvalidation
+   genlaguerre
+   gradient_table_from_gradient_strength_bvecs
+   l1_crossvalidation
+   multi_voxel_fit
+   optional_package
+   part1_reg_matrix_tau
+   part23_iso_reg_matrix_q
+   part23_reg_matrix_q
+   part23_reg_matrix_tau
+   part4_iso_reg_matrix_q
+   part4_reg_matrix_q
+   part4_reg_matrix_tau
+   qtdmri_anisotropic_scaling
+   qtdmri_eap_matrix
+   qtdmri_eap_matrix_
+   qtdmri_index_matrix
+   qtdmri_isotropic_eap_matrix
+   qtdmri_isotropic_eap_matrix_
+   qtdmri_isotropic_index_matrix
+   qtdmri_isotropic_laplacian_reg_matrix
+   qtdmri_isotropic_scaling
+   qtdmri_isotropic_signal_matrix
+   qtdmri_isotropic_signal_matrix_
+   qtdmri_isotropic_to_mapmri_matrix
+   qtdmri_laplacian_reg_matrix
+   qtdmri_mapmri_isotropic_normalization
+   qtdmri_mapmri_normalization
+   qtdmri_number_of_coefficients
+   qtdmri_signal_matrix
+   qtdmri_signal_matrix_
+   qtdmri_temporal_normalization
+   qtdmri_to_mapmri_matrix
+   radial_basis_EAP_opt
+   radial_basis_opt
+   real_sph_harm
+   temporal_basis
+   visualise_gradient_table_G_Delta_rainbow
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.sfm`
+--------------------------
+.. automodule:: dipy.reconst.sfm
+
+.. currentmodule:: dipy.reconst.sfm
+.. autosummary::
+
+   Cache
+   ExponentialIsotropicFit
+   ExponentialIsotropicModel
+   IsotropicFit
+   IsotropicModel
+   ReconstFit
+   ReconstModel
+   SparseFascicleFit
+   SparseFascicleModel
+   auto_attr
+   nanmean
+   optional_package
+   sfm_design_matrix
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.shm`
+--------------------------
+.. automodule:: dipy.reconst.shm
+
+.. currentmodule:: dipy.reconst.shm
+.. autosummary::
+
+   Cache
+   CsaOdfModel
+   LooseVersion
+   OdfFit
+   OdfModel
+   OpdtModel
+   QballBaseModel
+   QballModel
+   ResidualBootstrapWrapper
+   SphHarmFit
+   SphHarmModel
+   anisotropic_power
+   auto_attr
+   bootstrap_data_array
+   bootstrap_data_voxel
+   calculate_max_order
+   cart2sphere
+   concatenate
+   diag
+   diff
+   dot
+   empty
+   eye
+   forward_sdeconv_mat
+   gen_dirac
+   hat
+   lazy_index
+   lcr_matrix
+   lpn
+   normalize_data
+   order_from_ncoef
+   pinv
+   randint
+   real_sph_harm
+   real_sym_sh_basis
+   real_sym_sh_mrtrix
+   sf_to_sh
+   sh_to_rh
+   sh_to_sf
+   sh_to_sf_matrix
+   smooth_pinv
+   sph_harm_ind_list
+   spherical_harmonics
+   svd
+   unique
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.shore`
+----------------------------
+.. automodule:: dipy.reconst.shore
+
+.. currentmodule:: dipy.reconst.shore
+.. autosummary::
+
+   Cache
+   ShoreFit
+   ShoreModel
+   cart2sphere
+   create_rspace
+   factorial
+   genlaguerre
+   l_shore
+   multi_voxel_fit
+   n_shore
+   optional_package
+   real_sph_harm
+   shore_indices
+   shore_matrix
+   shore_matrix_odf
+   shore_matrix_pdf
+   shore_order
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`reconst.utils`
+----------------------------
+.. automodule:: dipy.reconst.utils
+
+.. currentmodule:: dipy.reconst.utils
+.. autosummary::
+
+   dki_design_matrix
+
+
+.. currentmodule:: dipy.reconst
+
+bench
+~~~~~
+
+.. autofunction:: bench
+
+test
+~~~~
+
+.. autofunction:: test
+
+
+.. currentmodule:: dipy.reconst.base
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+.. currentmodule:: dipy.reconst.benchmarks
+
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_bounding_box
+
+bench_bounding_box
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_bounding_box
+
+bounding_box
+~~~~~~~~~~~~
+
+.. autofunction:: bounding_box
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_csd
+
+
+:class:`ConstrainedSphericalDeconvModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ConstrainedSphericalDeconvModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`GradientTable`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: GradientTable
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+bench_csdeconv
+~~~~~~~~~~~~~~
+
+.. autofunction:: bench_csdeconv
+
+num_grad
+~~~~~~~~
+
+.. autofunction:: num_grad
+
+read_stanford_labels
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_stanford_labels
+
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_peaks
+
+bench_local_maxima
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_local_maxima
+
+local_maxima
+~~~~~~~~~~~~
+
+.. autofunction:: local_maxima
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+unique_edges
+~~~~~~~~~~~~
+
+.. autofunction:: unique_edges
+
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_squash
+
+bench_quick_squash
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_quick_squash
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+old_squash
+~~~~~~~~~~
+
+.. autofunction:: old_squash
+
+quick_squash
+~~~~~~~~~~~~
+
+.. autofunction:: quick_squash
+
+reduce
+~~~~~~
+
+.. autofunction:: reduce
+
+
+.. currentmodule:: dipy.reconst.benchmarks.bench_vec_val_sum
+
+bench_vec_val_vect
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_vec_val_vect
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+randn
+~~~~~
+
+.. autofunction:: randn
+
+vec_val_vect
+~~~~~~~~~~~~
+
+.. autofunction:: vec_val_vect
+
+with_einsum
+~~~~~~~~~~~
+
+.. autofunction:: with_einsum
+
+
+.. currentmodule:: dipy.reconst.cache
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+auto_attr
+~~~~~~~~~
+
+.. autofunction:: auto_attr
+
+
+.. currentmodule:: dipy.reconst.cross_validation
+
+coeff_of_determination
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: coeff_of_determination
+
+kfold_xval
+~~~~~~~~~~
+
+.. autofunction:: kfold_xval
+
+
+.. currentmodule:: dipy.reconst.csdeconv
+
+
+:class:`AxSymShResponse`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AxSymShResponse
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ConstrainedSDTModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ConstrainedSDTModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ConstrainedSphericalDeconvModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ConstrainedSphericalDeconvModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SphHarmFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SphHarmFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SphHarmModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SphHarmModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TensorModel`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TensorModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+auto_response
+~~~~~~~~~~~~~
+
+.. autofunction:: auto_response
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+csdeconv
+~~~~~~~~
+
+.. autofunction:: csdeconv
+
+estimate_response
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: estimate_response
+
+fa_inferior
+~~~~~~~~~~~
+
+.. autofunction:: fa_inferior
+
+fa_superior
+~~~~~~~~~~~
+
+.. autofunction:: fa_superior
+
+fa_trace_to_lambdas
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fa_trace_to_lambdas
+
+forward_sdeconv_mat
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: forward_sdeconv_mat
+
+forward_sdt_deconv_mat
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: forward_sdt_deconv_mat
+
+fractional_anisotropy
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fractional_anisotropy
+
+get_sphere
+~~~~~~~~~~
+
+.. autofunction:: get_sphere
+
+lazy_index
+~~~~~~~~~~
+
+.. autofunction:: lazy_index
+
+lpn
+~~~
+
+.. autofunction:: lpn
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+odf_deconv
+~~~~~~~~~~
+
+.. autofunction:: odf_deconv
+
+odf_sh_to_sharp
+~~~~~~~~~~~~~~~
+
+.. autofunction:: odf_sh_to_sharp
+
+peaks_from_model
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: peaks_from_model
+
+quad
+~~~~
+
+.. autofunction:: quad
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+real_sym_sh_basis
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: real_sym_sh_basis
+
+recursive_response
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: recursive_response
+
+response_from_mask
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: response_from_mask
+
+sh_to_rh
+~~~~~~~~
+
+.. autofunction:: sh_to_rh
+
+single_tensor
+~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor
+
+sph_harm_ind_list
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: sph_harm_ind_list
+
+vec2vec_rotmat
+~~~~~~~~~~~~~~
+
+.. autofunction:: vec2vec_rotmat
+
+
+.. currentmodule:: dipy.reconst.dki
+
+
+:class:`DiffusionKurtosisFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionKurtosisFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionKurtosisModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionKurtosisModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TensorFit`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TensorFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+Wcons
+~~~~~
+
+.. autofunction:: Wcons
+
+Wrotate
+~~~~~~~
+
+.. autofunction:: Wrotate
+
+Wrotate_element
+~~~~~~~~~~~~~~~
+
+.. autofunction:: Wrotate_element
+
+apparent_kurtosis_coef
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: apparent_kurtosis_coef
+
+axial_kurtosis
+~~~~~~~~~~~~~~
+
+.. autofunction:: axial_kurtosis
+
+carlson_rd
+~~~~~~~~~~
+
+.. autofunction:: carlson_rd
+
+carlson_rf
+~~~~~~~~~~
+
+.. autofunction:: carlson_rf
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+check_multi_b
+~~~~~~~~~~~~~
+
+.. autofunction:: check_multi_b
+
+decompose_tensor
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_tensor
+
+design_matrix
+~~~~~~~~~~~~~
+
+.. autofunction:: design_matrix
+
+directional_diffusion
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: directional_diffusion
+
+directional_diffusion_variance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: directional_diffusion_variance
+
+directional_kurtosis
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: directional_kurtosis
+
+dki_prediction
+~~~~~~~~~~~~~~
+
+.. autofunction:: dki_prediction
+
+from_lower_triangular
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: from_lower_triangular
+
+get_sphere
+~~~~~~~~~~
+
+.. autofunction:: get_sphere
+
+kurtosis_maximum
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: kurtosis_maximum
+
+local_maxima
+~~~~~~~~~~~~
+
+.. autofunction:: local_maxima
+
+lower_triangular
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: lower_triangular
+
+mean_diffusivity
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: mean_diffusivity
+
+mean_kurtosis
+~~~~~~~~~~~~~
+
+.. autofunction:: mean_kurtosis
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+ols_fit_dki
+~~~~~~~~~~~
+
+.. autofunction:: ols_fit_dki
+
+radial_kurtosis
+~~~~~~~~~~~~~~~
+
+.. autofunction:: radial_kurtosis
+
+sphere2cart
+~~~~~~~~~~~
+
+.. autofunction:: sphere2cart
+
+split_dki_param
+~~~~~~~~~~~~~~~
+
+.. autofunction:: split_dki_param
+
+vec_val_vect
+~~~~~~~~~~~~
+
+.. autofunction:: vec_val_vect
+
+wls_fit_dki
+~~~~~~~~~~~
+
+.. autofunction:: wls_fit_dki
+
+
+.. currentmodule:: dipy.reconst.dki_micro
+
+
+:class:`DiffusionKurtosisFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionKurtosisFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionKurtosisModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionKurtosisModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`KurtosisMicrostructuralFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: KurtosisMicrostructuralFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`KurtosisMicrostructureModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: KurtosisMicrostructureModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+axial_diffusivity
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: axial_diffusivity
+
+axonal_water_fraction
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: axonal_water_fraction
+
+decompose_tensor
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_tensor
+
+diffusion_components
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: diffusion_components
+
+directional_diffusion
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: directional_diffusion
+
+directional_kurtosis
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: directional_kurtosis
+
+dkimicro_prediction
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: dkimicro_prediction
+
+dti_design_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: dti_design_matrix
+
+from_lower_triangular
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: from_lower_triangular
+
+get_sphere
+~~~~~~~~~~
+
+.. autofunction:: get_sphere
+
+kurtosis_maximum
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: kurtosis_maximum
+
+lower_triangular
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: lower_triangular
+
+mean_diffusivity
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: mean_diffusivity
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+radial_diffusivity
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: radial_diffusivity
+
+split_dki_param
+~~~~~~~~~~~~~~~
+
+.. autofunction:: split_dki_param
+
+tortuosity
+~~~~~~~~~~
+
+.. autofunction:: tortuosity
+
+trace
+~~~~~
+
+.. autofunction:: trace
+
+vec_val_vect
+~~~~~~~~~~~~
+
+.. autofunction:: vec_val_vect
+
+
+.. currentmodule:: dipy.reconst.dsi
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionSpectrumDeconvFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionSpectrumDeconvFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionSpectrumDeconvModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionSpectrumDeconvModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionSpectrumFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionSpectrumFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffusionSpectrumModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffusionSpectrumModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfFit`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfModel`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+LR_deconv
+~~~~~~~~~
+
+.. autofunction:: LR_deconv
+
+create_qspace
+~~~~~~~~~~~~~
+
+.. autofunction:: create_qspace
+
+create_qtable
+~~~~~~~~~~~~~
+
+.. autofunction:: create_qtable
+
+fftn
+~~~~
+
+.. autofunction:: fftn
+
+fftshift
+~~~~~~~~
+
+.. autofunction:: fftshift
+
+gen_PSF
+~~~~~~~
+
+.. autofunction:: gen_PSF
+
+half_to_full_qspace
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: half_to_full_qspace
+
+hanning_filter
+~~~~~~~~~~~~~~
+
+.. autofunction:: hanning_filter
+
+ifftshift
+~~~~~~~~~
+
+.. autofunction:: ifftshift
+
+map_coordinates
+~~~~~~~~~~~~~~~
+
+.. autofunction:: map_coordinates
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+pdf_interp_coords
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: pdf_interp_coords
+
+pdf_odf
+~~~~~~~
+
+.. autofunction:: pdf_odf
+
+project_hemisph_bvecs
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: project_hemisph_bvecs
+
+threshold_propagator
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: threshold_propagator
+
+
+.. currentmodule:: dipy.reconst.dti
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TensorFit`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TensorFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TensorModel`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TensorModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apparent_diffusion_coef
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: apparent_diffusion_coef
+
+auto_attr
+~~~~~~~~~
+
+.. autofunction:: auto_attr
+
+axial_diffusivity
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: axial_diffusivity
+
+color_fa
+~~~~~~~~
+
+.. autofunction:: color_fa
+
+decompose_tensor
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_tensor
+
+design_matrix
+~~~~~~~~~~~~~
+
+.. autofunction:: design_matrix
+
+determinant
+~~~~~~~~~~~
+
+.. autofunction:: determinant
+
+deviatoric
+~~~~~~~~~~
+
+.. autofunction:: deviatoric
+
+eig_from_lo_tri
+~~~~~~~~~~~~~~~
+
+.. autofunction:: eig_from_lo_tri
+
+fractional_anisotropy
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fractional_anisotropy
+
+from_lower_triangular
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: from_lower_triangular
+
+geodesic_anisotropy
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: geodesic_anisotropy
+
+get_sphere
+~~~~~~~~~~
+
+.. autofunction:: get_sphere
+
+gradient_table
+~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table
+
+isotropic
+~~~~~~~~~
+
+.. autofunction:: isotropic
+
+iter_fit_tensor
+~~~~~~~~~~~~~~~
+
+.. autofunction:: iter_fit_tensor
+
+linearity
+~~~~~~~~~
+
+.. autofunction:: linearity
+
+lower_triangular
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: lower_triangular
+
+mean_diffusivity
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: mean_diffusivity
+
+mode
+~~~~
+
+.. autofunction:: mode
+
+nlls_fit_tensor
+~~~~~~~~~~~~~~~
+
+.. autofunction:: nlls_fit_tensor
+
+norm
+~~~~
+
+.. autofunction:: norm
+
+ols_fit_tensor
+~~~~~~~~~~~~~~
+
+.. autofunction:: ols_fit_tensor
+
+pinv
+~~~~
+
+.. autofunction:: pinv
+
+planarity
+~~~~~~~~~
+
+.. autofunction:: planarity
+
+quantize_evecs
+~~~~~~~~~~~~~~
+
+.. autofunction:: quantize_evecs
+
+radial_diffusivity
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: radial_diffusivity
+
+restore_fit_tensor
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: restore_fit_tensor
+
+sphericity
+~~~~~~~~~~
+
+.. autofunction:: sphericity
+
+tensor_prediction
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: tensor_prediction
+
+trace
+~~~~~
+
+.. autofunction:: trace
+
+vec_val_vect
+~~~~~~~~~~~~
+
+.. autofunction:: vec_val_vect
+
+vector_norm
+~~~~~~~~~~~
+
+.. autofunction:: vector_norm
+
+wls_fit_tensor
+~~~~~~~~~~~~~~
+
+.. autofunction:: wls_fit_tensor
+
+
+.. currentmodule:: dipy.reconst.forecast
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ForecastFit`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ForecastFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ForecastModel`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ForecastModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfFit`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfModel`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+csdeconv
+~~~~~~~~
+
+.. autofunction:: csdeconv
+
+find_signal_means
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: find_signal_means
+
+forecast_error_func
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: forecast_error_func
+
+forecast_matrix
+~~~~~~~~~~~~~~~
+
+.. autofunction:: forecast_matrix
+
+lb_forecast
+~~~~~~~~~~~
+
+.. autofunction:: lb_forecast
+
+leastsq
+~~~~~~~
+
+.. autofunction:: leastsq
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+psi_l
+~~~~~
+
+.. autofunction:: psi_l
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+rho_matrix
+~~~~~~~~~~
+
+.. autofunction:: rho_matrix
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.reconst.fwdti
+
+
+:class:`FreeWaterTensorFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: FreeWaterTensorFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`FreeWaterTensorModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: FreeWaterTensorModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TensorFit`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TensorFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+check_multi_b
+~~~~~~~~~~~~~
+
+.. autofunction:: check_multi_b
+
+cholesky_to_lower_triangular
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: cholesky_to_lower_triangular
+
+decompose_tensor
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_tensor
+
+design_matrix
+~~~~~~~~~~~~~
+
+.. autofunction:: design_matrix
+
+from_lower_triangular
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: from_lower_triangular
+
+fwdti_prediction
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: fwdti_prediction
+
+lower_triangular
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: lower_triangular
+
+lower_triangular_to_cholesky
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: lower_triangular_to_cholesky
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+nls_fit_tensor
+~~~~~~~~~~~~~~
+
+.. autofunction:: nls_fit_tensor
+
+nls_iter
+~~~~~~~~
+
+.. autofunction:: nls_iter
+
+vec_val_vect
+~~~~~~~~~~~~
+
+.. autofunction:: vec_val_vect
+
+wls_fit_tensor
+~~~~~~~~~~~~~~
+
+.. autofunction:: wls_fit_tensor
+
+wls_iter
+~~~~~~~~
+
+.. autofunction:: wls_iter
+
+
+.. currentmodule:: dipy.reconst.gqi
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`GeneralizedQSamplingFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: GeneralizedQSamplingFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`GeneralizedQSamplingModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: GeneralizedQSamplingModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfFit`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfModel`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+equatorial_maximum
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: equatorial_maximum
+
+equatorial_zone_vertices
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: equatorial_zone_vertices
+
+gfa
+~~~
+
+.. autofunction:: gfa
+
+local_maxima
+~~~~~~~~~~~~
+
+.. autofunction:: local_maxima
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+normalize_qa
+~~~~~~~~~~~~
+
+.. autofunction:: normalize_qa
+
+npa
+~~~
+
+.. autofunction:: npa
+
+odf_sum
+~~~~~~~
+
+.. autofunction:: odf_sum
+
+patch_maximum
+~~~~~~~~~~~~~
+
+.. autofunction:: patch_maximum
+
+patch_sum
+~~~~~~~~~
+
+.. autofunction:: patch_sum
+
+patch_vertices
+~~~~~~~~~~~~~~
+
+.. autofunction:: patch_vertices
+
+polar_zone_vertices
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: polar_zone_vertices
+
+remove_similar_vertices
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: remove_similar_vertices
+
+squared_radial_component
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: squared_radial_component
+
+triple_odf_maxima
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: triple_odf_maxima
+
+upper_hemi_map
+~~~~~~~~~~~~~~
+
+.. autofunction:: upper_hemi_map
+
+
+.. currentmodule:: dipy.reconst.ivim
+
+
+:class:`IvimFit`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IvimFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IvimModelTRR`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IvimModelTRR
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IvimModelVP`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IvimModelVP
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+IvimModel
+~~~~~~~~~
+
+.. autofunction:: IvimModel
+
+differential_evolution
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: differential_evolution
+
+f_D_star_error
+~~~~~~~~~~~~~~
+
+.. autofunction:: f_D_star_error
+
+f_D_star_prediction
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: f_D_star_prediction
+
+ivim_model_selector
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: ivim_model_selector
+
+ivim_prediction
+~~~~~~~~~~~~~~~
+
+.. autofunction:: ivim_prediction
+
+least_squares
+~~~~~~~~~~~~~
+
+.. autofunction:: least_squares
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+
+.. currentmodule:: dipy.reconst.mapmri
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MapmriFit`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MapmriFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MapmriModel`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MapmriModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Optimizer`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Optimizer
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+b_mat
+~~~~~
+
+.. autofunction:: b_mat
+
+b_mat_isotropic
+~~~~~~~~~~~~~~~
+
+.. autofunction:: b_mat_isotropic
+
+binomialfloat
+~~~~~~~~~~~~~
+
+.. autofunction:: binomialfloat
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+create_rspace
+~~~~~~~~~~~~~
+
+.. autofunction:: create_rspace
+
+delta
+~~~~~
+
+.. autofunction:: delta
+
+factorial2
+~~~~~~~~~~
+
+.. autofunction:: factorial2
+
+gcv_cost_function
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: gcv_cost_function
+
+generalized_crossvalidation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generalized_crossvalidation
+
+generalized_crossvalidation_array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generalized_crossvalidation_array
+
+genlaguerre
+~~~~~~~~~~~
+
+.. autofunction:: genlaguerre
+
+gradient_table
+~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table
+
+hermite
+~~~~~~~
+
+.. autofunction:: hermite
+
+isotropic_scale_factor
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: isotropic_scale_factor
+
+map_laplace_s
+~~~~~~~~~~~~~
+
+.. autofunction:: map_laplace_s
+
+map_laplace_t
+~~~~~~~~~~~~~
+
+.. autofunction:: map_laplace_t
+
+map_laplace_u
+~~~~~~~~~~~~~
+
+.. autofunction:: map_laplace_u
+
+mapmri_STU_reg_matrices
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_STU_reg_matrices
+
+mapmri_index_matrix
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_index_matrix
+
+mapmri_isotropic_K_mu_dependent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_K_mu_dependent
+
+mapmri_isotropic_K_mu_independent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_K_mu_independent
+
+mapmri_isotropic_M_mu_dependent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_M_mu_dependent
+
+mapmri_isotropic_M_mu_independent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_M_mu_independent
+
+mapmri_isotropic_index_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_index_matrix
+
+mapmri_isotropic_laplacian_reg_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_laplacian_reg_matrix
+
+mapmri_isotropic_laplacian_reg_matrix_from_index_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_laplacian_reg_matrix_from_index_matrix
+
+mapmri_isotropic_odf_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_odf_matrix
+
+mapmri_isotropic_odf_sh_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_odf_sh_matrix
+
+mapmri_isotropic_phi_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_phi_matrix
+
+mapmri_isotropic_psi_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_psi_matrix
+
+mapmri_isotropic_radial_pdf_basis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_radial_pdf_basis
+
+mapmri_isotropic_radial_signal_basis
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_isotropic_radial_signal_basis
+
+mapmri_laplacian_reg_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_laplacian_reg_matrix
+
+mapmri_odf_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_odf_matrix
+
+mapmri_phi_1d
+~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_phi_1d
+
+mapmri_phi_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_phi_matrix
+
+mapmri_psi_1d
+~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_psi_1d
+
+mapmri_psi_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mapmri_psi_matrix
+
+mfactorial
+~~~~~~~~~~
+
+.. autofunction:: mfactorial
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+sfactorial
+~~~~~~~~~~
+
+.. autofunction:: sfactorial
+
+sph_harm_ind_list
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: sph_harm_ind_list
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.reconst.mcsd
+
+
+:class:`MSDeconvFit`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MSDeconvFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MultiShellDeconvModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MultiShellDeconvModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MultiShellResponse`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MultiShellResponse
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QpFitter`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QpFitter
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+multi_tissue_basis
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tissue_basis
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+solve_qp
+~~~~~~~~
+
+.. autofunction:: solve_qp
+
+
+.. currentmodule:: dipy.reconst.msdki
+
+
+:class:`MeanDiffusionKurtosisFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MeanDiffusionKurtosisFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MeanDiffusionKurtosisModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MeanDiffusionKurtosisModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+auto_attr
+~~~~~~~~~
+
+.. autofunction:: auto_attr
+
+check_multi_b
+~~~~~~~~~~~~~
+
+.. autofunction:: check_multi_b
+
+design_matrix
+~~~~~~~~~~~~~
+
+.. autofunction:: design_matrix
+
+mean_signal_bvalue
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: mean_signal_bvalue
+
+msdki_prediction
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: msdki_prediction
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+round_bvals
+~~~~~~~~~~~
+
+.. autofunction:: round_bvals
+
+unique_bvals
+~~~~~~~~~~~~
+
+.. autofunction:: unique_bvals
+
+wls_fit_msdki
+~~~~~~~~~~~~~
+
+.. autofunction:: wls_fit_msdki
+
+
+.. currentmodule:: dipy.reconst.multi_voxel
+
+
+:class:`CallableArray`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: CallableArray
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MultiVoxelFit`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MultiVoxelFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+as_strided
+~~~~~~~~~~
+
+.. autofunction:: as_strided
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+ndindex
+~~~~~~~
+
+.. autofunction:: ndindex
+
+
+.. currentmodule:: dipy.reconst.odf
+
+
+:class:`OdfFit`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfModel`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+gfa
+~~~
+
+.. autofunction:: gfa
+
+minmax_normalize
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: minmax_normalize
+
+
+.. currentmodule:: dipy.reconst.qtdmri
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QtdmriFit`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QtdmriFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QtdmriModel`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QtdmriModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+GCV_cost_function
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: GCV_cost_function
+
+H
+~
+
+.. autofunction:: H
+
+angular_basis_EAP_opt
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: angular_basis_EAP_opt
+
+angular_basis_opt
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: angular_basis_opt
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+create_rt_space_grid
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_rt_space_grid
+
+design_matrix_spatial
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: design_matrix_spatial
+
+elastic_crossvalidation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: elastic_crossvalidation
+
+factorial
+~~~~~~~~~
+
+.. autofunction:: factorial
+
+factorial2
+~~~~~~~~~~
+
+.. autofunction:: factorial2
+
+fmin_l_bfgs_b
+~~~~~~~~~~~~~
+
+.. autofunction:: fmin_l_bfgs_b
+
+generalized_crossvalidation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generalized_crossvalidation
+
+genlaguerre
+~~~~~~~~~~~
+
+.. autofunction:: genlaguerre
+
+gradient_table_from_gradient_strength_bvecs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table_from_gradient_strength_bvecs
+
+l1_crossvalidation
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: l1_crossvalidation
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+part1_reg_matrix_tau
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part1_reg_matrix_tau
+
+part23_iso_reg_matrix_q
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part23_iso_reg_matrix_q
+
+part23_reg_matrix_q
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part23_reg_matrix_q
+
+part23_reg_matrix_tau
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part23_reg_matrix_tau
+
+part4_iso_reg_matrix_q
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part4_iso_reg_matrix_q
+
+part4_reg_matrix_q
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part4_reg_matrix_q
+
+part4_reg_matrix_tau
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: part4_reg_matrix_tau
+
+qtdmri_anisotropic_scaling
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_anisotropic_scaling
+
+qtdmri_eap_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_eap_matrix
+
+qtdmri_eap_matrix_
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_eap_matrix_
+
+qtdmri_index_matrix
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_index_matrix
+
+qtdmri_isotropic_eap_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_eap_matrix
+
+qtdmri_isotropic_eap_matrix_
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_eap_matrix_
+
+qtdmri_isotropic_index_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_index_matrix
+
+qtdmri_isotropic_laplacian_reg_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_laplacian_reg_matrix
+
+qtdmri_isotropic_scaling
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_scaling
+
+qtdmri_isotropic_signal_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_signal_matrix
+
+qtdmri_isotropic_signal_matrix_
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_signal_matrix_
+
+qtdmri_isotropic_to_mapmri_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_isotropic_to_mapmri_matrix
+
+qtdmri_laplacian_reg_matrix
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_laplacian_reg_matrix
+
+qtdmri_mapmri_isotropic_normalization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_mapmri_isotropic_normalization
+
+qtdmri_mapmri_normalization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_mapmri_normalization
+
+qtdmri_number_of_coefficients
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_number_of_coefficients
+
+qtdmri_signal_matrix
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_signal_matrix
+
+qtdmri_signal_matrix_
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_signal_matrix_
+
+qtdmri_temporal_normalization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_temporal_normalization
+
+qtdmri_to_mapmri_matrix
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: qtdmri_to_mapmri_matrix
+
+radial_basis_EAP_opt
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: radial_basis_EAP_opt
+
+radial_basis_opt
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: radial_basis_opt
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+temporal_basis
+~~~~~~~~~~~~~~
+
+.. autofunction:: temporal_basis
+
+visualise_gradient_table_G_Delta_rainbow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: visualise_gradient_table_G_Delta_rainbow
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.reconst.sfm
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ExponentialIsotropicFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ExponentialIsotropicFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ExponentialIsotropicModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ExponentialIsotropicModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IsotropicFit`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IsotropicFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IsotropicModel`
+~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IsotropicModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SparseFascicleFit`
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SparseFascicleFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SparseFascicleModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SparseFascicleModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+auto_attr
+~~~~~~~~~
+
+.. autofunction:: auto_attr
+
+nanmean
+~~~~~~~
+
+.. autofunction:: nanmean
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+sfm_design_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: sfm_design_matrix
+
+
+.. currentmodule:: dipy.reconst.shm
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`CsaOdfModel`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: CsaOdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`LooseVersion`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: LooseVersion
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfFit`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OdfModel`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OdfModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`OpdtModel`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: OpdtModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QballBaseModel`
+~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QballBaseModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QballModel`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QballModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ResidualBootstrapWrapper`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ResidualBootstrapWrapper
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SphHarmFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SphHarmFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SphHarmModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SphHarmModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+anisotropic_power
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: anisotropic_power
+
+auto_attr
+~~~~~~~~~
+
+.. autofunction:: auto_attr
+
+bootstrap_data_array
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bootstrap_data_array
+
+bootstrap_data_voxel
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bootstrap_data_voxel
+
+calculate_max_order
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: calculate_max_order
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+concatenate
+~~~~~~~~~~~
+
+.. autofunction:: concatenate
+
+diag
+~~~~
+
+.. autofunction:: diag
+
+diff
+~~~~
+
+.. autofunction:: diff
+
+dot
+~~~
+
+.. autofunction:: dot
+
+empty
+~~~~~
+
+.. autofunction:: empty
+
+eye
+~~~
+
+.. autofunction:: eye
+
+forward_sdeconv_mat
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: forward_sdeconv_mat
+
+gen_dirac
+~~~~~~~~~
+
+.. autofunction:: gen_dirac
+
+hat
+~~~
+
+.. autofunction:: hat
+
+lazy_index
+~~~~~~~~~~
+
+.. autofunction:: lazy_index
+
+lcr_matrix
+~~~~~~~~~~
+
+.. autofunction:: lcr_matrix
+
+lpn
+~~~
+
+.. autofunction:: lpn
+
+normalize_data
+~~~~~~~~~~~~~~
+
+.. autofunction:: normalize_data
+
+order_from_ncoef
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: order_from_ncoef
+
+pinv
+~~~~
+
+.. autofunction:: pinv
+
+randint
+~~~~~~~
+
+.. autofunction:: randint
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+real_sym_sh_basis
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: real_sym_sh_basis
+
+real_sym_sh_mrtrix
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: real_sym_sh_mrtrix
+
+sf_to_sh
+~~~~~~~~
+
+.. autofunction:: sf_to_sh
+
+sh_to_rh
+~~~~~~~~
+
+.. autofunction:: sh_to_rh
+
+sh_to_sf
+~~~~~~~~
+
+.. autofunction:: sh_to_sf
+
+sh_to_sf_matrix
+~~~~~~~~~~~~~~~
+
+.. autofunction:: sh_to_sf_matrix
+
+smooth_pinv
+~~~~~~~~~~~
+
+.. autofunction:: smooth_pinv
+
+sph_harm_ind_list
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: sph_harm_ind_list
+
+spherical_harmonics
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: spherical_harmonics
+
+svd
+~~~
+
+.. autofunction:: svd
+
+unique
+~~~~~~
+
+.. autofunction:: unique
+
+
+.. currentmodule:: dipy.reconst.shore
+
+
+:class:`Cache`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cache
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ShoreFit`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ShoreFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ShoreModel`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ShoreModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+cart2sphere
+~~~~~~~~~~~
+
+.. autofunction:: cart2sphere
+
+create_rspace
+~~~~~~~~~~~~~
+
+.. autofunction:: create_rspace
+
+factorial
+~~~~~~~~~
+
+.. autofunction:: factorial
+
+genlaguerre
+~~~~~~~~~~~
+
+.. autofunction:: genlaguerre
+
+l_shore
+~~~~~~~
+
+.. autofunction:: l_shore
+
+multi_voxel_fit
+~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_voxel_fit
+
+n_shore
+~~~~~~~
+
+.. autofunction:: n_shore
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+real_sph_harm
+~~~~~~~~~~~~~
+
+.. autofunction:: real_sph_harm
+
+shore_indices
+~~~~~~~~~~~~~
+
+.. autofunction:: shore_indices
+
+shore_matrix
+~~~~~~~~~~~~
+
+.. autofunction:: shore_matrix
+
+shore_matrix_odf
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: shore_matrix_odf
+
+shore_matrix_pdf
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: shore_matrix_pdf
+
+shore_order
+~~~~~~~~~~~
+
+.. autofunction:: shore_order
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.reconst.utils
+
+dki_design_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: dki_design_matrix
+

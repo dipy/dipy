@@ -1,0 +1,933 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`segment`
+==============
+.. automodule:: dipy.segment
+
+.. currentmodule:: dipy.segment
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.benchmarks`
+---------------------------------
+.. automodule:: dipy.segment.benchmarks
+
+.. currentmodule:: dipy.segment.benchmarks
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.benchmarks.bench_quickbundles`
+----------------------------------------------------
+.. automodule:: dipy.segment.benchmarks.bench_quickbundles
+
+.. currentmodule:: dipy.segment.benchmarks.bench_quickbundles
+.. autosummary::
+
+   MDFpy
+   Metric
+   QB_New
+   Streamlines
+   assert_array_equal
+   assert_arrays_equal
+   assert_equal
+   bench_quickbundles
+   get_fnames
+   load_tractogram
+   measure
+   set_number_of_points
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.bundles`
+------------------------------
+.. automodule:: dipy.segment.bundles
+
+.. currentmodule:: dipy.segment.bundles
+.. autosummary::
+
+   BundleMinDistanceAsymmetricMetric
+   BundleMinDistanceMetric
+   BundleSumDistanceMatrixMetric
+   RecoBundles
+   StreamlineLinearRegistration
+   Streamlines
+   chain
+   apply_affine
+   bundle_adjacency
+   bundles_distances_mam
+   bundles_distances_mdf
+   check_range
+   length
+   nbytes
+   qbx_and_merge
+   select_random_set_of_streamlines
+   set_number_of_points
+   time
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.clustering`
+---------------------------------
+.. automodule:: dipy.segment.clustering
+
+.. currentmodule:: dipy.segment.clustering
+.. autosummary::
+
+   ABCMeta
+   AveragePointwiseEuclideanMetric
+   Cluster
+   ClusterCentroid
+   ClusterMap
+   ClusterMapCentroid
+   Clustering
+   Identity
+   Metric
+   MinimumAverageDirectFlipMetric
+   QuickBundles
+   QuickBundlesX
+   ResampleFeature
+   TreeCluster
+   TreeClusterMap
+   abstractmethod
+   nbytes
+   qbx_and_merge
+   set_number_of_points
+   time
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.mask`
+---------------------------
+.. automodule:: dipy.segment.mask
+
+.. currentmodule:: dipy.segment.mask
+.. autosummary::
+
+   applymask
+   binary_dilation
+   bounding_box
+   clean_cc_mask
+   color_fa
+   crop
+   fractional_anisotropy
+   generate_binary_structure
+   median_filter
+   median_otsu
+   multi_median
+   otsu
+   segment_from_cfa
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.metric`
+-----------------------------
+.. automodule:: dipy.segment.metric
+
+.. currentmodule:: dipy.segment.metric
+.. autosummary::
+
+   ArcLengthFeature
+   AveragePointwiseEuclideanMetric
+   CenterOfMassFeature
+   CosineMetric
+   EuclideanMetric
+   Feature
+   IdentityFeature
+   Metric
+   MidpointFeature
+   MinimumAverageDirectFlipMetric
+   ResampleFeature
+   SumPointwiseEuclideanMetric
+   VectorOfEndpointsFeature
+   dist
+   distance_matrix
+   mdf
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.threshold`
+--------------------------------
+.. automodule:: dipy.segment.threshold
+
+.. currentmodule:: dipy.segment.threshold
+.. autosummary::
+
+   otsu
+   upper_bound_by_percent
+   upper_bound_by_rate
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`segment.tissue`
+-----------------------------
+.. automodule:: dipy.segment.tissue
+
+.. currentmodule:: dipy.segment.tissue
+.. autosummary::
+
+   ConstantObservationModel
+   IteratedConditionalModes
+   TissueClassifierHMRF
+   add_noise
+
+
+.. currentmodule:: dipy.segment
+
+
+.. currentmodule:: dipy.segment.benchmarks
+
+
+.. currentmodule:: dipy.segment.benchmarks.bench_quickbundles
+
+
+:class:`MDFpy`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: MDFpy
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Metric`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Metric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QB_New`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QB_New
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+assert_array_equal
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: assert_array_equal
+
+assert_arrays_equal
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: assert_arrays_equal
+
+assert_equal
+~~~~~~~~~~~~
+
+.. autofunction:: assert_equal
+
+bench_quickbundles
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_quickbundles
+
+get_fnames
+~~~~~~~~~~
+
+.. autofunction:: get_fnames
+
+load_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: load_tractogram
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+
+.. currentmodule:: dipy.segment.bundles
+
+
+:class:`BundleMinDistanceAsymmetricMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleMinDistanceAsymmetricMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`BundleMinDistanceMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleMinDistanceMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`BundleSumDistanceMatrixMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleSumDistanceMatrixMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`RecoBundles`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: RecoBundles
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StreamlineLinearRegistration`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StreamlineLinearRegistration
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`chain`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: chain
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apply_affine
+~~~~~~~~~~~~
+
+.. autofunction:: apply_affine
+
+bundle_adjacency
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_adjacency
+
+bundles_distances_mam
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundles_distances_mam
+
+bundles_distances_mdf
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundles_distances_mdf
+
+check_range
+~~~~~~~~~~~
+
+.. autofunction:: check_range
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+nbytes
+~~~~~~
+
+.. autofunction:: nbytes
+
+qbx_and_merge
+~~~~~~~~~~~~~
+
+.. autofunction:: qbx_and_merge
+
+select_random_set_of_streamlines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: select_random_set_of_streamlines
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+time
+~~~~
+
+.. autofunction:: time
+
+
+.. currentmodule:: dipy.segment.clustering
+
+
+:class:`ABCMeta`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ABCMeta
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`AveragePointwiseEuclideanMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AveragePointwiseEuclideanMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Cluster`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Cluster
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ClusterCentroid`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ClusterCentroid
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ClusterMap`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ClusterMap
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ClusterMapCentroid`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ClusterMapCentroid
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Clustering`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Clustering
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Identity`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Identity
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Metric`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Metric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MinimumAverageDirectFlipMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MinimumAverageDirectFlipMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QuickBundles`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QuickBundles
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QuickBundlesX`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QuickBundlesX
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ResampleFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ResampleFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TreeCluster`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TreeCluster
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TreeClusterMap`
+~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TreeClusterMap
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+abstractmethod
+~~~~~~~~~~~~~~
+
+.. autofunction:: abstractmethod
+
+nbytes
+~~~~~~
+
+.. autofunction:: nbytes
+
+qbx_and_merge
+~~~~~~~~~~~~~
+
+.. autofunction:: qbx_and_merge
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+time
+~~~~
+
+.. autofunction:: time
+
+
+.. currentmodule:: dipy.segment.mask
+
+applymask
+~~~~~~~~~
+
+.. autofunction:: applymask
+
+binary_dilation
+~~~~~~~~~~~~~~~
+
+.. autofunction:: binary_dilation
+
+bounding_box
+~~~~~~~~~~~~
+
+.. autofunction:: bounding_box
+
+clean_cc_mask
+~~~~~~~~~~~~~
+
+.. autofunction:: clean_cc_mask
+
+color_fa
+~~~~~~~~
+
+.. autofunction:: color_fa
+
+crop
+~~~~
+
+.. autofunction:: crop
+
+fractional_anisotropy
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: fractional_anisotropy
+
+generate_binary_structure
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generate_binary_structure
+
+median_filter
+~~~~~~~~~~~~~
+
+.. autofunction:: median_filter
+
+median_otsu
+~~~~~~~~~~~
+
+.. autofunction:: median_otsu
+
+multi_median
+~~~~~~~~~~~~
+
+.. autofunction:: multi_median
+
+otsu
+~~~~
+
+.. autofunction:: otsu
+
+segment_from_cfa
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: segment_from_cfa
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.segment.metric
+
+
+:class:`ArcLengthFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ArcLengthFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`AveragePointwiseEuclideanMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AveragePointwiseEuclideanMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`CenterOfMassFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: CenterOfMassFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`CosineMetric`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: CosineMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`EuclideanMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: EuclideanMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Feature`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Feature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IdentityFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IdentityFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Metric`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Metric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MidpointFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MidpointFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MinimumAverageDirectFlipMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MinimumAverageDirectFlipMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ResampleFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ResampleFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SumPointwiseEuclideanMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SumPointwiseEuclideanMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`VectorOfEndpointsFeature`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: VectorOfEndpointsFeature
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+dist
+~~~~
+
+.. autofunction:: dist
+
+distance_matrix
+~~~~~~~~~~~~~~~
+
+.. autofunction:: distance_matrix
+
+mdf
+~~~
+
+.. autofunction:: mdf
+
+
+.. currentmodule:: dipy.segment.threshold
+
+otsu
+~~~~
+
+.. autofunction:: otsu
+
+upper_bound_by_percent
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: upper_bound_by_percent
+
+upper_bound_by_rate
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: upper_bound_by_rate
+
+
+.. currentmodule:: dipy.segment.tissue
+
+
+:class:`ConstantObservationModel`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ConstantObservationModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IteratedConditionalModes`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IteratedConditionalModes
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`TissueClassifierHMRF`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: TissueClassifierHMRF
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+add_noise
+~~~~~~~~~
+
+.. autofunction:: add_noise
+

@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Set up your fork" href="set_up_fork.html" />
+    <link rel="prev" title="Git for development" href="git_development.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../../index.html">
+  <img src="../../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="set_up_fork.html" title="Set up your fork"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="git_development.html" title="Git for development"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" >Working with DIPY source code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="git_development.html" accesskey="U">Git for development</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../../documentation.html">Documentation</a></li>
+    <li><a href="../index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Making your own copy (fork) of DIPY</a><ul>
+<li><a class="reference internal" href="#set-up-and-configure-a-github-account">Set up and configure a github account</a></li>
+<li><a class="reference internal" href="#create-your-own-forked-copy-of-dipy">Create your own forked copy of DIPY</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="git_development.html"
+                        title="previous chapter">Git for development</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="set_up_fork.html"
+                        title="next chapter">Set up your fork</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/devel/gitwash/forking_hell.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="making-your-own-copy-fork-of-dipy">
+<span id="forking"></span><h1>Making your own copy (fork) of DIPY<a class="headerlink" href="#making-your-own-copy-fork-of-dipy" title="Permalink to this headline">¶</a></h1>
+<p>You need to do this only once. The instructions here are very similar
+to the instructions at <a class="reference external" href="http://help.github.com/forking/">http://help.github.com/forking/</a> — please see
+that page for more detail. We’re repeating some of it here just to give the
+specifics for the <a class="reference external" href="http://nipy.org/dipy">DIPY</a> project, and to suggest some default names.</p>
+<div class="section" id="set-up-and-configure-a-github-account">
+<h2>Set up and configure a github account<a class="headerlink" href="#set-up-and-configure-a-github-account" title="Permalink to this headline">¶</a></h2>
+<p>If you don’t have a github account, go to the github page, and make one.</p>
+<p>You then need to configure your account to allow write access — see
+the <code class="docutils literal notranslate"><span class="pre">Generating</span> <span class="pre">SSH</span> <span class="pre">keys</span></code> help on <a class="reference external" href="http://help.github.com">github help</a>.</p>
+</div>
+<div class="section" id="create-your-own-forked-copy-of-dipy">
+<h2>Create your own forked copy of <a class="reference external" href="http://nipy.org/dipy">DIPY</a><a class="headerlink" href="#create-your-own-forked-copy-of-dipy" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p>Log into your github account.</p></li>
+<li><p>Go to the <a class="reference external" href="http://nipy.org/dipy">dipy</a> github home at <a class="reference external" href="https://github.com/nipy/dipy">dipy github</a>.</p></li>
+<li><p>Click on the <em>Fork</em> button:</p>
+<img alt="../../_images/forking_button.png" src="../../_images/forking_button.png" />
+<p>Now, after a short pause and some ‘Hardcore forking action’, you
+should find yourself at the home page for your own forked copy of <a class="reference external" href="http://nipy.org/dipy">dipy</a>.</p>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="set_up_fork.html" title="Set up your fork"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="git_development.html" title="Git for development"
+             >previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" >Working with DIPY source code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="git_development.html" >Git for development</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

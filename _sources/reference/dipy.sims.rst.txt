@@ -1,0 +1,219 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`sims`
+===========
+.. automodule:: dipy.sims
+
+.. currentmodule:: dipy.sims
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`sims.phantom`
+---------------------------
+.. automodule:: dipy.sims.phantom
+
+.. currentmodule:: dipy.sims.phantom
+.. autosummary::
+
+   add_noise
+   diff2eigenvectors
+   get_fnames
+   gradient_table
+   orbital_phantom
+   single_tensor
+   vec2vec_rotmat
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`sims.voxel`
+-------------------------
+.. automodule:: dipy.sims.voxel
+
+.. currentmodule:: dipy.sims.voxel
+.. autosummary::
+
+   add_noise
+   all_tensor_evecs
+   callaghan_perpendicular
+   cylinders_and_ball_soderman
+   dki_design_matrix
+   dki_signal
+   dot
+   gaussian_parallel
+   kurtosis_element
+   multi_tensor
+   multi_tensor_dki
+   multi_tensor_msd
+   multi_tensor_odf
+   multi_tensor_pdf
+   multi_tensor_rtop
+   single_tensor
+   single_tensor_msd
+   single_tensor_odf
+   single_tensor_pdf
+   single_tensor_rtop
+   sphere2cart
+   sticks_and_ball
+   vec2vec_rotmat
+
+
+.. currentmodule:: dipy.sims
+
+
+.. currentmodule:: dipy.sims.phantom
+
+add_noise
+~~~~~~~~~
+
+.. autofunction:: add_noise
+
+diff2eigenvectors
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: diff2eigenvectors
+
+get_fnames
+~~~~~~~~~~
+
+.. autofunction:: get_fnames
+
+gradient_table
+~~~~~~~~~~~~~~
+
+.. autofunction:: gradient_table
+
+orbital_phantom
+~~~~~~~~~~~~~~~
+
+.. autofunction:: orbital_phantom
+
+single_tensor
+~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor
+
+vec2vec_rotmat
+~~~~~~~~~~~~~~
+
+.. autofunction:: vec2vec_rotmat
+
+
+.. currentmodule:: dipy.sims.voxel
+
+add_noise
+~~~~~~~~~
+
+.. autofunction:: add_noise
+
+all_tensor_evecs
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: all_tensor_evecs
+
+callaghan_perpendicular
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: callaghan_perpendicular
+
+cylinders_and_ball_soderman
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: cylinders_and_ball_soderman
+
+dki_design_matrix
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: dki_design_matrix
+
+dki_signal
+~~~~~~~~~~
+
+.. autofunction:: dki_signal
+
+dot
+~~~
+
+.. autofunction:: dot
+
+gaussian_parallel
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: gaussian_parallel
+
+kurtosis_element
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: kurtosis_element
+
+multi_tensor
+~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor
+
+multi_tensor_dki
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor_dki
+
+multi_tensor_msd
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor_msd
+
+multi_tensor_odf
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor_odf
+
+multi_tensor_pdf
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor_pdf
+
+multi_tensor_rtop
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: multi_tensor_rtop
+
+single_tensor
+~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor
+
+single_tensor_msd
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor_msd
+
+single_tensor_odf
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor_odf
+
+single_tensor_pdf
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor_pdf
+
+single_tensor_rtop
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: single_tensor_rtop
+
+sphere2cart
+~~~~~~~~~~~
+
+.. autofunction:: sphere2cart
+
+sticks_and_ball
+~~~~~~~~~~~~~~~
+
+.. autofunction:: sticks_and_ball
+
+vec2vec_rotmat
+~~~~~~~~~~~~~~
+
+.. autofunction:: vec2vec_rotmat
+

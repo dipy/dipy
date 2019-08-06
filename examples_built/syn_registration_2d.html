@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Symmetric Diffeomorphic Registration in 2D</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/syn_registration_2d.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="symmetric-diffeomorphic-registration-in-2d">
+<span id="example-syn-registration-2d"></span><h1>Symmetric Diffeomorphic Registration in 2D<a class="headerlink" href="#symmetric-diffeomorphic-registration-in-2d" title="Permalink to this headline">¶</a></h1>
+<p>This example explains how to register 2D images using the Symmetric Normalization
+(SyN) algorithm proposed by Avants et al. <a class="reference internal" href="syn_registration_3d.html#avants09" id="id1"><span>[Avants09]</span></a> (also implemented in
+the ANTs software <a class="reference internal" href="syn_registration_3d.html#avants11" id="id2"><span>[Avants11]</span></a>)</p>
+<p>We will perform the classic Circle-To-C experiment for diffeomorphic registration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="kn">from</span> <span class="nn">dipy.align.imwarp</span> <span class="k">import</span> <span class="n">SymmetricDiffeomorphicRegistration</span>
+<span class="kn">from</span> <span class="nn">dipy.align.metrics</span> <span class="k">import</span> <span class="n">SSDMetric</span><span class="p">,</span> <span class="n">CCMetric</span><span class="p">,</span> <span class="n">EMMetric</span>
+<span class="kn">import</span> <span class="nn">dipy.align.imwarp</span> <span class="k">as</span> <span class="nn">imwarp</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">regtools</span>
+
+
+<span class="n">fname_moving</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;reg_o&#39;</span><span class="p">)</span>
+<span class="n">fname_static</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;reg_c&#39;</span><span class="p">)</span>
+
+<span class="n">moving</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname_moving</span><span class="p">)</span>
+<span class="n">static</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fname_static</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To visually check the overlap of the static image with the transformed moving
+image, we can plot them on top of each other with different channels to see
+where the differences are located</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">moving</span><span class="p">,</span> <span class="s1">&#39;Static&#39;</span><span class="p">,</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Moving&#39;</span><span class="p">,</span> <span class="s1">&#39;input_images.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/input_images.png" src="../_images/input_images.png" />
+<p class="caption"><span class="caption-text">Input images.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>We want to find an invertible map that transforms the moving image (circle)
+into the static image (the C letter).</p>
+<p>The first decision we need to make is what similarity metric is appropriate
+for our problem. In this example we are using two binary images, so the Sum
+of Squared Differences (SSD) is a good choice.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dim</span> <span class="o">=</span> <span class="n">static</span><span class="o">.</span><span class="n">ndim</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">SSDMetric</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we define an instance of the registration class. The SyN algorithm uses
+a multi-resolution approach by building a Gaussian Pyramid. We instruct the
+registration instance to perform at most <span class="math notranslate nohighlight">\([n_0, n_1, ..., n_k]\)</span> iterations at
+each level of the pyramid. The 0-th level corresponds to the finest resolution.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level_iters</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">]</span>
+
+<span class="n">sdr</span> <span class="o">=</span> <span class="n">SymmetricDiffeomorphicRegistration</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">level_iters</span><span class="p">,</span> <span class="n">inv_iter</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we execute the optimization, which returns a DiffeomorphicMap object,
+that can be used to register images back and forth between the static and moving
+domains</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">moving</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It is a good idea to visualize the resulting deformation map to make sure the
+result is reasonable (at least, visually)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;diffeomorphic_map.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/diffeomorphic_map.png" src="../_images/diffeomorphic_map.png" />
+<p class="caption"><span class="caption-text">Deformed lattice under the resulting diffeomorphic map.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<p>Now let’s warp the moving image and see if it gets similar to the static image</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">warped_moving</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">moving</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">warped_moving</span><span class="p">,</span> <span class="s1">&#39;Static&#39;</span><span class="p">,</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span><span class="s1">&#39;Warped moving&#39;</span><span class="p">,</span>
+   <span class="s1">&#39;direct_warp_result.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/direct_warp_result.png" src="../_images/direct_warp_result.png" />
+<p class="caption"><span class="caption-text">Moving image transformed under the (direct) transformation in green on top of the static image (in red).</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>And we can also apply the inverse mapping to verify that the warped static image
+is similar to the moving image</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">warped_static</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform_inverse</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">warped_static</span><span class="p">,</span> <span class="n">moving</span><span class="p">,</span><span class="s1">&#39;Warped static&#39;</span><span class="p">,</span><span class="s1">&#39;Overlay&#39;</span><span class="p">,</span><span class="s1">&#39;Moving&#39;</span><span class="p">,</span>
+   <span class="s1">&#39;inverse_warp_result.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id7">
+<img alt="../_images/inverse_warp_result.png" src="../_images/inverse_warp_result.png" />
+<p class="caption"><span class="caption-text">Static image transformed under the (inverse) transformation in red on top of the moving image (in green).</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+<p>Now let’s register a couple of slices from a b0 image using the Cross
+Correlation metric. Also, let’s inspect the evolution of the registration.
+To do this we will define a function that will be called by the registration
+object at each stage of the optimization process. We will draw the current
+warped images after finishing each resolution.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">callback_CC</span><span class="p">(</span><span class="n">sdr</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+    <span class="c1">#Status indicates at which stage of the optimization we currently are</span>
+    <span class="c1">#For now, we will only react at the end of each resolution of the scale</span>
+    <span class="c1">#space</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="n">imwarp</span><span class="o">.</span><span class="n">RegistrationStages</span><span class="o">.</span><span class="n">SCALE_END</span><span class="p">:</span>
+        <span class="c1">#get the current images from the metric</span>
+        <span class="n">wmoving</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">moving_image</span>
+        <span class="n">wstatic</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">static_image</span>
+        <span class="c1">#draw the images on top of each other with different colors</span>
+        <span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">wmoving</span><span class="p">,</span> <span class="n">wstatic</span><span class="p">,</span> <span class="s1">&#39;Warped moving&#39;</span><span class="p">,</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Warped static&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we are ready to configure and run the registration. First load the data</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data.fetcher</span> <span class="k">import</span> <span class="n">fetch_syn_data</span><span class="p">,</span> <span class="n">read_syn_data</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+
+<span class="n">fetch_syn_data</span><span class="p">()</span>
+
+<span class="n">t1</span><span class="p">,</span> <span class="n">b0</span> <span class="o">=</span> <span class="n">read_syn_data</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">b0</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We first remove the skull from the b0 volume</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b0_mask</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And select two slices to try the 2D registration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">static</span> <span class="o">=</span> <span class="n">b0_mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">40</span><span class="p">]</span>
+<span class="n">moving</span> <span class="o">=</span> <span class="n">b0_mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">38</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>After loading the data, we instantiate the Cross Correlation metric. The metric
+receives three parameters: the dimension of the input images, the standard
+deviation of the Gaussian Kernel to be used to regularize the gradient and the
+radius of the window to be used for evaluating the local normalized cross
+correlation.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sigma_diff</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">radius</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">CCMetric</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">sigma_diff</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s use a scale space of 3 levels</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">level_iters</span> <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">25</span><span class="p">]</span>
+<span class="n">sdr</span> <span class="o">=</span> <span class="n">SymmetricDiffeomorphicRegistration</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">level_iters</span><span class="p">)</span>
+<span class="n">sdr</span><span class="o">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">callback_CC</span>
+</pre></div>
+</div>
+<p>And execute the optimization</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">moving</span><span class="p">)</span>
+
+<span class="n">warped</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">moving</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can see the effect of the warping by switching between the images before and
+after registration</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">moving</span><span class="p">,</span> <span class="s1">&#39;Static&#39;</span><span class="p">,</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Moving&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;t1_slices_input.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id8">
+<img alt="../_images/t1_slices_input.png" src="../_images/t1_slices_input.png" />
+<p class="caption"><span class="caption-text">Input images.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">static</span><span class="p">,</span> <span class="n">warped</span><span class="p">,</span> <span class="s1">&#39;Static&#39;</span><span class="p">,</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;Warped moving&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;t1_slices_res.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id9">
+<img alt="../_images/t1_slices_res.png" src="../_images/t1_slices_res.png" />
+<p class="caption"><span class="caption-text">Moving image transformed under the (direct) transformation in green on top of the static image (in red).</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+<p>And we can apply the inverse warping too</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inv_warped</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform_inverse</span><span class="p">(</span><span class="n">static</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">overlay_images</span><span class="p">(</span><span class="n">inv_warped</span><span class="p">,</span> <span class="n">moving</span><span class="p">,</span> <span class="s1">&#39;Warped static&#39;</span><span class="p">,</span> <span class="s1">&#39;Overlay&#39;</span><span class="p">,</span> <span class="s1">&#39;moving&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;t1_slices_res2.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id10">
+<img alt="../_images/t1_slices_res2.png" src="../_images/t1_slices_res2.png" />
+<p class="caption"><span class="caption-text">Static image transformed under the (inverse) transformation in red on top of the moving image (in green).</span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+<p>Finally, let’s see the deformation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;diffeomorphic_map_b0s.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id11">
+<img alt="../_images/diffeomorphic_map_b0s.png" src="../_images/diffeomorphic_map_b0s.png" />
+<p class="caption"><span class="caption-text">Deformed lattice under the resulting diffeomorphic map.</span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="avants09"><span class="brackets"><a class="fn-backref" href="#id1">Avants09</a></span></dt>
+<dd><p>Avants, B. B., Epstein, C. L., Grossman, M., &amp; Gee, J. C. (2009).
+Symmetric Diffeomorphic Image Registration with Cross-Correlation:
+Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1),
+26-41.</p>
+</dd>
+<dt class="label" id="avants11"><span class="brackets"><a class="fn-backref" href="#id2">Avants11</a></span></dt>
+<dd><p>Avants, B. B., Tustison, N., &amp; Song, G. (2011). Advanced
+Normalization Tools (ANTS), 1-35.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/50bc7c0cbaffaef36444a291474bdc8a/syn_registration_2d.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Extracting AFQ tract profiles from segmented bundles</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/afq_tract_profiles.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="extracting-afq-tract-profiles-from-segmented-bundles">
+<span id="example-afq-tract-profiles"></span><h1>Extracting AFQ tract profiles from segmented bundles<a class="headerlink" href="#extracting-afq-tract-profiles-from-segmented-bundles" title="Permalink to this headline">¶</a></h1>
+<p>In this example, we will we will extract the values of a statistic from a
+volume, using the coordinates along the length of a bundle. These are called
+<cite>tract profiles</cite></p>
+<p>One of the challenges of extracting tract profiles is that some of the
+streamlines in a bundle may diverge significantly from the bundle in some
+locations. To overcome this challenge, we will use a strategy similar to that
+described in <a class="reference internal" href="#yeatman2012" id="id1"><span>[Yeatman2012]</span></a>: We will weight the contribution of each streamline
+to the bundle profile based on how far this streamline is from the mean
+trajectory of the bundle at that location.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dipy.stats.analysis</span> <span class="k">as</span> <span class="nn">dsa</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">as</span> <span class="nn">dts</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="p">(</span><span class="n">AveragePointwiseEuclideanMetric</span><span class="p">,</span>
+                                 <span class="n">ResampleFeature</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.data.fetcher</span> <span class="k">import</span> <span class="n">get_two_hcp842_bundles</span>
+<span class="kn">import</span> <span class="nn">dipy.data</span> <span class="k">as</span> <span class="nn">dpd</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_trk</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+</pre></div>
+</div>
+<p>To get started, we will grab the bundles that were extracted in the bundle
+extraction example. If the example hasn’t been run yet, these files don’t
+yet exist, and we’ll need to run that example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;CST_L.trk&quot;</span><span class="p">)</span> <span class="ow">and</span>
+        <span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;AF_L.trk&quot;</span><span class="p">)</span> <span class="ow">and</span>
+        <span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">&quot;slr_transform.npy&quot;</span><span class="p">)):</span>
+    <span class="kn">import</span> <span class="nn">bundle_extraction</span>
+</pre></div>
+</div>
+<p>Either way, we can use the <cite>dipy.io</cite> API to read in the bundles from file.
+<cite>load_trk</cite> returns both the streamlines, as well as header information.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cst_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="s2">&quot;CST_L.trk&quot;</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+<span class="n">af_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="s2">&quot;AF_L.trk&quot;</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+
+<span class="n">transform</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;slr_transform.npy&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the next step, we need to make sure that all the streamlines in each bundle
+are oriented the same way. For example, for the CST, we want to make sure that
+all the bundles have their cortical termination at one end of the streamline.
+This is that when we later extract values from a volume, we won’t have different
+streamlines going in opposite directions.</p>
+<p>To orient all the streamlines in each bundles, we will create standard
+streamlines, by finding the centroids of the left AF and CST bundle models.</p>
+<p>The advantage of using the model bundles is that we can use the same standard
+for different subjects, which means that we’ll get roughly the same orientation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model_af_l_file</span><span class="p">,</span> <span class="n">model_cst_l_file</span> <span class="o">=</span> <span class="n">get_two_hcp842_bundles</span><span class="p">()</span>
+
+<span class="n">model_af_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">model_af_l_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span>
+                      <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+<span class="n">model_cst_l</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="n">model_cst_l_file</span><span class="p">,</span> <span class="s2">&quot;same&quot;</span><span class="p">,</span>
+                       <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+
+
+<span class="n">feature</span> <span class="o">=</span> <span class="n">ResampleFeature</span><span class="p">(</span><span class="n">nb_points</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">metric</span> <span class="o">=</span> <span class="n">AveragePointwiseEuclideanMetric</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since we are going to include all of the streamlines in the single cluster
+from the streamlines, we set the threshold to <cite>np.inf</cite>. We pull out the
+centroid as the standard.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+
+<span class="n">cluster_cst_l</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">model_cst_l</span><span class="p">)</span>
+<span class="n">standard_cst_l</span> <span class="o">=</span> <span class="n">cluster_cst_l</span><span class="o">.</span><span class="n">centroids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">cluster_af_l</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">model_af_l</span><span class="p">)</span>
+<span class="n">standard_af_l</span> <span class="o">=</span> <span class="n">cluster_af_l</span><span class="o">.</span><span class="n">centroids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We use the centroid streamline for each atlas bundle as the standard to orient
+all of the streamlines in each bundle from the individual subject. Here, the
+affine used is the one from the transform between the atlas and individual
+tractogram. This is so that the orienting is done relative to the space of the
+individual, and not relative to the atlas space.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">oriented_cst_l</span> <span class="o">=</span> <span class="n">dts</span><span class="o">.</span><span class="n">orient_by_streamline</span><span class="p">(</span><span class="n">cst_l</span><span class="p">,</span> <span class="n">standard_cst_l</span><span class="p">)</span>
+<span class="n">oriented_af_l</span> <span class="o">=</span> <span class="n">dts</span><span class="o">.</span><span class="n">orient_by_streamline</span><span class="p">(</span><span class="n">af_l</span><span class="p">,</span> <span class="n">standard_af_l</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read volumetric data from an image corresponding to this subject.</p>
+<p>For the purpose of this, we’ve extracted only the FA within the bundles in
+question, but in real use, this is where you would add the FA map of your
+subject.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">files</span><span class="p">,</span> <span class="n">folder</span> <span class="o">=</span> <span class="n">dpd</span><span class="o">.</span><span class="n">fetch_bundle_fa_hcp</span><span class="p">()</span>
+
+<span class="n">img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="s2">&quot;hcp_bundle_fa.nii.gz&quot;</span><span class="p">))</span>
+<span class="n">fa</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_fdata</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Calculate weights for each bundle:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">w_cst_l</span> <span class="o">=</span> <span class="n">dsa</span><span class="o">.</span><span class="n">gaussian_weights</span><span class="p">(</span><span class="n">oriented_cst_l</span><span class="p">)</span>
+<span class="n">w_af_l</span> <span class="o">=</span> <span class="n">dsa</span><span class="o">.</span><span class="n">gaussian_weights</span><span class="p">(</span><span class="n">oriented_af_l</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And then use the weights to calculate the tract profiles for each bundle</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">profile_cst_l</span> <span class="o">=</span> <span class="n">dsa</span><span class="o">.</span><span class="n">afq_profile</span><span class="p">(</span><span class="n">fa</span><span class="p">,</span> <span class="n">oriented_cst_l</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">,</span>
+                                <span class="n">weights</span><span class="o">=</span><span class="n">w_cst_l</span><span class="p">)</span>
+
+<span class="n">profile_af_l</span> <span class="o">=</span> <span class="n">dsa</span><span class="o">.</span><span class="n">afq_profile</span><span class="p">(</span><span class="n">fa</span><span class="p">,</span> <span class="n">oriented_af_l</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">,</span>
+                               <span class="n">weights</span><span class="o">=</span><span class="n">w_af_l</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">profile_cst_l</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Fractional anisotropy&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Node along CST&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">profile_af_l</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Node along AF&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;tract_profiles&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/tract_profiles.png" src="../_images/tract_profiles.png" />
+<p class="caption"><span class="caption-text">Bundle profiles for the fractional anisotropy in left CST (left) and left
+AF (right).</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="yeatman2012"><span class="brackets"><a class="fn-backref" href="#id1">Yeatman2012</a></span></dt>
+<dd><p>Yeatman, Jason D., Robert F. Dougherty, Nathaniel J. Myall,
+Brian A. Wandell, and Heidi M. Feldman. 2012. “Tract Profiles of White
+Matter Properties: Automating Fiber-Tract Quantification” PloS One 7 (11):
+e49790.</p>
+</dd>
+<dt class="label" id="garyfallidis17"><span class="brackets">Garyfallidis17</span></dt>
+<dd><p>Garyfallidis et al. Recognition of white matter bundles
+using local and global streamline-based registration and clustering,
+Neuroimage, 2017.</p>
+</dd>
+<dt class="label" id="garyfallidis12"><span class="brackets">Garyfallidis12</span></dt>
+<dd><p>Garyfallidis E. et al., QuickBundles a method for
+tractography simplification, Frontiers in Neuroscience, vol 6, no 175, 2012.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/4b05e60c121f8076792a281aeca72e1a/afq_tract_profiles.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

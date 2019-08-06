@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Release notes for DIPY version 0.7" href="release0.7.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.7.html" title="Release notes for DIPY version 0.7"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" accesskey="U">A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="release0.7.html"
+                        title="previous chapter">Release notes for DIPY version 0.7</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/release_notes/release0.6.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="release-notes-for-dipy-version-0-6">
+<span id="release0-6"></span><h1>Release notes for DIPY version 0.6<a class="headerlink" href="#release-notes-for-dipy-version-0-6" title="Permalink to this headline">¶</a></h1>
+<p>GitHub stats for 2011/02/12 - 2013/03/20</p>
+<p>The following 13 authors contributed 972 commits.</p>
+<ul class="simple">
+<li><p>Ariel Rokem</p></li>
+<li><p>Bago Amirbekian</p></li>
+<li><p>Eleftherios Garyfallidis</p></li>
+<li><p>Emanuele Olivetti</p></li>
+<li><p>Ian Nimmo-Smith</p></li>
+<li><p>Maria Luisa Mandelli</p></li>
+<li><p>Matthew Brett</p></li>
+<li><p>Maxime Descoteaux</p></li>
+<li><p>Michael Paquette</p></li>
+<li><p>Samuel St-Jean</p></li>
+<li><p>Stefan van der Walt</p></li>
+<li><p>Yaroslav Halchenko</p></li>
+<li><p>endolith</p></li>
+</ul>
+<p>We closed a total of 225 issues, 100 pull requests and 125 regular issues;
+this is the full list (generated with the script
+<code class="file docutils literal notranslate"><span class="pre">tools/github_stats.py</span></code>):</p>
+<p>Pull Requests (100):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/146/">PR #146</a>: BF - allow Bootstrap Wrapper to work with markov tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/143/">PR #143</a>: Garyfallidis tutorials 0.6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/145/">PR #145</a>: Mdesco dti metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/141/">PR #141</a>: Peak extraction isbi</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/142/">PR #142</a>: RF - always use theta and phi in that order, (not “phi, theta”)</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/140/">PR #140</a>: Sf2sh second try at correcting suggestions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/139/">PR #139</a>: Spherical function to spherical harmonics and back</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/138/">PR #138</a>: Coding style fix for dsi_deconv</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/137/">PR #137</a>: BF - check shapes before allclose</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/136/">PR #136</a>: BF: add top-level benchmarking command</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/135/">PR #135</a>: Refactor local maxima</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/134/">PR #134</a>: BF - fix shm tests to accept antipodal directions as the same</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/133/">PR #133</a>: Corrected test for Deconvolution after the discrete direction finder was removed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/124/">PR #124</a>: Remove direction finder</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/77/">PR #77</a>: Rework tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/132/">PR #132</a>: A new fvtk function for visualizing fields of odfs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/131/">PR #131</a>: Add missing files</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/130/">PR #130</a>: Implementation of DSI deconvolution from E.J. Canales-Rodriguez</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/128/">PR #128</a>: Colorfa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/129/">PR #129</a>: RF - minor cleanup of pdf_odf code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/127/">PR #127</a>: Adding multi-tensor simulation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/126/">PR #126</a>: Improve local maxima</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/122/">PR #122</a>: Removed calculation of gfa and other functions from inside the odf(sphere) of DSI and GQI</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/103/">PR #103</a>: Major update of the website, with a few examples and with some additional minor RFs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/121/">PR #121</a>: NF: Allow the smoothing parameter to come through to rbf interpolation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/120/">PR #120</a>: Fast squash fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/116/">PR #116</a>: RF: common dtype for squash without result_type</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/117/">PR #117</a>: Fix directions on TensorFit and add getitem</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/119/">PR #119</a>: RF: raise errors for Python version dependencies</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/118/">PR #118</a>: Seperate fa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/111/">PR #111</a>: RF - clean up _squash in multi_voxel and related code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/112/">PR #112</a>: RF: fix vec_val_vect logic, generalize for shape</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/114/">PR #114</a>: BF: fix face and edge byte order for sphere load</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/109/">PR #109</a>: Faster einsum</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/110/">PR #110</a>: TST: This is only almost equal on XP, for some reason.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/108/">PR #108</a>: TST + STY: Use and assert_equal so that we get more information upon failure</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/107/">PR #107</a>: RF: A.dot(B) =&gt; np.dot(A, B) for numpy &lt; 1.5</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/102/">PR #102</a>: BF - Allow ndindex to work with older numpy than 1.6.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/106/">PR #106</a>: RF: allow optional scipy.spatial.Delaunay</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/105/">PR #105</a>: Skip doctest decorator</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/104/">PR #104</a>: RF: remove deprecated old parametric testing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/101/">PR #101</a>: WIP: Fix isnan windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/100/">PR #100</a>: Small stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/94/">PR #94</a>: Multivoxel dsi and gqi are back!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/96/">PR #96</a>: ENH: Implement masking for the new TensorModel implementation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/95/">PR #95</a>: NF fetch publicly available datasets</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/26/">PR #26</a>: Noise</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/84/">PR #84</a>: Non linear peak finding</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/82/">PR #82</a>: DTI new api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/91/">PR #91</a>: Shm new api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/88/">PR #88</a>: NF - wrapper function for multi voxel models</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/86/">PR #86</a>: DOC: Fixed some typos, etc in the FAQ</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/90/">PR #90</a>: A simpler ndindex using generators.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/87/">PR #87</a>: RF - Provide shape as argument to ndindex.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/85/">PR #85</a>: Add fast ndindex.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/81/">PR #81</a>: RF - fixup peaks_from_model to take use remove_similar_vertices and</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/79/">PR #79</a>: BF: Fixed projection plots.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/80/">PR #80</a>: RF - remove some old functions tools</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/71/">PR #71</a>: ENH: Make the internals of the io module visible on tab completion in ip…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/76/">PR #76</a>: Yay, more gradient stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/75/">PR #75</a>: Rename L2norm to vector_norm</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/74/">PR #74</a>: Gradient rf</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/73/">PR #73</a>: RF/BF - removed duplicate vector_norm/L2norm</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/72/">PR #72</a>: Mr bago model api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/68/">PR #68</a>: DSI seems working again - Have a look</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/65/">PR #65</a>: RF: Make the docstring and call consistent with scipy.interpolate.Rbf.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/61/">PR #61</a>: RF - Refactor direction finding.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/60/">PR #60</a>: NF - Add key-value cache for use in models.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/63/">PR #63</a>: TST - Disable reconstruction methods that break the test suite.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/62/">PR #62</a>: BF - Fix missing import in peak finding tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/37/">PR #37</a>: cleanup refrences in the code to E1381S6_edcor* (these were removed from…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/55/">PR #55</a>: Ravel multi index</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/58/">PR #58</a>: TST - skip doctest when matplotlib is not available</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/59/">PR #59</a>: optional_traits is not needed anymore</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/56/">PR #56</a>: TST: Following change to API in dipy.segment.quickbundles.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/52/">PR #52</a>: Matplotlib optional</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/50/">PR #50</a>: NF - added subdivide method to sphere</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/51/">PR #51</a>: Fix tracking utils</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/48/">PR #48</a>: BF - Brought back _filter peaks and associated test.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/47/">PR #47</a>: RF - Removed reduce_antipodal from sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/41/">PR #41</a>: NF - Add radial basis function interpolation on the sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/39/">PR #39</a>: GradientTable</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/40/">PR #40</a>: BF - Fix axis specification in sph_project.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/28/">PR #28</a>: Odf+shm api update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/36/">PR #36</a>: Nf hemisphere preview</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/34/">PR #34</a>: RF - replace _filter_peaks with unique_vertices</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/35/">PR #35</a>: BF - Fix imports from dipy.core.sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/21/">PR #21</a>: Viz 2d</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/32/">PR #32</a>: NF - Sphere class.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/30/">PR #30</a>: RF: Don’t import all this every time.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/24/">PR #24</a>: TST: Fixing tests in reconst module.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/27/">PR #27</a>: DOC - Add reference to white matter diffusion values.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/25/">PR #25</a>: NF - Add prolate white matter as defaults for multi-tensor signal sim.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/22/">PR #22</a>: Updating my fork with the nipy master</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/20/">PR #20</a>: RF - create OptionalImportError for traits imports</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/19/">PR #19</a>: DOC: add comments and example to commit codes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/18/">PR #18</a>: DOC: update gitwash from source</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/17/">PR #17</a>: Optional traits</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/14/">PR #14</a>: DOC - fix frontpage example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/12/">PR #12</a>: BF(?): cart2sphere and sphere2cart are now invertible.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/11/">PR #11</a>: BF explicit type declaration and initialization for longest_track_len[AB] – for cython 0.15 compatibility</p></li>
+</ul>
+<p>Issues (125):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/99/">#99</a>: RF - Separate direction finder from model fit.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/143/">#143</a>: Garyfallidis tutorials 0.6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/144/">#144</a>: DTI metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/145/">#145</a>: Mdesco dti metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/123/">#123</a>: Web content and examples for 0.6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/141/">#141</a>: Peak extraction isbi</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/142/">#142</a>: RF - always use theta and phi in that order, (not “phi, theta”)</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/140/">#140</a>: Sf2sh second try at correcting suggestions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/139/">#139</a>: Spherical function to spherical harmonics and back</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/23/">#23</a>: qball not properly import-able</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/29/">#29</a>: Don’t import everything when you import dipy</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/138/">#138</a>: Coding style fix for dsi_deconv</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/137/">#137</a>: BF - check shapes before allclose</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/136/">#136</a>: BF: add top-level benchmarking command</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/135/">#135</a>: Refactor local maxima</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/134/">#134</a>: BF - fix shm tests to accept antipodal directions as the same</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/133/">#133</a>: Corrected test for Deconvolution after the discrete direction finder was removed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/124/">#124</a>: Remove direction finder</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/77/">#77</a>: Rework tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/132/">#132</a>: A new fvtk function for visualizing fields of odfs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/125/">#125</a>: BF: Remove ‘mayavi’ directory, to avoid triggering mayavi import warning…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/131/">#131</a>: Add missing files</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/130/">#130</a>: Implementation of DSI deconvolution from E.J. Canales-Rodriguez</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/128/">#128</a>: Colorfa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/129/">#129</a>: RF - minor cleanup of pdf_odf code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/127/">#127</a>: Adding multi-tensor simulation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/126/">#126</a>: Improve local maxima</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/97/">#97</a>: BF - separate out storing of fit values in gqi</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/122/">#122</a>: Removed calculation of gfa and other functions from inside the odf(sphere) of DSI and GQI</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/103/">#103</a>: Major update of the website, with a few examples and with some additional minor RFs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/121/">#121</a>: NF: Allow the smoothing parameter to come through to rbf interpolation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/120/">#120</a>: Fast squash fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/116/">#116</a>: RF: common dtype for squash without result_type</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/117/">#117</a>: Fix directions on TensorFit and add getitem</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/119/">#119</a>: RF: raise errors for Python version dependencies</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/118/">#118</a>: Seperate fa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/113/">#113</a>: RF - use min_diffusivity relative to 1 / max(bval)</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/111/">#111</a>: RF - clean up _squash in multi_voxel and related code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/112/">#112</a>: RF: fix vec_val_vect logic, generalize for shape</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/114/">#114</a>: BF: fix face and edge byte order for sphere load</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/109/">#109</a>: Faster einsum</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/110/">#110</a>: TST: This is only almost equal on XP, for some reason.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/98/">#98</a>: This is an update of PR #94 mostly typos and coding style</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/108/">#108</a>: TST + STY: Use and assert_equal so that we get more information upon failure</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/107/">#107</a>: RF: A.dot(B) =&gt; np.dot(A, B) for numpy &lt; 1.5</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/102/">#102</a>: BF - Allow ndindex to work with older numpy than 1.6.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/106/">#106</a>: RF: allow optional scipy.spatial.Delaunay</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/105/">#105</a>: Skip doctest decorator</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/104/">#104</a>: RF: remove deprecated old parametric testing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/101/">#101</a>: WIP: Fix isnan windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/100/">#100</a>: Small stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/94/">#94</a>: Multivoxel dsi and gqi are back!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/96/">#96</a>: ENH: Implement masking for the new TensorModel implementation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/95/">#95</a>: NF fetch publicly available datasets</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/26/">#26</a>: Noise</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/84/">#84</a>: Non linear peak finding</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/82/">#82</a>: DTI new api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/91/">#91</a>: Shm new api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/88/">#88</a>: NF - wrapper function for multi voxel models</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/86/">#86</a>: DOC: Fixed some typos, etc in the FAQ</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/89/">#89</a>: Consisten ndindex behaviour</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/90/">#90</a>: A simpler ndindex using generators.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/87/">#87</a>: RF - Provide shape as argument to ndindex.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/85/">#85</a>: Add fast ndindex.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/81/">#81</a>: RF - fixup peaks_from_model to take use remove_similar_vertices and</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/83/">#83</a>: Non linear peak finding</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/78/">#78</a>: This PR replaces PR 70</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/79/">#79</a>: BF: Fixed projection plots.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/80/">#80</a>: RF - remove some old functions tools</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/70/">#70</a>: New api dti</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/71/">#71</a>: ENH: Make the internals of the io module visible on tab completion in ip…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/76/">#76</a>: Yay, more gradient stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/69/">#69</a>: New api and tracking refacotor</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/75/">#75</a>: Rename L2norm to vector_norm</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/74/">#74</a>: Gradient rf</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/73/">#73</a>: RF/BF - removed duplicate vector_norm/L2norm</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/72/">#72</a>: Mr bago model api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/66/">#66</a>: DOCS - docs for model api</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/49/">#49</a>: Reworking tracking code.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/68/">#68</a>: DSI seems working again - Have a look</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/65/">#65</a>: RF: Make the docstring and call consistent with scipy.interpolate.Rbf.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/61/">#61</a>: RF - Refactor direction finding.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/60/">#60</a>: NF - Add key-value cache for use in models.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/63/">#63</a>: TST - Disable reconstruction methods that break the test suite.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/62/">#62</a>: BF - Fix missing import in peak finding tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/37/">#37</a>: cleanup refrences in the code to E1381S6_edcor* (these were removed from…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/55/">#55</a>: Ravel multi index</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/46/">#46</a>: BF: Trying to fix test failures.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/57/">#57</a>: TST: Reverted back to optional definition of the function to make TB hap…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/58/">#58</a>: TST - skip doctest when matplotlib is not available</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/59/">#59</a>: optional_traits is not needed anymore</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/56/">#56</a>: TST: Following change to API in dipy.segment.quickbundles.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/52/">#52</a>: Matplotlib optional</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/50/">#50</a>: NF - added subdivide method to sphere</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/51/">#51</a>: Fix tracking utils</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/48/">#48</a>: BF - Brought back _filter peaks and associated test.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/47/">#47</a>: RF - Removed reduce_antipodal from sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/41/">#41</a>: NF - Add radial basis function interpolation on the sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/33/">#33</a>: Gradients Table class</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/39/">#39</a>: GradientTable</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/45/">#45</a>: BF - Fix sphere creation in triangle_subdivide.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/38/">#38</a>: Subdivide octahedron</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/40/">#40</a>: BF - Fix axis specification in sph_project.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/28/">#28</a>: Odf+shm api update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/36/">#36</a>: Nf hemisphere preview</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/34/">#34</a>: RF - replace _filter_peaks with unique_vertices</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/35/">#35</a>: BF - Fix imports from dipy.core.sphere.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/21/">#21</a>: Viz 2d</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/32/">#32</a>: NF - Sphere class.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/30/">#30</a>: RF: Don’t import all this every time.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/24/">#24</a>: TST: Fixing tests in reconst module.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/27/">#27</a>: DOC - Add reference to white matter diffusion values.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/25/">#25</a>: NF - Add prolate white matter as defaults for multi-tensor signal sim.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/22/">#22</a>: Updating my fork with the nipy master</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/20/">#20</a>: RF - create OptionalImportError for traits imports</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/8/">#8</a>: X error BadRequest with fvtk.show</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/19/">#19</a>: DOC: add comments and example to commit codes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/18/">#18</a>: DOC: update gitwash from source</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/17/">#17</a>: Optional traits</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/15/">#15</a>: Octahedron in dipy.core.triangle_subdivide has wrong faces</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/14/">#14</a>: DOC - fix frontpage example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/12/">#12</a>: BF(?): cart2sphere and sphere2cart are now invertible.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/11/">#11</a>: BF explicit type declaration and initialization for longest_track_len[AB] – for cython 0.15 compatibility</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/5/">#5</a>: Add DSI reconstruction in Dipy</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/9/">#9</a>: Bug in dipy.tracking.metrics.downsampling when we downsample a track to more than 20 points</p></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.7.html" title="Release notes for DIPY version 0.7"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" >A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

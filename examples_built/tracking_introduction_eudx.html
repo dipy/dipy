@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction to Basic Tracking</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/tracking_introduction_eudx.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction-to-basic-tracking">
+<span id="intro-basic-tracking"></span><span id="example-tracking-introduction-eudx"></span><h1>Introduction to Basic Tracking<a class="headerlink" href="#introduction-to-basic-tracking" title="Permalink to this headline">¶</a></h1>
+<p>Local fiber tracking is an approach used to model white matter fibers by
+creating streamlines from local directional information. The idea is as
+follows: if the local directionality of a tract/pathway segment is known, one
+can integrate along those directions to build a complete representation of that
+structure. Local fiber tracking is widely used in the field of diffusion MRI
+because it is simple and robust.</p>
+<p>In order to perform local fiber tracking, three things are needed: 1) A method
+for getting directions from a diffusion data set. 2) A method for identifying
+when the tracking must stop. 3) A set of seeds from which to
+begin tracking. This example shows how to combine the 3 parts described above
+to create a tractography reconstruction from a diffusion data set.</p>
+<p>To begin, let’s load an example HARDI data set from Stanford. If you have
+not already downloaded this data set, the first time you run this example you
+will need to be connected to the internet and this dataset will be downloaded
+to your computer.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_stanford_labels</span>
+
+<span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>This dataset provides a label map in which all white matter tissues are
+labeled either 1 or 2. Lets create a white matter mask to restrict tracking to
+the white matter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">white_matter</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>1. The first thing we need to begin fiber tracking is a way of getting
+directions from this diffusion data set. In order to do that, we can fit the
+data to a Constant Solid Angle ODF Model. This model will estimate the
+Orientation Distribution Function (ODF) at each voxel. The ODF is the
+distribution of water diffusion as a function of direction. The peaks of an ODF
+are good estimates for the orientation of tract segments at a point in the
+image. Here, we use <code class="docutils literal notranslate"><span class="pre">peaks_from_model</span></code> to fit the data and calculated the
+fiber directions in all voxels of the white matter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.csdeconv</span> <span class="k">import</span> <span class="n">auto_response</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.shm</span> <span class="k">import</span> <span class="n">CsaOdfModel</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">default_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+
+<span class="n">response</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">=</span> <span class="n">auto_response</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">roi_radius</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fa_thr</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">csa_model</span> <span class="o">=</span> <span class="n">CsaOdfModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">sh_order</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+<span class="n">csa_peaks</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">csa_model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">default_sphere</span><span class="p">,</span>
+                             <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span>
+                             <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+                             <span class="n">mask</span><span class="o">=</span><span class="n">white_matter</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For quality assurance we can also visualize a slice from the direction field
+which we will use as the basis to perform the tracking. The visualization will
+be done using the <code class="docutils literal notranslate"><span class="pre">fury</span></code> python package</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">has_fury</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">peak_slicer</span><span class="p">(</span><span class="n">csa_peaks</span><span class="o">.</span><span class="n">peak_dirs</span><span class="p">,</span>
+                              <span class="n">csa_peaks</span><span class="o">.</span><span class="n">peak_values</span><span class="p">,</span>
+                              <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">))</span>
+
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;csa_direction_field.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">900</span><span class="p">,</span> <span class="mi">900</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/csa_direction_field.png" src="../_images/csa_direction_field.png" />
+<p class="caption"><span class="caption-text"><strong>Direction Field (peaks)</strong></span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>2. Next we need some way of restricting the fiber tracking to areas with good
+directionality information. We’ve already created the white matter mask,
+but we can go a step further and restrict fiber tracking to those areas where
+the ODF shows significant restricted diffusion by thresholding on
+the generalized fractional anisotropy (GFA).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.tracking.stopping_criterion</span> <span class="k">import</span> <span class="n">ThresholdStoppingCriterion</span>
+
+<span class="n">stopping_criterion</span> <span class="o">=</span> <span class="n">ThresholdStoppingCriterion</span><span class="p">(</span><span class="n">csa_peaks</span><span class="o">.</span><span class="n">gfa</span><span class="p">,</span> <span class="o">.</span><span class="mi">25</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Again, for quality assurance we can also visualize a slice the GFA and the
+resulting tracking mask.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">sli</span> <span class="o">=</span> <span class="n">csa_peaks</span><span class="o">.</span><span class="n">gfa</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;GFA&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">csa_peaks</span><span class="o">.</span><span class="n">gfa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">((</span><span class="n">csa_peaks</span><span class="o">.</span><span class="n">gfa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.25</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;gfa_tracking_mask.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/gfa_tracking_mask.png" src="../_images/gfa_tracking_mask.png" />
+<p class="caption"><span class="caption-text">An example of tracking mask derived from the generalized fractional
+anisotropy (GFA).</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<p>3. Before we can begin tracking is to specify where to “seed” (begin) the fiber
+tracking. Generally, the seeds chosen will depend on the pathways one is
+interested in modeling. In this example, we’ll use a <span class="math notranslate nohighlight">\(2 \times 2 \times 2\)</span> grid
+of seeds per voxel, in a sagittal slice of the corpus callosum. Tracking from
+this region will give us a model of the corpus callosum tract. This slice has
+label value <code class="docutils literal notranslate"><span class="pre">2</span></code> in the labels image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.tracking</span> <span class="k">import</span> <span class="n">utils</span>
+
+<span class="n">seed_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">seeds</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">seeds_from_mask</span><span class="p">(</span><span class="n">seed_mask</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Finally, we can bring it all together using <code class="docutils literal notranslate"><span class="pre">LocalTracking</span></code>, performing Using
+the EuDX algorithm <a class="reference internal" href="#garyfallidis12" id="id1"><span>[Garyfallidis12]</span></a>. <code class="docutils literal notranslate"><span class="pre">EuDX</span></code> <a class="reference internal" href="#garyfallidis12" id="id2"><span>[Garyfallidis12]</span></a> is a fast
+algorithm that we use here to generate streamlines. This algorithm is what is
+used here and the default option when providing the output of peaks directly
+in LocalTracking.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.tracking.local_tracking</span> <span class="k">import</span> <span class="n">LocalTracking</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+
+<span class="c1"># Initialization of LocalTracking. The computation happens in the next step.</span>
+<span class="n">streamlines_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">csa_peaks</span><span class="p">,</span> <span class="n">stopping_criterion</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span>
+                                      <span class="n">affine</span><span class="o">=</span><span class="n">affine</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">)</span>
+<span class="c1"># Generate streamlines object</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamlines_generator</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will then display the resulting streamlines using the <code class="docutils literal notranslate"><span class="pre">fury</span></code>
+python package.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">colormap</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="c1"># Prepare the display objects.</span>
+    <span class="n">color</span> <span class="o">=</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+
+    <span class="n">streamlines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span>
+                                   <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">))</span>
+
+    <span class="c1"># Create the 3D display.</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">streamlines_actor</span><span class="p">)</span>
+
+    <span class="c1"># Save still images for this static example. Or for interactivity use</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_EuDX.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/tractogram_EuDX.png" src="../_images/tractogram_EuDX.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum using EuDx</strong></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>We’ve created a deterministic set of streamlines using the EuDX algorithm. This
+is so called deterministic because if you repeat the fiber tracking (keeping
+all the inputs the same) you will get exactly the same set of streamlines.
+We can save the streamlines as a Trackvis file so it can be loaded into other
+software for visualization or further analysis.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">save_trk</span>
+
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_EuDX.trk&quot;</span><span class="p">,</span> <span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="garyfallidis12"><span class="brackets">Garyfallidis12</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
+<dd><p>Garyfallidis E., “Towards an accurate brain tractography”,</p>
+</dd>
+</dl>
+<p>PhD thesis, University of Cambridge, 2012.</p>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/736a375ec92f7df7dc77e8d8181d2256/tracking_introduction_eudx.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

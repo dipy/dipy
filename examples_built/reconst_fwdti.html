@@ -1,0 +1,353 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using the free water elimination model to remove DTI free water contamination</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_fwdti.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-the-free-water-elimination-model-to-remove-dti-free-water-contamination">
+<span id="example-reconst-fwdti"></span><h1>Using the free water elimination model to remove DTI free water contamination<a class="headerlink" href="#using-the-free-water-elimination-model-to-remove-dti-free-water-contamination" title="Permalink to this headline">¶</a></h1>
+<p>As shown previously (see <a class="reference internal" href="reconst_dti.html#example-reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a>), the diffusion tensor
+model is a simple way to characterize diffusion anisotropy. However, in regions
+near the cerebral ventricle and parenchyma can be underestimated by partial
+volume effects of the cerebral spinal fluid (CSF). This free water
+contamination can particularly corrupt Diffusion Tensor Imaging analysis of
+microstructural changes when different groups of subjects show different brain
+morphology (e.g. brain ventricle enlargement associated with brain tissue
+atrophy that occurs in several brain pathologies and ageing).</p>
+<p>A way to remove this free water influences is to expand the DTI model to take
+into account an extra compartment representing the contributions of free water
+diffusion <a class="reference internal" href="#pasternak2009" id="id1"><span>[Pasternak2009]</span></a>. The expression of the expanded DTI model is shown
+below:</p>
+<div class="math notranslate nohighlight">
+\[S(\mathbf{g}, b) = S_0(1-f)e^{-b\mathbf{g}^T \mathbf{D}
+\mathbf{g}}+S_0fe^{-b D_{iso}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{g}\)</span> and <span class="math notranslate nohighlight">\(b\)</span> are diffusion gradient direction and weighted
+(more information see <a class="reference internal" href="reconst_dti.html#example-reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a>), <span class="math notranslate nohighlight">\(S(\mathbf{g}, b)\)</span> is the
+diffusion-weighted signal measured, <span class="math notranslate nohighlight">\(S_0\)</span> is the signal in a measurement with
+no diffusion weighting, <span class="math notranslate nohighlight">\(\mathbf{D}\)</span> is the diffusion tensor, <span class="math notranslate nohighlight">\(f\)</span> the volume
+fraction of the free water component, and <span class="math notranslate nohighlight">\(D_{iso}\)</span> is the isotropic value of
+the free water diffusion (normally set to <span class="math notranslate nohighlight">\(3.0 \times 10^{-3} mm^{2}s^{-1}\)</span>).</p>
+<p>In this example, we show how to process a diffusion weighting dataset using
+an adapted version of the free water elimination proposed by <a class="reference internal" href="#hoy2014" id="id2"><span>[Hoy2014]</span></a>.</p>
+<p>The full details of Dipy’s free water DTI implementation was published in
+<a class="reference internal" href="#henriques2017" id="id3"><span>[Henriques2017]</span></a>. Please cite this work if you use this algorithm.</p>
+<p>Let’s start by importing the relevant modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.fwdti</span> <span class="k">as</span> <span class="nn">fwdti</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dti</span> <span class="k">as</span> <span class="nn">dti</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_cenir_multib</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_cenir_multib</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+</pre></div>
+</div>
+<p>Without spatial constrains the free water elimination model cannot be solved
+in data acquired from one non-zero b-value <a class="reference internal" href="#hoy2014" id="id4"><span>[Hoy2014]</span></a>. Therefore, here we
+download a dataset that was required from multiple b-values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cenir_multib</span><span class="p">(</span><span class="n">with_raw</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From the downloaded data, we read only the data acquired with b-values up to
+2000 <span class="math notranslate nohighlight">\(s/mm^2\)</span> to decrease the influence of non-Gaussian diffusion
+effects of the tissue which are not taken into account by the free water
+elimination model <a class="reference internal" href="#hoy2014" id="id5"><span>[Hoy2014]</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bvals</span> <span class="o">=</span> <span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">]</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cenir_multib</span><span class="p">(</span><span class="n">bvals</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>The free water DTI model can take some minutes to process the full data set.
+Thus, we remove the background of the image to avoid unnecessary calculations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">autocrop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Moreover, for illustration purposes we process only an axial slice of the
+data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">axial_slice</span> <span class="o">=</span> <span class="mi">40</span>
+
+<span class="n">mask_roi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">mask_roi</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>The free water elimination model fit can then be initialized by instantiating
+a FreeWaterTensorModel class object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fwdtimodel</span> <span class="o">=</span> <span class="n">fwdti</span><span class="o">.</span><span class="n">FreeWaterTensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The data can then be fitted using the <code class="docutils literal notranslate"><span class="pre">fit</span></code> function of the defined model
+object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fwdtifit</span> <span class="o">=</span> <span class="n">fwdtimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_roi</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This 2-steps procedure will create a FreeWaterTensorFit object which contains
+all the diffusion tensor statistics free for free water contaminations. Below
+we extract the fractional anisotropy (FA) and the mean diffusivity (MD) of the
+free water diffusion tensor.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA</span> <span class="o">=</span> <span class="n">fwdtifit</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">MD</span> <span class="o">=</span> <span class="n">fwdtifit</span><span class="o">.</span><span class="n">md</span>
+</pre></div>
+</div>
+<p>For comparison we also compute the same standard measures processed by the
+standard DTI model</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dtimodel</span> <span class="o">=</span> <span class="n">dti</span><span class="o">.</span><span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+
+<span class="n">dtifit</span> <span class="o">=</span> <span class="n">dtimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask_roi</span><span class="p">)</span>
+
+<span class="n">dti_FA</span> <span class="o">=</span> <span class="n">dtifit</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">dti_MD</span> <span class="o">=</span> <span class="n">dtifit</span><span class="o">.</span><span class="n">md</span>
+</pre></div>
+</div>
+<p>Below the FA values for both free water elimnantion DTI model and standard DTI
+model are plotted in panels A and B, while the repective MD values are ploted
+in panels D and E. For a better visualization of the effect of the free water
+correction, the differences between these two metrics are shown in panels C and
+E. In addition to the standard diffusion statistics, the estimated volume
+fraction of the free water contamination is shown on panel G.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;A) fwDTI FA&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;B) standard DTI FA&#39;</span><span class="p">)</span>
+
+<span class="n">FAdiff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span> <span class="o">-</span> <span class="n">dti_FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FAdiff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;C) FA difference&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;D) fwDTI MD&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;E) standard DTI MD&#39;</span><span class="p">)</span>
+
+<span class="n">MDdiff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span> <span class="o">-</span> <span class="n">dti_MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MDdiff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;F) MD difference&#39;</span><span class="p">)</span>
+
+<span class="n">F</span> <span class="o">=</span> <span class="n">fwdtifit</span><span class="o">.</span><span class="n">f</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">F</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;G) free water volume&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;In_vivo_free_water_DTI_and_standard_DTI_measures.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/In_vivo_free_water_DTI_and_standard_DTI_measures.png" src="../_images/In_vivo_free_water_DTI_and_standard_DTI_measures.png" />
+<p class="caption"><span class="caption-text">In vivo diffusion measures obtain from the free water DTI and standard
+DTI. The values of Fractional Anisotropy for the free water DTI model and
+standard DTI model and their difference are shown in the upper panels (A-C),
+while respective MD values are shown in the lower panels (D-F). In addition
+the free water volume fraction estimated from the fwDTI model is shown in
+panel G.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>From the figure, one can observe that the free water elimination model
+produces in general higher values of FA and lower values of MD than the
+standard DTI model. These differences in FA and MD estimation are expected
+due to the suppression of the free water isotropic diffusion components.
+Unexpected high amplitudes of FA are however observed in the periventricular
+gray matter. This is a known artefact of regions associated to voxels with high
+water volume fraction (i.e. voxels containing basically CSF). We are able to
+remove this problematic voxels by excluding all FA values associated with
+measured volume fractions above a reasonable threshold of 0.7:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA</span><span class="p">[</span><span class="n">F</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">dti_FA</span><span class="p">[</span><span class="n">F</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Above we reproduce the plots of the in vivo FA from the two DTI fits and where
+we can see that the inflated FA values were practically removed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;A) fwDTI FA&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                  <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;B) standard DTI FA&#39;</span><span class="p">)</span>
+
+<span class="n">FAdiff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span> <span class="o">-</span> <span class="n">dti_FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FAdiff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;C) FA difference&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;In_vivo_free_water_DTI_and_standard_DTI_corrected.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id7">
+<img alt="../_images/In_vivo_free_water_DTI_and_standard_DTI_corrected.png" src="../_images/In_vivo_free_water_DTI_and_standard_DTI_corrected.png" />
+<p class="caption"><span class="caption-text">In vivo FA measures obtain from the free water DTI (A) and standard
+DTI (B) and their difference (C). Problematic inflated FA values of the
+images were removed by dismissing voxels above a volume fraction threshold
+of 0.7.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="pasternak2009"><span class="brackets"><a class="fn-backref" href="#id1">Pasternak2009</a></span></dt>
+<dd><p>Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y.,
+2009. Free water elimination and mapping from diffusion MRI. Magn. Reson.
+Med. 62(3): 717-30. doi: 10.1002/mrm.22055.</p>
+</dd>
+<dt class="label" id="hoy2014"><span class="brackets">Hoy2014</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id4">2</a>,<a href="#id5">3</a>)</span></dt>
+<dd><p>Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
+Optimization of a free water elimination two-compartmental model for
+diffusion tensor imaging. NeuroImage 103, 323-333. doi:
+10.1016/j.neuroimage.2014.09.053</p>
+</dd>
+<dt class="label" id="henriques2017"><span class="brackets"><a class="fn-backref" href="#id3">Henriques2017</a></span></dt>
+<dd><p>Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free water
+elimination two-compartment model for diffusion tensor imaging.
+ReScience volume 3, issue 1, article number 2</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/5102e82aac7e10640087ee963b057a87/reconst_fwdti.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

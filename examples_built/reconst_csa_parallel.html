@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_csa_parallel.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="parallel-reconstruction-using-q-ball">
+<span id="example-reconst-csa-parallel"></span><h1>Parallel reconstruction using Q-Ball<a class="headerlink" href="#parallel-reconstruction-using-q-ball" title="Permalink to this headline">¶</a></h1>
+<p>We show an example of parallel reconstruction using a Q-Ball Constant Solid
+Angle model (see Aganj et al. (MRM 2010)) and <cite>peaks_from_model</cite>.</p>
+<p>Import modules, fetch and read data, and compute the mask.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_stanford_hardi</span><span class="p">,</span> <span class="n">read_stanford_hardi</span><span class="p">,</span> <span class="n">get_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.shm</span> <span class="k">import</span> <span class="n">CsaOdfModel</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+
+<span class="n">fetch_stanford_hardi</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_stanford_hardi</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                             <span class="n">numpass</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">autocrop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We instantiate our CSA model with spherical harmonic order of 4</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">csamodel</span> <span class="o">=</span> <span class="n">CsaOdfModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><cite>Peaks_from_model</cite> is used to calculate properties of the ODFs (Orientation
+Distribution Function) and return for
+example the peaks and their indices, or GFA which is similar to FA but for ODF
+based models. This function mainly needs a reconstruction model, the data and a
+sphere as input. The sphere is an object that represents the spherical discrete
+grid where the ODF values will be evaluated.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We will first run <cite>peaks_from_model</cite> using parallelism with 2 processes. If
+<cite>nbr_processes</cite> is None (default option) then this function will find the total
+number of processors from the operating system and use this number as
+<cite>nbr_processes</cite>. Sometimes it makes sense to use only a few of the processes in
+order to allow resources for other applications. However, most of the times
+using the default option will be sufficient.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">csapeaks_parallel</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">csamodel</span><span class="p">,</span>
+                                     <span class="n">data</span><span class="o">=</span><span class="n">maskdata</span><span class="p">,</span>
+                                     <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                                     <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                                     <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+                                     <span class="n">return_odf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                     <span class="n">normalize_peaks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">npeaks</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                     <span class="n">nbr_processes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">time_parallel</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;peaks_from_model using 2 processes ran in : &quot;</span> <span class="o">+</span>
+      <span class="nb">str</span><span class="p">(</span><span class="n">time_parallel</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2
+process</p>
+<p>If we don’t use parallelism then we need to set <cite>parallel=False</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">csapeaks</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">csamodel</span><span class="p">,</span>
+                            <span class="n">data</span><span class="o">=</span><span class="n">maskdata</span><span class="p">,</span>
+                            <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                            <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                            <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                            <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+                            <span class="n">return_odf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">normalize_peaks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">npeaks</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                            <span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                            <span class="n">nbr_processes</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+<span class="n">time_single</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;peaks_from_model ran in : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">time_single</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; seconds&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>peaks_from_model ran in : 196.872478008 seconds</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Speedup factor : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">time_single</span> <span class="o">/</span> <span class="n">time_parallel</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Speedup factor : 1.72191839533</p>
+<p>In Windows if you get a runtime error about frozen executable please start
+your script by adding your code above in a <code class="docutils literal notranslate"><span class="pre">main</span></code> function and use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">multiprocessing</span>
+    <span class="n">multiprocessing</span><span class="o">.</span><span class="n">freeze_support</span><span class="p">()</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/f10fd38e46ba24eb93a599e27a9c5ee8/reconst_csa_parallel.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

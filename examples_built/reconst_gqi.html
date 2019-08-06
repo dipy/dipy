@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_gqi.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruct-with-generalized-q-sampling-imaging">
+<span id="example-reconst-gqi"></span><h1>Reconstruct with Generalized Q-Sampling Imaging<a class="headerlink" href="#reconstruct-with-generalized-q-sampling-imaging" title="Permalink to this headline">¶</a></h1>
+<p>We show how to apply Generalized Q-Sampling Imaging <a class="reference internal" href="#yeh2010" id="id1"><span>[Yeh2010]</span></a>
+to diffusion MRI datasets. You can think of GQI as an analytical version of
+DSI orientation distribution function (ODF) (Garyfallidis, PhD thesis, 2012).</p>
+<p>First import the necessary modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_taiwan_ntu_dsi</span><span class="p">,</span> <span class="n">read_taiwan_ntu_dsi</span><span class="p">,</span> <span class="n">get_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.gqi</span> <span class="k">import</span> <span class="n">GeneralizedQSamplingModel</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+</pre></div>
+</div>
+<p>Download and read the data for this tutorial.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_taiwan_ntu_dsi</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_taiwan_ntu_dsi</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>img contains a nibabel Nifti1Image object (data) and gtab contains a
+<code class="docutils literal notranslate"><span class="pre">GradientTable</span></code> object (gradient information e.g. b-values). For example to
+read the b-values it is possible to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load the raw diffusion data and the affine.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>data.shape <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">60,</span> <span class="pre">203)</span></code></p>
+<p>This dataset has anisotropic voxel sizes, therefore reslicing is necessary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>Read the voxel size from the image header.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">voxel_size</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get_zooms</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Instantiate the model and apply it to the data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gqmodel</span> <span class="o">=</span> <span class="n">GeneralizedQSamplingModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">sampling_length</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameter <code class="docutils literal notranslate"><span class="pre">sampling_length</span></code> is used here to</p>
+<p>Lets just use one slice only from the data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataslice</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
+
+<span class="n">mask</span> <span class="o">=</span> <span class="n">dataslice</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">50</span>
+
+<span class="n">gqfit</span> <span class="o">=</span> <span class="n">gqmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dataslice</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load an ODF reconstruction sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Calculate the ODFs with this specific sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ODF</span> <span class="o">=</span> <span class="n">gqfit</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ODF.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">ODF</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>ODF.shape <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">724)</span></code></p>
+<p>Using <code class="docutils literal notranslate"><span class="pre">peaks_from_model</span></code> we can find the main peaks of the ODFs and other
+properties.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gqpeaks</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">gqmodel</span><span class="p">,</span>
+                           <span class="n">data</span><span class="o">=</span><span class="n">dataslice</span><span class="p">,</span>
+                           <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                           <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                           <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                           <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+                           <span class="n">return_odf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">normalize_peaks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">gqpeak_values</span> <span class="o">=</span> <span class="n">gqpeaks</span><span class="o">.</span><span class="n">peak_values</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gqpeak_indices</span></code> show which sphere points have the maximum values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gqpeak_indices</span> <span class="o">=</span> <span class="n">gqpeaks</span><span class="o">.</span><span class="n">peak_indices</span>
+</pre></div>
+</div>
+<p>It is also possible to calculate GFA.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">GFA</span> <span class="o">=</span> <span class="n">gqpeaks</span><span class="o">.</span><span class="n">gfa</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;GFA.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">GFA</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With parameter <code class="docutils literal notranslate"><span class="pre">return_odf=True</span></code> we can obtain the ODF using <code class="docutils literal notranslate"><span class="pre">gqpeaks.ODF</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gqpeaks</span> <span class="o">=</span> <span class="n">peaks_from_model</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">gqmodel</span><span class="p">,</span>
+                           <span class="n">data</span><span class="o">=</span><span class="n">dataslice</span><span class="p">,</span>
+                           <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span>
+                           <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                           <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+                           <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
+                           <span class="n">return_odf</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">normalize_peaks</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This ODF will be of course identical to the ODF calculated above as long as the same
+data and mask are used.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gqpeaks</span><span class="o">.</span><span class="n">odf</span> <span class="o">!=</span> <span class="n">ODF</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>True</p>
+<p>The advantage of using <code class="docutils literal notranslate"><span class="pre">peaks_from_model</span></code> is that it calculates the ODF only
+once and saves it or deletes if it is not necessary to keep.</p>
+<dl class="citation">
+<dt class="label" id="yeh2010"><span class="brackets"><a class="fn-backref" href="#id1">Yeh2010</a></span></dt>
+<dd><p>Yeh, F-C et al., Generalized Q-sampling imaging, IEEE Transactions
+on Medical Imaging, vol 29, no 9, 2010.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/fb9d26f45daab4de1bd6fa6878667efa/reconst_gqi.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

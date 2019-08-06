@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_dsi.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruct-with-diffusion-spectrum-imaging">
+<span id="example-reconst-dsi"></span><h1>Reconstruct with Diffusion Spectrum Imaging<a class="headerlink" href="#reconstruct-with-diffusion-spectrum-imaging" title="Permalink to this headline">¶</a></h1>
+<p>We show how to apply Diffusion Spectrum Imaging <a class="reference internal" href="#wedeen08" id="id1"><span>[Wedeen08]</span></a> to
+diffusion MRI datasets of Cartesian keyhole diffusion gradients.</p>
+<p>First import the necessary modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_taiwan_ntu_dsi</span><span class="p">,</span> <span class="n">read_taiwan_ntu_dsi</span><span class="p">,</span> <span class="n">get_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.dsi</span> <span class="k">import</span> <span class="n">DiffusionSpectrumModel</span>
+</pre></div>
+</div>
+<p>Download and read the data for this tutorial.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_taiwan_ntu_dsi</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_taiwan_ntu_dsi</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
+object (gradient information e.g. b-values). For example to read the b-values
+it is possible to write print(gtab.bvals).</p>
+<p>Load the raw diffusion data and the affine.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>data.shape <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">60,</span> <span class="pre">203)</span></code></p>
+<p>This dataset has anisotropic voxel sizes, therefore reslicing is necessary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>Read the voxel size from the image header.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">voxel_size</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get_zooms</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Instantiate the Model and apply it to the data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dsmodel</span> <span class="o">=</span> <span class="n">DiffusionSpectrumModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Lets just use one slice only from the data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dataslice</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
+
+<span class="n">dsfit</span> <span class="o">=</span> <span class="n">dsmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dataslice</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load an odf reconstruction sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Calculate the ODFs with this specific sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ODF</span> <span class="o">=</span> <span class="n">dsfit</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;ODF.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">ODF</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>ODF.shape <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">724)</span></code></p>
+<p>In a similar fashion it is possible to calculate the PDFs of all voxels
+in one call with the following way</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PDF</span> <span class="o">=</span> <span class="n">dsfit</span><span class="o">.</span><span class="n">pdf</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;PDF.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">PDF</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>PDF.shape <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">17,</span> <span class="pre">17,</span> <span class="pre">17)</span></code></p>
+<p>We see that even for a single slice this PDF array is close to 345 MBytes so we
+really have to be careful with memory usage when use this function with a full
+dataset.</p>
+<p>The simple solution is to generate/analyze the ODFs/PDFs by iterating through
+each voxel and not store them in memory if that is not necessary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.core.ndindex</span> <span class="k">import</span> <span class="n">ndindex</span>
+
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">ndindex</span><span class="p">(</span><span class="n">dataslice</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]):</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">dsmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dataslice</span><span class="p">[</span><span class="n">index</span><span class="p">])</span><span class="o">.</span><span class="n">pdf</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you really want to save the PDFs of a full dataset on the disc we recommend
+using memory maps (<code class="docutils literal notranslate"><span class="pre">numpy.memmap</span></code>) but still have in mind that even if you do
+that for example for a dataset of volume size <code class="docutils literal notranslate"><span class="pre">(96,</span> <span class="pre">96,</span> <span class="pre">60)</span></code> you will need about
+2.5 GBytes which can take less space when reasonable spheres (with &lt; 1000 vertices)
+are used.</p>
+<p>Let’s now calculate a map of Generalized Fractional Anisotropy (GFA) <a class="reference internal" href="#tuch04" id="id2"><span>[Tuch04]</span></a>
+using the DSI ODFs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.odf</span> <span class="k">import</span> <span class="n">gfa</span>
+
+<span class="n">GFA</span> <span class="o">=</span> <span class="n">gfa</span><span class="p">(</span><span class="n">ODF</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">fig_hist</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">GFA</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;dsi_gfa.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/dsi_gfa.png" src="../_images/dsi_gfa.png" />
+</div>
+<p>See also <a class="reference internal" href="reconst_dsi_metrics.html#example-reconst-dsi-metrics"><span class="std std-ref">Calculate DSI-based scalar maps</span></a> for calculating different types
+of DSI maps.</p>
+<dl class="citation">
+<dt class="label" id="wedeen08"><span class="brackets"><a class="fn-backref" href="#id1">Wedeen08</a></span></dt>
+<dd><p>Wedeen et al., Diffusion spectrum magnetic resonance imaging (DSI)
+tractography of crossing fibers, Neuroimage, vol 41, no 4,
+1267-1277, 2008.</p>
+</dd>
+<dt class="label" id="tuch04"><span class="brackets"><a class="fn-backref" href="#id2">Tuch04</a></span></dt>
+<dd><p>Tuch, D.S, Q-ball imaging, MRM, vol 52, no 6, 1358-1372, 2004.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/248bde5f53b16c0fb24cff558c89b712/reconst_dsi.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

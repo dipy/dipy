@@ -1,0 +1,41 @@
+
+========================
+dipy_track_pft
+========================
+
+usage: dipy_track_pft [-h] [--step_size float] [--seed_density int]
+                     [--pmf_threshold float] [--max_angle float]
+                     [--pft_back float] [--pft_front float] [--pft_count int]
+                     [--out_dir str] [--out_tractogram str] [--save_seeds]
+                     pam_files wm_files gm_files csf_files seeding_files
+
+Workflow for Particle Filtering Tracking.
+
+This workflow use a saved peaks and metrics (PAM) file as input.
+
+positional arguments:
+  pam_files             Path to the peaks and metrics files. This path may contain  wildcards to use multiple masks at once.
+  wm_files              Path to white matter partial volume estimate for tracking (CMC).
+  gm_files              Path to grey matter partial volume estimate for tracking (CMC).
+  csf_files             Path to cerebrospinal fluid partial volume estimate for tracking (CMC).
+  seeding_files         A binary image showing where we need to seed for tracking.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --step_size float     Step size used for tracking (default 0.2mm).
+  --seed_density int    Number of seeds per dimension inside voxel (default 1).  For example, seed_density of 2 means 8 regularly distributed  points in the voxel. And seed density of 1 means 1 point at the  center of the voxel.
+  --pmf_threshold float
+                        Threshold for ODF functions (default 0.1).
+  --max_angle float     Maximum angle between streamline segments (range [0, 90], default 20).
+  --pft_back float      Distance in mm to back track before starting the particle filtering tractography (default 2mm). The total particle filtering tractography distance is equal to back_tracking_dist + front_tracking_dist.
+  --pft_front float     Distance in mm to run the particle filtering tractography after the the back track distance (default 1mm). The total particle filtering tractography distance is equal to back_tracking_dist + front_tracking_dist.
+  --pft_count int       Number of particles to use in the particle filter (default 15).
+  --save_seeds          If true, save the seeds associated to their streamline in the 'data_per_streamline' Tractogram dictionary using 'seeds' as the key
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_tractogram str  Name of the tractogram file to be saved (default 'tractogram.trk')
+
+References: 
+Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M. Towardsquantitative connectivity analysis: reducing tractography biases.NeuroImage, 98, 266-278, 2014.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="A guide to making a DIPY release" href="../make_release.html" />
+    <link rel="prev" title="Maintainer workflow" href="maintainer_workflow.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../../index.html">
+  <img src="../../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../make_release.html" title="A guide to making a DIPY release"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="maintainer_workflow.html" title="Maintainer workflow"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" accesskey="U">Working with DIPY source code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../../documentation.html">Documentation</a></li>
+    <li><a href="../index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">git resources</a><ul>
+<li><a class="reference internal" href="#tutorials-and-summaries">Tutorials and summaries</a></li>
+<li><a class="reference internal" href="#advanced-git-workflow">Advanced git workflow</a></li>
+<li><a class="reference internal" href="#manual-pages-online">Manual pages online</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="maintainer_workflow.html"
+                        title="previous chapter">Maintainer workflow</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../make_release.html"
+                        title="next chapter">A guide to making a DIPY release</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/devel/gitwash/git_resources.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="git-resources">
+<span id="id1"></span><h1>git resources<a class="headerlink" href="#git-resources" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="tutorials-and-summaries">
+<h2>Tutorials and summaries<a class="headerlink" href="#tutorials-and-summaries" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://help.github.com">github help</a> has an excellent series of how-to guides.</p></li>
+<li><p><a class="reference external" href="http://learn.github.com/">learn.github</a> has an excellent series of tutorials</p></li>
+<li><p>The <a class="reference external" href="http://git-scm.com/book">pro git book</a> is a good in-depth book on git.</p></li>
+<li><p>A <a class="reference external" href="http://github.com/guides/git-cheat-sheet">git cheat sheet</a> is a page giving summaries of common commands.</p></li>
+<li><p>The <a class="reference external" href="http://schacon.github.com/git/user-manual.html">git user manual</a></p></li>
+<li><p>The <a class="reference external" href="http://schacon.github.com/git/gittutorial.html">git tutorial</a></p></li>
+<li><p>The <a class="reference external" href="http://book.git-scm.com/">git community book</a></p></li>
+<li><p><a class="reference external" href="http://www.gitready.com/">git ready</a> — a nice series of tutorials</p></li>
+<li><p><a class="reference external" href="http://www.gitcasts.com/">git casts</a> — video snippets giving git how-tos.</p></li>
+<li><p><a class="reference external" href="http://www-cs-students.stanford.edu/~blynn/gitmagic/index.html">git magic</a> — extended introduction with intermediate detail</p></li>
+<li><p>The <a class="reference external" href="http://tom.preston-werner.com/2009/05/19/the-git-parable.html">git parable</a> is an easy read explaining the concepts behind git.</p></li>
+<li><p><a class="reference external" href="http://matthew-brett.github.com/pydagogue/foundation.html">git foundation</a> expands on the <a class="reference external" href="http://tom.preston-werner.com/2009/05/19/the-git-parable.html">git parable</a>.</p></li>
+<li><p>Fernando Perez’ git page — <a class="reference external" href="http://www.fperez.org/py4science/git.html">Fernando’s git page</a> — many
+links and tips</p></li>
+<li><p>A good but technical page on <a class="reference external" href="http://www.eecs.harvard.edu/~cduan/technical/git/">git concepts</a></p></li>
+<li><p><a class="reference external" href="http://git-scm.com/course/svn.html">git svn crash course</a>: git for those of us used to <a class="reference external" href="http://subversion.tigris.org/">subversion</a></p></li>
+</ul>
+</div>
+<div class="section" id="advanced-git-workflow">
+<h2>Advanced git workflow<a class="headerlink" href="#advanced-git-workflow" title="Permalink to this headline">¶</a></h2>
+<p>There are many ways of working with git; here are some posts on the
+rules of thumb that other projects have come up with:</p>
+<ul class="simple">
+<li><p>Linus Torvalds on <a class="reference external" href="http://www.mail-archive.com/dri-devel&#64;lists.sourceforge.net/msg39091.html">linux git workflow</a> .  Summary; use the git tools
+to make the history of your edits as clean as possible; merge from
+upstream edits as little as possible in branches where you are doing
+active development.</p></li>
+</ul>
+</div>
+<div class="section" id="manual-pages-online">
+<h2>Manual pages online<a class="headerlink" href="#manual-pages-online" title="Permalink to this headline">¶</a></h2>
+<p>You can get these on your own machine with (e.g) <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">help</span> <span class="pre">push</span></code> or
+(same thing) <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">--help</span></code>, but, for convenience, here are the
+online manual pages for some common commands:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-add.html">git add</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-branch.html">git branch</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-checkout.html">git checkout</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-clone.html">git clone</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-commit.html">git commit</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-config.html">git config</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-diff.html">git diff</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-log.html">git log</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-pull.html">git pull</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-push.html">git push</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-remote.html">git remote</a></p></li>
+<li><p><a class="reference external" href="http://schacon.github.com/git/git-status.html">git status</a></p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../make_release.html" title="A guide to making a DIPY release"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="maintainer_workflow.html" title="Maintainer workflow"
+             >previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" >Working with DIPY source code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

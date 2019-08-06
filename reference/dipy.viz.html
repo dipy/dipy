@@ -1,0 +1,1868 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="workflows" href="dipy.workflows.html" />
+    <link rel="prev" title="tracking" href="dipy.tracking.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.workflows.html" title="workflows"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy.tracking.html" title="tracking"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">viz</span></code></a><ul>
+<li><a class="reference internal" href="#module-dipy.viz.app">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.app</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.viz.gmem">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.gmem</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.viz.panel">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.panel</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.viz.projections">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.projections</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.viz.regtools">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.regtools</span></code></a><ul>
+<li><a class="reference internal" href="#fetch-viz-icons">fetch_viz_icons</a></li>
+<li><a class="reference internal" href="#optional-package">optional_package</a></li>
+<li><a class="reference internal" href="#read-viz-icons">read_viz_icons</a></li>
+<li><a class="reference internal" href="#eventcounter"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventCounter</span></code></a></li>
+<li><a class="reference internal" href="#horizon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Horizon</span></code></a></li>
+<li><a class="reference internal" href="#space"><code class="xref py py-class docutils literal notranslate"><span class="pre">Space</span></code></a></li>
+<li><a class="reference internal" href="#statefultractogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatefulTractogram</span></code></a></li>
+<li><a class="reference internal" href="#streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">Streamlines</span></code></a></li>
+<li><a class="reference internal" href="#apply-shader">apply_shader</a></li>
+<li><a class="reference internal" href="#build-label">build_label</a></li>
+<li><a class="reference internal" href="#distinguishable-colormap">distinguishable_colormap</a></li>
+<li><a class="reference internal" href="#id2">horizon</a></li>
+<li><a class="reference internal" href="#length">length</a></li>
+<li><a class="reference internal" href="#id4">optional_package</a></li>
+<li><a class="reference internal" href="#qbx-and-merge">qbx_and_merge</a></li>
+<li><a class="reference internal" href="#save-tractogram">save_tractogram</a></li>
+<li><a class="reference internal" href="#setup-module">setup_module</a></li>
+<li><a class="reference internal" href="#slicer-panel">slicer_panel</a></li>
+<li><a class="reference internal" href="#globalhorizon"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalHorizon</span></code></a></li>
+<li><a class="reference internal" href="#id7">build_label</a></li>
+<li><a class="reference internal" href="#id8">optional_package</a></li>
+<li><a class="reference internal" href="#id9">setup_module</a></li>
+<li><a class="reference internal" href="#id10">slicer_panel</a></li>
+<li><a class="reference internal" href="#doctest-skip-parser">doctest_skip_parser</a></li>
+<li><a class="reference internal" href="#id11">optional_package</a></li>
+<li><a class="reference internal" href="#id12">setup_module</a></li>
+<li><a class="reference internal" href="#sph-project">sph_project</a></li>
+<li><a class="reference internal" href="#draw-lattice-2d">draw_lattice_2d</a></li>
+<li><a class="reference internal" href="#id13">optional_package</a></li>
+<li><a class="reference internal" href="#overlay-images">overlay_images</a></li>
+<li><a class="reference internal" href="#overlay-slices">overlay_slices</a></li>
+<li><a class="reference internal" href="#plot-2d-diffeomorphic-map">plot_2d_diffeomorphic_map</a></li>
+<li><a class="reference internal" href="#plot-slices">plot_slices</a></li>
+<li><a class="reference internal" href="#id14">setup_module</a></li>
+<li><a class="reference internal" href="#simple-plot">simple_plot</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy.tracking.html"
+                        title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tracking</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.workflows.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">workflows</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.viz.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy.viz">
+<span id="viz"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">viz</span></code><a class="headerlink" href="#module-dipy.viz" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.fetch_viz_icons" title="dipy.viz.fetch_viz_icons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fetch_viz_icons</span></code></a>()</p></td>
+<td><p>Download icons for fury</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.optional_package" title="dipy.viz.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.read_viz_icons" title="dipy.viz.read_viz_icons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_viz_icons</span></code></a>([style, fname])</p></td>
+<td><p>Read specific icon from specific style.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="module-dipy.viz.app">
+<span id="module-viz-app"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.app</span></code><a class="headerlink" href="#module-dipy.viz.app" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.EventCounter" title="dipy.viz.app.EventCounter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EventCounter</span></code></a>([events_names])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.Horizon" title="dipy.viz.app.Horizon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Horizon</span></code></a>([tractograms, images, pams, …])</p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.Space" title="dipy.viz.app.Space"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Space</span></code></a></p></td>
+<td><p>Enum to simplify future change to convention</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram" title="dipy.viz.app.StatefulTractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StatefulTractogram</span></code></a>(streamlines, reference, space)</p></td>
+<td><p>Class for stateful representation of collections of streamlines Object designed to be identical no matter the file format (trk, tck, vtk, fib, dpy).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.Streamlines" title="dipy.viz.app.Streamlines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Streamlines</span></code></a></p></td>
+<td><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.streamlines.array_sequence.ArraySequence</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.apply_shader" title="dipy.viz.app.apply_shader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_shader</span></code></a>(hz, actor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.build_label" title="dipy.viz.app.build_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_label</span></code></a>(text[, font_size, bold])</p></td>
+<td><p>Simple utility function to build labels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.distinguishable_colormap" title="dipy.viz.app.distinguishable_colormap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">distinguishable_colormap</span></code></a>([bg, exclude, …])</p></td>
+<td><p>Generate colors that are maximally perceptually distinct.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.horizon" title="dipy.viz.app.horizon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">horizon</span></code></a>([tractograms, images, pams, …])</p></td>
+<td><p>Highly interactive visualization - invert the Horizon!</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.length" title="dipy.viz.app.length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">length</span></code></a></p></td>
+<td><p>Euclidean length of streamlines</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.optional_package" title="dipy.viz.app.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.qbx_and_merge" title="dipy.viz.app.qbx_and_merge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">qbx_and_merge</span></code></a>(streamlines, thresholds[, …])</p></td>
+<td><p>Run QuickBundlesX and then run again on the centroids of the last layer</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.save_tractogram" title="dipy.viz.app.save_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_tractogram</span></code></a>(sft, filename[, …])</p></td>
+<td><p>Save the stateful tractogram in any format (trk, tck, vtk, fib, dpy)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.setup_module" title="dipy.viz.app.setup_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_module</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.slicer_panel" title="dipy.viz.app.slicer_panel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slicer_panel</span></code></a>(renderer, iren[, data, affine, …])</p></td>
+<td><p>Slicer panel with slicer included</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.viz.gmem">
+<span id="module-viz-gmem"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.gmem</span></code><a class="headerlink" href="#module-dipy.viz.gmem" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.gmem.GlobalHorizon" title="dipy.viz.gmem.GlobalHorizon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GlobalHorizon</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.viz.panel">
+<span id="module-viz-panel"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.panel</span></code><a class="headerlink" href="#module-dipy.viz.panel" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.panel.build_label" title="dipy.viz.panel.build_label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_label</span></code></a>(text[, font_size, bold])</p></td>
+<td><p>Simple utility function to build labels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.panel.optional_package" title="dipy.viz.panel.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.panel.setup_module" title="dipy.viz.panel.setup_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_module</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.panel.slicer_panel" title="dipy.viz.panel.slicer_panel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slicer_panel</span></code></a>(renderer, iren[, data, affine, …])</p></td>
+<td><p>Slicer panel with slicer included</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.viz.projections">
+<span id="module-viz-projections"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.projections</span></code><a class="headerlink" href="#module-dipy.viz.projections" title="Permalink to this headline">¶</a></h2>
+<p>Visualization tools for 2D projections of 3D functions on the sphere, such as
+ODFs.</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.projections.doctest_skip_parser" title="dipy.viz.projections.doctest_skip_parser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">doctest_skip_parser</span></code></a>(func)</p></td>
+<td><p>Decorator replaces custom skip test markup in doctests.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.projections.optional_package" title="dipy.viz.projections.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.projections.setup_module" title="dipy.viz.projections.setup_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_module</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.projections.sph_project" title="dipy.viz.projections.sph_project"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sph_project</span></code></a>(vertices, val[, ax, vmin, vmax, …])</p></td>
+<td><p>Draw a signal on a 2D projection of the sphere.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.viz.regtools">
+<span id="module-viz-regtools"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">viz.regtools</span></code><a class="headerlink" href="#module-dipy.viz.regtools" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.regtools.draw_lattice_2d" title="dipy.viz.regtools.draw_lattice_2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_lattice_2d</span></code></a>(nrows, ncols, delta)</p></td>
+<td><p>Create a regular lattice of nrows x ncols squares.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.regtools.optional_package" title="dipy.viz.regtools.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.regtools.overlay_images" title="dipy.viz.regtools.overlay_images"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overlay_images</span></code></a>(img0, img1[, title0, …])</p></td>
+<td><p>Plot two images one on top of the other using red and green channels.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.regtools.overlay_slices" title="dipy.viz.regtools.overlay_slices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overlay_slices</span></code></a>(L, R[, slice_index, …])</p></td>
+<td><p>Plot three overlaid slices from the given volumes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.regtools.plot_2d_diffeomorphic_map" title="dipy.viz.regtools.plot_2d_diffeomorphic_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_2d_diffeomorphic_map</span></code></a>(mapping[, delta, …])</p></td>
+<td><p>Draw the effect of warping a regular lattice by a diffeomorphic map.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.regtools.plot_slices" title="dipy.viz.regtools.plot_slices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_slices</span></code></a>(V[, slice_indices, fname])</p></td>
+<td><p>Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.regtools.setup_module" title="dipy.viz.regtools.setup_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_module</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.regtools.simple_plot" title="dipy.viz.regtools.simple_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simple_plot</span></code></a>(file_name, title, x, y, xlabel, …)</p></td>
+<td><p>Saves the simple plot with given x and y values</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="fetch-viz-icons">
+<h3>fetch_viz_icons<a class="headerlink" href="#fetch-viz-icons" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.fetch_viz_icons">
+<code class="sig-prename descclassname">dipy.viz.</code><code class="sig-name descname">fetch_viz_icons</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.fetch_viz_icons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download icons for fury</p>
+</dd></dl>
+
+</div>
+<div class="section" id="optional-package">
+<h3>optional_package<a class="headerlink" href="#optional-package" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.optional_package">
+<code class="sig-prename descclassname">dipy.viz.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="read-viz-icons">
+<h3>read_viz_icons<a class="headerlink" href="#read-viz-icons" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.read_viz_icons">
+<code class="sig-prename descclassname">dipy.viz.</code><code class="sig-name descname">read_viz_icons</code><span class="sig-paren">(</span><em class="sig-param">style='icomoon'</em>, <em class="sig-param">fname='infinity.png'</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.read_viz_icons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read specific icon from specific style.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>style</strong><span class="classifier">str</span></dt><dd><p>Current icon style. Default is icomoon.</p>
+</dd>
+<dt><strong>fname</strong><span class="classifier">str</span></dt><dd><p>Filename of icon. This should be found in folder HOME/.fury/style/.
+Default is infinity.png.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>path</strong><span class="classifier">str</span></dt><dd><p>Complete path of icon.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="eventcounter">
+<h3><a class="reference internal" href="#dipy.viz.app.EventCounter" title="dipy.viz.app.EventCounter"><code class="xref py py-class docutils literal notranslate"><span class="pre">EventCounter</span></code></a><a class="headerlink" href="#eventcounter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.viz.app.EventCounter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">EventCounter</code><span class="sig-paren">(</span><em class="sig-param">events_names=['CharEvent', 'MouseMoveEvent', 'KeyPressEvent', 'KeyReleaseEvent', 'LeftButtonPressEvent', 'LeftButtonReleaseEvent', 'RightButtonPressEvent', 'RightButtonReleaseEvent', 'MiddleButtonPressEvent', 'MiddleButtonReleaseEvent']</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.EventCounter.count" title="dipy.viz.app.EventCounter.count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count</span></code></a>(i_ren, _obj, _element)</p></td>
+<td><p>Simple callback that counts events occurences.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 38%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>check_counts</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>load</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>monitor</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>save</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">events_names=['CharEvent', 'MouseMoveEvent', 'KeyPressEvent', 'KeyReleaseEvent', 'LeftButtonPressEvent', 'LeftButtonReleaseEvent', 'RightButtonPressEvent', 'RightButtonReleaseEvent', 'MiddleButtonPressEvent', 'MiddleButtonReleaseEvent']</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.check_counts">
+<code class="sig-name descname">check_counts</code><span class="sig-paren">(</span><em class="sig-param">expected</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.check_counts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.count">
+<code class="sig-name descname">count</code><span class="sig-paren">(</span><em class="sig-param">i_ren</em>, <em class="sig-param">_obj</em>, <em class="sig-param">_element</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple callback that counts events occurences.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.load">
+<em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.load" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.monitor">
+<code class="sig-name descname">monitor</code><span class="sig-paren">(</span><em class="sig-param">ui_component</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.monitor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.EventCounter.save">
+<code class="sig-name descname">save</code><span class="sig-paren">(</span><em class="sig-param">filename</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.EventCounter.save" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="horizon">
+<h3><a class="reference internal" href="#dipy.viz.app.Horizon" title="dipy.viz.app.Horizon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Horizon</span></code></a><a class="headerlink" href="#horizon" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.viz.app.Horizon">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">Horizon</code><span class="sig-paren">(</span><em class="sig-param">tractograms=None</em>, <em class="sig-param">images=None</em>, <em class="sig-param">pams=None</em>, <em class="sig-param">cluster=False</em>, <em class="sig-param">cluster_thr=15.0</em>, <em class="sig-param">random_colors=False</em>, <em class="sig-param">length_gt=0</em>, <em class="sig-param">length_lt=1000</em>, <em class="sig-param">clusters_gt=0</em>, <em class="sig-param">clusters_lt=10000</em>, <em class="sig-param">world_coords=True</em>, <em class="sig-param">interactive=True</em>, <em class="sig-param">out_png='tmp.png'</em>, <em class="sig-param">recorded_events=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.Horizon.add_actors" title="dipy.viz.app.Horizon.add_actors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_actors</span></code></a>(scene, tractograms, threshold)</p></td>
+<td><p>Add streamline actors to the scene</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>build_scene</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>build_show</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>remove_actors</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.viz.app.Horizon.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">tractograms=None</em>, <em class="sig-param">images=None</em>, <em class="sig-param">pams=None</em>, <em class="sig-param">cluster=False</em>, <em class="sig-param">cluster_thr=15.0</em>, <em class="sig-param">random_colors=False</em>, <em class="sig-param">length_gt=0</em>, <em class="sig-param">length_lt=1000</em>, <em class="sig-param">clusters_gt=0</em>, <em class="sig-param">clusters_lt=10000</em>, <em class="sig-param">world_coords=True</em>, <em class="sig-param">interactive=True</em>, <em class="sig-param">out_png='tmp.png'</em>, <em class="sig-param">recorded_events=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Highly interactive visualization - invert the Horizon!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tractograms</strong><span class="classifier">sequence of Streamlines</span></dt><dd><p>Sequence of Streamlines objects</p>
+</dd>
+<dt><strong>images</strong><span class="classifier">sequence of tuples</span></dt><dd><p>Each tuple contains data and affine</p>
+</dd>
+<dt><strong>pams</strong><span class="classifier">sequence of PeakAndMetrics</span></dt><dd></dd>
+<dt><strong>cluster</strong><span class="classifier">bool</span></dt><dd><p>Enable QuickBundlesX clustering</p>
+</dd>
+<dt><strong>cluster_thr</strong><span class="classifier">float</span></dt><dd><p>Distance threshold used for clustering</p>
+</dd>
+<dt><strong>random_colors</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>length_gt</strong><span class="classifier">float</span></dt><dd></dd>
+<dt><strong>length_lt</strong><span class="classifier">float</span></dt><dd></dd>
+<dt><strong>clusters_gt</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>clusters_lt</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>world_coords</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>interactive</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>out_png</strong><span class="classifier">string</span></dt><dd></dd>
+<dt><strong>recorded_events</strong><span class="classifier">string</span></dt><dd><p>File path to replay recorded events</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r984363f17fa0-horizon-ismrm19"><span class="brackets"><a class="fn-backref" href="#id1">Horizon_ISMRM19</a></span></dt>
+<dd><p>Garyfallidis E., M-A. Cote, B.Q. Chandio,
+S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
+S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
+adaptive visualization, Proceedings of: International Society of
+Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.Horizon.add_actors">
+<code class="sig-name descname">add_actors</code><span class="sig-paren">(</span><em class="sig-param">scene</em>, <em class="sig-param">tractograms</em>, <em class="sig-param">threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon.add_actors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add streamline actors to the scene</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.Horizon.build_scene">
+<code class="sig-name descname">build_scene</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon.build_scene" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.Horizon.build_show">
+<code class="sig-name descname">build_show</code><span class="sig-paren">(</span><em class="sig-param">scene</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon.build_show" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.Horizon.remove_actors">
+<code class="sig-name descname">remove_actors</code><span class="sig-paren">(</span><em class="sig-param">scene</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Horizon.remove_actors" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="space">
+<h3><a class="reference internal" href="#dipy.viz.app.Space" title="dipy.viz.app.Space"><code class="xref py py-class docutils literal notranslate"><span class="pre">Space</span></code></a><a class="headerlink" href="#space" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.viz.app.Space">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">Space</code><a class="headerlink" href="#dipy.viz.app.Space" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Enum to simplify future change to convention</p>
+<dl class="method">
+<dt id="dipy.viz.app.Space.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.Space.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.viz.app.Space.RASMM">
+<code class="sig-name descname">RASMM</code><em class="property"> = 'rasmm'</em><a class="headerlink" href="#dipy.viz.app.Space.RASMM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.viz.app.Space.VOX">
+<code class="sig-name descname">VOX</code><em class="property"> = 'vox'</em><a class="headerlink" href="#dipy.viz.app.Space.VOX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.viz.app.Space.VOXMM">
+<code class="sig-name descname">VOXMM</code><em class="property"> = 'voxmm'</em><a class="headerlink" href="#dipy.viz.app.Space.VOXMM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="statefultractogram">
+<h3><a class="reference internal" href="#dipy.viz.app.StatefulTractogram" title="dipy.viz.app.StatefulTractogram"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatefulTractogram</span></code></a><a class="headerlink" href="#statefultractogram" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.viz.app.StatefulTractogram">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">StatefulTractogram</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">reference</em>, <em class="sig-param">space</em>, <em class="sig-param">shifted_origin=False</em>, <em class="sig-param">data_per_point=None</em>, <em class="sig-param">data_per_streamline=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class for stateful representation of collections of streamlines
+Object designed to be identical no matter the file format
+(trk, tck, vtk, fib, dpy). Facilitate transformation between space and
+data manipulation for each streamline / point.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.data_per_point" title="dipy.viz.app.StatefulTractogram.data_per_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data_per_point</span></code></a></dt><dd><p>Getter for data_per_point</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.data_per_streamline" title="dipy.viz.app.StatefulTractogram.data_per_streamline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">data_per_streamline</span></code></a></dt><dd><p>Getter for data_per_streamline</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.shifted_origin" title="dipy.viz.app.StatefulTractogram.shifted_origin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shifted_origin</span></code></a></dt><dd><p>Getter for shift</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.space" title="dipy.viz.app.StatefulTractogram.space"><code class="xref py py-obj docutils literal notranslate"><span class="pre">space</span></code></a></dt><dd><p>Getter for the current space</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.space_attribute" title="dipy.viz.app.StatefulTractogram.space_attribute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">space_attribute</span></code></a></dt><dd><p>Getter for spatial attribute</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.streamlines" title="dipy.viz.app.StatefulTractogram.streamlines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">streamlines</span></code></a></dt><dd><p>Partially safe getter for streamlines</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.compute_bounding_box" title="dipy.viz.app.StatefulTractogram.compute_bounding_box"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_bounding_box</span></code></a>()</p></td>
+<td><p>Compute the bounding box of the streamlines in their current state</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.get_streamlines_copy" title="dipy.viz.app.StatefulTractogram.get_streamlines_copy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_streamlines_copy</span></code></a>()</p></td>
+<td><p>Safe getter for streamlines (for slicing)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.is_bbox_in_vox_valid" title="dipy.viz.app.StatefulTractogram.is_bbox_in_vox_valid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_bbox_in_vox_valid</span></code></a>()</p></td>
+<td><p>Verify that the bounding box is valid in voxel space Will transform the streamlines for OBB, slow for big tractogram</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.remove_invalid_streamlines" title="dipy.viz.app.StatefulTractogram.remove_invalid_streamlines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_invalid_streamlines</span></code></a>()</p></td>
+<td><p>Remove streamlines with invalid coordinates from the object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.to_center" title="dipy.viz.app.StatefulTractogram.to_center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_center</span></code></a>()</p></td>
+<td><p>Safe function to shift streamlines so the center of voxel is the origin</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.to_corner" title="dipy.viz.app.StatefulTractogram.to_corner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_corner</span></code></a>()</p></td>
+<td><p>Safe function to shift streamlines so the corner of voxel is the origin</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.to_rasmm" title="dipy.viz.app.StatefulTractogram.to_rasmm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_rasmm</span></code></a>()</p></td>
+<td><p>Safe function to transform streamlines and update state</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.to_vox" title="dipy.viz.app.StatefulTractogram.to_vox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_vox</span></code></a>()</p></td>
+<td><p>Safe function to transform streamlines and update state</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.viz.app.StatefulTractogram.to_voxmm" title="dipy.viz.app.StatefulTractogram.to_voxmm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_voxmm</span></code></a>()</p></td>
+<td><p>Safe function to transform streamlines and update state</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">reference</em>, <em class="sig-param">space</em>, <em class="sig-param">shifted_origin=False</em>, <em class="sig-param">data_per_point=None</em>, <em class="sig-param">data_per_streamline=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a strict, state-aware, robust tractogram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>streamlines</strong><span class="classifier">list or ArraySequence</span></dt><dd><p>Streamlines of the tractogram</p>
+</dd>
+<dt><strong>reference</strong><span class="classifier">Nifti or Trk filename, Nifti1Image or TrkFile,</span></dt><dd><p>Nifti1Header, trk.header (dict) or another Stateful Tractogram
+Reference that provides the spatial attribute.
+Typically a nifti-related object from the native diffusion used for
+streamlines generation</p>
+</dd>
+<dt><strong>space</strong><span class="classifier">string</span></dt><dd><p>Current space in which the streamlines are (vox, voxmm or rasmm)
+Typically after tracking the space is VOX, after nibabel loading
+the space is RASMM</p>
+</dd>
+<dt><strong>shifted_origin</strong><span class="classifier">bool</span></dt><dd><p>Information on the position of the origin,
+False is Trackvis standard, default (corner of the voxel)
+True is NIFTI standard (center of the voxel)</p>
+</dd>
+<dt><strong>data_per_point</strong><span class="classifier">dict</span></dt><dd><p>Dictionary in which each key has X items, each items has Y_i items
+X being the number of streamlines
+Y_i being the number of points on streamlines #i</p>
+</dd>
+<dt><strong>data_per_streamline</strong><span class="classifier">dict</span></dt><dd><p>Dictionary in which each key has X items
+X being the number of streamlines</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Very important to respect the convention, verify that streamlines
+match the reference and are effectively in the right space.</p>
+<p>Any change to the number of streamlines, data_per_point or
+data_per_streamline requires particular verification.</p>
+<p>In a case of manipulation not allowed by this object, use Nibabel
+directly and be careful.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.compute_bounding_box">
+<code class="sig-name descname">compute_bounding_box</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.compute_bounding_box" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the bounding box of the streamlines in their current state</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">ndarray</span></dt><dd><p>8 corners of the XYZ aligned box, all zeros if no streamlines</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.data_per_point">
+<em class="property">property </em><code class="sig-name descname">data_per_point</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.data_per_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for data_per_point</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.data_per_streamline">
+<em class="property">property </em><code class="sig-name descname">data_per_streamline</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.data_per_streamline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for data_per_streamline</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.get_streamlines_copy">
+<code class="sig-name descname">get_streamlines_copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.get_streamlines_copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe getter for streamlines (for slicing)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.is_bbox_in_vox_valid">
+<code class="sig-name descname">is_bbox_in_vox_valid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.is_bbox_in_vox_valid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Verify that the bounding box is valid in voxel space
+Will transform the streamlines for OBB, slow for big tractogram</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">bool</span></dt><dd><p>Are the streamlines within the volume of the associated reference</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.remove_invalid_streamlines">
+<code class="sig-name descname">remove_invalid_streamlines</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.remove_invalid_streamlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove streamlines with invalid coordinates from the object.
+Will also remove the data_per_point and data_per_streamline.
+Invalid coordinates are any X,Y,Z values above the reference
+dimensions or below zero
+Returns
+——-
+output : tuple</p>
+<blockquote>
+<div><p>Tuple of two list, indices_to_remove, indices_to_keep</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.shifted_origin">
+<em class="property">property </em><code class="sig-name descname">shifted_origin</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.shifted_origin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for shift</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.space">
+<em class="property">property </em><code class="sig-name descname">space</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.space" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for the current space</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.space_attribute">
+<em class="property">property </em><code class="sig-name descname">space_attribute</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.space_attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Getter for spatial attribute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.streamlines">
+<em class="property">property </em><code class="sig-name descname">streamlines</code><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.streamlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Partially safe getter for streamlines</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.to_center">
+<code class="sig-name descname">to_center</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.to_center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe function to shift streamlines so the center of voxel is
+the origin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.to_corner">
+<code class="sig-name descname">to_corner</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.to_corner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe function to shift streamlines so the corner of voxel is
+the origin</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.to_rasmm">
+<code class="sig-name descname">to_rasmm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.to_rasmm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe function to transform streamlines and update state</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.to_vox">
+<code class="sig-name descname">to_vox</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.to_vox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe function to transform streamlines and update state</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.viz.app.StatefulTractogram.to_voxmm">
+<code class="sig-name descname">to_voxmm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.StatefulTractogram.to_voxmm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Safe function to transform streamlines and update state</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="streamlines">
+<h3><a class="reference internal" href="#dipy.viz.app.Streamlines" title="dipy.viz.app.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">Streamlines</span></code></a><a class="headerlink" href="#streamlines" title="Permalink to this headline">¶</a></h3>
+<dl class="attribute">
+<dt id="dipy.viz.app.Streamlines">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">Streamlines</code><a class="headerlink" href="#dipy.viz.app.Streamlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.streamlines.array_sequence.ArraySequence</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="apply-shader">
+<h3>apply_shader<a class="headerlink" href="#apply-shader" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.apply_shader">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">apply_shader</code><span class="sig-paren">(</span><em class="sig-param">hz</em>, <em class="sig-param">actor</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.apply_shader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="build-label">
+<h3>build_label<a class="headerlink" href="#build-label" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.build_label">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">build_label</code><span class="sig-paren">(</span><em class="sig-param">text</em>, <em class="sig-param">font_size=18</em>, <em class="sig-param">bold=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.build_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple utility function to build labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>text</strong><span class="classifier">str</span></dt><dd></dd>
+<dt><strong>font_size</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>bold</strong><span class="classifier">bool</span></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">TextBlock2D</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="distinguishable-colormap">
+<h3>distinguishable_colormap<a class="headerlink" href="#distinguishable-colormap" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.distinguishable_colormap">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">distinguishable_colormap</code><span class="sig-paren">(</span><em class="sig-param">bg=(0</em>, <em class="sig-param">0</em>, <em class="sig-param">0)</em>, <em class="sig-param">exclude=[]</em>, <em class="sig-param">nb_colors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.distinguishable_colormap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate colors that are maximally perceptually distinct.</p>
+<p>This function generates a set of colors which are distinguishable
+by reference to the “Lab” color space, which more closely matches
+human color perception than RGB. Given an initial large list of possible
+colors, it iteratively chooses the entry in the list that is farthest (in
+Lab space) from all previously-chosen entries. While this “greedy”
+algorithm does not yield a global maximum, it is simple and efficient.
+Moreover, the sequence of colors is consistent no matter how many you
+request, which facilitates the users’ ability to learn the color order
+and avoids major changes in the appearance of plots when adding or
+removing lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>bg</strong><span class="classifier">tuple (optional)</span></dt><dd><p>Background RGB color, to make sure that your colors are also
+distinguishable from the background. Default: (0, 0, 0).</p>
+</dd>
+<dt><strong>exclude</strong><span class="classifier">list of tuples (optional)</span></dt><dd><p>Additional RGB colors to be distinguishable from.</p>
+</dd>
+<dt><strong>nb_colors</strong><span class="classifier">int (optional)</span></dt><dd><p>Number of colors desired. Default: generate as many colors as needed.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>iterable of ndarray</strong></dt><dd><p>If <cite>nb_colors</cite> is provided, returns a list of RBG colors.
+Otherwise, yields the next RBG color maximally perceptually
+distinct from previous ones.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Code was initially in matlab and was rewritten in Python for dipy by
+the Dipy Team. Thank you Tim Holy for putting this online. Visit
+<a class="reference external" href="http://www.mathworks.com/matlabcentral/fileexchange/29702">http://www.mathworks.com/matlabcentral/fileexchange/29702</a> for the
+original implementation (v1.2), 14 Dec 2010 (Updated 07 Feb 2011).</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.viz.colormap</span> <span class="k">import</span> <span class="n">distinguishable_colormap</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Generate 5 colors</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">distinguishable_colormap</span><span class="p">())]</span>
+<span class="go">[array([ 0.,  1.,  0.]),</span>
+<span class="go"> array([ 1.,  0.,  1.]),</span>
+<span class="go"> array([ 1.        ,  0.75862069,  0.03448276]),</span>
+<span class="go"> array([ 0.        ,  1.        ,  0.89655172]),</span>
+<span class="go"> array([ 0.        ,  0.17241379,  1.        ])]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id2">
+<h3>horizon<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.horizon">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">horizon</code><span class="sig-paren">(</span><em class="sig-param">tractograms=None</em>, <em class="sig-param">images=None</em>, <em class="sig-param">pams=None</em>, <em class="sig-param">cluster=False</em>, <em class="sig-param">cluster_thr=15.0</em>, <em class="sig-param">random_colors=False</em>, <em class="sig-param">length_gt=0</em>, <em class="sig-param">length_lt=1000</em>, <em class="sig-param">clusters_gt=0</em>, <em class="sig-param">clusters_lt=10000</em>, <em class="sig-param">world_coords=True</em>, <em class="sig-param">interactive=True</em>, <em class="sig-param">out_png='tmp.png'</em>, <em class="sig-param">recorded_events=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.horizon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Highly interactive visualization - invert the Horizon!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tractograms</strong><span class="classifier">sequence</span></dt><dd><p>Sequence of Streamlines objects</p>
+</dd>
+<dt><strong>images</strong><span class="classifier">sequence of tuples</span></dt><dd><p>Each tuple contains data and affine</p>
+</dd>
+<dt><strong>pams</strong><span class="classifier">peaks</span></dt><dd></dd>
+<dt><strong>cluster</strong><span class="classifier">bool</span></dt><dd><p>Enable QuickBundlesX clustering</p>
+</dd>
+<dt><strong>cluster_thr</strong><span class="classifier">float</span></dt><dd><p>Distance threshold used for clustering</p>
+</dd>
+<dt><strong>random_colors</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>length_gt</strong><span class="classifier">float</span></dt><dd></dd>
+<dt><strong>length_lt</strong><span class="classifier">float</span></dt><dd></dd>
+<dt><strong>clusters_gt</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>clusters_lt</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>world_coords</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>interactive</strong><span class="classifier">bool</span></dt><dd></dd>
+<dt><strong>out_png</strong><span class="classifier">string</span></dt><dd></dd>
+<dt><strong>recorded_events</strong><span class="classifier">string</span></dt><dd><p>File path to replay recorded events</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r171dccc25b00-horizon-ismrm19"><span class="brackets"><a class="fn-backref" href="#id3">Horizon_ISMRM19</a></span></dt>
+<dd><p>Garyfallidis E., M-A. Cote, B.Q. Chandio,
+S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,
+S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and
+adaptive visualization, Proceedings of: International Society of
+Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="length">
+<h3>length<a class="headerlink" href="#length" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.length">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">length</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Euclidean length of streamlines</p>
+<p>Length is in mm only if streamlines are expressed in world coordinates.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>streamlines</strong><span class="classifier">ndarray or a list or <a class="reference internal" href="dipy.tracking.html#dipy.tracking.Streamlines" title="dipy.tracking.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.Streamlines</span></code></a></span></dt><dd><p>If ndarray, must have shape (N,3) where N is the number of points
+of the streamline.
+If list, each item must be ndarray shape (Ni,3) where Ni is the number
+of points of streamline i.
+If <a class="reference internal" href="dipy.tracking.html#dipy.tracking.Streamlines" title="dipy.tracking.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.Streamlines</span></code></a>, its <cite>common_shape</cite> must be 3.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>lengths</strong><span class="classifier">scalar or ndarray shape (N,)</span></dt><dd><p>If there is only one streamline, a scalar representing the length of the
+streamline.
+If there are several streamlines, ndarray containing the length of every
+streamline.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">length</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">streamline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expected_length</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">3</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">3</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="mi">4</span><span class="o">**</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">length</span><span class="p">(</span><span class="n">streamline</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected_length</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">streamlines</span> <span class="o">=</span> <span class="p">[</span><span class="n">streamline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">streamline</span><span class="p">,</span> <span class="n">streamline</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expected_lengths</span> <span class="o">=</span> <span class="p">[</span><span class="n">expected_length</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">expected_length</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span><span class="n">length</span><span class="p">(</span><span class="n">streamlines</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">length</span><span class="p">(</span><span class="n">streamlines</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">expected_lengths</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">length</span><span class="p">([])</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">length</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]))</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id4">
+<h3>optional_package<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.optional_package">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="qbx-and-merge">
+<h3>qbx_and_merge<a class="headerlink" href="#qbx-and-merge" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.qbx_and_merge">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">qbx_and_merge</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">thresholds</em>, <em class="sig-param">nb_pts=20</em>, <em class="sig-param">select_randomly=None</em>, <em class="sig-param">rng=None</em>, <em class="sig-param">verbose=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.qbx_and_merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run QuickBundlesX and then run again on the centroids of the last layer</p>
+<p>Running again QuickBundles at a layer has the effect of merging
+some of the clusters that maybe originally devided because of branching.
+This function help obtain a result at a QuickBundles quality but with
+QuickBundlesX speed. The merging phase has low cost because it is applied
+only on the centroids rather than the entire dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>streamlines</strong><span class="classifier">Streamlines</span></dt><dd></dd>
+<dt><strong>thresholds</strong><span class="classifier">sequence</span></dt><dd><p>List of distance thresholds for QuickBundlesX.</p>
+</dd>
+<dt><strong>nb_pts</strong><span class="classifier">int</span></dt><dd><p>Number of points for discretizing each streamline</p>
+</dd>
+<dt><strong>select_randomly</strong><span class="classifier">int</span></dt><dd><p>Randomly select a specific number of streamlines. If None all the
+streamlines are used.</p>
+</dd>
+<dt><strong>rng</strong><span class="classifier">RandomState</span></dt><dd><p>If None then RandomState is initialized internally.</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool</span></dt><dd><p>If True print information in stdout.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>clusters</strong><span class="classifier">obj</span></dt><dd><p>Contains the clusters of the last layer of QuickBundlesX after merging.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r2d7ef898ecc1-garyfallidis12"><span class="brackets"><a class="fn-backref" href="#id5">Garyfallidis12</a></span></dt>
+<dd><p>Garyfallidis E. et al., QuickBundles a method for
+tractography simplification, Frontiers in Neuroscience,
+vol 6, no 175, 2012.</p>
+</dd>
+<dt class="label" id="r2d7ef898ecc1-garyfallidis16"><span class="brackets"><a class="fn-backref" href="#id6">Garyfallidis16</a></span></dt>
+<dd><p>Garyfallidis E. et al. QuickBundlesX: Sequential
+clustering of millions of streamlines in multiple
+levels of detail at record execution time. Proceedings
+of the, International Society of Magnetic Resonance
+in Medicine (ISMRM). Singapore, 4187, 2016.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="save-tractogram">
+<h3>save_tractogram<a class="headerlink" href="#save-tractogram" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.save_tractogram">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">save_tractogram</code><span class="sig-paren">(</span><em class="sig-param">sft</em>, <em class="sig-param">filename</em>, <em class="sig-param">bbox_valid_check=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.save_tractogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the stateful tractogram in any format (trk, tck, vtk, fib, dpy)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sft</strong><span class="classifier">StatefulTractogram</span></dt><dd><p>The stateful tractogram to save</p>
+</dd>
+<dt><strong>filename</strong><span class="classifier">string</span></dt><dd><p>Filename with valid extension</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">bool</span></dt><dd><p>Did the saving work properly</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="setup-module">
+<h3>setup_module<a class="headerlink" href="#setup-module" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.setup_module">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">setup_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.setup_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="slicer-panel">
+<h3>slicer_panel<a class="headerlink" href="#slicer-panel" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.app.slicer_panel">
+<code class="sig-prename descclassname">dipy.viz.app.</code><code class="sig-name descname">slicer_panel</code><span class="sig-paren">(</span><em class="sig-param">renderer</em>, <em class="sig-param">iren</em>, <em class="sig-param">data=None</em>, <em class="sig-param">affine=None</em>, <em class="sig-param">world_coords=False</em>, <em class="sig-param">pam=None</em>, <em class="sig-param">mask=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.app.slicer_panel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Slicer panel with slicer included</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>renderer</strong><span class="classifier">Renderer</span></dt><dd></dd>
+<dt><strong>iren</strong><span class="classifier">Interactor</span></dt><dd></dd>
+<dt><strong>data</strong><span class="classifier">3d ndarray</span></dt><dd></dd>
+<dt><strong>affine</strong><span class="classifier">4x4 ndarray</span></dt><dd></dd>
+<dt><strong>world_coords</strong><span class="classifier">bool</span></dt><dd><p>If True then the affine is applied.</p>
+</dd>
+<dt><strong>peaks</strong><span class="classifier">PeaksAndMetrics</span></dt><dd><p>Default None</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>panel</strong><span class="classifier">Panel</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="globalhorizon">
+<h3><a class="reference internal" href="#dipy.viz.gmem.GlobalHorizon" title="dipy.viz.gmem.GlobalHorizon"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalHorizon</span></code></a><a class="headerlink" href="#globalhorizon" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.viz.gmem.GlobalHorizon">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.viz.gmem.</code><code class="sig-name descname">GlobalHorizon</code><a class="headerlink" href="#dipy.viz.gmem.GlobalHorizon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="dipy.viz.gmem.GlobalHorizon.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.gmem.GlobalHorizon.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id7">
+<h3>build_label<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.panel.build_label">
+<code class="sig-prename descclassname">dipy.viz.panel.</code><code class="sig-name descname">build_label</code><span class="sig-paren">(</span><em class="sig-param">text</em>, <em class="sig-param">font_size=18</em>, <em class="sig-param">bold=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.panel.build_label" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple utility function to build labels</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>text</strong><span class="classifier">str</span></dt><dd></dd>
+<dt><strong>font_size</strong><span class="classifier">int</span></dt><dd></dd>
+<dt><strong>bold</strong><span class="classifier">bool</span></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">TextBlock2D</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id8">
+<h3>optional_package<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.panel.optional_package">
+<code class="sig-prename descclassname">dipy.viz.panel.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.panel.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id9">
+<h3>setup_module<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.panel.setup_module">
+<code class="sig-prename descclassname">dipy.viz.panel.</code><code class="sig-name descname">setup_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.panel.setup_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="id10">
+<h3>slicer_panel<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.panel.slicer_panel">
+<code class="sig-prename descclassname">dipy.viz.panel.</code><code class="sig-name descname">slicer_panel</code><span class="sig-paren">(</span><em class="sig-param">renderer</em>, <em class="sig-param">iren</em>, <em class="sig-param">data=None</em>, <em class="sig-param">affine=None</em>, <em class="sig-param">world_coords=False</em>, <em class="sig-param">pam=None</em>, <em class="sig-param">mask=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.panel.slicer_panel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Slicer panel with slicer included</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>renderer</strong><span class="classifier">Renderer</span></dt><dd></dd>
+<dt><strong>iren</strong><span class="classifier">Interactor</span></dt><dd></dd>
+<dt><strong>data</strong><span class="classifier">3d ndarray</span></dt><dd></dd>
+<dt><strong>affine</strong><span class="classifier">4x4 ndarray</span></dt><dd></dd>
+<dt><strong>world_coords</strong><span class="classifier">bool</span></dt><dd><p>If True then the affine is applied.</p>
+</dd>
+<dt><strong>peaks</strong><span class="classifier">PeaksAndMetrics</span></dt><dd><p>Default None</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>panel</strong><span class="classifier">Panel</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="doctest-skip-parser">
+<h3>doctest_skip_parser<a class="headerlink" href="#doctest-skip-parser" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.projections.doctest_skip_parser">
+<code class="sig-prename descclassname">dipy.viz.projections.</code><code class="sig-name descname">doctest_skip_parser</code><span class="sig-paren">(</span><em class="sig-param">func</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.projections.doctest_skip_parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator replaces custom skip test markup in doctests.</p>
+<p>Say a function has a docstring:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">something</span> <span class="c1"># skip if not HAVE_AMODULE</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">something</span> <span class="o">+</span> <span class="k">else</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">something</span> <span class="c1"># skip if HAVE_BMODULE</span>
+</pre></div>
+</div>
+<p>This decorator will evaluate the expresssion after <code class="docutils literal notranslate"><span class="pre">skip</span> <span class="pre">if</span></code>.  If this
+evaluates to True, then the comment is replaced by <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">doctest:</span> <span class="pre">+SKIP</span></code>.
+If False, then the comment is just removed. The expression is evaluated in
+the <code class="docutils literal notranslate"><span class="pre">globals</span></code> scope of <cite>func</cite>.</p>
+<p>For example, if the module global <code class="docutils literal notranslate"><span class="pre">HAVE_AMODULE</span></code> is False, and module
+global <code class="docutils literal notranslate"><span class="pre">HAVE_BMODULE</span></code> is False, the returned function will have
+docstring:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">something</span> 
+<span class="gp">&gt;&gt;&gt; </span><span class="n">something</span> <span class="o">+</span> <span class="k">else</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">something</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id11">
+<h3>optional_package<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.projections.optional_package">
+<code class="sig-prename descclassname">dipy.viz.projections.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.projections.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id12">
+<h3>setup_module<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.projections.setup_module">
+<code class="sig-prename descclassname">dipy.viz.projections.</code><code class="sig-name descname">setup_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.projections.setup_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="sph-project">
+<h3>sph_project<a class="headerlink" href="#sph-project" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.projections.sph_project">
+<code class="sig-prename descclassname">dipy.viz.projections.</code><code class="sig-name descname">sph_project</code><span class="sig-paren">(</span><em class="sig-param">vertices</em>, <em class="sig-param">val</em>, <em class="sig-param">ax=None</em>, <em class="sig-param">vmin=None</em>, <em class="sig-param">vmax=None</em>, <em class="sig-param">cmap=None</em>, <em class="sig-param">cbar=True</em>, <em class="sig-param">tri=False</em>, <em class="sig-param">boundary=False</em>, <em class="sig-param">**basemap_args</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.projections.sph_project" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw a signal on a 2D projection of the sphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vertices</strong><span class="classifier">(N,3) ndarray</span></dt><dd><p>unit vector points of the sphere</p>
+</dd>
+<dt><strong>val: (N) ndarray</strong></dt><dd><p>Function values.</p>
+</dd>
+<dt><strong>ax</strong><span class="classifier">mpl axis, optional</span></dt><dd><p>If specified, draw onto this existing axis instead.</p>
+</dd>
+<dt><strong>vmin, vmax</strong><span class="classifier">floats</span></dt><dd><p>Values to cut the z</p>
+</dd>
+<dt><strong>cmap</strong><span class="classifier">mpl colormap</span></dt><dd></dd>
+<dt><strong>cbar: Whether to add the color-bar to the figure</strong></dt><dd></dd>
+<dt><strong>triang</strong><span class="classifier">Whether to display the plot triangulated as a pseudo-color plot.</span></dt><dd></dd>
+<dt><strong>boundary</strong><span class="classifier">Whether to draw the boundary around the projection</span></dt><dd></dd>
+<dt><strong>in a black line</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>ax</strong><span class="classifier">axis</span></dt><dd><p>Matplotlib figure axis</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">default_sphere</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">verts</span> <span class="o">=</span> <span class="n">default_sphere</span><span class="o">.</span><span class="n">vertices</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ax</span> <span class="o">=</span> <span class="n">sph_project</span><span class="p">(</span><span class="n">verts</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">verts</span><span class="o">.</span><span class="n">T</span><span class="p">)))</span> <span class="c1"># doctest: +SKIP</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="draw-lattice-2d">
+<h3>draw_lattice_2d<a class="headerlink" href="#draw-lattice-2d" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.draw_lattice_2d">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">draw_lattice_2d</code><span class="sig-paren">(</span><em class="sig-param">nrows</em>, <em class="sig-param">ncols</em>, <em class="sig-param">delta</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.draw_lattice_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a regular lattice of nrows x ncols squares.</p>
+<p>Creates an image (2D array) of a regular lattice of nrows x ncols squares.
+The size of each square is delta x delta pixels (not counting the
+separation lines). The lines are one pixel width.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>nrows</strong><span class="classifier">int</span></dt><dd><p>the number of squares to be drawn vertically</p>
+</dd>
+<dt><strong>ncols</strong><span class="classifier">int</span></dt><dd><p>the number of squares to be drawn horizontally</p>
+</dd>
+<dt><strong>delta</strong><span class="classifier">int</span></dt><dd><p>the size of each square of the grid. Each square is delta x delta
+pixels</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>lattice</strong><span class="classifier">array, shape (R, C)</span></dt><dd><p>the image (2D array) of the segular lattice. The shape (R, C) of the
+array is given by
+R = 1 + (delta + 1) * nrows
+C = 1 + (delta + 1) * ncols</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id13">
+<h3>optional_package<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.optional_package">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="overlay-images">
+<h3>overlay_images<a class="headerlink" href="#overlay-images" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.overlay_images">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">overlay_images</code><span class="sig-paren">(</span><em class="sig-param">img0</em>, <em class="sig-param">img1</em>, <em class="sig-param">title0=''</em>, <em class="sig-param">title_mid=''</em>, <em class="sig-param">title1=''</em>, <em class="sig-param">fname=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.overlay_images" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot two images one on top of the other using red and green channels.</p>
+<p>Creates a figure containing three images: the first image to the left
+plotted on the red channel of a color image, the second to the right
+plotted on the green channel of a color image and the two given images on
+top of each other using the red channel for the first image and the green
+channel for the second one. It is assumed that both images have the same
+shape. The intended use of this function is to visually assess the quality
+of a registration result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>img0</strong><span class="classifier">array, shape(R, C)</span></dt><dd><p>the image to be plotted on the red channel, to the left of the figure</p>
+</dd>
+<dt><strong>img1</strong><span class="classifier">array, shape(R, C)</span></dt><dd><p>the image to be plotted on the green channel, to the right of the
+figure</p>
+</dd>
+<dt><strong>title0</strong><span class="classifier">string (optional)</span></dt><dd><p>the title to be written on top of the image to the left. By default, no
+title is displayed.</p>
+</dd>
+<dt><strong>title_mid</strong><span class="classifier">string (optional)</span></dt><dd><p>the title to be written on top of the middle image. By default, no
+title is displayed.</p>
+</dd>
+<dt><strong>title1</strong><span class="classifier">string (optional)</span></dt><dd><p>the title to be written on top of the image to the right. By default,
+no title is displayed.</p>
+</dd>
+<dt><strong>fname</strong><span class="classifier">string (optional)</span></dt><dd><p>the file name to write the resulting figure. If None (default), the
+image is not saved.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="overlay-slices">
+<h3>overlay_slices<a class="headerlink" href="#overlay-slices" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.overlay_slices">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">overlay_slices</code><span class="sig-paren">(</span><em class="sig-param">L</em>, <em class="sig-param">R</em>, <em class="sig-param">slice_index=None</em>, <em class="sig-param">slice_type=1</em>, <em class="sig-param">ltitle='Left'</em>, <em class="sig-param">rtitle='Right'</em>, <em class="sig-param">fname=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.overlay_slices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot three overlaid slices from the given volumes.</p>
+<p>Creates a figure containing three images: the gray scale k-th slice of
+the first volume (L) to the left, where k=slice_index, the k-th slice of
+the second volume (R) to the right and the k-th slices of the two given
+images on top of each other using the red channel for the first volume and
+the green channel for the second one. It is assumed that both volumes have
+the same shape. The intended use of this function is to visually assess the
+quality of a registration result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>L</strong><span class="classifier">array, shape (S, R, C)</span></dt><dd><p>the first volume to extract the slice from, plottet to the left</p>
+</dd>
+<dt><strong>R</strong><span class="classifier">array, shape (S, R, C)</span></dt><dd><p>the second volume to extract the slice from, plotted to the right</p>
+</dd>
+<dt><strong>slice_index</strong><span class="classifier">int (optional)</span></dt><dd><p>the index of the slices (along the axis given by slice_type) to be
+overlaid. If None, the slice along the specified axis is used</p>
+</dd>
+<dt><strong>slice_type</strong><span class="classifier">int (optional)</span></dt><dd><p>the type of slice to be extracted:
+0=sagital, 1=coronal (default), 2=axial.</p>
+</dd>
+<dt><strong>ltitle</strong><span class="classifier">string (optional)</span></dt><dd><p>the string to be written as title of the left image. By default,
+no title is displayed.</p>
+</dd>
+<dt><strong>rtitle</strong><span class="classifier">string (optional)</span></dt><dd><p>the string to be written as title of the right image. By default,
+no title is displayed.</p>
+</dd>
+<dt><strong>fname</strong><span class="classifier">string (optional)</span></dt><dd><p>the name of the file to write the image to. If None (default), the
+figure is not saved to disk.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="plot-2d-diffeomorphic-map">
+<h3>plot_2d_diffeomorphic_map<a class="headerlink" href="#plot-2d-diffeomorphic-map" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.plot_2d_diffeomorphic_map">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">plot_2d_diffeomorphic_map</code><span class="sig-paren">(</span><em class="sig-param">mapping</em>, <em class="sig-param">delta=10</em>, <em class="sig-param">fname=None</em>, <em class="sig-param">direct_grid_shape=None</em>, <em class="sig-param">direct_grid2world=-1</em>, <em class="sig-param">inverse_grid_shape=None</em>, <em class="sig-param">inverse_grid2world=-1</em>, <em class="sig-param">show_figure=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.plot_2d_diffeomorphic_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the effect of warping a regular lattice by a diffeomorphic map.</p>
+<p>Draws a diffeomorphic map by showing the effect of the deformation on a
+regular grid. The resulting figure contains two images: the direct
+transformation is plotted to the left, and the inverse transformation is
+plotted to the right.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mapping</strong><span class="classifier">DiffeomorphicMap object</span></dt><dd><p>the diffeomorphic map to be drawn</p>
+</dd>
+<dt><strong>delta</strong><span class="classifier">int, optional</span></dt><dd><p>the size (in pixels) of the squares of the regular lattice to be used
+to plot the warping effects. Each square will be delta x delta pixels.
+By default, the size will be 10 pixels.</p>
+</dd>
+<dt><strong>fname</strong><span class="classifier">string, optional</span></dt><dd><p>the name of the file the figure will be written to. If None (default),
+the figure will not be saved to disk.</p>
+</dd>
+<dt><strong>direct_grid_shape</strong><span class="classifier">tuple, shape (2,), optional</span></dt><dd><p>the shape of the grid image after being deformed by the direct
+transformation. By default, the shape of the deformed grid is the
+same as the grid of the displacement field, which is by default
+equal to the shape of the fixed image. In other words, the resulting
+deformed grid (deformed by the direct transformation) will normally
+have the same shape as the fixed image.</p>
+</dd>
+<dt><strong>direct_grid2world</strong><span class="classifier">array, shape (3, 3), optional</span></dt><dd><p>the affine transformation mapping the direct grid’s coordinates to
+physical space. By default, this transformation will correspond to
+the image-to-world transformation corresponding to the default
+direct_grid_shape (in general, if users specify a direct_grid_shape,
+they should also specify direct_grid2world).</p>
+</dd>
+<dt><strong>inverse_grid_shape</strong><span class="classifier">tuple, shape (2,), optional</span></dt><dd><p>the shape of the grid image after being deformed by the inverse
+transformation. By default, the shape of the deformed grid under the
+inverse transform is the same as the image used as “moving” when
+the diffeomorphic map was generated by a registration algorithm
+(so it corresponds to the effect of warping the static image towards
+the moving).</p>
+</dd>
+<dt><strong>inverse_grid2world</strong><span class="classifier">array, shape (3, 3), optional</span></dt><dd><p>the affine transformation mapping inverse grid’s coordinates to
+physical space. By default, this transformation will correspond to
+the image-to-world transformation corresponding to the default
+inverse_grid_shape (in general, if users specify an inverse_grid_shape,
+they should also specify inverse_grid2world).</p>
+</dd>
+<dt><strong>show_figure</strong><span class="classifier">bool, optional</span></dt><dd><p>if True (default), the deformed grids will be ploted using matplotlib,
+else the grids are just returned</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>warped_forward</strong><span class="classifier">array</span></dt><dd><p>Image with grid showing the effect of transforming the moving image to
+the static image.  Shape will be <cite>direct_grid_shape</cite> if specified,
+otherwise the shape of the static image.</p>
+</dd>
+<dt><strong>warped_backward</strong><span class="classifier">array</span></dt><dd><p>Image with grid showing the effect of transforming the static image to
+the moving image.  Shape will be <cite>inverse_grid_shape</cite> if specified,
+otherwise the shape of the moving image.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The default value for the affine transformation is “-1” to handle the case
+in which the user provides “None” as input meaning “identity”. If we used
+None as default, we wouldn’t know if the user specifically wants to use
+the identity (specifically passing None) or if it was left unspecified,
+meaning to use the apropriate default matrix.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="plot-slices">
+<h3>plot_slices<a class="headerlink" href="#plot-slices" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.plot_slices">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">plot_slices</code><span class="sig-paren">(</span><em class="sig-param">V</em>, <em class="sig-param">slice_indices=None</em>, <em class="sig-param">fname=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.plot_slices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial</p>
+<p>Creates a figure showing the axial, coronal and sagital slices at the
+requested positions of the given volume. The requested slices are specified
+by slice_indices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>V</strong><span class="classifier">array, shape (S, R, C)</span></dt><dd><p>the 3D volume to extract the slices from</p>
+</dd>
+<dt><strong>slice_indices</strong><span class="classifier">array, shape (3,) (optional)</span></dt><dd><p>the indices of the sagital (slice_indices[0]), coronal
+(slice_indices[1])
+and axial (slice_indices[2]) slices to be displayed. If None, the
+middle slices along each direction are displayed.</p>
+</dd>
+<dt><strong>fname</strong><span class="classifier">string (optional)</span></dt><dd><p>the name of the file to save the figure to. If None (default), the
+figure is not saved to disk.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id14">
+<h3>setup_module<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.setup_module">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">setup_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.setup_module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="simple-plot">
+<h3>simple_plot<a class="headerlink" href="#simple-plot" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.viz.regtools.simple_plot">
+<code class="sig-prename descclassname">dipy.viz.regtools.</code><code class="sig-name descname">simple_plot</code><span class="sig-paren">(</span><em class="sig-param">file_name</em>, <em class="sig-param">title</em>, <em class="sig-param">x</em>, <em class="sig-param">y</em>, <em class="sig-param">xlabel</em>, <em class="sig-param">ylabel</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.viz.regtools.simple_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the simple plot with given x and y values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>file_name</strong><span class="classifier">string</span></dt><dd><p>file name for saving the plot</p>
+</dd>
+<dt><strong>title</strong><span class="classifier">string</span></dt><dd><p>title of the plot</p>
+</dd>
+<dt><strong>x</strong><span class="classifier">integer list</span></dt><dd><p>x-axis values to be ploted</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">integer list</span></dt><dd><p>y-axis values to be ploted</p>
+</dd>
+<dt><strong>xlabel</strong><span class="classifier">string</span></dt><dd><p>label for x-axis</p>
+</dd>
+<dt><strong>ylable</strong><span class="classifier">string</span></dt><dd><p>label for y-axis</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.workflows.html" title="workflows"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy.tracking.html" title="tracking"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

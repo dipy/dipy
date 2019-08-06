@@ -1,0 +1,786 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`io`
+=========
+.. automodule:: dipy.io
+
+.. currentmodule:: dipy.io
+.. autosummary::
+
+   Dpy
+   load_pickle
+   orientation_from_string
+   orientation_to_string
+   ornt_mapping
+   read_bvals_bvecs
+   read_bvec_file
+   reorient_on_axis
+   reorient_vectors
+   save_pickle
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.bvectxt`
+-------------------------
+.. automodule:: dipy.io.bvectxt
+
+.. currentmodule:: dipy.io.bvectxt
+.. autosummary::
+
+   orientation_from_string
+   orientation_to_string
+   ornt_mapping
+   read_bvec_file
+   reorient_on_axis
+   reorient_vectors
+   splitext
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.dpy`
+---------------------
+.. automodule:: dipy.io.dpy
+
+.. currentmodule:: dipy.io.dpy
+.. autosummary::
+
+   Dpy
+   Streamlines
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.gradients`
+---------------------------
+.. automodule:: dipy.io.gradients
+
+.. currentmodule:: dipy.io.gradients
+.. autosummary::
+
+   InTemporaryDirectory
+   read_bvals_bvecs
+   splitext
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.image`
+-----------------------
+.. automodule:: dipy.io.image
+
+.. currentmodule:: dipy.io.image
+.. autosummary::
+
+   load_nifti
+   save_nifti
+   save_qa_metric
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.peaks`
+-----------------------
+.. automodule:: dipy.io.peaks
+
+.. currentmodule:: dipy.io.peaks
+.. autosummary::
+
+   PeaksAndMetrics
+   Sphere
+   load_peaks
+   peaks_to_niftis
+   reshape_peaks_for_visualization
+   save_nifti
+   save_peaks
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.pickles`
+-------------------------
+.. automodule:: dipy.io.pickles
+
+.. currentmodule:: dipy.io.pickles
+.. autosummary::
+
+   load_pickle
+   save_pickle
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.stateful_tractogram`
+-------------------------------------
+.. automodule:: dipy.io.stateful_tractogram
+
+.. currentmodule:: dipy.io.stateful_tractogram
+.. autosummary::
+
+   PerArrayDict
+   PerArraySequenceDict
+   Space
+   StatefulTractogram
+   Streamlines
+   Tractogram
+   itemgetter
+   product
+   apply_affine
+   bisect
+   deepcopy
+   get_reference_info
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.streamline`
+----------------------------
+.. automodule:: dipy.io.streamline
+
+.. currentmodule:: dipy.io.streamline
+.. autosummary::
+
+   Dpy
+   Space
+   StatefulTractogram
+   Tractogram
+   create_tractogram_header
+   deepcopy
+   detect_format
+   is_header_compatible
+   load_dpy
+   load_fib
+   load_tck
+   load_tractogram
+   load_trk
+   load_vtk
+   load_vtk_streamlines
+   save_dpy
+   save_fib
+   save_tck
+   save_tractogram
+   save_trk
+   save_vtk
+   save_vtk_streamlines
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.utils`
+-----------------------
+.. automodule:: dipy.io.utils
+
+.. currentmodule:: dipy.io.utils
+.. autosummary::
+
+   Nifti1Image
+   create_nifti_header
+   create_tractogram_header
+   decfa
+   decfa_to_float
+   detect_format
+   get_reference_info
+   is_header_compatible
+   make5d
+   nifti1_symmat
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`io.vtk`
+---------------------
+.. automodule:: dipy.io.vtk
+
+.. currentmodule:: dipy.io.vtk
+.. autosummary::
+
+   load_polydata
+   load_vtk_streamlines
+   optional_package
+   save_polydata
+   save_vtk_streamlines
+   setup_module
+   transform_streamlines
+
+
+.. currentmodule:: dipy.io
+
+
+:class:`Dpy`
+~~~~~~~~~~~~
+
+
+.. autoclass:: Dpy
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+load_pickle
+~~~~~~~~~~~
+
+.. autofunction:: load_pickle
+
+orientation_from_string
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orientation_from_string
+
+orientation_to_string
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orientation_to_string
+
+ornt_mapping
+~~~~~~~~~~~~
+
+.. autofunction:: ornt_mapping
+
+read_bvals_bvecs
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_bvals_bvecs
+
+read_bvec_file
+~~~~~~~~~~~~~~
+
+.. autofunction:: read_bvec_file
+
+reorient_on_axis
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: reorient_on_axis
+
+reorient_vectors
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: reorient_vectors
+
+save_pickle
+~~~~~~~~~~~
+
+.. autofunction:: save_pickle
+
+
+.. currentmodule:: dipy.io.bvectxt
+
+orientation_from_string
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orientation_from_string
+
+orientation_to_string
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orientation_to_string
+
+ornt_mapping
+~~~~~~~~~~~~
+
+.. autofunction:: ornt_mapping
+
+read_bvec_file
+~~~~~~~~~~~~~~
+
+.. autofunction:: read_bvec_file
+
+reorient_on_axis
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: reorient_on_axis
+
+reorient_vectors
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: reorient_vectors
+
+splitext
+~~~~~~~~
+
+.. autofunction:: splitext
+
+
+.. currentmodule:: dipy.io.dpy
+
+
+:class:`Dpy`
+~~~~~~~~~~~~
+
+
+.. autoclass:: Dpy
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+.. currentmodule:: dipy.io.gradients
+
+
+:class:`InTemporaryDirectory`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: InTemporaryDirectory
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+read_bvals_bvecs
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: read_bvals_bvecs
+
+splitext
+~~~~~~~~
+
+.. autofunction:: splitext
+
+
+.. currentmodule:: dipy.io.image
+
+load_nifti
+~~~~~~~~~~
+
+.. autofunction:: load_nifti
+
+save_nifti
+~~~~~~~~~~
+
+.. autofunction:: save_nifti
+
+save_qa_metric
+~~~~~~~~~~~~~~
+
+.. autofunction:: save_qa_metric
+
+
+.. currentmodule:: dipy.io.peaks
+
+
+:class:`PeaksAndMetrics`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: PeaksAndMetrics
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Sphere`
+~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Sphere
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+load_peaks
+~~~~~~~~~~
+
+.. autofunction:: load_peaks
+
+peaks_to_niftis
+~~~~~~~~~~~~~~~
+
+.. autofunction:: peaks_to_niftis
+
+reshape_peaks_for_visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: reshape_peaks_for_visualization
+
+save_nifti
+~~~~~~~~~~
+
+.. autofunction:: save_nifti
+
+save_peaks
+~~~~~~~~~~
+
+.. autofunction:: save_peaks
+
+
+.. currentmodule:: dipy.io.pickles
+
+load_pickle
+~~~~~~~~~~~
+
+.. autofunction:: load_pickle
+
+save_pickle
+~~~~~~~~~~~
+
+.. autofunction:: save_pickle
+
+
+.. currentmodule:: dipy.io.stateful_tractogram
+
+
+:class:`PerArrayDict`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: PerArrayDict
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`PerArraySequenceDict`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: PerArraySequenceDict
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Space`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Space
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StatefulTractogram`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StatefulTractogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Tractogram`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Tractogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`itemgetter`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: itemgetter
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`product`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: product
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apply_affine
+~~~~~~~~~~~~
+
+.. autofunction:: apply_affine
+
+bisect
+~~~~~~
+
+.. autofunction:: bisect
+
+deepcopy
+~~~~~~~~
+
+.. autofunction:: deepcopy
+
+get_reference_info
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_reference_info
+
+
+.. currentmodule:: dipy.io.streamline
+
+
+:class:`Dpy`
+~~~~~~~~~~~~
+
+
+.. autoclass:: Dpy
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Space`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Space
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StatefulTractogram`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StatefulTractogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Tractogram`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Tractogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+create_tractogram_header
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_tractogram_header
+
+deepcopy
+~~~~~~~~
+
+.. autofunction:: deepcopy
+
+detect_format
+~~~~~~~~~~~~~
+
+.. autofunction:: detect_format
+
+is_header_compatible
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: is_header_compatible
+
+load_dpy
+~~~~~~~~
+
+.. autofunction:: load_dpy
+
+load_fib
+~~~~~~~~
+
+.. autofunction:: load_fib
+
+load_tck
+~~~~~~~~
+
+.. autofunction:: load_tck
+
+load_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: load_tractogram
+
+load_trk
+~~~~~~~~
+
+.. autofunction:: load_trk
+
+load_vtk
+~~~~~~~~
+
+.. autofunction:: load_vtk
+
+load_vtk_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: load_vtk_streamlines
+
+save_dpy
+~~~~~~~~
+
+.. autofunction:: save_dpy
+
+save_fib
+~~~~~~~~
+
+.. autofunction:: save_fib
+
+save_tck
+~~~~~~~~
+
+.. autofunction:: save_tck
+
+save_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: save_tractogram
+
+save_trk
+~~~~~~~~
+
+.. autofunction:: save_trk
+
+save_vtk
+~~~~~~~~
+
+.. autofunction:: save_vtk
+
+save_vtk_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: save_vtk_streamlines
+
+
+.. currentmodule:: dipy.io.utils
+
+
+:class:`Nifti1Image`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Nifti1Image
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+create_nifti_header
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_nifti_header
+
+create_tractogram_header
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: create_tractogram_header
+
+decfa
+~~~~~
+
+.. autofunction:: decfa
+
+decfa_to_float
+~~~~~~~~~~~~~~
+
+.. autofunction:: decfa_to_float
+
+detect_format
+~~~~~~~~~~~~~
+
+.. autofunction:: detect_format
+
+get_reference_info
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_reference_info
+
+is_header_compatible
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: is_header_compatible
+
+make5d
+~~~~~~
+
+.. autofunction:: make5d
+
+nifti1_symmat
+~~~~~~~~~~~~~
+
+.. autofunction:: nifti1_symmat
+
+
+.. currentmodule:: dipy.io.vtk
+
+load_polydata
+~~~~~~~~~~~~~
+
+.. autofunction:: load_polydata
+
+load_vtk_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: load_vtk_streamlines
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+save_polydata
+~~~~~~~~~~~~~
+
+.. autofunction:: save_polydata
+
+save_vtk_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: save_vtk_streamlines
+
+setup_module
+~~~~~~~~~~~~
+
+.. autofunction:: setup_module
+
+transform_streamlines
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_streamlines
+

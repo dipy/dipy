@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Reconstruction of the diffusion signal with the WMTI model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_dki_micro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruction-of-the-diffusion-signal-with-the-wmti-model">
+<span id="example-reconst-dki-micro"></span><h1>Reconstruction of the diffusion signal with the WMTI model<a class="headerlink" href="#reconstruction-of-the-diffusion-signal-with-the-wmti-model" title="Permalink to this headline">¶</a></h1>
+<p>DKI can also be used to derive concrete biophysical parameters by applying
+microstructural models to DT and KT estimated from DKI. For instance,
+Fieremans et al. <a class="reference internal" href="#fierem2011" id="id1"><span>[Fierem2011]</span></a> showed that DKI can be used to
+estimate the contribution of hindered and restricted diffusion for well-aligned
+fibers - a model that was later referred to as the white matter tract integrity
+WMTI technique <a class="reference internal" href="#fierem2013" id="id2"><span>[Fierem2013]</span></a>. The two tensors of WMTI can be also
+interpreted as the influences of intra- and extra-cellular compartments and can
+be used to estimate the axonal volume fraction and diffusion extra-cellular
+tortuosity. According to previous studies <a class="reference internal" href="#fierem2012" id="id3"><span>[Fierem2012]</span></a> <a class="reference internal" href="#fierem2013" id="id4"><span>[Fierem2013]</span></a>,
+these latter measures can be used to distinguish processes of axonal loss from
+processes of myelin degeneration.</p>
+<p>In this example, we show how to process a dMRI dataset using
+the WMTI model.</p>
+<p>First, we import all relevant modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dki</span> <span class="k">as</span> <span class="nn">dki</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dki_micro</span> <span class="k">as</span> <span class="nn">dki_micro</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_cfin_multib</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_cfin_dwi</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">import</span> <span class="n">gaussian_filter</span>
+</pre></div>
+</div>
+<p>As the standard DKI, WMTI requires multi-shell data, i.e. data acquired from
+more than one non-zero b-value. Here, we use a fetcher to download a
+multi-shell dataset which was kindly provided by Hansen and Jespersen
+(more details about the data are provided in their paper <a class="reference internal" href="reconst_msdki.html#hansen2016" id="id5"><span>[Hansen2016]</span></a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cfin_multib</span><span class="p">()</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cfin_dwi</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>For comparison, this dataset is pre-processed using the same steps used in the
+example for reconstructing DKI (see <a class="reference internal" href="reconst_dki.html#example-reconst-dki"><span class="std std-ref">Reconstruction of the diffusion signal with the kurtosis tensor model</span></a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># data masking</span>
+<span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">autocrop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Smoothing</span>
+<span class="n">fwhm</span> <span class="o">=</span> <span class="mf">1.25</span>
+<span class="n">gauss_std</span> <span class="o">=</span> <span class="n">fwhm</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+<span class="n">data_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">data_smooth</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">v</span><span class="p">],</span> <span class="n">sigma</span><span class="o">=</span><span class="n">gauss_std</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The WMTI model can be defined in DIPY by instantiating the
+‘KurtosisMicrostructureModel’ object in the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dki_micro_model</span> <span class="o">=</span> <span class="n">dki_micro</span><span class="o">.</span><span class="n">KurtosisMicrostructureModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Before fitting this microstructural model, it is useful to indicate the
+regions in which this model provides meaningful information (i.e. voxels of
+well-aligned fibers). Following Fieremans et al. <span id="id6">[Fieremans2011]</span>, a simple way
+to select this region is to generate a well-aligned fiber mask based on the
+values of diffusion sphericity, planarity and linearity. Here we will follow
+these selection criteria for a better comparison of our figures with the
+original article published by Fieremans et al. <span id="id7">[Fieremans2011]</span>. Nevertheless,
+it is important to note that voxels with well-aligned fibers can be selected
+based on other approaches such as using predefined regions of interest.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Diffusion Tensor is computed based on the standard DKI model</span>
+<span class="n">dkimodel</span> <span class="o">=</span> <span class="n">dki</span><span class="o">.</span><span class="n">DiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">dkifit</span> <span class="o">=</span> <span class="n">dkimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_smooth</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
+<span class="c1"># Initialize well aligned mask with ones</span>
+<span class="n">well_aligned_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+
+<span class="c1"># Diffusion coefficient of linearity (cl) has to be larger than 0.4, thus</span>
+<span class="c1"># we exclude voxels with cl &lt; 0.4.</span>
+<span class="n">cl</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">linearity</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">cl</span> <span class="o">&lt;</span> <span class="mf">0.4</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Diffusion coefficient of planarity (cp) has to be lower than 0.2, thus</span>
+<span class="c1"># we exclude voxels with cp &gt; 0.2.</span>
+<span class="n">cp</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">planarity</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">cp</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Diffusion coefficient of sphericity (cs) has to be lower than 0.35, thus</span>
+<span class="c1"># we exclude voxels with cs &gt; 0.35.</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">sphericity</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">cs</span> <span class="o">&gt;</span> <span class="mf">0.35</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Removing nan associated with background voxels</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cl</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cp</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">well_aligned_mask</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">cs</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>Analogous to DKI, the data fit can be done by calling the <code class="docutils literal notranslate"><span class="pre">fit</span></code> function of
+the model’s object as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dki_micro_fit</span> <span class="o">=</span> <span class="n">dki_micro_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_smooth</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">well_aligned_mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The KurtosisMicrostructureFit object created by this <code class="docutils literal notranslate"><span class="pre">fit</span></code> function can then
+be used to extract model parameters such as the axonal water fraction and
+diffusion hindered tortuosity:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">AWF</span> <span class="o">=</span> <span class="n">dki_micro_fit</span><span class="o">.</span><span class="n">awf</span>
+<span class="n">TORT</span> <span class="o">=</span> <span class="n">dki_micro_fit</span><span class="o">.</span><span class="n">tortuosity</span>
+</pre></div>
+</div>
+<p>These parameters are plotted below on top of the mean kurtosis maps:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MK</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="n">axial_slice</span> <span class="o">=</span> <span class="mi">9</span>
+
+<span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">AWF</span><span class="p">[</span><span class="n">AWF</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="n">TORT</span><span class="p">[</span><span class="n">TORT</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">,</span>
+             <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">im0</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">AWF</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Reds</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
+                   <span class="n">vmin</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im0</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">,</span>
+             <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">im1</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">TORT</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">Blues</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span>
+                   <span class="n">vmin</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im1</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;Kurtosis_Microstructural_measures.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id9">
+<img alt="../_images/Kurtosis_Microstructural_measures.png" src="../_images/Kurtosis_Microstructural_measures.png" />
+<p class="caption"><span class="caption-text">Axonal water fraction (left panel) and tortuosity (right panel) values
+of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
+image.</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="fierem2011"><span class="brackets"><a class="fn-backref" href="#id1">Fierem2011</a></span></dt>
+<dd><p>Fieremans E, Jensen JH, Helpern JA (2011). White matter
+characterization with diffusion kurtosis imaging. NeuroImage
+58: 177-188</p>
+</dd>
+<dt class="label" id="fierem2012"><span class="brackets"><a class="fn-backref" href="#id3">Fierem2012</a></span></dt>
+<dd><p>Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
+Inglese M, Novikov DS. (2012). Diffusion distinguishes between
+axonal loss and demyelination in brain white matter.
+Proceedings of the 20th Annual Meeting of the International
+Society for Magnetic Resonance Medicine; Melbourne, Australia.
+May 5-11.</p>
+</dd>
+<dt class="label" id="fierem2013"><span class="brackets">Fierem2013</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id4">2</a>)</span></dt>
+<dd><p>Fieremans, E., Benitez, A., Jensen, J.H., Falangola, M.F.,
+Tabesh, A., Deardorff, R.L., Spampinato, M.V., Babb, J.S.,
+Novikov, D.S., Ferris, S.H., Helpern, J.A., 2013. Novel
+white matter tract integrity metrics sensitive to Alzheimer
+disease progression. AJNR Am. J. Neuroradiol. 34(11),
+2105-2112. doi: 10.3174/ajnr.A3553</p>
+</dd>
+<dt class="label" id="hansen2016"><span class="brackets"><a class="fn-backref" href="#id5">Hansen2016</a></span></dt>
+<dd><p>Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
+kurtosis strategies, b-value optimization and exploration of
+diffusion MRI contrast. Scientific Data 3: 160072
+doi:10.1038/sdata.2016.72</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/ee727a3e9b3f1fdfd068d9d0ddfb8099/reconst_dki_micro.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

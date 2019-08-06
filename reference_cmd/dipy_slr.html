@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_ba" href="dipy_ba.html" />
+    <link rel="prev" title="dipy_fit_csa" href="dipy_fit_csa.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_ba.html" title="dipy_ba"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_csa.html" title="dipy_fit_csa"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_fit_csa.html"
+                        title="previous chapter">dipy_fit_csa</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_ba.html"
+                        title="next chapter">dipy_ba</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_slr.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-slr">
+<h1>dipy_slr<a class="headerlink" href="#dipy-slr" title="Permalink to this headline">¶</a></h1>
+<dl class="simple">
+<dt>usage: dipy_slr [-h] [–x0 str] [–rm_small_clusters int]</dt><dd><p>[–qbx_thr [int [int …]]] [–num_threads int]
+[–greater_than int] [–less_than int] [–nb_pts int]
+[–progressive] [–out_dir str] [–out_moved str]
+[–out_affine str] [–out_stat_centroids str]
+[–out_moving_centroids str] [–out_moved_centroids str]
+static_files moving_files</p>
+</dd>
+</dl>
+<p>Streamline-based linear registration.</p>
+<p>For efficiency we apply the registration on cluster centroids and remove small clusters.</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>static_files
+moving_files</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--x0 <var>str</var></span></kbd></dt>
+<dd><p>rigid, similarity or affine transformation model (default affine)</p>
+</dd>
+<dt><kbd><span class="option">--rm_small_clusters <var>int</var></span></kbd></dt>
+<dd><p>Remove clusters that have less than <cite>rm_small_clusters</cite> (default 50)</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>–qbx_thr [int [int …]]</dt><dd><p>Thresholds for QuickBundlesX (default [40, 30, 20, 15])</p>
+</dd>
+</dl>
+<dl class="option-list">
+<dt><kbd><span class="option">--num_threads <var>int</var></span></kbd></dt>
+<dd><p>Number of threads. If None (default) then all available threads will be used. Only metrics using OpenMP will use this variable.</p>
+</dd>
+<dt><kbd><span class="option">--greater_than <var>int</var></span></kbd></dt>
+<dd><p>Keep streamlines that have length greater than this value (default 50)</p>
+</dd>
+<dt><kbd><span class="option">--less_than <var>int</var></span></kbd></dt>
+<dd><p>Keep streamlines have length less than this value (default 250)</p>
+</dd>
+<dt><kbd><span class="option">--nb_pts <var>int</var></span></kbd></dt>
+<dd><p>Number of points for discretizing each streamline (default 20)</p>
+</dd>
+<dt><kbd><span class="option">--progressive</span></kbd></dt>
+<dd><p>(default True)</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Output directory (default input file directory)</p>
+</dd>
+<dt><kbd><span class="option">--out_moved <var>str</var></span></kbd></dt>
+<dd><p>Filename of moved tractogram (default ‘moved.trk’)</p>
+</dd>
+<dt><kbd><span class="option">--out_affine <var>str</var></span></kbd></dt>
+<dd><p>Filename of affine for SLR transformation (default ‘affine.txt’)</p>
+</dd>
+<dt><kbd><span class="option">--out_stat_centroids <var>str</var></span></kbd></dt>
+<dd><p>Filename of static centroids (default ‘static_centroids.trk’)</p>
+</dd>
+<dt><kbd><span class="option">--out_moving_centroids <var>str</var></span></kbd></dt>
+<dd><p>Filename of moving centroids (default ‘moving_centroids.trk’)</p>
+</dd>
+<dt><kbd><span class="option">--out_moved_centroids <var>str</var></span></kbd></dt>
+<dd><p>Filename of moved centroids (default ‘moved_centroids.trk’)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+.. [Garyfallidis15] Garyfallidis et al. “Robust and efficient linearregistration of white-matter fascicles in the space ofstreamlines”, NeuroImage, 117, 124–140, 2015
+.. [Garyfallidis14] Garyfallidis et al., “Direct native-space fiberbundle alignment for group comparisons”, ISMRM, 2014.
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matterbundles using local and global streamline-based registrationand clustering, NeuroImage, 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_ba.html" title="dipy_ba"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_csa.html" title="dipy_fit_csa"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

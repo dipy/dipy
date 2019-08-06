@@ -1,0 +1,2213 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="io" href="dipy.io.html" />
+    <link rel="prev" title="denoise" href="dipy.denoise.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.io.html" title="io"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy.denoise.html" title="denoise"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">direction</span></code></a><ul>
+<li><a class="reference internal" href="#module-dipy.direction.peaks">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">direction.peaks</span></code></a><ul>
+<li><a class="reference internal" href="#bootdirectiongetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BootDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#closestpeakdirectiongetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClosestPeakDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#deterministicmaximumdirectiongetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeterministicMaximumDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#eudxdirectiongetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#intemporarydirectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a></li>
+<li><a class="reference internal" href="#peaksandmetrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a></li>
+<li><a class="reference internal" href="#probabilisticdirectiongetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProbabilisticDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#sphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sphere</span></code></a></li>
+<li><a class="reference internal" href="#repeat"><code class="xref py py-class docutils literal notranslate"><span class="pre">repeat</span></code></a></li>
+<li><a class="reference internal" href="#pool">Pool</a></li>
+<li><a class="reference internal" href="#cpu-count">cpu_count</a></li>
+<li><a class="reference internal" href="#gfa">gfa</a></li>
+<li><a class="reference internal" href="#local-maxima">local_maxima</a></li>
+<li><a class="reference internal" href="#ndindex">ndindex</a></li>
+<li><a class="reference internal" href="#peak-directions">peak_directions</a></li>
+<li><a class="reference internal" href="#peak-directions-nl">peak_directions_nl</a></li>
+<li><a class="reference internal" href="#peaks-from-model">peaks_from_model</a></li>
+<li><a class="reference internal" href="#remove-similar-vertices">remove_similar_vertices</a></li>
+<li><a class="reference internal" href="#reshape-peaks-for-visualization">reshape_peaks_for_visualization</a></li>
+<li><a class="reference internal" href="#search-descending">search_descending</a></li>
+<li><a class="reference internal" href="#sh-to-sf-matrix">sh_to_sf_matrix</a></li>
+<li><a class="reference internal" href="#warn">warn</a></li>
+<li><a class="reference internal" href="#id10"><code class="xref py py-class docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a></li>
+<li><a class="reference internal" href="#id11"><code class="xref py py-class docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a></li>
+<li><a class="reference internal" href="#id12"><code class="xref py py-class docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a></li>
+<li><a class="reference internal" href="#id13"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sphere</span></code></a></li>
+<li><a class="reference internal" href="#id14"><code class="xref py py-class docutils literal notranslate"><span class="pre">repeat</span></code></a></li>
+<li><a class="reference internal" href="#id15">Pool</a></li>
+<li><a class="reference internal" href="#id16">cpu_count</a></li>
+<li><a class="reference internal" href="#id17">gfa</a></li>
+<li><a class="reference internal" href="#id19">local_maxima</a></li>
+<li><a class="reference internal" href="#id20">ndindex</a></li>
+<li><a class="reference internal" href="#id21">peak_directions</a></li>
+<li><a class="reference internal" href="#id22">peak_directions_nl</a></li>
+<li><a class="reference internal" href="#id23">peaks_from_model</a></li>
+<li><a class="reference internal" href="#id28">remove_similar_vertices</a></li>
+<li><a class="reference internal" href="#id29">reshape_peaks_for_visualization</a></li>
+<li><a class="reference internal" href="#id30">search_descending</a></li>
+<li><a class="reference internal" href="#id31">sh_to_sf_matrix</a></li>
+<li><a class="reference internal" href="#id36">warn</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy.denoise.html"
+                        title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.io.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">io</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.direction.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy.direction">
+<span id="direction"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">direction</span></code><a class="headerlink" href="#module-dipy.direction" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.BootDirectionGetter" title="dipy.direction.BootDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BootDirectionGetter</span></code></a></p></td>
+<td><p><p class="rubric">Methods</p>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.ClosestPeakDirectionGetter" title="dipy.direction.ClosestPeakDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClosestPeakDirectionGetter</span></code></a></p></td>
+<td><p>A direction getter that returns the closest odf peak to previous tracking direction.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.DeterministicMaximumDirectionGetter" title="dipy.direction.DeterministicMaximumDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DeterministicMaximumDirectionGetter</span></code></a></p></td>
+<td><p>Return direction of a sphere with the highest probability mass function (pmf).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.EuDXDirectionGetter" title="dipy.direction.EuDXDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a></p></td>
+<td><p>Deterministic Direction Getter based on peak directions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.InTemporaryDirectory" title="dipy.direction.InTemporaryDirectory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a>([suffix, prefix, dir])</p></td>
+<td><p>Create, return, and change directory to a temporary directory</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.PeaksAndMetrics" title="dipy.direction.PeaksAndMetrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a></p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.ProbabilisticDirectionGetter" title="dipy.direction.ProbabilisticDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProbabilisticDirectionGetter</span></code></a></p></td>
+<td><p>Randomly samples direction of a sphere based on probability mass function (pmf).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.Sphere" title="dipy.direction.Sphere"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sphere</span></code></a>([x, y, z, theta, phi, xyz, faces, edges])</p></td>
+<td><p>Points on the unit sphere.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.repeat" title="dipy.direction.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(object [,times])</p></td>
+<td><p>for the specified number of times.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.Pool" title="dipy.direction.Pool"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pool</span></code></a>([processes, initializer, initargs, …])</p></td>
+<td><p>Returns a process pool object</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.cpu_count" title="dipy.direction.cpu_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu_count</span></code></a>()</p></td>
+<td><p>Returns the number of CPUs in the system</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.gfa" title="dipy.direction.gfa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gfa</span></code></a>(samples)</p></td>
+<td><p>The general fractional anisotropy of a function evaluated on the unit sphere</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.local_maxima" title="dipy.direction.local_maxima"><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_maxima</span></code></a></p></td>
+<td><p>Local maxima of a function evaluated on a discrete set of points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.ndindex" title="dipy.direction.ndindex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndindex</span></code></a>(shape)</p></td>
+<td><p>An N-dimensional iterator object to index arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peak_directions" title="dipy.direction.peak_directions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peak_directions</span></code></a>(odf, sphere[, …])</p></td>
+<td><p>Get the directions of odf peaks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peak_directions_nl" title="dipy.direction.peak_directions_nl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peak_directions_nl</span></code></a>(sphere_eval[, …])</p></td>
+<td><p>Non Linear Direction Finder.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks_from_model" title="dipy.direction.peaks_from_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peaks_from_model</span></code></a>(model, data, sphere, …[, …])</p></td>
+<td><p>Fit the model to data and computes peaks and metrics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.remove_similar_vertices" title="dipy.direction.remove_similar_vertices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_similar_vertices</span></code></a></p></td>
+<td><p>Remove vertices that are less than <cite>theta</cite> degrees from any other</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.reshape_peaks_for_visualization" title="dipy.direction.reshape_peaks_for_visualization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape_peaks_for_visualization</span></code></a>(peaks)</p></td>
+<td><p>Reshape peaks for visualization.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.search_descending" title="dipy.direction.search_descending"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_descending</span></code></a></p></td>
+<td><p><cite>i</cite> in descending array <cite>a</cite> so <cite>a[i] &lt; a[0] * relative_threshold</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.sh_to_sf_matrix" title="dipy.direction.sh_to_sf_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sh_to_sf_matrix</span></code></a>(sphere, sh_order[, …])</p></td>
+<td><p>Matrix that transforms Spherical harmonics (SH) to spherical function (SF).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.warn" title="dipy.direction.warn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">warn</span></code></a></p></td>
+<td><p>Issue a warning, or maybe ignore it or raise an exception.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="module-dipy.direction.peaks">
+<span id="module-direction-peaks"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">direction.peaks</span></code><a class="headerlink" href="#module-dipy.direction.peaks" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.EuDXDirectionGetter" title="dipy.direction.peaks.EuDXDirectionGetter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a></p></td>
+<td><p>Deterministic Direction Getter based on peak directions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.InTemporaryDirectory" title="dipy.direction.peaks.InTemporaryDirectory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a>([suffix, prefix, dir])</p></td>
+<td><p>Create, return, and change directory to a temporary directory</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.PeaksAndMetrics" title="dipy.direction.peaks.PeaksAndMetrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a></p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.Sphere" title="dipy.direction.peaks.Sphere"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Sphere</span></code></a>([x, y, z, theta, phi, xyz, faces, edges])</p></td>
+<td><p>Points on the unit sphere.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.repeat" title="dipy.direction.peaks.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(object [,times])</p></td>
+<td><p>for the specified number of times.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.Pool" title="dipy.direction.peaks.Pool"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pool</span></code></a>([processes, initializer, initargs, …])</p></td>
+<td><p>Returns a process pool object</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.cpu_count" title="dipy.direction.peaks.cpu_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cpu_count</span></code></a>()</p></td>
+<td><p>Returns the number of CPUs in the system</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.gfa" title="dipy.direction.peaks.gfa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gfa</span></code></a>(samples)</p></td>
+<td><p>The general fractional anisotropy of a function evaluated on the unit sphere</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.local_maxima" title="dipy.direction.peaks.local_maxima"><code class="xref py py-obj docutils literal notranslate"><span class="pre">local_maxima</span></code></a></p></td>
+<td><p>Local maxima of a function evaluated on a discrete set of points.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.ndindex" title="dipy.direction.peaks.ndindex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndindex</span></code></a>(shape)</p></td>
+<td><p>An N-dimensional iterator object to index arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.peak_directions" title="dipy.direction.peaks.peak_directions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peak_directions</span></code></a>(odf, sphere[, …])</p></td>
+<td><p>Get the directions of odf peaks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.peak_directions_nl" title="dipy.direction.peaks.peak_directions_nl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peak_directions_nl</span></code></a>(sphere_eval[, …])</p></td>
+<td><p>Non Linear Direction Finder.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.peaks_from_model" title="dipy.direction.peaks.peaks_from_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peaks_from_model</span></code></a>(model, data, sphere, …[, …])</p></td>
+<td><p>Fit the model to data and computes peaks and metrics</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.remove_similar_vertices" title="dipy.direction.peaks.remove_similar_vertices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_similar_vertices</span></code></a></p></td>
+<td><p>Remove vertices that are less than <cite>theta</cite> degrees from any other</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.reshape_peaks_for_visualization" title="dipy.direction.peaks.reshape_peaks_for_visualization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape_peaks_for_visualization</span></code></a>(peaks)</p></td>
+<td><p>Reshape peaks for visualization.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.search_descending" title="dipy.direction.peaks.search_descending"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_descending</span></code></a></p></td>
+<td><p><cite>i</cite> in descending array <cite>a</cite> so <cite>a[i] &lt; a[0] * relative_threshold</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.sh_to_sf_matrix" title="dipy.direction.peaks.sh_to_sf_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sh_to_sf_matrix</span></code></a>(sphere, sh_order[, …])</p></td>
+<td><p>Matrix that transforms Spherical harmonics (SH) to spherical function (SF).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.warn" title="dipy.direction.peaks.warn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">warn</span></code></a></p></td>
+<td><p>Issue a warning, or maybe ignore it or raise an exception.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="bootdirectiongetter">
+<h3><a class="reference internal" href="#dipy.direction.BootDirectionGetter" title="dipy.direction.BootDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">BootDirectionGetter</span></code></a><a class="headerlink" href="#bootdirectiongetter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.BootDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">BootDirectionGetter</code><a class="headerlink" href="#dipy.direction.BootDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.direction.closest_peak_direction_getter.BaseDirectionGetter</span></code></p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.BootDirectionGetter.from_data" title="dipy.direction.BootDirectionGetter.from_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_data</span></code></a></p></td>
+<td><p>Create a BootDirectionGetter using HARDI data and an ODF type model</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>Returns best directions at seed location to start tracking.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.BootDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.BootDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.BootDirectionGetter.from_data">
+<code class="sig-name descname">from_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.BootDirectionGetter.from_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a BootDirectionGetter using HARDI data and an ODF type model</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">ndarray, float, (…, N)</span></dt><dd><p>Diffusion MRI data with N volumes.</p>
+</dd>
+<dt><strong>model</strong><span class="classifier">dipy diffusion model</span></dt><dd><p>Must provide fit with odf method.</p>
+</dd>
+<dt><strong>max_angle</strong><span class="classifier">float (0, 90)</span></dt><dd><p>Maximum angle between tract segments. This angle can be more
+generous (larger) than values typically used with probabilistic
+direction getters.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The sphere used to sample the diffusion ODF.</p>
+</dd>
+<dt><strong>sh_order</strong><span class="classifier">even int</span></dt><dd><p>The order of the SH “model” used to estimate bootstrap residuals.</p>
+</dd>
+<dt><strong>max_attempts</strong><span class="classifier">int</span></dt><dd><p>Max number of bootstrap samples used to find tracking direction
+before giving up.</p>
+</dd>
+<dt><strong>pmf_threshold</strong><span class="classifier">float</span></dt><dd><p>Threshold for ODF functions.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float in [0., 1.]</span></dt><dd><p>Relative threshold for excluding ODF peaks.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>Angular threshold for excluding ODF peaks.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="closestpeakdirectiongetter">
+<h3><a class="reference internal" href="#dipy.direction.ClosestPeakDirectionGetter" title="dipy.direction.ClosestPeakDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClosestPeakDirectionGetter</span></code></a><a class="headerlink" href="#closestpeakdirectiongetter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.ClosestPeakDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">ClosestPeakDirectionGetter</code><a class="headerlink" href="#dipy.direction.ClosestPeakDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.direction.closest_peak_direction_getter.PmfGenDirectionGetter</span></code></p>
+<p>A direction getter that returns the closest odf peak to previous tracking
+direction.</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pmf</span></code></p></td>
+<td><p>Constructor for making a DirectionGetter from an array of Pmfs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_shcoeff</span></code></p></td>
+<td><p>Probabilistic direction getter from a distribution of directions on the sphere</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>Returns best directions at seed location to start tracking.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.ClosestPeakDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.ClosestPeakDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="deterministicmaximumdirectiongetter">
+<h3><a class="reference internal" href="#dipy.direction.DeterministicMaximumDirectionGetter" title="dipy.direction.DeterministicMaximumDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeterministicMaximumDirectionGetter</span></code></a><a class="headerlink" href="#deterministicmaximumdirectiongetter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.DeterministicMaximumDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">DeterministicMaximumDirectionGetter</code><a class="headerlink" href="#dipy.direction.DeterministicMaximumDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.direction.probabilistic_direction_getter.ProbabilisticDirectionGetter</span></code></p>
+<p>Return direction of a sphere with the highest probability mass
+function (pmf).</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pmf</span></code></p></td>
+<td><p>Constructor for making a DirectionGetter from an array of Pmfs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_shcoeff</span></code></p></td>
+<td><p>Probabilistic direction getter from a distribution of directions on the sphere</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>Returns best directions at seed location to start tracking.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.DeterministicMaximumDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.DeterministicMaximumDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="eudxdirectiongetter">
+<h3><a class="reference internal" href="#dipy.direction.EuDXDirectionGetter" title="dipy.direction.EuDXDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a><a class="headerlink" href="#eudxdirectiongetter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.EuDXDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">EuDXDirectionGetter</code><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.direction_getter.DirectionGetter</span></code></p>
+<p>Deterministic Direction Getter based on peak directions.</p>
+<p>This class contains the cython portion of the code for PeaksAndMetrics and
+is not meant to be used on its own.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ang_thr</strong></dt><dd></dd>
+<dt><strong>qa_thr</strong></dt><dd></dd>
+<dt><strong>total_weight</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.EuDXDirectionGetter.initial_direction" title="dipy.direction.EuDXDirectionGetter.initial_direction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></a></p></td>
+<td><p>The best starting directions for fiber tracking from point</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.EuDXDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.EuDXDirectionGetter.ang_thr">
+<code class="sig-name descname">ang_thr</code><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter.ang_thr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.EuDXDirectionGetter.initial_direction">
+<code class="sig-name descname">initial_direction</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter.initial_direction" title="Permalink to this definition">¶</a></dt>
+<dd><p>The best starting directions for fiber tracking from point</p>
+<p>All the valid peaks in the voxel closest to point are returned as
+initial directions.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.EuDXDirectionGetter.qa_thr">
+<code class="sig-name descname">qa_thr</code><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter.qa_thr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.EuDXDirectionGetter.total_weight">
+<code class="sig-name descname">total_weight</code><a class="headerlink" href="#dipy.direction.EuDXDirectionGetter.total_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="intemporarydirectory">
+<h3><a class="reference internal" href="#dipy.direction.InTemporaryDirectory" title="dipy.direction.InTemporaryDirectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a><a class="headerlink" href="#intemporarydirectory" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.InTemporaryDirectory">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">InTemporaryDirectory</code><span class="sig-paren">(</span><em class="sig-param">suffix=''</em>, <em class="sig-param">prefix='tmp'</em>, <em class="sig-param">dir=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.InTemporaryDirectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.tmpdirs.TemporaryDirectory</span></code></p>
+<p>Create, return, and change directory to a temporary directory</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">InTemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmpdir</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;test.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;some text&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;test.txt&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="s1">&#39;test.txt&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">==</span> <span class="n">my_cwd</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 48%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>cleanup</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.InTemporaryDirectory.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">suffix=''</em>, <em class="sig-param">prefix='tmp'</em>, <em class="sig-param">dir=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.InTemporaryDirectory.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="peaksandmetrics">
+<h3><a class="reference internal" href="#dipy.direction.PeaksAndMetrics" title="dipy.direction.PeaksAndMetrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a><a class="headerlink" href="#peaksandmetrics" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.PeaksAndMetrics">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">PeaksAndMetrics</code><a class="headerlink" href="#dipy.direction.PeaksAndMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.reconst.peak_direction_getter.EuDXDirectionGetter</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ang_thr</strong></dt><dd></dd>
+<dt><strong>qa_thr</strong></dt><dd></dd>
+<dt><strong>total_weight</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>The best starting directions for fiber tracking from point</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.PeaksAndMetrics.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.PeaksAndMetrics.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="probabilisticdirectiongetter">
+<h3><a class="reference internal" href="#dipy.direction.ProbabilisticDirectionGetter" title="dipy.direction.ProbabilisticDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProbabilisticDirectionGetter</span></code></a><a class="headerlink" href="#probabilisticdirectiongetter" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.ProbabilisticDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">ProbabilisticDirectionGetter</code><a class="headerlink" href="#dipy.direction.ProbabilisticDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.direction.closest_peak_direction_getter.PmfGenDirectionGetter</span></code></p>
+<p>Randomly samples direction of a sphere based on probability mass
+function (pmf).</p>
+<p>The main constructors for this class are current from_pmf and from_shcoeff.
+The pmf gives the probability that each direction on the sphere should be
+chosen as the next direction. To get the true pmf from the “raw pmf”
+directions more than <code class="docutils literal notranslate"><span class="pre">max_angle</span></code> degrees from the incoming direction are
+set to 0 and the result is normalized.</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pmf</span></code></p></td>
+<td><p>Constructor for making a DirectionGetter from an array of Pmfs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_shcoeff</span></code></p></td>
+<td><p>Probabilistic direction getter from a distribution of directions on the sphere</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>Returns best directions at seed location to start tracking.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.ProbabilisticDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.ProbabilisticDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Direction getter from a pmf generator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>pmf_gen</strong><span class="classifier">PmfGen</span></dt><dd><p>Used to get probability mass function for selecting tracking
+directions.</p>
+</dd>
+<dt><strong>max_angle</strong><span class="classifier">float, [0, 90]</span></dt><dd><p>The maximum allowed angle between incoming direction and new
+direction.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The set of directions to be used for tracking.</p>
+</dd>
+<dt><strong>pmf_threshold</strong><span class="classifier">float [0., 1.]</span></dt><dd><p>Used to remove direction from the probability mass function for
+selecting the tracking direction.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float in [0., 1.]</span></dt><dd><p>Used for extracting initial tracking directions. Passed to
+peak_directions.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>Used for extracting initial tracking directions. Passed to
+peak_directions.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#dipy.direction.peaks.peak_directions" title="dipy.direction.peaks.peak_directions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dipy.direction.peaks.peak_directions</span></code></a></p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="sphere">
+<h3><a class="reference internal" href="#dipy.direction.Sphere" title="dipy.direction.Sphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sphere</span></code></a><a class="headerlink" href="#sphere" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.Sphere">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">Sphere</code><span class="sig-paren">(</span><em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">z=None</em>, <em class="sig-param">theta=None</em>, <em class="sig-param">phi=None</em>, <em class="sig-param">xyz=None</em>, <em class="sig-param">faces=None</em>, <em class="sig-param">edges=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Points on the unit sphere.</p>
+<p>The sphere can be constructed using one of three conventions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Sphere</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="n">Sphere</span><span class="p">(</span><span class="n">xyz</span><span class="o">=</span><span class="n">xyz</span><span class="p">)</span>
+<span class="n">Sphere</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="o">=</span><span class="n">phi</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x, y, z</strong><span class="classifier">1-D array_like</span></dt><dd><p>Vertices as x-y-z coordinates.</p>
+</dd>
+<dt><strong>theta, phi</strong><span class="classifier">1-D array_like</span></dt><dd><p>Vertices as spherical coordinates.  Theta and phi are the inclination
+and azimuth angles respectively.</p>
+</dd>
+<dt><strong>xyz</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>Vertices as x-y-z coordinates.</p>
+</dd>
+<dt><strong>faces</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>Indices into vertices that form triangular faces.  If unspecified,
+the faces are computed using a Delaunay triangulation.</p>
+</dd>
+<dt><strong>edges</strong><span class="classifier">(N, 2) ndarray</span></dt><dd><p>Edges between vertices.  If unspecified, the edges are
+derived from the faces.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>x</strong></dt><dd></dd>
+<dt><strong>y</strong></dt><dd></dd>
+<dt><strong>z</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.Sphere.find_closest" title="dipy.direction.Sphere.find_closest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_closest</span></code></a>(xyz)</p></td>
+<td><p>Find the index of the vertex in the Sphere closest to the input vector</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.Sphere.subdivide" title="dipy.direction.Sphere.subdivide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subdivide</span></code></a>([n])</p></td>
+<td><p>Subdivides each face of the sphere into four new faces.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>edges</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>faces</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>vertices</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.Sphere.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">z=None</em>, <em class="sig-param">theta=None</em>, <em class="sig-param">phi=None</em>, <em class="sig-param">xyz=None</em>, <em class="sig-param">faces=None</em>, <em class="sig-param">edges=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.edges">
+<code class="sig-name descname">edges</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.faces">
+<code class="sig-name descname">faces</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.faces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.find_closest">
+<code class="sig-name descname">find_closest</code><span class="sig-paren">(</span><em class="sig-param">xyz</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.find_closest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the index of the vertex in the Sphere closest to the input vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xyz</strong><span class="classifier">array-like, 3 elements</span></dt><dd><p>A unit vector</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>idx</strong><span class="classifier">int</span></dt><dd><p>The index into the Sphere.vertices array that gives the closest
+vertex (in angle).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.subdivide">
+<code class="sig-name descname">subdivide</code><span class="sig-paren">(</span><em class="sig-param">n=1</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.subdivide" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subdivides each face of the sphere into four new faces.</p>
+<p>New vertices are created at a, b, and c. Then each face [x, y, z] is
+divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   y
+   /               /               a/____
+/\    /            /  \  /             /____\/____          x      c     z
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n</strong><span class="classifier">int, optional</span></dt><dd><p>The number of subdivisions to preform.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>new_sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The subdivided sphere.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.vertices">
+<code class="sig-name descname">vertices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Sphere.vertices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.x">
+<em class="property">property </em><code class="sig-name descname">x</code><a class="headerlink" href="#dipy.direction.Sphere.x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.y">
+<em class="property">property </em><code class="sig-name descname">y</code><a class="headerlink" href="#dipy.direction.Sphere.y" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.Sphere.z">
+<em class="property">property </em><code class="sig-name descname">z</code><a class="headerlink" href="#dipy.direction.Sphere.z" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="repeat">
+<h3><a class="reference internal" href="#dipy.direction.repeat" title="dipy.direction.repeat"><code class="xref py py-class docutils literal notranslate"><span class="pre">repeat</span></code></a><a class="headerlink" href="#repeat" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.repeat">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">repeat</code><span class="sig-paren">(</span><em class="sig-param">object</em><span class="optional">[</span>, <em class="sig-param">times</em><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; create an iterator which returns the object<a class="headerlink" href="#dipy.direction.repeat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>for the specified number of times.  If not specified, returns the object
+endlessly.</p>
+<dl class="method">
+<dt id="dipy.direction.repeat.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.repeat.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="pool">
+<h3>Pool<a class="headerlink" href="#pool" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.Pool">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">Pool</code><span class="sig-paren">(</span><em class="sig-param">processes=None</em>, <em class="sig-param">initializer=None</em>, <em class="sig-param">initargs=()</em>, <em class="sig-param">maxtasksperchild=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.Pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a process pool object</p>
+</dd></dl>
+
+</div>
+<div class="section" id="cpu-count">
+<h3>cpu_count<a class="headerlink" href="#cpu-count" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.cpu_count">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">cpu_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.cpu_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of CPUs in the system</p>
+</dd></dl>
+
+</div>
+<div class="section" id="gfa">
+<h3>gfa<a class="headerlink" href="#gfa" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.gfa">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">gfa</code><span class="sig-paren">(</span><em class="sig-param">samples</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.gfa" title="Permalink to this definition">¶</a></dt>
+<dd><p>The general fractional anisotropy of a function evaluated
+on the unit sphere</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>samples</strong><span class="classifier">ndarray</span></dt><dd><p>Values of data on the unit sphere.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>gfa</strong><span class="classifier">ndarray</span></dt><dd><p>GFA evaluated in each entry of the array, along the last dimension.
+An <cite>np.nan</cite> is returned for coordinates that contain all-zeros in
+<cite>samples</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The GFA is defined as <a class="reference internal" href="#rbd5d437e381d-1" id="id1">[1]</a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">sqrt</span><span class="p">{</span>\<span class="n">frac</span><span class="p">{</span><span class="n">n</span> \<span class="n">sum_i</span><span class="p">{(</span>\<span class="n">Psi_i</span> <span class="o">-</span> <span class="o">&lt;</span>\<span class="n">Psi</span><span class="o">&gt;</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="p">}}{(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> \<span class="nb">sum</span><span class="p">{</span>\<span class="n">Psi_i</span> <span class="o">^</span> <span class="mi">2</span><span class="p">}}}</span>
+</pre></div>
+</div>
+<p>Where <span class="math notranslate nohighlight">\(\Psi\)</span> is an orientation distribution function sampled discretely on
+the unit sphere and angle brackets denote average over the samples on the
+sphere.</p>
+<dl class="citation">
+<dt class="label" id="rbd5d437e381d-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>Quality assessment of High Angular Resolution Diffusion Imaging
+data using bootstrap on Q-ball reconstruction. J. Cohen Adad, M.
+Descoteaux, L.L. Wald. JMRI 33: 1194-1208.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="local-maxima">
+<h3>local_maxima<a class="headerlink" href="#local-maxima" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.local_maxima">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">local_maxima</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.local_maxima" title="Permalink to this definition">¶</a></dt>
+<dd><p>Local maxima of a function evaluated on a discrete set of points.</p>
+<p>If a function is evaluated on some set of points where each pair of
+neighboring points is an edge in edges, find the local maxima.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>odf</strong><span class="classifier">array, 1d, dtype=double</span></dt><dd><p>The function evaluated on a set of discrete points.</p>
+</dd>
+<dt><strong>edges</strong><span class="classifier">array (N, 2)</span></dt><dd><p>The set of neighbor relations between the points. Every edge, ie
+<cite>edges[i, :]</cite>, is a pair of neighboring points.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>peak_values</strong><span class="classifier">ndarray</span></dt><dd><p>Value of odf at a maximum point. Peak values is sorted in descending
+order.</p>
+</dd>
+<dt><strong>peak_indices</strong><span class="classifier">ndarray</span></dt><dd><p>Indices of maximum points. Sorted in the same order as <cite>peak_values</cite> so
+<cite>odf[peak_indices[i]] == peak_values[i]</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="dipy.core.html#module-dipy.core.sphere" title="dipy.core.sphere"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dipy.core.sphere</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>A point is a local maximum if it is &gt; at least one neighbor and &gt;= all
+neighbors. If no points meet the above criteria, 1 maximum is returned such
+that <cite>odf[maximum] == max(odf)</cite>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="ndindex">
+<h3>ndindex<a class="headerlink" href="#ndindex" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.ndindex">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">ndindex</code><span class="sig-paren">(</span><em class="sig-param">shape</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.ndindex" title="Permalink to this definition">¶</a></dt>
+<dd><p>An N-dimensional iterator object to index arrays.</p>
+<p>Given the shape of an array, an <cite>ndindex</cite> instance iterates over
+the N-dimensional index of the array. At each iteration a tuple
+of indices is returned; the last dimension is iterated over first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>shape</strong><span class="classifier">tuple of ints</span></dt><dd><p>The dimensions of the array.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.ndindex</span> <span class="k">import</span> <span class="n">ndindex</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">ndindex</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+<span class="go">(0, 0, 0)</span>
+<span class="go">(0, 1, 0)</span>
+<span class="go">(1, 0, 0)</span>
+<span class="go">(1, 1, 0)</span>
+<span class="go">(2, 0, 0)</span>
+<span class="go">(2, 1, 0)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="peak-directions">
+<h3>peak_directions<a class="headerlink" href="#peak-directions" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peak_directions">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">peak_directions</code><span class="sig-paren">(</span><em class="sig-param">odf</em>, <em class="sig-param">sphere</em>, <em class="sig-param">relative_peak_threshold=0.5</em>, <em class="sig-param">min_separation_angle=25</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peak_directions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the directions of odf peaks.</p>
+<p>Peaks are defined as points on the odf that are greater than at least one
+neighbor and greater than or equal to all neighbors. Peaks are sorted in
+descending order by their values then filtered based on their relative size
+and spacing on the sphere. An odf may have 0 peaks, for example if the odf
+is perfectly isotropic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>odf</strong><span class="classifier">1d ndarray</span></dt><dd><p>The odf function evaluated on the vertices of <cite>sphere</cite></p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The Sphere providing discrete directions for evaluation.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float in [0., 1.]</span></dt><dd><p>Only peaks greater than <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">+</span> <span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">scale</span></code> are
+kept, where <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">=</span> <span class="pre">max(0,</span> <span class="pre">odf.min())</span></code> and
+<code class="docutils literal notranslate"><span class="pre">scale</span> <span class="pre">=</span> <span class="pre">odf.max()</span> <span class="pre">-</span> <span class="pre">min</span></code>.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>The minimum distance between directions. If two peaks are too close
+only the larger of the two is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>directions</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>N vertices for sphere, one for each peak</p>
+</dd>
+<dt><strong>values</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>peak values</p>
+</dd>
+<dt><strong>indices</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>peak indices of the directions on the sphere</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the odf has any negative values, they will be clipped to zeros.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="peak-directions-nl">
+<h3>peak_directions_nl<a class="headerlink" href="#peak-directions-nl" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peak_directions_nl">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">peak_directions_nl</code><span class="sig-paren">(</span><em class="sig-param">sphere_eval</em>, <em class="sig-param">relative_peak_threshold=0.25</em>, <em class="sig-param">min_separation_angle=25</em>, <em class="sig-param">sphere=&lt;dipy.core.sphere.HemiSphere object&gt;</em>, <em class="sig-param">xtol=1e-07</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peak_directions_nl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non Linear Direction Finder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sphere_eval</strong><span class="classifier">callable</span></dt><dd><p>A function which can be evaluated on a sphere.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float</span></dt><dd><p>Only return peaks greater than <code class="docutils literal notranslate"><span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">m</span></code> where m
+is the largest peak.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>The minimum distance between directions. If two peaks are too close
+only the larger of the two is returned.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>A discrete Sphere. The points on the sphere will be used for initial
+estimate of maximums.</p>
+</dd>
+<dt><strong>xtol</strong><span class="classifier">float</span></dt><dd><p>Relative tolerance for optimization.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>directions</strong><span class="classifier">array (N, 3)</span></dt><dd><p>Points on the sphere corresponding to N local maxima on the sphere.</p>
+</dd>
+<dt><strong>values</strong><span class="classifier">array (N,)</span></dt><dd><p>Value of sphere_eval at each point on directions.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="peaks-from-model">
+<h3>peaks_from_model<a class="headerlink" href="#peaks-from-model" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks_from_model">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">peaks_from_model</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">data</em>, <em class="sig-param">sphere</em>, <em class="sig-param">relative_peak_threshold</em>, <em class="sig-param">min_separation_angle</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">return_odf=False</em>, <em class="sig-param">return_sh=True</em>, <em class="sig-param">gfa_thr=0</em>, <em class="sig-param">normalize_peaks=False</em>, <em class="sig-param">sh_order=8</em>, <em class="sig-param">sh_basis_type=None</em>, <em class="sig-param">npeaks=5</em>, <em class="sig-param">B=None</em>, <em class="sig-param">invB=None</em>, <em class="sig-param">parallel=False</em>, <em class="sig-param">nbr_processes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks_from_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model to data and computes peaks and metrics</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">a model instance</span></dt><dd><p><cite>model</cite> will be used to fit the data.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The Sphere providing discrete directions for evaluation.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float</span></dt><dd><p>Only return peaks greater than <code class="docutils literal notranslate"><span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">m</span></code> where m
+is the largest peak.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90] The minimum distance between</span></dt><dd><p>directions. If two peaks are too close only the larger of the two is
+returned.</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">array, optional</span></dt><dd><p>If <cite>mask</cite> is provided, voxels that are False in <cite>mask</cite> are skipped and
+no peaks are returned.</p>
+</dd>
+<dt><strong>return_odf</strong><span class="classifier">bool</span></dt><dd><p>If True, the odfs are returned.</p>
+</dd>
+<dt><strong>return_sh</strong><span class="classifier">bool</span></dt><dd><p>If True, the odf as spherical harmonics coefficients is returned</p>
+</dd>
+<dt><strong>gfa_thr</strong><span class="classifier">float</span></dt><dd><p>Voxels with gfa less than <cite>gfa_thr</cite> are skipped, no peaks are returned.</p>
+</dd>
+<dt><strong>normalize_peaks</strong><span class="classifier">bool</span></dt><dd><p>If true, all peak values are calculated relative to <cite>max(odf)</cite>.</p>
+</dd>
+<dt><strong>sh_order</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum SH order in the SH fit.  For <cite>sh_order</cite>, there will be
+<code class="docutils literal notranslate"><span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">2)</span> <span class="pre">/</span> <span class="pre">2</span></code> SH coefficients (default 8).</p>
+</dd>
+<dt><strong>sh_basis_type</strong><span class="classifier">{None, ‘tournier07’, ‘descoteaux07’}</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">None</span></code> for the default DIPY basis,
+<code class="docutils literal notranslate"><span class="pre">tournier07</span></code> for the Tournier 2007 <a class="reference internal" href="#r42d7cfcc4bc3-2" id="id2">[2]</a> basis, and
+<code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code> for the Descoteaux 2007 <a class="reference internal" href="#r42d7cfcc4bc3-1" id="id3">[1]</a> basis
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code>).</p>
+</dd>
+<dt><strong>sh_smooth</strong><span class="classifier">float, optional</span></dt><dd><p>Lambda-regularization in the SH fit (default 0.0).</p>
+</dd>
+<dt><strong>npeaks</strong><span class="classifier">int</span></dt><dd><p>Maximum number of peaks found (default 5 peaks).</p>
+</dd>
+<dt><strong>B</strong><span class="classifier">ndarray, optional</span></dt><dd><p>Matrix that transforms spherical harmonics to spherical function
+<code class="docutils literal notranslate"><span class="pre">sf</span> <span class="pre">=</span> <span class="pre">np.dot(sh,</span> <span class="pre">B)</span></code>.</p>
+</dd>
+<dt><strong>invB</strong><span class="classifier">ndarray, optional</span></dt><dd><p>Inverse of B.</p>
+</dd>
+<dt><strong>parallel: bool</strong></dt><dd><p>If True, use multiprocessing to compute peaks and metric
+(default False). Temporary files are saved in the default temporary
+directory of the system. It can be changed using <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">tempfile</span></code>
+and <code class="docutils literal notranslate"><span class="pre">tempfile.tempdir</span> <span class="pre">=</span> <span class="pre">'/path/to/tempdir'</span></code>.</p>
+</dd>
+<dt><strong>nbr_processes: int</strong></dt><dd><p>If <cite>parallel</cite> is True, the number of subprocesses to use
+(default multiprocessing.cpu_count()).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pam</strong><span class="classifier">PeaksAndMetrics</span></dt><dd><p>An object with <code class="docutils literal notranslate"><span class="pre">gfa</span></code>, <code class="docutils literal notranslate"><span class="pre">peak_directions</span></code>, <code class="docutils literal notranslate"><span class="pre">peak_values</span></code>,
+<code class="docutils literal notranslate"><span class="pre">peak_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">odf</span></code>, <code class="docutils literal notranslate"><span class="pre">shm_coeffs</span></code> as attributes</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r42d7cfcc4bc3-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id4">2</a>)</span></dt>
+<dd><p>Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+Regularized, Fast, and Robust Analytical Q-ball Imaging.
+Magn. Reson. Med. 2007;58:497-510.</p>
+</dd>
+<dt class="label" id="r42d7cfcc4bc3-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id5">2</a>)</span></dt>
+<dd><p>Tournier J.D., Calamante F. and Connelly A. Robust determination
+of the fibre orientation distribution in diffusion MRI:
+Non-negativity constrained super-resolved spherical deconvolution.
+NeuroImage. 2007;35(4):1459-1472.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="remove-similar-vertices">
+<h3>remove_similar_vertices<a class="headerlink" href="#remove-similar-vertices" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.remove_similar_vertices">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">remove_similar_vertices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.remove_similar_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove vertices that are less than <cite>theta</cite> degrees from any other</p>
+<p>Returns vertices that are at least theta degrees from any other vertex.
+Vertex v and -v are considered the same so if v and -v are both in
+<cite>vertices</cite> only one is kept. Also if v and w are both in vertices, w must
+be separated by theta degrees from both v and -v to be unique.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vertices</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>N unit vectors.</p>
+</dd>
+<dt><strong>theta</strong><span class="classifier">float</span></dt><dd><p>The minimum separation between vertices in degrees.</p>
+</dd>
+<dt><strong>return_mapping</strong><span class="classifier">{False, True}, optional</span></dt><dd><p>If True, return <cite>mapping</cite> as well as <cite>vertices</cite> and maybe <cite>indices</cite>
+(see below).</p>
+</dd>
+<dt><strong>return_indices</strong><span class="classifier">{False, True}, optional</span></dt><dd><p>If True, return <cite>indices</cite> as well as <cite>vertices</cite> and maybe <cite>mapping</cite>
+(see below).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>unique_vertices</strong><span class="classifier">(M, 3) ndarray</span></dt><dd><p>Vertices sufficiently separated from one another.</p>
+</dd>
+<dt><strong>mapping</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>For each element <code class="docutils literal notranslate"><span class="pre">vertices[i]</span></code> (<span class="math notranslate nohighlight">\(i \in 0..N-1\)</span>), the index <span class="math notranslate nohighlight">\(j\)</span> to a
+vertex in <cite>unique_vertices</cite> that is less than <cite>theta</cite> degrees from
+<code class="docutils literal notranslate"><span class="pre">vertices[i]</span></code>.  Only returned if <cite>return_mapping</cite> is True.</p>
+</dd>
+<dt><strong>indices</strong><span class="classifier">(N,) ndarray</span></dt><dd><p><cite>indices</cite> gives the reverse of <cite>mapping</cite>.  For each element
+<code class="docutils literal notranslate"><span class="pre">unique_vertices[j]</span></code> (<span class="math notranslate nohighlight">\(j \in 0..M-1\)</span>), the index <span class="math notranslate nohighlight">\(i\)</span> to a vertex in
+<cite>vertices</cite> that is less than <cite>theta</cite> degrees from
+<code class="docutils literal notranslate"><span class="pre">unique_vertices[j]</span></code>.  If there is more than one element of
+<cite>vertices</cite> that is less than theta degrees from <cite>unique_vertices[j]</cite>,
+return the first (lowest index) matching value.  Only return if
+<cite>return_indices</cite> is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="reshape-peaks-for-visualization">
+<h3>reshape_peaks_for_visualization<a class="headerlink" href="#reshape-peaks-for-visualization" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.reshape_peaks_for_visualization">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">reshape_peaks_for_visualization</code><span class="sig-paren">(</span><em class="sig-param">peaks</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.reshape_peaks_for_visualization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshape peaks for visualization.</p>
+<p>Reshape and convert to float32 a set of peaks for visualisation with mrtrix
+or the fibernavigator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>peaks: nd array (…, N, 3) or PeaksAndMetrics object</strong></dt><dd><p>The peaks to be reshaped and converted to float32.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>peaks</strong><span class="classifier">nd array (…, 3*N)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="search-descending">
+<h3>search_descending<a class="headerlink" href="#search-descending" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.search_descending">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">search_descending</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.search_descending" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>i</cite> in descending array <cite>a</cite> so <cite>a[i] &lt; a[0] * relative_threshold</cite></p>
+<p>Call <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code>. Return value <cite>i</cite> will be the
+smallest index in the descending array <cite>a</cite> such that <code class="docutils literal notranslate"><span class="pre">a[i]</span> <span class="pre">&lt;</span> <span class="pre">T</span></code>.
+Equivalently, <cite>i</cite> will be the largest index such that <code class="docutils literal notranslate"><span class="pre">all(a[:i]</span> <span class="pre">&gt;=</span> <span class="pre">T)</span></code>.
+If all values in <cite>a</cite> are &gt;= T, return the length of array <cite>a</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>a</strong><span class="classifier">ndarray, ndim=1, c-contiguous</span></dt><dd><p>Array to be searched.  We assume <cite>a</cite> is in descending order.</p>
+</dd>
+<dt><strong>relative_threshold</strong><span class="classifier">float</span></dt><dd><p>Applied threshold will be <code class="docutils literal notranslate"><span class="pre">T</span></code> with <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>i</strong><span class="classifier">np.intp</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code> then <cite>i</cite> will be the largest index
+such that <code class="docutils literal notranslate"><span class="pre">all(a[:i]</span> <span class="pre">&gt;=</span> <span class="pre">T)</span></code>.  If all values in <cite>a</cite> are &gt;= T then
+<cite>i</cite> will be <cite>len(a)</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([ 10.,   9.,   8.,   7.,   6.,   5.,   4.,   3.,   2.,   1.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="go">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="o">*</span> <span class="mf">0.5</span>
+<span class="go">array([False, False, False, False, False, False,  True,  True,  True,  True], dtype=bool)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">10</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="sh-to-sf-matrix">
+<h3>sh_to_sf_matrix<a class="headerlink" href="#sh-to-sf-matrix" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.sh_to_sf_matrix">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">sh_to_sf_matrix</code><span class="sig-paren">(</span><em class="sig-param">sphere</em>, <em class="sig-param">sh_order</em>, <em class="sig-param">basis_type=None</em>, <em class="sig-param">return_inv=True</em>, <em class="sig-param">smooth=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.sh_to_sf_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matrix that transforms Spherical harmonics (SH) to spherical
+function (SF).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The points on which to sample the spherical function.</p>
+</dd>
+<dt><strong>sh_order</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum SH order in the SH fit.  For <cite>sh_order</cite>, there will be
+<code class="docutils literal notranslate"><span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(sh_order_2)</span> <span class="pre">/</span> <span class="pre">2</span></code> SH coefficients (default 4).</p>
+</dd>
+<dt><strong>basis_type</strong><span class="classifier">{None, ‘tournier07’, ‘descoteaux07’}</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">None</span></code> for the default DIPY basis,
+<code class="docutils literal notranslate"><span class="pre">tournier07</span></code> for the Tournier 2007 <a class="reference internal" href="#r0296267dba6e-2" id="id6">[2]</a> basis, and
+<code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code> for the Descoteaux 2007 <a class="reference internal" href="#r0296267dba6e-1" id="id7">[1]</a> basis
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code>).</p>
+</dd>
+<dt><strong>return_inv</strong><span class="classifier">bool</span></dt><dd><p>If True then the inverse of the matrix is also returned</p>
+</dd>
+<dt><strong>smooth</strong><span class="classifier">float, optional</span></dt><dd><p>Lambda-regularization in the SH fit (default 0.0).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>B</strong><span class="classifier">ndarray</span></dt><dd><p>Matrix that transforms spherical harmonics to spherical function
+<code class="docutils literal notranslate"><span class="pre">sf</span> <span class="pre">=</span> <span class="pre">np.dot(sh,</span> <span class="pre">B)</span></code>.</p>
+</dd>
+<dt><strong>invB</strong><span class="classifier">ndarray</span></dt><dd><p>Inverse of B.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r0296267dba6e-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id7">1</a>,<a href="#id8">2</a>)</span></dt>
+<dd><p>Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+Regularized, Fast, and Robust Analytical Q-ball Imaging.
+Magn. Reson. Med. 2007;58:497-510.</p>
+</dd>
+<dt class="label" id="r0296267dba6e-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id6">1</a>,<a href="#id9">2</a>)</span></dt>
+<dd><p>Tournier J.D., Calamante F. and Connelly A. Robust determination
+of the fibre orientation distribution in diffusion MRI:
+Non-negativity constrained super-resolved spherical deconvolution.
+NeuroImage. 2007;35(4):1459-1472.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="warn">
+<h3>warn<a class="headerlink" href="#warn" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.warn">
+<code class="sig-prename descclassname">dipy.direction.</code><code class="sig-name descname">warn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.warn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a warning, or maybe ignore it or raise an exception.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="id10">
+<h3><a class="reference internal" href="#dipy.direction.peaks.EuDXDirectionGetter" title="dipy.direction.peaks.EuDXDirectionGetter"><code class="xref py py-class docutils literal notranslate"><span class="pre">EuDXDirectionGetter</span></code></a><a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">EuDXDirectionGetter</code><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.direction_getter.DirectionGetter</span></code></p>
+<p>Deterministic Direction Getter based on peak directions.</p>
+<p>This class contains the cython portion of the code for PeaksAndMetrics and
+is not meant to be used on its own.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ang_thr</strong></dt><dd></dd>
+<dt><strong>qa_thr</strong></dt><dd></dd>
+<dt><strong>total_weight</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.EuDXDirectionGetter.initial_direction" title="dipy.direction.peaks.EuDXDirectionGetter.initial_direction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></a></p></td>
+<td><p>The best starting directions for fiber tracking from point</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter.ang_thr">
+<code class="sig-name descname">ang_thr</code><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter.ang_thr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter.initial_direction">
+<code class="sig-name descname">initial_direction</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter.initial_direction" title="Permalink to this definition">¶</a></dt>
+<dd><p>The best starting directions for fiber tracking from point</p>
+<p>All the valid peaks in the voxel closest to point are returned as
+initial directions.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter.qa_thr">
+<code class="sig-name descname">qa_thr</code><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter.qa_thr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.direction.peaks.EuDXDirectionGetter.total_weight">
+<code class="sig-name descname">total_weight</code><a class="headerlink" href="#dipy.direction.peaks.EuDXDirectionGetter.total_weight" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id11">
+<h3><a class="reference internal" href="#dipy.direction.peaks.InTemporaryDirectory" title="dipy.direction.peaks.InTemporaryDirectory"><code class="xref py py-class docutils literal notranslate"><span class="pre">InTemporaryDirectory</span></code></a><a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.peaks.InTemporaryDirectory">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">InTemporaryDirectory</code><span class="sig-paren">(</span><em class="sig-param">suffix=''</em>, <em class="sig-param">prefix='tmp'</em>, <em class="sig-param">dir=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.InTemporaryDirectory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.tmpdirs.TemporaryDirectory</span></code></p>
+<p>Create, return, and change directory to a temporary directory</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">my_cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">InTemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmpdir</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">_</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;test.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;some text&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;test.txt&#39;</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="s1">&#39;test.txt&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span> <span class="o">==</span> <span class="n">my_cwd</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 48%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>cleanup</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.peaks.InTemporaryDirectory.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">suffix=''</em>, <em class="sig-param">prefix='tmp'</em>, <em class="sig-param">dir=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.InTemporaryDirectory.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id12">
+<h3><a class="reference internal" href="#dipy.direction.peaks.PeaksAndMetrics" title="dipy.direction.peaks.PeaksAndMetrics"><code class="xref py py-class docutils literal notranslate"><span class="pre">PeaksAndMetrics</span></code></a><a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.peaks.PeaksAndMetrics">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">PeaksAndMetrics</code><a class="headerlink" href="#dipy.direction.peaks.PeaksAndMetrics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.reconst.peak_direction_getter.EuDXDirectionGetter</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ang_thr</strong></dt><dd></dd>
+<dt><strong>qa_thr</strong></dt><dd></dd>
+<dt><strong>total_weight</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_direction</span></code></p></td>
+<td><p>The best starting directions for fiber tracking from point</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 63%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_direction</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.peaks.PeaksAndMetrics.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.PeaksAndMetrics.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id13">
+<h3><a class="reference internal" href="#dipy.direction.peaks.Sphere" title="dipy.direction.peaks.Sphere"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sphere</span></code></a><a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.peaks.Sphere">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">Sphere</code><span class="sig-paren">(</span><em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">z=None</em>, <em class="sig-param">theta=None</em>, <em class="sig-param">phi=None</em>, <em class="sig-param">xyz=None</em>, <em class="sig-param">faces=None</em>, <em class="sig-param">edges=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Points on the unit sphere.</p>
+<p>The sphere can be constructed using one of three conventions:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Sphere</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="n">Sphere</span><span class="p">(</span><span class="n">xyz</span><span class="o">=</span><span class="n">xyz</span><span class="p">)</span>
+<span class="n">Sphere</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="o">=</span><span class="n">phi</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x, y, z</strong><span class="classifier">1-D array_like</span></dt><dd><p>Vertices as x-y-z coordinates.</p>
+</dd>
+<dt><strong>theta, phi</strong><span class="classifier">1-D array_like</span></dt><dd><p>Vertices as spherical coordinates.  Theta and phi are the inclination
+and azimuth angles respectively.</p>
+</dd>
+<dt><strong>xyz</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>Vertices as x-y-z coordinates.</p>
+</dd>
+<dt><strong>faces</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>Indices into vertices that form triangular faces.  If unspecified,
+the faces are computed using a Delaunay triangulation.</p>
+</dd>
+<dt><strong>edges</strong><span class="classifier">(N, 2) ndarray</span></dt><dd><p>Edges between vertices.  If unspecified, the edges are
+derived from the faces.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>x</strong></dt><dd></dd>
+<dt><strong>y</strong></dt><dd></dd>
+<dt><strong>z</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.direction.peaks.Sphere.find_closest" title="dipy.direction.peaks.Sphere.find_closest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_closest</span></code></a>(xyz)</p></td>
+<td><p>Find the index of the vertex in the Sphere closest to the input vector</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.direction.peaks.Sphere.subdivide" title="dipy.direction.peaks.Sphere.subdivide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subdivide</span></code></a>([n])</p></td>
+<td><p>Subdivides each face of the sphere into four new faces.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 45%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>edges</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>faces</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>vertices</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">x=None</em>, <em class="sig-param">y=None</em>, <em class="sig-param">z=None</em>, <em class="sig-param">theta=None</em>, <em class="sig-param">phi=None</em>, <em class="sig-param">xyz=None</em>, <em class="sig-param">faces=None</em>, <em class="sig-param">edges=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.edges">
+<code class="sig-name descname">edges</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.edges" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.faces">
+<code class="sig-name descname">faces</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.faces" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.find_closest">
+<code class="sig-name descname">find_closest</code><span class="sig-paren">(</span><em class="sig-param">xyz</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.find_closest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the index of the vertex in the Sphere closest to the input vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>xyz</strong><span class="classifier">array-like, 3 elements</span></dt><dd><p>A unit vector</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>idx</strong><span class="classifier">int</span></dt><dd><p>The index into the Sphere.vertices array that gives the closest
+vertex (in angle).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.subdivide">
+<code class="sig-name descname">subdivide</code><span class="sig-paren">(</span><em class="sig-param">n=1</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.subdivide" title="Permalink to this definition">¶</a></dt>
+<dd><p>Subdivides each face of the sphere into four new faces.</p>
+<p>New vertices are created at a, b, and c. Then each face [x, y, z] is
+divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   y
+   /               /               a/____
+/\    /            /  \  /             /____\/____          x      c     z
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n</strong><span class="classifier">int, optional</span></dt><dd><p>The number of subdivisions to preform.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>new_sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The subdivided sphere.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.vertices">
+<code class="sig-name descname">vertices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Sphere.vertices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.x">
+<em class="property">property </em><code class="sig-name descname">x</code><a class="headerlink" href="#dipy.direction.peaks.Sphere.x" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.y">
+<em class="property">property </em><code class="sig-name descname">y</code><a class="headerlink" href="#dipy.direction.peaks.Sphere.y" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.direction.peaks.Sphere.z">
+<em class="property">property </em><code class="sig-name descname">z</code><a class="headerlink" href="#dipy.direction.peaks.Sphere.z" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id14">
+<h3><a class="reference internal" href="#dipy.direction.peaks.repeat" title="dipy.direction.peaks.repeat"><code class="xref py py-class docutils literal notranslate"><span class="pre">repeat</span></code></a><a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.direction.peaks.repeat">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">repeat</code><span class="sig-paren">(</span><em class="sig-param">object</em><span class="optional">[</span>, <em class="sig-param">times</em><span class="optional">]</span><span class="sig-paren">)</span> &#x2192; create an iterator which returns the object<a class="headerlink" href="#dipy.direction.peaks.repeat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>for the specified number of times.  If not specified, returns the object
+endlessly.</p>
+<dl class="method">
+<dt id="dipy.direction.peaks.repeat.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.repeat.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="id15">
+<h3>Pool<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.Pool">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">Pool</code><span class="sig-paren">(</span><em class="sig-param">processes=None</em>, <em class="sig-param">initializer=None</em>, <em class="sig-param">initargs=()</em>, <em class="sig-param">maxtasksperchild=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.Pool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a process pool object</p>
+</dd></dl>
+
+</div>
+<div class="section" id="id16">
+<h3>cpu_count<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.cpu_count">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">cpu_count</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.cpu_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of CPUs in the system</p>
+</dd></dl>
+
+</div>
+<div class="section" id="id17">
+<h3>gfa<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.gfa">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">gfa</code><span class="sig-paren">(</span><em class="sig-param">samples</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.gfa" title="Permalink to this definition">¶</a></dt>
+<dd><p>The general fractional anisotropy of a function evaluated
+on the unit sphere</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>samples</strong><span class="classifier">ndarray</span></dt><dd><p>Values of data on the unit sphere.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>gfa</strong><span class="classifier">ndarray</span></dt><dd><p>GFA evaluated in each entry of the array, along the last dimension.
+An <cite>np.nan</cite> is returned for coordinates that contain all-zeros in
+<cite>samples</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The GFA is defined as <a class="reference internal" href="#rd66f29ec64ce-1" id="id18">[1]</a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>\<span class="n">sqrt</span><span class="p">{</span>\<span class="n">frac</span><span class="p">{</span><span class="n">n</span> \<span class="n">sum_i</span><span class="p">{(</span>\<span class="n">Psi_i</span> <span class="o">-</span> <span class="o">&lt;</span>\<span class="n">Psi</span><span class="o">&gt;</span><span class="p">)</span><span class="o">^</span><span class="mi">2</span><span class="p">}}{(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> \<span class="nb">sum</span><span class="p">{</span>\<span class="n">Psi_i</span> <span class="o">^</span> <span class="mi">2</span><span class="p">}}}</span>
+</pre></div>
+</div>
+<p>Where <span class="math notranslate nohighlight">\(\Psi\)</span> is an orientation distribution function sampled discretely on
+the unit sphere and angle brackets denote average over the samples on the
+sphere.</p>
+<dl class="citation">
+<dt class="label" id="rd66f29ec64ce-1"><span class="brackets"><a class="fn-backref" href="#id18">1</a></span></dt>
+<dd><p>Quality assessment of High Angular Resolution Diffusion Imaging
+data using bootstrap on Q-ball reconstruction. J. Cohen Adad, M.
+Descoteaux, L.L. Wald. JMRI 33: 1194-1208.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id19">
+<h3>local_maxima<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.local_maxima">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">local_maxima</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.local_maxima" title="Permalink to this definition">¶</a></dt>
+<dd><p>Local maxima of a function evaluated on a discrete set of points.</p>
+<p>If a function is evaluated on some set of points where each pair of
+neighboring points is an edge in edges, find the local maxima.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>odf</strong><span class="classifier">array, 1d, dtype=double</span></dt><dd><p>The function evaluated on a set of discrete points.</p>
+</dd>
+<dt><strong>edges</strong><span class="classifier">array (N, 2)</span></dt><dd><p>The set of neighbor relations between the points. Every edge, ie
+<cite>edges[i, :]</cite>, is a pair of neighboring points.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>peak_values</strong><span class="classifier">ndarray</span></dt><dd><p>Value of odf at a maximum point. Peak values is sorted in descending
+order.</p>
+</dd>
+<dt><strong>peak_indices</strong><span class="classifier">ndarray</span></dt><dd><p>Indices of maximum points. Sorted in the same order as <cite>peak_values</cite> so
+<cite>odf[peak_indices[i]] == peak_values[i]</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="dipy.core.html#module-dipy.core.sphere" title="dipy.core.sphere"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dipy.core.sphere</span></code></a></p>
+</div>
+<p class="rubric">Notes</p>
+<p>A point is a local maximum if it is &gt; at least one neighbor and &gt;= all
+neighbors. If no points meet the above criteria, 1 maximum is returned such
+that <cite>odf[maximum] == max(odf)</cite>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="id20">
+<h3>ndindex<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.ndindex">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">ndindex</code><span class="sig-paren">(</span><em class="sig-param">shape</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.ndindex" title="Permalink to this definition">¶</a></dt>
+<dd><p>An N-dimensional iterator object to index arrays.</p>
+<p>Given the shape of an array, an <cite>ndindex</cite> instance iterates over
+the N-dimensional index of the array. At each iteration a tuple
+of indices is returned; the last dimension is iterated over first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>shape</strong><span class="classifier">tuple of ints</span></dt><dd><p>The dimensions of the array.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.core.ndindex</span> <span class="k">import</span> <span class="n">ndindex</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">ndindex</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+<span class="go">(0, 0, 0)</span>
+<span class="go">(0, 1, 0)</span>
+<span class="go">(1, 0, 0)</span>
+<span class="go">(1, 1, 0)</span>
+<span class="go">(2, 0, 0)</span>
+<span class="go">(2, 1, 0)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id21">
+<h3>peak_directions<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.peak_directions">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">peak_directions</code><span class="sig-paren">(</span><em class="sig-param">odf</em>, <em class="sig-param">sphere</em>, <em class="sig-param">relative_peak_threshold=0.5</em>, <em class="sig-param">min_separation_angle=25</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.peak_directions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the directions of odf peaks.</p>
+<p>Peaks are defined as points on the odf that are greater than at least one
+neighbor and greater than or equal to all neighbors. Peaks are sorted in
+descending order by their values then filtered based on their relative size
+and spacing on the sphere. An odf may have 0 peaks, for example if the odf
+is perfectly isotropic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>odf</strong><span class="classifier">1d ndarray</span></dt><dd><p>The odf function evaluated on the vertices of <cite>sphere</cite></p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The Sphere providing discrete directions for evaluation.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float in [0., 1.]</span></dt><dd><p>Only peaks greater than <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">+</span> <span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">scale</span></code> are
+kept, where <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">=</span> <span class="pre">max(0,</span> <span class="pre">odf.min())</span></code> and
+<code class="docutils literal notranslate"><span class="pre">scale</span> <span class="pre">=</span> <span class="pre">odf.max()</span> <span class="pre">-</span> <span class="pre">min</span></code>.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>The minimum distance between directions. If two peaks are too close
+only the larger of the two is returned.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>directions</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>N vertices for sphere, one for each peak</p>
+</dd>
+<dt><strong>values</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>peak values</p>
+</dd>
+<dt><strong>indices</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>peak indices of the directions on the sphere</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the odf has any negative values, they will be clipped to zeros.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="id22">
+<h3>peak_directions_nl<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.peak_directions_nl">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">peak_directions_nl</code><span class="sig-paren">(</span><em class="sig-param">sphere_eval</em>, <em class="sig-param">relative_peak_threshold=0.25</em>, <em class="sig-param">min_separation_angle=25</em>, <em class="sig-param">sphere=&lt;dipy.core.sphere.HemiSphere object&gt;</em>, <em class="sig-param">xtol=1e-07</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.peak_directions_nl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non Linear Direction Finder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sphere_eval</strong><span class="classifier">callable</span></dt><dd><p>A function which can be evaluated on a sphere.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float</span></dt><dd><p>Only return peaks greater than <code class="docutils literal notranslate"><span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">m</span></code> where m
+is the largest peak.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90]</span></dt><dd><p>The minimum distance between directions. If two peaks are too close
+only the larger of the two is returned.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>A discrete Sphere. The points on the sphere will be used for initial
+estimate of maximums.</p>
+</dd>
+<dt><strong>xtol</strong><span class="classifier">float</span></dt><dd><p>Relative tolerance for optimization.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>directions</strong><span class="classifier">array (N, 3)</span></dt><dd><p>Points on the sphere corresponding to N local maxima on the sphere.</p>
+</dd>
+<dt><strong>values</strong><span class="classifier">array (N,)</span></dt><dd><p>Value of sphere_eval at each point on directions.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id23">
+<h3>peaks_from_model<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.peaks_from_model">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">peaks_from_model</code><span class="sig-paren">(</span><em class="sig-param">model</em>, <em class="sig-param">data</em>, <em class="sig-param">sphere</em>, <em class="sig-param">relative_peak_threshold</em>, <em class="sig-param">min_separation_angle</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">return_odf=False</em>, <em class="sig-param">return_sh=True</em>, <em class="sig-param">gfa_thr=0</em>, <em class="sig-param">normalize_peaks=False</em>, <em class="sig-param">sh_order=8</em>, <em class="sig-param">sh_basis_type=None</em>, <em class="sig-param">npeaks=5</em>, <em class="sig-param">B=None</em>, <em class="sig-param">invB=None</em>, <em class="sig-param">parallel=False</em>, <em class="sig-param">nbr_processes=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.peaks_from_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model to data and computes peaks and metrics</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">a model instance</span></dt><dd><p><cite>model</cite> will be used to fit the data.</p>
+</dd>
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The Sphere providing discrete directions for evaluation.</p>
+</dd>
+<dt><strong>relative_peak_threshold</strong><span class="classifier">float</span></dt><dd><p>Only return peaks greater than <code class="docutils literal notranslate"><span class="pre">relative_peak_threshold</span> <span class="pre">*</span> <span class="pre">m</span></code> where m
+is the largest peak.</p>
+</dd>
+<dt><strong>min_separation_angle</strong><span class="classifier">float in [0, 90] The minimum distance between</span></dt><dd><p>directions. If two peaks are too close only the larger of the two is
+returned.</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">array, optional</span></dt><dd><p>If <cite>mask</cite> is provided, voxels that are False in <cite>mask</cite> are skipped and
+no peaks are returned.</p>
+</dd>
+<dt><strong>return_odf</strong><span class="classifier">bool</span></dt><dd><p>If True, the odfs are returned.</p>
+</dd>
+<dt><strong>return_sh</strong><span class="classifier">bool</span></dt><dd><p>If True, the odf as spherical harmonics coefficients is returned</p>
+</dd>
+<dt><strong>gfa_thr</strong><span class="classifier">float</span></dt><dd><p>Voxels with gfa less than <cite>gfa_thr</cite> are skipped, no peaks are returned.</p>
+</dd>
+<dt><strong>normalize_peaks</strong><span class="classifier">bool</span></dt><dd><p>If true, all peak values are calculated relative to <cite>max(odf)</cite>.</p>
+</dd>
+<dt><strong>sh_order</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum SH order in the SH fit.  For <cite>sh_order</cite>, there will be
+<code class="docutils literal notranslate"><span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">2)</span> <span class="pre">/</span> <span class="pre">2</span></code> SH coefficients (default 8).</p>
+</dd>
+<dt><strong>sh_basis_type</strong><span class="classifier">{None, ‘tournier07’, ‘descoteaux07’}</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">None</span></code> for the default DIPY basis,
+<code class="docutils literal notranslate"><span class="pre">tournier07</span></code> for the Tournier 2007 <a class="reference internal" href="#r5bfa62a45a36-2" id="id24">[2]</a> basis, and
+<code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code> for the Descoteaux 2007 <a class="reference internal" href="#r5bfa62a45a36-1" id="id25">[1]</a> basis
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code>).</p>
+</dd>
+<dt><strong>sh_smooth</strong><span class="classifier">float, optional</span></dt><dd><p>Lambda-regularization in the SH fit (default 0.0).</p>
+</dd>
+<dt><strong>npeaks</strong><span class="classifier">int</span></dt><dd><p>Maximum number of peaks found (default 5 peaks).</p>
+</dd>
+<dt><strong>B</strong><span class="classifier">ndarray, optional</span></dt><dd><p>Matrix that transforms spherical harmonics to spherical function
+<code class="docutils literal notranslate"><span class="pre">sf</span> <span class="pre">=</span> <span class="pre">np.dot(sh,</span> <span class="pre">B)</span></code>.</p>
+</dd>
+<dt><strong>invB</strong><span class="classifier">ndarray, optional</span></dt><dd><p>Inverse of B.</p>
+</dd>
+<dt><strong>parallel: bool</strong></dt><dd><p>If True, use multiprocessing to compute peaks and metric
+(default False). Temporary files are saved in the default temporary
+directory of the system. It can be changed using <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">tempfile</span></code>
+and <code class="docutils literal notranslate"><span class="pre">tempfile.tempdir</span> <span class="pre">=</span> <span class="pre">'/path/to/tempdir'</span></code>.</p>
+</dd>
+<dt><strong>nbr_processes: int</strong></dt><dd><p>If <cite>parallel</cite> is True, the number of subprocesses to use
+(default multiprocessing.cpu_count()).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pam</strong><span class="classifier">PeaksAndMetrics</span></dt><dd><p>An object with <code class="docutils literal notranslate"><span class="pre">gfa</span></code>, <code class="docutils literal notranslate"><span class="pre">peak_directions</span></code>, <code class="docutils literal notranslate"><span class="pre">peak_values</span></code>,
+<code class="docutils literal notranslate"><span class="pre">peak_indices</span></code>, <code class="docutils literal notranslate"><span class="pre">odf</span></code>, <code class="docutils literal notranslate"><span class="pre">shm_coeffs</span></code> as attributes</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r5bfa62a45a36-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id25">1</a>,<a href="#id26">2</a>)</span></dt>
+<dd><p>Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+Regularized, Fast, and Robust Analytical Q-ball Imaging.
+Magn. Reson. Med. 2007;58:497-510.</p>
+</dd>
+<dt class="label" id="r5bfa62a45a36-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id24">1</a>,<a href="#id27">2</a>)</span></dt>
+<dd><p>Tournier J.D., Calamante F. and Connelly A. Robust determination
+of the fibre orientation distribution in diffusion MRI:
+Non-negativity constrained super-resolved spherical deconvolution.
+NeuroImage. 2007;35(4):1459-1472.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id28">
+<h3>remove_similar_vertices<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.remove_similar_vertices">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">remove_similar_vertices</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.remove_similar_vertices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove vertices that are less than <cite>theta</cite> degrees from any other</p>
+<p>Returns vertices that are at least theta degrees from any other vertex.
+Vertex v and -v are considered the same so if v and -v are both in
+<cite>vertices</cite> only one is kept. Also if v and w are both in vertices, w must
+be separated by theta degrees from both v and -v to be unique.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vertices</strong><span class="classifier">(N, 3) ndarray</span></dt><dd><p>N unit vectors.</p>
+</dd>
+<dt><strong>theta</strong><span class="classifier">float</span></dt><dd><p>The minimum separation between vertices in degrees.</p>
+</dd>
+<dt><strong>return_mapping</strong><span class="classifier">{False, True}, optional</span></dt><dd><p>If True, return <cite>mapping</cite> as well as <cite>vertices</cite> and maybe <cite>indices</cite>
+(see below).</p>
+</dd>
+<dt><strong>return_indices</strong><span class="classifier">{False, True}, optional</span></dt><dd><p>If True, return <cite>indices</cite> as well as <cite>vertices</cite> and maybe <cite>mapping</cite>
+(see below).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>unique_vertices</strong><span class="classifier">(M, 3) ndarray</span></dt><dd><p>Vertices sufficiently separated from one another.</p>
+</dd>
+<dt><strong>mapping</strong><span class="classifier">(N,) ndarray</span></dt><dd><p>For each element <code class="docutils literal notranslate"><span class="pre">vertices[i]</span></code> (<span class="math notranslate nohighlight">\(i \in 0..N-1\)</span>), the index <span class="math notranslate nohighlight">\(j\)</span> to a
+vertex in <cite>unique_vertices</cite> that is less than <cite>theta</cite> degrees from
+<code class="docutils literal notranslate"><span class="pre">vertices[i]</span></code>.  Only returned if <cite>return_mapping</cite> is True.</p>
+</dd>
+<dt><strong>indices</strong><span class="classifier">(N,) ndarray</span></dt><dd><p><cite>indices</cite> gives the reverse of <cite>mapping</cite>.  For each element
+<code class="docutils literal notranslate"><span class="pre">unique_vertices[j]</span></code> (<span class="math notranslate nohighlight">\(j \in 0..M-1\)</span>), the index <span class="math notranslate nohighlight">\(i\)</span> to a vertex in
+<cite>vertices</cite> that is less than <cite>theta</cite> degrees from
+<code class="docutils literal notranslate"><span class="pre">unique_vertices[j]</span></code>.  If there is more than one element of
+<cite>vertices</cite> that is less than theta degrees from <cite>unique_vertices[j]</cite>,
+return the first (lowest index) matching value.  Only return if
+<cite>return_indices</cite> is True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id29">
+<h3>reshape_peaks_for_visualization<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.reshape_peaks_for_visualization">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">reshape_peaks_for_visualization</code><span class="sig-paren">(</span><em class="sig-param">peaks</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.reshape_peaks_for_visualization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshape peaks for visualization.</p>
+<p>Reshape and convert to float32 a set of peaks for visualisation with mrtrix
+or the fibernavigator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>peaks: nd array (…, N, 3) or PeaksAndMetrics object</strong></dt><dd><p>The peaks to be reshaped and converted to float32.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>peaks</strong><span class="classifier">nd array (…, 3*N)</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id30">
+<h3>search_descending<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.search_descending">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">search_descending</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.search_descending" title="Permalink to this definition">¶</a></dt>
+<dd><p><cite>i</cite> in descending array <cite>a</cite> so <cite>a[i] &lt; a[0] * relative_threshold</cite></p>
+<p>Call <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code>. Return value <cite>i</cite> will be the
+smallest index in the descending array <cite>a</cite> such that <code class="docutils literal notranslate"><span class="pre">a[i]</span> <span class="pre">&lt;</span> <span class="pre">T</span></code>.
+Equivalently, <cite>i</cite> will be the largest index such that <code class="docutils literal notranslate"><span class="pre">all(a[:i]</span> <span class="pre">&gt;=</span> <span class="pre">T)</span></code>.
+If all values in <cite>a</cite> are &gt;= T, return the length of array <cite>a</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>a</strong><span class="classifier">ndarray, ndim=1, c-contiguous</span></dt><dd><p>Array to be searched.  We assume <cite>a</cite> is in descending order.</p>
+</dd>
+<dt><strong>relative_threshold</strong><span class="classifier">float</span></dt><dd><p>Applied threshold will be <code class="docutils literal notranslate"><span class="pre">T</span></code> with <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>i</strong><span class="classifier">np.intp</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">T</span> <span class="pre">=</span> <span class="pre">a[0]</span> <span class="pre">*</span> <span class="pre">relative_threshold</span></code> then <cite>i</cite> will be the largest index
+such that <code class="docutils literal notranslate"><span class="pre">all(a[:i]</span> <span class="pre">&gt;=</span> <span class="pre">T)</span></code>.  If all values in <cite>a</cite> are &gt;= T then
+<cite>i</cite> will be <cite>len(a)</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([ 10.,   9.,   8.,   7.,   6.,   5.,   4.,   3.,   2.,   1.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="go">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="o">*</span> <span class="mf">0.5</span>
+<span class="go">array([False, False, False, False, False, False,  True,  True,  True,  True], dtype=bool)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">search_descending</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">10</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="id31">
+<h3>sh_to_sf_matrix<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.sh_to_sf_matrix">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">sh_to_sf_matrix</code><span class="sig-paren">(</span><em class="sig-param">sphere</em>, <em class="sig-param">sh_order</em>, <em class="sig-param">basis_type=None</em>, <em class="sig-param">return_inv=True</em>, <em class="sig-param">smooth=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.sh_to_sf_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matrix that transforms Spherical harmonics (SH) to spherical
+function (SF).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>sphere</strong><span class="classifier">Sphere</span></dt><dd><p>The points on which to sample the spherical function.</p>
+</dd>
+<dt><strong>sh_order</strong><span class="classifier">int, optional</span></dt><dd><p>Maximum SH order in the SH fit.  For <cite>sh_order</cite>, there will be
+<code class="docutils literal notranslate"><span class="pre">(sh_order</span> <span class="pre">+</span> <span class="pre">1)</span> <span class="pre">*</span> <span class="pre">(sh_order_2)</span> <span class="pre">/</span> <span class="pre">2</span></code> SH coefficients (default 4).</p>
+</dd>
+<dt><strong>basis_type</strong><span class="classifier">{None, ‘tournier07’, ‘descoteaux07’}</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">None</span></code> for the default DIPY basis,
+<code class="docutils literal notranslate"><span class="pre">tournier07</span></code> for the Tournier 2007 <a class="reference internal" href="#rc855ec825848-2" id="id32">[2]</a> basis, and
+<code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code> for the Descoteaux 2007 <a class="reference internal" href="#rc855ec825848-1" id="id33">[1]</a> basis
+(<code class="docutils literal notranslate"><span class="pre">None</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">descoteaux07</span></code>).</p>
+</dd>
+<dt><strong>return_inv</strong><span class="classifier">bool</span></dt><dd><p>If True then the inverse of the matrix is also returned</p>
+</dd>
+<dt><strong>smooth</strong><span class="classifier">float, optional</span></dt><dd><p>Lambda-regularization in the SH fit (default 0.0).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>B</strong><span class="classifier">ndarray</span></dt><dd><p>Matrix that transforms spherical harmonics to spherical function
+<code class="docutils literal notranslate"><span class="pre">sf</span> <span class="pre">=</span> <span class="pre">np.dot(sh,</span> <span class="pre">B)</span></code>.</p>
+</dd>
+<dt><strong>invB</strong><span class="classifier">ndarray</span></dt><dd><p>Inverse of B.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc855ec825848-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id33">1</a>,<a href="#id34">2</a>)</span></dt>
+<dd><p>Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+Regularized, Fast, and Robust Analytical Q-ball Imaging.
+Magn. Reson. Med. 2007;58:497-510.</p>
+</dd>
+<dt class="label" id="rc855ec825848-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id32">1</a>,<a href="#id35">2</a>)</span></dt>
+<dd><p>Tournier J.D., Calamante F. and Connelly A. Robust determination
+of the fibre orientation distribution in diffusion MRI:
+Non-negativity constrained super-resolved spherical deconvolution.
+NeuroImage. 2007;35(4):1459-1472.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="id36">
+<h3>warn<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.direction.peaks.warn">
+<code class="sig-prename descclassname">dipy.direction.peaks.</code><code class="sig-name descname">warn</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.direction.peaks.warn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Issue a warning, or maybe ignore it or raise an exception.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.io.html" title="io"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy.denoise.html" title="denoise"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

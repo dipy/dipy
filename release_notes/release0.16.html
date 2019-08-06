@@ -1,0 +1,282 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Release notes for DIPY version 0.15" href="release0.15.html" />
+    <link rel="prev" title="Release notes for DIPY version 1.0" href="release1.0.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.15.html" title="Release notes for DIPY version 0.15"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="release1.0.html" title="Release notes for DIPY version 1.0"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" accesskey="U">A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="release1.0.html"
+                        title="previous chapter">Release notes for DIPY version 1.0</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="release0.15.html"
+                        title="next chapter">Release notes for DIPY version 0.15</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/release_notes/release0.16.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="release-notes-for-dipy-version-0-16">
+<span id="release0-16"></span><h1>Release notes for DIPY version 0.16<a class="headerlink" href="#release-notes-for-dipy-version-0-16" title="Permalink to this headline">¶</a></h1>
+<p>GitHub stats for 2018/12/12 - 2019/03/10 (tag: 0.15.0)</p>
+<p>These lists are automatically generated, and may be incomplete or contain duplicates.</p>
+<p>The following 14 authors contributed 361 commits.</p>
+<ul class="simple">
+<li><p>Ariel Rokem</p></li>
+<li><p>Bramsh Qamar</p></li>
+<li><p>Clément Zotti</p></li>
+<li><p>Eleftherios Garyfallidis</p></li>
+<li><p>Francois Rheault</p></li>
+<li><p>Gabriel Girard</p></li>
+<li><p>Jean-Christophe Houde</p></li>
+<li><p>Jon Haitz Legarreta Gorroño</p></li>
+<li><p>Katrin Leinweber</p></li>
+<li><p>Kesshi Jordan</p></li>
+<li><p>Parichit Sharma</p></li>
+<li><p>Serge Koudoro</p></li>
+<li><p>Shreyas Fadnavis</p></li>
+<li><p>Yijun Liu</p></li>
+</ul>
+<p>We closed a total of 103 issues, 41 pull requests and 62 regular issues;
+this is the full list (generated with the script
+<code class="file docutils literal notranslate"><span class="pre">tools/github_stats.py</span></code>):</p>
+<p>Pull Requests (41):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1755/">PR #1755</a>: Bundle Analysis and Linear mixed Models Workflows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1748/">PR #1748</a>: [REBASED ] Symmetric Diffeomorphic registration workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1714/">PR #1714</a>: DOC: Add Cython style guideline for DIPY.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1726/">PR #1726</a>: IVIM MIX Model (MicroLearn)</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1753/">PR #1753</a>: BF: Fixes #1751, by adding a <cite>scale</cite> key-word arg to <cite>decfa</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1743/">PR #1743</a>: Horizon</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1749/">PR #1749</a>: [Fix] Tutorial syntax</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1739/">PR #1739</a>: IVIM Workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1695/">PR #1695</a>: A few tractometry functions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1741/">PR #1741</a>: [Fix]  Pre-build : From relative to absolute import</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1742/">PR #1742</a>: [REBASED] Apply Transform Workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1745/">PR #1745</a>: Adjust number of threads for SLR in Recobundles</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1746/">PR #1746</a>: [DOC] Add NIH to sponsor list</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1735/">PR #1735</a>: [Rebase] Affine Registration Workflow with Supporting Quality Metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1738/">PR #1738</a>: [FIX] Python 3 compatibility for some tools script</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1740/">PR #1740</a>: [FIX] mapmri  with cvxpy 1.0.15</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1730/">PR #1730</a>: [Fix] Cython syntax error</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1666/">PR #1666</a>: Remove the points added oustide of a mask. Fix the related tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1737/">PR #1737</a>: Doc Fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1733/">PR #1733</a>: Minor Doc Fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1732/">PR #1732</a>: MAIIncrement Python version for testing to 3.6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1716/">PR #1716</a>: DOC: Add <cite>Imports</cite> section on package shorthands recommendations.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1640/">PR #1640</a>: Workflows - Adding PFT, probabilistic, closestpeaks tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1652/">PR #1652</a>: Switching tests to pytest</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1720/">PR #1720</a>: [WIP] DIPY Workshop link on current website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1719/">PR #1719</a>: BF: Syntax fix example images not rendering</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1715/">PR #1715</a>: DOC: Avoid the bullet points being interpreted as quoted blocks.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1706/">PR #1706</a>: BUG: Fix Cython one-liner non-trivial type declaration warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1705/">PR #1705</a>: BUG: Fix Numpy <cite>.random.random_integer</cite> deprecation warning.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1704/">PR #1704</a>: DOC: Fix typo in <cite>linear_fascicle_evaluation.py</cite> script.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1701/">PR #1701</a>: BUG: Fix Sphinx math notation documentation warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1707/">PR #1707</a>: BUG: Address <cite>numpy.matrix</cite> <cite>PendingDeprecation</cite> warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1703/">PR #1703</a>: BUG: Fix blank image being recorded at <cite>linear_fascicle_evaluation.py</cite>.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1700/">PR #1700</a>: DOC: Use triple double-quoted strings for docstrings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1708/">PR #1708</a>: BF: Clip the values before passing to arccos, instead of fixing nans.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1710/">PR #1710</a>: DOC: fix typo in instruction below sample snippet</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1702/">PR #1702</a>: BUG: Fix <cite>dipy.io.trackvis</cite> deprecation warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1697/">PR #1697</a>: Hyperlink DOIs to preferred resolver</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1696/">PR #1696</a>: Transfer release notes to a specific folder</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1690/">PR #1690</a>: Typo in release notes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/1693/">PR #1693</a>: Changed the GSoC conduction years</p></li>
+</ul>
+<p>Issues (62):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1757/">#1757</a>: NI Learn info from sensors designed to acseptible eeg format?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1755/">#1755</a>: Bundle Analysis and Linear mixed Models Workflows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1748/">#1748</a>: [REBASED ] Symmetric Diffeomorphic registration workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1714/">#1714</a>: DOC: Add Cython style guideline for DIPY.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1726/">#1726</a>: IVIM MIX Model (MicroLearn)</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1751/">#1751</a>: Scale values in <cite>decfa</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1753/">#1753</a>: BF: Fixes #1751, by adding a <cite>scale</cite> key-word arg to <cite>decfa</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1754/">#1754</a>: DeprecationWarning: This function is deprecated. Please call randint(0, 10000 + 1) instead    C:UsersranjiAnaconda3libsite-packagesipykernel_launcher.py:14: DeprecationWarning: <cite>imsave</cite> is deprecated! <cite>imsave</cite> is deprecated in SciPy 1.0.0, and will be removed in 1.2.0. Use <code class="docutils literal notranslate"><span class="pre">imageio.imwrite</span></code> instead.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1743/">#1743</a>: Horizon</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1749/">#1749</a>: [Fix] Tutorial syntax</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1616/">#1616</a>: Implementing the Diffeomorphic registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1739/">#1739</a>: IVIM Workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1695/">#1695</a>: A few tractometry functions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1741/">#1741</a>: [Fix]  Pre-build : From relative to absolute import</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1742/">#1742</a>: [REBASED] Apply Transform Workflow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1745/">#1745</a>: Adjust number of threads for SLR in Recobundles</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1746/">#1746</a>: [DOC] Add NIH to sponsor list</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1605/">#1605</a>: Cleaned PR for Apply Transform Workflow to quickly register a set of moving NIFTI images using a given affine matrix.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1735/">#1735</a>: [Rebase] Affine Registration Workflow with Supporting Quality Metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1738/">#1738</a>: [FIX] Python 3 compatibility for some tools script</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1740/">#1740</a>: [FIX] mapmri  with cvxpy 1.0.15</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1730/">#1730</a>: [Fix] Cython syntax error</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1661/">#1661</a>: Local Tracking - BinaryTissueClassifier - dropping the last point</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1666/">#1666</a>: Remove the points added oustide of a mask. Fix the related tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1737/">#1737</a>: Doc Fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1604/">#1604</a>: Cleaned PR for Affine Registration Workflow with Supporting Quality Metrics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1734/">#1734</a>: Documentation Error</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1733/">#1733</a>: Minor Doc Fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1565/">#1565</a>: New warnings with <cite>PRE=1</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1732/">#1732</a>: MAIIncrement Python version for testing to 3.6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1716/">#1716</a>: DOC: Add <cite>Imports</cite> section on package shorthands recommendations.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1640/">#1640</a>: Workflows - Adding PFT, probabilistic, closestpeaks tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1729/">#1729</a>: N3/N4 Bias correction?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1652/">#1652</a>: Switching tests to pytest</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1280/">#1280</a>: Switch testing to pytest?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1727/">#1727</a>: Upgrade Scipy for MIX framework?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1723/">#1723</a>: Failure on</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1720/">#1720</a>: [WIP] DIPY Workshop link on current website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1718/">#1718</a>: cannot import name window</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1719/">#1719</a>: BF: Syntax fix example images not rendering</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1717/">#1717</a>: cannot import packages of dipy.viz</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1715/">#1715</a>: DOC: Avoid the bullet points being interpreted as quoted blocks.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1706/">#1706</a>: BUG: Fix Cython one-liner non-trivial type declaration warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1705/">#1705</a>: BUG: Fix Numpy <cite>.random.random_integer</cite> deprecation warning.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1664/">#1664</a>: Deprecation warnings on testing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1704/">#1704</a>: DOC: Fix typo in <cite>linear_fascicle_evaluation.py</cite> script.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1701/">#1701</a>: BUG: Fix Sphinx math notation documentation warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1707/">#1707</a>: BUG: Address <cite>numpy.matrix</cite> <cite>PendingDeprecation</cite> warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1633/">#1633</a>: Blank png saved/displayed on documentation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1703/">#1703</a>: BUG: Fix blank image being recorded at <cite>linear_fascicle_evaluation.py</cite>.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1700/">#1700</a>: DOC: Use triple double-quoted strings for docstrings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1708/">#1708</a>: BF: Clip the values before passing to arccos, instead of fixing nans.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1698/">#1698</a>: test failure in travis</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1710/">#1710</a>: DOC: fix typo in instruction below sample snippet</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1702/">#1702</a>: BUG: Fix <cite>dipy.io.trackvis</cite> deprecation warnings.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1697/">#1697</a>: Hyperlink DOIs to preferred resolver</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1696/">#1696</a>: Transfer release notes to a specific folder</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1691/">#1691</a>: Doc folder for release notes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1690/">#1690</a>: Typo in release notes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1693/">#1693</a>: Changed the GSoC conduction years</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1692/">#1692</a>: Minor doc fix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/1632/">#1632</a>: Link broken on website</p></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.15.html" title="Release notes for DIPY version 0.15"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="release1.0.html" title="Release notes for DIPY version 1.0"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" >A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

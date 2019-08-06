@@ -1,0 +1,37 @@
+
+========================
+dipy_horizon
+========================
+
+usage: dipy_horizon [-h] [--cluster] [--cluster_thr float] [--random_colors]
+                     [--length_gt float] [--length_lt float]
+                     [--clusters_gt int] [--clusters_lt int] [--native_coords]
+                     [--stealth] [--out_dir str] [--out_stealth_png str]
+                     input_files [input_files ...]
+
+Highly interactive visualization - invert the Horizon!
+
+Interact with any number of .trk, .tck or .dpy tractograms and anatomy files .nii or .nii.gz. Cluster streamlines on loading.
+
+positional arguments:
+  input_files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --cluster
+  --cluster_thr float
+  --random_colors
+  --length_gt float
+  --length_lt float
+  --clusters_gt int
+  --clusters_lt int
+  --native_coords
+  --stealth
+
+output arguments(optional):
+  --out_dir str
+  --out_stealth_png str
+
+References: 
+.. [Horizon_ISMRM19] Garyfallidis E., M-A. Cote, B.Q. Chandio,    S. Fadnavis, J. Guaje, R. Aggarwal, E. St-Onge, K.S. Juneja,    S. Koudoro, D. Reagan, DIPY Horizon: fast, modular, unified and    adaptive visualization, Proceedings of: International Society of    Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

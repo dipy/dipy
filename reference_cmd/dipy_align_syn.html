@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_align_affine" href="dipy_align_affine.html" />
+    <link rel="prev" title="dipy_mask" href="dipy_mask.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_align_affine.html" title="dipy_align_affine"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_mask.html" title="dipy_mask"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_mask.html"
+                        title="previous chapter">dipy_mask</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_align_affine.html"
+                        title="next chapter">dipy_align_affine</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_align_syn.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-align-syn">
+<h1>dipy_align_syn<a class="headerlink" href="#dipy-align-syn" title="Permalink to this headline">¶</a></h1>
+<dl>
+<dt>usage: dipy_align_syn [-h] [–prealign_file str] [–inv_static]</dt><dd><p>[–level_iters [int [int …]]] [–metric str]
+[–mopt_sigma_diff float] [–mopt_radius int]
+[–mopt_smooth float] [–mopt_inner_iter int]
+[–mopt_q_levels int] [–mopt_double_gradient]
+[–mopt_step_type str] [–step_length float]
+[–ss_sigma_factor float] [–opt_tol float]
+[–inv_iter int] [–inv_tol float] [–out_dir str]
+[–out_warped str] [–out_inv_static str]
+[–out_field str]
+static_image_files moving_image_files</p>
+</dd>
+<dt>positional arguments:</dt><dd><p>static_image_files    Path of the static image file.
+moving_image_files    Path to the moving image file.</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--prealign_file <var>str</var></span></kbd></dt>
+<dd><p>The text file containing pre alignment information via an  affine matrix.</p>
+</dd>
+<dt><kbd><span class="option">--inv_static</span></kbd></dt>
+<dd><p>Apply the inverse mapping to the static image (default ‘False’).</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>–level_iters [int [int …]]</dt><dd><p>The number of iterations at each level of the gaussian pyramid.  By default, a 3-level scale space with iterations  sequence equal to [10, 10, 5] will be used. The 0-th  level corresponds to the finest resolution.</p>
+</dd>
+</dl>
+<dl class="option-list">
+<dt><kbd><span class="option">--metric <var>str</var></span></kbd></dt>
+<dd><p>The metric to be used (Default cc, ‘Cross Correlation metric’). metric available: cc (Cross Correlation), ssd (Sum Squared Difference), em (Expectation-Maximization).</p>
+</dd>
+<dt><kbd><span class="option">--mopt_sigma_diff <var>float</var></span></kbd></dt>
+<dd><p>Metric option applied on Cross correlation (CC). The standard deviation of the Gaussian smoothing kernel to be applied to the update field at each iteration (default 2.0)</p>
+</dd>
+<dt><kbd><span class="option">--mopt_radius <var>int</var></span></kbd></dt>
+<dd><p>Metric option applied on Cross correlation (CC). the radius of the squared (cubic) neighborhood at each voxel to be considered to compute the cross correlation. (default 4)</p>
+</dd>
+<dt><kbd><span class="option">--mopt_smooth <var>float</var></span></kbd></dt>
+<dd><p>Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). Smoothness parameter, the larger the value the smoother the deformation field. (default 1.0 for EM, 4.0 for SSD)</p>
+</dd>
+<dt><kbd><span class="option">--mopt_inner_iter <var>int</var></span></kbd></dt>
+<dd><p>Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). This is number of iterations to be performed at each level of the multi-resolution Gauss-Seidel optimization algorithm (this is not the number of steps per Gaussian Pyramid level, that parameter must be set for the optimizer, not the metric). Default 5 for EM, 10 for SSD.</p>
+</dd>
+<dt><kbd><span class="option">--mopt_q_levels <var>int</var></span></kbd></dt>
+<dd><p>Metric option applied on Expectation Maximization (EM). Number of quantization levels (Default: 256 for EM)</p>
+</dd>
+<dt><kbd><span class="option">--mopt_double_gradient</span></kbd></dt>
+<dd><p>Metric option applied on Expectation Maximization (EM). if True, the gradient of the expected static image under the moving modality will be added to the gradient of the moving image, similarly, the gradient of the expected moving image under the static modality will be added to the gradient of the static image.</p>
+</dd>
+<dt><kbd><span class="option">--mopt_step_type <var>str</var></span></kbd></dt>
+<dd><p>Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). The optimization schedule to be used in the multi-resolution Gauss-Seidel optimization algorithm (not used if Demons Step is selected). Possible value: (‘gauss_newton’, ‘demons’). default: ‘gauss_newton’ for EM, ‘demons’ for SSD.</p>
+</dd>
+<dt><kbd><span class="option">--step_length <var>float</var></span></kbd></dt>
+<dd><p>the length of the maximum displacement vector of the update  displacement field at each iteration.</p>
+</dd>
+<dt><kbd><span class="option">--ss_sigma_factor <var>float</var></span></kbd></dt>
+<dd><p>parameter of the scale-space smoothing kernel. For example, the  std. dev. of the kernel will be factor*(2^i) in the isotropic case  where i = 0, 1, …, n_scales is the scale.</p>
+</dd>
+<dt><kbd><span class="option">--opt_tol <var>float</var></span></kbd></dt>
+<dd><p>the optimization will stop when the estimated derivative of the  energy profile w.r.t. time falls below this threshold.</p>
+</dd>
+<dt><kbd><span class="option">--inv_iter <var>int</var></span></kbd></dt>
+<dd><p>the number of iterations to be performed by the displacement field  inversion algorithm.</p>
+</dd>
+<dt><kbd><span class="option">--inv_tol <var>float</var></span></kbd></dt>
+<dd><p>the displacement field inversion algorithm will stop iterating  when the inversion error falls below this threshold.</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Directory to save the transformed files (default ‘’).</p>
+</dd>
+<dt><kbd><span class="option">--out_warped <var>str</var></span></kbd></dt>
+<dd><p>Name of the warped file. (default ‘warped_moved.nii.gz’).</p>
+</dd>
+<dt><kbd><span class="option">--out_inv_static <var>str</var></span></kbd></dt>
+<dd><p>Name of the file to save the static image after applying the  inverse mapping (default ‘inv_static.nii.gz’).</p>
+</dd>
+<dt><kbd><span class="option">--out_field <var>str</var></span></kbd></dt>
+<dd><p>Name of the file to save the diffeomorphic map. (default ‘displacement_field.nii.gz’)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_align_affine.html" title="dipy_align_affine"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_mask.html" title="dipy_mask"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

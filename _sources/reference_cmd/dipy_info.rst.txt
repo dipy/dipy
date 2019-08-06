@@ -1,0 +1,22 @@
+
+========================
+dipy_info
+========================
+
+usage: dipy_info [-h] [--b0_threshold float] [--bvecs_tol float]
+                     [--bshell_thr float]
+                     input_files [input_files ...]
+
+Provides useful information about different files used in medical imaging. Any number of input files can be provided. The program identifies the type of file by its extension.
+
+positional arguments:
+  input_files           Any number of Nifti1, bvals or bvecs files.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --b0_threshold float  (default 50)
+  --bvecs_tol float     Threshold used to check that norm(bvec) = 1 +/- bvecs_tol b-vectors are unit vectors (default 0.01)
+  --bshell_thr float    Threshold for distinguishing b-values in different shells (default 100)
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

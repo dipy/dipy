@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_info" href="dipy_info.html" />
+    <link rel="prev" title="dipy_align_syn" href="dipy_align_syn.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_info.html" title="dipy_info"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_align_syn.html" title="dipy_align_syn"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_align_syn.html"
+                        title="previous chapter">dipy_align_syn</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_info.html"
+                        title="next chapter">dipy_info</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_align_affine.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-align-affine">
+<h1>dipy_align_affine<a class="headerlink" href="#dipy-align-affine" title="Permalink to this headline">¶</a></h1>
+<dl>
+<dt>usage: dipy_align_affine [-h] [–transform str] [–nbins int]</dt><dd><p>[–sampling_prop int] [–metric str]
+[–level_iters [int [int …]]]
+[–sigmas [float [float …]]]
+[–factors [float [float …]]] [–progressive]
+[–save_metric] [–out_dir str] [–out_moved str]
+[–out_affine str] [–out_quality str]
+static_img_files moving_img_files</p>
+</dd>
+<dt>positional arguments:</dt><dd><p>static_img_files      Path to the static image file.
+moving_img_files      Path to the moving image file.</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--transform <var>str</var></span></kbd></dt>
+<dd><p>com: center of mass, trans: translation, rigid: rigid body  affine: full affine including translation, rotation, shearing and  scaling (default ‘affine’).</p>
+</dd>
+<dt><kbd><span class="option">--nbins <var>int</var></span></kbd></dt>
+<dd><p>Number of bins to discretize the joint and marginal PDF  (default ‘32’).</p>
+</dd>
+<dt><kbd><span class="option">--sampling_prop <var>int</var></span></kbd></dt>
+<dd><p>Number ([0-100]) of voxels for calculating the PDF.  ‘None’ implies all voxels (default ‘None’).</p>
+</dd>
+<dt><kbd><span class="option">--metric <var>str</var></span></kbd></dt>
+<dd><p>Similarity metric for gathering mutual information  (default ‘mi’ , Mutual Information metric).</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>–level_iters [int [int …]]</dt><dd><p>The number of iterations at each scale of the scale space.  <cite>level_iters[0]</cite> corresponds to the coarsest scale,  <cite>level_iters[-1]</cite> the finest, where n is the length of the   sequence. By default, a 3-level scale space with iterations   sequence equal to [10000, 1000, 100] will be used.</p>
+</dd>
+<dt>–sigmas [float [float …]]</dt><dd><p>Custom smoothing parameter to build the scale space (one parameter  for each scale). By default, the sequence of sigmas will be  [3, 1, 0].</p>
+</dd>
+<dt>–factors [float [float …]]</dt><dd><p>Custom scale factors to build the scale space (one factor for each  scale). By default, the sequence of factors will be [4, 2, 1].</p>
+</dd>
+</dl>
+<dl class="option-list">
+<dt><kbd><span class="option">--progressive</span></kbd></dt>
+<dd><p>Enable/Disable the progressive registration (default ‘True’).</p>
+</dd>
+<dt><kbd><span class="option">--save_metric</span></kbd></dt>
+<dd><p>If true, quality assessment metric are saved in ‘quality_metric.txt’ (default ‘False’).</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Directory to save the transformed image and the affine matrix  (default ‘’).</p>
+</dd>
+<dt><kbd><span class="option">--out_moved <var>str</var></span></kbd></dt>
+<dd><p>Name for the saved transformed image  (default ‘moved.nii.gz’).</p>
+</dd>
+<dt><kbd><span class="option">--out_affine <var>str</var></span></kbd></dt>
+<dd><p>Name for the saved affine matrix  (default ‘affine.txt’).</p>
+</dd>
+<dt><kbd><span class="option">--out_quality <var>str</var></span></kbd></dt>
+<dd><p>Name of the file containing the saved quality  metric (default ‘quality_metric.txt’).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_info.html" title="dipy_info"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_align_syn.html" title="dipy_align_syn"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

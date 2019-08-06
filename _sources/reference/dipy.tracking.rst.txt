@@ -1,0 +1,911 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`tracking`
+===============
+.. automodule:: dipy.tracking
+
+.. currentmodule:: dipy.tracking
+.. autosummary::
+
+   Streamlines
+   bench
+   test
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking._utils`
+------------------------------
+.. automodule:: dipy.tracking._utils
+
+.. currentmodule:: dipy.tracking._utils
+.. autosummary::
+
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.benchmarks`
+----------------------------------
+.. automodule:: dipy.tracking.benchmarks
+
+.. currentmodule:: dipy.tracking.benchmarks
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.benchmarks.bench_streamline`
+---------------------------------------------------
+.. automodule:: dipy.tracking.benchmarks.bench_streamline
+
+.. currentmodule:: dipy.tracking.benchmarks.bench_streamline
+.. autosummary::
+
+   Streamlines
+   assert_array_almost_equal
+   assert_array_equal
+   bench_compress_streamlines
+   bench_length
+   bench_set_number_of_points
+   compress_streamlines
+   compress_streamlines_python
+   generate_streamlines
+   get_fnames
+   length
+   length_python
+   load_tractogram
+   measure
+   set_number_of_points
+   set_number_of_points_python
+   setup
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.learning`
+--------------------------------
+.. automodule:: dipy.tracking.learning
+
+.. currentmodule:: dipy.tracking.learning
+.. autosummary::
+
+   detect_corresponding_tracks
+   detect_corresponding_tracks_plus
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.life`
+----------------------------
+.. automodule:: dipy.tracking.life
+
+.. currentmodule:: dipy.tracking.life
+.. autosummary::
+
+   FiberFit
+   FiberModel
+   LifeSignalMaker
+   ReconstFit
+   ReconstModel
+   grad_tensor
+   gradient
+   streamline_gradients
+   streamline_signal
+   streamline_tensors
+   transform_streamlines
+   unique_rows
+   voxel2streamline
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.local_tracking`
+--------------------------------------
+.. automodule:: dipy.tracking.local_tracking
+
+.. currentmodule:: dipy.tracking.local_tracking
+.. autosummary::
+
+   AnatomicalStoppingCriterion
+   LocalTracking
+   ParticleFilteringTracking
+   StreamlineStatus
+   local_tracker
+   pft_tracker
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.metrics`
+-------------------------------
+.. automodule:: dipy.tracking.metrics
+
+.. currentmodule:: dipy.tracking.metrics
+.. autosummary::
+
+   arbitrarypoint
+   bytes
+   center_of_mass
+   downsample
+   endpoint
+   frenet_serret
+   generate_combinations
+   inside_sphere
+   inside_sphere_points
+   intersect_sphere
+   length
+   longest_track_bundle
+   magn
+   mean_curvature
+   mean_orientation
+   midpoint
+   midpoint2point
+   principal_components
+   splev
+   spline
+   splprep
+   startpoint
+   winding
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.streamline`
+----------------------------------
+.. automodule:: dipy.tracking.streamline
+
+.. currentmodule:: dipy.tracking.streamline
+.. autosummary::
+
+   Streamlines
+   apply_affine
+   bundles_distances_mdf
+   cdist
+   center_streamlines
+   cluster_confidence
+   compress_streamlines
+   deepcopy
+   deform_streamlines
+   dist_to_corner
+   interpolate_scalar_3d
+   interpolate_vector_3d
+   length
+   nbytes
+   orient_by_rois
+   orient_by_streamline
+   relist_streamlines
+   select_by_rois
+   select_random_set_of_streamlines
+   set_number_of_points
+   transform_streamlines
+   unlist_streamlines
+   values_from_volume
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`tracking.utils`
+-----------------------------
+.. automodule:: dipy.tracking.utils
+
+.. currentmodule:: dipy.tracking.utils
+.. autosummary::
+
+   defaultdict
+   apply_affine
+   asarray
+   cdist
+   connectivity_matrix
+   density_map
+   dist_to_corner
+   empty
+   length
+   minimum_at
+   ndbincount
+   near_roi
+   path_length
+   random_seeds_from_mask
+   ravel_multi_index
+   reduce_labels
+   reduce_rois
+   seeds_from_mask
+   streamline_near_roi
+   subsegment
+   target
+   target_line_based
+   transform_tracking_output
+   unique_rows
+   warn
+   wraps
+
+
+.. currentmodule:: dipy.tracking
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+bench
+~~~~~
+
+.. autofunction:: bench
+
+test
+~~~~
+
+.. autofunction:: test
+
+
+.. currentmodule:: dipy.tracking._utils
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.tracking.benchmarks
+
+
+.. currentmodule:: dipy.tracking.benchmarks.bench_streamline
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+assert_array_almost_equal
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: assert_array_almost_equal
+
+assert_array_equal
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: assert_array_equal
+
+bench_compress_streamlines
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_compress_streamlines
+
+bench_length
+~~~~~~~~~~~~
+
+.. autofunction:: bench_length
+
+bench_set_number_of_points
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bench_set_number_of_points
+
+compress_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: compress_streamlines
+
+compress_streamlines_python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: compress_streamlines_python
+
+generate_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generate_streamlines
+
+get_fnames
+~~~~~~~~~~
+
+.. autofunction:: get_fnames
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+length_python
+~~~~~~~~~~~~~
+
+.. autofunction:: length_python
+
+load_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: load_tractogram
+
+measure
+~~~~~~~
+
+.. autofunction:: measure
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+set_number_of_points_python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points_python
+
+setup
+~~~~~
+
+.. autofunction:: setup
+
+
+.. currentmodule:: dipy.tracking.learning
+
+detect_corresponding_tracks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: detect_corresponding_tracks
+
+detect_corresponding_tracks_plus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: detect_corresponding_tracks_plus
+
+
+.. currentmodule:: dipy.tracking.life
+
+
+:class:`FiberFit`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: FiberFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`FiberModel`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: FiberModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`LifeSignalMaker`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: LifeSignalMaker
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstFit`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstFit
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ReconstModel`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ReconstModel
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+grad_tensor
+~~~~~~~~~~~
+
+.. autofunction:: grad_tensor
+
+gradient
+~~~~~~~~
+
+.. autofunction:: gradient
+
+streamline_gradients
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: streamline_gradients
+
+streamline_signal
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: streamline_signal
+
+streamline_tensors
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: streamline_tensors
+
+transform_streamlines
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_streamlines
+
+unique_rows
+~~~~~~~~~~~
+
+.. autofunction:: unique_rows
+
+voxel2streamline
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: voxel2streamline
+
+
+.. currentmodule:: dipy.tracking.local_tracking
+
+
+:class:`AnatomicalStoppingCriterion`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AnatomicalStoppingCriterion
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`LocalTracking`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: LocalTracking
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ParticleFilteringTracking`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ParticleFilteringTracking
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StreamlineStatus`
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StreamlineStatus
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+local_tracker
+~~~~~~~~~~~~~
+
+.. autofunction:: local_tracker
+
+pft_tracker
+~~~~~~~~~~~
+
+.. autofunction:: pft_tracker
+
+
+.. currentmodule:: dipy.tracking.metrics
+
+arbitrarypoint
+~~~~~~~~~~~~~~
+
+.. autofunction:: arbitrarypoint
+
+bytes
+~~~~~
+
+.. autofunction:: bytes
+
+center_of_mass
+~~~~~~~~~~~~~~
+
+.. autofunction:: center_of_mass
+
+downsample
+~~~~~~~~~~
+
+.. autofunction:: downsample
+
+endpoint
+~~~~~~~~
+
+.. autofunction:: endpoint
+
+frenet_serret
+~~~~~~~~~~~~~
+
+.. autofunction:: frenet_serret
+
+generate_combinations
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: generate_combinations
+
+inside_sphere
+~~~~~~~~~~~~~
+
+.. autofunction:: inside_sphere
+
+inside_sphere_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: inside_sphere_points
+
+intersect_sphere
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: intersect_sphere
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+longest_track_bundle
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: longest_track_bundle
+
+magn
+~~~~
+
+.. autofunction:: magn
+
+mean_curvature
+~~~~~~~~~~~~~~
+
+.. autofunction:: mean_curvature
+
+mean_orientation
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: mean_orientation
+
+midpoint
+~~~~~~~~
+
+.. autofunction:: midpoint
+
+midpoint2point
+~~~~~~~~~~~~~~
+
+.. autofunction:: midpoint2point
+
+principal_components
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: principal_components
+
+splev
+~~~~~
+
+.. autofunction:: splev
+
+spline
+~~~~~~
+
+.. autofunction:: spline
+
+splprep
+~~~~~~~
+
+.. autofunction:: splprep
+
+startpoint
+~~~~~~~~~~
+
+.. autofunction:: startpoint
+
+winding
+~~~~~~~
+
+.. autofunction:: winding
+
+
+.. currentmodule:: dipy.tracking.streamline
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apply_affine
+~~~~~~~~~~~~
+
+.. autofunction:: apply_affine
+
+bundles_distances_mdf
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundles_distances_mdf
+
+cdist
+~~~~~
+
+.. autofunction:: cdist
+
+center_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: center_streamlines
+
+cluster_confidence
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: cluster_confidence
+
+compress_streamlines
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: compress_streamlines
+
+deepcopy
+~~~~~~~~
+
+.. autofunction:: deepcopy
+
+deform_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: deform_streamlines
+
+dist_to_corner
+~~~~~~~~~~~~~~
+
+.. autofunction:: dist_to_corner
+
+interpolate_scalar_3d
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: interpolate_scalar_3d
+
+interpolate_vector_3d
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: interpolate_vector_3d
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+nbytes
+~~~~~~
+
+.. autofunction:: nbytes
+
+orient_by_rois
+~~~~~~~~~~~~~~
+
+.. autofunction:: orient_by_rois
+
+orient_by_streamline
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orient_by_streamline
+
+relist_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: relist_streamlines
+
+select_by_rois
+~~~~~~~~~~~~~~
+
+.. autofunction:: select_by_rois
+
+select_random_set_of_streamlines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: select_random_set_of_streamlines
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+transform_streamlines
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_streamlines
+
+unlist_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: unlist_streamlines
+
+values_from_volume
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: values_from_volume
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.tracking.utils
+
+
+:class:`defaultdict`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: defaultdict
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apply_affine
+~~~~~~~~~~~~
+
+.. autofunction:: apply_affine
+
+asarray
+~~~~~~~
+
+.. autofunction:: asarray
+
+cdist
+~~~~~
+
+.. autofunction:: cdist
+
+connectivity_matrix
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: connectivity_matrix
+
+density_map
+~~~~~~~~~~~
+
+.. autofunction:: density_map
+
+dist_to_corner
+~~~~~~~~~~~~~~
+
+.. autofunction:: dist_to_corner
+
+empty
+~~~~~
+
+.. autofunction:: empty
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+minimum_at
+~~~~~~~~~~
+
+.. autofunction:: minimum_at
+
+ndbincount
+~~~~~~~~~~
+
+.. autofunction:: ndbincount
+
+near_roi
+~~~~~~~~
+
+.. autofunction:: near_roi
+
+path_length
+~~~~~~~~~~~
+
+.. autofunction:: path_length
+
+random_seeds_from_mask
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: random_seeds_from_mask
+
+ravel_multi_index
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: ravel_multi_index
+
+reduce_labels
+~~~~~~~~~~~~~
+
+.. autofunction:: reduce_labels
+
+reduce_rois
+~~~~~~~~~~~
+
+.. autofunction:: reduce_rois
+
+seeds_from_mask
+~~~~~~~~~~~~~~~
+
+.. autofunction:: seeds_from_mask
+
+streamline_near_roi
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: streamline_near_roi
+
+subsegment
+~~~~~~~~~~
+
+.. autofunction:: subsegment
+
+target
+~~~~~~
+
+.. autofunction:: target
+
+target_line_based
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: target_line_based
+
+transform_tracking_output
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_tracking_output
+
+unique_rows
+~~~~~~~~~~~
+
+.. autofunction:: unique_rows
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+wraps
+~~~~~
+
+.. autofunction:: wraps
+

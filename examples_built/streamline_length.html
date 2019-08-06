@@ -1,0 +1,295 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/streamline_length.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="streamline-length-and-size-reduction">
+<span id="example-streamline-length"></span><h1>Streamline length and size reduction<a class="headerlink" href="#streamline-length-and-size-reduction" title="Permalink to this headline">¶</a></h1>
+<p>This example shows how to calculate the lengths of a set of streamlines and
+also how to compress the streamlines without considerably reducing their
+lengths or overall shape.</p>
+<p>A streamline in <a class="reference external" href="http://dipy.org">DIPY</a> is represented as a numpy array of size
+<span class="math notranslate nohighlight">\((N \times 3)\)</span> where each row of the array represent a 3D point of the
+streamline. A set of streamlines is represented with a list of
+numpy arrays of size <span class="math notranslate nohighlight">\((N_i \times 3)\)</span> for <span class="math notranslate nohighlight">\(i=1:M\)</span> where <span class="math notranslate nohighlight">\(M\)</span> is the
+number of streamlines in the set.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.utils</span> <span class="k">import</span> <span class="n">length</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.metrics</span> <span class="k">import</span> <span class="n">downsample</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.distances</span> <span class="k">import</span> <span class="n">approx_polygon_track</span>
+</pre></div>
+</div>
+<p>Let’s first create a simple simulation of a bundle of streamlines using
+a cosine function.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">simulated_bundles</span><span class="p">(</span><span class="n">no_streamlines</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">n_pts</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">n_pts</span><span class="p">)</span>
+
+    <span class="n">bundle</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">no_streamlines</span><span class="p">):</span>
+        <span class="n">pts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">t</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="p">))</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">bundle</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pts</span><span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">no_streamlines</span><span class="p">)</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">no_streamlines</span><span class="p">)</span>
+
+    <span class="n">bundle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span> <span class="o">*</span> <span class="n">streamline</span><span class="p">[</span><span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+              <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">streamline</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">bundle</span><span class="p">)]</span>
+    <span class="n">bundle</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">streamline</span><span class="p">)</span> <span class="k">for</span> <span class="n">streamline</span> <span class="ow">in</span> <span class="n">bundle</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">bundle</span>
+
+
+<span class="n">bundle</span> <span class="o">=</span> <span class="n">simulated_bundles</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;This bundle has </span><span class="si">%d</span><span class="s1"> streamlines&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">bundle</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This bundle has 50 streamlines.</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">length</span></code> function we can retrieve the lengths of each streamline.
+Below we show the histogram of the lengths of the streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lengths</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">bundle</span><span class="p">))</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">fig_hist</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;burlywood&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Length&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Count&#39;</span><span class="p">)</span>
+<span class="c1"># plt.show()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;length_histogram.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/length_histogram.png" src="../_images/length_histogram.png" />
+<p class="caption"><span class="caption-text"><strong>Histogram of lengths of the streamlines</strong></span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Length</span></code> will return the length in the units of the coordinate system that
+streamlines are currently. So, if the streamlines are in world coordinates then
+the lengths will be in millimeters (mm). If the streamlines are for example in
+native image coordinates of voxel size 2mm isotropic then you will need to
+multiply the lengths by 2 if you want them to correspond to mm. In this example
+we process simulated data without units, however this information is good to have
+in mind when you calculate lengths with real data.</p>
+<p>Next, let’s find the number of points that each streamline has.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">n_pts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">streamline</span><span class="p">)</span> <span class="k">for</span> <span class="n">streamline</span> <span class="ow">in</span> <span class="n">bundle</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Often, streamlines are represented with more points than what is actually
+necessary for specific applications. Also, sometimes every streamline has
+different number of points which could be of a trouble for some algorithms
+. The function <code class="docutils literal notranslate"><span class="pre">downsample</span></code> can be used to set the number of points of a
+streamline at a specific number and at the same time enforce that all the
+segments of the streamline will have equal length.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bundle_downsampled</span> <span class="o">=</span> <span class="p">[</span><span class="n">downsample</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">bundle</span><span class="p">]</span>
+<span class="n">n_pts_ds</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">bundle_downsampled</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Alternatively, the function <code class="docutils literal notranslate"><span class="pre">approx_polygon_track</span></code> allows to reduce the number
+of points so that they are more points in curvy regions and less points in
+less curvy regions. In contrast with <code class="docutils literal notranslate"><span class="pre">downsample</span></code> it does not enforce that
+segments should be of equal size.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bundle_downsampled2</span> <span class="o">=</span> <span class="p">[</span><span class="n">approx_polygon_track</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">bundle</span><span class="p">]</span>
+<span class="n">n_pts_ds2</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">streamline</span><span class="p">)</span> <span class="k">for</span> <span class="n">streamline</span> <span class="ow">in</span> <span class="n">bundle_downsampled2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Both, <code class="docutils literal notranslate"><span class="pre">downsample</span></code> and <code class="docutils literal notranslate"><span class="pre">approx_polygon_track</span></code> can be thought as methods for
+lossy compression of streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="o">*</span><span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">white</span><span class="p">)</span>
+<span class="n">bundle_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">bundle</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">red</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bundle_actor</span><span class="p">)</span>
+
+<span class="n">bundle_actor2</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">bundle_downsampled</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">red</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">bundle_actor2</span><span class="o">.</span><span class="n">SetPosition</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">bundle_actor3</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">bundle_downsampled2</span><span class="p">,</span> <span class="n">window</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">red</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">bundle_actor3</span><span class="o">.</span><span class="n">SetPosition</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bundle_actor2</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bundle_actor3</span><span class="p">)</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">set_camera</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">focal_point</span><span class="o">=</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;simulated_cosine_bundle.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">900</span><span class="p">,</span> <span class="mi">900</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id3">
+<img alt="../_images/simulated_cosine_bundle.png" src="../_images/simulated_cosine_bundle.png" />
+<p class="caption"><span class="caption-text">Initial bundle (down), downsampled at 12 equidistant points (middle),
+downsampled not equidistantly (up).</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<p>From the figure above we can see that all 3 bundles look quite similar. However,
+when we plot the histogram of the number of points used for each streamline, it
+becomes obvious that we have managed to reduce in a great amount the size of the
+initial dataset.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">fig_hist</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">n_pts</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;initial&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">n_pts_ds</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;downsample (12)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">n_pts_ds2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;approx_polygon_track (0.25)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Number of points&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Count&#39;</span><span class="p">)</span>
+<span class="c1"># plt.show()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;n_pts_histogram.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/n_pts_histogram.png" src="../_images/n_pts_histogram.png" />
+<p class="caption"><span class="caption-text">Histogram of the number of points of the streamlines.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>Finally, we can also show that the lengths of the streamlines haven’t changed
+considerably after applying the two methods of downsampling.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lengths_downsampled</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">bundle_downsampled</span><span class="p">))</span>
+<span class="n">lengths_downsampled2</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">length</span><span class="p">(</span><span class="n">bundle_downsampled2</span><span class="p">))</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;initial&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lengths_downsampled</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;g&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;downsample (12)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lengths_downsampled2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;approx_polygon_track (0.25)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Streamline ID&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Length&#39;</span><span class="p">)</span>
+<span class="c1"># plt.show()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;lengths_plots.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/lengths_plots.png" src="../_images/lengths_plots.png" />
+<p class="caption"><span class="caption-text">Lengths of each streamline for every one of the 3 bundles.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/a12bb96260ce7e7753583acc923b003f/streamline_length.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`dipy`
+===========
+.. automodule:: dipy
+
+.. currentmodule:: dipy
+.. autosummary::
+
+   bench
+   get_info
+   setup_test
+   test
+
+
+.. currentmodule:: dipy
+
+bench
+~~~~~
+
+.. autofunction:: bench
+
+get_info
+~~~~~~~~
+
+.. autofunction:: get_info
+
+setup_test
+~~~~~~~~~~
+
+.. autofunction:: setup_test
+
+test
+~~~~
+
+.. autofunction:: test
+

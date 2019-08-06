@@ -1,0 +1,57 @@
+
+========================
+dipy_recobundles
+========================
+
+usage: dipy_recobundles [-h] [--greater_than int] [--less_than int] [--no_slr]
+                     [--clust_thr float] [--reduction_thr float]
+                     [--reduction_distance str] [--model_clust_thr float]
+                     [--pruning_thr float] [--pruning_distance str]
+                     [--slr_metric str] [--slr_transform str]
+                     [--slr_matrix str] [--refine] [--r_reduction_thr float]
+                     [--r_pruning_thr float] [--no_r_slr] [--out_dir str]
+                     [--out_recognized_transf str]
+                     [--out_recognized_labels str]
+                     streamline_files model_bundle_files
+
+Recognize bundles
+
+positional arguments:
+  streamline_files      The path of streamline files where you want to recognize bundles
+  model_bundle_files    The path of model bundle files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --greater_than int    Keep streamlines that have length greater than this value (default 50) in mm.
+  --less_than int       Keep streamlines have length less than this value (default 1000000) in mm.
+  --no_slr              Don't enable local Streamline-based Linear Registration (default False).
+  --clust_thr float     MDF distance threshold for all streamlines (default 15)
+  --reduction_thr float
+                        Reduce search space by (mm) (default 15)
+  --reduction_distance str
+                        Reduction distance type can be mdf or mam (default mdf)
+  --model_clust_thr float
+                        MDF distance threshold for the model bundles (default 2.5)
+  --pruning_thr float   Pruning after matching (default 8).
+  --pruning_distance str
+                        Pruning distance type can be mdf or mam (default mdf)
+  --slr_metric str      Options are None, symmetric, asymmetric or diagonal (default symmetric).
+  --slr_transform str   Transformation allowed. translation, rigid, similarity or scaling (Default 'similarity').
+  --slr_matrix str      Options are 'nano', 'tiny', 'small', 'medium', 'large', 'huge' (default 'small')
+  --refine              Enable refine recognized bunle (default False)
+  --r_reduction_thr float
+                        Refine reduce search space by (mm) (default 12)
+  --r_pruning_thr float
+                        Refine pruning after matching (default 6).
+  --no_r_slr            Don't enable Refine local Streamline-based Linear Registration (default False).
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_recognized_transf str
+                        Recognized bundle in the space of the model bundle (default 'recognized.trk')
+  --out_recognized_labels str
+                        Indices of recognized bundle in the original tractogram (default 'labels.npy')
+
+References: 
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles using local and global streamline-based registration and clustering, Neuroimage, 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

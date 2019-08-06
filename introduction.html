@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Mission statement" href="mission.html" />
+    <link rel="prev" title="Documentation" href="documentation.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mission.html" title="Mission statement"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="documentation.html" title="Documentation"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="documentation.html"
+                        title="previous chapter">Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mission.html"
+                        title="next chapter">Mission statement</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/introduction.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="what-is-dipy">
+<span id="introduction"></span><h1>What is DIPY?<a class="headerlink" href="#what-is-dipy" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><strong>a python package</strong> for analyzing <code class="docutils literal notranslate"><span class="pre">diffusion</span> <span class="pre">MRI</span> <span class="pre">data</span></code></p></li>
+<li><p>a free and open project to collaborate and <strong>share</strong> your code and expertise.</p></li>
+</ul>
+<p>Want to know more? Read our <a class="reference internal" href="documentation.html#documentation"><span class="std std-ref">Documentation</span></a>, <a class="reference internal" href="installation.html#installation"><span class="std std-ref">Installation</span></a>
+guidelines and try the <a class="reference internal" href="examples_index.html#examples"><span class="std std-ref">Examples</span></a>. Didn’t find what you are looking for?
+Then try <a class="reference internal" href="faq.html#faq"><span class="std std-ref">Frequently Asked Questions</span></a> and then if this doesn’t help send an e-mail to our
+e-mail list <a class="reference external" href="mailto:neuroimaging&#37;&#52;&#48;python&#46;org">neuroimaging<span>&#64;</span>python<span>&#46;</span>org</a> with subject starting with <code class="docutils literal notranslate"><span class="pre">[DIPY]</span></code>.</p>
+<div class="figure align-center" id="id2">
+<img alt="_images/pretty_tracks.png" src="_images/pretty_tracks.png" />
+<p class="caption"><span class="caption-text">This is a depiction of tractography created with DIPY.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+<div class="legend">
+<p>If you want to learn how you can create these with your datasets,
+read the examples in our <a class="reference internal" href="documentation.html#documentation"><span class="std std-ref">Documentation</span></a> .</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mission.html" title="Mission statement"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="documentation.html" title="Documentation"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

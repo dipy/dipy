@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Spherical Harmonic bases" href="sh_basis.html" />
+    <link rel="prev" title="Theory and concepts" href="index.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sh_basis.html" title="Spherical Harmonic bases"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Theory and concepts"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Theory and concepts</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Spherical coordinates</a><ul>
+<li><a class="reference internal" href="#terms">Terms</a></li>
+<li><a class="reference internal" href="#the-physics-convention">The physics convention</a></li>
+<li><a class="reference internal" href="#the-mathematics-convention">The mathematics convention</a></li>
+<li><a class="reference internal" href="#matlab-convention">Matlab convention</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Theory and concepts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sh_basis.html"
+                        title="next chapter">Spherical Harmonic bases</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/theory/spherical.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="spherical-coordinates">
+<span id="spherical"></span><h1>Spherical coordinates<a class="headerlink" href="#spherical-coordinates" title="Permalink to this headline">¶</a></h1>
+<p>There are good dicussions of spherical coordinates in <a class="reference external" href="http://en.wikipedia.org/wiki/Spherical_coordinate_system">wikipedia
+spherical coordinate system</a> and <a class="reference external" href="http://mathworld.wolfram.com/SphericalCoordinates.html">Mathworld spherical coordinate
+system</a>.</p>
+<p>There is more information in the docstring for the
+<a class="reference internal" href="../reference/dipy.core.html#dipy.core.geometry.sphere2cart" title="dipy.core.geometry.sphere2cart"><code class="xref py py-func docutils literal notranslate"><span class="pre">sphere2cart()</span></code></a> function.</p>
+<div class="section" id="terms">
+<h2>Terms<a class="headerlink" href="#terms" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>Origin</dt><dd><p>Origin of the sphere</p>
+</dd>
+<dt>P</dt><dd><p>The point represented by spherical coordinates</p>
+</dd>
+<dt>OP</dt><dd><p>The line connecting the origin and P</p>
+</dd>
+<dt>radial distance</dt><dd><p>or radius.  The Euclidean length of OP.</p>
+</dd>
+<dt>z axis</dt><dd><p>The vertical of the sphere.  If we consider the sphere as a globe,
+then the z axis runs from south to north.  This is the zenith direction of the sphere.</p>
+</dd>
+<dt>Reference plane</dt><dd><p>The plane containing the origin and orthogonal to the z axis
+(zenith direction)</p>
+</dd>
+<dt>y axis</dt><dd><p>Horizontal axis of the sphere, orthogonal to the z axis, on the
+reference plane.  West to east
+for a globe.</p>
+</dd>
+<dt>x axis</dt><dd><p>Axis orthogonal to y and z axis, on the reference plane. For a globe,
+this will be a line
+from behind the globe through the origin towards us, the viewer.</p>
+</dd>
+<dt>Inclination angle</dt><dd><p>The angle between OP and the z axis. This can also be called the
+polar angle, or the co-latitude.</p>
+</dd>
+<dt>Azimuth angle</dt><dd><p>or azimuthal angle or longitude.  The angle between the projection of OP onto the
+reference plane and the x axis</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="the-physics-convention">
+<h2>The physics convention<a class="headerlink" href="#the-physics-convention" title="Permalink to this headline">¶</a></h2>
+<p>The radius is <span class="math notranslate nohighlight">\(r\)</span>, the inclination angle is <span class="math notranslate nohighlight">\(\theta\)</span> and the azimuth angle is
+<span class="math notranslate nohighlight">\(\phi\)</span>.  Spherical coordinates are specified by the tuple of <span class="math notranslate nohighlight">\((r, \theta, \phi)\)</span>
+in that order.</p>
+<p>Here is a good illustration we made from the scripts kindly provided by <a class="reference external" href="http://commons.wikimedia.org/wiki/User:Jorge_Stolfi">Jorge
+Stolfi</a> on wikipedia.</p>
+<img alt="../_images/spherical_coordinates.png" src="../_images/spherical_coordinates.png" />
+<p>The formulae relating Cartesian coordinates <span class="math notranslate nohighlight">\((x, y, z)\)</span> to <span class="math notranslate nohighlight">\(r, \theta, \phi\)</span> are:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}r=\sqrt{x^2+y^2+z^2}\\\theta=\arccos\frac{z}{\sqrt{x^2+y^2+z^2}}\\\phi = \operatorname{atan2}(y,x)\end{aligned}\end{align} \]</div>
+<p>and from <span class="math notranslate nohighlight">\((r, \theta, \phi)\)</span> to <span class="math notranslate nohighlight">\((x, y, z)\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[ \begin{align}\begin{aligned}x=r \, \sin\theta \, \cos\phi\\y=r \, \sin\theta \, \sin\phi\\z=r \, \cos\theta\end{aligned}\end{align} \]</div>
+</div>
+<div class="section" id="the-mathematics-convention">
+<h2>The mathematics convention<a class="headerlink" href="#the-mathematics-convention" title="Permalink to this headline">¶</a></h2>
+<p>See <a class="reference external" href="http://en.wikipedia.org/wiki/Spherical_coordinate_system">wikipedia spherical coordinate system</a> .  The mathematics convention
+reverses the meaning of <span class="math notranslate nohighlight">\(\theta\)</span> and <span class="math notranslate nohighlight">\(\phi\)</span> so that <span class="math notranslate nohighlight">\(\theta\)</span> refers to the
+azimuthal angle and <span class="math notranslate nohighlight">\(\phi\)</span> refers to the inclination angle.</p>
+</div>
+<div class="section" id="matlab-convention">
+<h2>Matlab convention<a class="headerlink" href="#matlab-convention" title="Permalink to this headline">¶</a></h2>
+<p>Matlab has functions <code class="docutils literal notranslate"><span class="pre">sph2cart</span></code> and <code class="docutils literal notranslate"><span class="pre">cart2sph</span></code>.  These use the terms
+<code class="docutils literal notranslate"><span class="pre">theta</span></code> and <code class="docutils literal notranslate"><span class="pre">phi</span></code>, but with a different meaning again from the standard
+physics and mathematics conventions.   Here <code class="docutils literal notranslate"><span class="pre">theta</span></code> is the azimuth angle, as
+for the mathematics convention, but <code class="docutils literal notranslate"><span class="pre">phi</span></code> is the angle between the reference
+plane and OP.  This implies different formulae for the conversions between
+Cartesian and spherical coordinates that are easy to derive.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sh_basis.html" title="Spherical Harmonic bases"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Theory and concepts"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Theory and concepts</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

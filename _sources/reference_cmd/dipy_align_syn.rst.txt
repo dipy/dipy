@@ -1,0 +1,53 @@
+
+========================
+dipy_align_syn
+========================
+
+usage: dipy_align_syn [-h] [--prealign_file str] [--inv_static]
+                     [--level_iters [int [int ...]]] [--metric str]
+                     [--mopt_sigma_diff float] [--mopt_radius int]
+                     [--mopt_smooth float] [--mopt_inner_iter int]
+                     [--mopt_q_levels int] [--mopt_double_gradient]
+                     [--mopt_step_type str] [--step_length float]
+                     [--ss_sigma_factor float] [--opt_tol float]
+                     [--inv_iter int] [--inv_tol float] [--out_dir str]
+                     [--out_warped str] [--out_inv_static str]
+                     [--out_field str]
+                     static_image_files moving_image_files
+
+positional arguments:
+  static_image_files    Path of the static image file. 
+  moving_image_files    Path to the moving image file. 
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --prealign_file str   The text file containing pre alignment information via an  affine matrix. 
+  --inv_static          Apply the inverse mapping to the static image (default 'False'). 
+  --level_iters [int [int ...]]
+                        The number of iterations at each level of the gaussian pyramid.  By default, a 3-level scale space with iterations  sequence equal to [10, 10, 5] will be used. The 0-th  level corresponds to the finest resolution. 
+  --metric str          The metric to be used (Default cc, 'Cross Correlation metric'). metric available: cc (Cross Correlation), ssd (Sum Squared Difference), em (Expectation-Maximization). 
+  --mopt_sigma_diff float
+                        Metric option applied on Cross correlation (CC). The standard deviation of the Gaussian smoothing kernel to be applied to the update field at each iteration (default 2.0) 
+  --mopt_radius int     Metric option applied on Cross correlation (CC). the radius of the squared (cubic) neighborhood at each voxel to be considered to compute the cross correlation. (default 4) 
+  --mopt_smooth float   Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). Smoothness parameter, the larger the value the smoother the deformation field. (default 1.0 for EM, 4.0 for SSD) 
+  --mopt_inner_iter int
+                        Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). This is number of iterations to be performed at each level of the multi-resolution Gauss-Seidel optimization algorithm (this is not the number of steps per Gaussian Pyramid level, that parameter must be set for the optimizer, not the metric). Default 5 for EM, 10 for SSD. 
+  --mopt_q_levels int   Metric option applied on Expectation Maximization (EM). Number of quantization levels (Default: 256 for EM) 
+  --mopt_double_gradient
+                        Metric option applied on Expectation Maximization (EM). if True, the gradient of the expected static image under the moving modality will be added to the gradient of the moving image, similarly, the gradient of the expected moving image under the static modality will be added to the gradient of the static image. 
+  --mopt_step_type str  Metric option applied on Sum Squared Difference (SSD) and Expectation Maximization (EM). The optimization schedule to be used in the multi-resolution Gauss-Seidel optimization algorithm (not used if Demons Step is selected). Possible value: ('gauss_newton', 'demons'). default: 'gauss_newton' for EM, 'demons' for SSD. 
+  --step_length float   the length of the maximum displacement vector of the update  displacement field at each iteration. 
+  --ss_sigma_factor float
+                        parameter of the scale-space smoothing kernel. For example, the  std. dev. of the kernel will be factor*(2^i) in the isotropic case  where i = 0, 1, ..., n_scales is the scale. 
+  --opt_tol float       the optimization will stop when the estimated derivative of the  energy profile w.r.t. time falls below this threshold. 
+  --inv_iter int        the number of iterations to be performed by the displacement field  inversion algorithm. 
+  --inv_tol float       the displacement field inversion algorithm will stop iterating  when the inversion error falls below this threshold. 
+
+output arguments(optional):
+  --out_dir str         Directory to save the transformed files (default ''). 
+  --out_warped str      Name of the warped file. (default 'warped_moved.nii.gz'). 
+  --out_inv_static str  Name of the file to save the static image after applying the  inverse mapping (default 'inv_static.nii.gz'). 
+  --out_field str       Name of the file to save the diffeomorphic map. (default 'displacement_field.nii.gz')
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

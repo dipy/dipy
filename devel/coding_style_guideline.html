@@ -1,0 +1,437 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Keeping code compatible with Pythons 2 and 3" href="python3.html" />
+    <link rel="prev" title="Commit message codes" href="commit_codes.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python3.html" title="Keeping code compatible with Pythons 2 and 3"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="commit_codes.html" title="Commit message codes"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">DIPY development</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">DIPY Coding Style Guideline</a><ul>
+<li><a class="reference internal" href="#coding-style">Coding style</a><ul>
+<li><a class="reference internal" href="#imports">Imports</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#cython-coding-style">Cython coding style</a><ul>
+<li><a class="reference internal" href="#id2">Imports</a></li>
+<li><a class="reference internal" href="#variable-declaration">Variable declaration</a></li>
+<li><a class="reference internal" href="#using-c-libraries">Using C libraries</a></li>
+<li><a class="reference internal" href="#error-return-values">Error return values</a></li>
+<li><a class="reference internal" href="#pointers-and-references">Pointers and references</a></li>
+<li><a class="reference internal" href="#casting">Casting</a></li>
+<li><a class="reference internal" href="#loops">Loops</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#documentation">Documentation</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="commit_codes.html"
+                        title="previous chapter">Commit message codes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="python3.html"
+                        title="next chapter">Keeping code compatible with Pythons 2 and 3</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/devel/coding_style_guideline.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-coding-style-guideline">
+<span id="coding-style-guideline"></span><h1>DIPY Coding Style Guideline<a class="headerlink" href="#dipy-coding-style-guideline" title="Permalink to this headline">¶</a></h1>
+<p>The main principles behind <a class="reference external" href="http://dipy.org">DIPY</a> development are:</p>
+<ul class="simple">
+<li><p><strong>Robustness</strong>: the results of a piece of code must be verified
+systematically, and hence stability and robustness of the code must be
+ensured, reducing code redundancies.</p></li>
+<li><p><strong>Readability</strong>: the code is written and read by humans, and it is read
+much more frequently than it is written.</p></li>
+<li><p><strong>Consistency</strong>: following these guidelines will ease reading the code,
+and will make it less error-prone.</p></li>
+<li><p><strong>Documentation</strong>: document the code. Documentation is essential as it is
+one of the key points for the adoption of DIPY as the toolkit of choice in
+diffusion by the scientific community. Documenting helps clarifying
+certain choices, helps avoiding obscure places, and is a way to allow
+other members <em>decode</em> it with less effort.</p></li>
+<li><p><strong>Language</strong>: the code must be written in English. Norms and spelling
+should be abided by.</p></li>
+</ul>
+<div class="section" id="coding-style">
+<h2>Coding style<a class="headerlink" href="#coding-style" title="Permalink to this headline">¶</a></h2>
+<p>DIPY uses the standard Python <a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">PEP8</a> style to ensure the
+readability and consistency across the toolkit. Conformance to the PEP8 syntax
+is checked automatically when requesting to push to DIPY. There are
+<a class="reference external" href="https://pypi.python.org/pypi/pep8">software systems</a> that will check your
+code for PEP8 compliance, and most text editors can be configured to check the
+compliance of your code with PEP8. Beyond the aspects checked, as a
+contributor to DIPY, you should try to ensure that your code, including
+comments, conform to the above principles.</p>
+<div class="section" id="imports">
+<h3>Imports<a class="headerlink" href="#imports" title="Permalink to this headline">¶</a></h3>
+<p>DIPY recommends using the following package shorthands to increase consistency
+and readability across the library:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.testing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="k">as</span> <span class="nn">sp</span>
+</pre></div>
+</div>
+<p>No alias should be used for <cite>h5py</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">h5py</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="cython-coding-style">
+<h2>Cython coding style<a class="headerlink" href="#cython-coding-style" title="Permalink to this headline">¶</a></h2>
+<p>DIPY recommends the use of the standard Python
+<a class="reference external" href="https://www.python.org/dev/peps/pep-0008/">PEP8</a> style when writing
+<cite>Cython &lt;https://cython.org/&gt;</cite> code.</p>
+<p>Cython-specific syntax should follow these additional rules:</p>
+<div class="section" id="id2">
+<h3>Imports<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>cimport`s should add the `c</cite> prefix to the usual Python import package
+shorthand, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cimport</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">cnp</span>
+</pre></div>
+</div>
+<p>Adding the <cite>c</cite> prefix to the import line makes it clear that the Cython/C
+symbols are being referred to as to compared to the Python symbols.</p>
+</div>
+<div class="section" id="variable-declaration">
+<h3>Variable declaration<a class="headerlink" href="#variable-declaration" title="Permalink to this headline">¶</a></h3>
+<p>Separate <cite>cdef</cite>, <cite>cpdef</cite>, and <cite>ctypedef</cite> statements from the following type by
+exactly one space. In turn, separate the type from the variable name by exactly
+one space. Declare only one <cite>ctypedef</cite> variable per line. You may <cite>cdef</cite> or
+<cite>cpdef</cite> multiple variables per line as long as these are simple declarations;
+note that multiple assignment, references, or pointers are not allowed on the
+same line. Grouping <cite>cdef</cite> statements is allowed. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="n">cdef</span> <span class="nb">int</span> <span class="n">n</span>
+<span class="n">cdef</span> <span class="n">char</span> <span class="o">*</span> <span class="n">s</span>
+<span class="n">cdef</span> <span class="n">double</span> <span class="n">Xf</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">cdef</span> <span class="n">double</span> <span class="n">d</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">cpdef</span> <span class="nb">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span>
+<span class="n">cdef</span> <span class="n">ClusterMapCentroid</span> <span class="n">clusters</span> <span class="o">=</span> <span class="n">ClusterMapCentroid</span><span class="p">()</span>
+<span class="n">cdef</span><span class="p">:</span>
+    <span class="n">double</span> <span class="o">*</span><span class="n">ps</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">double</span> <span class="o">*&gt;</span> <span class="n">cnp</span><span class="o">.</span><span class="n">PyArray_DATA</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">cnp</span><span class="o">.</span><span class="n">npy_intp</span> <span class="o">*</span><span class="n">pstr</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">cnp</span><span class="o">.</span><span class="n">npy_intp</span> <span class="o">*&gt;</span> <span class="n">qa</span><span class="o">.</span><span class="n">strides</span>
+    <span class="n">cnp</span><span class="o">.</span><span class="n">npy_intp</span> <span class="n">d</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">cnt</span>
+    <span class="n">double</span> <span class="n">direction</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">double</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">ftmp</span>
+<span class="n">cdef</span> <span class="nb">int</span> <span class="n">get_direction_c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">double</span><span class="o">*</span> <span class="n">point</span><span class="p">,</span> <span class="n">double</span><span class="o">*</span> <span class="n">direction</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">1</span>
+
+<span class="c1"># Bad</span>
+<span class="n">cdef</span>  <span class="n">char</span> <span class="o">*</span><span class="n">s</span>
+<span class="n">cdef</span> <span class="n">char</span> <span class="o">*</span> <span class="n">s</span><span class="p">,</span> <span class="o">*</span> <span class="n">t</span><span class="p">,</span> <span class="o">*</span> <span class="n">u</span><span class="p">,</span> <span class="o">*</span> <span class="n">v</span>
+<span class="n">cdef</span> <span class="n">double</span> <span class="n">Xf</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">d</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+<span class="n">cdef</span> <span class="n">double</span> <span class="n">x</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">x</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">x</span><span class="o">*</span><span class="n">y</span>
+<span class="n">cdef</span> <span class="n">ClusterMapCentroid</span>     <span class="n">clusters</span>   <span class="o">=</span> <span class="n">ClusterMapCentroid</span><span class="p">()</span>
+<span class="n">cdef</span>   <span class="nb">int</span>   <span class="n">get_direction_c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">double</span><span class="o">*</span> <span class="n">point</span><span class="p">,</span> <span class="n">double</span><span class="o">*</span> <span class="n">direction</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Inside of a function, place all <cite>cdef</cite> statements at the top of the function
+body:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="n">cdef</span> <span class="n">void</span> <span class="n">estimate_kernel_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="n">cdef</span><span class="p">:</span>
+    <span class="n">double</span> <span class="p">[:]</span> <span class="n">x</span>
+    <span class="n">double</span> <span class="p">[:]</span> <span class="n">y</span>
+
+<span class="c1"># Bad</span>
+<span class="n">cdef</span> <span class="n">void</span> <span class="n">estimate_kernel_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">cdef</span> <span class="n">double</span> <span class="p">[:]</span> <span class="n">x</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">kernelmax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">k2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="n">cdef</span> <span class="n">double</span> <span class="p">[:]</span> <span class="n">y</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-c-libraries">
+<h3>Using C libraries<a class="headerlink" href="#using-c-libraries" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>cimport`s should follow the same rules defined in PEP8 for `import</cite>
+statements. If a module is both <em>imported</em> and <em>cimported</em>, the <cite>cimport</cite>
+should come before the <cite>import</cite>.</p>
+<p>An example of an imported C library:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">libc.stdlib</span> <span class="n">cimport</span> <span class="n">calloc</span><span class="p">,</span> <span class="n">realloc</span><span class="p">,</span> <span class="n">free</span>
+</pre></div>
+</div>
+<p>Do not use <cite>include</cite> statements.</p>
+</div>
+<div class="section" id="error-return-values">
+<h3>Error return values<a class="headerlink" href="#error-return-values" title="Permalink to this headline">¶</a></h3>
+<p>When declaring an error return value with the <cite>except</cite> keyword, use one space on
+both sides of the <cite>except</cite>. If in a function definition, there should be no
+spaces between the error return value and the colon <cite>:</cite>. Avoid <cite>except *</cite>
+unless it is needed for functions returning <cite>void</cite>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="n">cdef</span> <span class="n">void</span> <span class="n">bar</span><span class="p">()</span> <span class="k">except</span> <span class="o">*</span>
+<span class="n">cdef</span> <span class="n">void</span> <span class="n">c_extract</span><span class="p">(</span><span class="n">Feature</span> <span class="bp">self</span><span class="p">,</span> <span class="n">Data2D</span> <span class="n">datum</span><span class="p">,</span> <span class="n">Data2D</span> <span class="n">out</span><span class="p">)</span> <span class="n">nogil</span> <span class="k">except</span> <span class="o">*</span><span class="p">:</span>
+<span class="n">cdef</span> <span class="nb">int</span> <span class="n">front</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">except</span> <span class="o">+</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="c1"># Bad</span>
+<span class="n">cdef</span> <span class="n">char</span> <span class="o">*</span> <span class="n">hat</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">except</span> <span class="o">*</span><span class="p">:</span>
+<span class="n">cdef</span> <span class="nb">int</span> <span class="n">front</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>    <span class="k">except</span>   <span class="o">+</span>  <span class="p">:</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="pointers-and-references">
+<h3>Pointers and references<a class="headerlink" href="#pointers-and-references" title="Permalink to this headline">¶</a></h3>
+<p>Pointers and references may be either zero or one space away from the type name.
+If followed by a variable name, they must be one space away from the variable
+name. Do not put any spaces between the reference operator <cite>&amp;</cite> and the variable
+name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="n">cdef</span> <span class="nb">int</span><span class="o">&amp;</span> <span class="n">i</span>
+<span class="n">cdef</span> <span class="n">char</span> <span class="o">*</span> <span class="n">s</span>
+<span class="n">i</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">j</span>
+
+<span class="c1"># Bad</span>
+<span class="n">cdef</span> <span class="nb">int</span> <span class="o">&amp;</span><span class="n">i</span>
+<span class="n">cdef</span> <span class="n">char</span> <span class="o">*</span><span class="n">s</span>
+<span class="n">i</span> <span class="o">=</span> <span class="o">&amp;</span> <span class="n">j</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="casting">
+<h3>Casting<a class="headerlink" href="#casting" title="Permalink to this headline">¶</a></h3>
+<p>When casting a variable there must be no whitespace between the opening <cite>&lt;</cite> and
+the type. There must one space between the closing <cite>&gt;</cite> and the variable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="o">&lt;</span><span class="nb">float</span><span class="o">&gt;</span> <span class="n">i</span>
+<span class="o">&lt;</span><span class="n">void</span> <span class="o">*&gt;</span> <span class="n">s</span>
+
+<span class="c1"># Bad</span>
+<span class="o">&lt;</span> <span class="nb">float</span> <span class="o">&gt;</span><span class="n">i</span>
+<span class="o">&lt;</span><span class="n">void</span><span class="o">*&gt;</span>  <span class="n">s</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="loops">
+<h3>Loops<a class="headerlink" href="#loops" title="Permalink to this headline">¶</a></h3>
+<p>Use Python loop syntax:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nrows</span><span class="p">):</span>
+  <span class="o">...</span>
+</pre></div>
+</div>
+<p>Other <cite>for</cite>-loop constructs are deprecated and must be avoided.</p>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>DIPY uses <a class="reference external" href="http://www.sphinx-doc.org/en/stable/index.html">Sphinx</a> to
+generate documentation. We welcome contributions of examples, and suggestions
+for changes in the documentation, but please make sure that changes that are
+introduced render properly into the HTML format that is used for the DIPY
+website.</p>
+<p>DIPY follows the <a class="reference external" href="https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt">numpy docstring standard</a>
+for documenting modules, classes, functions, and examples.</p>
+<p>The documentation includes an extensive library of
+<a class="reference external" href="http://dipy.org/examples_index.html">examples</a>. These are Python files that
+are stored in the <code class="docutils literal notranslate"><span class="pre">doc/examples</span></code> folder and contain code to execute the
+example, interleaved with multi-line comments that contain explanations of the
+blocks of code. Examples demonstrate how to perform processing (segmentation,
+tracking, etc.) on diffusion files using the DIPY classes. The code is
+intermixed with generous comments that describe the former, and the rationale
+and aim of it. If you are contributing a new feature to DIPY, please provide
+an extended example, with explanations of this feature, and references to the
+relevant papers.</p>
+<p>If the feature that you are working on integrates well into one of the
+existing examples, please edit the <code class="docutils literal notranslate"><span class="pre">.py</span></code> file of that example. Otherwise,
+create a new <code class="docutils literal notranslate"><span class="pre">.py</span></code> file in that directory. Please also add the name of this
+file into the <code class="docutils literal notranslate"><span class="pre">doc/examples/valid_examples.txt</span></code> file (which controls the
+rendering of these examples into the documentation).</p>
+<p>Additionally, DIPY relies on a set of reStructuredText files (<code class="docutils literal notranslate"><span class="pre">.rst</span></code>)
+located in the <code class="docutils literal notranslate"><span class="pre">doc</span></code> folder. They contain information about theoretical
+backgrounds of DIPY, installation instructions, description of the
+contribution process, etc.</p>
+<p>Again, both sets of files use the <a class="reference external" href="http://www.sphinx-doc.org/en/stable/rest.html">reStructuredText markup language</a> for comments. Sphinx parses
+the files to produce the contents that are later rendered in the <a class="reference external" href="http://dipy.org">DIPY</a>
+website.</p>
+<p>The Python examples are compiled, output images produced, and corresponding
+<code class="docutils literal notranslate"><span class="pre">.rst</span></code> files produced so that the comments can be appropriately displayed
+in a web page enriched with images.</p>
+<p>Particularly, in order to ease the contribution of examples and <code class="docutils literal notranslate"><span class="pre">.rst</span></code>
+files, and with the consistency criterion in mind, beyond the numpy
+docstring standard aspects, contributors are encouraged to observe the
+following guidelines:</p>
+<ul class="simple">
+<li><p>The acronym for the Diffusion Imaging in Python toolkit should be written
+as <strong>DIPY</strong>.</p></li>
+<li><p>The classes, objects, and any other construct referenced from the code
+should be written with inverted commas, such as in <em>In DIPY, we use an
+object called ``GradientTable`` which holds all the acquisition specific
+parameters, e.g. b-values, b-vectors, timings and others.</em></p></li>
+<li><p>Cite the relevant papers. Use the <em>[NameYear]</em> convention for
+cross-referencing them, such as in <a class="reference internal" href="#garyfallidis2014" id="id3"><span>[Garyfallidis2014]</span></a>, and put them
+under the <a class="reference internal" href="#references"><span class="std std-ref">References</span></a> section.</p></li>
+<li><p>Cross-reference related examples and files. Use the
+<code class="docutils literal notranslate"><span class="pre">..</span> <span class="pre">_specific_filename:</span></code> convention to label a file at the top of it.
+Thus, other pages will be able to reference the file using the standard
+Sphinx syntax <code class="docutils literal notranslate"><span class="pre">:ref:`specific_filename`</span></code>.</p></li>
+<li><p>Use an all-caps scheme for acronyms, and capitalize the first letters of
+the long names, such as in <em>Constrained Spherical Deconvolution (CSD)</em>,
+except in those cases where the most common convention has been to use
+lowercase, such as in <em>superior longitudinal fasciculus (SLF)</em>.</p></li>
+<li><p>As customary in Python, use lowercase and separate words with underscores
+for filenames, labels for references, etc.</p></li>
+<li><p>When including figures, use the regular font for captions (i.e. do not use
+bold faces), unless otherwise required for a specific text part (e.g. a
+DIPY object, etc.).</p></li>
+<li><p>When referring to relative paths, use the backquote inline markup
+convention, such as in <code class="docutils literal notranslate"><span class="pre">doc/devel</span></code>. Do not add the
+greater-than/less-than signs to enclose the path.</p></li>
+</ul>
+<div class="section" id="references">
+<span id="id4"></span><h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
+<dl class="citation">
+<dt class="label" id="garyfallidis2014"><span class="brackets"><a class="fn-backref" href="#id3">Garyfallidis2014</a></span></dt>
+<dd><p>Garyfallidis E, Brett M, Amirbekian B, Rokem A, van der
+Walt S, Descoteaux M, Nimmo-Smith I and Dipy Contributors (2014). <a class="reference external" href="http://journal.frontiersin.org/Journal/10.3389/fninf.2014.00008/abstract">Dipy, a
+library for the analysis of diffusion MRI data.</a>
+Frontiers in Neuroinformatics, vol.8, no.8.</p>
+</dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python3.html" title="Keeping code compatible with Pythons 2 and 3"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="commit_codes.html" title="Commit message codes"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >DIPY development</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

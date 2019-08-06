@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Developers" href="developers.html" />
+    <link rel="prev" title="A note about the examples" href="note_about_examples.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="developers.html" title="Developers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="note_about_examples.html" title="A note about the examples"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Frequently Asked Questions</a><ul>
+<li><a class="reference internal" href="#theoretical">Theoretical</a></li>
+<li><a class="reference internal" href="#practical">Practical</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="note_about_examples.html"
+                        title="previous chapter">A note about the examples</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="developers.html"
+                        title="next chapter">Developers</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/faq.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="frequently-asked-questions">
+<span id="faq"></span><h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="theoretical">
+<h2>Theoretical<a class="headerlink" href="#theoretical" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>What is a b-value?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>The b-value <span class="math notranslate nohighlight">\(b\)</span> or <em>diffusion weighting</em> is a function of the
+strength, duration and temporal spacing and timing parameters of the
+specific paradigm. This function is derived from the Bloch-Torrey
+equations. In the case of the classical Stejskal-Tanner
+pulsed gradient spin-echo (PGSE) sequence, at the time of readout
+<span class="math notranslate nohighlight">\(b=\gamma^{2}G^{2}\delta^{2}\left(\Delta-\frac{\delta}{3}\right)\)</span>
+where <span class="math notranslate nohighlight">\(\gamma\)</span> is the gyromagnetic radio, <span class="math notranslate nohighlight">\(\delta\)</span> denotes the pulse
+width, <span class="math notranslate nohighlight">\(G\)</span> is the gradient amplitude and <span class="math notranslate nohighlight">\(\Delta\)</span> the centre-to-centre
+spacing. <span class="math notranslate nohighlight">\(\gamma\)</span> is a constant, but we can change the other
+three parameters and in that way control the b-value.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p><strong>What is q-space?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Q-space is the space of one or more 3D spin displacement wave vectors
+<span class="math notranslate nohighlight">\(\mathbf{q}\)</span>. The vector <span class="math notranslate nohighlight">\(\mathbf{q}\)</span>
+parametrises the space of diffusion gradients. It is related to the
+applied magnetic gradient <span class="math notranslate nohighlight">\(\mathbf{g}\)</span> by the formula
+<span class="math notranslate nohighlight">\(\mathbf{q}=(2\pi)^{-1}\gamma\delta\mathbf{g}\)</span>.
+Every single vector <span class="math notranslate nohighlight">\(\mathbf{q}\)</span> has the same orientation as the
+direction of diffusion gradient <span class="math notranslate nohighlight">\(\mathbf{g}\)</span> and length proportional
+to the strength <span class="math notranslate nohighlight">\(g\)</span> of the gradient field. Every single point in
+q-space corresponds to a possible 3D volume of the MR signal for a specific
+gradient direction and strength. Therefore if, for example, we have
+programmed the scanner to apply 60 gradient directions, then our data
+should have 60 diffusion volumes, with each volume obtained for a specific
+gradient. A Diffusion Weighted Image (DWI) is the volume acquired
+from only one direction gradient.</p>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p><strong>What does DWI stand for?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Diffusion Weighted Imaging (DWI) is MRI imaging designed to be sensitive
+to diffusion. A diffusion weighted image is a volume of voxel data gathered
+by applying only one gradient direction
+using a diffusion sequence. We expect that the signal in any voxel
+should be low if there is greater mobility of water molecules along
+the specified gradient direction and it should be high if there is
+less movement in that direction. Yes, it is counterintuitive but correct!
+However, greater mobility gives greater opportunity for the proton spins to
+be dephased, producing a smaller RF signal.</p>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p><strong>Why dMRI and not DTI?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Diffusion MRI (dMRI or dwMRI) are the preferred terms if you want to speak
+about diffusion weighted MRI in general. DTI (diffusion tensor imaging) is
+just one of the many ways you can reconstruct the voxel from your measured
+signal. There are plenty of others, for example DSI, GQI, QBI, etc.</p>
+</div></blockquote>
+<ol class="arabic simple" start="5">
+<li><p><strong>What is the difference between Image coordinates and World coordinates?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Image coordinates have positive integer values and represent the centres
+<span class="math notranslate nohighlight">\((i, j, k)\)</span> of the voxels. There is an affine transform (stored in the
+nifti file) that takes the image coordinates and transforms them to
+millimeter (mm) in real world space. World coordinates have floating point
+precision and your dataset has 3 real dimensions e.g. <span class="math notranslate nohighlight">\((x, y, z)\)</span>.</p>
+</div></blockquote>
+<ol class="arabic simple" start="6">
+<li><p><strong>We generated dMRI datasets with nonisotropic voxel sizes. What do we do?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>You need to resample your raw data to an isotropic size. Have a look at
+the module <code class="docutils literal notranslate"><span class="pre">dipy.align.aniso2iso</span></code>. (We think it is a mistake to
+acquire nonisotropic data because the directional resolution of the data
+will depend on the orientation of the gradient with respect to the
+voxels, being lower when aligned with a longer voxel dimension.)</p>
+</div></blockquote>
+<ol class="arabic simple" start="7">
+<li><p><strong>Why are non-isotropic voxel sizes a bad idea in diffusion?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>If, for example, you have <span class="math notranslate nohighlight">\(2 \times 2 \times 4\ \textrm{mm}^3\)</span> voxels, the
+last dimension will be averaged over the double distance and less detail
+will be captured compared to the other two dimensions. Furthermore, with
+very anisotropic voxels the uncertainty on orientation estimates will
+depend on the position of the subject in the scanner.</p>
+</div></blockquote>
+</div>
+<div class="section" id="practical">
+<h2>Practical<a class="headerlink" href="#practical" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Why Python and not MATLAB or some other language?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Python is free, batteries included, very well-designed, painless to read
+and easy to use.
+There is nothing else like it. Give it a go.
+Once with Python, always with Python.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p><strong>Isn’t Python slow?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>True, sometimes Python can be slow, if you are using multiple nested
+<code class="docutils literal notranslate"><span class="pre">for</span></code> loops, for example.
+In that case, we use <a class="reference external" href="http://cython.org">Cython</a>, which takes execution up to C speed.</p>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p><strong>What numerical libraries do you use in Python?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>The best ever designed numerical library - <a class="reference external" href="http://numpy.scipy.org">NumPy</a>.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p><strong>Which Python console do you recommend?</strong></p></li>
+</ol>
+<blockquote>
+<div><p><a class="reference external" href="http://www.ipython.org/">IPython</a></p>
+</div></blockquote>
+<ol class="arabic simple" start="3">
+<li><p><strong>What do you use for visualization?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>For 3D visualization we use <code class="docutils literal notranslate"><span class="pre">dipy.viz</span></code> which depends in turn on <code class="docutils literal notranslate"><span class="pre">FURY</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+</pre></div>
+</div>
+<p>For 2D visualization we use <a class="reference external" href="http://matplotlib.sourceforge.net">matplotlib</a>.</p>
+</div></blockquote>
+<ol class="arabic simple" start="4">
+<li><p><strong>Which file formats do you support?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), DIPY (.dpy),
+Numpy (.npy, ,npz), text and any other formats supported by nibabel and
+pydicom.</p>
+<p>You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
+using <cite>scipy.io.loadmat</cite>. For higher versions &gt;= 7.3, you can use <a class="reference external" href="http://www.pytables.org">pytables</a>
+or any other python-to-hdf5 library e.g. h5py.</p>
+<p>For object serialization you can use <code class="docutils literal notranslate"><span class="pre">dipy.io.pickles</span></code> functions
+<code class="docutils literal notranslate"><span class="pre">load_pickle</span></code>, <code class="docutils literal notranslate"><span class="pre">save_pickle</span></code>.</p>
+</div></blockquote>
+<ol class="arabic simple" start="5">
+<li><p><strong>What is dpy</strong>?</p></li>
+</ol>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">dpy</span></code> is an <code class="docutils literal notranslate"><span class="pre">hdf5</span></code> file format which we use in DIPY to store
+tractography and other information. This allows us to store huge
+tractographies and load different parts of the datasets
+directly from the disk as if it were in memory.</p>
+</div></blockquote>
+<ol class="arabic simple" start="6">
+<li><p><strong>Which python editor should I use?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Any text editor would do the job but we prefer the following: PyCharm, Sublime, Aptana, Emacs, Vim and Eclipse (with PyDev).</p>
+</div></blockquote>
+<ol class="arabic simple" start="7">
+<li><p><strong>I have problems reading my dicom files using nibabel, what should I do?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Use Chris Rorden’s dcm2nii to transform them to nifti files.
+<a class="reference external" href="http://www.cabiatl.com/mricro/mricron/dcm2nii.html">http://www.cabiatl.com/mricro/mricron/dcm2nii.html</a>
+Or you can make your own reader using pydicom.
+<a class="reference external" href="http://code.google.com/p/pydicom/">http://code.google.com/p/pydicom/</a>
+and then use nibabel to store the data as nifti.</p>
+</div></blockquote>
+<ol class="arabic simple" start="8">
+<li><p><strong>Where can I find diffusion data?</strong></p></li>
+</ol>
+<blockquote>
+<div><p>Have a look at Beijing Enhanced
+<a class="reference external" href="http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html">http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html</a></p>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="developers.html" title="Developers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="note_about_examples.html" title="A note about the examples"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

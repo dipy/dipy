@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Visualize bundles and metrics on bundles</a><ul>
+<li><a class="reference internal" href="#show-every-streamline-with-an-orientation-color">Show every streamline with an orientation color</a></li>
+<li><a class="reference internal" href="#show-every-point-with-a-value-from-a-volume-with-default-colormap">Show every point with a value from a volume with default colormap</a></li>
+<li><a class="reference internal" href="#show-every-point-with-a-value-from-a-volume-with-your-colormap">Show every point with a value from a volume with your colormap</a></li>
+<li><a class="reference internal" href="#show-every-bundle-with-a-specific-color">Show every bundle with a specific color</a></li>
+<li><a class="reference internal" href="#show-every-streamline-of-a-bundle-with-a-different-color">Show every streamline of a bundle with a different color</a></li>
+<li><a class="reference internal" href="#show-every-point-of-every-streamline-with-a-different-color">Show every point of every streamline with a different color</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/viz_bundles.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="visualize-bundles-and-metrics-on-bundles">
+<span id="example-viz-bundles"></span><h1>Visualize bundles and metrics on bundles<a class="headerlink" href="#visualize-bundles-and-metrics-on-bundles" title="Permalink to this headline">¶</a></h1>
+<p>First, let’s download some available datasets. Here we are using a dataset
+which provides metrics and bundles.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_bundles_2_subjects</span><span class="p">,</span> <span class="n">read_bundles_2_subjects</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">transform_streamlines</span>
+
+<span class="n">fetch_bundles_2_subjects</span><span class="p">()</span>
+<span class="n">dix</span> <span class="o">=</span> <span class="n">read_bundles_2_subjects</span><span class="p">(</span><span class="n">subj_id</span><span class="o">=</span><span class="s1">&#39;subj_1&#39;</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;fa&#39;</span><span class="p">],</span>
+                              <span class="n">bundles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;cg.left&#39;</span><span class="p">,</span> <span class="s1">&#39;cst.right&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Store fractional anisotropy.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fa</span> <span class="o">=</span> <span class="n">dix</span><span class="p">[</span><span class="s1">&#39;fa&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Store grid to world transformation matrix.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">affine</span> <span class="o">=</span> <span class="n">dix</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Store the cingulum bundle. A bundle is a list of streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bundle</span> <span class="o">=</span> <span class="n">dix</span><span class="p">[</span><span class="s1">&#39;cg.left&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>It happened that this bundle is in world coordinates and therefore we need to
+transform it into native image coordinates so that it is in the same coordinate
+space as the <code class="docutils literal notranslate"><span class="pre">fa</span></code> image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bundle_native</span> <span class="o">=</span> <span class="n">transform_streamlines</span><span class="p">(</span><span class="n">bundle</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">affine</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="section" id="show-every-streamline-with-an-orientation-color">
+<h2>Show every streamline with an orientation color<a class="headerlink" href="#show-every-streamline-with-an-orientation-color" title="Permalink to this headline">¶</a></h2>
+<p>This is the default option when you are using <code class="docutils literal notranslate"><span class="pre">line</span></code> or <code class="docutils literal notranslate"><span class="pre">streamtube</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+
+<span class="n">stream_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">set_camera</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">176.42</span><span class="p">,</span> <span class="mf">118.52</span><span class="p">,</span> <span class="mf">128.20</span><span class="p">),</span>
+                    <span class="n">focal_point</span><span class="o">=</span><span class="p">(</span><span class="mf">113.30</span><span class="p">,</span> <span class="mf">128.31</span><span class="p">,</span> <span class="mf">76.56</span><span class="p">),</span>
+                    <span class="n">view_up</span><span class="o">=</span><span class="p">(</span><span class="mf">0.18</span><span class="p">,</span> <span class="mf">0.00</span><span class="p">,</span> <span class="mf">0.98</span><span class="p">))</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor</span><span class="p">)</span>
+
+<span class="c1"># Uncomment the line below to show to display the window</span>
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle1.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id1">
+<img alt="../_images/bundle1.png" src="../_images/bundle1.png" />
+<p class="caption"><span class="caption-text">One orientation color for every streamline.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>You may wonder how we knew how to set the camera. This is very easy. You just
+need to run <code class="docutils literal notranslate"><span class="pre">window.show</span></code> once see how you want to see the object and then
+close the window and call the <code class="docutils literal notranslate"><span class="pre">camera_info</span></code> method which prints the position,
+focal point and view up vectors of the camera.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">camera_info</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="show-every-point-with-a-value-from-a-volume-with-default-colormap">
+<h2>Show every point with a value from a volume with default colormap<a class="headerlink" href="#show-every-point-with-a-value-from-a-volume-with-default-colormap" title="Permalink to this headline">¶</a></h2>
+<p>Here we will need to input the <code class="docutils literal notranslate"><span class="pre">fa</span></code> map in <code class="docutils literal notranslate"><span class="pre">streamtube</span></code> or <code class="docutils literal notranslate"><span class="pre">line</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="n">stream_actor2</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can also show the scalar bar.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bar</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">scalar_bar</span><span class="p">()</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor2</span><span class="p">)</span>
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>
+
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle2.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/bundle2.png" src="../_images/bundle2.png" />
+<p class="caption"><span class="caption-text">Every point with a color from FA.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="show-every-point-with-a-value-from-a-volume-with-your-colormap">
+<h2>Show every point with a value from a volume with your colormap<a class="headerlink" href="#show-every-point-with-a-value-from-a-volume-with-your-colormap" title="Permalink to this headline">¶</a></h2>
+<p>Here we will need to input the <code class="docutils literal notranslate"><span class="pre">fa</span></code> map in <code class="docutils literal notranslate"><span class="pre">streamtube</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+<span class="n">hue</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>  <span class="c1"># red only</span>
+<span class="n">saturation</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>  <span class="c1"># white to red</span>
+
+<span class="n">lut_cmap</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">colormap_lookup_table</span><span class="p">(</span><span class="n">hue_range</span><span class="o">=</span><span class="n">hue</span><span class="p">,</span>
+                                       <span class="n">saturation_range</span><span class="o">=</span><span class="n">saturation</span><span class="p">)</span>
+
+<span class="n">stream_actor3</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">,</span> <span class="n">fa</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                           <span class="n">lookup_colormap</span><span class="o">=</span><span class="n">lut_cmap</span><span class="p">)</span>
+<span class="n">bar2</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">scalar_bar</span><span class="p">(</span><span class="n">lut_cmap</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor3</span><span class="p">)</span>
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bar2</span><span class="p">)</span>
+
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle3.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id3">
+<img alt="../_images/bundle3.png" src="../_images/bundle3.png" />
+<p class="caption"><span class="caption-text">Every point with a color from FA using a non default colormap.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="show-every-bundle-with-a-specific-color">
+<h2>Show every bundle with a specific color<a class="headerlink" href="#show-every-bundle-with-a-specific-color" title="Permalink to this headline">¶</a></h2>
+<p>You can have a bundle with a specific color. In this example, we are chosing
+orange.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="n">stream_actor4</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">,</span> <span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor4</span><span class="p">)</span>
+
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle4.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/bundle4.png" src="../_images/bundle4.png" />
+<p class="caption"><span class="caption-text">Entire bundle with a specific color.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="show-every-streamline-of-a-bundle-with-a-different-color">
+<h2>Show every streamline of a bundle with a different color<a class="headerlink" href="#show-every-streamline-of-a-bundle-with-a-different-color" title="Permalink to this headline">¶</a></h2>
+<p>Let’s make a colormap where every streamline of the bundle is colored by its
+length.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">length</span>
+
+<span class="n">lengths</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">)</span>
+
+<span class="n">hue</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># blue only</span>
+<span class="n">saturation</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>  <span class="c1"># black to white</span>
+
+<span class="n">lut_cmap</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">colormap_lookup_table</span><span class="p">(</span>
+    <span class="n">scale_range</span><span class="o">=</span><span class="p">(</span><span class="n">lengths</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">lengths</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span>
+    <span class="n">hue_range</span><span class="o">=</span><span class="n">hue</span><span class="p">,</span>
+    <span class="n">saturation_range</span><span class="o">=</span><span class="n">saturation</span><span class="p">)</span>
+
+<span class="n">stream_actor5</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">,</span> <span class="n">lengths</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                           <span class="n">lookup_colormap</span><span class="o">=</span><span class="n">lut_cmap</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor5</span><span class="p">)</span>
+<span class="n">bar3</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">scalar_bar</span><span class="p">(</span><span class="n">lut_cmap</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bar3</span><span class="p">)</span>
+
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle5.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/bundle5.png" src="../_images/bundle5.png" />
+<p class="caption"><span class="caption-text">Color every streamline by the length of the streamline</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="show-every-point-of-every-streamline-with-a-different-color">
+<h2>Show every point of every streamline with a different color<a class="headerlink" href="#show-every-point-of-every-streamline-with-a-different-color" title="Permalink to this headline">¶</a></h2>
+<p>In this case in which we want to have a color per point and per streamline,
+we can create a list of the colors to correspond to the list of streamlines
+(bundles). Here in <code class="docutils literal notranslate"><span class="pre">colors</span></code> we will insert some random RGB colors.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">renderer</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="o">*</span><span class="n">streamline</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">streamline</span> <span class="ow">in</span> <span class="n">bundle_native</span><span class="p">]</span>
+
+<span class="n">stream_actor6</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">bundle_native</span><span class="p">,</span> <span class="n">colors</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+<span class="n">renderer</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor6</span><span class="p">)</span>
+
+<span class="c1"># window.show(renderer, size=(600, 600), reset_camera=False)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundle6.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/bundle6.png" src="../_images/bundle6.png" />
+<p class="caption"><span class="caption-text">Random colors per points per streamline.</span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>In summary, we showed that there are many useful ways for visualizing maps
+on bundles.</p>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/7e5b77afacfb13e483cccefd6adf610b/viz_bundles.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

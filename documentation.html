@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="What is DIPY?" href="introduction.html" />
+    <link rel="prev" title="Diffusion Imaging In Python" href="index.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="What is DIPY?"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Diffusion Imaging In Python"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="#">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Documentation</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Diffusion Imaging In Python</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="introduction.html"
+                        title="next chapter">What is DIPY?</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/documentation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="documentation">
+<span id="id1"></span><h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is DIPY?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mission.html">Mission statement</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-a-release">Installing a release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#support">Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-source">Installing from source</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples_index.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="note_about_examples.html">A note about the examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#preprocessing">Preprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#contextual-enhancement">Contextual enhancement</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#fiber-tracking">Fiber tracking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#fiber-tracking-evaluation">Fiber tracking evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#streamline-analysis-and-connectivity">Streamline analysis and connectivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#registration">Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#segmentation">Segmentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#simulations">Simulations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#multiprocessing">Multiprocessing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#file-formats">File Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#visualization">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples_index.html#workflows">Workflows</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#theoretical">Theoretical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#practical">Practical</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="developers.html">Developers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cite.html">Publications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cite.html#a-note-on-citing-our-work">A note on citing our work</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html">DIPY development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="devel/intro.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/gitwash/index.html">Working with DIPY source code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/make_release.html">A guide to making a DIPY release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/commit_codes.html">Commit message codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/coding_style_guideline.html">DIPY Coding Style Guideline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="devel/python3.html">Keeping code compatible with Pythons 2 and 3</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="devel/index.html#indices-and-tables">Indices and tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory/index.html">Theory and concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/spherical.html">Spherical coordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="theory/sh_basis.html">Spherical Harmonic bases</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">dipy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.__config__.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">__config__</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.align.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">align</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.boots.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">boots</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.core.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">core</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.data.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">data</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.denoise.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.direction.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">direction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.io.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">io</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.reconst.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">reconst</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.segment.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">segment</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.sims.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sims</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.stats.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">stats</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.tracking.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tracking</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.viz.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">viz</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/dipy.workflows.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">workflows</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference_cmd/index.html">Command Line Utilities Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_dti.html">dipy_fit_dti</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_recobundles.html">dipy_recobundles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_csa.html">dipy_fit_csa</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_slr.html">dipy_slr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_ba.html">dipy_ba</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_dki.html">dipy_fit_dki</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_lmm.html">dipy_lmm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_median_otsu.html">dipy_median_otsu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_nlmeans.html">dipy_nlmeans</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_horizon.html">dipy_horizon</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_mapmri.html">dipy_fit_mapmri</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_mask.html">dipy_mask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_align_syn.html">dipy_align_syn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_align_affine.html">dipy_align_affine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_info.html">dipy_info</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_csd.html">dipy_fit_csd</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_reslice.html">dipy_reslice</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_track_pft.html">dipy_track_pft</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_apply_transform.html">dipy_apply_transform</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fetch.html">dipy_fetch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_track_local.html">dipy_track_local</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_labelsbundles.html">dipy_labelsbundles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_snr_in_cc.html">dipy_snr_in_cc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference_cmd/dipy_fit_ivim.html">dipy_fit_ivim</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_changes.html">API changes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-1-0-changes">DIPY 1.0 changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-16-changes">DIPY 0.16 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-15-changes">DIPY 0.15 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-14-changes">DIPY 0.14 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-13-changes">DIPY 0.13 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-12-changes">DIPY 0.12 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-10-changes">DIPY 0.10 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-9-changes">DIPY 0.9 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#dipy-0-8-changes">DIPY 0.8 Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_changes.html#changes-between-0-7-1-and-0-6">Changes between 0.7.1 and 0.6</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="introduction.html" title="What is DIPY?"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Diffusion Imaging In Python"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+
+========================
+dipy_ba
+========================
+
+usage: dipy_ba [-h] [--no_disks int] [--out_dir str]
+                     model_bundle_folder subject_folder
+
+Workflow of bundle analytics.
+
+Applies statistical analysis on bundles of subjects and saves the results in a directory specified by ``out_dir``.
+
+positional arguments:
+  model_bundle_folder  Path to the input model bundle files. This path may contain wildcards to process multiple inputs at once. 
+  subject_folder       Path to the input subject folder. This path may contain wildcards to process multiple inputs at once. 
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --no_disks int       Number of disks used for dividing bundle into disks. (Default 100) 
+
+output arguments(optional):
+  --out_dir str        Output directory (default input file directory)
+
+References: 
+.. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,E. Garyfallidis, Bundle Analytics: a computational and statisticalanalyses framework for tractometric studies, Proceedings of:International Society of Magnetic Resonance in Medicine (ISMRM),Montreal, Canada, 2019.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

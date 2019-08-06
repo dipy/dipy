@@ -1,0 +1,338 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Read/Write streamline files</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/streamline_formats.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="read-write-streamline-files">
+<span id="example-streamline-formats"></span><h1>Read/Write streamline files<a class="headerlink" href="#read-write-streamline-files" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p><a href="#id3"><span class="problematic" id="id4">DIPY_</span></a> can read and write many different file formats. In this example
+we give a short introduction on how to use it for loading or saving
+streamlines. The new statefull tractogram class was made to reduce errors
+caused by spatial transformation and complex file format convention.</p>
+<p>Read <a class="reference internal" href="../faq.html#faq"><span class="std std-ref">Frequently Asked Questions</span></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_tractogram</span><span class="p">,</span> <span class="n">save_tractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.io.utils</span> <span class="k">import</span> <span class="p">(</span><span class="n">create_nifti_header</span><span class="p">,</span> <span class="n">get_reference_info</span><span class="p">,</span>
+                           <span class="n">is_header_compatible</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">select_random_set_of_streamlines</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.utils</span> <span class="k">import</span> <span class="n">density_map</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data.fetcher</span> <span class="k">import</span> <span class="p">(</span><span class="n">fetch_file_formats</span><span class="p">,</span>
+                               <span class="n">get_file_formats</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>First fetch the dataset that contains 5 tractography file of 5 file formats:
+- cc_m_sub.trk
+- laf_m_sub.tck
+- lpt_m_sub.fib
+- raf_m_sub.vtk
+- rpt_m_sub.dpy</p>
+<p>And their reference anatomy, common to all 5 files:
+- template0.nii.gz</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_file_formats</span><span class="p">()</span>
+<span class="n">bundles_filename</span><span class="p">,</span> <span class="n">ref_anat_filename</span> <span class="o">=</span> <span class="n">get_file_formats</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">bundles_filename</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+<span class="n">reference_anatomy</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">ref_anat_filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load tractogram will support 5 file formats, functions like load_trk or
+load_tck will simply be restricted to one file format</p>
+<p>TRK files contain their own header (when writen properly), so they
+technically do not need a reference. (See how below)
+cc_trk = <a href="#id1"><span class="problematic" id="id2">``</span></a>load_tractogram``(bundles_filename[0], ‘same’)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_sft</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">bundles_filename</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">reference_anatomy</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc_sft</span><span class="p">)</span>
+<span class="n">laf_sft</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">bundles_filename</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reference_anatomy</span><span class="p">)</span>
+<span class="n">raf_sft</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">bundles_filename</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">reference_anatomy</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These files contain invalid streamlines (negative values once in voxel space)
+This is not considered a valid tractography file, but it is possible to load
+it anyway.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lpt_sft</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">bundles_filename</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">reference_anatomy</span><span class="p">,</span>
+                          <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">rpt_sft</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">bundles_filename</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">reference_anatomy</span><span class="p">,</span>
+                          <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The function <code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code> requires a reference, any of the following input
+is considered valid (as long as they are in the same share space)
+- Nifti filename
+- Trk filename
+- nib.nifti1.Nifti1Image
+- nib.streamlines.trk.TrkFile
+- nib.nifti1.Nifti1Header
+- Trk header (dict)
+- Stateful Tractogram</p>
+<p>The reason why this parameters is required is to guarantee all informations
+related to space attribute are always present.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">affine</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">voxel_sizes</span><span class="p">,</span> <span class="n">voxel_order</span> <span class="o">=</span> <span class="n">get_reference_info</span><span class="p">(</span>
+    <span class="n">reference_anatomy</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">affine</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">voxel_sizes</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">voxel_order</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you have a Trk file that was generated using a particular anatomy,
+to be considered valid all fields must correspond between the headers.
+It can be easily verified using this function, which also accept
+the same variety of input as <code class="docutils literal notranslate"><span class="pre">get_reference_info</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">is_header_compatible</span><span class="p">(</span><span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">bundles_filename</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</pre></div>
+</div>
+<p>If a TRK was generated with a valid header, but the reference NIFTI was lost
+a header can be generated to then generate a fake NIFTI file.</p>
+<p>If you wish to manually save Trk and Tck file using nibabel streamlines
+API for more freedom of action (not recommended for beginners) you can
+create a valid header using create_tractogram_header</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nifti_header</span> <span class="o">=</span> <span class="n">create_nifti_header</span><span class="p">(</span><span class="n">affine</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">voxel_sizes</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dimensions</span><span class="p">),</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;fake.nii.gz&#39;</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">ref_anat_filename</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Once loaded, no matter the original file format, the stateful tractogram is
+self-contained and maintains a valid state. By requiring a reference the
+tractogram’s spatial transformation can be easily manipulated.</p>
+<p>Let’s save all files as TRK to visualize in TrackVis for example.
+However, when loaded the lpt and rpt files contain invalid streamlines and
+for particular operations/tools/functions it is safer to remove them</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">save_tractogram</span><span class="p">(</span><span class="n">cc_sft</span><span class="p">,</span> <span class="s1">&#39;cc.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">laf_sft</span><span class="p">,</span> <span class="s1">&#39;laf.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">raf_sft</span><span class="p">,</span> <span class="s1">&#39;raf.trk&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">lpt_sft</span><span class="o">.</span><span class="n">is_bbox_in_vox_valid</span><span class="p">())</span>
+<span class="n">lpt_sft</span><span class="o">.</span><span class="n">remove_invalid_streamlines</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">lpt_sft</span><span class="o">.</span><span class="n">is_bbox_in_vox_valid</span><span class="p">())</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">lpt_sft</span><span class="p">,</span> <span class="s1">&#39;lpt.trk&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">rpt_sft</span><span class="o">.</span><span class="n">is_bbox_in_vox_valid</span><span class="p">())</span>
+<span class="n">rpt_sft</span><span class="o">.</span><span class="n">remove_invalid_streamlines</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">rpt_sft</span><span class="o">.</span><span class="n">is_bbox_in_vox_valid</span><span class="p">())</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">rpt_sft</span><span class="p">,</span> <span class="s1">&#39;rpt.trk&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Some functions in DIPY require streamlines to be in voxel space so computation
+can be perfomed on a grid (connectivity matrix, ROIs masking, density map).
+The stateful tractogram class provides safe functions for such manipulation.
+These functions can be called safely over and over, by knowing in which state
+the tractogram is operating, and compute only necessary transformations</p>
+<p>No matter the state, functions such as <code class="docutils literal notranslate"><span class="pre">save_tractogram</span></code> or
+<code class="docutils literal notranslate"><span class="pre">removing_invalid_coordinates</span></code> can be called safely and the transformations
+are handled internally when needed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_sft</span><span class="o">.</span><span class="n">to_voxmm</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc_sft</span><span class="o">.</span><span class="n">space</span><span class="p">)</span>
+<span class="n">cc_sft</span><span class="o">.</span><span class="n">to_rasmm</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc_sft</span><span class="o">.</span><span class="n">space</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now lets move them all to voxel space, subsample them to 100 streamlines,
+compute a density map and save everything for visualisation in another
+software such as Trackvis or MI-Brain.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+<span class="n">laf_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+<span class="n">raf_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+<span class="n">lpt_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+<span class="n">rpt_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+
+<span class="n">cc_streamlines_vox</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">cc_sft</span><span class="o">.</span><span class="n">streamlines</span><span class="p">,</span>
+                                                      <span class="mi">1000</span><span class="p">)</span>
+<span class="n">laf_streamlines_vox</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">laf_sft</span><span class="o">.</span><span class="n">streamlines</span><span class="p">,</span>
+                                                       <span class="mi">1000</span><span class="p">)</span>
+<span class="n">raf_streamlines_vox</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">raf_sft</span><span class="o">.</span><span class="n">streamlines</span><span class="p">,</span>
+                                                       <span class="mi">1000</span><span class="p">)</span>
+<span class="n">lpt_streamlines_vox</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">lpt_sft</span><span class="o">.</span><span class="n">streamlines</span><span class="p">,</span>
+                                                       <span class="mi">1000</span><span class="p">)</span>
+<span class="n">rpt_streamlines_vox</span> <span class="o">=</span> <span class="n">select_random_set_of_streamlines</span><span class="p">(</span><span class="n">rpt_sft</span><span class="o">.</span><span class="n">streamlines</span><span class="p">,</span>
+                                                       <span class="mi">1000</span><span class="p">)</span>
+
+<span class="c1"># Same dimensions for every stateful tractogram, can be re-use</span>
+<span class="n">affine</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">,</span> <span class="n">voxel_sizes</span><span class="p">,</span> <span class="n">voxel_order</span> <span class="o">=</span> <span class="n">cc_sft</span><span class="o">.</span><span class="n">space_attribute</span>
+<span class="n">cc_density</span> <span class="o">=</span> <span class="n">density_map</span><span class="p">(</span><span class="n">cc_streamlines_vox</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">dimensions</span><span class="p">)</span>
+<span class="n">laf_density</span> <span class="o">=</span> <span class="n">density_map</span><span class="p">(</span><span class="n">laf_streamlines_vox</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">dimensions</span><span class="p">)</span>
+<span class="n">raf_density</span> <span class="o">=</span> <span class="n">density_map</span><span class="p">(</span><span class="n">raf_streamlines_vox</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">dimensions</span><span class="p">)</span>
+<span class="n">lpt_density</span> <span class="o">=</span> <span class="n">density_map</span><span class="p">(</span><span class="n">lpt_streamlines_vox</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">dimensions</span><span class="p">)</span>
+<span class="n">rpt_density</span> <span class="o">=</span> <span class="n">density_map</span><span class="p">(</span><span class="n">rpt_streamlines_vox</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">dimensions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Replacing streamlines is possible, but if the state was modified between
+operations such as this one is not recommended:
+-&gt; cc_sft.streamlines = cc_streamlines_vox</p>
+<p>It is recommended to re-create a new StatefulTractogram object and
+explicitly specify in which space the streamlines are. Be careful to follow
+the order of operations.</p>
+<p>If the tractogram was from a Trk file with metadata, this will be lost.
+If you wish to keep metadata while manipulating the number or the order
+look at the function StatefulTractogram.remove_invalid_streamlines() for more
+details</p>
+<p>It is important to mention that once the object is created in a consistent state
+the <code class="docutils literal notranslate"><span class="pre">save_tractogram</span></code> function will save a valid file. And then the function
+<code class="docutils literal notranslate"><span class="pre">load_tractogram</span></code> will load them in a valid state.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">cc_streamlines_vox</span><span class="p">,</span> <span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+<span class="n">laf_sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">laf_streamlines_vox</span><span class="p">,</span> <span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+<span class="n">raf_sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">raf_streamlines_vox</span><span class="p">,</span> <span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+<span class="n">lpt_sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">lpt_streamlines_vox</span><span class="p">,</span> <span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+<span class="n">rpt_sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">rpt_streamlines_vox</span><span class="p">,</span> <span class="n">reference_anatomy</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cc_sft</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">laf_sft</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">raf_sft</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">lpt_sft</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">rpt_sft</span><span class="p">))</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">cc_sft</span><span class="p">,</span> <span class="s1">&#39;cc_1000.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">laf_sft</span><span class="p">,</span> <span class="s1">&#39;laf_1000.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">raf_sft</span><span class="p">,</span> <span class="s1">&#39;raf_1000.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">lpt_sft</span><span class="p">,</span> <span class="s1">&#39;lpt_1000.trk&#39;</span><span class="p">)</span>
+<span class="n">save_tractogram</span><span class="p">(</span><span class="n">rpt_sft</span><span class="p">,</span> <span class="s1">&#39;rpt_1000.trk&#39;</span><span class="p">)</span>
+
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">cc_density</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;cc_density.nii.gz&#39;</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">laf_density</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;laf_density.nii.gz&#39;</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">raf_density</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;raf_density.nii.gz&#39;</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">lpt_density</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;lpt_density.nii.gz&#39;</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">rpt_density</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">nifti_header</span><span class="p">),</span>
+         <span class="s1">&#39;rpt_density.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/bb25edf0a2022fcfd6fb7cbced74f6b5/streamline_formats.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

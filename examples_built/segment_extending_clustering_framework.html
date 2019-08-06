@@ -1,0 +1,365 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Enhancing QuickBundles with different metrics and features</a><ul>
+<li><a class="reference internal" href="#clustering-framework">Clustering framework</a></li>
+<li><a class="reference internal" href="#extending-feature">Extending <cite>Feature</cite></a></li>
+<li><a class="reference internal" href="#extending-metric">Extending <cite>Metric</cite></a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/segment_extending_clustering_framework.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="enhancing-quickbundles-with-different-metrics-and-features">
+<span id="example-segment-extending-clustering-framework"></span><h1>Enhancing QuickBundles with different metrics and features<a class="headerlink" href="#enhancing-quickbundles-with-different-metrics-and-features" title="Permalink to this headline">¶</a></h1>
+<p>QuickBundles <a class="reference internal" href="tracking_introduction_eudx.html#garyfallidis12" id="id1"><span>[Garyfallidis12]</span></a> is a flexible algorithm that requires only a
+distance metric and an adjacency threshold to perform clustering. There is a
+wide variety of metrics that could be used to cluster streamlines.</p>
+<p>The purpose of this tutorial is to show how to easily create new <code class="docutils literal notranslate"><span class="pre">Feature</span></code>
+and new <code class="docutils literal notranslate"><span class="pre">Metric</span></code> classes that can be used by QuickBundles.</p>
+<div class="section" id="clustering-framework">
+<span id="id2"></span><h2>Clustering framework<a class="headerlink" href="#clustering-framework" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://dipy.org">DIPY</a> provides a simple, flexible and fast framework to do clustering of
+sequential data (e.g. streamlines).</p>
+<p>A <em>sequential datum</em> in DIPY is represented as a numpy array of size
+<span class="math notranslate nohighlight">\((N \times D)\)</span>, where each row of the array represents a <span class="math notranslate nohighlight">\(D\)</span> dimensional
+point of the sequence. A set of these sequences is represented as a list of
+numpy arrays of size <span class="math notranslate nohighlight">\((N_i \times D)\)</span> for <span class="math notranslate nohighlight">\(i=1:M\)</span> where <span class="math notranslate nohighlight">\(M\)</span> is the
+number of sequences in the set.</p>
+<p>This clustering framework is modular and divided in three parts:</p>
+<ol class="arabic simple">
+<li><p>Feature extraction</p></li>
+<li><p>Distance computation</p></li>
+<li><p>Clustering algorithm</p></li>
+</ol>
+<p>The <strong>feature extraction</strong> part includes any preprocessing needed to be done on
+the data before computing distances between them (e.g. resampling the number of
+points of a streamline). To define a new way of extracting features, one has to
+subclass <code class="docutils literal notranslate"><span class="pre">Feature</span></code> (see below).</p>
+<p>The <strong>distance computation</strong> part includes any metric capable of evaluating a
+distance between two set of features previously extracted from the data. To
+define a new way of extracting features, one has to subclass <code class="docutils literal notranslate"><span class="pre">Metric</span></code> (see
+below).</p>
+<p>The <strong>clustering algorithm</strong> part represents the clustering algorithm itself
+(e.g. QuickBundles, K-means, Hierarchical Clustering). More precisely, it
+includes any algorithms taking as input a list of sequential data and
+outputting a <code class="docutils literal notranslate"><span class="pre">ClusterMap</span></code> object.</p>
+</div>
+<div class="section" id="extending-feature">
+<h2>Extending <cite>Feature</cite><a class="headerlink" href="#extending-feature" title="Permalink to this headline">¶</a></h2>
+<p>This section will guide you through the creation of a new feature extraction
+method that can be used in the context of this clustering framework. For a
+list of available features in DIPY see <a class="reference internal" href="segment_clustering_features.html#example-segment-clustering-features"><span class="std std-ref">Tractography Clustering - Available Features</span></a>.</p>
+<p>Assuming a set of streamlines, the type of features we want to extract is the
+arc length (i.e. the sum of the length of each segment for a given streamline).</p>
+<p>Let’s start by importing the necessary modules.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">Feature</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">length</span>
+</pre></div>
+</div>
+<p>We now define the class <code class="docutils literal notranslate"><span class="pre">ArcLengthFeature</span></code> that will perform the desired
+feature extraction. When subclassing <code class="docutils literal notranslate"><span class="pre">Feature</span></code>, two methods have to be
+redefined: <code class="docutils literal notranslate"><span class="pre">infer_shape</span></code> and <code class="docutils literal notranslate"><span class="pre">extract</span></code>.</p>
+<p>Also, an important property about feature extraction is whether or not
+its process is invariant to the order of the points within a streamline.
+This is needed as there is no way one can tell which extremity of a
+streamline is the beginning and which one is the end.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ArcLengthFeature</span><span class="p">(</span><span class="n">Feature</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Computes the arc length of a streamline. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># The arc length stays the same even if the streamline is reversed.</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ArcLengthFeature</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">is_order_invariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">infer_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">streamline</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Infers the shape of features extracted from `streamline`. &quot;&quot;&quot;</span>
+        <span class="c1"># Arc length is a scalar</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">streamline</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Extracts features from `streamline`. &quot;&quot;&quot;</span>
+        <span class="c1"># return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))</span>
+        <span class="c1"># or use a DIPY&#39;s function that computes the arc length of a streamline.</span>
+        <span class="k">return</span> <span class="n">length</span><span class="p">(</span><span class="n">streamline</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The new feature extraction <code class="docutils literal notranslate"><span class="pre">ArcLengthFeature</span></code> is ready to be used. Let’s use
+it to cluster a set of streamlines by their arc length. For educational
+purposes we will try to cluster a small streamline bundle known from
+neuroanatomy as the fornix.</p>
+<p>We start by loading the fornix streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_tractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+
+<span class="n">fname</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;fornix&#39;</span><span class="p">)</span>
+<span class="n">fornix</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;same&#39;</span><span class="p">,</span>
+                         <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">fornix</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform QuickBundles clustering using the metric
+<code class="docutils literal notranslate"><span class="pre">SumPointwiseEuclideanMetric</span></code> and our <code class="docutils literal notranslate"><span class="pre">ArcLengthFeature</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">SumPointwiseEuclideanMetric</span>
+
+<span class="n">metric</span> <span class="o">=</span> <span class="n">SumPointwiseEuclideanMetric</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">ArcLengthFeature</span><span class="p">())</span>
+<span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will now visualize the clustering result.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Color each streamline according to the cluster they belong to.</span>
+<span class="n">colormap</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">create_colormap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">clusters</span><span class="o">.</span><span class="n">centroids</span><span class="p">))</span>
+<span class="n">colormap_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">streamlines</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">clusters</span><span class="p">,</span> <span class="n">colormap</span><span class="p">):</span>
+    <span class="n">colormap_full</span><span class="p">[</span><span class="n">cluster</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap_full</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;fornix_clusters_arclength.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/fornix_clusters_arclength.png" src="../_images/fornix_clusters_arclength.png" />
+<p class="caption"><span class="caption-text">Showing the different clusters obtained by using the arc length.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="extending-metric">
+<h2>Extending <cite>Metric</cite><a class="headerlink" href="#extending-metric" title="Permalink to this headline">¶</a></h2>
+<p>This section will guide you through the creation of a new metric that can be
+used in the context of this clustering framework. For a list of available
+metrics in DIPY see <a class="reference internal" href="segment_clustering_metrics.html#example-segment-clustering-metrics"><span class="std std-ref">Tractography Clustering - Available Metrics</span></a>.</p>
+<p>Assuming a set of streamlines, we want a metric that computes the cosine
+distance giving the vector between endpoints of each streamline (i.e. one
+minus the cosine of the angle between two vectors). For more information
+about this distance check <a class="reference external" href="http://en.wikipedia.org/wiki/Cosine_similarity">http://en.wikipedia.org/wiki/Cosine_similarity</a>.</p>
+<p>Let’s start by importing the necessary modules.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">Metric</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">VectorOfEndpointsFeature</span>
+</pre></div>
+</div>
+<p>We now define the class <code class="docutils literal notranslate"><span class="pre">CosineMetric</span></code> that will perform the desired
+distance computation. When subclassing <code class="docutils literal notranslate"><span class="pre">Metric</span></code>, two methods have to be
+redefined: <code class="docutils literal notranslate"><span class="pre">are_compatible</span></code> and <code class="docutils literal notranslate"><span class="pre">dist</span></code>. Moreover, when implementing the
+<code class="docutils literal notranslate"><span class="pre">dist</span></code> method, one needs to make sure the distance returned is symmetric
+(i.e. <cite>dist(A, B) == dist(B, A)</cite>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">CosineMetric</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Computes the cosine distance between two streamlines. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># For simplicity, features will be the vector between endpoints of a streamline.</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CosineMetric</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">feature</span><span class="o">=</span><span class="n">VectorOfEndpointsFeature</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">are_compatible</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape1</span><span class="p">,</span> <span class="n">shape2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Checks if two features are vectors of same dimension.</span>
+
+<span class="sd">        Basically this method exists so we don&#39;t have to do this check</span>
+<span class="sd">        inside the `dist` method (speedup).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">shape1</span> <span class="o">==</span> <span class="n">shape2</span> <span class="ow">and</span> <span class="n">shape1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">dist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Computes a the cosine distance between two vectors. &quot;&quot;&quot;</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">cos_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">norm</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span><span class="o">*</span><span class="n">norm</span><span class="p">(</span><span class="n">v2</span><span class="p">))</span>
+
+        <span class="c1"># Make sure it&#39;s in [-1, 1], i.e. within domain of arccosine</span>
+        <span class="n">cos_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">cos_theta</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+        <span class="n">cos_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">cos_theta</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">cos_theta</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>  <span class="c1"># Normalized cosine distance</span>
+</pre></div>
+</div>
+<p>The new distance <code class="docutils literal notranslate"><span class="pre">CosineMetric</span></code> is ready to be used. Let’s use
+it to cluster a set of streamlines according to the cosine distance of the
+vector between their endpoints. For educational purposes we will try to
+cluster a small streamline bundle known from neuroanatomy as the fornix.</p>
+<p>We start by loading the fornix streamlines.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_tractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+
+<span class="n">fname</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;fornix&#39;</span><span class="p">)</span>
+<span class="n">fornix</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;same&#39;</span><span class="p">,</span> <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">fornix</span><span class="o">.</span><span class="n">streamlines</span>
+</pre></div>
+</div>
+<p>Perform QuickBundles clustering using our metric <code class="docutils literal notranslate"><span class="pre">CosineMetric</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+
+<span class="n">metric</span> <span class="o">=</span> <span class="n">CosineMetric</span><span class="p">()</span>
+<span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will now visualize the clustering result.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Color each streamline according to the cluster they belong to.</span>
+<span class="n">colormap</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">create_colormap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">)))</span>
+<span class="n">colormap_full</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">streamlines</span><span class="p">),</span> <span class="mi">3</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">clusters</span><span class="p">,</span> <span class="n">colormap</span><span class="p">):</span>
+    <span class="n">colormap_full</span><span class="p">[</span><span class="n">cluster</span><span class="o">.</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">color</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">SetBackground</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap_full</span><span class="p">))</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;fornix_clusters_cosine.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/fornix_clusters_cosine.png" src="../_images/fornix_clusters_cosine.png" />
+<p class="caption"><span class="caption-text">Showing the different clusters obtained by using the cosine metric.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
+<dl class="citation">
+<dt class="label" id="garyfallidis12"><span class="brackets"><a class="fn-backref" href="#id1">Garyfallidis12</a></span></dt>
+<dd><p>Garyfallidis E. et al., QuickBundles a method for
+tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
+2012.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/a56978042af4177a59e52880f635b0a6/segment_extending_clustering_framework.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

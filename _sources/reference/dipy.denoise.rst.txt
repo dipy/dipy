@@ -1,0 +1,181 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`denoise`
+==============
+.. automodule:: dipy.denoise
+
+.. currentmodule:: dipy.denoise
+.. autosummary::
+
+   bench
+   test
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.adaptive_soft_matching`
+---------------------------------------------
+.. automodule:: dipy.denoise.adaptive_soft_matching
+
+.. currentmodule:: dipy.denoise.adaptive_soft_matching
+.. autosummary::
+
+   adaptive_soft_matching
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.gibbs`
+----------------------------
+.. automodule:: dipy.denoise.gibbs
+
+.. currentmodule:: dipy.denoise.gibbs
+.. autosummary::
+
+   gibbs_removal
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.localpca`
+-------------------------------
+.. automodule:: dipy.denoise.localpca
+
+.. currentmodule:: dipy.denoise.localpca
+.. autosummary::
+
+   eigh
+   genpca
+   localpca
+   mppca
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.nlmeans`
+------------------------------
+.. automodule:: dipy.denoise.nlmeans
+
+.. currentmodule:: dipy.denoise.nlmeans
+.. autosummary::
+
+   nlmeans
+   nlmeans_3d
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.noise_estimate`
+-------------------------------------
+.. automodule:: dipy.denoise.noise_estimate
+
+.. currentmodule:: dipy.denoise.noise_estimate
+.. autosummary::
+
+   convolve
+   estimate_sigma
+   piesno
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`denoise.non_local_means`
+--------------------------------------
+.. automodule:: dipy.denoise.non_local_means
+
+.. currentmodule:: dipy.denoise.non_local_means
+.. autosummary::
+
+   nlmeans_block
+   non_local_means
+
+
+.. currentmodule:: dipy.denoise
+
+bench
+~~~~~
+
+.. autofunction:: bench
+
+test
+~~~~
+
+.. autofunction:: test
+
+
+.. currentmodule:: dipy.denoise.adaptive_soft_matching
+
+adaptive_soft_matching
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: adaptive_soft_matching
+
+
+.. currentmodule:: dipy.denoise.gibbs
+
+gibbs_removal
+~~~~~~~~~~~~~
+
+.. autofunction:: gibbs_removal
+
+
+.. currentmodule:: dipy.denoise.localpca
+
+eigh
+~~~~
+
+.. autofunction:: eigh
+
+genpca
+~~~~~~
+
+.. autofunction:: genpca
+
+localpca
+~~~~~~~~
+
+.. autofunction:: localpca
+
+mppca
+~~~~~
+
+.. autofunction:: mppca
+
+
+.. currentmodule:: dipy.denoise.nlmeans
+
+nlmeans
+~~~~~~~
+
+.. autofunction:: nlmeans
+
+nlmeans_3d
+~~~~~~~~~~
+
+.. autofunction:: nlmeans_3d
+
+
+.. currentmodule:: dipy.denoise.noise_estimate
+
+convolve
+~~~~~~~~
+
+.. autofunction:: convolve
+
+estimate_sigma
+~~~~~~~~~~~~~~
+
+.. autofunction:: estimate_sigma
+
+piesno
+~~~~~~
+
+.. autofunction:: piesno
+
+
+.. currentmodule:: dipy.denoise.non_local_means
+
+nlmeans_block
+~~~~~~~~~~~~~
+
+.. autofunction:: nlmeans_block
+
+non_local_means
+~~~~~~~~~~~~~~~
+
+.. autofunction:: non_local_means
+

@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="git resources" href="git_resources.html" />
+    <link rel="prev" title="Development workflow" href="development_workflow.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../../index.html">
+  <img src="../../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="git_resources.html" title="git resources"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="development_workflow.html" title="Development workflow"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" >Working with DIPY source code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="git_development.html" accesskey="U">Git for development</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../../documentation.html">Documentation</a></li>
+    <li><a href="../index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Maintainer workflow</a><ul>
+<li><a class="reference internal" href="#integrating-changes">Integrating changes</a><ul>
+<li><a class="reference internal" href="#a-few-commits">A few commits</a></li>
+<li><a class="reference internal" href="#a-long-series-of-commits">A long series of commits</a></li>
+<li><a class="reference internal" href="#check-the-history">Check the history</a></li>
+<li><a class="reference internal" href="#push-to-trunk">Push to trunk</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="development_workflow.html"
+                        title="previous chapter">Development workflow</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="git_resources.html"
+                        title="next chapter">git resources</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/devel/gitwash/maintainer_workflow.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="maintainer-workflow">
+<span id="id1"></span><h1>Maintainer workflow<a class="headerlink" href="#maintainer-workflow" title="Permalink to this headline">¶</a></h1>
+<p>This page is for maintainers — those of us who merge our own or other
+peoples’ changes into the upstream repository.</p>
+<p>Being as how you’re a maintainer, you are completely on top of the basic stuff
+in <a class="reference internal" href="development_workflow.html#development-workflow"><span class="std std-ref">Development workflow</span></a>.</p>
+<p>The instructions in <a class="reference internal" href="set_up_fork.html#linking-to-upstream"><span class="std std-ref">Linking your repository to the upstream repo</span></a> add a remote that has read-only
+access to the upstream repo.  Being a maintainer, you’ve got read-write access.</p>
+<p>It’s good to have your upstream remote have a scary name, to remind you that
+it’s a read-write remote:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">remote</span> <span class="n">add</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">nipy</span><span class="o">/</span><span class="n">dipy</span><span class="o">.</span><span class="n">git</span>
+<span class="n">git</span> <span class="n">fetch</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span>
+</pre></div>
+</div>
+<div class="section" id="integrating-changes">
+<h2>Integrating changes<a class="headerlink" href="#integrating-changes" title="Permalink to this headline">¶</a></h2>
+<p>Let’s say you have some changes that need to go into trunk
+(<code class="docutils literal notranslate"><span class="pre">upstream-rw/master</span></code>).</p>
+<p>The changes are in some branch that you are currently on.  For example, you are
+looking at someone’s changes like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">remote</span> <span class="n">add</span> <span class="n">someone</span> <span class="n">git</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">someone</span><span class="o">/</span><span class="n">dipy</span><span class="o">.</span><span class="n">git</span>
+<span class="n">git</span> <span class="n">fetch</span> <span class="n">someone</span>
+<span class="n">git</span> <span class="n">branch</span> <span class="n">cool</span><span class="o">-</span><span class="n">feature</span> <span class="o">--</span><span class="n">track</span> <span class="n">someone</span><span class="o">/</span><span class="n">cool</span><span class="o">-</span><span class="n">feature</span>
+<span class="n">git</span> <span class="n">checkout</span> <span class="n">cool</span><span class="o">-</span><span class="n">feature</span>
+</pre></div>
+</div>
+<p>So now you are on the branch with the changes to be incorporated upstream.  The
+rest of this section assumes you are on this branch.</p>
+<div class="section" id="a-few-commits">
+<h3>A few commits<a class="headerlink" href="#a-few-commits" title="Permalink to this headline">¶</a></h3>
+<p>If there are only a few commits, consider rebasing to upstream:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Fetch upstream changes</span>
+<span class="n">git</span> <span class="n">fetch</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span>
+<span class="c1"># rebase</span>
+<span class="n">git</span> <span class="n">rebase</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span><span class="o">/</span><span class="n">master</span>
+</pre></div>
+</div>
+<p>Remember that, if you do a rebase, and push that, you’ll have to close any
+github pull requests manually, because github will not be able to detect the
+changes have already been merged.</p>
+</div>
+<div class="section" id="a-long-series-of-commits">
+<h3>A long series of commits<a class="headerlink" href="#a-long-series-of-commits" title="Permalink to this headline">¶</a></h3>
+<p>If there are a longer series of related commits, consider a merge instead:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">fetch</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span>
+<span class="n">git</span> <span class="n">merge</span> <span class="o">--</span><span class="n">no</span><span class="o">-</span><span class="n">ff</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span><span class="o">/</span><span class="n">master</span>
+</pre></div>
+</div>
+<p>The merge will be detected by github, and should close any related pull requests
+automatically.</p>
+<p>Note the <code class="docutils literal notranslate"><span class="pre">--no-ff</span></code> above.  This forces git to make a merge commit, rather than
+doing a fast-forward, so that these set of commits branch off trunk then rejoin
+the main history with a merge, rather than appearing to have been made directly
+on top of trunk.</p>
+</div>
+<div class="section" id="check-the-history">
+<h3>Check the history<a class="headerlink" href="#check-the-history" title="Permalink to this headline">¶</a></h3>
+<p>Now, in either case, you should check that the history is sensible and you have
+the right commits:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">log</span> <span class="o">--</span><span class="n">oneline</span> <span class="o">--</span><span class="n">graph</span>
+<span class="n">git</span> <span class="n">log</span> <span class="o">-</span><span class="n">p</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span><span class="o">/</span><span class="n">master</span><span class="o">..</span>
+</pre></div>
+</div>
+<p>The first line above just shows the history in a compact way, with a text
+representation of the history graph. The second line shows the log of commits
+excluding those that can be reached from trunk (<code class="docutils literal notranslate"><span class="pre">upstream-rw/master</span></code>), and
+including those that can be reached from current HEAD (implied with the <code class="docutils literal notranslate"><span class="pre">..</span></code>
+at the end). So, it shows the commits unique to this branch compared to trunk.
+The <code class="docutils literal notranslate"><span class="pre">-p</span></code> option shows the diff for these commits in patch form.</p>
+</div>
+<div class="section" id="push-to-trunk">
+<h3>Push to trunk<a class="headerlink" href="#push-to-trunk" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">push</span> <span class="n">upstream</span><span class="o">-</span><span class="n">rw</span> <span class="n">my</span><span class="o">-</span><span class="n">new</span><span class="o">-</span><span class="n">feature</span><span class="p">:</span><span class="n">master</span>
+</pre></div>
+</div>
+<p>This pushes the <code class="docutils literal notranslate"><span class="pre">my-new-feature</span></code> branch in this repository to the <code class="docutils literal notranslate"><span class="pre">master</span></code>
+branch in the <code class="docutils literal notranslate"><span class="pre">upstream-rw</span></code> repository.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="git_resources.html" title="git resources"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="development_workflow.html" title="Development workflow"
+             >previous</a> |</li>
+  <li><a href="../../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="../index.html" >DIPY development</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="index.html" >Working with DIPY source code</a> &#187;</li>
+          <li class="nav-item nav-item-4"><a href="git_development.html" >Git for development</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

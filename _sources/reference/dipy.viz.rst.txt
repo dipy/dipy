@@ -1,0 +1,330 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`viz`
+==========
+.. automodule:: dipy.viz
+
+.. currentmodule:: dipy.viz
+.. autosummary::
+
+   fetch_viz_icons
+   optional_package
+   read_viz_icons
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`viz.app`
+----------------------
+.. automodule:: dipy.viz.app
+
+.. currentmodule:: dipy.viz.app
+.. autosummary::
+
+   EventCounter
+   Horizon
+   Space
+   StatefulTractogram
+   Streamlines
+   apply_shader
+   build_label
+   distinguishable_colormap
+   horizon
+   length
+   optional_package
+   qbx_and_merge
+   save_tractogram
+   setup_module
+   slicer_panel
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`viz.gmem`
+-----------------------
+.. automodule:: dipy.viz.gmem
+
+.. currentmodule:: dipy.viz.gmem
+.. autosummary::
+
+   GlobalHorizon
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`viz.panel`
+------------------------
+.. automodule:: dipy.viz.panel
+
+.. currentmodule:: dipy.viz.panel
+.. autosummary::
+
+   build_label
+   optional_package
+   setup_module
+   slicer_panel
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`viz.projections`
+------------------------------
+.. automodule:: dipy.viz.projections
+
+.. currentmodule:: dipy.viz.projections
+.. autosummary::
+
+   doctest_skip_parser
+   optional_package
+   setup_module
+   sph_project
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`viz.regtools`
+---------------------------
+.. automodule:: dipy.viz.regtools
+
+.. currentmodule:: dipy.viz.regtools
+.. autosummary::
+
+   draw_lattice_2d
+   optional_package
+   overlay_images
+   overlay_slices
+   plot_2d_diffeomorphic_map
+   plot_slices
+   setup_module
+   simple_plot
+
+
+.. currentmodule:: dipy.viz
+
+fetch_viz_icons
+~~~~~~~~~~~~~~~
+
+.. autofunction:: fetch_viz_icons
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+read_viz_icons
+~~~~~~~~~~~~~~
+
+.. autofunction:: read_viz_icons
+
+
+.. currentmodule:: dipy.viz.app
+
+
+:class:`EventCounter`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: EventCounter
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Horizon`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Horizon
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Space`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Space
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StatefulTractogram`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StatefulTractogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+apply_shader
+~~~~~~~~~~~~
+
+.. autofunction:: apply_shader
+
+build_label
+~~~~~~~~~~~
+
+.. autofunction:: build_label
+
+distinguishable_colormap
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: distinguishable_colormap
+
+horizon
+~~~~~~~
+
+.. autofunction:: horizon
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+qbx_and_merge
+~~~~~~~~~~~~~
+
+.. autofunction:: qbx_and_merge
+
+save_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: save_tractogram
+
+setup_module
+~~~~~~~~~~~~
+
+.. autofunction:: setup_module
+
+slicer_panel
+~~~~~~~~~~~~
+
+.. autofunction:: slicer_panel
+
+
+.. currentmodule:: dipy.viz.gmem
+
+
+:class:`GlobalHorizon`
+~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: GlobalHorizon
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+.. currentmodule:: dipy.viz.panel
+
+build_label
+~~~~~~~~~~~
+
+.. autofunction:: build_label
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+setup_module
+~~~~~~~~~~~~
+
+.. autofunction:: setup_module
+
+slicer_panel
+~~~~~~~~~~~~
+
+.. autofunction:: slicer_panel
+
+
+.. currentmodule:: dipy.viz.projections
+
+doctest_skip_parser
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: doctest_skip_parser
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+setup_module
+~~~~~~~~~~~~
+
+.. autofunction:: setup_module
+
+sph_project
+~~~~~~~~~~~
+
+.. autofunction:: sph_project
+
+
+.. currentmodule:: dipy.viz.regtools
+
+draw_lattice_2d
+~~~~~~~~~~~~~~~
+
+.. autofunction:: draw_lattice_2d
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+overlay_images
+~~~~~~~~~~~~~~
+
+.. autofunction:: overlay_images
+
+overlay_slices
+~~~~~~~~~~~~~~
+
+.. autofunction:: overlay_slices
+
+plot_2d_diffeomorphic_map
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: plot_2d_diffeomorphic_map
+
+plot_slices
+~~~~~~~~~~~
+
+.. autofunction:: plot_slices
+
+setup_module
+~~~~~~~~~~~~
+
+.. autofunction:: setup_module
+
+simple_plot
+~~~~~~~~~~~
+
+.. autofunction:: simple_plot
+

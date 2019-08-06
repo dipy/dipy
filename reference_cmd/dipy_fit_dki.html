@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_lmm" href="dipy_lmm.html" />
+    <link rel="prev" title="dipy_ba" href="dipy_ba.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_lmm.html" title="dipy_lmm"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_ba.html" title="dipy_ba"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_ba.html"
+                        title="previous chapter">dipy_ba</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_lmm.html"
+                        title="next chapter">dipy_lmm</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_fit_dki.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-fit-dki">
+<h1>dipy_fit_dki<a class="headerlink" href="#dipy-fit-dki" title="Permalink to this headline">¶</a></h1>
+<dl class="simple">
+<dt>usage: dipy_fit_dki [-h] [–b0_threshold float]</dt><dd><p>[–save_metrics [str [str …]]] [–out_dir str]
+[–out_dt_tensor str] [–out_fa str] [–out_ga str]
+[–out_rgb str] [–out_md str] [–out_ad str]
+[–out_rd str] [–out_mode str] [–out_evec str]
+[–out_eval str] [–out_dk_tensor str] [–out_mk str]
+[–out_ak str] [–out_rk str]
+input_files bvalues_files bvectors_files mask_files</p>
+</dd>
+</dl>
+<p>Workflow for Diffusion Kurtosis reconstruction and for computing DKI metrics. Performs a DKI reconstruction on the files by ‘globing’ <code class="docutils literal notranslate"><span class="pre">input_files</span></code> and saves the DKI metrics in a directory specified by <code class="docutils literal notranslate"><span class="pre">out_dir</span></code>.</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>input_files           Path to the input volumes. This path may contain wildcards to process multiple inputs at once.
+bvalues_files         Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+bvectors_files        Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+mask_files            Path to the input masks. This path may contain wildcards to use multiple masks at once. (default: No mask used)</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--b0_threshold <var>float</var></span></kbd></dt>
+<dd><p>Threshold used to find b=0 directions (default 0.0)</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>–save_metrics [str [str …]]</dt><dd><p>List of metrics to save. Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval (default [] (all))</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Output directory (default input file directory)</p>
+</dd>
+<dt><kbd><span class="option">--out_dt_tensor <var>str</var></span></kbd></dt>
+<dd><p>Name of the tensors volume to be saved (default: ‘dti_tensors.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_fa <var>str</var></span></kbd></dt>
+<dd><p>Name of the tensors volume to be saved (default ‘dki_tensors.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_ga <var>str</var></span></kbd></dt>
+<dd><p>Name of the fractional anisotropy volume to be saved (default ‘fa.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_rgb <var>str</var></span></kbd></dt>
+<dd><p>Name of the geodesic anisotropy volume to be saved (default ‘ga.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_md <var>str</var></span></kbd></dt>
+<dd><p>Name of the color fa volume to be saved (default ‘rgb.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_ad <var>str</var></span></kbd></dt>
+<dd><p>Name of the mean diffusivity volume to be saved (default ‘md.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_rd <var>str</var></span></kbd></dt>
+<dd><p>Name of the axial diffusivity volume to be saved (default ‘ad.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_mode <var>str</var></span></kbd></dt>
+<dd><p>Name of the radial diffusivity volume to be saved (default ‘rd.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_evec <var>str</var></span></kbd></dt>
+<dd><p>Name of the mode volume to be saved (default ‘mode.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_eval <var>str</var></span></kbd></dt>
+<dd><p>Name of the eigenvectors volume to be saved (default ‘evecs.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_dk_tensor <var>str</var></span></kbd></dt>
+<dd><p>Name of the eigenvalues to be saved (default ‘evals.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_mk <var>str</var></span></kbd></dt>
+<dd><p>Name of the mean kurtosis to be saved (default: ‘mk.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_ak <var>str</var></span></kbd></dt>
+<dd><p>Name of the axial kurtosis to be saved (default: ‘ak.nii.gz’)</p>
+</dd>
+<dt><kbd><span class="option">--out_rk <var>str</var></span></kbd></dt>
+<dd><p>Name of the radial kurtosis to be saved (default: ‘rk.nii.gz’)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+.. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.   Estimation of tensors and tensor-derived measures in diffusional   kurtosis imaging. Magn Reson Med. 65(3), 823-836
+.. [2] Jensen, Jens H., Joseph A. Helpern, Anita Ramani, Hanzhang Lu,   and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The   Quantification of Non-Gaussian Water Diffusion by Means of Magnetic   Resonance Imaging. MRM 53 (6):1432-40.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_lmm.html" title="dipy_lmm"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_ba.html" title="dipy_ba"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

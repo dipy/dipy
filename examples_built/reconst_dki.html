@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Reconstruction of the diffusion signal with the kurtosis tensor model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_dki.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruction-of-the-diffusion-signal-with-the-kurtosis-tensor-model">
+<span id="example-reconst-dki"></span><h1>Reconstruction of the diffusion signal with the kurtosis tensor model<a class="headerlink" href="#reconstruction-of-the-diffusion-signal-with-the-kurtosis-tensor-model" title="Permalink to this headline">¶</a></h1>
+<p>The diffusion kurtosis model is an expansion of the diffusion tensor model
+(see <a class="reference internal" href="reconst_dti.html#example-reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a>). In addition to the diffusion tensor (DT), the
+diffusion kurtosis model quantifies the degree to which water diffusion in
+biological tissues is non-Gaussian using the kurtosis tensor (KT)
+<a class="reference internal" href="reconst_msdki.html#jensen2005" id="id1"><span>[Jensen2005]</span></a>.</p>
+<p>Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
+interest because they can be used to charaterize tissue microstructural
+heterogeneity <a class="reference internal" href="#jensen2010" id="id2"><span>[Jensen2010]</span></a>. Moreover, DKI can be used to: 1) derive concrete
+biophysical parameters, such as the density of axonal fibers and diffusion
+tortuosity <a class="reference internal" href="reconst_dki_micro.html#fierem2011" id="id3"><span>[Fierem2011]</span></a> (see <a class="reference internal" href="reconst_dki_micro.html#example-reconst-dki-micro"><span class="std std-ref">Reconstruction of the diffusion signal with the WMTI model</span></a>); and 2)
+resolve crossing fibers in tractography and to obtain invariant rotational
+measures not limited to well-aligned fiber populations <a class="reference internal" href="reconst_msdki.html#netohe2015" id="id4"><span>[NetoHe2015]</span></a>.</p>
+<p>The diffusion kurtosis model expresses the diffusion-weighted signal as:</p>
+<div class="math notranslate nohighlight">
+\[S(n,b)=S_{0}e^{-bD(n)+\frac{1}{6}b^{2}D(n)^{2}K(n)}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{b}\)</span> is the applied diffusion weighting (which is dependent on
+the measurement parameters), <span class="math notranslate nohighlight">\(S_0\)</span> is the signal in the absence of diffusion
+gradient sensitization, <span class="math notranslate nohighlight">\(\mathbf{D(n)}\)</span> is the value of diffusion along
+direction <span class="math notranslate nohighlight">\(\mathbf{n}\)</span>, and <span class="math notranslate nohighlight">\(\mathbf{K(n)}\)</span> is the value of kurtosis along
+direction <span class="math notranslate nohighlight">\(\mathbf{n}\)</span>. The directional diffusion <span class="math notranslate nohighlight">\(\mathbf{D(n)}\)</span> and kurtosis
+<span class="math notranslate nohighlight">\(\mathbf{K(n)}\)</span> can be related to the diffusion tensor (DT) and kurtosis tensor
+(KT) using the following equations:</p>
+<div class="math notranslate nohighlight">
+\[D(n)=\sum_{i=1}^{3}\sum_{j=1}^{3}n_{i}n_{j}D_{ij}\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[K(n)=\frac{MD^{2}}{D(n)^{2}}\sum_{i=1}^{3}\sum_{j=1}^{3}\sum_{k=1}^{3}
+\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}\]</div>
+<p>where <span class="math notranslate nohighlight">\(D_{ij}\)</span> are the elements of the second-order DT, and <span class="math notranslate nohighlight">\(W_{ijkl}\)</span> the
+elements of the fourth-order KT and <span class="math notranslate nohighlight">\(MD\)</span> is the mean diffusivity. As the DT,
+KT has antipodal symmetry and thus only 15 Wijkl elemments are needed to fully
+characterize the KT:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{matrix} ( &amp; W_{xxxx} &amp; W_{yyyy} &amp; W_{zzzz} &amp; W_{xxxy} &amp; W_{xxxz}
+                 &amp; ... \\
+                 &amp; W_{xyyy} &amp; W_{yyyz} &amp; W_{xzzz} &amp; W_{yzzz} &amp; W_{xxyy}
+                 &amp; ... \\
+                 &amp; W_{xxzz} &amp; W_{yyzz} &amp; W_{xxyz} &amp; W_{xyyz} &amp; W_{xyzz}
+                 &amp; &amp; )\end{matrix}\end{split}\]</div>
+<p>In the following example we show how to fit the diffusion kurtosis model on
+diffusion-weighted multi-shell datasets and how to estimate diffusion kurtosis
+based statistics.</p>
+<p>First, we import all relevant modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dki</span> <span class="k">as</span> <span class="nn">dki</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dti</span> <span class="k">as</span> <span class="nn">dti</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_cfin_multib</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_cfin_dwi</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.filters</span> <span class="k">import</span> <span class="n">gaussian_filter</span>
+</pre></div>
+</div>
+<p>DKI requires multi-shell data, i.e. data acquired from more than one non-zero
+b-value. Here, we use fetch to download a multi-shell dataset which was kindly
+provided by Hansen and Jespersen (more details about the data are provided in
+their paper <a class="reference internal" href="reconst_msdki.html#hansen2016" id="id5"><span>[Hansen2016]</span></a>). The total size of the downloaded data is 192
+MBytes, however you only need to fetch it once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cfin_multib</span><span class="p">()</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cfin_dwi</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>Function <code class="docutils literal notranslate"><span class="pre">read_cfin_multib</span></code> return img and gtab which contains respectively
+a nibabel Nifti1Image object (where the data can be extracted) and a
+GradientTable object with information about the b-values and b-vectors.</p>
+<p>Before fitting the data, we preform some data pre-processing. We first compute
+a brain mask to avoid unnecessary calculations on the background of the image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">autocrop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since the diffusion kurtosis models involves the estimation of a large number
+of parameters <a class="reference internal" href="#taxcmw2015" id="id6"><span>[TaxCMW2015]</span></a> and since the non-Gaussian components of the
+diffusion signal are more sensitive to artefacts <a class="reference internal" href="#netohe2012" id="id7"><span>[NetoHe2012]</span></a>, it might be
+favorable to suppress the effects of noise and artefacts before diffusion
+kurtosis fitting. In this example the effects of noise and artefacts are
+suppress by using 3D Gaussian smoothing (with a Gaussian kernel with
+fwhm=1.25) as suggested by pioneer DKI studies (e.g. <a class="reference internal" href="reconst_msdki.html#jensen2005" id="id8"><span>[Jensen2005]</span></a>,
+<a class="reference internal" href="#netohe2012" id="id9"><span>[NetoHe2012]</span></a>). Although here the Gaussian smoothing is used so that results
+are comparable to these studies, it is important to note that more advanced
+noise and artifact suppression algorithms are available in <a class="reference external" href="http://dipy.org">DIPY</a> (e.g. the
+non-local means filter <span class="xref std std-ref">example-denoise-nlmeans</span>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fwhm</span> <span class="o">=</span> <span class="mf">1.25</span>
+<span class="n">gauss_std</span> <span class="o">=</span> <span class="n">fwhm</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">8</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>  <span class="c1"># converting fwhm to Gaussian std</span>
+<span class="n">data_smooth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="n">data_smooth</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">v</span><span class="p">],</span> <span class="n">sigma</span><span class="o">=</span><span class="n">gauss_std</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now that we have loaded and pre-processed the data we can go forward
+with DKI fitting. For this, the DKI model is first defined for the data’s
+GradientTable object by instantiating the DiffusionKurtosisModel object in the
+following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dkimodel</span> <span class="o">=</span> <span class="n">dki</span><span class="o">.</span><span class="n">DiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To fit the data using the defined model object, we call the <code class="docutils literal notranslate"><span class="pre">fit</span></code> function of
+this object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dkifit</span> <span class="o">=</span> <span class="n">dkimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_smooth</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The fit method creates a DiffusionKurtosisFit object, which contains all the
+diffusion and kurtosis fitting parameters and other DKI attributes. For
+instance, since the diffusion kurtosis model estimates the diffusion tensor,
+all diffusion standard tensor statistics can be computed from the
+DiffusionKurtosisFit instance. For example, we show below how to extract the
+fractional anisotropy (FA), the mean diffusivity (MD), the axial diffusivity
+(AD) and the radial diffusivity (RD) from the DiffusionKurtosisiFit instance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">MD</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">md</span>
+<span class="n">AD</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">ad</span>
+<span class="n">RD</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">rd</span>
+</pre></div>
+</div>
+<p>Note that these four standard measures could also be computed from DIPY’s DTI
+module. Theoretically, computing these measures from both models should be
+analogous. However, according to recent studies, the diffusion statistics from
+the kurtosis model are expected to have better accuracy <a class="reference internal" href="#veraar2011" id="id10"><span>[Veraar2011]</span></a>,
+<a class="reference internal" href="#netohe2012" id="id11"><span>[NetoHe2012]</span></a>. For comparison purposes, we calculate below the FA, MD, AD, and
+RD using DIPY’s <code class="docutils literal notranslate"><span class="pre">TensorModel</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tenmodel</span> <span class="o">=</span> <span class="n">dti</span><span class="o">.</span><span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">tenfit</span> <span class="o">=</span> <span class="n">tenmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_smooth</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
+<span class="n">dti_FA</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">dti_MD</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">md</span>
+<span class="n">dti_AD</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">ad</span>
+<span class="n">dti_RD</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">rd</span>
+</pre></div>
+</div>
+<p>The DT based measures can be easily visualized using matplotlib. For example,
+the FA, MD, AD, and RD obtained from the diffusion kurtosis model (upper
+panels) and the tensor model (lower panels) are plotted for a selected axial
+slice.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">axial_slice</span> <span class="o">=</span> <span class="mi">9</span>
+
+<span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;FA (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">AD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;AD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">RD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;RD (DKI)&#39;</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_FA</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;FA (DTI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MD (DTI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_AD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;AD (DTI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">dti_RD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+                  <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;RD (DTI)&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;Diffusion_tensor_measures_from_DTI_and_DKI.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id13">
+<img alt="../_images/Diffusion_tensor_measures_from_DTI_and_DKI.png" src="../_images/Diffusion_tensor_measures_from_DTI_and_DKI.png" />
+<p class="caption"><span class="caption-text">Diffusion tensor measures obtained from the diffusion tensor estimated
+from DKI (upper panels) and DTI (lower panels).</span><a class="headerlink" href="#id13" title="Permalink to this image">¶</a></p>
+</div>
+<p>In addition to the standard diffusion statistics, the DiffusionKurtosisFit
+instance can be used to estimate the non-Gaussian measures of mean kurtosis
+(MK), the axial kurtosis (AK) and the radial kurtosis (RK).</p>
+<p>Kurtosis measures are susceptible to high amplitude outliers. The impact of
+high amplitude kurtosis outliers can be removed by introducing as an optional
+input the extremes of the typical values of kurtosis. Here these are assumed to
+be on the range between 0 and 3):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MK</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">AK</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">ak</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">RK</span> <span class="o">=</span> <span class="n">dkifit</span><span class="o">.</span><span class="n">rk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we are ready to plot the kurtosis standard measures using matplotlib:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig2</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig2</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MK&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">AK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;AK&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">RK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;RK&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig2</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;Kurtosis_tensor_standard_measures.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id14">
+<img alt="../_images/Kurtosis_tensor_standard_measures.png" src="../_images/Kurtosis_tensor_standard_measures.png" />
+<p class="caption"><span class="caption-text">Kurtosis tensor standard measures obtained from the kurtosis tensor.</span><a class="headerlink" href="#id14" title="Permalink to this image">¶</a></p>
+</div>
+<p>The non-Gaussian behaviour of the diffusion signal is larger when water
+diffusion is restricted by compartments and barriers (e.g., myelin sheath).
+Therefore, as the figure above shows, white matter kurtosis values are smaller
+along the axial direction of fibers (smaller amplitudes shown in the AK map)
+than for the radial directions (larger amplitudes shown in the RK map).</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="taxcmw2015"><span class="brackets"><a class="fn-backref" href="#id6">TaxCMW2015</a></span></dt>
+<dd><p>Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
+(2014). REKINDLE: Robust extraction of kurtosis INDices with
+linear estimation. Magnetic Resonance in Medicine 73(2):
+794-808.</p>
+</dd>
+<dt class="label" id="jensen2005"><span class="brackets">Jensen2005</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id8">2</a>)</span></dt>
+<dd><p>Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
+Diffusional Kurtosis Imaging: The Quantification of
+Non_Gaussian Water Diffusion by Means of Magnetic Resonance
+Imaging. Magnetic Resonance in Medicine 53: 1432-1440</p>
+</dd>
+<dt class="label" id="jensen2010"><span class="brackets"><a class="fn-backref" href="#id2">Jensen2010</a></span></dt>
+<dd><p>Jensen JH, Helpern JA (2010). MRI quantification of
+non-Gaussian water diffusion by kurtosis analysis. NMR in
+Biomedicine 23(7): 698-710</p>
+</dd>
+<dt class="label" id="fierem2011"><span class="brackets"><a class="fn-backref" href="#id3">Fierem2011</a></span></dt>
+<dd><p>Fieremans E, Jensen JH, Helpern JA (2011). White matter
+characterization with diffusion kurtosis imaging. NeuroImage
+58: 177-188</p>
+</dd>
+<dt class="label" id="hansen2016"><span class="brackets"><a class="fn-backref" href="#id5">Hansen2016</a></span></dt>
+<dd><p>Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
+kurtosis strategies, b-value optimization and exploration of
+diffusion MRI contrast. Scientific Data 3: 160072
+doi:10.1038/sdata.2016.72</p>
+</dd>
+<dt class="label" id="netohe2012"><span class="brackets">NetoHe2012</span><span class="fn-backref">(<a href="#id7">1</a>,<a href="#id9">2</a>,<a href="#id11">3</a>)</span></dt>
+<dd><p>Neto Henriques R, Ferreira H, Correia M, (2012). Diffusion
+kurtosis imaging of the healthy human brain. Master
+Dissertation Bachelor and Master Programin Biomedical
+Engineering and Biophysics, Faculty of Sciences.
+<a class="reference external" href="http://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf">http://repositorio.ul.pt/bitstream/10451/8511/1/ulfc104137_tm_Rafael_Henriques.pdf</a></p>
+</dd>
+<dt class="label" id="netohe2015"><span class="brackets"><a class="fn-backref" href="#id4">NetoHe2015</a></span></dt>
+<dd><p>Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
+Exploring the 3D geometry of the diffusion kurtosis tensor -
+Impact on the development of robust tractography procedures and
+novel biomarkers, NeuroImage 111: 85-99</p>
+</dd>
+<dt class="label" id="veraar2011"><span class="brackets"><a class="fn-backref" href="#id10">Veraar2011</a></span></dt>
+<dd><p>Veraart J, Poot DH, Van Hecke W, Blockx I, Van der Linden A,
+Verhoye M, Sijbers J (2011). More Accurate Estimation of
+Diffusion Tensor Parameters Using Diffusion Kurtosis Imaging.
+Magnetic Resonance in Medicine 65(1): 138-145</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/7d665354633c51d9c135b89cb673c289/reconst_dki.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

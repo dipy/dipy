@@ -1,0 +1,31 @@
+
+========================
+dipy_snr_in_cc
+========================
+
+usage: dipy_snr_in_cc [-h] [--bbox_threshold [float [float ...]]]
+                     [--out_dir str] [--out_file str] [--out_mask_cc str]
+                     [--out_mask_noise str]
+                     data_files bvals_files bvecs_files mask_file
+
+Compute the signal-to-noise ratio in the corpus callosum.
+
+positional arguments:
+  data_files            Path to the dwi.nii.gz file. This path may contain wildcards to process multiple inputs at once.
+  bvals_files           Path of bvals.
+  bvecs_files           Path of bvecs.
+  mask_file             Path of a brain mask file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --bbox_threshold [float [float ...]]
+                        Threshold for bounding box, values separated with commas for ex. [0.6,1,0,0.1,0,0.1]. (default (0.6, 1, 0, 0.1, 0, 0.1))
+
+output arguments(optional):
+  --out_dir str         Where the resulting file will be saved. (default '')
+  --out_file str        Name of the result file to be saved. (default 'product.json')
+  --out_mask_cc str     Name of the CC mask volume to be saved (default 'cc.nii.gz')
+  --out_mask_noise str  Name of the mask noise volume to be saved (default 'mask_noise.nii.gz')
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

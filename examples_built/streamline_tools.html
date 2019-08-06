@@ -1,0 +1,350 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/streamline_tools.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="connectivity-matrices-roi-intersections-and-density-maps">
+<span id="streamline-tools"></span><span id="example-streamline-tools"></span><h1>Connectivity Matrices, ROI Intersections and Density Maps<a class="headerlink" href="#connectivity-matrices-roi-intersections-and-density-maps" title="Permalink to this headline">¶</a></h1>
+<p>This example is meant to be an introduction to some of the streamline tools
+available in <a class="reference external" href="http://dipy.org">DIPY</a>. Some of the functions covered in this example are
+<code class="docutils literal notranslate"><span class="pre">target</span></code>, <code class="docutils literal notranslate"><span class="pre">connectivity_matrix</span></code> and <code class="docutils literal notranslate"><span class="pre">density_map</span></code>. <code class="docutils literal notranslate"><span class="pre">target</span></code> allows one
+to filter streamlines that either pass through or do not pass through some
+region of the brain, <code class="docutils literal notranslate"><span class="pre">connectivity_matrix</span></code> groups and counts streamlines
+based on where in the brain they begin and end, and finally, density map counts
+the number of streamlines that pass though every voxel of some image.</p>
+<p>To get started we’ll need to have a set of streamlines to work with. We’ll use
+EuDX along with the CsaOdfModel to make some streamlines. Let’s import the
+modules and download the data we’ll be using.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="k">import</span> <span class="n">binary_dilation</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_stanford_labels</span><span class="p">,</span> <span class="n">read_stanford_t1</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">peaks</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst</span> <span class="k">import</span> <span class="n">shm</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking</span> <span class="k">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.local_tracking</span> <span class="k">import</span> <span class="n">LocalTracking</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.stopping_criterion</span> <span class="k">import</span> <span class="n">BinaryStoppingCriterion</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+
+<span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">t1</span> <span class="o">=</span> <span class="n">read_stanford_t1</span><span class="p">()</span>
+<span class="n">t1_data</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We’ve loaded an image called <code class="docutils literal notranslate"><span class="pre">labels_img</span></code> which is a map of tissue types such
+that every integer value in the array <code class="docutils literal notranslate"><span class="pre">labels</span></code> represents an anatomical
+structure or tissue type <a class="footnote-reference brackets" href="#id146" id="id1">1</a>. For this example, the image was created so that
+white matter voxels have values of either 1 or 2. We’ll use
+<code class="docutils literal notranslate"><span class="pre">peaks_from_model</span></code> to apply the <code class="docutils literal notranslate"><span class="pre">CsaOdfModel</span></code> to each white matter voxel
+and estimate fiber orientations which we can use for tracking. We will also
+dilate this mask by 1 voxel to ensure streamlines reach the grey matter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">white_matter</span> <span class="o">=</span> <span class="n">binary_dilation</span><span class="p">((</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">csamodel</span> <span class="o">=</span> <span class="n">shm</span><span class="o">.</span><span class="n">CsaOdfModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="n">csapeaks</span> <span class="o">=</span> <span class="n">peaks</span><span class="o">.</span><span class="n">peaks_from_model</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">csamodel</span><span class="p">,</span>
+                                  <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                                  <span class="n">sphere</span><span class="o">=</span><span class="n">peaks</span><span class="o">.</span><span class="n">default_sphere</span><span class="p">,</span>
+                                  <span class="n">relative_peak_threshold</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span>
+                                  <span class="n">min_separation_angle</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+                                  <span class="n">mask</span><span class="o">=</span><span class="n">white_matter</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we can use EuDX to track all of the white matter. To keep things reasonably
+fast we use <code class="docutils literal notranslate"><span class="pre">density=1</span></code> which will result in 1 seeds per voxel. The stopping
+criterion, determining when the tracking stops, is set to stop when the
+tracking exit the white matter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">affine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">seeds</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">seeds_from_mask</span><span class="p">(</span><span class="n">white_matter</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">stopping_criterion</span> <span class="o">=</span> <span class="n">BinaryStoppingCriterion</span><span class="p">(</span><span class="n">white_matter</span><span class="p">)</span>
+
+<span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">csapeaks</span><span class="p">,</span> <span class="n">stopping_criterion</span><span class="p">,</span> <span class="n">seeds</span><span class="p">,</span>
+                                     <span class="n">affine</span><span class="o">=</span><span class="n">affine</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The first of the tracking utilities we’ll cover here is <code class="docutils literal notranslate"><span class="pre">target</span></code>. This
+function takes a set of streamlines and a region of interest (ROI) and returns
+only those streamlines that pass though the ROI. The ROI should be an array
+such that the voxels that belong to the ROI are <code class="docutils literal notranslate"><span class="pre">True</span></code> and all other voxels
+are <code class="docutils literal notranslate"><span class="pre">False</span></code> (this type of binary array is sometimes called a mask). This
+function can also exclude all the streamlines that pass though an ROI by
+setting the <code class="docutils literal notranslate"><span class="pre">include</span></code> flag to <code class="docutils literal notranslate"><span class="pre">False</span></code>. In this example we’ll target the
+streamlines of the corpus callosum. Our <code class="docutils literal notranslate"><span class="pre">labels</span></code> array has a sagittal slice
+of the corpus callosum identified by the label value 2. We’ll create an ROI
+mask from that label and create two sets of streamlines, those that intersect
+with the ROI and those that don’t.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_slice</span> <span class="o">=</span> <span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span>
+<span class="n">cc_streamlines</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">cc_slice</span><span class="p">)</span>
+<span class="n">cc_streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">)</span>
+
+<span class="n">other_streamlines</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">cc_slice</span><span class="p">,</span>
+                                 <span class="n">include</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">other_streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">other_streamlines</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">other_streamlines</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can use some of <a class="reference external" href="http://dipy.org">DIPY</a>’s visualization tools to display the ROI we targeted
+above and all the streamlines that pass though that ROI. The ROI is the yellow
+region near the center of the axial image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">colormap</span> <span class="k">as</span> <span class="n">cmap</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="c1"># Make display objects</span>
+<span class="n">color</span> <span class="o">=</span> <span class="n">cmap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">)</span>
+<span class="n">cc_streamlines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">,</span>
+                                  <span class="n">cmap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">))</span>
+<span class="n">cc_ROI_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">contour_from_roi</span><span class="p">(</span><span class="n">cc_slice</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+                                      <span class="n">opacity</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="n">vol_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">slicer</span><span class="p">(</span><span class="n">t1_data</span><span class="p">)</span>
+
+<span class="n">vol_actor</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">vol_actor2</span> <span class="o">=</span> <span class="n">vol_actor</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">vol_actor2</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">35</span><span class="p">)</span>
+
+<span class="c1"># Add display objects to canvas</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor2</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cc_streamlines_actor</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cc_ROI_actor</span><span class="p">)</span>
+
+<span class="c1"># Save figures</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;corpuscallosum_axial.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">set_camera</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">focal_point</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">view_up</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;corpuscallosum_sagittal.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id149">
+<img alt="../_images/corpuscallosum_axial.png" src="../_images/corpuscallosum_axial.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum Axial</strong></span><a class="headerlink" href="#id149" title="Permalink to this image">¶</a></p>
+</div>
+<div class="figure align-center" id="id150">
+<img alt="../_images/corpuscallosum_sagittal.png" src="../_images/corpuscallosum_sagittal.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum Sagittal</strong></span><a class="headerlink" href="#id150" title="Permalink to this image">¶</a></p>
+</div>
+<p>Once we’ve targeted on the corpus callosum ROI, we might want to find out which
+regions of the brain are connected by these streamlines. To do this we can use
+the <code class="docutils literal notranslate"><span class="pre">connectivity_matrix</span></code> function. This function takes a set of streamlines
+and an array of labels as arguments. It returns the number of streamlines that
+start and end at each pair of labels and it can return the streamlines grouped
+by their endpoints. Notice that this function only considers the endpoints of
+each streamline.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">M</span><span class="p">,</span> <span class="n">grouping</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">connectivity_matrix</span><span class="p">(</span><span class="n">cc_streamlines</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span>
+                                        <span class="n">return_mapping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">mapping_as_streamlines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">M</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">M</span><span class="p">[:,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>We’ve set <code class="docutils literal notranslate"><span class="pre">return_mapping</span></code> and <code class="docutils literal notranslate"><span class="pre">mapping_as_streamlines</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> so that
+<code class="docutils literal notranslate"><span class="pre">connectivity_matrix</span></code> returns all the streamlines in <code class="docutils literal notranslate"><span class="pre">cc_streamlines</span></code>
+grouped by their endpoint.</p>
+<p>Because we’re typically only interested in connections between gray matter
+regions, and because the label 0 represents background and the labels 1 and 2
+represent white matter, we discard the first three rows and columns of the
+connectivity matrix.</p>
+<p>We can now display this matrix using matplotlib, we display it using a log
+scale to make small values in the matrix easier to see.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log1p</span><span class="p">(</span><span class="n">M</span><span class="p">),</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;connectivity.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id151">
+<img alt="../_images/connectivity.png" src="../_images/connectivity.png" />
+<p class="caption"><span class="caption-text"><strong>Connectivity of Corpus Callosum</strong></span><a class="headerlink" href="#id151" title="Permalink to this image">¶</a></p>
+</div>
+<p>In our example track there are more streamlines connecting regions 11 and
+54 than any other pair of regions. These labels represent the left and right
+superior frontal gyrus respectively. These two regions are large, close
+together, have lots of corpus callosum fibers and are easy to track so this
+result should not be a surprise to anyone.</p>
+<p>However, the interpretation of streamline counts can be tricky. The
+relationship between the underlying biology and the streamline counts will
+depend on several factors, including how the tracking was done, and the correct
+way to interpret these kinds of connectivity matrices is still an open question
+in the diffusion imaging literature.</p>
+<p>The next function we’ll demonstrate is <code class="docutils literal notranslate"><span class="pre">density_map</span></code>. This function allows
+one to represent the spatial distribution of a track by counting the density of
+streamlines in each voxel. For example, let’s take the track connecting the
+left and right superior frontal gyrus.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lr_superiorfrontal_track</span> <span class="o">=</span> <span class="n">grouping</span><span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="mi">54</span><span class="p">]</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">dm</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">density_map</span><span class="p">(</span><span class="n">lr_superiorfrontal_track</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s save this density map and the streamlines so that they can be
+visualized together. In order to save the streamlines in a “.trk” file we’ll
+need to move them to “trackvis space”, or the representation of streamlines
+specified by the trackvis Track File format.</p>
+<p>To do that, we will use tools available in <a class="reference external" href="http://nipy.org/nibabel">nibabel</a>)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">save_trk</span>
+
+<span class="c1"># Save density map</span>
+<span class="n">dm_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int16&quot;</span><span class="p">),</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span><span class="p">)</span>
+<span class="n">dm_img</span><span class="o">.</span><span class="n">to_filename</span><span class="p">(</span><span class="s2">&quot;lr-superiorfrontal-dm.nii.gz&quot;</span><span class="p">)</span>
+
+<span class="n">lr_sf_trk</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">lr_superiorfrontal_track</span><span class="p">)</span>
+
+<span class="c1"># Save streamlines</span>
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">lr_sf_trk</span><span class="p">,</span> <span class="n">dm_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">VOX</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;lr-superiorfrontal.trk&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Footnotes</p>
+<dl class="footnote brackets">
+<dt class="label" id="id146"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p>The image <cite>aparc-reduced.nii.gz</cite>, which we load as <code class="docutils literal notranslate"><span class="pre">labels_img</span></code>, is a
+modified version of label map <cite>aparc+aseg.mgz</cite> created by <a class="reference external" href="https://surfer.nmr.mgh.harvard.edu/">FreeSurfer</a>. The corpus callosum region is a
+combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
+labels were re-mapped and reduced so that they lie between 0 and 88. To
+see the FreeSurfer region, label and name, represented by each value see
+<cite>label_info.txt</cite> in <cite>~/.dipy/stanford_hardi</cite>.</p>
+</dd>
+<dt class="label" id="id148"><span class="brackets">2</span></dt>
+<dd><p>An affine transformation is a mapping between two coordinate systems
+that can represent scaling, rotation, sheer, translation and reflection.
+Affine transformations are often represented using a 4x4 matrix where the
+last row of the matrix is <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">1]</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/5785a32d62dc0eacfb0bc37fec83ff16/streamline_tools.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

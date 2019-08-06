@@ -1,0 +1,1294 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="direction" href="dipy.direction.html" />
+    <link rel="prev" title="data" href="dipy.data.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.direction.html" title="direction"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy.data.html" title="data"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise</span></code></a><ul>
+<li><a class="reference internal" href="#module-dipy.denoise.adaptive_soft_matching">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.adaptive_soft_matching</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.denoise.gibbs">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.gibbs</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.denoise.localpca">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.localpca</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.denoise.nlmeans">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.nlmeans</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.denoise.noise_estimate">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.noise_estimate</span></code></a></li>
+<li><a class="reference internal" href="#module-dipy.denoise.non_local_means">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.non_local_means</span></code></a><ul>
+<li><a class="reference internal" href="#bench">bench</a></li>
+<li><a class="reference internal" href="#test">test</a></li>
+<li><a class="reference internal" href="#adaptive-soft-matching">adaptive_soft_matching</a></li>
+<li><a class="reference internal" href="#gibbs-removal">gibbs_removal</a></li>
+<li><a class="reference internal" href="#eigh">eigh</a></li>
+<li><a class="reference internal" href="#genpca">genpca</a></li>
+<li><a class="reference internal" href="#localpca">localpca</a></li>
+<li><a class="reference internal" href="#mppca">mppca</a></li>
+<li><a class="reference internal" href="#nlmeans">nlmeans</a></li>
+<li><a class="reference internal" href="#nlmeans-3d">nlmeans_3d</a></li>
+<li><a class="reference internal" href="#convolve">convolve</a></li>
+<li><a class="reference internal" href="#estimate-sigma">estimate_sigma</a></li>
+<li><a class="reference internal" href="#piesno">piesno</a></li>
+<li><a class="reference internal" href="#nlmeans-block">nlmeans_block</a></li>
+<li><a class="reference internal" href="#non-local-means">non_local_means</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy.data.html"
+                        title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">data</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.direction.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">direction</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.denoise.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy.denoise">
+<span id="denoise"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise</span></code><a class="headerlink" href="#module-dipy.denoise" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.bench" title="dipy.denoise.bench"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bench</span></code></a>([label, verbose, extra_argv])</p></td>
+<td><p>Run benchmarks for module using nose.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.test" title="dipy.denoise.test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test</span></code></a>([label, verbose, extra_argv, doctests, …])</p></td>
+<td><p>Run tests for module using nose.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="module-dipy.denoise.adaptive_soft_matching">
+<span id="module-denoise-adaptive-soft-matching"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.adaptive_soft_matching</span></code><a class="headerlink" href="#module-dipy.denoise.adaptive_soft_matching" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.adaptive_soft_matching.adaptive_soft_matching" title="dipy.denoise.adaptive_soft_matching.adaptive_soft_matching"><code class="xref py py-obj docutils literal notranslate"><span class="pre">adaptive_soft_matching</span></code></a>(ima, fimau, fimao, sigma)</p></td>
+<td><p>Adaptive Soft Coefficient Matching</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.denoise.gibbs">
+<span id="module-denoise-gibbs"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.gibbs</span></code><a class="headerlink" href="#module-dipy.denoise.gibbs" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.gibbs.gibbs_removal" title="dipy.denoise.gibbs.gibbs_removal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gibbs_removal</span></code></a>(vol[, slice_axis, n_points])</p></td>
+<td><p>Suppresses Gibbs ringing artefacts of images volumes.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.denoise.localpca">
+<span id="module-denoise-localpca"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.localpca</span></code><a class="headerlink" href="#module-dipy.denoise.localpca" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.localpca.eigh" title="dipy.denoise.localpca.eigh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigh</span></code></a>(a[, b, lower, eigvals_only, …])</p></td>
+<td><p>Solve an ordinary or generalized eigenvalue problem for a complex Hermitian or real symmetric matrix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.localpca.genpca" title="dipy.denoise.localpca.genpca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">genpca</span></code></a>(arr[, sigma, mask, patch_radius, …])</p></td>
+<td><p>General function to perform PCA-based denoising of diffusion datasets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.localpca.localpca" title="dipy.denoise.localpca.localpca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">localpca</span></code></a>(arr, sigma[, mask, patch_radius, …])</p></td>
+<td><p>Performs local PCA denoising according to Manjon et al.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.localpca.mppca" title="dipy.denoise.localpca.mppca"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mppca</span></code></a>(arr[, mask, patch_radius, pca_method, …])</p></td>
+<td><p>Performs PCA-based denoising using the Marcenko-Pastur distribution <a class="reference internal" href="#ra3cd9ccad273-1" id="id1">[1]</a>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.denoise.nlmeans">
+<span id="module-denoise-nlmeans"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.nlmeans</span></code><a class="headerlink" href="#module-dipy.denoise.nlmeans" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.nlmeans.nlmeans" title="dipy.denoise.nlmeans.nlmeans"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nlmeans</span></code></a>(arr, sigma[, mask, patch_radius, …])</p></td>
+<td><p>Non-local means for denoising 3D and 4D images</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.nlmeans.nlmeans_3d" title="dipy.denoise.nlmeans.nlmeans_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nlmeans_3d</span></code></a></p></td>
+<td><p>Non-local means for denoising 3D images</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.denoise.noise_estimate">
+<span id="module-denoise-noise-estimate"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.noise_estimate</span></code><a class="headerlink" href="#module-dipy.denoise.noise_estimate" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.noise_estimate.convolve" title="dipy.denoise.noise_estimate.convolve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convolve</span></code></a>(input, weights[, output, mode, …])</p></td>
+<td><p>Multidimensional convolution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.noise_estimate.estimate_sigma" title="dipy.denoise.noise_estimate.estimate_sigma"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_sigma</span></code></a>(arr[, …])</p></td>
+<td><p>Standard deviation estimation from local patches</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.noise_estimate.piesno" title="dipy.denoise.noise_estimate.piesno"><code class="xref py py-obj docutils literal notranslate"><span class="pre">piesno</span></code></a>(data, N[, alpha, l, itermax, eps, …])</p></td>
+<td><p>Probabilistic Identification and Estimation of Noise (PIESNO).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="module-dipy.denoise.non_local_means">
+<span id="module-denoise-non-local-means"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">denoise.non_local_means</span></code><a class="headerlink" href="#module-dipy.denoise.non_local_means" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.denoise.non_local_means.nlmeans_block" title="dipy.denoise.non_local_means.nlmeans_block"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nlmeans_block</span></code></a></p></td>
+<td><p>Non-Local Means Denoising Using Blockwise Averaging</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.denoise.non_local_means.non_local_means" title="dipy.denoise.non_local_means.non_local_means"><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_local_means</span></code></a>(arr, sigma[, mask, …])</p></td>
+<td><p>Non-local means for denoising 3D and 4D images, using</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="bench">
+<h3>bench<a class="headerlink" href="#bench" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.bench">
+<code class="sig-prename descclassname">dipy.denoise.</code><code class="sig-name descname">bench</code><span class="sig-paren">(</span><em class="sig-param">label='fast'</em>, <em class="sig-param">verbose=1</em>, <em class="sig-param">extra_argv=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.bench" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run benchmarks for module using nose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">{‘fast’, ‘full’, ‘’, attribute identifier}, optional</span></dt><dd><p>Identifies the benchmarks to run. This can be a string to pass to
+the nosetests executable with the ‘-A’ option, or one of several
+special values.  Special values are:</p>
+<ul class="simple">
+<li><p>‘fast’ - the default - which corresponds to the <code class="docutils literal notranslate"><span class="pre">nosetests</span> <span class="pre">-A</span></code>
+option of ‘not slow’.</p></li>
+<li><p>‘full’ - fast (as above) and slow benchmarks as in the
+‘no -A’ option to nosetests - this is the same as ‘’.</p></li>
+<li><p>None or ‘’ - run all tests.</p></li>
+<li><p>attribute_identifier - string passed directly to nosetests as ‘-A’.</p></li>
+</ul>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">int, optional</span></dt><dd><p>Verbosity value for benchmark outputs, in the range 1-10. Default is 1.</p>
+</dd>
+<dt><strong>extra_argv</strong><span class="classifier">list, optional</span></dt><dd><p>List with any extra arguments to pass to nosetests.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>success</strong><span class="classifier">bool</span></dt><dd><p>Returns True if running the benchmarks works, False if an error
+occurred.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Benchmarks are like tests, but have names starting with “bench” instead
+of “test”, and can be found under the “benchmarks” sub-directory of the
+module.</p>
+<p>Each NumPy module exposes <cite>bench</cite> in its namespace to run all benchmarks
+for it.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">success</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">bench</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">Running benchmarks for numpy.lib</span>
+<span class="gp">...</span>
+<span class="go">using 562341 items:</span>
+<span class="go">unique:</span>
+<span class="go">0.11</span>
+<span class="go">unique1d:</span>
+<span class="go">0.11</span>
+<span class="go">ratio: 1.0</span>
+<span class="go">nUnique: 56230 == 56230</span>
+<span class="gp">...</span>
+<span class="go">OK</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">success</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="test">
+<h3>test<a class="headerlink" href="#test" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.test">
+<code class="sig-prename descclassname">dipy.denoise.</code><code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">label='fast'</em>, <em class="sig-param">verbose=1</em>, <em class="sig-param">extra_argv=None</em>, <em class="sig-param">doctests=False</em>, <em class="sig-param">coverage=False</em>, <em class="sig-param">raise_warnings=None</em>, <em class="sig-param">timer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run tests for module using nose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">{‘fast’, ‘full’, ‘’, attribute identifier}, optional</span></dt><dd><p>Identifies the tests to run. This can be a string to pass to
+the nosetests executable with the ‘-A’ option, or one of several
+special values.  Special values are:</p>
+<ul class="simple">
+<li><p>‘fast’ - the default - which corresponds to the <code class="docutils literal notranslate"><span class="pre">nosetests</span> <span class="pre">-A</span></code>
+option of ‘not slow’.</p></li>
+<li><p>‘full’ - fast (as above) and slow tests as in the
+‘no -A’ option to nosetests - this is the same as ‘’.</p></li>
+<li><p>None or ‘’ - run all tests.</p></li>
+<li><p>attribute_identifier - string passed directly to nosetests as ‘-A’.</p></li>
+</ul>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">int, optional</span></dt><dd><p>Verbosity value for test outputs, in the range 1-10. Default is 1.</p>
+</dd>
+<dt><strong>extra_argv</strong><span class="classifier">list, optional</span></dt><dd><p>List with any extra arguments to pass to nosetests.</p>
+</dd>
+<dt><strong>doctests</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, run doctests in module. Default is False.</p>
+</dd>
+<dt><strong>coverage</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, report coverage of NumPy code. Default is False.
+(This requires the
+<a class="reference external" href="https://nedbatchelder.com/code/modules/coveragehtml">coverage module</a>).</p>
+</dd>
+<dt><strong>raise_warnings</strong><span class="classifier">None, str or sequence of warnings, optional</span></dt><dd><p>This specifies which warnings to configure as ‘raise’ instead
+of being shown once during the test execution. Valid strings are:</p>
+<ul class="simple">
+<li><p>“develop” : equals <code class="docutils literal notranslate"><span class="pre">(Warning,)</span></code></p></li>
+<li><p>“release” : equals <code class="docutils literal notranslate"><span class="pre">()</span></code>, do not raise on any warnings.</p></li>
+</ul>
+</dd>
+<dt><strong>timer</strong><span class="classifier">bool or int, optional</span></dt><dd><p>Timing of individual tests with <code class="docutils literal notranslate"><span class="pre">nose-timer</span></code> (which needs to be
+installed).  If True, time tests and report on all of them.
+If an integer (say <code class="docutils literal notranslate"><span class="pre">N</span></code>), report timing results for <code class="docutils literal notranslate"><span class="pre">N</span></code> slowest
+tests.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>result</strong><span class="classifier">object</span></dt><dd><p>Returns the result of running the tests as a
+<code class="docutils literal notranslate"><span class="pre">nose.result.TextTestResult</span></code> object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Each NumPy module exposes <cite>test</cite> in its namespace to run all tests for it.
+For example, to run all tests for numpy.lib:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">test</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+</pre></div>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">test</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">Running unit tests for numpy.lib</span>
+<span class="gp">...</span>
+<span class="go">Ran 976 tests in 3.933s</span>
+</pre></div>
+</div>
+<p>OK</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">knownfail</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="adaptive-soft-matching">
+<h3>adaptive_soft_matching<a class="headerlink" href="#adaptive-soft-matching" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.adaptive_soft_matching.adaptive_soft_matching">
+<code class="sig-prename descclassname">dipy.denoise.adaptive_soft_matching.</code><code class="sig-name descname">adaptive_soft_matching</code><span class="sig-paren">(</span><em class="sig-param">ima</em>, <em class="sig-param">fimau</em>, <em class="sig-param">fimao</em>, <em class="sig-param">sigma</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.adaptive_soft_matching.adaptive_soft_matching" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adaptive Soft Coefficient Matching</p>
+<p>Combines two filtered 3D-images at different resolutions and the orginal
+image. Returns the resulting combined image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>ima</strong><span class="classifier">the original (not filtered) image</span></dt><dd></dd>
+<dt><strong>fimau</strong><span class="classifier">3D double array,</span></dt><dd><p>filtered image with optimized non-local means using a small block
+(suggested:3x3), which corresponds to a “high resolution” filter.</p>
+</dd>
+<dt><strong>fimao</strong><span class="classifier">3D double array,</span></dt><dd><p>filtered image with optimized non-local means using a small block
+(suggested:5x5), which corresponds to a “low resolution” filter.</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">the estimated standard deviation of the Gaussian random variables</span></dt><dd><p>that explain the rician noise. Note: In P. Coupe et al. the
+rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is
+the pixel value and x and y are independent realizations of a
+random variable with Normal distribution, with mean=0 and
+standard deviation=h</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>fima</strong><span class="classifier">3D double array</span></dt><dd><p>output denoised array which is of the same shape as that of
+the input</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="refa1efa84d4b-coupe11"><span class="brackets"><a class="fn-backref" href="#id2">Coupe11</a></span></dt>
+<dd><p>Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+“Multiresolution Non-Local Means Filter for 3D MR Image
+Denoising” IET Image Processing, Institution of Engineering
+and Technology,
+2011</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="gibbs-removal">
+<h3>gibbs_removal<a class="headerlink" href="#gibbs-removal" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.gibbs.gibbs_removal">
+<code class="sig-prename descclassname">dipy.denoise.gibbs.</code><code class="sig-name descname">gibbs_removal</code><span class="sig-paren">(</span><em class="sig-param">vol</em>, <em class="sig-param">slice_axis=2</em>, <em class="sig-param">n_points=3</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.gibbs.gibbs_removal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Suppresses Gibbs ringing artefacts of images volumes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>vol</strong><span class="classifier">ndarray ([X, Y]), ([X, Y, Z]) or ([X, Y, Z, g])</span></dt><dd><p>Matrix containing one volume (3D) or multiple (4D) volumes of images.</p>
+</dd>
+<dt><strong>slice_axis</strong><span class="classifier">int (0, 1, or 2)</span></dt><dd><p>Data axis corresponding to the number of acquired slices.
+Default is set to the third axis.</p>
+</dd>
+<dt><strong>n_points</strong><span class="classifier">int, optional</span></dt><dd><p>Number of neighbour points to access local TV (see note).
+Default is set to 3.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>vol</strong><span class="classifier">ndarray ([X, Y]), ([X, Y, Z]) or ([X, Y, Z, g])</span></dt><dd><p>Matrix containing one volume (3D) or multiple (4D) volumes of corrected
+images.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For 4D matrix last element should always correspond to the number of
+diffusion gradient directions.</p>
+<p class="rubric">References</p>
+<p>Please cite the following articles
+.. [Rfce522a872fd-1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI Data</p>
+<blockquote>
+<div><p>Analysis and their Application to the Healthy Ageing Brain
+(Doctoral thesis). <a class="reference external" href="https://doi.org/10.17863/CAM.29356">https://doi.org/10.17863/CAM.29356</a></p>
+</div></blockquote>
+<dl class="citation">
+<dt class="label" id="rfce522a872fd-2"><span class="brackets"><a class="fn-backref" href="#id4">2</a></span></dt>
+<dd><p>Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing artifact
+removal based on local subvoxel-shifts. Magn Reson Med. 2016
+doi: 10.1002/mrm.26054.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="eigh">
+<h3>eigh<a class="headerlink" href="#eigh" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.localpca.eigh">
+<code class="sig-prename descclassname">dipy.denoise.localpca.</code><code class="sig-name descname">eigh</code><span class="sig-paren">(</span><em class="sig-param">a</em>, <em class="sig-param">b=None</em>, <em class="sig-param">lower=True</em>, <em class="sig-param">eigvals_only=False</em>, <em class="sig-param">overwrite_a=False</em>, <em class="sig-param">overwrite_b=False</em>, <em class="sig-param">turbo=True</em>, <em class="sig-param">eigvals=None</em>, <em class="sig-param">type=1</em>, <em class="sig-param">check_finite=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.localpca.eigh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Solve an ordinary or generalized eigenvalue problem for a complex
+Hermitian or real symmetric matrix.</p>
+<p>Find eigenvalues w and optionally eigenvectors v of matrix <cite>a</cite>, where
+<cite>b</cite> is positive definite:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>              <span class="n">a</span> <span class="n">v</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="n">b</span> <span class="n">v</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span>
+<span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="n">a</span> <span class="n">v</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">w</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span><span class="o">.</span><span class="n">conj</span><span class="p">()</span> <span class="n">b</span> <span class="n">v</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>a</strong><span class="classifier">(M, M) array_like</span></dt><dd><p>A complex Hermitian or real symmetric matrix whose eigenvalues and
+eigenvectors will be computed.</p>
+</dd>
+<dt><strong>b</strong><span class="classifier">(M, M) array_like, optional</span></dt><dd><p>A complex Hermitian or real symmetric definite positive matrix in.
+If omitted, identity matrix is assumed.</p>
+</dd>
+<dt><strong>lower</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether the pertinent array data is taken from the lower or upper
+triangle of <cite>a</cite>. (Default: lower)</p>
+</dd>
+<dt><strong>eigvals_only</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to calculate only eigenvalues and no eigenvectors.
+(Default: both are calculated)</p>
+</dd>
+<dt><strong>turbo</strong><span class="classifier">bool, optional</span></dt><dd><p>Use divide and conquer algorithm (faster but expensive in memory,
+only for generalized eigenvalue problem and if eigvals=None)</p>
+</dd>
+<dt><strong>eigvals</strong><span class="classifier">tuple (lo, hi), optional</span></dt><dd><p>Indexes of the smallest and largest (in ascending order) eigenvalues
+and corresponding eigenvectors to be returned: 0 &lt;= lo &lt;= hi &lt;= M-1.
+If omitted, all eigenvalues and eigenvectors are returned.</p>
+</dd>
+<dt><strong>type</strong><span class="classifier">int, optional</span></dt><dd><p>Specifies the problem type to be solved:</p>
+<blockquote>
+<div><p>type = 1: a   v[:,i] = w[i] b v[:,i]</p>
+<p>type = 2: a b v[:,i] = w[i]   v[:,i]</p>
+<p>type = 3: b a v[:,i] = w[i]   v[:,i]</p>
+</div></blockquote>
+</dd>
+<dt><strong>overwrite_a</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to overwrite data in <cite>a</cite> (may improve performance)</p>
+</dd>
+<dt><strong>overwrite_b</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to overwrite data in <cite>b</cite> (may improve performance)</p>
+</dd>
+<dt><strong>check_finite</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to check that the input matrices contain only finite numbers.
+Disabling may give a performance gain, but may result in problems
+(crashes, non-termination) if the inputs do contain infinities or NaNs.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>w</strong><span class="classifier">(N,) float ndarray</span></dt><dd><p>The N (1&lt;=N&lt;=M) selected eigenvalues, in ascending order, each
+repeated according to its multiplicity.</p>
+</dd>
+<dt><strong>v</strong><span class="classifier">(M, N) complex ndarray</span></dt><dd><p>(if eigvals_only == False)</p>
+<p>The normalized selected eigenvector corresponding to the
+eigenvalue w[i] is the column v[:,i].</p>
+<p>Normalization:</p>
+<blockquote>
+<div><p>type 1 and 3: v.conj() a      v  = w</p>
+<p>type 2: inv(v).conj() a  inv(v) = w</p>
+<p>type = 1 or 2: v.conj() b      v  = I</p>
+<p>type = 3: v.conj() inv(b) v  = I</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>LinAlgError</strong></dt><dd><p>If eigenvalue computation does not converge,
+an error occurred, or b matrix is not definite positive. Note that
+if input matrices are not symmetric or hermitian, no error is reported
+but results will be wrong.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigvalsh</span></code></dt><dd><p>eigenvalues of symmetric or Hermitian arrays</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">eig</span></code></dt><dd><p>eigenvalues and right eigenvectors for non-symmetric arrays</p>
+</dd>
+<dt><a class="reference internal" href="#dipy.denoise.localpca.eigh" title="dipy.denoise.localpca.eigh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigh</span></code></a></dt><dd><p>eigenvalues and right eigenvectors for symmetric/Hermitian arrays</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">eigh_tridiagonal</span></code></dt><dd><p>eigenvalues and right eiegenvectors for symmetric/Hermitian tridiagonal matrices</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>This function does not check the input array for being hermitian/symmetric
+in order to allow for representing arrays with only their upper/lower
+triangular parts.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="k">import</span> <span class="n">eigh</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">w</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="n">eigh</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">A</span> <span class="o">@</span> <span class="n">v</span> <span class="o">-</span> <span class="n">v</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">w</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)))</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="genpca">
+<h3>genpca<a class="headerlink" href="#genpca" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.localpca.genpca">
+<code class="sig-prename descclassname">dipy.denoise.localpca.</code><code class="sig-name descname">genpca</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">sigma=None</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">patch_radius=2</em>, <em class="sig-param">pca_method='eig'</em>, <em class="sig-param">tau_factor=None</em>, <em class="sig-param">return_sigma=False</em>, <em class="sig-param">out_dtype=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.localpca.genpca" title="Permalink to this definition">¶</a></dt>
+<dd><p>General function to perform PCA-based denoising of diffusion datasets.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>arr</strong><span class="classifier">4D array</span></dt><dd><p>Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+are the diffusion gradient directions.</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">float or 3D array (optional)</span></dt><dd><p>Standard deviation of the noise estimated from the data. If no sigma
+is given, this will be estimated based on random matrix theory
+<a class="reference internal" href="#r4bed7265c934-1" id="id5">[1]</a>,[R4bed7265c934-2]_</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D boolean array (optional)</span></dt><dd><p>A mask with voxels that are true inside the brain and false outside of
+it. The function denoises within the true part and returns zeros
+outside of those voxels.</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int (optional)</span></dt><dd><p>The radius of the local patch to be taken around each voxel (in
+voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).</p>
+</dd>
+<dt><strong>pca_method</strong><span class="classifier">‘eig’ or ‘svd’ (optional)</span></dt><dd><p>Use either eigenvalue decomposition (eig) or singular value
+decomposition (svd) for principal component analysis. The default
+method is ‘eig’ which is faster. However, occasionally ‘svd’ might be
+more accurate.</p>
+</dd>
+<dt><strong>tau_factor</strong><span class="classifier">float (optional)</span></dt><dd><p>Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
+are smaller than:</p>
+<div class="math notranslate nohighlight">
+\[\tau = (\tau_{factor} \sigma)^2\]</div>
+<p>tau_{factor} can be set to a predefined values (e.g. tau_{factor} =
+2.3 <a class="reference internal" href="#r4bed7265c934-3" id="id6">[3]</a>), or automatically calculated using random matrix theory
+(in case that tau_{factor} is set to None).
+Default: None.</p>
+</dd>
+<dt><strong>return_sigma</strong><span class="classifier">bool (optional)</span></dt><dd><p>If true, the Standard deviation of the noise will be returned.
+Default: False.</p>
+</dd>
+<dt><strong>out_dtype</strong><span class="classifier">str or dtype (optional)</span></dt><dd><p>The dtype for the output array. Default: output has the same dtype as
+the input.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">4D array</span></dt><dd><p>This is the denoised array of the same size as that of the input data,
+clipped to non-negative values</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r4bed7265c934-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id7">2</a>)</span></dt>
+<dd><p>Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+theory. Neuroimage 142:394-406.
+doi: 10.1016/j.neuroimage.2016.08.016</p>
+</dd>
+<dt class="label" id="r4bed7265c934-2"><span class="brackets"><a class="fn-backref" href="#id8">2</a></span></dt>
+<dd><p>Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+mapping using random matrix theory. Magnetic Resonance in Medicine.
+doi: 10.1002/mrm.26059.</p>
+</dd>
+<dt class="label" id="r4bed7265c934-3"><span class="brackets">3</span><span class="fn-backref">(<a href="#id6">1</a>,<a href="#id9">2</a>)</span></dt>
+<dd><p>Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
+Diffusion Weighted Image Denoising Using Overcomplete Local
+PCA. PLoS ONE 8(9): e73021.
+<a class="reference external" href="https://doi.org/10.1371/journal.pone.0073021">https://doi.org/10.1371/journal.pone.0073021</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="localpca">
+<h3>localpca<a class="headerlink" href="#localpca" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.localpca.localpca">
+<code class="sig-prename descclassname">dipy.denoise.localpca.</code><code class="sig-name descname">localpca</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">sigma</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">patch_radius=2</em>, <em class="sig-param">pca_method='eig'</em>, <em class="sig-param">tau_factor=2.3</em>, <em class="sig-param">out_dtype=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.localpca.localpca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs local PCA denoising according to Manjon et al. <a class="reference internal" href="#rc1f8d7038c98-1" id="id10">[1]</a>.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>arr</strong><span class="classifier">4D array</span></dt><dd><p>Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+are the diffusion gradient directions.</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">float or 3D array</span></dt><dd><p>Standard deviation of the noise estimated from the data.</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D boolean array (optional)</span></dt><dd><p>A mask with voxels that are true inside the brain and false outside of
+it. The function denoises within the true part and returns zeros
+outside of those voxels.</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int (optional)</span></dt><dd><p>The radius of the local patch to be taken around each voxel (in
+voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).</p>
+</dd>
+<dt><strong>pca_method</strong><span class="classifier">‘eig’ or ‘svd’ (optional)</span></dt><dd><p>Use either eigenvalue decomposition (eig) or singular value
+decomposition (svd) for principal component analysis. The default
+method is ‘eig’ which is faster. However, occasionally ‘svd’ might be
+more accurate.</p>
+</dd>
+<dt><strong>tau_factor</strong><span class="classifier">float (optional)</span></dt><dd><p>Thresholding of PCA eigenvalues is done by nulling out eigenvalues that
+are smaller than:</p>
+<div class="math notranslate nohighlight">
+\[\tau = (\tau_{factor} \sigma)^2\]</div>
+<p>tau_{factor} can be change to adjust the relationship between the
+noise standard deviation and the threshold tau. If tau_{factor} is
+set to None, it will be automatically calculated using the
+Marcenko-Pastur distribution <a class="reference internal" href="#rc1f8d7038c98-2" id="id11">[2]</a>.
+Default: 2.3 (according to <a class="reference internal" href="#rc1f8d7038c98-1" id="id12">[1]</a>)</p>
+</dd>
+<dt><strong>out_dtype</strong><span class="classifier">str or dtype (optional)</span></dt><dd><p>The dtype for the output array. Default: output has the same dtype as
+the input.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">4D array</span></dt><dd><p>This is the denoised array of the same size as that of the input data,
+clipped to non-negative values</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc1f8d7038c98-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id10">1</a>,<a href="#id12">2</a>,<a href="#id13">3</a>)</span></dt>
+<dd><p>Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
+Diffusion Weighted Image Denoising Using Overcomplete Local
+PCA. PLoS ONE 8(9): e73021.
+<a class="reference external" href="https://doi.org/10.1371/journal.pone.0073021">https://doi.org/10.1371/journal.pone.0073021</a></p>
+</dd>
+<dt class="label" id="rc1f8d7038c98-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id11">1</a>,<a href="#id14">2</a>)</span></dt>
+<dd><p>Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+theory. Neuroimage 142:394-406.
+doi: 10.1016/j.neuroimage.2016.08.016</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="mppca">
+<h3>mppca<a class="headerlink" href="#mppca" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.localpca.mppca">
+<code class="sig-prename descclassname">dipy.denoise.localpca.</code><code class="sig-name descname">mppca</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">patch_radius=2</em>, <em class="sig-param">pca_method='eig'</em>, <em class="sig-param">return_sigma=False</em>, <em class="sig-param">out_dtype=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.localpca.mppca" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs PCA-based denoising using the Marcenko-Pastur
+distribution <a class="reference internal" href="#ra3cd9ccad273-1" id="id15">[1]</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>arr</strong><span class="classifier">4D array</span></dt><dd><p>Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
+are the diffusion gradient directions.</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D boolean array (optional)</span></dt><dd><p>A mask with voxels that are true inside the brain and false outside of
+it. The function denoises within the true part and returns zeros
+outside of those voxels.</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int (optional)</span></dt><dd><p>The radius of the local patch to be taken around each voxel (in
+voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).</p>
+</dd>
+<dt><strong>pca_method</strong><span class="classifier">‘eig’ or ‘svd’ (optional)</span></dt><dd><p>Use either eigenvalue decomposition (eig) or singular value
+decomposition (svd) for principal component analysis. The default
+method is ‘eig’ which is faster. However, occasionally ‘svd’ might be
+more accurate.</p>
+</dd>
+<dt><strong>return_sigma</strong><span class="classifier">bool (optional)</span></dt><dd><p>If true, a noise standard deviation estimate based on the
+Marcenko-Pastur distribution is returned <a class="reference internal" href="#ra3cd9ccad273-2" id="id16">[2]</a>.
+Default: False.</p>
+</dd>
+<dt><strong>out_dtype</strong><span class="classifier">str or dtype (optional)</span></dt><dd><p>The dtype for the output array. Default: output has the same dtype as
+the input.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">4D array</span></dt><dd><p>This is the denoised array of the same size as that of the input data,
+clipped to non-negative values</p>
+</dd>
+<dt><strong>sigma</strong><span class="classifier">3D array (when return_sigma=True)</span></dt><dd><p>Estimate of the spatial varying standard deviation of the noise</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="ra3cd9ccad273-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id15">2</a>,<a href="#id17">3</a>)</span></dt>
+<dd><p>Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+theory. Neuroimage 142:394-406.
+doi: 10.1016/j.neuroimage.2016.08.016</p>
+</dd>
+<dt class="label" id="ra3cd9ccad273-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id16">1</a>,<a href="#id18">2</a>)</span></dt>
+<dd><p>Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+mapping using random matrix theory. Magnetic Resonance in Medicine.
+doi: 10.1002/mrm.26059.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="nlmeans">
+<h3>nlmeans<a class="headerlink" href="#nlmeans" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.nlmeans.nlmeans">
+<code class="sig-prename descclassname">dipy.denoise.nlmeans.</code><code class="sig-name descname">nlmeans</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">sigma</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">patch_radius=1</em>, <em class="sig-param">block_radius=5</em>, <em class="sig-param">rician=True</em>, <em class="sig-param">num_threads=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.nlmeans.nlmeans" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non-local means for denoising 3D and 4D images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>arr</strong><span class="classifier">3D or 4D ndarray</span></dt><dd><p>The array to be denoised</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D ndarray</span></dt><dd></dd>
+<dt><strong>sigma</strong><span class="classifier">float or 3D array</span></dt><dd><p>standard deviation of the noise estimated from the data</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int</span></dt><dd><p>patch size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">patch_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 1.</p>
+</dd>
+<dt><strong>block_radius</strong><span class="classifier">int</span></dt><dd><p>block size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">block_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 5.</p>
+</dd>
+<dt><strong>rician</strong><span class="classifier">boolean</span></dt><dd><p>If True the noise is estimated as Rician, otherwise Gaussian noise
+is assumed.</p>
+</dd>
+<dt><strong>num_threads</strong><span class="classifier">int</span></dt><dd><p>Number of threads. If None (default) then all available threads
+will be used (all CPU cores).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">ndarray</span></dt><dd><p>the denoised <code class="docutils literal notranslate"><span class="pre">arr</span></code> which has the same shape as <code class="docutils literal notranslate"><span class="pre">arr</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r764c162eb15f-descoteaux08"><span class="brackets"><a class="fn-backref" href="#id19">Descoteaux08</a></span></dt>
+<dd><p>Descoteaux, Maxime and Wiest-Daesslé, Nicolas and Prima,
+Sylvain and Barillot, Christian and Deriche, Rachid
+Impact of Rician Adapted Non-Local Means Filtering on
+HARDI, MICCAI 2008</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="nlmeans-3d">
+<h3>nlmeans_3d<a class="headerlink" href="#nlmeans-3d" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.nlmeans.nlmeans_3d">
+<code class="sig-prename descclassname">dipy.denoise.nlmeans.</code><code class="sig-name descname">nlmeans_3d</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.nlmeans.nlmeans_3d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non-local means for denoising 3D images</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>arr</strong><span class="classifier">3D ndarray</span></dt><dd><p>The array to be denoised</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D ndarray</span></dt><dd></dd>
+<dt><strong>sigma</strong><span class="classifier">float or 3D array</span></dt><dd><p>standard deviation of the noise estimated from the data</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int</span></dt><dd><p>patch size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">patch_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 1.</p>
+</dd>
+<dt><strong>block_radius</strong><span class="classifier">int</span></dt><dd><p>block size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">block_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 5.</p>
+</dd>
+<dt><strong>rician</strong><span class="classifier">boolean</span></dt><dd><p>If True the noise is estimated as Rician, otherwise Gaussian noise
+is assumed.</p>
+</dd>
+<dt><strong>num_threads</strong><span class="classifier">int</span></dt><dd><p>Number of threads. If None (default) then all available threads
+will be used.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">ndarray</span></dt><dd><p>the denoised <code class="docutils literal notranslate"><span class="pre">arr</span></code> which has the same shape as <code class="docutils literal notranslate"><span class="pre">arr</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="convolve">
+<h3>convolve<a class="headerlink" href="#convolve" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.noise_estimate.convolve">
+<code class="sig-prename descclassname">dipy.denoise.noise_estimate.</code><code class="sig-name descname">convolve</code><span class="sig-paren">(</span><em class="sig-param">input</em>, <em class="sig-param">weights</em>, <em class="sig-param">output=None</em>, <em class="sig-param">mode='reflect'</em>, <em class="sig-param">cval=0.0</em>, <em class="sig-param">origin=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.noise_estimate.convolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multidimensional convolution.</p>
+<p>The array is convolved with the given kernel.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>input</strong><span class="classifier">array_like</span></dt><dd><p>The input array.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">array_like</span></dt><dd><p>Array of weights, same number of dimensions as input</p>
+</dd>
+<dt><strong>output</strong><span class="classifier">array or dtype, optional</span></dt><dd><p>The array in which to place the output, or the dtype of the
+returned array. By default an array of the same dtype as input
+will be created.</p>
+</dd>
+<dt><strong>mode</strong><span class="classifier">str or sequence, optional</span></dt><dd><p>The <cite>mode</cite> parameter determines how the input array is extended
+when the filter overlaps a border. By passing a sequence of modes
+with length equal to the number of dimensions of the input array,
+different modes can be specified along each axis. Default value is
+‘reflect’. The valid values and their behavior is as follows:</p>
+<dl class="simple">
+<dt>‘reflect’ (<cite>d c b a | a b c d | d c b a</cite>)</dt><dd><p>The input is extended by reflecting about the edge of the last
+pixel.</p>
+</dd>
+<dt>‘constant’ (<cite>k k k k | a b c d | k k k k</cite>)</dt><dd><p>The input is extended by filling all values beyond the edge with
+the same constant value, defined by the <cite>cval</cite> parameter.</p>
+</dd>
+<dt>‘nearest’ (<cite>a a a a | a b c d | d d d d</cite>)</dt><dd><p>The input is extended by replicating the last pixel.</p>
+</dd>
+<dt>‘mirror’ (<cite>d c b | a b c d | c b a</cite>)</dt><dd><p>The input is extended by reflecting about the center of the last
+pixel.</p>
+</dd>
+<dt>‘wrap’ (<cite>a b c d | a b c d | a b c d</cite>)</dt><dd><p>The input is extended by wrapping around to the opposite edge.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>cval</strong><span class="classifier">scalar, optional</span></dt><dd><p>Value to fill past edges of input if <cite>mode</cite> is ‘constant’. Default
+is 0.0</p>
+</dd>
+<dt><strong>origin</strong><span class="classifier">int or sequence, optional</span></dt><dd><p>Controls the placement of the filter on the input array’s pixels.
+A value of 0 (the default) centers the filter over the pixel, with
+positive values shifting the filter to the left, and negative ones
+to the right. By passing a sequence of origins with length equal to
+the number of dimensions of the input array, different shifts can
+be specified along each axis.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>result</strong><span class="classifier">ndarray</span></dt><dd><p>The result of convolution of <cite>input</cite> with <cite>weights</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">correlate</span></code></dt><dd><p>Correlate an image with a kernel.</p>
+</dd>
+</dl>
+</div>
+<p class="rubric">Notes</p>
+<p>Each value in result is <span class="math notranslate nohighlight">\(C_i = \sum_j{I_{i+k-j} W_j}\)</span>, where
+W is the <cite>weights</cite> kernel,
+j is the n-D spatial index over <span class="math notranslate nohighlight">\(W\)</span>,
+I is the <cite>input</cite> and k is the coordinate of the center of
+W, specified by <cite>origin</cite> in the input parameters.</p>
+<p class="rubric">Examples</p>
+<p>Perhaps the simplest case to understand is <code class="docutils literal notranslate"><span class="pre">mode='constant',</span> <span class="pre">cval=0.0</span></code>,
+because in this case borders (i.e. where the <cite>weights</cite> kernel, centered
+on any one value, extends beyond an edge of <cite>input</cite>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">ndimage</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="go">array([[11, 10,  7,  4],</span>
+<span class="go">       [10,  3, 11, 11],</span>
+<span class="go">       [15, 12, 14,  7],</span>
+<span class="go">       [12,  3,  7,  0]])</span>
+</pre></div>
+</div>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">cval=1.0</span></code> is equivalent to padding the outer edge of <cite>input</cite>
+with 1.0’s (and then extracting only the original region of the result).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="go">array([[13, 11,  8,  7],</span>
+<span class="go">       [11,  3, 11, 14],</span>
+<span class="go">       [16, 12, 14, 10],</span>
+<span class="go">       [15,  6, 10,  5]])</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">mode='reflect'</span></code> (the default), outer values are reflected at the
+edge of <cite>input</cite> to fill in missing values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;reflect&#39;</span><span class="p">)</span>
+<span class="go">array([[5, 0, 0],</span>
+<span class="go">       [3, 0, 0],</span>
+<span class="go">       [1, 0, 0]])</span>
+</pre></div>
+</div>
+<p>This includes diagonally at the corners.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+<span class="go">array([[4, 2, 0],</span>
+<span class="go">       [3, 2, 0],</span>
+<span class="go">       [1, 1, 0]])</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">mode='nearest'</span></code>, the single nearest value in to an edge in
+<cite>input</cite> is repeated as many times as needed to match the overlapping
+<cite>weights</cite>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+<span class="gp">... </span>              <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+<span class="go">array([[7, 0, 3],</span>
+<span class="go">       [5, 0, 2],</span>
+<span class="go">       [3, 0, 1]])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="estimate-sigma">
+<h3>estimate_sigma<a class="headerlink" href="#estimate-sigma" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.noise_estimate.estimate_sigma">
+<code class="sig-prename descclassname">dipy.denoise.noise_estimate.</code><code class="sig-name descname">estimate_sigma</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">disable_background_masking=False</em>, <em class="sig-param">N=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.noise_estimate.estimate_sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard deviation estimation from local patches</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>arr</strong><span class="classifier">3D or 4D ndarray</span></dt><dd><p>The array to be estimated</p>
+</dd>
+<dt><strong>disable_background_masking</strong><span class="classifier">bool, default False</span></dt><dd><p>If True, uses all voxels for the estimation, otherwise, only non-zeros
+voxels are used. Useful if the background is masked by the scanner.</p>
+</dd>
+<dt><strong>N</strong><span class="classifier">int, default 0</span></dt><dd><p>Number of coils of the receiver array. Use N = 1 in case of a SENSE
+reconstruction (Philips scanners) or the number of coils for a GRAPPA
+reconstruction (Siemens and GE). Use 0 to disable the correction factor,
+as for example if the noise is Gaussian distributed. See [1] for more
+information.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>sigma</strong><span class="classifier">ndarray</span></dt><dd><p>standard deviation of the noise, one estimation per volume.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function is the same as manually taking the standard deviation of the
+background and gives one value for the whole 3D array.
+It also includes the coil-dependent correction factor of Koay 2006
+(see <a class="reference internal" href="#rcc704f07ad21-1" id="id20">[1]</a>, equation 18) with theta = 0.
+Since this function was introduced in <a class="reference internal" href="#rcc704f07ad21-2" id="id21">[2]</a> for T1 imaging,
+it is expected to perform ok on diffusion MRI data, but might oversmooth
+some regions and leave others un-denoised for spatially varying noise
+profiles. Consider using <a class="reference internal" href="#dipy.denoise.noise_estimate.piesno" title="dipy.denoise.noise_estimate.piesno"><code class="xref py py-func docutils literal notranslate"><span class="pre">piesno()</span></code></a> to estimate sigma instead if visual
+inaccuracies are apparent in the denoised result.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rcc704f07ad21-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id20">1</a>,<a href="#id22">2</a>)</span></dt>
+<dd><p>Koay, C. G., &amp; Basser, P. J. (2006). Analytically exact correction</p>
+</dd>
+</dl>
+<p>scheme for signal extraction from noisy magnitude MR signals.
+Journal of Magnetic Resonance), 179(2), 317-22.</p>
+<dl class="citation">
+<dt class="label" id="rcc704f07ad21-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id21">1</a>,<a href="#id23">2</a>)</span></dt>
+<dd><p>Coupe, P., Yger, P., Prima, S., Hellier, P., Kervrann, C., Barillot,</p>
+</dd>
+</dl>
+<p>C., 2008. An optimized blockwise nonlocal means denoising filter for 3-D
+magnetic resonance images, IEEE Trans. Med. Imaging 27, 425-41.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="piesno">
+<h3>piesno<a class="headerlink" href="#piesno" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.noise_estimate.piesno">
+<code class="sig-prename descclassname">dipy.denoise.noise_estimate.</code><code class="sig-name descname">piesno</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">N</em>, <em class="sig-param">alpha=0.01</em>, <em class="sig-param">l=100</em>, <em class="sig-param">itermax=100</em>, <em class="sig-param">eps=1e-05</em>, <em class="sig-param">return_mask=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.noise_estimate.piesno" title="Permalink to this definition">¶</a></dt>
+<dd><p>Probabilistic Identification and Estimation of Noise (PIESNO).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">ndarray</span></dt><dd><p>The magnitude signals to analyse. The last dimension must contain the
+same realisation of the volume, such as dMRI or fMRI data.</p>
+</dd>
+<dt><strong>N</strong><span class="classifier">int</span></dt><dd><p>The number of phase array coils of the MRI scanner.
+If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the
+noise profile is always Rician.
+If your scanner does a GRAPPA reconstruction, set N as the number
+of phase array coils.</p>
+</dd>
+<dt><strong>alpha</strong><span class="classifier">float</span></dt><dd><p>Probabilistic estimation threshold for the gamma function.</p>
+</dd>
+<dt><strong>l</strong><span class="classifier">int</span></dt><dd><p>number of initial estimates for sigma to try.</p>
+</dd>
+<dt><strong>itermax</strong><span class="classifier">int</span></dt><dd><p>Maximum number of iterations to execute if convergence
+is not reached.</p>
+</dd>
+<dt><strong>eps</strong><span class="classifier">float</span></dt><dd><p>Tolerance for the convergence criterion. Convergence is
+reached if two subsequent estimates are smaller than eps.</p>
+</dd>
+<dt><strong>return_mask</strong><span class="classifier">bool</span></dt><dd><p>If True, return a mask identifying all the pure noise voxel
+that were found.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>sigma</strong><span class="classifier">float</span></dt><dd><p>The estimated standard deviation of the gaussian noise.</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">ndarray (optional)</span></dt><dd><p>A boolean mask indicating the voxels identified as pure noise.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This function assumes two things : 1. The data has a noisy, non-masked
+background and 2. The data is a repetition of the same measurements
+along the last axis, i.e. dMRI or fMRI data, not structural data like
+T1/T2.</p>
+<p>This function processes the data slice by slice, as originally designed in
+the paper. Use it to get a slice by slice estimation of the noise, as in
+spinal cord imaging for example.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc7d3e0e673f9-1"><span class="brackets"><a class="fn-backref" href="#id24">1</a></span></dt>
+<dd><p>Koay CG, Ozarslan E and Pierpaoli C.</p>
+</dd>
+</dl>
+<p>“Probabilistic Identification and Estimation of Noise (PIESNO):
+A self-consistent approach and its applications in MRI.”
+Journal of Magnetic Resonance 2009; 199: 94-103.</p>
+<dl class="citation">
+<dt class="label" id="rc7d3e0e673f9-2"><span class="brackets"><a class="fn-backref" href="#id25">2</a></span></dt>
+<dd><p>Koay CG, Ozarslan E and Basser PJ.</p>
+</dd>
+</dl>
+<p>“A signal transformational framework for breaking the noise floor
+and its applications in MRI.”
+Journal of Magnetic Resonance 2009; 197: 108-119.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="nlmeans-block">
+<h3>nlmeans_block<a class="headerlink" href="#nlmeans-block" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.non_local_means.nlmeans_block">
+<code class="sig-prename descclassname">dipy.denoise.non_local_means.</code><code class="sig-name descname">nlmeans_block</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.non_local_means.nlmeans_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Non-Local Means Denoising Using Blockwise Averaging</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>image</strong><span class="classifier">3D array of doubles</span></dt><dd><p>the input image, corrupted with rician noise</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D array of doubles</span></dt><dd><p>the input mask</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int</span></dt><dd><p>similar patches in the non-local means are searched for locally,
+inside a cube of side 2*v+1 centered at each voxel of interest.</p>
+</dd>
+<dt><strong>block_radius</strong><span class="classifier">int</span></dt><dd><p>the size of the block to be used (2*f+1)x(2*f+1)x(2*f+1) in the
+blockwise non-local means implementation (the Coupe’s proposal).</p>
+</dd>
+<dt><strong>h</strong><span class="classifier">double</span></dt><dd><p>the estimated amount of rician noise in the input image: in P.
+Coupe et al. the rician noise was simulated as
+sqrt((f+x)^2 + (y)^2) where f is the pixel value and x and y are
+independent realizations of a random variable with Normal
+distribution, with mean=0 and standard deviation=h</p>
+</dd>
+<dt><strong>rician</strong><span class="classifier">boolean</span></dt><dd><p>If True the noise is estimated as Rician, otherwise Gaussian noise
+is assumed.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>fima: 3D double array</strong></dt><dd><p>the denoised output which has the same shape as input image.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="simple">
+<dt>[1] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,</dt><dd><p>“An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
+Resonance Images”
+IEEE Transactions on Medical Imaging, 27(4):425-441, 2008</p>
+</dd>
+<dt>[2] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.</dt><dd><p>“Multiresolution Non-Local Means Filter for 3D MR Image Denoising”
+IET Image Processing, Institution of Engineering and Technology, 2011</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="non-local-means">
+<h3>non_local_means<a class="headerlink" href="#non-local-means" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.denoise.non_local_means.non_local_means">
+<code class="sig-prename descclassname">dipy.denoise.non_local_means.</code><code class="sig-name descname">non_local_means</code><span class="sig-paren">(</span><em class="sig-param">arr</em>, <em class="sig-param">sigma</em>, <em class="sig-param">mask=None</em>, <em class="sig-param">patch_radius=1</em>, <em class="sig-param">block_radius=5</em>, <em class="sig-param">rician=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.denoise.non_local_means.non_local_means" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Non-local means for denoising 3D and 4D images, using</dt><dd><p>blockwise averaging approach</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>arr</strong><span class="classifier">3D or 4D ndarray</span></dt><dd><p>The array to be denoised</p>
+</dd>
+<dt><strong>mask</strong><span class="classifier">3D ndarray</span></dt><dd></dd>
+<dt><strong>sigma</strong><span class="classifier">float</span></dt><dd><p>standard deviation of the noise estimated from the data</p>
+</dd>
+<dt><strong>patch_radius</strong><span class="classifier">int</span></dt><dd><p>patch size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">patch_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 1.</p>
+</dd>
+<dt><strong>block_radius</strong><span class="classifier">int</span></dt><dd><p>block size is <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">x</span> <span class="pre">block_radius</span> <span class="pre">+</span> <span class="pre">1</span></code>. Default is 5.</p>
+</dd>
+<dt><strong>rician</strong><span class="classifier">boolean</span></dt><dd><p>If True the noise is estimated as Rician, otherwise Gaussian noise
+is assumed.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>denoised_arr</strong><span class="classifier">ndarray</span></dt><dd><p>the denoised <code class="docutils literal notranslate"><span class="pre">arr</span></code> which has the same shape as <code class="docutils literal notranslate"><span class="pre">arr</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rad5f4d89a56a-coupe08"><span class="brackets"><a class="fn-backref" href="#id26">Coupe08</a></span></dt>
+<dd><p>P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
+Barillot, An Optimized Blockwise Non Local Means Denoising
+Filter for 3D Magnetic Resonance Images, IEEE Transactions on
+Medical Imaging, 27(4):425-441, 2008</p>
+</dd>
+<dt class="label" id="rad5f4d89a56a-coupe11"><span class="brackets"><a class="fn-backref" href="#id27">Coupe11</a></span></dt>
+<dd><p>Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+Adaptive Multiresolution Non-Local Means Filter for 3D MR Image
+Denoising IET Image Processing, Institution of Engineering and
+Technology, 2011</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.direction.html" title="direction"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy.data.html" title="data"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

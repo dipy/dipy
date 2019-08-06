@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/viz_advanced.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="advanced-interactive-visualization">
+<span id="example-viz-advanced"></span><h1>Advanced interactive visualization<a class="headerlink" href="#advanced-interactive-visualization" title="Permalink to this headline">¶</a></h1>
+<p>In <a class="reference external" href="http://dipy.org">DIPY</a> we created a thin interface to access many of the capabilities
+available in the Visualization Toolkit framework (VTK) but tailored to the
+needs of structural and diffusion imaging. Initially the 3D visualization
+module was named <code class="docutils literal notranslate"><span class="pre">fvtk</span></code>, meaning functions using vtk. This is not available
+anymore.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">actor</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">ui</span>
+</pre></div>
+</div>
+<p>In <code class="docutils literal notranslate"><span class="pre">window</span></code> we have all the objects that connect what needs to be rendered
+to the display or the disk e.g., for saving screenshots. So, there you will
+find key objects and functions like the <code class="docutils literal notranslate"><span class="pre">Renderer</span></code> class which holds and
+provides access to all the actors and the <code class="docutils literal notranslate"><span class="pre">show</span></code> function which displays what
+is in the renderer on a window. Also, this module provides access to functions
+for opening/saving dialogs and printing screenshots (see <code class="docutils literal notranslate"><span class="pre">snapshot</span></code>).</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">actor</span></code> module we can find all the different primitives e.g.,
+streamtubes, lines, image slices, etc.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">ui</span></code> module we have some other objects which allow to add buttons
+and sliders and these interact both with windows and actors. Because of this
+they need input from the operating system so they can process events.</p>
+<p>Let’s get started. In this tutorial, we will visualize some bundles
+together with FA or T1. We will be able to change the slices using
+a <code class="docutils literal notranslate"><span class="pre">LineSlider2D</span></code> widget.</p>
+<p>First we need to fetch and load some datasets.</p>
+<dl>
+<dt>::</dt><dd><p>from dipy.tracking.streamline import Streamlines
+from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects</p>
+<p>fetch_bundles_2_subjects()</p>
+</dd>
+</dl>
+<p>The following function outputs a dictionary with the required bundles e.g. <code class="docutils literal notranslate"><span class="pre">af</span>
+<span class="pre">left</span></code> (left arcuate fasciculus) and maps, e.g. FA for a specific subject.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">res</span> <span class="o">=</span> <span class="n">read_bundles_2_subjects</span><span class="p">(</span><span class="s1">&#39;subj_1&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;t1&#39;</span><span class="p">,</span> <span class="s1">&#39;fa&#39;</span><span class="p">],</span>
+                              <span class="p">[</span><span class="s1">&#39;af.left&#39;</span><span class="p">,</span> <span class="s1">&#39;cst.right&#39;</span><span class="p">,</span> <span class="s1">&#39;cc_1&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>We will use 3 bundles, FA and the affine transformation that brings the voxel
+coordinates to world coordinates (RAS 1mm).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;af.left&#39;</span><span class="p">])</span>
+<span class="n">streamlines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;cst.right&#39;</span><span class="p">])</span>
+<span class="n">streamlines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s1">&#39;cc_1&#39;</span><span class="p">])</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;fa&#39;</span><span class="p">]</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>With our current design it is easy to decide in which space you want the
+streamlines and slices to appear. The default we have here is to appear in
+world coordinates (RAS 1mm).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">world_coords</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>If we want to see the objects in native space we need to make sure that all
+objects which are currently in world coordinates are transformed back to
+native space using the inverse of the affine.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="ow">not</span> <span class="n">world_coords</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">transform_streamlines</span>
+    <span class="n">streamlines</span> <span class="o">=</span> <span class="n">transform_streamlines</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">affine</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Now we create, a <code class="docutils literal notranslate"><span class="pre">Renderer</span></code> object and add the streamlines using the <code class="docutils literal notranslate"><span class="pre">line</span></code>
+function and an image plane using the <code class="docutils literal notranslate"><span class="pre">slice</span></code> function.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">stream_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">world_coords</span><span class="p">:</span>
+    <span class="n">image_actor_z</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">slicer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">image_actor_z</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">slicer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">affine</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can also change also the opacity of the slicer.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">slicer_opacity</span> <span class="o">=</span> <span class="mf">0.6</span>
+<span class="n">image_actor_z</span><span class="o">.</span><span class="n">opacity</span><span class="p">(</span><span class="n">slicer_opacity</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can add additonal slicers by copying the original and adjusting the
+<code class="docutils literal notranslate"><span class="pre">display_extent</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">image_actor_x</span> <span class="o">=</span> <span class="n">image_actor_z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">x_midpoint</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">image_actor_x</span><span class="o">.</span><span class="n">display_extent</span><span class="p">(</span><span class="n">x_midpoint</span><span class="p">,</span>
+                             <span class="n">x_midpoint</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                             <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="mi">0</span><span class="p">,</span>
+                             <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">image_actor_y</span> <span class="o">=</span> <span class="n">image_actor_z</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">y_midpoint</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">image_actor_y</span><span class="o">.</span><span class="n">display_extent</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span>
+                             <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="n">y_midpoint</span><span class="p">,</span>
+                             <span class="n">y_midpoint</span><span class="p">,</span>
+                             <span class="mi">0</span><span class="p">,</span>
+                             <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Connect the actors with the Renderer.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stream_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">image_actor_z</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">image_actor_x</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">image_actor_y</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we would like to change the position of each <code class="docutils literal notranslate"><span class="pre">image_actor</span></code> using a
+slider. The sliders are widgets which require access to different areas of the
+visualization pipeline and therefore we don’t recommend using them with
+<code class="docutils literal notranslate"><span class="pre">show</span></code>. The more appropriate way is to use them with the <code class="docutils literal notranslate"><span class="pre">ShowManager</span></code>
+object which allows accessing the pipeline in different areas. Here is how:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">show_m</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">ShowManager</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1200</span><span class="p">,</span> <span class="mi">900</span><span class="p">))</span>
+<span class="n">show_m</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>After we have initialized the <code class="docutils literal notranslate"><span class="pre">ShowManager</span></code> we can go ahead and create
+sliders to move the slices and change their opacity.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">line_slider_z</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">LineSlider2D</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">max_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                <span class="n">initial_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                <span class="n">text_template</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{value:.0f}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">length</span><span class="o">=</span><span class="mi">140</span><span class="p">)</span>
+
+<span class="n">line_slider_x</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">LineSlider2D</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">max_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                <span class="n">initial_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                <span class="n">text_template</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{value:.0f}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">length</span><span class="o">=</span><span class="mi">140</span><span class="p">)</span>
+
+<span class="n">line_slider_y</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">LineSlider2D</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">max_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                <span class="n">initial_value</span><span class="o">=</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                <span class="n">text_template</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{value:.0f}</span><span class="s2">&quot;</span><span class="p">,</span>
+                                <span class="n">length</span><span class="o">=</span><span class="mi">140</span><span class="p">)</span>
+
+<span class="n">opacity_slider</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">LineSlider2D</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                                 <span class="n">max_value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                                 <span class="n">initial_value</span><span class="o">=</span><span class="n">slicer_opacity</span><span class="p">,</span>
+                                 <span class="n">length</span><span class="o">=</span><span class="mi">140</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we will write callbacks for the sliders and register them.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">change_slice_z</span><span class="p">(</span><span class="n">slider</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">slider</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+    <span class="n">image_actor_z</span><span class="o">.</span><span class="n">display_extent</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">change_slice_x</span><span class="p">(</span><span class="n">slider</span><span class="p">):</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">slider</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+    <span class="n">image_actor_x</span><span class="o">.</span><span class="n">display_extent</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">change_slice_y</span><span class="p">(</span><span class="n">slider</span><span class="p">):</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">slider</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+    <span class="n">image_actor_y</span><span class="o">.</span><span class="n">display_extent</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">change_opacity</span><span class="p">(</span><span class="n">slider</span><span class="p">):</span>
+    <span class="n">slicer_opacity</span> <span class="o">=</span> <span class="n">slider</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">image_actor_z</span><span class="o">.</span><span class="n">opacity</span><span class="p">(</span><span class="n">slicer_opacity</span><span class="p">)</span>
+    <span class="n">image_actor_x</span><span class="o">.</span><span class="n">opacity</span><span class="p">(</span><span class="n">slicer_opacity</span><span class="p">)</span>
+    <span class="n">image_actor_y</span><span class="o">.</span><span class="n">opacity</span><span class="p">(</span><span class="n">slicer_opacity</span><span class="p">)</span>
+
+
+<span class="n">line_slider_z</span><span class="o">.</span><span class="n">on_change</span> <span class="o">=</span> <span class="n">change_slice_z</span>
+<span class="n">line_slider_x</span><span class="o">.</span><span class="n">on_change</span> <span class="o">=</span> <span class="n">change_slice_x</span>
+<span class="n">line_slider_y</span><span class="o">.</span><span class="n">on_change</span> <span class="o">=</span> <span class="n">change_slice_y</span>
+<span class="n">opacity_slider</span><span class="o">.</span><span class="n">on_change</span> <span class="o">=</span> <span class="n">change_opacity</span>
+</pre></div>
+</div>
+<p>We’ll also create text labels to identify the sliders.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build_label</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+    <span class="n">label</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">TextBlock2D</span><span class="p">()</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">text</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">font_size</span> <span class="o">=</span> <span class="mi">18</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">font_family</span> <span class="o">=</span> <span class="s1">&#39;Arial&#39;</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">justification</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">bold</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">italic</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">shadow</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">background</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">label</span><span class="o">.</span><span class="n">color</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">label</span>
+
+
+<span class="n">line_slider_label_z</span> <span class="o">=</span> <span class="n">build_label</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Z Slice&quot;</span><span class="p">)</span>
+<span class="n">line_slider_label_x</span> <span class="o">=</span> <span class="n">build_label</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;X Slice&quot;</span><span class="p">)</span>
+<span class="n">line_slider_label_y</span> <span class="o">=</span> <span class="n">build_label</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Y Slice&quot;</span><span class="p">)</span>
+<span class="n">opacity_slider_label</span> <span class="o">=</span> <span class="n">build_label</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">&quot;Opacity&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we will create a <code class="docutils literal notranslate"><span class="pre">panel</span></code> to contain the sliders and labels.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">panel</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">Panel2D</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+                   <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                   <span class="n">opacity</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                   <span class="n">align</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1030</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span>
+
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_label_x</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_x</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_label_y</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_y</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_label_z</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">line_slider_z</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">opacity_slider_label</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">))</span>
+<span class="n">panel</span><span class="o">.</span><span class="n">add_element</span><span class="p">(</span><span class="n">opacity_slider</span><span class="p">,</span> <span class="p">(</span><span class="mf">0.38</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">))</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">panel</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then, we can render all the widgets and everything else in the screen and
+start the interaction using <code class="docutils literal notranslate"><span class="pre">show_m.start()</span></code>.</p>
+<p>However, if you change the window size, the panel will not update its position
+properly. The solution to this issue is to update the position of the panel
+using its <code class="docutils literal notranslate"><span class="pre">re_align</span></code> method every time the window size changes.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">global</span> <span class="n">size</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">ren</span><span class="o">.</span><span class="n">GetSize</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">win_callback</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">size</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">!=</span> <span class="n">obj</span><span class="o">.</span><span class="n">GetSize</span><span class="p">():</span>
+        <span class="n">size_old</span> <span class="o">=</span> <span class="n">size</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">GetSize</span><span class="p">()</span>
+        <span class="n">size_change</span> <span class="o">=</span> <span class="p">[</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">size_old</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">panel</span><span class="o">.</span><span class="n">re_align</span><span class="p">(</span><span class="n">size_change</span><span class="p">)</span>
+
+
+<span class="n">show_m</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Finally, please set the following variable to <code class="docutils literal notranslate"><span class="pre">True</span></code> to interact with the
+datasets in 3D.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">zoom</span><span class="p">(</span><span class="mf">1.5</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">reset_clipping_range</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+
+    <span class="n">show_m</span><span class="o">.</span><span class="n">add_window_callback</span><span class="p">(</span><span class="n">win_callback</span><span class="p">)</span>
+    <span class="n">show_m</span><span class="o">.</span><span class="n">render</span><span class="p">()</span>
+    <span class="n">show_m</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="k">else</span><span class="p">:</span>
+
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;bundles_and_3_slices.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1200</span><span class="p">,</span> <span class="mi">900</span><span class="p">),</span>
+                  <span class="n">reset_camera</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/bundles_and_3_slices.png" src="../_images/bundles_and_3_slices.png" />
+<p class="caption"><span class="caption-text">A few bundles with interactive slicing.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">del</span> <span class="n">show_m</span>
+</pre></div>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/2bcd6eddf3f46e5d3fb2eaa26ae0ec27/viz_advanced.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

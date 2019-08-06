@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Denoise images using the Marcenko-Pastur PCA algorithm</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/denoise_mppca.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="denoise-images-using-the-marcenko-pastur-pca-algorithm">
+<span id="example-denoise-mppca"></span><h1>Denoise images using the Marcenko-Pastur PCA algorithm<a class="headerlink" href="#denoise-images-using-the-marcenko-pastur-pca-algorithm" title="Permalink to this headline">¶</a></h1>
+<p>The PCA-based denoising algorithm exploits the redundancy across the
+diffusion-weighted images <a class="reference internal" href="#manjon2013" id="id1"><span>[Manjon2013]</span></a>, <span id="id2">[Veraart2016a]</span>. This algorithm has
+been shown to provide an optimal compromise between noise suppression and loss
+of anatomical information for different techniques such as DTI <a class="reference internal" href="#manjon2013" id="id3"><span>[Manjon2013]</span></a>,
+spherical deconvolution [Veraart2016a] and DKI <a class="reference internal" href="#henri2018" id="id4"><span>[Henri2018]</span></a>.</p>
+<p>The basic idea behind the PCA-based denoising algorithms is to remove the
+components of the data that are classified as noise. The Principal Components
+classification can be performed based on prior noise variance estimates
+<a class="reference internal" href="#manjon2013" id="id5"><span>[Manjon2013]</span></a> (see <span class="xref std std-ref">denoise_localpca</span>) or automatically based on the
+Marcenko-Pastur distribution <a class="reference internal" href="#veraa2016a" id="id6"><span>[Veraa2016a]</span></a>. In addition to noise
+suppression, the PCA algorithm can be used to get the standard deviation of
+the noise <a class="reference internal" href="#veraa2016b" id="id7"><span>[Veraa2016b]</span></a>.</p>
+<p>In the following example, we show how to denoise diffusion MRI images and
+estimate the noise standard deviation using the PCA algorithm based
+on the Marcenko-Pastur distribution [Veraa2016a]</p>
+<p>Let’s load the necessary modules</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># load general modules</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">time</span>
+
+<span class="c1"># load main pca function using Marcenko-Pastur distribution</span>
+<span class="kn">from</span> <span class="nn">dipy.denoise.localpca</span> <span class="k">import</span> <span class="n">mppca</span>
+
+<span class="c1"># load functions to fetch data for this example</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="p">(</span><span class="n">fetch_cfin_multib</span><span class="p">,</span> <span class="n">read_cfin_dwi</span><span class="p">)</span>
+
+<span class="c1"># load other dipy&#39;s functions that will be used for auxiliar analysis</span>
+<span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dki</span> <span class="k">as</span> <span class="nn">dki</span>
+</pre></div>
+</div>
+<p>For this example, we use fetch to download a multi-shell dataset which was
+kindly provided by Hansen and Jespersen (more details about the data are
+provided in their paper <a class="reference internal" href="reconst_msdki.html#hansen2016" id="id8"><span>[Hansen2016]</span></a>). The total size of the downloaded data
+is 192 MBytes, however you only need to fetch it once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cfin_multib</span><span class="p">()</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cfin_dwi</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>For the sake of simplicity, we only select two non-zero b-values for this
+example.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bvals</span> <span class="o">=</span> <span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span>
+
+<span class="n">bvecs</span> <span class="o">=</span> <span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span>
+
+<span class="n">sel_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">bvals</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">bvals</span> <span class="o">==</span> <span class="mi">1000</span><span class="p">),</span> <span class="n">bvals</span> <span class="o">==</span> <span class="mi">2000</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">sel_b</span><span class="p">]</span>
+
+<span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">[</span><span class="n">sel_b</span><span class="p">],</span> <span class="n">bvecs</span><span class="p">[</span><span class="n">sel_b</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As one can see from its shape, the selected data contains a total of 67
+volumes of images corresponding to all the diffusion gradient directions
+of the selected b-values.</p>
+<p>The PCA denoising using the Marcenko-Pastur distribution can be performed by
+calling the function <code class="docutils literal notranslate"><span class="pre">mppca</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+<span class="n">denoised_arr</span> <span class="o">=</span> <span class="n">mppca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">patch_radius</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Time taken for local MP-PCA &quot;</span><span class="p">,</span> <span class="o">-</span><span class="n">t</span> <span class="o">+</span> <span class="n">time</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Internally, the <code class="docutils literal notranslate"><span class="pre">mppca</span></code> algorithm denoises the diffusion-weighted data
+using a 3D sliding window which is defined by the variable patch_radius.
+In total, this window should comprise a larger number of voxels than the number
+of diffusion-weighted volumes. Since our data has a total of 67 volumes, the
+patch_radius is set to 2 which corresponds to a 5x5x5 sliding window
+comprising a total of 125 voxels.</p>
+<p>To assess the performance of the Marcenko-Pastur PCA denosing algorithm,
+an axial slice of the original data, denoised data, and residuals are plotted
+below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sli</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+<span class="n">gra</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span>
+<span class="n">orig</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">,</span> <span class="n">gra</span><span class="p">]</span>
+<span class="n">den</span> <span class="o">=</span> <span class="n">denoised_arr</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">,</span> <span class="n">gra</span><span class="p">]</span>
+<span class="n">rms_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">orig</span> <span class="o">-</span> <span class="n">den</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+<span class="n">fig1</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">orig</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Original&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">den</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Denoised Output&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rms_diff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Residuals&#39;</span><span class="p">)</span>
+
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;denoised_mppca.png&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The result saved in denoised_mppca.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/denoised_mppca.png" src="../_images/denoised_mppca.png" />
+</div>
+<p>The noise suppressing can be visually appreciated by comparing the original
+data slice (left panel) to its denoised version (middle panel). The difference
+between original and denoised data showing only random noise indicates that
+the data’s structural information is preserved by the PCA denoising algorithm
+(right panel).</p>
+<p>Below we show how the denoised data can be saved.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">denoised_arr</span><span class="p">,</span>
+                         <span class="n">affine</span><span class="p">),</span> <span class="s1">&#39;denoised_mppca.nii.gz&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Entire denoised data saved in denoised_mppca.nii.gz&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additionally, we show how the PCA denoising algorithm affects different
+diffusion measurements. For this, we run the diffusion kurtosis model
+below on both original and denoised versions of the data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dkimodel</span> <span class="o">=</span> <span class="n">dki</span><span class="o">.</span><span class="n">DiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+
+<span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">autocrop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">dki_orig</span> <span class="o">=</span> <span class="n">dkimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+<span class="n">dki_den</span> <span class="o">=</span> <span class="n">dkimodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">denoised_arr</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We use the following code to plot the MD, FA and MK estimates from the two data
+fits:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA_orig</span> <span class="o">=</span> <span class="n">dki_orig</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">FA_den</span> <span class="o">=</span> <span class="n">dki_den</span><span class="o">.</span><span class="n">fa</span>
+<span class="n">MD_orig</span> <span class="o">=</span> <span class="n">dki_orig</span><span class="o">.</span><span class="n">md</span>
+<span class="n">MD_den</span> <span class="o">=</span> <span class="n">dki_den</span><span class="o">.</span><span class="n">md</span>
+<span class="n">MK_orig</span> <span class="o">=</span> <span class="n">dki_orig</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">MK_den</span> <span class="o">=</span> <span class="n">dki_den</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+
+<span class="n">fig2</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig2</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.03</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MD_orig</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FA_orig</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;FA (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK_orig</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;AD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MD_den</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">FA_den</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;FA (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK_den</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;AD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig2</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;denoised_dki.png&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The result saved in denoised_dki.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/denoised_dki.png" src="../_images/denoised_dki.png" />
+</div>
+<p>In the above figure, the DKI maps obtained from the original data are shown in
+the upper panels, while the DKI maps from the denoised data are shown in the
+lower panels. Substantial improvements on measurements robustness can be
+visually appreciated, particularly for the FA and MK estimates.</p>
+<p>## noise standard deviation estimation using the Marcenko-Pastur PCA algorithm</p>
+<p>As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
+estimate the image’s noise standard deviation (std). The noise std
+automatically computed from the <code class="docutils literal notranslate"><span class="pre">mppca</span></code> function can be returned by
+setting the optional input parameter <code class="docutils literal notranslate"><span class="pre">return_sigma</span></code> to True.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">denoised_arr</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">mppca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">patch_radius</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">return_sigma</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s plot the noise standard deviation estimate:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig3</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;PCA Noise standard deviation estimation&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">sigma</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">sli</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig3</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;pca_sigma.png&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The result saved in pca_sigma.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/pca_sigma.png" src="../_images/pca_sigma.png" />
+</div>
+<p>The above figure shows that the Marcenko-Pastur PCA algorithm computes a 3D
+spatial varying noise level map. To obtain the mean noise std across all
+voxels, you can use the following lines of code:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sigma</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">mean_sigma</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Below we use this mean noise level estimate to compute the data’s nominal SNR
+(i.e. SNR at b-value=0):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">b0</span> <span class="o">=</span> <span class="n">denoised_arr</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+<span class="n">mean_signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">b0</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+
+<span class="n">snr</span> <span class="o">=</span> <span class="n">mean_signal</span> <span class="o">/</span> <span class="n">mean_sigma</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">snr</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="manjon2013"><span class="brackets">Manjon2013</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id3">2</a>,<a href="#id5">3</a>)</span></dt>
+<dd><p>Manjon JV, Coupe P, Concha L, Buades A, Collins DL “Diffusion
+Weighted Image Denoising Using Overcomplete Local PCA” (2013).
+PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.</p>
+</dd>
+<dt class="label" id="veraa2016a"><span class="brackets"><a class="fn-backref" href="#id6">Veraa2016a</a></span></dt>
+<dd><p>Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+mapping using random matrix theory. Magnetic Resonance in
+Medicine. doi: 10.1002/mrm.26059.</p>
+</dd>
+<dt class="label" id="henri2018"><span class="brackets"><a class="fn-backref" href="#id4">Henri2018</a></span></dt>
+<dd><p>Henriques, R., 2018. Advanced Methods for Diffusion MRI Data
+Analysis and their Application to the Healthy Ageing Brain
+(Doctoral thesis). <a class="reference external" href="https://doi.org/10.17863/CAM.29356">https://doi.org/10.17863/CAM.29356</a></p>
+</dd>
+<dt class="label" id="veraa2016b"><span class="brackets"><a class="fn-backref" href="#id7">Veraa2016b</a></span></dt>
+<dd><p>Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+Fieremans E, 2016. Denoising of Diffusion MRI using random
+matrix theory. Neuroimage 142:394-406.
+doi: 10.1016/j.neuroimage.2016.08.016</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/0e60e58c93e24235a7bc540769e164e4/denoise_mppca.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

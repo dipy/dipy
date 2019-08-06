@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/combined_workflow_creation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-new-combined-workflow">
+<span id="example-combined-workflow-creation"></span><h1>Creating a new combined workflow<a class="headerlink" href="#creating-a-new-combined-workflow" title="Permalink to this headline">¶</a></h1>
+<p>A <code class="docutils literal notranslate"><span class="pre">CombinedWorkflow</span></code> is a series of <a class="reference external" href="http://dipy.org">DIPY</a> workflows organized together in a
+way that the output of a workflow serves as input for the next one.</p>
+<p>First create your <code class="docutils literal notranslate"><span class="pre">CombinedWorkflow</span></code> class. Your <code class="docutils literal notranslate"><span class="pre">CombinedWorkflow</span></code> class
+file is usually located in the <code class="docutils literal notranslate"><span class="pre">dipy/workflows</span></code> directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.workflows.combined_workflow</span> <span class="k">import</span> <span class="n">CombinedWorkflow</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">CombinedWorkflow</span></code> is the base class that will be extended to create our
+combined workflow.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.workflows.denoise</span> <span class="k">import</span> <span class="n">NLMeansFlow</span>
+<span class="kn">from</span> <span class="nn">dipy.workflows.segment</span> <span class="k">import</span> <span class="n">MedianOtsuFlow</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">MedianOtsuFlow</span></code> and <code class="docutils literal notranslate"><span class="pre">NLMeansFlow</span></code> will be combined to create our
+processing section.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DenoiseAndSegment</span><span class="p">(</span><span class="n">CombinedWorkflow</span><span class="p">):</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">DenoiseAndSegment</span></code> is the name of our combined workflow. Note that
+it needs to extend CombinedWorkflow for everything to work properly.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_get_sub_flows</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">NLMeansFlow</span><span class="p">,</span>
+        <span class="n">MedianOtsuFlow</span>
+    <span class="p">]</span>
+</pre></div>
+</div>
+<p>It is mandatory to implement this method if you want to make all the sub
+workflows parameters available in commandline.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_files</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">out_file</span><span class="o">=</span><span class="s1">&#39;processed.nii.gz&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    input_files : string</span>
+<span class="sd">        Path to the input files. This path may contain wildcards to</span>
+<span class="sd">        process multiple inputs at once.</span>
+
+<span class="sd">    out_dir : string, optional</span>
+<span class="sd">        Where the resulting file will be saved. (default &#39;&#39;)</span>
+
+<span class="sd">    out_file : string, optional</span>
+<span class="sd">        Name of the result file to be saved. (default &#39;processed.nii.gz&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>Just like a normal workflow, it is mandatory to have out_dir as a
+parameter. It is also mandatory to put ‘<a href="#id2"><span class="problematic" id="id3">out_</span></a>’ in front of every
+parameter that is going to be an output. Lastly, all <a href="#id4"><span class="problematic" id="id5">out_</span></a> params needs
+to be at the end of the params list.
+The class docstring part is very important, you need to document
+every parameter as they will be used with inspection to build the
+command line argument parser.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">io_it</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_io_iterator</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">in_file</span><span class="p">,</span> <span class="n">out_file</span> <span class="ow">in</span> <span class="n">io_it</span><span class="p">:</span>
+    <span class="n">nl_flow</span> <span class="o">=</span> <span class="n">NLMeansFlow</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">run_sub_flow</span><span class="p">(</span><span class="n">nl_flow</span><span class="p">,</span> <span class="n">in_file</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">)</span>
+    <span class="n">denoised</span> <span class="o">=</span> <span class="n">nl_flow</span><span class="o">.</span><span class="n">last_generated_outputs</span><span class="p">[</span><span class="s1">&#39;out_denoised&#39;</span><span class="p">]</span>
+
+    <span class="n">me_flow</span> <span class="o">=</span> <span class="n">MedianOtsuFlow</span><span class="p">()</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">run_sub_flow</span><span class="p">(</span><span class="n">me_flow</span><span class="p">,</span> <span class="n">denoised</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="n">out_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">self.get_io_iterator()</span></code> in every workflow you create. This creates
+an <code class="docutils literal notranslate"><span class="pre">IOIterator</span></code> object that create output file names and directory structure
+based on the inputs and some other advanced output strategy parameters.</p>
+<p>Iterating on the <code class="docutils literal notranslate"><span class="pre">IOIterator</span></code> object you created previously you
+conveniently get all input and output paths for every input file
+found when globbin the input parameters.</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">IOIterator</span></code> loop you can see how we create a new <code class="docutils literal notranslate"><span class="pre">NLMeans</span></code> workflow
+then run it using <code class="docutils literal notranslate"><span class="pre">self.run_sub_flow</span></code>. Running it this way will pass any
+workflow specific parameter that was retreived from the command line and will
+append the ones you specify as optional parameters (<code class="docutils literal notranslate"><span class="pre">out_dir</span></code> in this case).</p>
+<p>Lastly, the outputs paths are retrived using
+<code class="docutils literal notranslate"><span class="pre">workflow.last_generated_outputs</span></code>. This allows to use <code class="docutils literal notranslate"><span class="pre">denoise</span></code> as the
+input for the <code class="docutils literal notranslate"><span class="pre">MedianOtsuFlow</span></code>.</p>
+<p>This is it for the combined workflow class! Now to be able to call it easily via
+command line, you need this last bit of code. It is usually in an executable
+file located in <code class="docutils literal notranslate"><span class="pre">bin</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.workflows.flow_runner</span> <span class="k">import</span> <span class="n">run_flow</span>
+</pre></div>
+</div>
+<p>This is the method that will wrap everything that is needed to make a workflow
+ready then run it.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">run_flow</span><span class="p">(</span><span class="n">DenoiseAndSegment</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This is the only thing needed to make your workflow available through command
+line.</p>
+<p>Now just call the script you just made with <code class="docutils literal notranslate"><span class="pre">-h</span></code> to see the argparser help
+text:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">combined_workflow_creation</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>You should see all your parameters available along with some extra common ones
+like logging file and force overwrite. Also all the documentation you wrote
+about each parameter is there. Also note that every sub workflow optional
+parameter is available.</p>
+<p>Now call it for real with a nifti file to see the results. Experiment
+with the parameters and see the results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">combined_workflow_creation</span><span class="o">.</span><span class="n">py</span> <span class="n">volume</span><span class="o">.</span><span class="n">nii</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/a917dba1e490dd0dbe2514fdb380c67a/combined_workflow_creation.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

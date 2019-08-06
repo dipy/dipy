@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Linear fascicle evaluation (LiFE)</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/linear_fascicle_evaluation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="linear-fascicle-evaluation-life">
+<span id="example-linear-fascicle-evaluation"></span><h1>Linear fascicle evaluation (LiFE)<a class="headerlink" href="#linear-fascicle-evaluation-life" title="Permalink to this headline">¶</a></h1>
+<p>Evaluating the results of tractography algorithms is one of the biggest
+challenges for diffusion MRI. One proposal for evaluation of tractography
+results is to use a forward model that predicts the signal from each of a set
+of streamlines, and then fit a linear model to these simultaneous predictions
+<a class="reference internal" href="#pestilli2014" id="id1"><span>[Pestilli2014]</span></a>.</p>
+<p>We will use streamlines generated using probabilistic tracking on CSA
+peaks. For brevity, we will include in this example only streamlines going
+through the corpus callosum connecting left to right superior frontal
+cortex. The process of tracking and finding these streamlines is fully
+demonstrated in the <a class="reference internal" href="streamline_tools.html#streamline-tools"><span class="std std-ref">Connectivity Matrices, ROI Intersections and Density Maps</span></a> example. If this example has been
+run, we can read the streamlines from file. Otherwise, we’ll run that example
+first, by importing it. This provides us with all of the variables that were
+created in that example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="k">import</span> <span class="n">AxesGrid</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">dipy.tracking.life</span> <span class="k">as</span> <span class="nn">life</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">colormap</span> <span class="k">as</span> <span class="n">cmap</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_trk</span>
+<span class="kn">import</span> <span class="nn">dipy.core.optimize</span> <span class="k">as</span> <span class="nn">opt</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">op</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">&#39;lr-superiorfrontal.trk&#39;</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">streamline_tools</span> <span class="k">import</span> <span class="o">*</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># We&#39;ll need to know where the corpus callosum is from these variables:</span>
+    <span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="p">(</span><span class="n">read_stanford_labels</span><span class="p">,</span>
+                           <span class="n">fetch_stanford_t1</span><span class="p">,</span>
+                           <span class="n">read_stanford_t1</span><span class="p">)</span>
+    <span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+    <span class="n">cc_slice</span> <span class="o">=</span> <span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="n">fetch_stanford_t1</span><span class="p">()</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">read_stanford_t1</span><span class="p">()</span>
+    <span class="n">t1_data</span> <span class="o">=</span> <span class="n">t1</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="c1"># Read the candidates from file in voxel space:</span>
+<span class="n">candidate_sl_sft</span> <span class="o">=</span> <span class="n">load_trk</span><span class="p">(</span><span class="s1">&#39;lr-superiorfrontal.trk&#39;</span><span class="p">,</span> <span class="s1">&#39;same&#39;</span><span class="p">)</span>
+<span class="n">candidate_sl_sft</span><span class="o">.</span><span class="n">to_vox</span><span class="p">()</span>
+<span class="n">candidate_sl</span> <span class="o">=</span> <span class="n">candidate_sl_sft</span><span class="o">.</span><span class="n">streamlines</span>
+</pre></div>
+</div>
+<p>The streamlines that are entered into the model are termed ‘candidate
+streamlines’ (or a ‘candidate connectome’):</p>
+<p>Let’s visualize the initial candidate group of streamlines in 3D, relative to
+the anatomical structure of this brain:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">candidate_streamlines_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">candidate_sl</span><span class="p">,</span>
+                                               <span class="n">cmap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">candidate_sl</span><span class="p">))</span>
+<span class="n">cc_ROI_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">contour_from_roi</span><span class="p">(</span><span class="n">cc_slice</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">),</span>
+                                      <span class="n">opacity</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="n">vol_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">slicer</span><span class="p">(</span><span class="n">t1_data</span><span class="p">)</span>
+
+<span class="n">vol_actor</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">vol_actor2</span> <span class="o">=</span> <span class="n">vol_actor</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">vol_actor2</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">35</span><span class="p">)</span>
+
+<span class="c1"># Add display objects to canvas</span>
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">candidate_streamlines_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cc_ROI_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor2</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+              <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;life_candidates.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/life_candidates.png" src="../_images/life_candidates.png" />
+<p class="caption"><span class="caption-text"><strong>Candidate connectome before life optimization</strong></span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>Next, we initialize a LiFE model. We import the <code class="docutils literal notranslate"><span class="pre">dipy.tracking.life</span></code> module,
+which contains the classes and functions that implement the model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fiber_model</span> <span class="o">=</span> <span class="n">life</span><span class="o">.</span><span class="n">FiberModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since we read the streamlines from a file, already in the voxel space, we do not
+need to transform them into this space. Otherwise, if the streamline coordinates
+were in the world space (relative to the scanner iso-center, or relative to the
+mid-point of the AC-PC-connecting line), we would use this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">inv_affine</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>the inverse transformation from world space to the voxel space as the affine for
+the following model fit.</p>
+<p>The next step is to fit the model, producing a <code class="docutils literal notranslate"><span class="pre">FiberFit</span></code> class instance,
+that stores the data, as well as the results of the fitting procedure.</p>
+<p>The LiFE model posits that the signal in the diffusion MRI volume can be
+explained by the streamlines, by the equation</p>
+<div class="math notranslate nohighlight">
+\[y = X\beta\]</div>
+<p>Where <span class="math notranslate nohighlight">\(y\)</span> is the diffusion MRI signal, <span class="math notranslate nohighlight">\(\beta\)</span> are a set of weights on the
+streamlines and <span class="math notranslate nohighlight">\(X\)</span> is a design matrix. This matrix has the dimensions <span class="math notranslate nohighlight">\(m\)</span> by
+<span class="math notranslate nohighlight">\(n\)</span>, where <span class="math notranslate nohighlight">\(m=n_{voxels} \cdot n_{directions}\)</span>, and <span class="math notranslate nohighlight">\(n_{voxels}\)</span> is the set of
+voxels in the ROI that contains the streamlines considered in this model. The
+<span class="math notranslate nohighlight">\(i^{th}\)</span> column of the matrix contains the expected contributions of the
+<span class="math notranslate nohighlight">\(i^{th}\)</span> streamline (arbitrarily ordered) to each of the voxels. <span class="math notranslate nohighlight">\(X\)</span> is a
+sparse matrix, because each streamline traverses only a small percentage of the
+voxels. The  expected contributions of the streamline are calculated using a
+forward model, where each node of the streamline is modeled as a cylindrical
+fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
+<a class="reference internal" href="#pestilli2014" id="id2"><span>[Pestilli2014]</span></a> for more detail on the model, and variations of this model.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fiber_fit</span> <span class="o">=</span> <span class="n">fiber_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">candidate_sl</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">FiberFit</span></code> class instance holds various properties of the model fit. For
+example, it has the weights <span class="math notranslate nohighlight">\(\beta\)</span>, that are assigned to each streamline. In
+most cases, a tractography through some region will include redundant
+streamlines, and these streamlines will have <span class="math notranslate nohighlight">\(\beta_i\)</span> that are 0.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Fiber weights&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;# fibers&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;beta_histogram.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/beta_histogram.png" src="../_images/beta_histogram.png" />
+<p class="caption"><span class="caption-text"><strong>LiFE streamline weights</strong></span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<p>We use <span class="math notranslate nohighlight">\(\beta\)</span> to filter out these redundant streamlines, and generate an
+optimized group of streamlines:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">optimized_sl</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">candidate_sl</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">beta</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span>
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">streamtube</span><span class="p">(</span><span class="n">optimized_sl</span><span class="p">,</span> <span class="n">cmap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">optimized_sl</span><span class="p">)))</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">cc_ROI_actor</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">vol_actor</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;life_optimized.png&#39;</span><span class="p">,</span>
+              <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/life_optimized.png" src="../_images/life_optimized.png" />
+<p class="caption"><span class="caption-text"><strong>Streamlines selected via LiFE optimization</strong></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<p>The new set of streamlines should do well in fitting the data, and redundant
+streamlines have presumably been removed (in this case, about 50% of the
+streamlines).</p>
+<p>But how well does the model do in explaining the diffusion data? We can
+quantify that: the <code class="docutils literal notranslate"><span class="pre">FiberFit</span></code> class instance has a <cite>predict</cite> method, which can
+be used to invert the model and predict back either the data that was used to
+fit the model, or other unseen data (e.g. in cross-validation, see
+<span class="xref std std-ref">kfold_xval</span>).</p>
+<p>Without arguments, the <code class="docutils literal notranslate"><span class="pre">.predict()</span></code> method will predict the diffusion signal
+for the same gradient table that was used in the fit data, but <code class="docutils literal notranslate"><span class="pre">gtab</span></code> and
+<code class="docutils literal notranslate"><span class="pre">S0</span></code> keyword arguments can be used to predict for other acquisition schemes
+and other baseline non-diffusion-weighted signals.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model_predict</span> <span class="o">=</span> <span class="n">fiber_fit</span><span class="o">.</span><span class="n">predict</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We will focus on the error in prediction of the diffusion-weighted data, and
+calculate the root of the mean squared error.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">model_error</span> <span class="o">=</span> <span class="n">model_predict</span> <span class="o">-</span> <span class="n">fiber_fit</span><span class="o">.</span><span class="n">data</span>
+<span class="n">model_rmse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">model_error</span><span class="p">[:,</span> <span class="mi">10</span><span class="p">:]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>As a baseline against which we can compare, we calculate another error term. In
+this case, we assume that the weight for each streamline is equal
+to zero. This produces the naive prediction of the mean of the signal in each
+voxel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">beta_baseline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">pred_weighted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">opt</span><span class="o">.</span><span class="n">spdot</span><span class="p">(</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">life_matrix</span><span class="p">,</span> <span class="n">beta_baseline</span><span class="p">),</span>
+                           <span class="p">(</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">)))</span>
+<span class="n">mean_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="n">S0</span> <span class="o">=</span> <span class="n">fiber_fit</span><span class="o">.</span><span class="n">b0_signal</span>
+</pre></div>
+</div>
+<p>Since the fitting is done in the demeaned S/S0 domain, we need
+to add back the mean and then multiply by S0 in every voxel:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean_pred</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">S0</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">mean_pred</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">]</span> <span class="o">=</span>\
+    <span class="p">(</span><span class="n">pred_weighted</span> <span class="o">+</span> <span class="n">fiber_fit</span><span class="o">.</span><span class="n">mean_signal</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">*</span> <span class="n">S0</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">mean_error</span> <span class="o">=</span> <span class="n">mean_pred</span> <span class="o">-</span> <span class="n">fiber_fit</span><span class="o">.</span><span class="n">data</span>
+<span class="n">mean_rmse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">mean_error</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>First, we can compare the overall distribution of errors between these two
+alternative models of the ROI. We show the distribution of differences in error
+(improvement through model fitting, relative to the baseline model). Here,
+positive values denote an improvement in error with model fit, relative to
+without the model fit.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">mean_rmse</span> <span class="o">-</span> <span class="n">model_rmse</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">histtype</span><span class="o">=</span><span class="s1">&#39;step&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s1">&#39;Median RMSE, mean model: </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">mean_rmse</span><span class="p">),</span>
+        <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span>
+        <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;Median RMSE, LiFE: </span><span class="si">%.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">model_rmse</span><span class="p">),</span>
+        <span class="n">horizontalalignment</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span>
+        <span class="n">verticalalignment</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;RMS Error&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;# voxels&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;error_histograms.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id7">
+<img alt="../_images/error_histograms.png" src="../_images/error_histograms.png" />
+<p class="caption"><span class="caption-text">Improvement in error with fitting of the LiFE model.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+<p>Second, we can show the spatial distribution of the two error terms,
+and of the improvement with the model fit:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">vol_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="n">vol_model</span><span class="p">[</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+          <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+          <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">model_rmse</span>
+<span class="n">vol_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="n">vol_mean</span><span class="p">[</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+         <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+         <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">mean_rmse</span>
+<span class="n">vol_improve</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="n">vol_improve</span><span class="p">[</span><span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">fiber_fit</span><span class="o">.</span><span class="n">vox_coords</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="n">mean_rmse</span> <span class="o">-</span> <span class="n">model_rmse</span>
+<span class="n">sl_idx</span> <span class="o">=</span> <span class="mi">49</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">AxesGrid</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="mi">111</span><span class="p">,</span>
+              <span class="n">nrows_ncols</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+              <span class="n">label_mode</span><span class="o">=</span><span class="s2">&quot;1&quot;</span><span class="p">,</span>
+              <span class="n">share_all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">cbar_location</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
+              <span class="n">cbar_mode</span><span class="o">=</span><span class="s2">&quot;each&quot;</span><span class="p">,</span>
+              <span class="n">cbar_size</span><span class="o">=</span><span class="s2">&quot;10%&quot;</span><span class="p">,</span>
+              <span class="n">cbar_pad</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">t1_data</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">bone</span><span class="p">)</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">vol_model</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">hot</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">cbar_axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">t1_data</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">bone</span><span class="p">)</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">vol_mean</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">hot</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">cbar_axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">t1_data</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">bone</span><span class="p">)</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">vol_improve</span><span class="p">[</span><span class="n">sl_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span>
+                   <span class="n">cmap</span><span class="o">=</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">RdBu</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">cbar_axes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">lax</span> <span class="ow">in</span> <span class="n">ax</span><span class="p">:</span>
+    <span class="n">lax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+    <span class="n">lax</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">([])</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;spatial_errors.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id8">
+<img alt="../_images/spatial_errors.png" src="../_images/spatial_errors.png" />
+<p class="caption"><span class="caption-text">Spatial distribution of error and improvement.</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+<p>This image demonstrates that in many places, fitting the LiFE model results in
+substantial reduction of the error.</p>
+<p>Note that for full-brain tractographies <em>LiFE</em> can require large amounts of
+memory. For detailed memory profiling of the algorithm, based on the
+streamlines generated in <span class="xref std std-ref">example_probabilistic_fiber_tracking</span>, see <a class="reference external" href="http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def">this
+IPython notebook</a>.</p>
+<p>For the Matlab implementation of LiFE, head over to <a class="reference external" href="http://francopestilli.github.io/life/">Franco Pestilli’s github
+webpage</a>.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="pestilli2014"><span class="brackets">Pestilli2014</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
+<dd><p>Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A.
+(2014). Validation and statistical inference in living connectomes. Nature
+Methods 11: 1058-1063. doi:10.1038/nmeth.3098</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/6c9f2ef406fd32c1c6ee06117a2585d5/linear_fascicle_evaluation.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

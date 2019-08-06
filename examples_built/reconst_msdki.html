@@ -1,0 +1,460 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Mean signal diffusion kurtosis imaging (MSDKI)</a><ul>
+<li><a class="reference internal" href="#testing-msdki-in-synthetic-data">Testing MSDKI in synthetic data</a></li>
+<li><a class="reference internal" href="#reconstructing-diffusion-data-using-msdki">Reconstructing diffusion data using MSDKI</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_msdki.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="mean-signal-diffusion-kurtosis-imaging-msdki">
+<span id="example-reconst-msdki"></span><h1>Mean signal diffusion kurtosis imaging (MSDKI)<a class="headerlink" href="#mean-signal-diffusion-kurtosis-imaging-msdki" title="Permalink to this headline">¶</a></h1>
+<p>Several microstructural models have been proposed to increase the specificity
+of diffusion-weighted data; however, improper model assumptions are known to
+compromise the validity of the model’s estimates <a class="reference internal" href="#netohe2019" id="id1"><span>[NetoHe2019]</span></a>. To avoid
+misleading interpretation, it might be enough to characterize
+diffusion-weighted data using signal representation techniques. For example,
+assuming that the degree of non-Gaussian diffusion decreases with tissue
+degeneration, this can be sensitive to general microstructural alterations.
+Although this cannot be used to distinguish different mechanisms of
+microstructural changes (e.g. axonal loss vs demyelination), the degree of
+non-Gaussian diffusion can provide insights on the general condition of tissue
+microstructure and provide useful markers to understanding, for instance, the
+relationship between brain microstructure changes and alterations in behaviour
+(e.g. <a class="reference internal" href="#price2017" id="id2"><span>[Price2017]</span></a>).</p>
+<p>Diffusion Kurtosis Imaging is one of the conventional ways to estimate the
+degree of non-Gaussian diffusion (see <a class="reference internal" href="reconst_dki.html#example-reconst-dki"><span class="std std-ref">Reconstruction of the diffusion signal with the kurtosis tensor model</span></a>). However,
+as previously pointed <a class="reference internal" href="#netohe2015" id="id3"><span>[NetoHe2015]</span></a>, standard kurtosis measures do not only
+depend on microstructural properties but also on mesoscopic properties such as
+fiber dispersion or the intersection angle of crossing fibers.</p>
+<p>In the following example, we show how one can process the diffusion kurtosis
+from mean signals (also known as powder-averaged signals) and obtain a
+characterization of non-Gaussian diffusion independently to the degree of fiber
+organization <a class="reference internal" href="#netohe2018" id="id4"><span>[NetoHe2018]</span></a>. In the first part of this example, the properties
+of the measures obtained from the mean signal diffusion kurtosis imaging
+<a class="reference internal" href="#netohe2018" id="id5"><span>[NetoHe2018]</span></a> are illustrated using synthetic data. Secondly, the mean signal
+diffusion kurtosis imaging will be applied to in-vivo MRI data.</p>
+<p>Let’s import all relevant modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="c1"># Reconstruction modules</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dki</span> <span class="k">as</span> <span class="nn">dki</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.msdki</span> <span class="k">as</span> <span class="nn">msdki</span>
+
+<span class="c1"># For simulations</span>
+<span class="kn">from</span> <span class="nn">dipy.sims.voxel</span> <span class="k">import</span> <span class="n">multi_tensor</span>
+<span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="kn">from</span> <span class="nn">dipy.core.sphere</span> <span class="k">import</span> <span class="n">disperse_charges</span><span class="p">,</span> <span class="n">HemiSphere</span>
+
+<span class="c1"># For in-vivo data</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_cfin_multib</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_cfin_dwi</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+</pre></div>
+</div>
+<div class="section" id="testing-msdki-in-synthetic-data">
+<h2>Testing MSDKI in synthetic data<a class="headerlink" href="#testing-msdki-in-synthetic-data" title="Permalink to this headline">¶</a></h2>
+<p>We simulate representative diffusion-weighted signals using MultiTensor
+simulations (for more information on this type of simulations see
+<a class="reference internal" href="simulate_multi_tensor.html#example-simulate-multi-tensor"><span class="std std-ref">MultiTensor Simulation</span></a>). For this example, simulations are
+produced based on the sum of four diffusion tensors to represent the intra-
+and extra-cellular spaces of two fiber populations. The parameters of these
+tensors are adjusted according to <a class="reference internal" href="#netohe2015" id="id6"><span>[NetoHe2015]</span></a> (see also
+<a class="reference internal" href="simulate_dki.html#example-simulate-dki"><span class="std std-ref">DKI MultiTensor Simulation</span></a>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mevals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.00099</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00226</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00099</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mf">0.00226</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">,</span> <span class="mf">0.00087</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>For the acquisition parameters of the synthetic data, we use 60 gradient
+directions for two non-zero b-values (1000 and 2000 <span class="math notranslate nohighlight">\(s/mm^{2}\)</span>) and two
+zero bvalues (note that, such as the standard DKI, MSDKI requires at least
+three different b-values).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample the spherical coordinates of 60 random diffusion-weighted directions.</span>
+<span class="n">n_pts</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_pts</span><span class="p">)</span>
+<span class="n">phi</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">n_pts</span><span class="p">)</span>
+
+<span class="c1"># Convert direction to cartesian coordinates.</span>
+<span class="n">hsph_initial</span> <span class="o">=</span> <span class="n">HemiSphere</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="o">=</span><span class="n">phi</span><span class="p">)</span>
+
+<span class="c1"># Evenly distribute the 60 directions</span>
+<span class="n">hsph_updated</span><span class="p">,</span> <span class="n">potential</span> <span class="o">=</span> <span class="n">disperse_charges</span><span class="p">(</span><span class="n">hsph_initial</span><span class="p">,</span> <span class="mi">5000</span><span class="p">)</span>
+<span class="n">directions</span> <span class="o">=</span> <span class="n">hsph_updated</span><span class="o">.</span><span class="n">vertices</span>
+
+<span class="c1"># Reconstruct acquisition parameters for 2 non-zero=b-values and 2 b0s</span>
+<span class="n">bvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="mi">1000</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_pts</span><span class="p">),</span> <span class="mi">2000</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n_pts</span><span class="p">)))</span>
+<span class="n">bvecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span> <span class="n">directions</span><span class="p">,</span> <span class="n">directions</span><span class="p">))</span>
+
+<span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Simulations are looped for different intra- and extra-cellular water
+volume fractions and different intersection angles of the two-fiber
+populations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Array containing the intra-cellular volume fractions tested</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="c1"># Array containing the intersection angle</span>
+<span class="n">ang</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">90.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">91</span><span class="p">)</span>
+
+<span class="c1"># Matrix where synthetic signals will be stored</span>
+<span class="n">dwi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">f</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">ang</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">bvals</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">f_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+    <span class="c1"># estimating volume fractions for individual tensors</span>
+    <span class="n">fractions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">100</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="mi">100</span> <span class="o">-</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">]])</span> <span class="o">*</span> <span class="mf">0.5</span>
+
+    <span class="k">for</span> <span class="n">a_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ang</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="c1"># defining the directions for individual tensors</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="p">[(</span><span class="n">ang</span><span class="p">[</span><span class="n">a_i</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="n">ang</span><span class="p">[</span><span class="n">a_i</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)]</span>
+
+        <span class="c1"># producing signals using Dipy&#39;s function multi_tensor</span>
+        <span class="n">signal</span><span class="p">,</span> <span class="n">sticks</span> <span class="o">=</span> <span class="n">multi_tensor</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">mevals</span><span class="p">,</span> <span class="n">S0</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">angles</span><span class="o">=</span><span class="n">angles</span><span class="p">,</span>
+                                      <span class="n">fractions</span><span class="o">=</span><span class="n">fractions</span><span class="p">,</span> <span class="n">snr</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">dwi</span><span class="p">[</span><span class="n">f_i</span><span class="p">,</span> <span class="n">a_i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">signal</span>
+</pre></div>
+</div>
+<p>Now that all synthetic signals were produced, we can go forward with
+MSDKI fitting. As other Dipy’s reconstruction techniques, the MSDKI model has
+to be first defined for the specific GradientTable object of the synthetic
+data. For MSDKI, this is done by instantiating the MeanDiffusionKurtosisModel
+object in the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">msdki_model</span> <span class="o">=</span> <span class="n">msdki</span><span class="o">.</span><span class="n">MeanDiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>MSDKI can then be fitted to the synthetic data by calling the <code class="docutils literal notranslate"><span class="pre">fit</span></code> function
+of this object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">msdki_fit</span> <span class="o">=</span> <span class="n">msdki_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dwi</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From the above fit object we can extract the two main parameters of the MSDKI,
+i.e.: 1) the mean signal diffusion (MSD); and 2) the mean signal kurtosis (MSK)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">MSD</span> <span class="o">=</span> <span class="n">msdki_fit</span><span class="o">.</span><span class="n">msd</span>
+ <span class="n">MSK</span> <span class="o">=</span> <span class="n">msdki_fit</span><span class="o">.</span><span class="n">msk</span>
+
+
+<span class="n">For</span> <span class="n">a</span> <span class="n">reference</span><span class="p">,</span> <span class="n">we</span> <span class="n">also</span> <span class="n">calculate</span> <span class="n">the</span> <span class="n">mean</span> <span class="n">diffusivity</span> <span class="p">(</span><span class="n">MD</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mean</span>
+</pre></div>
+</div>
+<p>kurtosis (MK) from the standard DKI.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dki_model</span> <span class="o">=</span> <span class="n">dki</span><span class="o">.</span><span class="n">DiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">dki_fit</span> <span class="o">=</span> <span class="n">dki_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">dwi</span><span class="p">)</span>
+
+<span class="n">MD</span> <span class="o">=</span> <span class="n">dki_fit</span><span class="o">.</span><span class="n">md</span>
+<span class="n">MK</span> <span class="o">=</span> <span class="n">dki_fit</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we plot the results as a function of the ground truth intersection
+angle and for different volume fractions of intra-cellular water.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig1</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">f_i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ang</span><span class="p">,</span> <span class="n">MSD</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">label</span><span class="o">=</span><span class="s1">&#39;:math:`F: </span><span class="si">%.2f</span><span class="s1">`&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ang</span><span class="p">,</span> <span class="n">MSK</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">label</span><span class="o">=</span><span class="s1">&#39;:math:`F: </span><span class="si">%.2f</span><span class="s1">`&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ang</span><span class="p">,</span> <span class="n">MD</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">label</span><span class="o">=</span><span class="s1">&#39;:math:`F: </span><span class="si">%.2f</span><span class="s1">`&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ang</span><span class="p">,</span> <span class="n">MK</span><span class="p">[</span><span class="n">f_i</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                   <span class="n">label</span><span class="o">=</span><span class="s1">&#39;:math:`F: </span><span class="si">%.2f</span><span class="s1">`&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">[</span><span class="n">f_i</span><span class="p">])</span>
+
+<span class="c1"># Adjust properties of the first panel of the figure</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Intersection angle&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;MSD&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Intersection angle&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;MSK&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center left&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Intersection angle&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;MD&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Intersection angle&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;MK&#39;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center left&#39;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig1</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MSDKI_simulations.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id10">
+<img alt="../_images/MSDKI_simulations.png" src="../_images/MSDKI_simulations.png" />
+<p class="caption"><span class="caption-text">MSDKI and DKI measures for data of two crossing synthetic fibers.
+Upper panels show the MSDKI measures: 1) mean signal diffusivity (left
+panel); and 2) mean signal kurtosis (right panel).
+For reference, lower panels show the measures obtained by standard DKI:
+1) mean diffusivity (left panel); and 2) mean kurtosis (right panel).
+All estimates are plotted as a function of the intersecting angle of the
+two crossing fibers. Different curves correspond to different ground truth
+axonal volume fraction of intra-cellular space.</span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+<p>The results of the above figure, demonstrate that both MSD and MSK are
+sensitive to axonal volume fraction (i.e. a microstructure property) but are
+independent to the intersectiong angle of the two crossing fibers (i.e.
+independent to properties regarding fiber orientation). In contrast, DKI
+measures seem to be independent to both axonal volume fraction and
+intersection angle.</p>
+</div>
+<div class="section" id="reconstructing-diffusion-data-using-msdki">
+<h2>Reconstructing diffusion data using MSDKI<a class="headerlink" href="#reconstructing-diffusion-data-using-msdki" title="Permalink to this headline">¶</a></h2>
+<p>Now that the properties of MSDKI were illustrated, let’s apply MSDKI to in-vivo
+diffusion-weighted data. As the example for the standard DKI
+(see <a class="reference internal" href="reconst_dki.html#example-reconst-dki"><span class="std std-ref">Reconstruction of the diffusion signal with the kurtosis tensor model</span></a>), we use fetch to download a multi-shell
+dataset which was kindly provided by Hansen and Jespersen (more details about
+the data are provided in their paper <a class="reference internal" href="#hansen2016" id="id7"><span>[Hansen2016]</span></a>). The total size of the
+downloaded data is 192 MBytes, however you only need to fetch it once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cfin_multib</span><span class="p">()</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cfin_dwi</span><span class="p">()</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+</pre></div>
+</div>
+<p>Before fitting the data, we preform some data pre-processing. For illustration,
+we only mask the data to avoid unnecessary calculations on the background of
+the image; however, you could also apply other pre-processing techniques.
+For example, some state of the art denoising algorithms are available in <a class="reference external" href="http://dipy.org">DIPY</a>
+(e.g. the non-local means filter <span class="xref std std-ref">example-denoise-nlmeans</span> or the
+local pca <span class="xref std std-ref">example-denoise-localpca</span>).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">numpass</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">autocrop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now that we have loaded and pre-processed the data we can go forward
+with MSDKI fitting. As for the synthetic data, the MSDKI model has to be first
+defined for the data’s GradientTable object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">msdki_model</span> <span class="o">=</span> <span class="n">msdki</span><span class="o">.</span><span class="n">MeanDiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The data can then be fitted by calling the <code class="docutils literal notranslate"><span class="pre">fit</span></code> function of this object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">msdki_fit</span> <span class="o">=</span> <span class="n">msdki_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s then extract the two main MSDKI’s parameters: 1) mean signal diffusion
+(MSD); and 2) mean signal kurtosis (MSK).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MSD</span> <span class="o">=</span> <span class="n">msdki_fit</span><span class="o">.</span><span class="n">msd</span>
+<span class="n">MSK</span> <span class="o">=</span> <span class="n">msdki_fit</span><span class="o">.</span><span class="n">msk</span>
+</pre></div>
+</div>
+<p>For comparison, we calculate also the mean diffusivity (MD) and mean kurtosis
+(MK) from the standard DKI.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dki_model</span> <span class="o">=</span> <span class="n">dki</span><span class="o">.</span><span class="n">DiffusionKurtosisModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">dki_fit</span> <span class="o">=</span> <span class="n">dki_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+
+<span class="n">MD</span> <span class="o">=</span> <span class="n">dki_fit</span><span class="o">.</span><span class="n">md</span>
+<span class="n">MK</span> <span class="o">=</span> <span class="n">dki_fit</span><span class="o">.</span><span class="n">mk</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s now visualize the data using matplotlib for a selected axial slice.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">axial_slice</span> <span class="o">=</span> <span class="mi">9</span>
+
+<span class="n">fig2</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+                        <span class="n">subplot_kw</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;xticks&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;yticks&#39;</span><span class="p">:</span> <span class="p">[]})</span>
+
+<span class="n">fig2</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">hspace</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MSD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MSD (MSDKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MSK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MSK (MSDKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MD</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">2.0e-3</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MD (DKI)&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">MK</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_slice</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;MK (DKI)&#39;</span><span class="p">)</span>
+
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">fig2</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MSDKI_invivo.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This figure shows that the contrast of in-vivo MSD and MSK maps (upper panels)
+are similar to the contrast of MD and MSK maps (lower panels); however, in the
+upper part we insure that direct contributions of fiber dispersion were
+removed. The upper panels also reveal that MSDKI measures are let sensitive
+to noise artefacts than standard DKI measures (as pointed by <a class="reference internal" href="#netohe2018" id="id8"><span>[NetoHe2018]</span></a>),
+particularly one can appriciate that MSK maps always present positive values
+in brain white matter regions, while implausible negative kurtosis values are
+present in the MK maps in the same regions.</p>
+<div class="section" id="references">
+<h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
+<dl class="citation">
+<dt class="label" id="netohe2019"><span class="brackets"><a class="fn-backref" href="#id1">NetoHe2019</a></span></dt>
+<dd><p>Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+anisotropy misestimation in spherical‐mean single diffusion
+encoding MRI. Magnetic Resonance in Medicine (In press).
+doi: 10.1002/mrm.27606</p>
+</dd>
+<dt class="label" id="price2017"><span class="brackets"><a class="fn-backref" href="#id2">Price2017</a></span></dt>
+<dd><p>Price D, Tyler LK, Neto Henriques R, Campbell KR, Williams N,
+Treder M, Taylor J, Cam-CAN, Henson R (2017). Age-Related
+Delay in Visual and Auditory Evoked Responses is Mediated by
+White- and Gray-matter Differences. Nature Communications 8,
+15671. doi: 10.1038/ncomms15671.</p>
+</dd>
+<dt class="label" id="jensen2005"><span class="brackets">Jensen2005</span></dt>
+<dd><p>Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
+Diffusional Kurtosis Imaging: The Quantification of
+Non_Gaussian Water Diffusion by Means of Magnetic Resonance
+Imaging. Magnetic Resonance in Medicine 53: 1432-1440</p>
+</dd>
+<dt class="label" id="netohe2015"><span class="brackets">NetoHe2015</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id6">2</a>)</span></dt>
+<dd><p>Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015).
+Exploring the 3D geometry of the diffusion kurtosis tensor -
+Impact on the development of robust tractography procedures and
+novel biomarkers, NeuroImage 111: 85-99</p>
+</dd>
+<dt class="label" id="netohe2018"><span class="brackets">NetoHe2018</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id5">2</a>,<a href="#id8">3</a>)</span></dt>
+<dd><p>Henriques RN, 2018. Advanced Methods for Diffusion MRI Data
+Analysis and their Application to the Healthy Ageing Brain
+(Doctoral thesis). Downing College, University of Cambridge.
+<a class="reference external" href="https://doi.org/10.17863/CAM.29356">https://doi.org/10.17863/CAM.29356</a></p>
+</dd>
+<dt class="label" id="hansen2016"><span class="brackets"><a class="fn-backref" href="#id7">Hansen2016</a></span></dt>
+<dd><p>Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
+kurtosis strategies, b-value optimization and exploration of
+diffusion MRI contrast. Scientific Data 3: 160072
+doi:10.1038/sdata.2016.72</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/092a4b250f892084f2e952032306051a/reconst_msdki.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

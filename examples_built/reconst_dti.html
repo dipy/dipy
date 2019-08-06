@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Reconstruction of the diffusion signal with the Tensor model</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_dti.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="reconstruction-of-the-diffusion-signal-with-the-tensor-model">
+<span id="reconst-dti"></span><span id="example-reconst-dti"></span><h1>Reconstruction of the diffusion signal with the Tensor model<a class="headerlink" href="#reconstruction-of-the-diffusion-signal-with-the-tensor-model" title="Permalink to this headline">¶</a></h1>
+<p>The diffusion tensor model is a model that describes the diffusion within a
+voxel. First proposed by Basser and colleagues <a class="reference internal" href="#basser1994" id="id1"><span>[Basser1994]</span></a>, it has been very
+influential in demonstrating the utility of diffusion MRI in characterizing the
+micro-structure of white matter tissue and of the biophysical properties of
+tissue, inferred from local diffusion properties and it is still very commonly
+used.</p>
+<p>The diffusion tensor models the diffusion signal as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{S(\mathbf{g}, b)}{S_0} = e^{-b\mathbf{g}^T \mathbf{D} \mathbf{g}}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mathbf{g}\)</span> is a unit vector in 3 space indicating the direction of
+measurement and b are the parameters of measurement, such as the strength and
+duration of diffusion-weighting gradient. <span class="math notranslate nohighlight">\(S(\mathbf{g}, b)\)</span> is the
+diffusion-weighted signal measured and <span class="math notranslate nohighlight">\(S_0\)</span> is the signal conducted in a
+measurement with no diffusion weighting. <span class="math notranslate nohighlight">\(\mathbf{D}\)</span> is a positive-definite quadratic
+form, which contains six free parameters to be fit. These six parameters are:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\mathbf{D} = \begin{pmatrix} D_{xx} &amp; D_{xy} &amp; D_{xz} \\
+                    D_{yx} &amp; D_{yy} &amp; D_{yz} \\
+                    D_{zx} &amp; D_{zy} &amp; D_{zz} \\ \end{pmatrix}\end{split}\]</div>
+<p>This matrix is a variance/covariance matrix of the diffusivity along the three
+spatial dimensions. Note that we can assume that diffusivity has antipodal
+symmetry, so elements across the diagonal are equal. For example:
+<span class="math notranslate nohighlight">\(D_{xy} = D_{yx}\)</span>. This is why there are only 6 free parameters to estimate
+here.</p>
+<p>In the following example we show how to reconstruct your diffusion datasets
+using a single tensor model.</p>
+<p>First import the necessary modules:</p>
+<p><code class="docutils literal notranslate"><span class="pre">numpy</span></code> is for numerical computation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">nibabel</span></code> is for loading imaging datasets</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.reconst</span></code> is for the reconstruction algorithms which we use to create
+voxel models from the raw data.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dipy.reconst.dti</span> <span class="k">as</span> <span class="nn">dti</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.data</span></code> is used for small datasets that we use in tests and examples.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_stanford_hardi</span>
+</pre></div>
+</div>
+<p>Fetch will download the raw dMRI dataset of a single subject. The size of the
+dataset is 87 MBytes. You only need to fetch once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_stanford_hardi</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Next, we read the saved dataset</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">read_stanford_hardi</span>
+
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_stanford_hardi</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">img</span></code> contains a nibabel Nifti1Image object (with the data) and gtab contains a
+<code class="docutils literal notranslate"><span class="pre">GradientTable</span></code> object (information about the gradients e.g. b-values and
+b-vectors).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>data.shape <code class="docutils literal notranslate"><span class="pre">(81,</span> <span class="pre">106,</span> <span class="pre">76,</span> <span class="pre">160)</span></code></p>
+<p>First of all, we mask and crop the data. This is a quick way to avoid
+calculating Tensors on the background of the image. This is done using <a class="reference external" href="http://dipy.org">DIPY</a>’s
+<code class="docutils literal notranslate"><span class="pre">mask</span></code> module.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+
+<span class="n">maskdata</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span> <span class="n">median_radius</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                             <span class="n">numpass</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">autocrop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dilate</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;maskdata.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">maskdata</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>maskdata.shape <code class="docutils literal notranslate"><span class="pre">(72,</span> <span class="pre">87,</span> <span class="pre">59,</span> <span class="pre">160)</span></code></p>
+<p>Now that we have prepared the datasets we can go forward with the voxel
+reconstruction. First, we instantiate the Tensor model in the following way.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tenmodel</span> <span class="o">=</span> <span class="n">dti</span><span class="o">.</span><span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Fitting the data is very simple. We just need to call the fit method of the
+TensorModel in the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tenfit</span> <span class="o">=</span> <span class="n">tenmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">maskdata</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The fit method creates a <code class="docutils literal notranslate"><span class="pre">TensorFit</span></code> object which contains the fitting parameters
+and other attributes of the model. For example we can generate fractional
+anisotropy (FA) from the eigen-values of the tensor. FA is used to characterize
+the degree to which the distribution of diffusion in a voxel is
+directional. That is, whether there is relatively unrestricted diffusion in one
+particular direction.</p>
+<p>Mathematically, FA is defined as the normalized variance of the eigen-values of
+the tensor:</p>
+<div class="math notranslate nohighlight">
+\[FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+            \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
+            \lambda_2^2+\lambda_3^2}}\]</div>
+<p>Note that FA should be interpreted carefully. It may be an indication of the
+density of packing of fibers in a voxel, and the amount of myelin wrapping these
+axons, but it is not always a measure of “tissue integrity”. For example, FA
+may decrease in locations in which there is fanning of white matter fibers, or
+where more than one population of white matter fibers crosses.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computing anisotropy measures (FA, MD, RGB)&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.dti</span> <span class="k">import</span> <span class="n">fractional_anisotropy</span><span class="p">,</span> <span class="n">color_fa</span>
+
+<span class="n">FA</span> <span class="o">=</span> <span class="n">fractional_anisotropy</span><span class="p">(</span><span class="n">tenfit</span><span class="o">.</span><span class="n">evals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the background of the image the fitting will not be accurate there is no
+signal and possibly we will find FA values with nans (not a number). We can
+easily remove these in the following way.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">FA</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>Saving the FA images is very easy using <a class="reference external" href="http://nipy.org/nibabel">nibabel</a>. We need the FA volume and the
+affine matrix which transform the image’s coordinates to the world coordinates.
+Here, we choose to save the FA in <code class="docutils literal notranslate"><span class="pre">float32</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fa_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">FA</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fa_img</span><span class="p">,</span> <span class="s1">&#39;tensor_fa.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>You can now see the result with any nifti viewer or check it slice by slice
+using <a class="reference external" href="http://matplotlib.sourceforge.net">matplotlib</a>’s <code class="docutils literal notranslate"><span class="pre">imshow</span></code>. In the same way you can save the eigen values, the
+eigen vectors or any other properties of the tensor.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">evecs_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">tenfit</span><span class="o">.</span><span class="n">evecs</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">evecs_img</span><span class="p">,</span> <span class="s1">&#39;tensor_evecs.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Other tensor statistics can be calculated from the <code class="docutils literal notranslate"><span class="pre">tenfit</span></code> object. For example,
+a commonly calculated statistic is the mean diffusivity (MD). This is simply the
+mean of the  eigenvalues of the tensor. Since FA is a normalized
+measure of variance and MD is the mean, they are often used as complimentary
+measures. In DIPY, there are two equivalent ways to calculate the mean
+diffusivity. One is by calling the <code class="docutils literal notranslate"><span class="pre">mean_diffusivity</span></code> module function on the
+eigen-values of the <code class="docutils literal notranslate"><span class="pre">TensorFit</span></code> class instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MD1</span> <span class="o">=</span> <span class="n">dti</span><span class="o">.</span><span class="n">mean_diffusivity</span><span class="p">(</span><span class="n">tenfit</span><span class="o">.</span><span class="n">evals</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">MD1</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">),</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">),</span> <span class="s1">&#39;tensors_md.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The other is to call the <code class="docutils literal notranslate"><span class="pre">TensorFit</span></code> class method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MD2</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">md</span>
+</pre></div>
+</div>
+<p>Obviously, the quantities are identical.</p>
+<p>We can also compute the colored FA or RGB-map <a class="reference internal" href="#pajevic1999" id="id2"><span>[Pajevic1999]</span></a>. First, we make sure
+that the FA is scaled between 0 and 1, we compute the RGB map and save it.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">FA</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">RGB</span> <span class="o">=</span> <span class="n">color_fa</span><span class="p">(</span><span class="n">FA</span><span class="p">,</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">evecs</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">255</span> <span class="o">*</span> <span class="n">RGB</span><span class="p">,</span> <span class="s1">&#39;uint8&#39;</span><span class="p">),</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">),</span> <span class="s1">&#39;tensor_rgb.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s try to visualize the tensor ellipsoids of a small rectangular
+area in an axial slice of the splenium of the corpus callosum (CC).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computing tensor ellipsoids in a part of the splenium of the CC&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_sphere</span>
+<span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+
+<span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">ren</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+
+<span class="n">evals</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">evals</span><span class="p">[</span><span class="mi">13</span><span class="p">:</span><span class="mi">43</span><span class="p">,</span> <span class="mi">44</span><span class="p">:</span><span class="mi">74</span><span class="p">,</span> <span class="mi">28</span><span class="p">:</span><span class="mi">29</span><span class="p">]</span>
+<span class="n">evecs</span> <span class="o">=</span> <span class="n">tenfit</span><span class="o">.</span><span class="n">evecs</span><span class="p">[</span><span class="mi">13</span><span class="p">:</span><span class="mi">43</span><span class="p">,</span> <span class="mi">44</span><span class="p">:</span><span class="mi">74</span><span class="p">,</span> <span class="mi">28</span><span class="p">:</span><span class="mi">29</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We can color the ellipsoids using the <code class="docutils literal notranslate"><span class="pre">color_fa</span></code> values that we calculated
+above. In this example we additionally normalize the values to increase the
+contrast.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cfa</span> <span class="o">=</span> <span class="n">RGB</span><span class="p">[</span><span class="mi">13</span><span class="p">:</span><span class="mi">43</span><span class="p">,</span> <span class="mi">44</span><span class="p">:</span><span class="mi">74</span><span class="p">,</span> <span class="mi">28</span><span class="p">:</span><span class="mi">29</span><span class="p">]</span>
+<span class="n">cfa</span> <span class="o">/=</span> <span class="n">cfa</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">tensor_slicer</span><span class="p">(</span><span class="n">evals</span><span class="p">,</span> <span class="n">evecs</span><span class="p">,</span> <span class="n">scalar_colors</span><span class="o">=</span><span class="n">cfa</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.3</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving illustration as tensor_ellipsoids.png&#39;</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tensor_ellipsoids.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/tensor_ellipsoids.png" src="../_images/tensor_ellipsoids.png" />
+<p class="caption"><span class="caption-text">Tensor Ellipsoids.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">window</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, we can visualize the tensor Orientation Distribution Functions
+for the same area as we did with the ellipsoids.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensor_odfs</span> <span class="o">=</span> <span class="n">tenmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">20</span><span class="p">:</span><span class="mi">50</span><span class="p">,</span> <span class="mi">55</span><span class="p">:</span><span class="mi">85</span><span class="p">,</span> <span class="mi">38</span><span class="p">:</span><span class="mi">39</span><span class="p">])</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">)</span>
+
+<span class="n">odf_actor</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">odf_slicer</span><span class="p">(</span><span class="n">tensor_odfs</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">ren</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">odf_actor</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Saving illustration as tensor_odfs.png&#39;</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">ren</span><span class="p">,</span> <span class="n">n_frames</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tensor_odfs.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">ren</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/tensor_odfs.png" src="../_images/tensor_odfs.png" />
+<p class="caption"><span class="caption-text">Tensor ODFs.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<p>Note that while the tensor model is an accurate and reliable model of the
+diffusion signal in the white matter, it has the drawback that it only has one
+principal diffusion direction. Therefore, in locations in the brain that
+contain multiple fiber populations crossing each other, the tensor model may
+indicate that the principal diffusion direction is intermediate to these
+directions. Therefore, using the principal diffusion direction for tracking in
+these locations may be misleading and may lead to errors in defining the
+tracks. Fortunately, other reconstruction methods can be used to represent the
+diffusion and fiber orientations in those locations. These are presented in
+other examples.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="basser1994"><span class="brackets"><a class="fn-backref" href="#id1">Basser1994</a></span></dt>
+<dd><p>Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
+spectroscopy and imaging.</p>
+</dd>
+<dt class="label" id="pajevic1999"><span class="brackets"><a class="fn-backref" href="#id2">Pajevic1999</a></span></dt>
+<dd><p>Pajevic S, Pierpaoli (1999). Color schemes to represent the
+orientation of anisotropic tissues from diffusion tensor data: application
+to white matter fiber tract mapping in the human brain.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/9c851aaa1bea3e171dd2a11e6e12f9d7/reconst_dti.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

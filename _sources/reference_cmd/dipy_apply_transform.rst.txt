@@ -1,0 +1,24 @@
+
+========================
+dipy_apply_transform
+========================
+
+usage: dipy_apply_transform [-h] [--transform_type str] [--out_dir str]
+                     [--out_file str]
+                     static_image_files moving_image_files transform_map_file
+
+positional arguments:
+  static_image_files    Path of the static image file. 
+  moving_image_files    Path of the moving image(s). It can be a single image or a folder containing multiple images. 
+  transform_map_file    For the affine case, it should be a text(*.txt) file containing the affine matrix. For the diffeomorphic case, it should be a nifti file containing the mapping displacement field in each voxel with this shape (x, y, z, 3, 2) 
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --transform_type str  Select the transformation type to apply between 'affine' or 'diffeomorphic'. (default affine) 
+
+output arguments(optional):
+  --out_dir str         Directory to save the transformed files (default ''). 
+  --out_file str        Name of the transformed file (default 'transformed.nii.gz').  It is recommended to use the flag --mix-names to   prevent the output files from being overwritten.
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

@@ -1,0 +1,168 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`stats`
+============
+.. automodule:: dipy.stats
+
+.. currentmodule:: dipy.stats
+.. autosummary::
+
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`stats.analysis`
+-----------------------------
+.. automodule:: dipy.stats.analysis
+
+.. currentmodule:: dipy.stats.analysis
+.. autosummary::
+
+   AveragePointwiseEuclideanMetric
+   QuickBundles
+   Streamlines
+   cKDTree
+   afq_profile
+   bundle_analysis
+   dti_measures
+   gaussian_weights
+   load_nifti
+   load_peaks
+   load_tractogram
+   mahalanobis
+   map_coordinates
+   optional_package
+   orient_by_streamline
+   peak_values
+   set_number_of_points
+   transform_streamlines
+   values_from_volume
+
+
+.. currentmodule:: dipy.stats
+
+
+.. currentmodule:: dipy.stats.analysis
+
+
+:class:`AveragePointwiseEuclideanMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AveragePointwiseEuclideanMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`QuickBundles`
+~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: QuickBundles
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`cKDTree`
+~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: cKDTree
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+afq_profile
+~~~~~~~~~~~
+
+.. autofunction:: afq_profile
+
+bundle_analysis
+~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_analysis
+
+dti_measures
+~~~~~~~~~~~~
+
+.. autofunction:: dti_measures
+
+gaussian_weights
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: gaussian_weights
+
+load_nifti
+~~~~~~~~~~
+
+.. autofunction:: load_nifti
+
+load_peaks
+~~~~~~~~~~
+
+.. autofunction:: load_peaks
+
+load_tractogram
+~~~~~~~~~~~~~~~
+
+.. autofunction:: load_tractogram
+
+mahalanobis
+~~~~~~~~~~~
+
+.. autofunction:: mahalanobis
+
+map_coordinates
+~~~~~~~~~~~~~~~
+
+.. autofunction:: map_coordinates
+
+optional_package
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: optional_package
+
+orient_by_streamline
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: orient_by_streamline
+
+peak_values
+~~~~~~~~~~~
+
+.. autofunction:: peak_values
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+transform_streamlines
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_streamlines
+
+values_from_volume
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: values_from_volume
+

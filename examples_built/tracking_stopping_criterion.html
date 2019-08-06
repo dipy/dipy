@@ -1,0 +1,483 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using Various Stopping Criterion for Tractography</a><ul>
+<li><a class="reference internal" href="#threshold-stopping-criterion">Threshold Stopping Criterion</a></li>
+<li><a class="reference internal" href="#binary-stopping-criterion">Binary Stopping Criterion</a></li>
+<li><a class="reference internal" href="#act-stopping-criterion">ACT Stopping Criterion</a><ul>
+<li><a class="reference internal" href="#notes">Notes</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/tracking_stopping_criterion.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-various-stopping-criterion-for-tractography">
+<span id="example-tracking-stopping-criterion"></span><h1>Using Various Stopping Criterion for Tractography<a class="headerlink" href="#using-various-stopping-criterion-for-tractography" title="Permalink to this headline">¶</a></h1>
+<p>The stopping criterion determines if the tracking stops or continues at each
+tracking position. The tracking stops when it reaches an ending region
+(e.g. low FA, gray matter or corticospinal fluid regions) or exits the image
+boundaries. The tracking also stops if the direction getter has no direction
+to follow.</p>
+<p>Each stopping criterion determines if the stopping is ‘valid’ or
+‘invalid’. A streamline is ‘valid’ when the stopping criterion determines if
+the streamline stops in a position classified as ‘ENDPOINT’ or ‘OUTSIDEIMAGE’.
+A streamline is ‘invalid’ when it stops in a position classified as
+‘TRACKPOINT’ or ‘INVALIDPOINT’. These conditions are described below. The
+‘LocalTracking’ generator can be set to output all generated streamlines
+or only the ‘valid’ ones. See Girard et al. (2004) <a class="reference internal" href="#girard2014" id="id1"><span>[Girard2014]</span></a> and Smith et
+al.(2012) <a class="reference internal" href="#smith2012" id="id2"><span>[Smith2012]</span></a> for more details on these methods.</p>
+<p>This example is an extension of the
+<a class="reference internal" href="tracking_deterministic.html#example-tracking-deterministic"><span class="std std-ref">An introduction to the Deterministic Maximum Direction Getter</span></a> example. We begin by loading the
+data, creating a seeding mask from white matter voxels of the corpus callosum,
+fitting a Constrained Spherical Deconvolution (CSD) reconstruction
+model and creating the maximum deterministic direction getter.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="p">(</span><span class="n">read_stanford_labels</span><span class="p">,</span>
+                       <span class="n">default_sphere</span><span class="p">,</span>
+                       <span class="n">read_stanford_pve_maps</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.direction</span> <span class="k">import</span> <span class="n">DeterministicMaximumDirectionGetter</span>
+<span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">save_trk</span>
+<span class="kn">from</span> <span class="nn">dipy.io.stateful_tractogram</span> <span class="k">import</span> <span class="n">Space</span><span class="p">,</span> <span class="n">StatefulTractogram</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.csdeconv</span> <span class="k">import</span> <span class="p">(</span><span class="n">ConstrainedSphericalDeconvModel</span><span class="p">,</span>
+                                   <span class="n">auto_response</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.dti</span> <span class="k">import</span> <span class="n">fractional_anisotropy</span><span class="p">,</span> <span class="n">TensorModel</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking</span> <span class="k">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.local_tracking</span> <span class="k">import</span> <span class="n">LocalTracking</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+<span class="kn">from</span> <span class="nn">dipy.tracking.stopping_criterion</span> <span class="k">import</span> <span class="p">(</span><span class="n">ActStoppingCriterion</span><span class="p">,</span>
+                                              <span class="n">BinaryStoppingCriterion</span><span class="p">,</span>
+                                              <span class="n">ThresholdStoppingCriterion</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span><span class="p">,</span> <span class="n">colormap</span><span class="p">,</span> <span class="n">has_fury</span>
+
+
+<span class="n">hardi_img</span><span class="p">,</span> <span class="n">gtab</span><span class="p">,</span> <span class="n">labels_img</span> <span class="o">=</span> <span class="n">read_stanford_labels</span><span class="p">()</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">img_pve_wm</span> <span class="o">=</span> <span class="n">read_stanford_pve_maps</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">labels_img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">hardi_img</span><span class="o">.</span><span class="n">affine</span>
+<span class="n">white_matter</span> <span class="o">=</span> <span class="n">img_pve_wm</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">seed_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">labels</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">seed_mask</span><span class="p">[</span><span class="n">img_pve_wm</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">seeds</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">seeds_from_mask</span><span class="p">(</span><span class="n">seed_mask</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">response</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">=</span> <span class="n">auto_response</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">roi_radius</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fa_thr</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">csd_model</span> <span class="o">=</span> <span class="n">ConstrainedSphericalDeconvModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+<span class="n">csd_fit</span> <span class="o">=</span> <span class="n">csd_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">white_matter</span><span class="p">)</span>
+
+<span class="n">dg</span> <span class="o">=</span> <span class="n">DeterministicMaximumDirectionGetter</span><span class="o">.</span><span class="n">from_shcoeff</span><span class="p">(</span><span class="n">csd_fit</span><span class="o">.</span><span class="n">shm_coeff</span><span class="p">,</span>
+                                                      <span class="n">max_angle</span><span class="o">=</span><span class="mf">30.</span><span class="p">,</span>
+                                                      <span class="n">sphere</span><span class="o">=</span><span class="n">default_sphere</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="threshold-stopping-criterion">
+<h2>Threshold Stopping Criterion<a class="headerlink" href="#threshold-stopping-criterion" title="Permalink to this headline">¶</a></h2>
+<p>A scalar map can be used to define where the tracking stops. The threshold
+stopping criterion uses a scalar map to stop the tracking whenever the
+interpolated scalar value is lower than a fixed threshold. Here, we show
+an example using the fractional anisotropy (FA) map of the DTI model.
+The threshold stopping criterion uses a trilinear interpolation at the
+tracking position.</p>
+<p><strong>Parameters</strong></p>
+<ul class="simple">
+<li><p>metric_map: numpy array [:, :, :]</p></li>
+<li><p>threshold: float</p></li>
+</ul>
+<p><strong>Stopping States</strong></p>
+<ul class="simple">
+<li><p>‘ENDPOINT’: stops at a position where metric_map &lt; threshold; the streamline</p></li>
+</ul>
+<p>reached the target stopping area.
+- ‘OUTSIDEIMAGE’: stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- ‘TRACKPOINT’: stops at a position because no direction is available; the
+streamline is stopping where metric_map &gt;= threshold, but there is no valid
+direction to follow.
+- ‘INVALIDPOINT’: N/A.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tensor_model</span> <span class="o">=</span> <span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">tenfit</span> <span class="o">=</span> <span class="n">tensor_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">labels</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">FA</span> <span class="o">=</span> <span class="n">fractional_anisotropy</span><span class="p">(</span><span class="n">tenfit</span><span class="o">.</span><span class="n">evals</span><span class="p">)</span>
+
+<span class="n">threshold_criterion</span> <span class="o">=</span> <span class="n">ThresholdStoppingCriterion</span><span class="p">(</span><span class="n">FA</span><span class="p">,</span> <span class="o">.</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">mask_fa</span> <span class="o">=</span> <span class="n">FA</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">mask_fa</span><span class="p">[</span><span class="n">mask_fa</span> <span class="o">&lt;</span> <span class="mf">0.2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">mask_fa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+           <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;threshold_fa.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<img alt="../_images/threshold_fa.png" src="../_images/threshold_fa.png" />
+<p class="caption"><span class="caption-text"><strong>Thresholded fractional anisotropy map.</strong></span><a class="headerlink" href="#id6" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">dg</span><span class="p">,</span>
+                                     <span class="n">threshold_criterion</span><span class="p">,</span>
+                                     <span class="n">seeds</span><span class="p">,</span>
+                                     <span class="n">affine</span><span class="p">,</span>
+                                     <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">return_all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_probabilistic_thresh_all.trk&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)))</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_deterministic_thresh_all.png&#39;</span><span class="p">,</span>
+                  <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id7">
+<img alt="../_images/tractogram_deterministic_thresh_all.png" src="../_images/tractogram_deterministic_thresh_all.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum using deterministic tractography with a thresholded
+fractional anisotropy mask.</strong></span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="binary-stopping-criterion">
+<h2>Binary Stopping Criterion<a class="headerlink" href="#binary-stopping-criterion" title="Permalink to this headline">¶</a></h2>
+<p>A binary mask can be used to define where the tracking stops. The binary
+stopping criterion stops the tracking whenever the tracking position is outside
+the mask. Here, we show how to obtain the binary stopping criterion from
+the white matter mask defined above. The binary stopping criterion uses a
+nearest-neighborhood interpolation at the tracking position.</p>
+<p><strong>Parameters</strong></p>
+<ul class="simple">
+<li><p>mask: numpy array [:, :, :]</p></li>
+</ul>
+<p><strong>Stopping States</strong></p>
+<ul class="simple">
+<li><p>‘ENDPOINT’: stops at a position where mask = 0; the streamline</p></li>
+</ul>
+<p>reached the target stopping area.
+- ‘OUTSIDEIMAGE’: stops at a position outside of metric_map; the streamline
+reached an area outside the image where no direction data is available.
+- ‘TRACKPOINT’: stops at a position because no direction is available; the
+streamline is stopping where mask &gt; 0, but there is no valid direction to
+follow.
+- ‘INVALIDPOINT’: N/A.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">binary_criterion</span> <span class="o">=</span> <span class="n">BinaryStoppingCriterion</span><span class="p">(</span><span class="n">white_matter</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">white_matter</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+           <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;white_matter_mask.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id8">
+<img alt="../_images/white_matter_mask.png" src="../_images/white_matter_mask.png" />
+<p class="caption"><span class="caption-text"><strong>White matter binary mask.</strong></span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">dg</span><span class="p">,</span>
+                                     <span class="n">binary_criterion</span><span class="p">,</span>
+                                     <span class="n">seeds</span><span class="p">,</span>
+                                     <span class="n">affine</span><span class="p">,</span>
+                                     <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">return_all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_deterministic_binary_all.trk&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)))</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_deterministic_binary_all.png&#39;</span><span class="p">,</span>
+                  <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id9">
+<img alt="../_images/tractogram_deterministic_binary_all.png" src="../_images/tractogram_deterministic_binary_all.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum using deterministic tractography with a binary white
+matter mask.</strong></span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+<div class="section" id="act-stopping-criterion">
+<h2>ACT Stopping Criterion<a class="headerlink" href="#act-stopping-criterion" title="Permalink to this headline">¶</a></h2>
+<p>Anatomically-constrained tractography (ACT) <a class="reference internal" href="#smith2012" id="id3"><span>[Smith2012]</span></a> uses information from
+anatomical images to determine when the tractography stops. The <code class="docutils literal notranslate"><span class="pre">include_map</span></code>
+defines when the streamline reached a ‘valid’ stopping region (e.g. gray
+matter partial volume estimation (PVE) map) and the <code class="docutils literal notranslate"><span class="pre">exclude_map</span></code> defines
+when the streamline reached an ‘invalid’ stopping region (e.g. corticospinal
+fluid PVE map). The background of the anatomical image should be added to the
+<code class="docutils literal notranslate"><span class="pre">include_map</span></code> to keep streamlines exiting the brain (e.g. through the
+brain stem). The ACT stopping criterion uses a trilinear interpolation
+at the tracking position.</p>
+<p><strong>Parameters</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">include_map</span></code>: numpy array <code class="docutils literal notranslate"><span class="pre">[:,</span> <span class="pre">:,</span> <span class="pre">:]</span></code>,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">exclude_map</span></code>: numpy array <code class="docutils literal notranslate"><span class="pre">[:,</span> <span class="pre">:,</span> <span class="pre">:]</span></code>,</p></li>
+</ul>
+<p><strong>Stopping States</strong></p>
+<ul class="simple">
+<li><p>‘ENDPOINT’: stops at a position where <code class="docutils literal notranslate"><span class="pre">include_map</span></code> &gt; 0.5; the streamline</p></li>
+</ul>
+<p>reached the target stopping area.
+- ‘OUTSIDEIMAGE’: stops at a position outside of <code class="docutils literal notranslate"><span class="pre">include_map</span></code> or
+<code class="docutils literal notranslate"><span class="pre">exclude_map</span></code>; the streamline reached an area outside the image where no
+direction data is available.
+- ‘TRACKPOINT’: stops at a position because no direction is available; the
+streamline is stopping where <code class="docutils literal notranslate"><span class="pre">include_map</span></code> &lt; 0.5 and <code class="docutils literal notranslate"><span class="pre">exclude_map</span></code> &lt; 0.5,
+but there is no valid direction to follow.
+- ‘INVALIDPOINT’: <code class="docutils literal notranslate"><span class="pre">exclude_map</span></code> &gt; 0.5; the streamline reach a position which
+is anatomically not plausible.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img_pve_csf</span><span class="p">,</span> <span class="n">img_pve_gm</span><span class="p">,</span> <span class="n">img_pve_wm</span> <span class="o">=</span> <span class="n">read_stanford_pve_maps</span><span class="p">()</span>
+
+<span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">img_pve_gm</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="n">background</span><span class="p">[(</span><span class="n">img_pve_gm</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">+</span>
+            <span class="n">img_pve_wm</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span> <span class="o">+</span>
+            <span class="n">img_pve_csf</span><span class="o">.</span><span class="n">get_data</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="n">include_map</span> <span class="o">=</span> <span class="n">img_pve_gm</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">include_map</span><span class="p">[</span><span class="n">background</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">exclude_map</span> <span class="o">=</span> <span class="n">img_pve_csf</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">act_criterion</span> <span class="o">=</span> <span class="n">ActStoppingCriterion</span><span class="p">(</span><span class="n">include_map</span><span class="p">,</span> <span class="n">exclude_map</span><span class="p">)</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">include_map</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+           <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">exclude_map</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span>
+           <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;act_maps.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id10">
+<img alt="../_images/act_maps.png" src="../_images/act_maps.png" />
+<p class="caption"><span class="caption-text"><strong>Include (left) and exclude (right) maps for ACT.</strong></span><a class="headerlink" href="#id10" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">dg</span><span class="p">,</span>
+                                     <span class="n">act_criterion</span><span class="p">,</span>
+                                     <span class="n">seeds</span><span class="p">,</span>
+                                     <span class="n">affine</span><span class="p">,</span>
+                                     <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">return_all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_deterministic_act_all.trk&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)))</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_deterministic_act_all.png&#39;</span><span class="p">,</span>
+                  <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id11">
+<img alt="../_images/tractogram_deterministic_act_all.png" src="../_images/tractogram_deterministic_act_all.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum using deterministic tractography with ACT stopping
+criterion.</strong></span><a class="headerlink" href="#id11" title="Permalink to this image">¶</a></p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">streamline_generator</span> <span class="o">=</span> <span class="n">LocalTracking</span><span class="p">(</span><span class="n">dg</span><span class="p">,</span>
+                                     <span class="n">act_criterion</span><span class="p">,</span>
+                                     <span class="n">seeds</span><span class="p">,</span>
+                                     <span class="n">affine</span><span class="p">,</span>
+                                     <span class="n">step_size</span><span class="o">=.</span><span class="mi">5</span><span class="p">,</span>
+                                     <span class="n">return_all</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">streamline_generator</span><span class="p">)</span>
+<span class="n">sft</span> <span class="o">=</span> <span class="n">StatefulTractogram</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">hardi_img</span><span class="p">,</span> <span class="n">Space</span><span class="o">.</span><span class="n">RASMM</span><span class="p">)</span>
+<span class="n">save_trk</span><span class="p">(</span><span class="n">sft</span><span class="p">,</span> <span class="s2">&quot;tractogram_deterministic_act_valid.trk&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">has_fury</span><span class="p">:</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+    <span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">actor</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">colormap</span><span class="o">.</span><span class="n">line_colors</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)))</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;tractogram_deterministic_act_valid.png&#39;</span><span class="p">,</span>
+                  <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">800</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id12">
+<img alt="../_images/tractogram_deterministic_act_valid.png" src="../_images/tractogram_deterministic_act_valid.png" />
+<p class="caption"><span class="caption-text"><strong>Corpus Callosum using deterministic tractography with ACT stopping
+criterion. Streamlines ending in gray matter region only.</strong></span><a class="headerlink" href="#id12" title="Permalink to this image">¶</a></p>
+</div>
+<p>The threshold and binary stopping criterion use respectively a scalar map and a
+binary mask to stop the tracking. The ACT stopping criterion use partial volume
+fraction (PVE) maps from an anatomical image to stop the tracking.
+Additionally, the ACT stopping criterion determines if the tracking stopped in
+expected regions (e.g. gray matter) and allows the user to get only
+streamlines stopping in those regions.</p>
+<div class="section" id="notes">
+<h3>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
+<p>Currently,the proposed method that cuts streamlines going through
+subcortical gray matter regions is not implemented. The
+backtracking technique for streamlines reaching INVALIDPOINT is not
+implemented either <a class="reference internal" href="#smith2012" id="id4"><span>[Smith2012]</span></a>.</p>
+</div>
+<div class="section" id="references">
+<h3>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h3>
+<dl class="citation">
+<dt class="label" id="smith2012"><span class="brackets">Smith2012</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>)</span></dt>
+<dd><p>Smith, R. E., Tournier, J.-D., Calamante, F., &amp; Connelly, A.
+Anatomically-constrained tractography: Improved diffusion MRI
+streamlines tractography through effective use of anatomical
+information. NeuroImage, 63(3), 1924-1938, 2012.</p>
+</dd>
+<dt class="label" id="girard2014"><span class="brackets"><a class="fn-backref" href="#id1">Girard2014</a></span></dt>
+<dd><p>Girard, G., Whittingstall, K., Deriche, R., &amp; Descoteaux, M.
+Towards quantitative connectivity analysis: reducing tractography biases.
+NeuroImage, 98, 266-278, 2014.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/034a6637eb62a224f34de94d97ecf916/tracking_stopping_criterion.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

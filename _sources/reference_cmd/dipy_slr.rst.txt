@@ -1,0 +1,50 @@
+
+========================
+dipy_slr
+========================
+
+usage: dipy_slr [-h] [--x0 str] [--rm_small_clusters int]
+                     [--qbx_thr [int [int ...]]] [--num_threads int]
+                     [--greater_than int] [--less_than int] [--nb_pts int]
+                     [--progressive] [--out_dir str] [--out_moved str]
+                     [--out_affine str] [--out_stat_centroids str]
+                     [--out_moving_centroids str] [--out_moved_centroids str]
+                     static_files moving_files
+
+Streamline-based linear registration.
+
+For efficiency we apply the registration on cluster centroids and remove small clusters.
+
+positional arguments:
+  static_files
+  moving_files
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --x0 str              rigid, similarity or affine transformation model (default affine)
+  --rm_small_clusters int
+                        Remove clusters that have less than `rm_small_clusters` (default 50)
+  --qbx_thr [int [int ...]]
+                        Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+  --num_threads int     Number of threads. If None (default) then all available threads will be used. Only metrics using OpenMP will use this variable.
+  --greater_than int    Keep streamlines that have length greater than this value (default 50)
+  --less_than int       Keep streamlines have length less than this value (default 250)
+  --nb_pts int          Number of points for discretizing each streamline (default 20)
+  --progressive         (default True)
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_moved str       Filename of moved tractogram (default 'moved.trk')
+  --out_affine str      Filename of affine for SLR transformation (default 'affine.txt')
+  --out_stat_centroids str
+                        Filename of static centroids (default 'static_centroids.trk')
+  --out_moving_centroids str
+                        Filename of moving centroids (default 'moving_centroids.trk')
+  --out_moved_centroids str
+                        Filename of moved centroids (default 'moved_centroids.trk')
+
+References: 
+.. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linearregistration of white-matter fascicles in the space ofstreamlines", NeuroImage, 117, 124--140, 2015
+.. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiberbundle alignment for group comparisons", ISMRM, 2014.
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matterbundles using local and global streamline-based registrationand clustering, NeuroImage, 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

@@ -1,0 +1,1621 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tracking" href="dipy.tracking.html" />
+    <link rel="prev" title="sims" href="dipy.sims.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.tracking.html" title="tracking"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy.sims.html" title="sims"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">stats</span></code></a><ul>
+<li><a class="reference internal" href="#module-dipy.stats.analysis">Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">stats.analysis</span></code></a><ul>
+<li><a class="reference internal" href="#averagepointwiseeuclideanmetric"><code class="xref py py-class docutils literal notranslate"><span class="pre">AveragePointwiseEuclideanMetric</span></code></a></li>
+<li><a class="reference internal" href="#quickbundles"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuickBundles</span></code></a></li>
+<li><a class="reference internal" href="#streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">Streamlines</span></code></a></li>
+<li><a class="reference internal" href="#ckdtree"><code class="xref py py-class docutils literal notranslate"><span class="pre">cKDTree</span></code></a></li>
+<li><a class="reference internal" href="#afq-profile">afq_profile</a></li>
+<li><a class="reference internal" href="#bundle-analysis">bundle_analysis</a></li>
+<li><a class="reference internal" href="#dti-measures">dti_measures</a></li>
+<li><a class="reference internal" href="#gaussian-weights">gaussian_weights</a></li>
+<li><a class="reference internal" href="#load-nifti">load_nifti</a></li>
+<li><a class="reference internal" href="#load-peaks">load_peaks</a></li>
+<li><a class="reference internal" href="#load-tractogram">load_tractogram</a></li>
+<li><a class="reference internal" href="#mahalanobis">mahalanobis</a></li>
+<li><a class="reference internal" href="#map-coordinates">map_coordinates</a></li>
+<li><a class="reference internal" href="#optional-package">optional_package</a></li>
+<li><a class="reference internal" href="#orient-by-streamline">orient_by_streamline</a></li>
+<li><a class="reference internal" href="#peak-values">peak_values</a></li>
+<li><a class="reference internal" href="#set-number-of-points">set_number_of_points</a></li>
+<li><a class="reference internal" href="#transform-streamlines">transform_streamlines</a></li>
+<li><a class="reference internal" href="#values-from-volume">values_from_volume</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy.sims.html"
+                        title="previous chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sims</span></code></a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.tracking.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">tracking</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.stats.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy.stats">
+<span id="stats"></span><h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">stats</span></code><a class="headerlink" href="#module-dipy.stats" title="Permalink to this headline">¶</a></h1>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+</tbody>
+</table>
+<div class="section" id="module-dipy.stats.analysis">
+<span id="module-stats-analysis"></span><h2>Module: <code class="xref py py-mod docutils literal notranslate"><span class="pre">stats.analysis</span></code><a class="headerlink" href="#module-dipy.stats.analysis" title="Permalink to this headline">¶</a></h2>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.AveragePointwiseEuclideanMetric" title="dipy.stats.analysis.AveragePointwiseEuclideanMetric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AveragePointwiseEuclideanMetric</span></code></a></p></td>
+<td><p>Computes the average of pointwise Euclidean distances between two sequential data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.QuickBundles" title="dipy.stats.analysis.QuickBundles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuickBundles</span></code></a>(threshold[, metric, …])</p></td>
+<td><p>Clusters streamlines using QuickBundles <a class="reference internal" href="#r2bead99ec474-garyfallidis12" id="id1">[Garyfallidis12]</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.Streamlines" title="dipy.stats.analysis.Streamlines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Streamlines</span></code></a></p></td>
+<td><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.streamlines.array_sequence.ArraySequence</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree" title="dipy.stats.analysis.cKDTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cKDTree</span></code></a>(data[, leafsize, compact_nodes, …])</p></td>
+<td><p>kd-tree for quick nearest-neighbor lookup</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.afq_profile" title="dipy.stats.analysis.afq_profile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">afq_profile</span></code></a>(data, bundle, affine[, …])</p></td>
+<td><p>Calculates a summarized profile of data for a bundle or tract along its length.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.bundle_analysis" title="dipy.stats.analysis.bundle_analysis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bundle_analysis</span></code></a>(model_bundle_folder, …[, …])</p></td>
+<td><p>Applies statistical analysis on bundles and saves the results in a directory specified by <code class="docutils literal notranslate"><span class="pre">out_dir</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.dti_measures" title="dipy.stats.analysis.dti_measures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dti_measures</span></code></a>(bundle, metric, dt, pname, …)</p></td>
+<td><p>Calculates dti measure (eg: FA, MD) per point on streamlines and save it in hd5 file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.gaussian_weights" title="dipy.stats.analysis.gaussian_weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gaussian_weights</span></code></a>(bundle[, n_points, …])</p></td>
+<td><p>Calculate weights for each streamline/node in a bundle, based on a Mahalanobis distance from the core the bundle, at that node (mean, per default).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.load_nifti" title="dipy.stats.analysis.load_nifti"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_nifti</span></code></a>(fname[, return_img, …])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.load_peaks" title="dipy.stats.analysis.load_peaks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_peaks</span></code></a>(fname[, verbose])</p></td>
+<td><p>Load a PeaksAndMetrics HDF5 file (PAM5)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.load_tractogram" title="dipy.stats.analysis.load_tractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_tractogram</span></code></a>(filename, reference[, …])</p></td>
+<td><p>Load the stateful tractogram from any format (trk, tck, fib, dpy)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.mahalanobis" title="dipy.stats.analysis.mahalanobis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mahalanobis</span></code></a>(u, v, VI)</p></td>
+<td><p>Compute the Mahalanobis distance between two 1-D arrays.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.map_coordinates" title="dipy.stats.analysis.map_coordinates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map_coordinates</span></code></a>(input, coordinates[, …])</p></td>
+<td><p>Map the input array to new coordinates by interpolation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.optional_package" title="dipy.stats.analysis.optional_package"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optional_package</span></code></a>(name[, trip_msg])</p></td>
+<td><p>Return package-like thing and module setup for package <cite>name</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.orient_by_streamline" title="dipy.stats.analysis.orient_by_streamline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">orient_by_streamline</span></code></a>(streamlines, standard)</p></td>
+<td><p>Orient a bundle of streamlines to a standard streamline.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.peak_values" title="dipy.stats.analysis.peak_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">peak_values</span></code></a>(bundle, peaks, dt, pname, bname, …)</p></td>
+<td><p>Peak_values function finds the peak direction and peak value of a point on a streamline used while tracking (generating the tractogram) and save it in hd5 file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.set_number_of_points" title="dipy.stats.analysis.set_number_of_points"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_number_of_points</span></code></a></p></td>
+<td><p>Change the number of points of streamlines</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.transform_streamlines" title="dipy.stats.analysis.transform_streamlines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_streamlines</span></code></a>(streamlines, mat[, …])</p></td>
+<td><p>Apply affine transformation to streamlines</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.values_from_volume" title="dipy.stats.analysis.values_from_volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values_from_volume</span></code></a>(data, streamlines, affine)</p></td>
+<td><p>Extract values of a scalar/vector along each streamline from a volume.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="averagepointwiseeuclideanmetric">
+<h3><a class="reference internal" href="#dipy.stats.analysis.AveragePointwiseEuclideanMetric" title="dipy.stats.analysis.AveragePointwiseEuclideanMetric"><code class="xref py py-class docutils literal notranslate"><span class="pre">AveragePointwiseEuclideanMetric</span></code></a><a class="headerlink" href="#averagepointwiseeuclideanmetric" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.stats.analysis.AveragePointwiseEuclideanMetric">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">AveragePointwiseEuclideanMetric</code><a class="headerlink" href="#dipy.stats.analysis.AveragePointwiseEuclideanMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.segment.metricspeed.SumPointwiseEuclideanMetric</span></code></p>
+<p>Computes the average of pointwise Euclidean distances between two
+sequential data.</p>
+<p>A sequence of N-dimensional points is represented as a 2D array with
+shape (nb_points, nb_dimensions). A <cite>feature</cite> object can be specified
+in order to calculate the distance between the features, rather than
+directly between the sequential data.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>feature</strong><span class="classifier"><cite>Feature</cite> object, optional</span></dt><dd><p>It is used to extract features before computing the distance.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The distance between two 2D sequential data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s1</span>       <span class="n">s2</span>
+
+<span class="mi">0</span><span class="o">*</span>   <span class="n">a</span>    <span class="o">*</span><span class="mi">0</span>
+  \       <span class="o">|</span>
+   \      <span class="o">|</span>
+   <span class="mi">1</span><span class="o">*</span>     <span class="o">|</span>
+    <span class="o">|</span>  <span class="n">b</span>  <span class="o">*</span><span class="mi">1</span>
+    <span class="o">|</span>      \
+    <span class="mi">2</span><span class="o">*</span>      \
+        <span class="n">c</span>    <span class="o">*</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>is equal to <span class="math notranslate nohighlight">\((a+b+c)/3\)</span> where <span class="math notranslate nohighlight">\(a\)</span> is the Euclidean distance between s1[0] and
+s2[0], <span class="math notranslate nohighlight">\(b\)</span> between s1[1] and s2[1] and <span class="math notranslate nohighlight">\(c\)</span> between s1[2] and s2[2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature</span></code></dt><dd><p><cite>Feature</cite> object used to extract features from sequential data</p>
+</dd>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_order_invariant</span></code></dt><dd><p>Is this metric invariant to the sequence’s ordering</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">are_compatible</span></code></p></td>
+<td><p>Checks if features can be used by <cite>metric.dist</cite> based on their shape.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dist</span></code></p></td>
+<td><p>Computes a distance between two data points based on their features.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.stats.analysis.AveragePointwiseEuclideanMetric.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.AveragePointwiseEuclideanMetric.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="quickbundles">
+<h3><a class="reference internal" href="#dipy.stats.analysis.QuickBundles" title="dipy.stats.analysis.QuickBundles"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuickBundles</span></code></a><a class="headerlink" href="#quickbundles" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.stats.analysis.QuickBundles">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">QuickBundles</code><span class="sig-paren">(</span><em class="sig-param">threshold</em>, <em class="sig-param">metric='MDF_12points'</em>, <em class="sig-param">max_nb_clusters=2147483647</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.QuickBundles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="dipy.segment.html#dipy.segment.clustering.Clustering" title="dipy.segment.clustering.Clustering"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.segment.clustering.Clustering</span></code></a></p>
+<p>Clusters streamlines using QuickBundles <a class="reference internal" href="#r2bead99ec474-garyfallidis12" id="id2">[Garyfallidis12]</a>.</p>
+<p>Given a list of streamlines, the QuickBundles algorithm sequentially
+assigns each streamline to its closest bundle in <span class="math notranslate nohighlight">\(\mathcal{O}(Nk)\)</span> where
+<span class="math notranslate nohighlight">\(N\)</span> is the number of streamlines and <span class="math notranslate nohighlight">\(k\)</span> is the final number of bundles.
+If for a given streamline its closest bundle is farther than <cite>threshold</cite>,
+a new bundle is created and the streamline is assigned to it except if the
+number of bundles has already exceeded <cite>max_nb_clusters</cite>.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>threshold</strong><span class="classifier">float</span></dt><dd><p>The maximum distance from a bundle for a streamline to be still
+considered as part of it.</p>
+</dd>
+<dt><strong>metric</strong><span class="classifier">str or <cite>Metric</cite> object (optional)</span></dt><dd><p>The distance metric to use when comparing two streamlines. By default,
+the Minimum average Direct-Flip (MDF) distance <a class="reference internal" href="#r2bead99ec474-garyfallidis12" id="id3">[Garyfallidis12]</a> is
+used and streamlines are automatically resampled so they have
+12 points.</p>
+</dd>
+<dt><strong>max_nb_clusters</strong><span class="classifier">int</span></dt><dd><p>Limits the creation of bundles.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r2bead99ec474-garyfallidis12"><span class="brackets">Garyfallidis12</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>,<a href="#id3">3</a>,<a href="#id4">4</a>)</span></dt>
+<dd><p>Garyfallidis E. et al., QuickBundles a method for
+tractography simplification, Frontiers in Neuroscience,
+vol 6, no 175, 2012.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.segment.clustering</span> <span class="k">import</span> <span class="n">QuickBundles</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">get_fnames</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.io.streamline</span> <span class="k">import</span> <span class="n">load_tractogram</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">Streamlines</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fname</span> <span class="o">=</span> <span class="n">get_fnames</span><span class="p">(</span><span class="s1">&#39;fornix&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fornix</span> <span class="o">=</span> <span class="n">load_tractogram</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;same&#39;</span><span class="p">,</span>
+<span class="gp">... </span>                         <span class="n">bbox_valid_check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">streamlines</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">streamlines</span> <span class="o">=</span> <span class="n">Streamlines</span><span class="p">(</span><span class="n">fornix</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Segment fornix with a threshold of 10mm and streamlines resampled</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># to 12 points.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">10.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">)</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">clusters</span><span class="p">))</span>
+<span class="go">[61, 191, 47, 1]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Resampling streamlines differently is done explicitly as follows.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Note this has an impact on the speed and the accuracy (tradeoff).</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">ResampleFeature</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.segment.metric</span> <span class="k">import</span> <span class="n">AveragePointwiseEuclideanMetric</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">feature</span> <span class="o">=</span> <span class="n">ResampleFeature</span><span class="p">(</span><span class="n">nb_points</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">metric</span> <span class="o">=</span> <span class="n">AveragePointwiseEuclideanMetric</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">qb</span> <span class="o">=</span> <span class="n">QuickBundles</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">qb</span><span class="o">.</span><span class="n">cluster</span><span class="p">(</span><span class="n">streamlines</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">clusters</span><span class="p">)</span>
+<span class="go">4</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">len</span><span class="p">,</span> <span class="n">clusters</span><span class="p">))</span>
+<span class="go">[58, 142, 72, 28]</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.QuickBundles.cluster" title="dipy.stats.analysis.QuickBundles.cluster"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cluster</span></code></a>(streamlines[, ordering])</p></td>
+<td><p>Clusters <cite>streamlines</cite> into bundles.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.stats.analysis.QuickBundles.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">threshold</em>, <em class="sig-param">metric='MDF_12points'</em>, <em class="sig-param">max_nb_clusters=2147483647</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.QuickBundles.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.QuickBundles.cluster">
+<code class="sig-name descname">cluster</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">ordering=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.QuickBundles.cluster" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clusters <cite>streamlines</cite> into bundles.</p>
+<p>Performs quickbundles algorithm using predefined metric and threshold.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>streamlines</strong><span class="classifier">list of 2D arrays</span></dt><dd><p>Each 2D array represents a sequence of 3D points (points, 3).</p>
+</dd>
+<dt><strong>ordering</strong><span class="classifier">iterable of indices</span></dt><dd><p>Specifies the order in which data points will be clustered.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>`ClusterMapCentroid` object</strong></dt><dd><p>Result of the clustering.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="streamlines">
+<h3><a class="reference internal" href="#dipy.stats.analysis.Streamlines" title="dipy.stats.analysis.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">Streamlines</span></code></a><a class="headerlink" href="#streamlines" title="Permalink to this headline">¶</a></h3>
+<dl class="attribute">
+<dt id="dipy.stats.analysis.Streamlines">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">Streamlines</code><a class="headerlink" href="#dipy.stats.analysis.Streamlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">nibabel.streamlines.array_sequence.ArraySequence</span></code></p>
+</dd></dl>
+
+</div>
+<div class="section" id="ckdtree">
+<h3><a class="reference internal" href="#dipy.stats.analysis.cKDTree" title="dipy.stats.analysis.cKDTree"><code class="xref py py-class docutils literal notranslate"><span class="pre">cKDTree</span></code></a><a class="headerlink" href="#ckdtree" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="dipy.stats.analysis.cKDTree">
+<em class="property">class </em><code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">cKDTree</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">leafsize=16</em>, <em class="sig-param">compact_nodes=True</em>, <em class="sig-param">copy_data=False</em>, <em class="sig-param">balanced_tree=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>kd-tree for quick nearest-neighbor lookup</p>
+<p>This class provides an index into a set of k-dimensional points
+which can be used to rapidly look up the nearest neighbors of any
+point.</p>
+<p>The algorithm used is described in Maneewongvatana and Mount 1999. 
+The general idea is that the kd-tree is a binary trie, each of whose
+nodes represents an axis-aligned hyperrectangle. Each node specifies
+an axis and splits the set of points based on whether their coordinate
+along that axis is greater than or less than a particular value.</p>
+<p>During construction, the axis and splitting point are chosen by the 
+“sliding midpoint” rule, which ensures that the cells do not all
+become long and thin.</p>
+<p>The tree can be queried for the r closest neighbors of any given point 
+(optionally returning only those within some maximum distance of the 
+point). It can also be queried, with a substantial gain in efficiency, 
+for the r approximate closest neighbors.</p>
+<p>For large dimensions (20 is already large) do not expect this to run 
+significantly faster than brute force. High-dimensional nearest-neighbor
+queries are a substantial open problem in computer science.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">array_like, shape (n,m)</span></dt><dd><p>The n data points of dimension m to be indexed. This array is 
+not copied unless this is necessary to produce a contiguous 
+array of doubles, and so modifying this data will result in 
+bogus results. The data are also copied if the kd-tree is built
+with copy_data=True.</p>
+</dd>
+<dt><strong>leafsize</strong><span class="classifier">positive int, optional</span></dt><dd><p>The number of points at which the algorithm switches over to
+brute-force. Default: 16.</p>
+</dd>
+<dt><strong>compact_nodes</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, the kd-tree is built to shrink the hyperrectangles to
+the actual data range. This usually gives a more compact tree that 
+is robust against degenerated input data and gives faster queries 
+at the expense of longer build time. Default: True.</p>
+</dd>
+<dt><strong>copy_data</strong><span class="classifier">bool, optional</span></dt><dd><p>If True the data is always copied to protect the kd-tree against 
+data corruption. Default: False.</p>
+</dd>
+<dt><strong>balanced_tree</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, the median is used to split the hyperrectangles instead of 
+the midpoint. This usually gives a more compact tree and 
+faster queries at the expense of longer build time. Default: True.</p>
+</dd>
+<dt><strong>boxsize</strong><span class="classifier">array_like or scalar, optional</span></dt><dd><p>Apply a m-d toroidal topology to the KDTree.. The topology is generated 
+by <span class="math notranslate nohighlight">\(x_i + n_i L_i\)</span> where <span class="math notranslate nohighlight">\(n_i\)</span> are integers and <span class="math notranslate nohighlight">\(L_i\)</span>
+is the boxsize along i-th dimension. The input data shall be wrapped 
+into <span class="math notranslate nohighlight">\([0, L_i)\)</span>. A ValueError is raised if any of the data is
+outside of this bound.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">KDTree</span></code></dt><dd><p>Implementation of <cite>cKDTree</cite> in pure Python</p>
+</dd>
+</dl>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">ndarray, shape (n,m)</span></dt><dd><p>The n data points of dimension m to be indexed. This array is
+not copied unless this is necessary to produce a contiguous
+array of doubles. The data are also copied if the kd-tree is built
+with <cite>copy_data=True</cite>.</p>
+</dd>
+<dt><strong>leafsize</strong><span class="classifier">positive int</span></dt><dd><p>The number of points at which the algorithm switches over to
+brute-force.</p>
+</dd>
+<dt><strong>m</strong><span class="classifier">int</span></dt><dd><p>The dimension of a single data-point.</p>
+</dd>
+<dt><strong>n</strong><span class="classifier">int</span></dt><dd><p>The number of data points.</p>
+</dd>
+<dt><strong>maxes</strong><span class="classifier">ndarray, shape (m,)</span></dt><dd><p>The maximum value in each dimension of the n data points.</p>
+</dd>
+<dt><strong>mins</strong><span class="classifier">ndarray, shape (m,)</span></dt><dd><p>The minimum value in each dimension of the n data points.</p>
+</dd>
+<dt><strong>tree</strong><span class="classifier">object, class cKDTreeNode</span></dt><dd><p>This class exposes a Python view of the root node in the cKDTree object.</p>
+</dd>
+<dt><strong>size</strong><span class="classifier">int</span></dt><dd><p>The number of nodes in the tree.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.count_neighbors" title="dipy.stats.analysis.cKDTree.count_neighbors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">count_neighbors</span></code></a>(self, other, r[, p, …])</p></td>
+<td><p>Count how many nearby pairs can be formed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.query" title="dipy.stats.analysis.cKDTree.query"><code class="xref py py-obj docutils literal notranslate"><span class="pre">query</span></code></a>(self, x[, k, eps, p, …])</p></td>
+<td><p>Query the kd-tree for nearest neighbors</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.query_ball_point" title="dipy.stats.analysis.cKDTree.query_ball_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">query_ball_point</span></code></a>(self, x, r[, p, eps])</p></td>
+<td><p>Find all points within distance r of point(s) x.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.query_ball_tree" title="dipy.stats.analysis.cKDTree.query_ball_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">query_ball_tree</span></code></a>(self, other, r[, p, eps])</p></td>
+<td><p>Find all pairs of points whose distance is at most r</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.query_pairs" title="dipy.stats.analysis.cKDTree.query_pairs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">query_pairs</span></code></a>(self, r[, p, eps])</p></td>
+<td><p>Find all pairs of points whose distance is at most r.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.stats.analysis.cKDTree.sparse_distance_matrix" title="dipy.stats.analysis.cKDTree.sparse_distance_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sparse_distance_matrix</span></code></a>(self, other, max_distance)</p></td>
+<td><p>Compute a sparse distance matrix</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">$self</em>, <em class="sig-param">/</em>, <em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.boxsize">
+<code class="sig-name descname">boxsize</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.boxsize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.count_neighbors">
+<code class="sig-name descname">count_neighbors</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">other</em>, <em class="sig-param">r</em>, <em class="sig-param">p=2.</em>, <em class="sig-param">weights=None</em>, <em class="sig-param">cumulative=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.count_neighbors" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count how many nearby pairs can be formed. (pair-counting)</p>
+<p>Count the number of pairs (x1,x2) can be formed, with x1 drawn
+from self and x2 drawn from <code class="docutils literal notranslate"><span class="pre">other</span></code>, and where
+<code class="docutils literal notranslate"><span class="pre">distance(x1,</span> <span class="pre">x2,</span> <span class="pre">p)</span> <span class="pre">&lt;=</span> <span class="pre">r</span></code>.</p>
+<p>Data points on self and other are optionally weighted by the <code class="docutils literal notranslate"><span class="pre">weights</span></code>
+argument. (See below)</p>
+<p>The algorithm we implement here is based on <a class="reference internal" href="#r6517d87a3955-1" id="id5">[1]</a>. See notes for further discussion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>other</strong><span class="classifier">cKDTree instance</span></dt><dd><p>The other tree to draw points from, can be the same tree as self.</p>
+</dd>
+<dt><strong>r</strong><span class="classifier">float or one-dimensional array of floats</span></dt><dd><p>The radius to produce a count for. Multiple radii are searched with
+a single tree traversal. 
+If the count is non-cumulative(<code class="docutils literal notranslate"><span class="pre">cumulative=False</span></code>), <code class="docutils literal notranslate"><span class="pre">r</span></code> defines 
+the edges of the bins, and must be non-decreasing.</p>
+</dd>
+<dt><strong>p</strong><span class="classifier">float, optional</span></dt><dd><p>1&lt;=p&lt;=infinity. 
+Which Minkowski p-norm to use.
+Default 2.0.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">tuple, array_like, or None, optional</span></dt><dd><p>If None, the pair-counting is unweighted.
+If given as a tuple, weights[0] is the weights of points in <code class="docutils literal notranslate"><span class="pre">self</span></code>, and
+weights[1] is the weights of points in <code class="docutils literal notranslate"><span class="pre">other</span></code>; either can be None to 
+indicate the points are unweighted.
+If given as an array_like, weights is the weights of points in <code class="docutils literal notranslate"><span class="pre">self</span></code>
+and <code class="docutils literal notranslate"><span class="pre">other</span></code>. For this to make sense, <code class="docutils literal notranslate"><span class="pre">self</span></code> and <code class="docutils literal notranslate"><span class="pre">other</span></code> must be the
+same tree. If <code class="docutils literal notranslate"><span class="pre">self</span></code> and <code class="docutils literal notranslate"><span class="pre">other</span></code> are two different trees, a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+is raised.
+Default: None</p>
+</dd>
+<dt><strong>cumulative</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether the returned counts are cumulative. When cumulative is set to <code class="docutils literal notranslate"><span class="pre">False</span></code>
+the algorithm is optimized to work with a large number of bins (&gt;10) specified
+by <code class="docutils literal notranslate"><span class="pre">r</span></code>. When <code class="docutils literal notranslate"><span class="pre">cumulative</span></code> is set to True, the algorithm is optimized to work
+with a small number of <code class="docutils literal notranslate"><span class="pre">r</span></code>. Default: True</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>result</strong><span class="classifier">scalar or 1-D array</span></dt><dd><p>The number of pairs. For unweighted counts, the result is integer.
+For weighted counts, the result is float.
+If cumulative is False, <code class="docutils literal notranslate"><span class="pre">result[i]</span></code> contains the counts with
+<code class="docutils literal notranslate"><span class="pre">(-inf</span> <span class="pre">if</span> <span class="pre">i</span> <span class="pre">==</span> <span class="pre">0</span> <span class="pre">else</span> <span class="pre">r[i-1])</span> <span class="pre">&lt;</span> <span class="pre">R</span> <span class="pre">&lt;=</span> <span class="pre">r[i]</span></code></p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Pair-counting is the basic operation used to calculate the two point
+correlation functions from a data set composed of position of objects.</p>
+<p>Two point correlation function measures the clustering of objects and
+is widely used in cosmology to quantify the large scale structure
+in our Universe, but it may be useful for data analysis in other fields
+where self-similar assembly of objects also occur.</p>
+<p>The Landy-Szalay estimator for the two point correlation function of
+<code class="docutils literal notranslate"><span class="pre">D</span></code> measures the clustering signal in <code class="docutils literal notranslate"><span class="pre">D</span></code>. <a class="reference internal" href="#r6517d87a3955-2" id="id6">[2]</a></p>
+<p>For example, given the position of two sets of objects,</p>
+<ul class="simple">
+<li><p>objects <code class="docutils literal notranslate"><span class="pre">D</span></code> (data) contains the clustering signal, and</p></li>
+<li><p>objects <code class="docutils literal notranslate"><span class="pre">R</span></code> (random) that contains no signal,</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\xi(r) = \frac{&lt;D, D&gt; - 2 f &lt;D, R&gt; + f^2&lt;R, R&gt;}{f^2&lt;R, R&gt;},\]</div>
+<p>where the brackets represents counting pairs between two data sets
+in a finite bin around <code class="docutils literal notranslate"><span class="pre">r</span></code> (distance), corresponding to setting
+<cite>cumulative=False</cite>, and <code class="docutils literal notranslate"><span class="pre">f</span> <span class="pre">=</span> <span class="pre">float(len(D))</span> <span class="pre">/</span> <span class="pre">float(len(R))</span></code> is the
+ratio between number of objects from data and random.</p>
+<p>The algorithm implemented here is loosely based on the dual-tree
+algorithm described in <a class="reference internal" href="#r6517d87a3955-1" id="id7">[1]</a>. We switch between two different
+pair-cumulation scheme depending on the setting of <code class="docutils literal notranslate"><span class="pre">cumulative</span></code>.
+The computing time of the method we use when for
+<code class="docutils literal notranslate"><span class="pre">cumulative</span> <span class="pre">==</span> <span class="pre">False</span></code> does not scale with the total number of bins.
+The algorithm for <code class="docutils literal notranslate"><span class="pre">cumulative</span> <span class="pre">==</span> <span class="pre">True</span></code> scales linearly with the
+number of bins, though it is slightly faster when only
+1 or 2 bins are used. <a class="reference internal" href="#r6517d87a3955-5" id="id8">[5]</a>.</p>
+<p>As an extension to the naive pair-counting,
+weighted pair-counting counts the product of weights instead
+of number of pairs.
+Weighted pair-counting is used to estimate marked correlation functions
+(<a class="reference internal" href="#r6517d87a3955-3" id="id9">[3]</a>, section 2.2),
+or to properly calculate the average of data per distance bin
+(e.g. <a class="reference internal" href="#r6517d87a3955-4" id="id10">[4]</a>, section 2.1 on redshift).</p>
+<dl class="citation">
+<dt class="label" id="r6517d87a3955-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id7">2</a>)</span></dt>
+<dd><p>Gray and Moore,
+“N-body problems in statistical learning”,
+Mining the sky, 2000,
+<a class="reference external" href="https://arxiv.org/abs/astro-ph/0012333">https://arxiv.org/abs/astro-ph/0012333</a></p>
+</dd>
+<dt class="label" id="r6517d87a3955-2"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dd><p>Landy and Szalay,
+“Bias and variance of angular correlation functions”,
+The Astrophysical Journal, 1993,
+<a class="reference external" href="http://adsabs.harvard.edu/abs/1993ApJ...412...64L">http://adsabs.harvard.edu/abs/1993ApJ…412…64L</a></p>
+</dd>
+<dt class="label" id="r6517d87a3955-3"><span class="brackets"><a class="fn-backref" href="#id9">3</a></span></dt>
+<dd><p>Sheth, Connolly and Skibba,
+“Marked correlations in galaxy formation models”,
+Arxiv e-print, 2005,
+<a class="reference external" href="https://arxiv.org/abs/astro-ph/0511773">https://arxiv.org/abs/astro-ph/0511773</a></p>
+</dd>
+<dt class="label" id="r6517d87a3955-4"><span class="brackets"><a class="fn-backref" href="#id10">4</a></span></dt>
+<dd><p>Hawkins, et al.,
+“The 2dF Galaxy Redshift Survey: correlation functions,
+peculiar velocities and the matter density of the Universe”,
+Monthly Notices of the Royal Astronomical Society, 2002,
+<a class="reference external" href="http://adsabs.harvard.edu/abs/2003MNRAS.346...78H">http://adsabs.harvard.edu/abs/2003MNRAS.346…78H</a></p>
+</dd>
+<dt class="label" id="r6517d87a3955-5"><span class="brackets"><a class="fn-backref" href="#id8">5</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/scipy/scipy/pull/5647#issuecomment-168474926">https://github.com/scipy/scipy/pull/5647#issuecomment-168474926</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.data">
+<code class="sig-name descname">data</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.indices">
+<code class="sig-name descname">indices</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.leafsize">
+<code class="sig-name descname">leafsize</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.leafsize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.m">
+<code class="sig-name descname">m</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.m" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.maxes">
+<code class="sig-name descname">maxes</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.maxes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.mins">
+<code class="sig-name descname">mins</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.mins" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.n">
+<code class="sig-name descname">n</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.n" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.query">
+<code class="sig-name descname">query</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">k=1</em>, <em class="sig-param">eps=0</em>, <em class="sig-param">p=2</em>, <em class="sig-param">distance_upper_bound=np.inf</em>, <em class="sig-param">n_jobs=1</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the kd-tree for nearest neighbors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">array_like, last dimension self.m</span></dt><dd><p>An array of points to query.</p>
+</dd>
+<dt><strong>k</strong><span class="classifier">list of integer or integer</span></dt><dd><p>The list of k-th nearest neighbors to return. If k is an 
+integer it is treated as a list of [1, … k] (range(1, k+1)).
+Note that the counting starts from 1.</p>
+</dd>
+<dt><strong>eps</strong><span class="classifier">non-negative float</span></dt><dd><p>Return approximate nearest neighbors; the k-th returned value 
+is guaranteed to be no further than (1+eps) times the 
+distance to the real k-th nearest neighbor.</p>
+</dd>
+<dt><strong>p</strong><span class="classifier">float, 1&lt;=p&lt;=infinity</span></dt><dd><p>Which Minkowski p-norm to use. 
+1 is the sum-of-absolute-values “Manhattan” distance
+2 is the usual Euclidean distance
+infinity is the maximum-coordinate-difference distance</p>
+</dd>
+<dt><strong>distance_upper_bound</strong><span class="classifier">nonnegative float</span></dt><dd><p>Return only neighbors within this distance.  This is used to prune
+tree searches, so if you are doing a series of nearest-neighbor
+queries, it may help to supply the distance to the nearest neighbor
+of the most recent point.</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier">int, optional</span></dt><dd><p>Number of jobs to schedule for parallel processing. If -1 is given
+all processors are used. Default: 1.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>d</strong><span class="classifier">array of floats</span></dt><dd><p>The distances to the nearest neighbors. 
+If <code class="docutils literal notranslate"><span class="pre">x</span></code> has shape <code class="docutils literal notranslate"><span class="pre">tuple+(self.m,)</span></code>, then <code class="docutils literal notranslate"><span class="pre">d</span></code> has shape <code class="docutils literal notranslate"><span class="pre">tuple+(k,)</span></code>.
+When k == 1, the last dimension of the output is squeezed.
+Missing neighbors are indicated with infinite distances.</p>
+</dd>
+<dt><strong>i</strong><span class="classifier">ndarray of ints</span></dt><dd><p>The locations of the neighbors in <code class="docutils literal notranslate"><span class="pre">self.data</span></code>.
+If <code class="docutils literal notranslate"><span class="pre">x</span></code> has shape <code class="docutils literal notranslate"><span class="pre">tuple+(self.m,)</span></code>, then <code class="docutils literal notranslate"><span class="pre">i</span></code> has shape <code class="docutils literal notranslate"><span class="pre">tuple+(k,)</span></code>.
+When k == 1, the last dimension of the output is squeezed.
+Missing neighbors are indicated with <code class="docutils literal notranslate"><span class="pre">self.n</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If the KD-Tree is periodic, the position <code class="docutils literal notranslate"><span class="pre">x</span></code> is wrapped into the
+box.</p>
+<p>When the input k is a list, a query for arange(max(k)) is performed, but
+only columns that store the requested values of k are preserved. This is 
+implemented in a manner that reduces memory usage.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="k">import</span> <span class="n">cKDTree</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tree</span> <span class="o">=</span> <span class="n">cKDTree</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()])</span>
+</pre></div>
+</div>
+<p>To query the nearest neighbours and return squeezed result, use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]],</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+<span class="go">[2.         0.14142136] [ 0 13]</span>
+</pre></div>
+</div>
+<p>To query the nearest neighbours and return unsqueezed result, use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]],</span> <span class="n">k</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+<span class="go">[[2.        ]</span>
+<span class="go"> [0.14142136]] [[ 0]</span>
+<span class="go"> [13]]</span>
+</pre></div>
+</div>
+<p>To query the second nearest neighbours and return unsqueezed result, use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]],</span> <span class="n">k</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+<span class="go">[[2.23606798]</span>
+<span class="go"> [0.90553851]] [[ 6]</span>
+<span class="go"> [12]]</span>
+</pre></div>
+</div>
+<p>To query the first and second nearest neighbours, use</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]],</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+<span class="go">[[2.         2.23606798]</span>
+<span class="go"> [0.14142136 0.90553851]] [[ 0  6]</span>
+<span class="go"> [13 12]]</span>
+</pre></div>
+</div>
+<p>or, be more specific</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span> <span class="o">=</span> <span class="n">tree</span><span class="o">.</span><span class="n">query</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">2.1</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]],</span> <span class="n">k</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">dd</span><span class="p">,</span> <span class="n">ii</span><span class="p">)</span>
+<span class="go">[[2.         2.23606798]</span>
+<span class="go"> [0.14142136 0.90553851]] [[ 0  6]</span>
+<span class="go"> [13 12]]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.query_ball_point">
+<code class="sig-name descname">query_ball_point</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">x</em>, <em class="sig-param">r</em>, <em class="sig-param">p=2.</em>, <em class="sig-param">eps=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.query_ball_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find all points within distance r of point(s) x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>x</strong><span class="classifier">array_like, shape tuple + (self.m,)</span></dt><dd><p>The point or points to search for neighbors of.</p>
+</dd>
+<dt><strong>r</strong><span class="classifier">positive float</span></dt><dd><p>The radius of points to return.</p>
+</dd>
+<dt><strong>p</strong><span class="classifier">float, optional</span></dt><dd><p>Which Minkowski p-norm to use.  Should be in the range [1, inf].</p>
+</dd>
+<dt><strong>eps</strong><span class="classifier">nonnegative float, optional</span></dt><dd><p>Approximate search. Branches of the tree are not explored if their
+nearest points are further than <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">/</span> <span class="pre">(1</span> <span class="pre">+</span> <span class="pre">eps)</span></code>, and branches are
+added in bulk if their furthest points are nearer than
+<code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">*</span> <span class="pre">(1</span> <span class="pre">+</span> <span class="pre">eps)</span></code>.</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier">int, optional</span></dt><dd><p>Number of jobs to schedule for parallel processing. If -1 is given
+all processors are used. Default: 1.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">list or array of lists</span></dt><dd><p>If <cite>x</cite> is a single point, returns a list of the indices of the
+neighbors of <cite>x</cite>. If <cite>x</cite> is an array of points, returns an object
+array of shape tuple containing lists of neighbors.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>If you have many points whose neighbors you want to find, you may save
+substantial amounts of time by putting them in a cKDTree and using
+query_ball_tree.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">spatial</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">ravel</span><span class="p">()]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tree</span> <span class="o">=</span> <span class="n">spatial</span><span class="o">.</span><span class="n">cKDTree</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tree</span><span class="o">.</span><span class="n">query_ball_point</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">[4, 8, 9, 12]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.query_ball_tree">
+<code class="sig-name descname">query_ball_tree</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">other</em>, <em class="sig-param">r</em>, <em class="sig-param">p=2.</em>, <em class="sig-param">eps=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.query_ball_tree" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find all pairs of points whose distance is at most r</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>other</strong><span class="classifier">cKDTree instance</span></dt><dd><p>The tree containing points to search against.</p>
+</dd>
+<dt><strong>r</strong><span class="classifier">float</span></dt><dd><p>The maximum distance, has to be positive.</p>
+</dd>
+<dt><strong>p</strong><span class="classifier">float, optional</span></dt><dd><p>Which Minkowski norm to use.  <cite>p</cite> has to meet the condition
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">p</span> <span class="pre">&lt;=</span> <span class="pre">infinity</span></code>.</p>
+</dd>
+<dt><strong>eps</strong><span class="classifier">float, optional</span></dt><dd><p>Approximate search.  Branches of the tree are not explored
+if their nearest points are further than <code class="docutils literal notranslate"><span class="pre">r/(1+eps)</span></code>, and
+branches are added in bulk if their furthest points are nearer
+than <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">*</span> <span class="pre">(1+eps)</span></code>.  <cite>eps</cite> has to be non-negative.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">list of lists</span></dt><dd><p>For each element <code class="docutils literal notranslate"><span class="pre">self.data[i]</span></code> of this tree, <code class="docutils literal notranslate"><span class="pre">results[i]</span></code> is a
+list of the indices of its neighbors in <code class="docutils literal notranslate"><span class="pre">other.data</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.query_pairs">
+<code class="sig-name descname">query_pairs</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">r</em>, <em class="sig-param">p=2.</em>, <em class="sig-param">eps=0</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.query_pairs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find all pairs of points whose distance is at most r.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>r</strong><span class="classifier">positive float</span></dt><dd><p>The maximum distance.</p>
+</dd>
+<dt><strong>p</strong><span class="classifier">float, optional</span></dt><dd><p>Which Minkowski norm to use.  <code class="docutils literal notranslate"><span class="pre">p</span></code> has to meet the condition
+<code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">&lt;=</span> <span class="pre">p</span> <span class="pre">&lt;=</span> <span class="pre">infinity</span></code>.</p>
+</dd>
+<dt><strong>eps</strong><span class="classifier">float, optional</span></dt><dd><p>Approximate search.  Branches of the tree are not explored
+if their nearest points are further than <code class="docutils literal notranslate"><span class="pre">r/(1+eps)</span></code>, and
+branches are added in bulk if their furthest points are nearer
+than <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">*</span> <span class="pre">(1+eps)</span></code>.  <cite>eps</cite> has to be non-negative.</p>
+</dd>
+<dt><strong>output_type</strong><span class="classifier">string, optional</span></dt><dd><p>Choose the output container, ‘set’ or ‘ndarray’. Default: ‘set’</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>results</strong><span class="classifier">set or ndarray</span></dt><dd><p>Set of pairs <code class="docutils literal notranslate"><span class="pre">(i,j)</span></code>, with <code class="docutils literal notranslate"><span class="pre">i</span> <span class="pre">&lt;</span> <span class="pre">j</span></code>, for which the corresponding
+positions are close. If output_type is ‘ndarray’, an ndarry is 
+returned instead of a set.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.size">
+<code class="sig-name descname">size</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.size" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="dipy.stats.analysis.cKDTree.sparse_distance_matrix">
+<code class="sig-name descname">sparse_distance_matrix</code><span class="sig-paren">(</span><em class="sig-param">self</em>, <em class="sig-param">other</em>, <em class="sig-param">max_distance</em>, <em class="sig-param">p=2.</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.cKDTree.sparse_distance_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a sparse distance matrix</p>
+<p>Computes a distance matrix between two cKDTrees, leaving as zero
+any distance greater than max_distance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>other</strong><span class="classifier">cKDTree</span></dt><dd></dd>
+<dt><strong>max_distance</strong><span class="classifier">positive float</span></dt><dd></dd>
+<dt><strong>p</strong><span class="classifier">float, 1&lt;=p&lt;=infinity</span></dt><dd><p>Which Minkowski p-norm to use.</p>
+</dd>
+<dt><strong>output_type</strong><span class="classifier">string, optional</span></dt><dd><p>Which container to use for output data. Options: ‘dok_matrix’,
+‘coo_matrix’, ‘dict’, or ‘ndarray’. Default: ‘dok_matrix’.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>result</strong><span class="classifier">dok_matrix, coo_matrix, dict or ndarray</span></dt><dd><p>Sparse matrix representing the results in “dictionary of keys” 
+format. If a dict is returned the keys are (i,j) tuples of indices.
+If output_type is ‘ndarray’ a record array with fields ‘i’, ‘j’,
+and ‘k’ is returned,</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="dipy.stats.analysis.cKDTree.tree">
+<code class="sig-name descname">tree</code><a class="headerlink" href="#dipy.stats.analysis.cKDTree.tree" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="afq-profile">
+<h3>afq_profile<a class="headerlink" href="#afq-profile" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.afq_profile">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">afq_profile</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">bundle</em>, <em class="sig-param">affine</em>, <em class="sig-param">n_points=100</em>, <em class="sig-param">orient_by=None</em>, <em class="sig-param">weights=None</em>, <em class="sig-param">**weights_kwarg</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.afq_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates a summarized profile of data for a bundle or tract
+along its length.</p>
+<p>Follows the approach outlined in <a class="reference internal" href="#r59d3e2f0a60f-yeatman2012" id="id11">[Yeatman2012]</a>.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">3D volume</span></dt><dd><p>The statistic to sample with the streamlines.</p>
+</dd>
+<dt><strong>bundle</strong><span class="classifier">StreamLines class instance</span></dt><dd><dl class="simple">
+<dt>The collection of streamlines (possibly already resampled into an array</dt><dd><p>for each to have the same length) with which we are resampling. See
+Note below about orienting the streamlines.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>affine</strong><span class="classifier">array_like (4, 4)</span></dt><dd><p>The mapping from voxel coordinates to streamline points.
+The voxel_to_rasmm matrix, typically from a NIFTI file.</p>
+</dd>
+<dt><strong>n_points: int, optional</strong></dt><dd><p>The number of points to sample along the bundle. Default: 100.</p>
+</dd>
+<dt><strong>orient_by: streamline, optional.</strong></dt><dd><p>A streamline to use as a standard to orient all of the streamlines in
+the bundle according to.</p>
+</dd>
+<dt><strong>weights</strong><span class="classifier">1D array or 2D array or callable (optional)</span></dt><dd><p>Weight each streamline (1D) or each node (2D) when calculating the
+tract-profiles. Must sum to 1 across streamlines (in each node if
+relevant). If callable, this is a function that calculates weights.</p>
+</dd>
+<dt><strong>weights_kwarg</strong><span class="classifier">key-word arguments</span></dt><dd><p>Additional key-word arguments to pass to the weight-calculating
+function. Only to be used if weights is a callable.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>ndarray</strong><span class="classifier">a 1D array with the profile of <cite>data</cite> along the length of</span></dt><dd><p><cite>bundle</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Before providing a bundle as input to this function, you will need to make
+sure that the streamlines in the bundle are all oriented in the same
+orientation relative to the bundle (use <a class="reference internal" href="#dipy.stats.analysis.orient_by_streamline" title="dipy.stats.analysis.orient_by_streamline"><code class="xref py py-func docutils literal notranslate"><span class="pre">orient_by_streamline()</span></code></a>).</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r59d3e2f0a60f-yeatman2012"><span class="brackets">Yeatman2012</span><span class="fn-backref">(<a href="#id11">1</a>,<a href="#id12">2</a>)</span></dt>
+<dd><p>Yeatman, Jason D., Robert F. Dougherty,
+Nathaniel J. Myall, Brian A. Wandell, and Heidi M. Feldman. 2012.
+“Tract Profiles of White Matter Properties: Automating Fiber-Tract
+Quantification” PloS One 7 (11): e49790.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="bundle-analysis">
+<h3>bundle_analysis<a class="headerlink" href="#bundle-analysis" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.bundle_analysis">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">bundle_analysis</code><span class="sig-paren">(</span><em class="sig-param">model_bundle_folder</em>, <em class="sig-param">bundle_folder</em>, <em class="sig-param">orig_bundle_folder</em>, <em class="sig-param">metric_folder</em>, <em class="sig-param">group</em>, <em class="sig-param">subject</em>, <em class="sig-param">no_disks=100</em>, <em class="sig-param">out_dir=''</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.bundle_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies statistical analysis on bundles and saves the results
+in a directory specified by <code class="docutils literal notranslate"><span class="pre">out_dir</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model_bundle_folder</strong><span class="classifier">string</span></dt><dd><p>Path to the input model bundle files. This path may contain
+wildcards to process multiple inputs at once.</p>
+</dd>
+<dt><strong>bundle_folder</strong><span class="classifier">string</span></dt><dd><p>Path to the input bundle files in common space. This path may
+contain wildcards to process multiple inputs at once.</p>
+</dd>
+<dt><strong>orig_folder</strong><span class="classifier">string</span></dt><dd><p>Path to the input bundle files in native space. This path may
+contain wildcards to process multiple inputs at once.</p>
+</dd>
+<dt><strong>metric_folder</strong><span class="classifier">string</span></dt><dd><p>Path to the input dti metric or/and peak files. It will be used as
+metric for statistical analysis of bundles.</p>
+</dd>
+<dt><strong>group</strong><span class="classifier">string</span></dt><dd><p>what group subject belongs to e.g. control or patient</p>
+</dd>
+<dt><strong>subject</strong><span class="classifier">string</span></dt><dd><p>subject id e.g. 10001</p>
+</dd>
+<dt><strong>no_disks</strong><span class="classifier">integer, optional</span></dt><dd><p>Number of disks used for dividing bundle into disks. (Default 100)</p>
+</dd>
+<dt><strong>out_dir</strong><span class="classifier">string, optional</span></dt><dd><p>Output directory (default input file directory)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="re83c634fc031-chandio19"><span class="brackets"><a class="fn-backref" href="#id13">Chandio19</a></span></dt>
+<dd><p>Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,</p>
+</dd>
+</dl>
+<p>E. Garyfallidis, Bundle Analytics: a computational and statistical
+analyses framework for tractometric studies, Proceedings of:
+International Society of Magnetic Resonance in Medicine (ISMRM),
+Montreal, Canada, 2019.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="dti-measures">
+<h3>dti_measures<a class="headerlink" href="#dti-measures" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.dti_measures">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">dti_measures</code><span class="sig-paren">(</span><em class="sig-param">bundle</em>, <em class="sig-param">metric</em>, <em class="sig-param">dt</em>, <em class="sig-param">pname</em>, <em class="sig-param">bname</em>, <em class="sig-param">subject</em>, <em class="sig-param">group</em>, <em class="sig-param">ind</em>, <em class="sig-param">dir</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.dti_measures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates dti measure (eg: FA, MD) per point on streamlines and
+save it in hd5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>bundle</strong><span class="classifier">string</span></dt><dd><p>Name of bundle being analyzed</p>
+</dd>
+<dt><strong>metric</strong><span class="classifier">matrix of float values</span></dt><dd><p>dti metric e.g. FA, MD</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">DataFrame</span></dt><dd><p>DataFrame to be populated</p>
+</dd>
+<dt><strong>pname</strong><span class="classifier">string</span></dt><dd><p>Name of the dti metric</p>
+</dd>
+<dt><strong>bname</strong><span class="classifier">string</span></dt><dd><p>Name of bundle being analyzed.</p>
+</dd>
+<dt><strong>subject</strong><span class="classifier">string</span></dt><dd><p>subject number as a string (e.g. 10001)</p>
+</dd>
+<dt><strong>group</strong><span class="classifier">string</span></dt><dd><p>which group subject belongs to (e.g. patient or control)</p>
+</dd>
+<dt><strong>ind</strong><span class="classifier">integer list</span></dt><dd><p>ind tells which disk number a point belong.</p>
+</dd>
+<dt><strong>dir</strong><span class="classifier">string</span></dt><dd><p>path of output directory</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="gaussian-weights">
+<h3>gaussian_weights<a class="headerlink" href="#gaussian-weights" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.gaussian_weights">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">gaussian_weights</code><span class="sig-paren">(</span><em class="sig-param">bundle</em>, <em class="sig-param">n_points=100</em>, <em class="sig-param">return_mahalnobis=False</em>, <em class="sig-param">stat=&lt;function mean&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.gaussian_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate weights for each streamline/node in a bundle, based on a
+Mahalanobis distance from the core the bundle, at that node (mean, per
+default).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>bundle</strong><span class="classifier">Streamlines</span></dt><dd><p>The streamlines to weight.</p>
+</dd>
+<dt><strong>n_points</strong><span class="classifier">int, optional</span></dt><dd><p>The number of points to resample to. <em>If the `bundle` is an array, this
+input is ignored</em>. Default: 100.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>w</strong><span class="classifier">array of shape (n_streamlines, n_points)</span></dt><dd><p>Weights for each node in each streamline, calculated as its relative
+inverse of the Mahalanobis distance, relative to the distribution of
+coordinates at that node position across streamlines.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="load-nifti">
+<h3>load_nifti<a class="headerlink" href="#load-nifti" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.load_nifti">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">load_nifti</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">return_img=False</em>, <em class="sig-param">return_voxsize=False</em>, <em class="sig-param">return_coords=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.load_nifti" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="load-peaks">
+<h3>load_peaks<a class="headerlink" href="#load-peaks" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.load_peaks">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">load_peaks</code><span class="sig-paren">(</span><em class="sig-param">fname</em>, <em class="sig-param">verbose=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.load_peaks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load a PeaksAndMetrics HDF5 file (PAM5)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>fname</strong><span class="classifier">string</span></dt><dd><p>Filename of PAM5 file.</p>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">bool</span></dt><dd><p>Print summary information about the loaded file.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>pam</strong><span class="classifier">PeaksAndMetrics object</span></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="load-tractogram">
+<h3>load_tractogram<a class="headerlink" href="#load-tractogram" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.load_tractogram">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">load_tractogram</code><span class="sig-paren">(</span><em class="sig-param">filename</em>, <em class="sig-param">reference</em>, <em class="sig-param">to_space=&lt;Space.RASMM: 'rasmm'&gt;</em>, <em class="sig-param">shifted_origin=False</em>, <em class="sig-param">bbox_valid_check=True</em>, <em class="sig-param">trk_header_check=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.load_tractogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the stateful tractogram from any format (trk, tck, fib, dpy)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>filename</strong><span class="classifier">string</span></dt><dd><p>Filename with valid extension</p>
+</dd>
+<dt><strong>reference</strong><span class="classifier">Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or</span></dt><dd><p>trk.header (dict), or ‘same’ if the input is a trk file.
+Reference that provides the spatial attribute.
+Typically a nifti-related object from the native diffusion used for
+streamlines generation</p>
+</dd>
+<dt><strong>space</strong><span class="classifier">string</span></dt><dd><p>Space in which the streamlines will be transformed after loading
+(vox, voxmm or rasmm)</p>
+</dd>
+<dt><strong>shifted_origin</strong><span class="classifier">bool</span></dt><dd><p>Information on the position of the origin,
+False is Trackvis standard, default (center of the voxel)
+True is NIFTI standard (corner of the voxel)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>output</strong><span class="classifier">StatefulTractogram</span></dt><dd><p>The tractogram to load (must have been saved properly)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="mahalanobis">
+<h3>mahalanobis<a class="headerlink" href="#mahalanobis" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.mahalanobis">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">mahalanobis</code><span class="sig-paren">(</span><em class="sig-param">u</em>, <em class="sig-param">v</em>, <em class="sig-param">VI</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.mahalanobis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the Mahalanobis distance between two 1-D arrays.</p>
+<p>The Mahalanobis distance between 1-D arrays <cite>u</cite> and <cite>v</cite>, is defined as</p>
+<div class="math notranslate nohighlight">
+\[\sqrt{ (u-v) V^{-1} (u-v)^T }\]</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">V</span></code> is the covariance matrix.  Note that the argument <cite>VI</cite>
+is the inverse of <code class="docutils literal notranslate"><span class="pre">V</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>u</strong><span class="classifier">(N,) array_like</span></dt><dd><p>Input array.</p>
+</dd>
+<dt><strong>v</strong><span class="classifier">(N,) array_like</span></dt><dd><p>Input array.</p>
+</dd>
+<dt><strong>VI</strong><span class="classifier">ndarray</span></dt><dd><p>The inverse of the covariance matrix.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>mahalanobis</strong><span class="classifier">double</span></dt><dd><p>The Mahalanobis distance between vectors <cite>u</cite> and <cite>v</cite>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="k">import</span> <span class="n">distance</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">iv</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span><span class="o">.</span><span class="n">mahalanobis</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">iv</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span><span class="o">.</span><span class="n">mahalanobis</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">iv</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">distance</span><span class="o">.</span><span class="n">mahalanobis</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">iv</span><span class="p">)</span>
+<span class="go">1.7320508075688772</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="map-coordinates">
+<h3>map_coordinates<a class="headerlink" href="#map-coordinates" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.map_coordinates">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">map_coordinates</code><span class="sig-paren">(</span><em class="sig-param">input</em>, <em class="sig-param">coordinates</em>, <em class="sig-param">output=None</em>, <em class="sig-param">order=3</em>, <em class="sig-param">mode='constant'</em>, <em class="sig-param">cval=0.0</em>, <em class="sig-param">prefilter=True</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.map_coordinates" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map the input array to new coordinates by interpolation.</p>
+<p>The array of coordinates is used to find, for each point in the output,
+the corresponding coordinates in the input. The value of the input at
+those coordinates is determined by spline interpolation of the
+requested order.</p>
+<p>The shape of the output is derived from that of the coordinate
+array by dropping the first axis. The values of the array along
+the first axis are the coordinates in the input array at which the
+output value is found.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>input</strong><span class="classifier">array_like</span></dt><dd><p>The input array.</p>
+</dd>
+<dt><strong>coordinates</strong><span class="classifier">array_like</span></dt><dd><p>The coordinates at which <cite>input</cite> is evaluated.</p>
+</dd>
+<dt><strong>output</strong><span class="classifier">array or dtype, optional</span></dt><dd><p>The array in which to place the output, or the dtype of the
+returned array. By default an array of the same dtype as input
+will be created.</p>
+</dd>
+<dt><strong>order</strong><span class="classifier">int, optional</span></dt><dd><p>The order of the spline interpolation, default is 3.
+The order has to be in the range 0-5.</p>
+</dd>
+<dt><strong>mode</strong><span class="classifier">{‘reflect’, ‘constant’, ‘nearest’, ‘mirror’, ‘wrap’}, optional</span></dt><dd><p>The <cite>mode</cite> parameter determines how the input array is extended
+when the filter overlaps a border. Default is ‘reflect’. Behavior
+for each valid value is as follows:</p>
+<dl class="simple">
+<dt>‘reflect’ (<cite>d c b a | a b c d | d c b a</cite>)</dt><dd><p>The input is extended by reflecting about the edge of the last
+pixel.</p>
+</dd>
+<dt>‘constant’ (<cite>k k k k | a b c d | k k k k</cite>)</dt><dd><p>The input is extended by filling all values beyond the edge with
+the same constant value, defined by the <cite>cval</cite> parameter.</p>
+</dd>
+<dt>‘nearest’ (<cite>a a a a | a b c d | d d d d</cite>)</dt><dd><p>The input is extended by replicating the last pixel.</p>
+</dd>
+<dt>‘mirror’ (<cite>d c b | a b c d | c b a</cite>)</dt><dd><p>The input is extended by reflecting about the center of the last
+pixel.</p>
+</dd>
+<dt>‘wrap’ (<cite>a b c d | a b c d | a b c d</cite>)</dt><dd><p>The input is extended by wrapping around to the opposite edge.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>cval</strong><span class="classifier">scalar, optional</span></dt><dd><p>Value to fill past edges of input if <cite>mode</cite> is ‘constant’. Default
+is 0.0.</p>
+</dd>
+<dt><strong>prefilter</strong><span class="classifier">bool, optional</span></dt><dd><p>Determines if the input array is prefiltered with <cite>spline_filter</cite>
+before interpolation. The default is True, which will create a
+temporary <cite>float64</cite> array of filtered values if <cite>order &gt; 1</cite>. If
+setting this to False, the output will be slightly blurred if
+<cite>order &gt; 1</cite>, unless the input is prefiltered, i.e. it is the result
+of calling <cite>spline_filter</cite> on the original input.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>map_coordinates</strong><span class="classifier">ndarray</span></dt><dd><p>The result of transforming the input. The shape of the output is
+derived from that of <cite>coordinates</cite> by dropping the first axis.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">spline_filter</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">geometric_transform</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">scipy.interpolate</span></code></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">ndimage</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">12.</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([[  0.,   1.,   2.],</span>
+<span class="go">       [  3.,   4.,   5.],</span>
+<span class="go">       [  6.,   7.,   8.],</span>
+<span class="go">       [  9.,  10.,  11.]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">array([ 2.,  7.])</span>
+</pre></div>
+</div>
+<p>Above, the interpolated value of a[0.5, 0.5] gives output[0], while
+a[2, 1] is output[1].</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cval</span><span class="o">=-</span><span class="mf">33.3</span><span class="p">)</span>
+<span class="go">array([  2. , -33.3])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+<span class="go">array([ 2.,  8.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ndimage</span><span class="o">.</span><span class="n">map_coordinates</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">inds</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="go">array([ True, False], dtype=bool)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="optional-package">
+<h3>optional_package<a class="headerlink" href="#optional-package" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.optional_package">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">optional_package</code><span class="sig-paren">(</span><em class="sig-param">name</em>, <em class="sig-param">trip_msg=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.optional_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return package-like thing and module setup for package <cite>name</cite></p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>name</strong><span class="classifier">str</span></dt><dd><p>package name</p>
+</dd>
+<dt><strong>trip_msg</strong><span class="classifier">None or str</span></dt><dd><p>message to give when someone tries to use the return package, but we
+could not import it, and have returned a TripWire object instead.
+Default message if None.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>pkg_like</strong><span class="classifier">module or <code class="docutils literal notranslate"><span class="pre">TripWire</span></code> instance</span></dt><dd><p>If we can import the package, return it.  Otherwise return an object
+raising an error when accessed</p>
+</dd>
+<dt><strong>have_pkg</strong><span class="classifier">bool</span></dt><dd><p>True if import for package was successful, false otherwise</p>
+</dd>
+<dt><strong>module_setup</strong><span class="classifier">function</span></dt><dd><p>callable usually set as <code class="docutils literal notranslate"><span class="pre">setup_module</span></code> in calling namespace, to allow
+skipping tests.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<p>Typical use would be something like this at the top of a module using an
+optional package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.utils.optpkg</span> <span class="k">import</span> <span class="n">optional_package</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">have_pkg</span><span class="p">,</span> <span class="n">setup_module</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;not_a_package&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Of course in this case the package doesn’t exist, and so, in the module:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">have_pkg</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>and</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="o">.</span><span class="n">some_function</span><span class="p">()</span> <span class="c1">#doctest: +IGNORE_EXCEPTION_DETAIL</span>
+<span class="gt">Traceback (most recent call last):</span>
+    <span class="o">...</span>
+<span class="gr">TripWireError</span>: <span class="n">We need package not_a_package for these functions, but</span>
+<span class="go">``import not_a_package`` raised an ImportError</span>
+</pre></div>
+</div>
+<p>If the module does exist - we get the module</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">pkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="s1">&#39;path&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Or a submodule if that’s what we asked for</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">subpkg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">optional_package</span><span class="p">(</span><span class="s1">&#39;os.path&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">subpkg</span><span class="p">,</span> <span class="s1">&#39;dirname&#39;</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="orient-by-streamline">
+<h3>orient_by_streamline<a class="headerlink" href="#orient-by-streamline" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.orient_by_streamline">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">orient_by_streamline</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">standard</em>, <em class="sig-param">n_points=12</em>, <em class="sig-param">in_place=False</em>, <em class="sig-param">as_generator=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.orient_by_streamline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Orient a bundle of streamlines to a standard streamline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>streamlines</strong><span class="classifier">Streamlines, list</span></dt><dd><p>The input streamlines to orient.</p>
+</dd>
+<dt><strong>standard</strong><span class="classifier">Streamlines, list, or ndarrray</span></dt><dd><p>This provides the standard orientation according to which the
+streamlines in the provided bundle should be reoriented.</p>
+</dd>
+<dt><strong>n_points: int, optional</strong></dt><dd><p>The number of samples to apply to each of the streamlines.</p>
+</dd>
+<dt><strong>in_place</strong><span class="classifier">bool</span></dt><dd><p>Whether to make the change in-place in the original input
+(and return a reference), or to make a copy of the list
+and return this copy, with the relevant streamlines reoriented.
+Default: False.</p>
+</dd>
+<dt><strong>as_generator</strong><span class="classifier">bool</span></dt><dd><p>Whether to return a generator as output. Default: False</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Streamlines</strong><span class="classifier">with each individual array oriented to be as similar as</span></dt><dd><p>possible to the standard.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="peak-values">
+<h3>peak_values<a class="headerlink" href="#peak-values" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.peak_values">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">peak_values</code><span class="sig-paren">(</span><em class="sig-param">bundle</em>, <em class="sig-param">peaks</em>, <em class="sig-param">dt</em>, <em class="sig-param">pname</em>, <em class="sig-param">bname</em>, <em class="sig-param">subject</em>, <em class="sig-param">group</em>, <em class="sig-param">ind</em>, <em class="sig-param">dir</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.peak_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Peak_values function finds the peak direction and peak value of a point
+on a streamline used while tracking (generating the tractogram) and
+save it in hd5 file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>bundle</strong><span class="classifier">string</span></dt><dd><p>Name of bundle being analyzed</p>
+</dd>
+<dt><strong>peaks</strong><span class="classifier">peaks</span></dt><dd><p>contains peak directions and values</p>
+</dd>
+<dt><strong>dt</strong><span class="classifier">DataFrame</span></dt><dd><p>DataFrame to be populated</p>
+</dd>
+<dt><strong>pname</strong><span class="classifier">string</span></dt><dd><p>Name of the dti metric</p>
+</dd>
+<dt><strong>bname</strong><span class="classifier">string</span></dt><dd><p>Name of bundle being analyzed.</p>
+</dd>
+<dt><strong>subject</strong><span class="classifier">string</span></dt><dd><p>subject number as a string (e.g. 10001)</p>
+</dd>
+<dt><strong>group</strong><span class="classifier">string</span></dt><dd><p>which group subject belongs to (e.g. patient or control)</p>
+</dd>
+<dt><strong>ind</strong><span class="classifier">integer list</span></dt><dd><p>ind tells which disk number a point belong.</p>
+</dd>
+<dt><strong>dir</strong><span class="classifier">string</span></dt><dd><p>path of output directory</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="set-number-of-points">
+<h3>set_number_of_points<a class="headerlink" href="#set-number-of-points" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.set_number_of_points">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">set_number_of_points</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.set_number_of_points" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Change the number of points of streamlines</dt><dd><p>(either by downsampling or upsampling)</p>
+</dd>
+</dl>
+<p>Change the number of points of streamlines in order to obtain
+<cite>nb_points</cite>-1 segments of equal length. Points of streamlines will be
+modified along the curve.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>streamlines</strong><span class="classifier">ndarray or a list or <a class="reference internal" href="dipy.tracking.html#dipy.tracking.Streamlines" title="dipy.tracking.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.Streamlines</span></code></a></span></dt><dd><p>If ndarray, must have shape (N,3) where N is the number of points
+of the streamline.
+If list, each item must be ndarray shape (Ni,3) where Ni is the number
+of points of streamline i.
+If <a class="reference internal" href="dipy.tracking.html#dipy.tracking.Streamlines" title="dipy.tracking.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.Streamlines</span></code></a>, its <cite>common_shape</cite> must be 3.</p>
+</dd>
+<dt><strong>nb_points</strong><span class="classifier">int</span></dt><dd><p>integer representing number of points wanted along the curve.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl>
+<dt><strong>new_streamlines</strong><span class="classifier">ndarray or a list or <a class="reference internal" href="dipy.tracking.html#dipy.tracking.Streamlines" title="dipy.tracking.Streamlines"><code class="xref py py-class docutils literal notranslate"><span class="pre">dipy.tracking.Streamlines</span></code></a></span></dt><dd><p>Results of the downsampling or upsampling process.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">dipy.tracking.streamline</span> <span class="k">import</span> <span class="n">set_number_of_points</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+<p>One streamline, a semi-circle:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">x</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">streamline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">modified_streamline</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">streamline</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">modified_streamline</span><span class="p">)</span>
+<span class="go">3</span>
+</pre></div>
+</div>
+<p>Multiple streamlines:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">streamlines</span> <span class="o">=</span> <span class="p">[</span><span class="n">streamline</span><span class="p">,</span> <span class="n">streamline</span><span class="p">[::</span><span class="mi">2</span><span class="p">]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new_streamlines</span> <span class="o">=</span> <span class="n">set_number_of_points</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">streamlines</span><span class="p">]</span>
+<span class="go">[100, 50]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">new_streamlines</span><span class="p">]</span>
+<span class="go">[10, 10]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="transform-streamlines">
+<h3>transform_streamlines<a class="headerlink" href="#transform-streamlines" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.transform_streamlines">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">transform_streamlines</code><span class="sig-paren">(</span><em class="sig-param">streamlines</em>, <em class="sig-param">mat</em>, <em class="sig-param">in_place=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.transform_streamlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Apply affine transformation to streamlines</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>streamlines</strong><span class="classifier">Streamlines</span></dt><dd><p>Streamlines object</p>
+</dd>
+<dt><strong>mat</strong><span class="classifier">array, (4, 4)</span></dt><dd><p>transformation matrix</p>
+</dd>
+<dt><strong>in_place</strong><span class="classifier">bool</span></dt><dd><p>If True then change data in place.
+Be careful changes input streamlines.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>new_streamlines</strong><span class="classifier">Streamlines</span></dt><dd><p>Sequence transformed 2D ndarrays of shape[-1]==3</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="values-from-volume">
+<h3>values_from_volume<a class="headerlink" href="#values-from-volume" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt id="dipy.stats.analysis.values_from_volume">
+<code class="sig-prename descclassname">dipy.stats.analysis.</code><code class="sig-name descname">values_from_volume</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">streamlines</em>, <em class="sig-param">affine</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.stats.analysis.values_from_volume" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract values of a scalar/vector along each streamline from a volume.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>data</strong><span class="classifier">3D or 4D array</span></dt><dd><p>Scalar (for 3D) and vector (for 4D) values to be extracted. For 4D
+data, interpolation will be done on the 3 spatial dimensions in each
+volume.</p>
+</dd>
+<dt><strong>streamlines</strong><span class="classifier">ndarray or list</span></dt><dd><p>If array, of shape (n_streamlines, n_nodes, 3)
+If list, len(n_streamlines) with (n_nodes, 3) array in
+each element of the list.</p>
+</dd>
+<dt><strong>affine</strong><span class="classifier">array_like (4, 4)</span></dt><dd><p>The mapping from voxel coordinates to streamline points.
+The voxel_to_rasmm matrix, typically from a NIFTI file.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>array or list (depending on the input)</strong><span class="classifier">values interpolate to each</span></dt><dd><p>coordinate along the length of each streamline.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Values are extracted from the image based on the 3D coordinates of the
+nodes that comprise the points in the streamline, without any interpolation
+into segments between the nodes. Using this function with streamlines that
+have been resampled into a very small number of nodes will result in very
+few values.</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.tracking.html" title="tracking"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy.sims.html" title="sims"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

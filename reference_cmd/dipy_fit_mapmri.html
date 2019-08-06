@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_mask" href="dipy_mask.html" />
+    <link rel="prev" title="dipy_horizon" href="dipy_horizon.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_mask.html" title="dipy_mask"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_horizon.html" title="dipy_horizon"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_horizon.html"
+                        title="previous chapter">dipy_horizon</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_mask.html"
+                        title="next chapter">dipy_mask</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_fit_mapmri.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-fit-mapmri">
+<h1>dipy_fit_mapmri<a class="headerlink" href="#dipy-fit-mapmri" title="Permalink to this headline">¶</a></h1>
+<dl class="simple">
+<dt>usage: dipy_fit_mapmri [-h] [–b0_threshold float] [–laplacian] [–positivity]</dt><dd><p>[–bval_threshold float] [–save_metrics [str [str …]]]
+[–laplacian_weighting float] [–radial_order int]
+[–out_dir str] [–out_rtop str] [–out_lapnorm str]
+[–out_msd str] [–out_qiv str] [–out_rtap str]
+[–out_rtpp str] [–out_ng str] [–out_perng str]
+[–out_parng str]
+data_files bvals_files bvecs_files small_delta big_delta</p>
+</dd>
+</dl>
+<p>Workflow for fitting the MAPMRI model (with optional Laplacian regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp, non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti format in input files provided by <cite>data_files</cite> and saves the nifti files to an output directory specified by <cite>out_dir</cite>.</p>
+<p>In order for the MAPMRI workflow to work in the way intended either the Laplacian or positivity or both must be set to True.</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>data_files            Path to the input volume.
+bvals_files           Path to the bval files.
+bvecs_files           Path to the bvec files.
+small_delta           Small delta value used in generation of gradient table of provided bval and bvec.
+big_delta             Big delta value used in generation of gradient table of provided bval and bvec.</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--b0_threshold <var>float</var></span></kbd></dt>
+<dd><p>Threshold used to find b=0 directions (default 0.0)</p>
+</dd>
+<dt><kbd><span class="option">--laplacian</span></kbd></dt>
+<dd><p>Regularize using the Laplacian of the MAP-MRI basis (default True)</p>
+</dd>
+<dt><kbd><span class="option">--positivity</span></kbd></dt>
+<dd><p>Constrain the propagator to be positive. (default True)</p>
+</dd>
+<dt><kbd><span class="option">--bval_threshold <var>float</var></span></kbd></dt>
+<dd><p>Sets the b-value threshold to be used in the scale factor estimation. In order for the estimated non-Gaussianity to have meaning this value should set to a lower value (b&lt;2000 s/mm^2) such that the scale factors are estimated on signal points that reasonably represent the spins at Gaussian diffusion. (default: 2000)</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>–save_metrics [str [str …]]</dt><dd><p>List of metrics to save. Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp, ng, perng, parng (default: [] (all))</p>
+</dd>
+</dl>
+<dl class="option-list">
+<dt><kbd><span class="option">--laplacian_weighting <var>float</var></span></kbd></dt>
+<dd><p>Weighting value used in fitting the MAPMRI model in the Laplacian and both model types. (default: 0.05)</p>
+</dd>
+<dt><kbd><span class="option">--radial_order <var>int</var></span></kbd></dt>
+<dd><p>Even value used to set the order of the basis (default: 6)</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Output directory (default: input file directory)</p>
+</dd>
+<dt><kbd><span class="option">--out_rtop <var>str</var></span></kbd></dt>
+<dd><p>Name of the rtop to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_lapnorm <var>str</var></span></kbd></dt>
+<dd><p>Name of the norm of Laplacian signal to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_msd <var>str</var></span></kbd></dt>
+<dd><p>Name of the msd to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_qiv <var>str</var></span></kbd></dt>
+<dd><p>Name of the qiv to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_rtap <var>str</var></span></kbd></dt>
+<dd><p>Name of the rtap to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_rtpp <var>str</var></span></kbd></dt>
+<dd><p>Name of the rtpp to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_ng <var>str</var></span></kbd></dt>
+<dd><p>Name of the Non-Gaussianity to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_perng <var>str</var></span></kbd></dt>
+<dd><p>Name of the Non-Gaussianity perpendicular to be saved</p>
+</dd>
+<dt><kbd><span class="option">--out_parng <var>str</var></span></kbd></dt>
+<dd><p>Name of the Non-Gaussianity parallel to be saved</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_mask.html" title="dipy_mask"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_horizon.html" title="dipy_horizon"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

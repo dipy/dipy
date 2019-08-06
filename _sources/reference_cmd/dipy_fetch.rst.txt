@@ -1,0 +1,20 @@
+
+========================
+dipy_fetch
+========================
+
+usage: dipy_fetch [-h] [--out_dir str] data_names [data_names ...]
+
+Download files to folder and check their md5 checksums.
+
+positional arguments:
+  data_names     Any number of Nifti1, bvals or bvecs files.
+
+optional arguments:
+  -h, --help     show this help message and exit
+
+output arguments(optional):
+  --out_dir str  Output directory. Default: dipy home folder (~/.dipy)
+
+References: 
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

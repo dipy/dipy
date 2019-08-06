@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dipy_fit_csa" href="dipy_fit_csa.html" />
+    <link rel="prev" title="dipy_fit_dti" href="dipy_fit_dti.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_csa.html" title="dipy_fit_csa"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_dti.html" title="dipy_fit_dti"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dipy_fit_dti.html"
+                        title="previous chapter">dipy_fit_dti</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy_fit_csa.html"
+                        title="next chapter">dipy_fit_csa</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference_cmd/dipy_recobundles.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="dipy-recobundles">
+<h1>dipy_recobundles<a class="headerlink" href="#dipy-recobundles" title="Permalink to this headline">¶</a></h1>
+<dl class="simple">
+<dt>usage: dipy_recobundles [-h] [–greater_than int] [–less_than int] [–no_slr]</dt><dd><p>[–clust_thr float] [–reduction_thr float]
+[–reduction_distance str] [–model_clust_thr float]
+[–pruning_thr float] [–pruning_distance str]
+[–slr_metric str] [–slr_transform str]
+[–slr_matrix str] [–refine] [–r_reduction_thr float]
+[–r_pruning_thr float] [–no_r_slr] [–out_dir str]
+[–out_recognized_transf str]
+[–out_recognized_labels str]
+streamline_files model_bundle_files</p>
+</dd>
+</dl>
+<p>Recognize bundles</p>
+<dl>
+<dt>positional arguments:</dt><dd><p>streamline_files      The path of streamline files where you want to recognize bundles
+model_bundle_files    The path of model bundle files</p>
+</dd>
+<dt>optional arguments:</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">-h</span>, <span class="option">--help</span></kbd></dt>
+<dd><p>show this help message and exit</p>
+</dd>
+<dt><kbd><span class="option">--greater_than <var>int</var></span></kbd></dt>
+<dd><p>Keep streamlines that have length greater than this value (default 50) in mm.</p>
+</dd>
+<dt><kbd><span class="option">--less_than <var>int</var></span></kbd></dt>
+<dd><p>Keep streamlines have length less than this value (default 1000000) in mm.</p>
+</dd>
+<dt><kbd><span class="option">--no_slr</span></kbd></dt>
+<dd><p>Don’t enable local Streamline-based Linear Registration (default False).</p>
+</dd>
+<dt><kbd><span class="option">--clust_thr <var>float</var></span></kbd></dt>
+<dd><p>MDF distance threshold for all streamlines (default 15)</p>
+</dd>
+<dt><kbd><span class="option">--reduction_thr <var>float</var></span></kbd></dt>
+<dd><p>Reduce search space by (mm) (default 15)</p>
+</dd>
+<dt><kbd><span class="option">--reduction_distance <var>str</var></span></kbd></dt>
+<dd><p>Reduction distance type can be mdf or mam (default mdf)</p>
+</dd>
+<dt><kbd><span class="option">--model_clust_thr <var>float</var></span></kbd></dt>
+<dd><p>MDF distance threshold for the model bundles (default 2.5)</p>
+</dd>
+<dt><kbd><span class="option">--pruning_thr <var>float</var></span></kbd></dt>
+<dd><p>Pruning after matching (default 8).</p>
+</dd>
+<dt><kbd><span class="option">--pruning_distance <var>str</var></span></kbd></dt>
+<dd><p>Pruning distance type can be mdf or mam (default mdf)</p>
+</dd>
+<dt><kbd><span class="option">--slr_metric <var>str</var></span></kbd></dt>
+<dd><p>Options are None, symmetric, asymmetric or diagonal (default symmetric).</p>
+</dd>
+<dt><kbd><span class="option">--slr_transform <var>str</var></span></kbd></dt>
+<dd><p>Transformation allowed. translation, rigid, similarity or scaling (Default ‘similarity’).</p>
+</dd>
+<dt><kbd><span class="option">--slr_matrix <var>str</var></span></kbd></dt>
+<dd><p>Options are ‘nano’, ‘tiny’, ‘small’, ‘medium’, ‘large’, ‘huge’ (default ‘small’)</p>
+</dd>
+<dt><kbd><span class="option">--refine</span></kbd></dt>
+<dd><p>Enable refine recognized bunle (default False)</p>
+</dd>
+<dt><kbd><span class="option">--r_reduction_thr <var>float</var></span></kbd></dt>
+<dd><p>Refine reduce search space by (mm) (default 12)</p>
+</dd>
+<dt><kbd><span class="option">--r_pruning_thr <var>float</var></span></kbd></dt>
+<dd><p>Refine pruning after matching (default 6).</p>
+</dd>
+<dt><kbd><span class="option">--no_r_slr</span></kbd></dt>
+<dd><p>Don’t enable Refine local Streamline-based Linear Registration (default False).</p>
+</dd>
+</dl>
+</dd>
+<dt>output arguments(optional):</dt><dd><dl class="option-list">
+<dt><kbd><span class="option">--out_dir <var>str</var></span></kbd></dt>
+<dd><p>Output directory (default input file directory)</p>
+</dd>
+<dt><kbd><span class="option">--out_recognized_transf <var>str</var></span></kbd></dt>
+<dd><p>Recognized bundle in the space of the model bundle (default ‘recognized.trk’)</p>
+</dd>
+<dt><kbd><span class="option">--out_recognized_labels <var>str</var></span></kbd></dt>
+<dd><p>Indices of recognized bundle in the original tractogram (default ‘labels.npy’)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>References:
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles using local and global streamline-based registration and clustering, Neuroimage, 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_csa.html" title="dipy_fit_csa"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dipy_fit_dti.html" title="dipy_fit_dti"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Command Line Utilities Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

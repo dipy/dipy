@@ -1,0 +1,300 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">SNR estimation for Diffusion-Weighted Images</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/snr_in_cc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="snr-estimation-for-diffusion-weighted-images">
+<span id="example-snr-in-cc"></span><h1>SNR estimation for Diffusion-Weighted Images<a class="headerlink" href="#snr-estimation-for-diffusion-weighted-images" title="Permalink to this headline">¶</a></h1>
+<p>Computing the Signal-to-Noise-Ratio (SNR) of DW images is still an open
+question, as SNR depends on the white matter structure of interest as well as
+the gradient direction corresponding to each DWI.</p>
+<p>In classical MRI, SNR can be defined as the ratio of the mean of the signal
+divided by the standard deviation of the underlying Gaussian noise, that is
+<span class="math notranslate nohighlight">\(SNR = mean(signal) / std(noise)\)</span>. The noise standard deviation can be computed
+from the background in any of the DW images. How do we compute the mean of the
+signal, and what signal?</p>
+<p>The strategy here is to compute a ‘worst-case’ SNR for DWI. Several white
+matter structures such as the corpus callosum (CC), corticospinal tract (CST),
+or the superior longitudinal fasciculus (SLF) can be easily identified from the
+colored-FA (CFA) map. In this example, we will use voxels from the CC, which
+have the characteristic of being highly red in the CFA map since they are
+mainly oriented in the left-right direction. We know that the DW image closest
+to the X-direction will be the one with the most attenuated diffusion signal.
+This is the strategy adopted in several recent papers (see <a class="reference internal" href="#descoteaux2011" id="id1"><span>[Descoteaux2011]</span></a>
+and <a class="reference internal" href="#jones2013" id="id2"><span>[Jones2013]</span></a>). It gives a good indication of the quality of the DWI data.</p>
+<p>First, we compute the tensor model in a brain mask (see the <a class="reference internal" href="reconst_dti.html#reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a>
+example for further explanations).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_stanford_hardi</span><span class="p">,</span> <span class="n">read_stanford_hardi</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">median_otsu</span>
+<span class="kn">from</span> <span class="nn">dipy.reconst.dti</span> <span class="k">import</span> <span class="n">TensorModel</span>
+
+<span class="n">fetch_stanford_hardi</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_stanford_hardi</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">affine</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computing brain mask...&#39;</span><span class="p">)</span>
+<span class="n">b0_mask</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">median_otsu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">vol_idx</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computing tensors...&#39;</span><span class="p">)</span>
+<span class="n">tenmodel</span> <span class="o">=</span> <span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">tensorfit</span> <span class="o">=</span> <span class="n">tenmodel</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we set our red-green-blue thresholds to (0.6, 1) in the x axis and
+(0, 0.1) in the y and z axes respectively. These values work well in practice
+to isolate the very RED voxels of the cfa map.</p>
+<p>Then, as assurance, we want just RED voxels in the CC (there could be noisy
+red voxels around the brain mask and we don’t want those). Unless the brain
+acquisition was badly aligned, the CC is always close to the mid-sagittal
+slice.</p>
+<p>The following lines perform these two operations and then saves the
+computed mask.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Computing worst-case/best-case SNR using the corpus callosum...&#39;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">segment_from_cfa</span>
+<span class="kn">from</span> <span class="nn">dipy.segment.mask</span> <span class="k">import</span> <span class="n">bounding_box</span>
+
+<span class="n">threshold</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">CC_box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+
+<span class="n">mins</span><span class="p">,</span> <span class="n">maxs</span> <span class="o">=</span> <span class="n">bounding_box</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+<span class="n">mins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mins</span><span class="p">)</span>
+<span class="n">maxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">maxs</span><span class="p">)</span>
+<span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">maxs</span> <span class="o">-</span> <span class="n">mins</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span>
+<span class="n">bounds_min</span> <span class="o">=</span> <span class="n">mins</span> <span class="o">+</span> <span class="n">diff</span>
+<span class="n">bounds_max</span> <span class="o">=</span> <span class="n">maxs</span> <span class="o">-</span> <span class="n">diff</span>
+
+<span class="n">CC_box</span><span class="p">[</span><span class="n">bounds_min</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">bounds_max</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+       <span class="n">bounds_min</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">bounds_max</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+       <span class="n">bounds_min</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span><span class="n">bounds_max</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">mask_cc_part</span><span class="p">,</span> <span class="n">cfa</span> <span class="o">=</span> <span class="n">segment_from_cfa</span><span class="p">(</span><span class="n">tensorfit</span><span class="p">,</span> <span class="n">CC_box</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span>
+                                     <span class="n">return_cfa</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">cfa_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">((</span><span class="n">cfa</span><span class="o">*</span><span class="mi">255</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">affine</span><span class="p">)</span>
+<span class="n">mask_cc_part_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">mask_cc_part</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">affine</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">mask_cc_part_img</span><span class="p">,</span> <span class="s1">&#39;mask_CC_part.nii.gz&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="n">region</span> <span class="o">=</span> <span class="mi">40</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;Corpus callosum segmentation&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Corpus callosum (CC)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">red</span> <span class="o">=</span> <span class="n">cfa</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">red</span><span class="p">[</span><span class="n">region</span><span class="p">,</span> <span class="o">...</span><span class="p">]))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;CC mask used for SNR computation&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rot90</span><span class="p">(</span><span class="n">mask_cc_part</span><span class="p">[</span><span class="n">region</span><span class="p">,</span> <span class="o">...</span><span class="p">]))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;CC_segmentation.png&quot;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/CC_segmentation.png" src="../_images/CC_segmentation.png" />
+</div>
+<p>Now that we are happy with our crude CC mask that selected voxels in the
+x-direction, we can use all the voxels to estimate the mean signal in this
+region.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mean_signal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">mask_cc_part</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, we need a good background estimation. We will re-use the brain mask
+computed before and invert it to catch the outside of the brain. This could
+also be determined manually with a ROI in the background.
+[Warning: Certain MR manufacturers mask out the outside of the brain with 0’s.
+One thus has to be careful how the noise ROI is defined].</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.ndimage.morphology</span> <span class="k">import</span> <span class="n">binary_dilation</span>
+<span class="n">mask_noise</span> <span class="o">=</span> <span class="n">binary_dilation</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">mask_noise</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="p">:</span><span class="n">mask_noise</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">//</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">mask_noise</span> <span class="o">=</span> <span class="o">~</span><span class="n">mask_noise</span>
+<span class="n">mask_noise_img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">mask_noise</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="n">affine</span><span class="p">)</span>
+<span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">mask_noise_img</span><span class="p">,</span> <span class="s1">&#39;mask_noise.nii.gz&#39;</span><span class="p">)</span>
+
+<span class="n">noise_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">mask_noise</span><span class="p">,</span> <span class="p">:])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Noise standard deviation sigma= &#39;</span><span class="p">,</span> <span class="n">noise_std</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can now compute the SNR for each DWI. For example, report SNR
+for DW images with gradient direction that lies the closest to
+the X, Y and Z axes.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Exclude null bvecs from the search</span>
+<span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+<span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+<span class="n">axis_X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">axis_Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">axis_Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis_X</span><span class="p">,</span> <span class="n">axis_Y</span><span class="p">,</span> <span class="n">axis_Z</span><span class="p">]:</span>
+    <span class="n">SNR</span> <span class="o">=</span> <span class="n">mean_signal</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span><span class="o">/</span><span class="n">noise_std</span>
+    <span class="k">if</span> <span class="n">direction</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SNR for the b=0 image is :&quot;</span><span class="p">,</span> <span class="n">SNR</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SNR for direction&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span>
+              <span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="p">[</span><span class="n">direction</span><span class="p">],</span> <span class="s2">&quot;is :&quot;</span><span class="p">,</span> <span class="n">SNR</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>SNR for the b=0 image is : ‘‘42.0695455758’‘</p>
+<p>SNR for direction 58  [ 0.98875  0.1177  -0.09229] is : ‘‘5.46995373635’‘</p>
+<p>SNR for direction 57  [-0.05039  0.99871  0.0054406] is : ‘‘23.9329492871’‘</p>
+<p>SNR for direction 126 [-0.11825  -0.039925  0.99218 ] is : ‘‘23.9965694823’‘</p>
+<p>Since the CC is aligned with the X axis, the lowest SNR is for that gradient
+direction. In comparison, the DW images in the perpendical Y and Z axes have a
+high SNR. The b0 still exhibits the highest SNR, since there is no signal
+attenuation.</p>
+<p>Hence, we can say the Stanford diffusion data has a ‘worst-case’ SNR of
+approximately 5, a ‘best-case’ SNR of approximately 24, and a SNR of 42 on the
+b0 image.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="descoteaux2011"><span class="brackets"><a class="fn-backref" href="#id1">Descoteaux2011</a></span></dt>
+<dd><p>Descoteaux, M., Deriche, R., Le Bihan, D., Mangin, J.-F.,
+and Poupon, C. Multiple q-shell diffusion propagator imaging. Medical Image
+Analysis, 15(4), 603, 2011.</p>
+</dd>
+<dt class="label" id="jones2013"><span class="brackets"><a class="fn-backref" href="#id2">Jones2013</a></span></dt>
+<dd><p>Jones, D. K., Knosche, T. R., &amp; Turner, R. White Matter
+Integrity, Fiber Count, and Other Fallacies: The Dos and Don’ts of Diffusion
+MRI. NeuroImage, 73, 239, 2013.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/e9d79d89e545a2e65e6b29151ae27c1e/snr_in_cc.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

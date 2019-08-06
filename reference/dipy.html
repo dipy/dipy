@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="__config__" href="dipy.__config__.html" />
+    <link rel="prev" title="API Reference" href="index.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.__config__.html" title="__config__"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="API Reference"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">dipy</span></code></a><ul>
+<li><a class="reference internal" href="#diffusion-imaging-in-python">Diffusion Imaging in Python</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#utilities">Utilities</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bench">bench</a></li>
+<li><a class="reference internal" href="#get-info">get_info</a></li>
+<li><a class="reference internal" href="#setup-test">setup_test</a></li>
+<li><a class="reference internal" href="#test">test</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">API Reference</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="dipy.__config__.html"
+                        title="next chapter"><code class="xref py py-mod docutils literal notranslate"><span class="pre">__config__</span></code></a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/dipy.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-dipy">
+<span id="dipy"></span><h1><a class="reference internal" href="#module-dipy" title="dipy"><code class="xref py py-mod docutils literal notranslate"><span class="pre">dipy</span></code></a><a class="headerlink" href="#module-dipy" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="diffusion-imaging-in-python">
+<h2>Diffusion Imaging in Python<a class="headerlink" href="#diffusion-imaging-in-python" title="Permalink to this headline">¶</a></h2>
+<p>For more information, please visit <a class="reference external" href="http://dipy.org">http://dipy.org</a></p>
+<div class="section" id="subpackages">
+<h3>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">align</span>         <span class="o">--</span> <span class="n">Registration</span><span class="p">,</span> <span class="n">streamline</span> <span class="n">alignment</span><span class="p">,</span> <span class="n">volume</span> <span class="n">resampling</span>
+<span class="n">boots</span>         <span class="o">--</span> <span class="n">Bootstrapping</span> <span class="n">algorithms</span>
+<span class="n">core</span>          <span class="o">--</span> <span class="n">Spheres</span><span class="p">,</span> <span class="n">gradient</span> <span class="n">tables</span>
+<span class="n">core</span><span class="o">.</span><span class="n">geometry</span> <span class="o">--</span> <span class="n">Spherical</span> <span class="n">geometry</span><span class="p">,</span> <span class="n">coordinate</span> <span class="ow">and</span> <span class="n">vector</span> <span class="n">manipulation</span>
+<span class="n">core</span><span class="o">.</span><span class="n">meshes</span>   <span class="o">--</span> <span class="n">Point</span> <span class="n">distributions</span> <span class="n">on</span> <span class="n">the</span> <span class="n">sphere</span>
+<span class="n">data</span>          <span class="o">--</span> <span class="n">Small</span> <span class="n">testing</span> <span class="n">datasets</span>
+<span class="n">denoise</span>       <span class="o">--</span> <span class="n">Denoising</span> <span class="n">algorithms</span>
+<span class="n">direction</span>     <span class="o">--</span> <span class="n">Manage</span> <span class="n">peaks</span> <span class="ow">and</span> <span class="n">tracking</span>
+<span class="n">io</span>            <span class="o">--</span> <span class="n">Loading</span><span class="o">/</span><span class="n">saving</span> <span class="n">of</span> <span class="n">dpy</span> <span class="n">datasets</span>
+<span class="n">reconst</span>       <span class="o">--</span> <span class="n">Signal</span> <span class="n">reconstruction</span> <span class="n">modules</span> <span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">spherical</span> <span class="n">harmonics</span><span class="p">,</span>
+                 <span class="n">diffusion</span> <span class="n">spectrum</span><span class="p">,</span> <span class="n">etc</span><span class="o">.</span><span class="p">)</span>
+<span class="n">segment</span>       <span class="o">--</span> <span class="n">Tractography</span> <span class="n">segmentation</span>
+<span class="n">sims</span>          <span class="o">--</span> <span class="n">MRI</span> <span class="n">phantom</span> <span class="n">signal</span> <span class="n">simulation</span>
+<span class="n">tracking</span>      <span class="o">--</span> <span class="n">Tractography</span><span class="p">,</span> <span class="n">metrics</span> <span class="k">for</span> <span class="n">streamlines</span>
+<span class="n">viz</span>           <span class="o">--</span> <span class="n">Visualization</span> <span class="ow">and</span> <span class="n">GUIs</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="utilities">
+<h3>Utilities<a class="headerlink" href="#utilities" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">test</span>          <span class="o">--</span> <span class="n">Run</span> <span class="n">unittests</span>
+<span class="n">__version__</span>   <span class="o">--</span> <span class="n">Dipy</span> <span class="n">version</span>
+</pre></div>
+</div>
+</div>
+</div>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.bench" title="dipy.bench"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bench</span></code></a>([label, verbose, extra_argv])</p></td>
+<td><p>Run benchmarks for module using nose.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.get_info" title="dipy.get_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_info</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#dipy.setup_test" title="dipy.setup_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_test</span></code></a>()</p></td>
+<td><p>Set numpy print options to “legacy” for new versions of numpy</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#dipy.test" title="dipy.test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test</span></code></a>([label, verbose, extra_argv, doctests, …])</p></td>
+<td><p>Run tests for module using nose.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="bench">
+<h2>bench<a class="headerlink" href="#bench" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dipy.bench">
+<code class="sig-prename descclassname">dipy.</code><code class="sig-name descname">bench</code><span class="sig-paren">(</span><em class="sig-param">label='fast'</em>, <em class="sig-param">verbose=1</em>, <em class="sig-param">extra_argv=None</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.bench" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run benchmarks for module using nose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">{‘fast’, ‘full’, ‘’, attribute identifier}, optional</span></dt><dd><p>Identifies the benchmarks to run. This can be a string to pass to
+the nosetests executable with the ‘-A’ option, or one of several
+special values.  Special values are:</p>
+<ul class="simple">
+<li><p>‘fast’ - the default - which corresponds to the <code class="docutils literal notranslate"><span class="pre">nosetests</span> <span class="pre">-A</span></code>
+option of ‘not slow’.</p></li>
+<li><p>‘full’ - fast (as above) and slow benchmarks as in the
+‘no -A’ option to nosetests - this is the same as ‘’.</p></li>
+<li><p>None or ‘’ - run all tests.</p></li>
+<li><p>attribute_identifier - string passed directly to nosetests as ‘-A’.</p></li>
+</ul>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">int, optional</span></dt><dd><p>Verbosity value for benchmark outputs, in the range 1-10. Default is 1.</p>
+</dd>
+<dt><strong>extra_argv</strong><span class="classifier">list, optional</span></dt><dd><p>List with any extra arguments to pass to nosetests.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>success</strong><span class="classifier">bool</span></dt><dd><p>Returns True if running the benchmarks works, False if an error
+occurred.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Benchmarks are like tests, but have names starting with “bench” instead
+of “test”, and can be found under the “benchmarks” sub-directory of the
+module.</p>
+<p>Each NumPy module exposes <cite>bench</cite> in its namespace to run all benchmarks
+for it.</p>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">success</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">bench</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">Running benchmarks for numpy.lib</span>
+<span class="gp">...</span>
+<span class="go">using 562341 items:</span>
+<span class="go">unique:</span>
+<span class="go">0.11</span>
+<span class="go">unique1d:</span>
+<span class="go">0.11</span>
+<span class="go">ratio: 1.0</span>
+<span class="go">nUnique: 56230 == 56230</span>
+<span class="gp">...</span>
+<span class="go">OK</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">success</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="get-info">
+<h2>get_info<a class="headerlink" href="#get-info" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dipy.get_info">
+<code class="sig-prename descclassname">dipy.</code><code class="sig-name descname">get_info</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.get_info" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="setup-test">
+<h2>setup_test<a class="headerlink" href="#setup-test" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dipy.setup_test">
+<code class="sig-prename descclassname">dipy.</code><code class="sig-name descname">setup_test</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dipy.setup_test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set numpy print options to “legacy” for new versions of numpy</p>
+<p>If imported into a file, pytest will run this before any doctests.</p>
+<p class="rubric">References</p>
+<p><a class="reference external" href="https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718">https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718</a>
+<a class="reference external" href="https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495">https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495</a>
+<a class="reference external" href="https://github.com/nipy/nibabel/pull/556">https://github.com/nipy/nibabel/pull/556</a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="test">
+<h2>test<a class="headerlink" href="#test" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dipy.test">
+<code class="sig-prename descclassname">dipy.</code><code class="sig-name descname">test</code><span class="sig-paren">(</span><em class="sig-param">label='fast'</em>, <em class="sig-param">verbose=1</em>, <em class="sig-param">extra_argv=None</em>, <em class="sig-param">doctests=False</em>, <em class="sig-param">coverage=False</em>, <em class="sig-param">raise_warnings=None</em>, <em class="sig-param">timer=False</em><span class="sig-paren">)</span><a class="headerlink" href="#dipy.test" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run tests for module using nose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>label</strong><span class="classifier">{‘fast’, ‘full’, ‘’, attribute identifier}, optional</span></dt><dd><p>Identifies the tests to run. This can be a string to pass to
+the nosetests executable with the ‘-A’ option, or one of several
+special values.  Special values are:</p>
+<ul class="simple">
+<li><p>‘fast’ - the default - which corresponds to the <code class="docutils literal notranslate"><span class="pre">nosetests</span> <span class="pre">-A</span></code>
+option of ‘not slow’.</p></li>
+<li><p>‘full’ - fast (as above) and slow tests as in the
+‘no -A’ option to nosetests - this is the same as ‘’.</p></li>
+<li><p>None or ‘’ - run all tests.</p></li>
+<li><p>attribute_identifier - string passed directly to nosetests as ‘-A’.</p></li>
+</ul>
+</dd>
+<dt><strong>verbose</strong><span class="classifier">int, optional</span></dt><dd><p>Verbosity value for test outputs, in the range 1-10. Default is 1.</p>
+</dd>
+<dt><strong>extra_argv</strong><span class="classifier">list, optional</span></dt><dd><p>List with any extra arguments to pass to nosetests.</p>
+</dd>
+<dt><strong>doctests</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, run doctests in module. Default is False.</p>
+</dd>
+<dt><strong>coverage</strong><span class="classifier">bool, optional</span></dt><dd><p>If True, report coverage of NumPy code. Default is False.
+(This requires the
+<a class="reference external" href="https://nedbatchelder.com/code/modules/coveragehtml">coverage module</a>).</p>
+</dd>
+<dt><strong>raise_warnings</strong><span class="classifier">None, str or sequence of warnings, optional</span></dt><dd><p>This specifies which warnings to configure as ‘raise’ instead
+of being shown once during the test execution. Valid strings are:</p>
+<ul class="simple">
+<li><p>“develop” : equals <code class="docutils literal notranslate"><span class="pre">(Warning,)</span></code></p></li>
+<li><p>“release” : equals <code class="docutils literal notranslate"><span class="pre">()</span></code>, do not raise on any warnings.</p></li>
+</ul>
+</dd>
+<dt><strong>timer</strong><span class="classifier">bool or int, optional</span></dt><dd><p>Timing of individual tests with <code class="docutils literal notranslate"><span class="pre">nose-timer</span></code> (which needs to be
+installed).  If True, time tests and report on all of them.
+If an integer (say <code class="docutils literal notranslate"><span class="pre">N</span></code>), report timing results for <code class="docutils literal notranslate"><span class="pre">N</span></code> slowest
+tests.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>result</strong><span class="classifier">object</span></dt><dd><p>Returns the result of running the tests as a
+<code class="docutils literal notranslate"><span class="pre">nose.result.TextTestResult</span></code> object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Each NumPy module exposes <cite>test</cite> in its namespace to run all tests for it.
+For example, to run all tests for numpy.lib:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">test</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+</pre></div>
+</div>
+<p class="rubric">Examples</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">test</span><span class="p">()</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">Running unit tests for numpy.lib</span>
+<span class="gp">...</span>
+<span class="go">Ran 976 tests in 3.933s</span>
+</pre></div>
+</div>
+<p>OK</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">knownfail</span> <span class="c1">#doctest: +SKIP</span>
+<span class="go">[]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="dipy.__config__.html" title="__config__"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="API Reference"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >API Reference</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

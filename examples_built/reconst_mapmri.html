@@ -1,0 +1,552 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Continuous and analytical diffusion signal modelling with MAPMRI</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/reconst_mapmri.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="continuous-and-analytical-diffusion-signal-modelling-with-mapmri">
+<span id="example-reconst-mapmri"></span><h1>Continuous and analytical diffusion signal modelling with MAPMRI<a class="headerlink" href="#continuous-and-analytical-diffusion-signal-modelling-with-mapmri" title="Permalink to this headline">¶</a></h1>
+<p>We show how to model the diffusion signal as a linear combination
+of continuous functions from the MAPMRI basis <a class="reference internal" href="#ozarslan2013" id="id1"><span>[Ozarslan2013]</span></a>.
+This continuous representation allows for the computation of many
+properties of both the signal and diffusion propagator.</p>
+<p>We show how to estimate the analytical Orientation Distribution
+Function (ODF) and a variety of scalar indices. These include rotationally
+invariant quantities such as the Mean Squared Displacement (MSD), Q-space
+Inverse Variance (QIV), Return-To-Origin Probability (RTOP) and
+Non-Gaussianity (NG). Interestingly, the MAP-MRI basis also allows for
+the computation of directional indices, such as the Return To the Axis
+Probability (RTAP), the Return To the Plane Probability (RTPP), and
+the parallel and perpendicular Non-Gaussianity.</p>
+<p>The estimation of these properties from noisy DWIs requires that the
+fitting of the MAPMRI basis is regularized. We will show that this can
+be done using both constraining the diffusion propagator to positive
+values <a class="reference internal" href="#ozarslan2013" id="id2"><span>[Ozarslan2013]</span></a> and analytic Laplacian Regularization (MAPL)
+<a class="reference internal" href="#fick2016a" id="id3"><span>[Fick2016a]</span></a>.</p>
+<p>First import the necessary modules:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst</span> <span class="k">import</span> <span class="n">mapmri</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">actor</span>
+<span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_cfin_multib</span><span class="p">,</span> <span class="n">read_cfin_dwi</span><span class="p">,</span> <span class="n">get_sphere</span>
+<span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="k">import</span> <span class="n">make_axes_locatable</span>
+</pre></div>
+</div>
+<p>Download and read the data for this tutorial.</p>
+<p>MAPMRI requires multi-shell data, to properly fit the radial part of the basis.
+to <code class="docutils literal notranslate"><span class="pre">False</span></code> to only download eddy-current/motion corrected data.
+The total size of the downloaded data is 187.66 MBytes, however you only need
+to fetch it once.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fetch_cfin_multib</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">data</span></code> contains the voxel data and <code class="docutils literal notranslate"><span class="pre">gtab</span></code> contains a <code class="docutils literal notranslate"><span class="pre">GradientTable</span></code>
+object (gradient information e.g. b-values). For example, to show the b-values
+it is possible to write:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For the values of the q-space indices to make sense it is necessary to
+explicitly state the <code class="docutils literal notranslate"><span class="pre">big_delta</span></code> and <code class="docutils literal notranslate"><span class="pre">small_delta</span></code> parameters in the
+gradient table.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">read_cfin_dwi</span><span class="p">()</span>
+<span class="n">big_delta</span> <span class="o">=</span> <span class="mf">0.0365</span>  <span class="c1"># seconds</span>
+<span class="n">small_delta</span> <span class="o">=</span> <span class="mf">0.0157</span>  <span class="c1"># seconds</span>
+<span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="o">=</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="o">=</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="p">,</span>
+                      <span class="n">big_delta</span><span class="o">=</span><span class="n">big_delta</span><span class="p">,</span>
+                      <span class="n">small_delta</span><span class="o">=</span><span class="n">small_delta</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+<span class="n">data_small</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">65</span><span class="p">,</span> <span class="mi">50</span><span class="p">:</span><span class="mi">51</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;data.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The MAPMRI Model can now be instantiated. The <code class="docutils literal notranslate"><span class="pre">radial_order</span></code> determines the
+expansion order of the basis, i.e., how many basis functions are used to
+approximate the signal.</p>
+<p>First, we must decide to use the anisotropic or isotropic MAPMRI basis. As was
+shown in <a class="reference internal" href="#fick2016a" id="id4"><span>[Fick2016a]</span></a>, the isotropic basis is best used for tractography
+purposes, as the anisotropic basis has a bias towards smaller crossing angles
+in the ODF. For signal fitting and estimation of scalar quantities the
+anisotropic basis is suggested. The choice can be made by setting
+<code class="docutils literal notranslate"><span class="pre">anisotropic_scaling=True</span></code> or <code class="docutils literal notranslate"><span class="pre">anisotropic_scaling=False</span></code>.</p>
+<p>First, we must select the method of regularization and/or constraining the
+basis fitting.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">laplacian_regularization=True</span></code> makes it use Laplacian regularization
+<a class="reference internal" href="#fick2016a" id="id5"><span>[Fick2016a]</span></a>. This method essentially reduces spurious oscillations in the
+reconstruction by minimizing the Laplacian of the fitted signal.
+Several options can be given to select the regularization weight:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">regularization_weighting=GCV</span></code> uses generalized cross-validation
+<a class="reference internal" href="#craven1978" id="id6"><span>[Craven1978]</span></a> to find an optimal weight.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regularization_weighting=0.2</span></code> for example would omit the GCV and
+just set it to 0.2 (found to be reasonable in HCP data <a class="reference internal" href="#fick2016a" id="id7"><span>[Fick2016a]</span></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regularization_weighting=np.array(weights)</span></code> would make the GCV use
+a custom range to find an optimal weight.</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">positivity_constraint=True</span></code> makes it use the positivity constraint on the
+diffusion propagator <a class="reference internal" href="#ozarslan2013" id="id8"><span>[Ozarslan2013]</span></a>. This method constrains the final
+solution of the diffusion propagator to be positive at a set of discrete
+points, since negative values should not exist.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">pos_grid</span></code> and <code class="docutils literal notranslate"><span class="pre">pos_radius</span></code> affect the location and number of
+constraint points in the diffusion propagator.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+<p>Both methods do a good job of producing viable solutions to the signal fitting
+in practice. The difference is that the Laplacian regularization imposes
+smoothness over the entire signal, including the extrapolation beyond the
+measured signal. In practice this results in, but does not guarantee positive
+solutions of the diffusion propagator. The positivity constraint guarantees a
+positive solution in a set of discrete points, which in general results in
+smooth solutions, but does not guarantee it.</p>
+<p>A suggested strategy is to use a low Laplacian weight together with the
+positivity constraint. In this way both desired properties are guaranteed in
+the final solution.</p>
+<p>We use package CVXPY (<a class="reference external" href="http://www.cvxpy.org/">http://www.cvxpy.org/</a>) to solve convex optimization
+problems when “positivity_constraint=True”, so we need to first install
+CVXPY.</p>
+<p>For now we will generate the anisotropic models for all combinations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radial_order</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">map_model_laplacian_aniso</span> <span class="o">=</span> <span class="n">mapmri</span><span class="o">.</span><span class="n">MapmriModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                                               <span class="n">laplacian_regularization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                               <span class="n">laplacian_weighting</span><span class="o">=.</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">map_model_positivity_aniso</span> <span class="o">=</span> <span class="n">mapmri</span><span class="o">.</span><span class="n">MapmriModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span>
+                                                <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                                                <span class="n">laplacian_regularization</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">positivity_constraint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">map_model_both_aniso</span> <span class="o">=</span> <span class="n">mapmri</span><span class="o">.</span><span class="n">MapmriModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                                          <span class="n">laplacian_regularization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                          <span class="n">laplacian_weighting</span><span class="o">=.</span><span class="mi">05</span><span class="p">,</span>
+                                          <span class="n">positivity_constraint</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that when we use only Laplacian regularization, the <code class="docutils literal notranslate"><span class="pre">GCV</span></code> option may
+select very low regularization weights in very anisotropic white matter such
+as the corpus callosum, resulting in corrupted scalar indices. In this example
+we therefore choose a preset value of 0.2, which has shown to be quite robust
+and also faster in practice <a class="reference internal" href="#fick2016a" id="id9"><span>[Fick2016a]</span></a>.</p>
+<p>We can then fit the MAPMRI model to the data:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapfit_laplacian_aniso</span> <span class="o">=</span> <span class="n">map_model_laplacian_aniso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+<span class="n">mapfit_positivity_aniso</span> <span class="o">=</span> <span class="n">map_model_positivity_aniso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+<span class="n">mapfit_both_aniso</span> <span class="o">=</span> <span class="n">map_model_both_aniso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>From the fitted models we will first illustrate the estimation of q-space
+indices. For completeness, we will compare the estimation using only Laplacian
+regularization, positivity constraint or both. We first show the RTOP
+<a class="reference internal" href="#ozarslan2013" id="id10"><span>[Ozarslan2013]</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># generating RTOP plots</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTOP - Laplacian&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtop_laplacian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_laplacian_aniso</span><span class="o">.</span><span class="n">rtop</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                          <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtop_laplacian</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                 <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTOP - Positivity&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtop_positivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_positivity_aniso</span><span class="o">.</span><span class="n">rtop</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                           <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtop_positivity</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                 <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTOP - Both&#39;</span><span class="p">)</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtop_both</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">rtop</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax3</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtop_both</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax3</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MAPMRI_maps_regularization.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/MAPMRI_maps_regularization.png" src="../_images/MAPMRI_maps_regularization.png" />
+</div>
+<p>It can be seen that all maps appear quite smooth and similar. Though, it is
+possible to see some subtle differences near the corpus callosum. The
+similarity and differences in reconstruction can be further illustrated by
+visualizing the analytic norm of the Laplacian of the fitted signal.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Laplacian norm - Laplacian&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">laplacian_norm_laplacian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_laplacian_aniso</span><span class="o">.</span><span class="n">norm_of_laplacian_signal</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">laplacian_norm_laplacian</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                 <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Laplacian norm - Positivity&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">laplacian_norm_positivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_positivity_aniso</span><span class="o">.</span><span class="n">norm_of_laplacian_signal</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">laplacian_norm_positivity</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                 <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Laplacian norm - Both&#39;</span><span class="p">)</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">laplacian_norm_both</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">norm_of_laplacian_signal</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax3</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">laplacian_norm_both</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax3</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MAPMRI_norm_laplacian.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/MAPMRI_norm_laplacian.png" src="../_images/MAPMRI_norm_laplacian.png" />
+</div>
+<p>A high Laplacian norm indicates that the gradient in the three-dimensional
+signal reconstruction changes a lot - something that may indicate spurious
+oscillations. In the Laplacian reconstruction (left) we see that there are some
+isolated voxels that have a higher norm than the rest. In the
+positivity constraint reconstruction the norm is already smoother. When both
+methods are used together the overall norm gets smoother still, since both
+smoothness of the signal and positivity of the propagator are imposed.</p>
+<p>From now on we just use the combined approach, show all maps we can generate
+and explain their significance.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;MSD&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">msd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">msd</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">msd</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;QIV&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">qiv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">qiv</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">qiv</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTOP&#39;</span><span class="p">)</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtop</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">rtop</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax3</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtop</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax4</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTAP&#39;</span><span class="p">)</span>
+<span class="n">ax4</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">rtap</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax4</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+
+<span class="n">ax5</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;RTPP&#39;</span><span class="p">)</span>
+<span class="n">ax5</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">rtpp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_aniso</span><span class="o">.</span><span class="n">rtpp</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax5</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rtpp</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MAPMRI_maps.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/MAPMRI_maps.png" src="../_images/MAPMRI_maps.png" />
+</div>
+<p>From left to right:</p>
+<ul class="simple">
+<li><p>Mean Squared Displacement (MSD) is a measure for how far protons are able to
+diffuse. a decrease in MSD indicates protons are hindered/restricted more,
+as can be seen by the high MSD in the CSF, but low in the white matter.</p></li>
+<li><p>Q-space Inverse Variance (QIV) is a measure of variance in the signal, which
+is said to have higher contrast to white matter than the MSD
+<a class="reference internal" href="#hosseinbor2013" id="id11"><span>[Hosseinbor2013]</span></a>. We also showed that QIV has high sensitivity to tissue
+composition change in a simulation study <a class="reference internal" href="#fick2016b" id="id12"><span>[Fick2016b]</span></a>.</p></li>
+<li><p>Return to origin probability (RTOP) quantifies the probability that a proton
+will be at the same position at the first and second diffusion gradient
+pulse. A higher RTOP indicates that the volume a spin is inside of is
+smaller, meaning more overall restriction. This is illustrated by the low
+values in CSF and high values in white matter.</p></li>
+<li><p>Return to axis probability (RTAP) is a directional index that quantifies
+the probability that a proton will be along the axis of the main eigenvector
+of a diffusion tensor during both diffusion gradient pulses. RTAP has been
+related to the apparent axon diameter <a class="reference internal" href="#ozarslan2013" id="id13"><span>[Ozarslan2013]</span></a> <a class="reference internal" href="#fick2016a" id="id14"><span>[Fick2016a]</span></a> under
+several strong assumptions on the tissue composition and acquisition
+protocol.</p></li>
+<li><p>Return to plane probability (RTPP) is a directional index that quantifies the
+probability that a proton will be on the plane perpendicular to the main
+eigenvector of a diffusion tensor during both gradient pulses. RTPP is
+related to the length of a pore <a class="reference internal" href="#ozarslan2013" id="id15"><span>[Ozarslan2013]</span></a> but in practice should be
+similar to that of Gaussian diffusion.</p></li>
+</ul>
+<p>It is also possible to estimate the amount of non-Gaussian diffusion in every
+voxel <a class="reference internal" href="#ozarslan2013" id="id16"><span>[Ozarslan2013]</span></a>. This quantity is estimated through the ratio between
+Gaussian volume (MAPMRI’s first basis function) and the non-Gaussian volume
+(all other basis functions) of the fitted signal. For this value to be
+physically meaningful we must use a b-value threshold in the MAPMRI model. This
+threshold makes the scale estimation in MAPMRI only use samples that
+realistically describe Gaussian diffusion, i.e., at low b-values.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">map_model_both_ng</span> <span class="o">=</span> <span class="n">mapmri</span><span class="o">.</span><span class="n">MapmriModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                                       <span class="n">laplacian_regularization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">laplacian_weighting</span><span class="o">=.</span><span class="mi">05</span><span class="p">,</span>
+                                       <span class="n">positivity_constraint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">bval_threshold</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+
+<span class="n">mapfit_both_ng</span> <span class="o">=</span> <span class="n">map_model_both_ng</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;NG&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_ng</span><span class="o">.</span><span class="n">ng</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ng</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;NG perpendicular&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ng_perpendicular</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_ng</span><span class="o">.</span><span class="n">ng_perpendicular</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ng_perpendicular</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax2</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+
+<span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;NG parallel&#39;</span><span class="p">)</span>
+<span class="n">ax3</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">ng_parallel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mapfit_both_ng</span><span class="o">.</span><span class="n">ng_parallel</span><span class="p">()[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">ind</span> <span class="o">=</span> <span class="n">ax3</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ng_parallel</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">,</span>
+                 <span class="n">cmap</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">gray</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax3</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;MAPMRI_ng.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/MAPMRI_ng.png" src="../_images/MAPMRI_ng.png" />
+</div>
+<p>On the left we see the overall NG and on the right the directional
+perpendicular NG and parallel NG. The NG ranges from 1 (completely
+non-Gaussian) to 0 (completely Gaussian). The overall NG of a voxel is always
+higher or equal than each of its components. It can be seen that NG has low
+values in the CSF and higher in the white matter.</p>
+<p>Increases or decreases in these values do not point to a specific
+microstructural change, but can indicate clues as to what is happening, similar
+to Fractional Anisotropy. An initial simulation study that quantifies the added
+value of q-space indices over DTI indices is given in <a class="reference internal" href="#fick2016b" id="id17"><span>[Fick2016b]</span></a>.</p>
+<p>The MAPMRI framework also allows for the estimation of Orientation Distribution
+Functions (ODFs). We recommend to use the isotropic implementation for this
+purpose, as the anisotropic implementation has a bias towards smaller crossing
+angles.</p>
+<p>For the isotropic basis we recommend to use a <code class="docutils literal notranslate"><span class="pre">radial_order</span></code> of 8, as the
+basis needs more generic and needs more basis functions to approximate the
+signal.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">radial_order</span> <span class="o">=</span> <span class="mi">8</span>
+<span class="n">map_model_both_iso</span> <span class="o">=</span> <span class="n">mapmri</span><span class="o">.</span><span class="n">MapmriModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">radial_order</span><span class="o">=</span><span class="n">radial_order</span><span class="p">,</span>
+                                        <span class="n">laplacian_regularization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">laplacian_weighting</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">positivity_constraint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                        <span class="n">anisotropic_scaling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">mapfit_both_iso</span> <span class="o">=</span> <span class="n">map_model_both_iso</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data_small</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Load an ODF reconstruction sphere</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphere</span> <span class="o">=</span> <span class="n">get_sphere</span><span class="p">(</span><span class="s1">&#39;repulsion724&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compute the ODFs.</p>
+<p>The radial order <code class="docutils literal notranslate"><span class="pre">s</span></code> can be increased to sharpen the results, but it might
+also make the ODFs noisier. Always check the results visually.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">odf</span> <span class="o">=</span> <span class="n">mapfit_both_iso</span><span class="o">.</span><span class="n">odf</span><span class="p">(</span><span class="n">sphere</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;odf.shape (</span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">, </span><span class="si">%d</span><span class="s1">)&#39;</span> <span class="o">%</span> <span class="n">odf</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Display the ODFs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enables/disables interactive visualization</span>
+<span class="n">interactive</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">window</span><span class="o">.</span><span class="n">Renderer</span><span class="p">()</span>
+<span class="n">sfu</span> <span class="o">=</span> <span class="n">actor</span><span class="o">.</span><span class="n">odf_slicer</span><span class="p">(</span><span class="n">odf</span><span class="p">,</span> <span class="n">sphere</span><span class="o">=</span><span class="n">sphere</span><span class="p">,</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;plasma&#39;</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">sfu</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">sfu</span><span class="o">.</span><span class="n">RotateX</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">)</span>
+<span class="n">r</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sfu</span><span class="p">)</span>
+<span class="n">window</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">out_path</span><span class="o">=</span><span class="s1">&#39;odfs.png&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">600</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">window</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id19">
+<img alt="../_images/odfs.png" src="../_images/odfs.png" />
+<p class="caption"><span class="caption-text">Orientation distribution functions (ODFs).</span><a class="headerlink" href="#id19" title="Permalink to this image">¶</a></p>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="ozarslan2013"><span class="brackets">Ozarslan2013</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>,<a href="#id8">3</a>,<a href="#id10">4</a>,<a href="#id13">5</a>,<a href="#id15">6</a>,<a href="#id16">7</a>)</span></dt>
+<dd><p>Ozarslan E. et al., “Mean apparent propagator (MAP) MRI: A
+novel diffusion imaging method for mapping tissue microstructure”,
+NeuroImage, 2013.</p>
+</dd>
+<dt class="label" id="fick2016a"><span class="brackets">Fick2016a</span><span class="fn-backref">(<a href="#id3">1</a>,<a href="#id4">2</a>,<a href="#id5">3</a>,<a href="#id7">4</a>,<a href="#id9">5</a>,<a href="#id14">6</a>)</span></dt>
+<dd><p>Fick, Rutger HJ, et al. “MAPL: Tissue microstructure estimation
+using Laplacian-regularized MAP-MRI and its application to HCP data.”
+NeuroImage (2016).</p>
+</dd>
+<dt class="label" id="craven1978"><span class="brackets"><a class="fn-backref" href="#id6">Craven1978</a></span></dt>
+<dd><p>Craven et al. “Smoothing Noisy Data with Spline Functions.”
+NUMER MATH 31.4 (1978): 377-403.</p>
+</dd>
+<dt class="label" id="hosseinbor2013"><span class="brackets"><a class="fn-backref" href="#id11">Hosseinbor2013</a></span></dt>
+<dd><p>Hosseinbor et al. “Bessel fourier orientation
+reconstruction (bfor): an analytical diffusion propagator reconstruction
+for hybrid diffusion imaging and computation of q-space indices. NeuroImage
+64, 650-670.</p>
+</dd>
+<dt class="label" id="fick2016b"><span class="brackets">Fick2016b</span><span class="fn-backref">(<a href="#id12">1</a>,<a href="#id17">2</a>)</span></dt>
+<dd><p>Fick et al. “A sensitivity analysis of Q-space indices with
+respect to changes in axonal diameter, dispersion and tissue composition.
+ISBI 2016.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/3032f314a8b6e90a06ca72b187f7be70/reconst_mapmri.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

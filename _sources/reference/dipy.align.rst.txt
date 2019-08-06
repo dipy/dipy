@@ -1,0 +1,773 @@
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+:mod:`align`
+============
+.. automodule:: dipy.align
+
+.. currentmodule:: dipy.align
+.. autosummary::
+
+   Bunch
+   floating
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.imaffine`
+-----------------------------
+.. automodule:: dipy.align.imaffine
+
+.. currentmodule:: dipy.align.imaffine
+.. autosummary::
+
+   AffineInvalidValuesError
+   AffineInversionError
+   AffineMap
+   AffineRegistration
+   IsotropicScaleSpace
+   MutualInformationMetric
+   Optimizer
+   ParzenJointHistogram
+   ScaleSpace
+   compute_parzen_mi
+   get_direction_and_spacings
+   interpolate_scalar_2d
+   interpolate_scalar_3d
+   sample_domain_regular
+   transform_centers_of_mass
+   transform_geometric_centers
+   transform_origins
+   warn
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.imwarp`
+---------------------------
+.. automodule:: dipy.align.imwarp
+
+.. currentmodule:: dipy.align.imwarp
+.. autosummary::
+
+   Bunch
+   DiffeomorphicMap
+   DiffeomorphicRegistration
+   ScaleSpace
+   SymmetricDiffeomorphicRegistration
+   floating
+   get_direction_and_spacings
+   mult_aff
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.metrics`
+----------------------------
+.. automodule:: dipy.align.metrics
+
+.. currentmodule:: dipy.align.metrics
+.. autosummary::
+
+   CCMetric
+   EMMetric
+   SSDMetric
+   SimilarityMetric
+   floating
+   gradient
+   v_cycle_2d
+   v_cycle_3d
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.reslice`
+----------------------------
+.. automodule:: dipy.align.reslice
+
+.. currentmodule:: dipy.align.reslice
+.. autosummary::
+
+   Pool
+   affine_transform
+   cpu_count
+   reslice
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.scalespace`
+-------------------------------
+.. automodule:: dipy.align.scalespace
+
+.. currentmodule:: dipy.align.scalespace
+.. autosummary::
+
+   IsotropicScaleSpace
+   ScaleSpace
+   floating
+
+.. AUTO-GENERATED FILE -- DO NOT EDIT!
+
+Module: :mod:`align.streamlinear`
+---------------------------------
+.. automodule:: dipy.align.streamlinear
+
+.. currentmodule:: dipy.align.streamlinear
+.. autosummary::
+
+   BundleMinDistanceAsymmetricMetric
+   BundleMinDistanceMatrixMetric
+   BundleMinDistanceMetric
+   BundleSumDistanceMatrixMetric
+   Optimizer
+   StreamlineDistanceMetric
+   StreamlineLinearRegistration
+   StreamlineRegistrationMap
+   Streamlines
+   bundle_min_distance
+   bundle_min_distance_asymmetric_fast
+   bundle_min_distance_fast
+   bundle_sum_distance
+   center_streamlines
+   compose_matrix
+   compose_matrix44
+   compose_transformations
+   decompose_matrix
+   decompose_matrix44
+   distance_matrix_mdf
+   length
+   progressive_slr
+   qbx_and_merge
+   remove_clusters_by_size
+   select_random_set_of_streamlines
+   set_number_of_points
+   slr_with_qbx
+   time
+   transform_streamlines
+   unlist_streamlines
+   whole_brain_slr
+
+
+.. currentmodule:: dipy.align
+
+
+:class:`Bunch`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Bunch
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`floating`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: floating
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+.. currentmodule:: dipy.align.imaffine
+
+
+:class:`AffineInvalidValuesError`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AffineInvalidValuesError
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`AffineInversionError`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AffineInversionError
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`AffineMap`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AffineMap
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`AffineRegistration`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: AffineRegistration
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`IsotropicScaleSpace`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IsotropicScaleSpace
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`MutualInformationMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: MutualInformationMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Optimizer`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Optimizer
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ParzenJointHistogram`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ParzenJointHistogram
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ScaleSpace`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ScaleSpace
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+compute_parzen_mi
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: compute_parzen_mi
+
+get_direction_and_spacings
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_direction_and_spacings
+
+interpolate_scalar_2d
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: interpolate_scalar_2d
+
+interpolate_scalar_3d
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: interpolate_scalar_3d
+
+sample_domain_regular
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: sample_domain_regular
+
+transform_centers_of_mass
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_centers_of_mass
+
+transform_geometric_centers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_geometric_centers
+
+transform_origins
+~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_origins
+
+warn
+~~~~
+
+.. autofunction:: warn
+
+
+.. currentmodule:: dipy.align.imwarp
+
+
+:class:`Bunch`
+~~~~~~~~~~~~~~
+
+
+.. autoclass:: Bunch
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffeomorphicMap`
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffeomorphicMap
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`DiffeomorphicRegistration`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: DiffeomorphicRegistration
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ScaleSpace`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ScaleSpace
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SymmetricDiffeomorphicRegistration`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SymmetricDiffeomorphicRegistration
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`floating`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: floating
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+get_direction_and_spacings
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: get_direction_and_spacings
+
+mult_aff
+~~~~~~~~
+
+.. autofunction:: mult_aff
+
+
+.. currentmodule:: dipy.align.metrics
+
+
+:class:`CCMetric`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: CCMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`EMMetric`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: EMMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SSDMetric`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SSDMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`SimilarityMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: SimilarityMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`floating`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: floating
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+gradient
+~~~~~~~~
+
+.. autofunction:: gradient
+
+v_cycle_2d
+~~~~~~~~~~
+
+.. autofunction:: v_cycle_2d
+
+v_cycle_3d
+~~~~~~~~~~
+
+.. autofunction:: v_cycle_3d
+
+
+.. currentmodule:: dipy.align.reslice
+
+Pool
+~~~~
+
+.. autofunction:: Pool
+
+affine_transform
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: affine_transform
+
+cpu_count
+~~~~~~~~~
+
+.. autofunction:: cpu_count
+
+reslice
+~~~~~~~
+
+.. autofunction:: reslice
+
+
+.. currentmodule:: dipy.align.scalespace
+
+
+:class:`IsotropicScaleSpace`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: IsotropicScaleSpace
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`ScaleSpace`
+~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: ScaleSpace
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`floating`
+~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: floating
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+.. currentmodule:: dipy.align.streamlinear
+
+
+:class:`BundleMinDistanceAsymmetricMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleMinDistanceAsymmetricMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`BundleMinDistanceMatrixMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleMinDistanceMatrixMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`BundleMinDistanceMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleMinDistanceMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`BundleSumDistanceMatrixMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: BundleSumDistanceMatrixMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Optimizer`
+~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Optimizer
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StreamlineDistanceMetric`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StreamlineDistanceMetric
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StreamlineLinearRegistration`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StreamlineLinearRegistration
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`StreamlineRegistrationMap`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: StreamlineRegistrationMap
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+
+:class:`Streamlines`
+~~~~~~~~~~~~~~~~~~~~
+
+
+.. autoclass:: Streamlines
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+  .. automethod:: __init__
+
+bundle_min_distance
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_min_distance
+
+bundle_min_distance_asymmetric_fast
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_min_distance_asymmetric_fast
+
+bundle_min_distance_fast
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_min_distance_fast
+
+bundle_sum_distance
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: bundle_sum_distance
+
+center_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: center_streamlines
+
+compose_matrix
+~~~~~~~~~~~~~~
+
+.. autofunction:: compose_matrix
+
+compose_matrix44
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: compose_matrix44
+
+compose_transformations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: compose_transformations
+
+decompose_matrix
+~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_matrix
+
+decompose_matrix44
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: decompose_matrix44
+
+distance_matrix_mdf
+~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: distance_matrix_mdf
+
+length
+~~~~~~
+
+.. autofunction:: length
+
+progressive_slr
+~~~~~~~~~~~~~~~
+
+.. autofunction:: progressive_slr
+
+qbx_and_merge
+~~~~~~~~~~~~~
+
+.. autofunction:: qbx_and_merge
+
+remove_clusters_by_size
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: remove_clusters_by_size
+
+select_random_set_of_streamlines
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: select_random_set_of_streamlines
+
+set_number_of_points
+~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: set_number_of_points
+
+slr_with_qbx
+~~~~~~~~~~~~
+
+.. autofunction:: slr_with_qbx
+
+time
+~~~~
+
+.. autofunction:: time
+
+transform_streamlines
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: transform_streamlines
+
+unlist_streamlines
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: unlist_streamlines
+
+whole_brain_slr
+~~~~~~~~~~~~~~~
+
+.. autofunction:: whole_brain_slr
+

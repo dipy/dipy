@@ -1,0 +1,24 @@
+
+========================
+dipy_labelsbundles
+========================
+
+usage: dipy_labelsbundles [-h] [--out_dir str] [--out_bundle str]
+                     streamline_files labels_files
+
+Extract bundles using existing indices (labels)
+
+positional arguments:
+  streamline_files  The path of streamline files where you want to recognize bundles
+  labels_files      The path of model bundle files
+
+optional arguments:
+  -h, --help        show this help message and exit
+
+output arguments(optional):
+  --out_dir str     Output directory (default input file directory)
+  --out_bundle str  Recognized bundle in the space of the model bundle (default 'recognized_orig.trk')
+
+References: 
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles using local and global streamline-based registration and clustering, Neuroimage, 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

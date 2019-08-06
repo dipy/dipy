@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/workflow_creation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-new-workflow">
+<span id="example-workflow-creation"></span><h1>Creating a new workflow.<a class="headerlink" href="#creating-a-new-workflow" title="Permalink to this headline">¶</a></h1>
+<p>A workflow is a series of <a class="reference external" href="http://dipy.org">DIPY</a> operations with fixed inputs and outputs
+that is callable via command line or another interface.</p>
+<p>For example, after installing <a class="reference external" href="http://dipy.org">DIPY</a>, you can call anywhere from your command
+line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dipy_nlmeans</span> <span class="n">t1</span><span class="o">.</span><span class="n">nii</span><span class="o">.</span><span class="n">gz</span> <span class="n">t1_denoised</span><span class="o">.</span><span class="n">nii</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<p>First create your workflow (let’s name this workflow file as my_workflow.py). Usually this is a python file in
+the <code class="docutils literal notranslate"><span class="pre">&lt;../dipy/workflows&gt;</span></code> directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">shutil</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">shutil</span></code> Will be used for sample file manipulation.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.workflows.workflow</span> <span class="k">import</span> <span class="n">Workflow</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Workflow</span></code> is the base class that will be extended to create our workflow.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">AppendTextFlow</span><span class="p">(</span><span class="n">Workflow</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_files</span><span class="p">,</span> <span class="n">text_to_append</span><span class="o">=</span><span class="s1">&#39;dipy&#39;</span><span class="p">,</span> <span class="n">out_dir</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="n">out_file</span><span class="o">=</span><span class="s1">&#39;append.txt&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_files : string</span>
+<span class="sd">            Path to the input files. This path may contain wildcards to</span>
+<span class="sd">            process multiple inputs at once.</span>
+
+<span class="sd">        text_to_append : string, optional</span>
+<span class="sd">            Text that will be appended to the file. (default &#39;dipy&#39;)</span>
+
+<span class="sd">        out_dir : string, optional</span>
+<span class="sd">            Where the resulting file will be saved. (default &#39;&#39;)</span>
+
+<span class="sd">        out_file : string, optional</span>
+<span class="sd">            Name of the result file to be saved. (default &#39;append.txt&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">AppendTextFlow</span></code> is the name of our workflow. Note that it needs
+to extend Workflow for everything to work properly. It will append
+text to a file.
+It is mandatory to have out_dir as a parameter. It is also mandatory
+to put <cite>out_</cite> in front of every parameter that is going to be an
+output. Lastly, all <cite>out_</cite> params needs to be at the end of the params
+list.
+The <code class="docutils literal notranslate"><span class="pre">run</span></code> docstring is very important, you need to document every
+parameter as they will be used with inspection to build the command line
+argument parser.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">io_it</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_io_iterator</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">in_file</span><span class="p">,</span> <span class="n">out_file</span> <span class="ow">in</span> <span class="n">io_it</span><span class="p">:</span>
+
+    <span class="n">shutil</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">in_file</span><span class="p">,</span> <span class="n">out_file</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">out_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">myfile</span><span class="p">:</span>
+
+        <span class="n">myfile</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">text_to_append</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Use self.get_io_iterator() in every workflow you create. This creates
+an <code class="docutils literal notranslate"><span class="pre">IOIterator</span></code> object that create output file names and directory structure
+based on the inputs and some other advanced output strategy parameters.</p>
+<p>By iterating on the <code class="docutils literal notranslate"><span class="pre">IOIterator</span></code> object you created previously you
+conveniently get all input and output paths for every input file
+found when globbing the input parameters.</p>
+<p>The code in the loop is the actual workflow processing code. It can be anything.
+For the example, it just appends text to an input file.</p>
+<p>This is it for the workflow! Now to be able to call it easily via command
+line, you need to add this bit of code. Usually this is in a separate
+executable file located in <code class="docutils literal notranslate"><span class="pre">bin</span></code>.</p>
+<p>The first line imports the run_flow method from the flow_runner class.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.workflows.flow_runner</span> <span class="k">import</span> <span class="n">run_flow</span>
+</pre></div>
+</div>
+<p>The second line imports the <code class="docutils literal notranslate"><span class="pre">AppendTextFlow</span></code> class from the newly created
+<code class="docutils literal notranslate"><span class="pre">my_workflow.py</span></code> file. In this specific case, we comment this import
+since <code class="docutils literal notranslate"><span class="pre">AppendTextFlow</span></code> class is not on an external file but in the current file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># from dipy.workflows.my_workflow import AppendTextFlow</span>
+</pre></div>
+</div>
+<p>This is the method that will wrap everything that is needed to make a flow
+command line ready then run it.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">run_flow</span><span class="p">(</span><span class="n">AppendTextFlow</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This is the only thing needed to make your workflow available through command
+line.</p>
+<p>Now just call the script you just made with <code class="docutils literal notranslate"><span class="pre">-h</span></code> to see the argparser help
+text:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">workflow_creation</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>You should see all your parameters available along with some extra common ones
+like logging file and force overwrite. Also all the documentation you wrote
+about each parameter is there.</p>
+<p>Now call it for real with a text file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">workflow_creation</span><span class="o">.</span><span class="n">py</span> <span class="o">./</span><span class="n">text_file</span><span class="o">.</span><span class="n">txt</span>
+</pre></div>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/696c6e3171584d9bcf05a4da9349f7d4/workflow_creation.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

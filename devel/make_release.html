@@ -1,0 +1,492 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Commit message codes" href="commit_codes.html" />
+    <link rel="prev" title="git resources" href="gitwash/git_resources.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="commit_codes.html" title="Commit message codes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gitwash/git_resources.html" title="git resources"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">DIPY development</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">A guide to making a DIPY release</a><ul>
+<li><a class="reference internal" href="#release-tools">Release tools</a></li>
+<li><a class="reference internal" href="#release-checklist">Release checklist</a></li>
+<li><a class="reference internal" href="#doing-the-release">Doing the release</a></li>
+<li><a class="reference internal" href="#uploading-binary-builds-for-the-release">Uploading binary builds for the release</a></li>
+<li><a class="reference internal" href="#other-stuff-that-needs-doing-for-the-release">Other stuff that needs doing for the release</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gitwash/git_resources.html"
+                        title="previous chapter">git resources</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="commit_codes.html"
+                        title="next chapter">Commit message codes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/devel/make_release.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="a-guide-to-making-a-dipy-release">
+<span id="release-guide"></span><h1>A guide to making a DIPY release<a class="headerlink" href="#a-guide-to-making-a-dipy-release" title="Permalink to this headline">¶</a></h1>
+<p>A guide for developers who are doing a DIPY release</p>
+<div class="section" id="release-tools">
+<span id="id1"></span><h2>Release tools<a class="headerlink" href="#release-tools" title="Permalink to this headline">¶</a></h2>
+<p>There are some release utilities that come with <a class="reference external" href="http://nipy.org/nibabel">nibabel</a>. nibabel should
+install these as the <code class="docutils literal notranslate"><span class="pre">nisext</span></code> package, and the testing stuff is understandably
+in the <code class="docutils literal notranslate"><span class="pre">testers</span></code> module of that package. DIPY has Makefile targets for their
+use.  The relevant targets are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">check</span><span class="o">-</span><span class="n">version</span><span class="o">-</span><span class="n">info</span>
+<span class="n">make</span> <span class="n">check</span><span class="o">-</span><span class="n">files</span>
+<span class="n">make</span> <span class="n">sdist</span><span class="o">-</span><span class="n">tests</span>
+</pre></div>
+</div>
+<p>The first installs the code from a git archive, from the repository, and for
+in-place use, and runs the <code class="docutils literal notranslate"><span class="pre">get_info()</span></code> function to confirm that installation
+is working and information parameters are set correctly.</p>
+<p>The second (<code class="docutils literal notranslate"><span class="pre">sdist-tests</span></code>) makes an sdist source distribution archive,
+installs it to a temporary directory, and runs the tests of that install.</p>
+<p>If you have a version of nibabel trunk past February 11th 2011, there will also
+be a functional make target:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">bdist</span><span class="o">-</span><span class="n">egg</span><span class="o">-</span><span class="n">tests</span>
+</pre></div>
+</div>
+<p>This builds an egg (which is a zip file), hatches it (unzips the egg) and runs
+the tests from the resulting directory.</p>
+</div>
+<div class="section" id="release-checklist">
+<span id="id2"></span><h2>Release checklist<a class="headerlink" href="#release-checklist" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Review the open list of <a class="reference external" href="http://github.com/nipy/dipy/issues">dipy issues</a>.  Check whether there are
+outstanding issues that can be closed, and whether there are any issues that
+should delay the release.  Label them !</p></li>
+<li><p>Check whether there are no build failing on <cite>Travis</cite>. Indeed, <code class="docutils literal notranslate"><span class="pre">PRE</span></code> build is
+allowed to fail and does not block a PR merge but it should block release !
+So make sure that <code class="docutils literal notranslate"><span class="pre">PRE</span></code> build is not failing.</p></li>
+<li><p>Review and update the release notes.  Review and update the <code class="file docutils literal notranslate"><span class="pre">Changelog</span></code>
+file.  Get a partial list of contributors with something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">shortlog</span> <span class="o">-</span><span class="n">ns</span> <span class="mf">0.6</span><span class="o">.</span><span class="mf">0.</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">0.6.0</span></code> was the last release tag name.</p>
+<p>Then manually go over <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">shortlog</span> <span class="pre">0.6.0..</span></code> to make sure the release notes
+are as complete as possible and that every contributor was recognized.</p>
+</li>
+<li><p>Use the opportunity to update the <code class="docutils literal notranslate"><span class="pre">.mailmap</span></code> file if there are any duplicate
+authors listed from <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">shortlog</span> <span class="pre">-ns</span></code>.</p></li>
+<li><p>Add any new authors to the <code class="docutils literal notranslate"><span class="pre">AUTHORS</span></code> file.  Add any new entries to the
+<code class="docutils literal notranslate"><span class="pre">THANKS</span></code> file.</p></li>
+<li><p>Check the copyright years in <code class="docutils literal notranslate"><span class="pre">doc/conf.py</span></code> and <code class="docutils literal notranslate"><span class="pre">LICENSE</span></code></p></li>
+<li><p>Check the examples - we really need an automated check here.</p></li>
+<li><p>Check the <code class="docutils literal notranslate"><span class="pre">pyx</span></code> file doctests with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">tools</span><span class="o">/</span><span class="n">doctest_extmods</span><span class="o">.</span><span class="n">py</span> <span class="n">dipy</span>
+</pre></div>
+</div>
+<p>We really need an automated run of these using the buildbots, but we haven’t
+done it yet.</p>
+</li>
+<li><p>Check the <code class="docutils literal notranslate"><span class="pre">long_description</span></code> in <code class="docutils literal notranslate"><span class="pre">dipy/info.py</span></code>.  Check it matches the
+<code class="docutils literal notranslate"><span class="pre">README</span></code> in the root directory, maybe with <code class="docutils literal notranslate"><span class="pre">vim</span></code> <code class="docutils literal notranslate"><span class="pre">diffthis</span></code> command.
+Check all the links are still valid.</p></li>
+<li><p>Check all the DIPY builds are green on the nipy <a class="reference external" href="http://nipy.bic.berkeley.edu/builders">buildbots</a></p></li>
+<li><p>If you have <a class="reference external" href="https://travis-ci.org/">travis-ci</a> building set up you might want to push the code in its
+current state to a branch that will build, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">branch</span> <span class="o">-</span><span class="n">D</span> <span class="n">pre</span><span class="o">-</span><span class="n">release</span><span class="o">-</span><span class="n">test</span> <span class="c1"># in case branch already exists</span>
+<span class="n">git</span> <span class="n">co</span> <span class="o">-</span><span class="n">b</span> <span class="n">pre</span><span class="o">-</span><span class="n">release</span><span class="o">-</span><span class="n">test</span>
+</pre></div>
+</div>
+</li>
+<li><p>Run the builder and review the output from
+<a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-release-checks">http://nipy.bic.berkeley.edu/builders/dipy-release-checks</a>   This builder does
+<em>not</em> check the outputs - they will likely all be green - you have to check the
+<code class="docutils literal notranslate"><span class="pre">stdio</span></code> output for each step using the web interface.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">dipy-release-checks</span></code> builder runs these tests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">distclean</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">compileall</span> <span class="o">.</span>
+<span class="n">make</span> <span class="n">sdist</span><span class="o">-</span><span class="n">tests</span>
+<span class="n">make</span> <span class="n">bdist</span><span class="o">-</span><span class="n">egg</span><span class="o">-</span><span class="n">tests</span>
+<span class="n">make</span> <span class="n">check</span><span class="o">-</span><span class="n">version</span><span class="o">-</span><span class="n">info</span>
+<span class="n">make</span> <span class="n">check</span><span class="o">-</span><span class="n">files</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">bdist-egg-tests</span></code> may well fail because of a problem with the script
+tests; if you have a recent (&gt;= March 31 2013) nibabel <code class="docutils literal notranslate"><span class="pre">nisext</span></code> package, you
+could try instead doing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s1">&#39;from nisext.testers import bdist_egg_tests; bdist_egg_tests(&quot;dipy&quot;, label=&quot;not slow and not script_test&quot;)&#39;</span>
+</pre></div>
+</div>
+<p>Eventually we should update the <code class="docutils literal notranslate"><span class="pre">bdist-egg-tests</span></code> makefile target.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">check-version-info</span></code> checks how the commit hash is stored in the
+installed files.  You should see something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s1">&#39;sys_version&#39;</span><span class="p">:</span> <span class="s1">&#39;2.6.6 (r266:84374, Aug 31 2010, 11:00:51) </span><span class="se">\n</span><span class="s1">[GCC 4.0.1 (Apple Inc. build 5493)]&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_source&#39;</span><span class="p">:</span> <span class="s1">&#39;archive substitution&#39;</span><span class="p">,</span> <span class="s1">&#39;np_version&#39;</span><span class="p">:</span> <span class="s1">&#39;1.5.0&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_hash&#39;</span><span class="p">:</span> <span class="s1">&#39;25b4125&#39;</span><span class="p">,</span> <span class="s1">&#39;pkg_path&#39;</span><span class="p">:</span> <span class="s1">&#39;/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_executable&#39;</span><span class="p">:</span> <span class="s1">&#39;/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_platform&#39;</span><span class="p">:</span> <span class="s1">&#39;darwin&#39;</span><span class="p">}</span>
+<span class="o">/</span><span class="n">var</span><span class="o">/</span><span class="n">folders</span><span class="o">/</span><span class="n">jg</span><span class="o">/</span><span class="n">jgfZ12ZXHwGSFKD85xLpLk</span><span class="o">+++</span><span class="n">TI</span><span class="o">/-</span><span class="n">Tmp</span><span class="o">-/</span><span class="n">tmpGPiD3E</span><span class="o">/</span><span class="n">pylib</span><span class="o">/</span><span class="n">dipy</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">pyc</span>
+<span class="p">{</span><span class="s1">&#39;sys_version&#39;</span><span class="p">:</span> <span class="s1">&#39;2.6.6 (r266:84374, Aug 31 2010, 11:00:51) </span><span class="se">\n</span><span class="s1">[GCC 4.0.1 (Apple Inc. build 5493)]&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_source&#39;</span><span class="p">:</span> <span class="s1">&#39;installation&#39;</span><span class="p">,</span> <span class="s1">&#39;np_version&#39;</span><span class="p">:</span> <span class="s1">&#39;1.5.0&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_hash&#39;</span><span class="p">:</span> <span class="s1">&#39;25b4125&#39;</span><span class="p">,</span> <span class="s1">&#39;pkg_path&#39;</span><span class="p">:</span> <span class="s1">&#39;/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_executable&#39;</span><span class="p">:</span> <span class="s1">&#39;/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_platform&#39;</span><span class="p">:</span> <span class="s1">&#39;darwin&#39;</span><span class="p">}</span>
+<span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">mb312</span><span class="o">/</span><span class="n">dev_trees</span><span class="o">/</span><span class="n">dipy</span><span class="o">/</span><span class="n">dipy</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">pyc</span>
+<span class="p">{</span><span class="s1">&#39;sys_version&#39;</span><span class="p">:</span> <span class="s1">&#39;2.6.6 (r266:84374, Aug 31 2010, 11:00:51) </span><span class="se">\n</span><span class="s1">[GCC 4.0.1 (Apple Inc. build 5493)]&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_source&#39;</span><span class="p">:</span> <span class="s1">&#39;repository&#39;</span><span class="p">,</span> <span class="s1">&#39;np_version&#39;</span><span class="p">:</span> <span class="s1">&#39;1.5.0&#39;</span><span class="p">,</span> <span class="s1">&#39;commit_hash&#39;</span><span class="p">:</span> <span class="s1">&#39;25b4125&#39;</span><span class="p">,</span> <span class="s1">&#39;pkg_path&#39;</span><span class="p">:</span> <span class="s1">&#39;/Users/mb312/dev_trees/dipy/dipy&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_executable&#39;</span><span class="p">:</span> <span class="s1">&#39;/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python&#39;</span><span class="p">,</span> <span class="s1">&#39;sys_platform&#39;</span><span class="p">:</span> <span class="s1">&#39;darwin&#39;</span><span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">check-files</span></code> checks if the source distribution is picking up all the
+library and script files.  Look for output at the end about missed files, such
+as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Missed</span> <span class="n">script</span> <span class="n">files</span><span class="p">:</span>  <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">mb312</span><span class="o">/</span><span class="n">dev_trees</span><span class="o">/</span><span class="n">dipy</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">nib</span><span class="o">-</span><span class="n">dicomfs</span><span class="p">,</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">mb312</span><span class="o">/</span><span class="n">dev_trees</span><span class="o">/</span><span class="n">dipy</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">nifti1_diagnose</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Fix <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> to carry across any files that should be in the distribution.</p>
+</li>
+<li><p>Clean and compile:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">distclean</span>
+<span class="n">git</span> <span class="n">clean</span> <span class="o">-</span><span class="n">fxd</span>
+<span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build_ext</span> <span class="o">--</span><span class="n">inplace</span>
+</pre></div>
+</div>
+</li>
+<li><p>Make sure all tests pass on your local machine (from the <code class="docutils literal notranslate"><span class="pre">&lt;dipy</span> <span class="pre">root&gt;</span></code> directory):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">..</span>
+<span class="n">pytest</span> <span class="o">-</span><span class="n">sv</span> <span class="o">--</span><span class="k">with</span><span class="o">-</span><span class="n">doctest</span> <span class="n">dipy</span>
+<span class="n">cd</span> <span class="n">dipy</span> <span class="c1"># back to the root directory</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check the documentation doctests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">doc</span>
+<span class="n">make</span> <span class="n">doctest</span>
+<span class="n">cd</span> <span class="o">..</span>
+</pre></div>
+</div>
+<p>At the moment this generates lots of errors from the autodoc documentation
+running the doctests in the code, where the doctests pass when run in pytest -
+we should find out why this is at some point, but leave it for now.</p>
+</li>
+<li><p>Trigger builds of all the binary build testers for DIPY, using the web
+interface. You may need permissions set to do this - contact Matthew or
+Eleftherios if you do.</p>
+<p>At the moment, the useful DIPY binary build testers are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist32-35">http://nipy.bic.berkeley.edu/builders/dipy-bdist32-35</a></p></li>
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist32-27">http://nipy.bic.berkeley.edu/builders/dipy-bdist32-27</a></p></li>
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist64-27">http://nipy.bic.berkeley.edu/builders/dipy-bdist64-27</a></p></li>
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist64-35">http://nipy.bic.berkeley.edu/builders/dipy-bdist64-35</a></p></li>
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.6">http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.6</a></p></li>
+<li><p><a class="reference external" href="http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.7">http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.7</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Build and test the DIPY wheels.  See the <a class="reference external" href="https://github.com/MacPython/dipy-wheels">wheel builder README</a> for instructions.  In summary,
+clone the wheel-building repo, edit the <code class="docutils literal notranslate"><span class="pre">.travis.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">appveyor.yml</span></code>
+text files (if present) with the branch or commit for the release, commit
+and then push back up to github.  This will trigger a wheel build and test
+on OSX, Linux and Windows. Check the build has passed on on the Travis-CI
+interface at <a class="reference external" href="https://travis-ci.org/MacPython/dipy-wheels">https://travis-ci.org/MacPython/dipy-wheels</a>.  You’ll need
+commit privileges to the <code class="docutils literal notranslate"><span class="pre">dipy-wheels</span></code> repo; ask Matthew Brett or on the
+mailing list if you do not have them.</p></li>
+<li><p>The release should now be ready.</p></li>
+</ul>
+</div>
+<div class="section" id="doing-the-release">
+<h2>Doing the release<a class="headerlink" href="#doing-the-release" title="Permalink to this headline">¶</a></h2>
+<p>Doing the release! This has two steps:</p>
+<ul class="simple">
+<li><p>build and upload the DIPY wheels;</p></li>
+<li><p>make and upload the DIPY source release.</p></li>
+</ul>
+<p>The trick here is to get all the testing, pushing to upstream done <em>before</em> you
+do the final release commit.  There should be only one commit with the release
+version number, so you might want to make the release commit on your local
+machine, push to <a class="reference external" href="http://pypi.python.org/pypi/dipy">dipy pypi</a>, review, fix, rebase, until all is good.  Then and only
+then do you push to upstream on github.</p>
+<ul>
+<li><p>Make the release commit.  Edit <code class="file docutils literal notranslate"><span class="pre">dipy/info.py</span></code> to set
+<code class="docutils literal notranslate"><span class="pre">_version_extra</span></code> to <code class="docutils literal notranslate"><span class="pre">''</span></code>; commit.  Push.</p></li>
+<li><p>For the wheel build / upload, follow the <a class="reference external" href="https://github.com/MacPython/dipy-wheels">wheel builder README</a>
+instructions again.  Edit the <code class="docutils literal notranslate"><span class="pre">.travis.yml</span></code> and <code class="docutils literal notranslate"><span class="pre">appveyor.yml</span></code> files (if
+present) to give the release tag to build.  Check the build has passed on on
+the Travis-CI interface at <a class="reference external" href="https://travis-ci.org/MacPython/dipy-wheels">https://travis-ci.org/MacPython/dipy-wheels</a>.  Now
+follow the instructions in the page above to download the built wheels to a
+local machine and upload to PyPI.</p></li>
+<li><p>Now it’s time for the source release. Build the release files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">distclean</span>
+<span class="n">git</span> <span class="n">clean</span> <span class="o">-</span><span class="n">fxd</span>
+<span class="n">make</span> <span class="n">source</span><span class="o">-</span><span class="n">release</span>
+</pre></div>
+</div>
+</li>
+<li><p>Once everything looks good, upload the source release to PyPi.  See
+<a class="reference external" href="http://packages.python.org/an_example_pypi_project/setuptools.html">setuptools intro</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">register</span>
+<span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">sdist</span> <span class="o">--</span><span class="n">formats</span><span class="o">=</span><span class="n">gztar</span><span class="p">,</span><span class="nb">zip</span> <span class="n">upload</span>
+</pre></div>
+</div>
+</li>
+<li><p>Remember you’ll need your <code class="docutils literal notranslate"><span class="pre">~/.pypirc</span></code> file set up right for this to work.
+See <a class="reference external" href="http://packages.python.org/an_example_pypi_project/setuptools.html">setuptools intro</a>.  The file should look something like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">distutils</span><span class="p">]</span>
+<span class="n">index</span><span class="o">-</span><span class="n">servers</span> <span class="o">=</span>
+    <span class="n">pypi</span>
+
+<span class="p">[</span><span class="n">pypi</span><span class="p">]</span>
+<span class="n">username</span><span class="p">:</span><span class="n">your</span><span class="o">.</span><span class="n">pypi</span><span class="o">.</span><span class="n">username</span>
+<span class="n">password</span><span class="p">:</span><span class="n">your</span><span class="o">-</span><span class="n">password</span>
+
+<span class="p">[</span><span class="n">server</span><span class="o">-</span><span class="n">login</span><span class="p">]</span>
+<span class="n">username</span><span class="p">:</span><span class="n">your</span><span class="o">.</span><span class="n">pypi</span><span class="o">.</span><span class="n">username</span>
+<span class="n">password</span><span class="p">:</span><span class="n">your</span><span class="o">-</span><span class="n">password</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check how everything looks on pypi - the description, the packages.  If
+necessary delete the release and try again if it doesn’t look right.</p></li>
+<li><p>Make an annotated tag for the release with tag of form <code class="docutils literal notranslate"><span class="pre">0.6.0</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">tag</span> <span class="o">-</span><span class="n">am</span> <span class="s1">&#39;Second public release&#39;</span> <span class="mf">0.6</span><span class="o">.</span><span class="mi">0</span>
+</pre></div>
+</div>
+</li>
+<li><p>Set up maintenance / development branches</p>
+<p>If this is this is a full release you need to set up two branches, one for
+further substantial development (often called ‘trunk’) and another for
+maintenance releases.</p>
+<ul>
+<li><p>Branch to maintenance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">co</span> <span class="o">-</span><span class="n">b</span> <span class="n">maint</span><span class="o">/</span><span class="mf">0.6</span><span class="o">.</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>Set <code class="docutils literal notranslate"><span class="pre">_version_extra</span></code> back to <code class="docutils literal notranslate"><span class="pre">.dev</span></code> and bump <code class="docutils literal notranslate"><span class="pre">_version_micro</span></code> by 1.
+Thus the maintenance series will have version numbers like - say - ‘0.6.1.dev’
+until the next maintenance release - say ‘0.6.1’.  Commit.</p>
+<p>Push with something like <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">upstream-rw</span> <span class="pre">maint/0.6.x</span> <span class="pre">--set-upstream</span></code></p>
+</li>
+<li><p>Start next development series:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">co</span> <span class="n">main</span><span class="o">-</span><span class="n">master</span>
+</pre></div>
+</div>
+<p>then restore <code class="docutils literal notranslate"><span class="pre">.dev</span></code> to <code class="docutils literal notranslate"><span class="pre">_version_extra</span></code>, and bump <code class="docutils literal notranslate"><span class="pre">_version_minor</span></code> by 1.
+Thus the development series (‘trunk’) will have a version number here of
+‘0.7.0.dev’ and the next full release will be ‘0.7.0’.</p>
+<p>Next merge the maintenace branch with the “ours” strategy.  This just labels
+the maintenance branch <cite>info.py</cite> edits as seen but discarded, so we can
+merge from maintenance in future without getting spurious merge conflicts:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">merge</span> <span class="o">-</span><span class="n">s</span> <span class="n">ours</span> <span class="n">maint</span><span class="o">/</span><span class="mf">0.6</span><span class="o">.</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>Push with something like <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">upstream-rw</span> <span class="pre">main-master:master</span></code></p>
+</li>
+</ul>
+<p>If this is just a maintenance release from <code class="docutils literal notranslate"><span class="pre">maint/0.6.x</span></code> or similar, just
+tag and set the version number to - say - <code class="docutils literal notranslate"><span class="pre">0.6.2.dev</span></code>.</p>
+</li>
+<li><p>Push the tag with <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">push</span> <span class="pre">upstream-rw</span> <span class="pre">0.6.0</span></code></p></li>
+</ul>
+</div>
+<div class="section" id="uploading-binary-builds-for-the-release">
+<h2>Uploading binary builds for the release<a class="headerlink" href="#uploading-binary-builds-for-the-release" title="Permalink to this headline">¶</a></h2>
+<p>By far the easiest way to do this is via the buildbots.</p>
+<p>In order to do this, you need first to push the release commit and the release
+tag to github, so the buildbots can find the released code and build it.</p>
+<ul>
+<li><p>In order to trigger the binary builds for the release commit, you need to go
+to the web interface for the binary builder, go to the “Force build” section,
+enter your username and password for the buildbot web service and enter the
+commit tag name in the <em>revision</em> field.  For example, if the tag was
+<code class="docutils literal notranslate"><span class="pre">0.6.0</span></code> then you would enter <code class="docutils literal notranslate"><span class="pre">0.6.0</span></code> in the revision field of the form.
+This builds the exact commit labeled by the tag, which is what we want.</p></li>
+<li><p>Trigger binary builds for Windows from the buildbots. See builders
+<code class="docutils literal notranslate"><span class="pre">dipy-bdist32-26</span></code>, <code class="docutils literal notranslate"><span class="pre">dipy-bdist32-27</span></code>.  The <code class="docutils literal notranslate"><span class="pre">exe</span></code> builds will appear in
+<a class="reference external" href="http://nipy.bic.berkeley.edu/dipy-dist">http://nipy.bic.berkeley.edu/dipy-dist</a> .  Check that the binary build version
+numbers are release numbers (<code class="docutils literal notranslate"><span class="pre">dipy-0.6.0.win32.exe</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">dipy-0.6.0.dev.win32.exe</span></code>).</p>
+<p>Download the builds and upload to pypi.</p>
+<p>You can upload the exe files with the <em>files</em> interface for the new DIPY release.
+Obviously you’ll need to log in to do this, and you’ll need to be an admin for
+the DIPY pypi project.</p>
+<p>For reference, if you need to do binary exe builds by hand, use something
+like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">distclean</span>
+<span class="n">git</span> <span class="n">clean</span> <span class="o">-</span><span class="n">fxd</span>
+<span class="n">c</span><span class="p">:</span>\<span class="n">Python26</span>\<span class="n">python</span><span class="o">.</span><span class="n">exe</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist_egg</span> <span class="n">upload</span>
+<span class="n">c</span><span class="p">:</span>\<span class="n">Python26</span>\<span class="n">python</span><span class="o">.</span><span class="n">exe</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">bdist_wininst</span> <span class="o">--</span><span class="n">target</span><span class="o">-</span><span class="n">version</span><span class="o">=</span><span class="mf">2.6</span> <span class="n">register</span> <span class="n">upload</span>
+</pre></div>
+</div>
+</li>
+<li><p>Trigger binary builds for OSX from the buildbots <code class="docutils literal notranslate"><span class="pre">dipy-bdist-mpkg-2.6</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dipy-bdist-mpkg-2.7</span></code>. <code class="docutils literal notranslate"><span class="pre">egg</span></code> and <code class="docutils literal notranslate"><span class="pre">mpkg</span></code> builds will appear in
+<a class="reference external" href="http://nipy.bic.berkeley.edu/dipy-dist">http://nipy.bic.berkeley.edu/dipy-dist</a> .  Download the eggs and upload to
+pypi.</p>
+<p>Upload the dmg files with the <em>files</em> interface for the new DIPY release.</p>
+</li>
+<li><p>Building OSX dmgs from the mpkg builds.</p>
+<p>The buildbot binary builders build <code class="docutils literal notranslate"><span class="pre">mpkg</span></code> directories, which are installers
+for OSX.</p>
+<p>These need their permissions to be fixed because the installers should install
+the files as the root user, group <code class="docutils literal notranslate"><span class="pre">admin</span></code>.  The all need to be converted to
+OSX disk images.  Use the <code class="docutils literal notranslate"><span class="pre">./tools/build_dmgs.py</span></code>, with something like this
+command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">tools</span><span class="o">/</span><span class="n">build_dmgs</span> <span class="s2">&quot;dipy-dist/dipy-0.6.0-py*.mpkg&quot;</span>
+</pre></div>
+</div>
+<p>For this to work you’ll need several things:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>An account on a OSX box with sudo (Admin user) on which to run the script.</p></li>
+<li><p>ssh access to the buildbot server <a class="reference external" href="http://nipy.bic.berkeley.edu">http://nipy.bic.berkeley.edu</a> (ask
+Matthew or Eleftherios).</p></li>
+<li><p>a development version of <code class="docutils literal notranslate"><span class="pre">bdist_mpkg</span></code> installed from
+<a class="reference external" href="https://github.com/matthew-brett/bdist_mpkg">https://github.com/matthew-brett/bdist_mpkg</a>.  You need this second for the
+script <code class="docutils literal notranslate"><span class="pre">reown_mpkg</span></code> that fixes the permissions.</p></li>
+</ul>
+</div></blockquote>
+<p>Upload the dmg files with the <em>files</em> interface for the new DIPY release.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="other-stuff-that-needs-doing-for-the-release">
+<h2>Other stuff that needs doing for the release<a class="headerlink" href="#other-stuff-that-needs-doing-for-the-release" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p>Checkout the tagged release, build the html docs and upload them to
+the github pages website:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">upload</span>
+</pre></div>
+</div>
+<p>You need to checkout the tagged version in order to get the version number
+correct for the doc build.  The version number gets picked up from the
+<code class="docutils literal notranslate"><span class="pre">info.py</span></code> version.</p>
+</li>
+<li><p>Announce to the mailing lists.  With fear and trembling.</p></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="commit_codes.html" title="Commit message codes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gitwash/git_resources.html" title="git resources"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../documentation.html" >Documentation</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >DIPY development</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

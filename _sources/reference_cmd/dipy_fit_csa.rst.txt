@@ -1,0 +1,46 @@
+
+========================
+dipy_fit_csa
+========================
+
+usage: dipy_fit_csa [-h] [--sh_order int] [--odf_to_sh_order int]
+                     [--b0_threshold float] [--bvecs_tol float]
+                     [--extract_pam_values] [--parallel] [--nbr_processes int]
+                     [--out_dir str] [--out_pam str] [--out_shm str]
+                     [--out_peaks_dir str] [--out_peaks_values str]
+                     [--out_peaks_indices str] [--out_gfa str]
+                     input_files bvalues_files bvectors_files mask_files
+
+Constant Solid Angle.
+
+positional arguments:
+  input_files           Path to the input volumes. This path may contain wildcards to process multiple inputs at once.
+  bvalues_files         Path to the bvalues files. This path may contain wildcards to use multiple bvalues files at once.
+  bvectors_files        Path to the bvectors files. This path may contain wildcards to use multiple bvectors files at once.
+  mask_files            Path to the input masks. This path may contain wildcards to use multiple masks at once. (default: No mask used)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --sh_order int        Spherical harmonics order (default 6) used in the CSA fit.
+  --odf_to_sh_order int
+                        Spherical harmonics order used for peak_from_model to compress the ODF to spherical harmonics coefficients (default 8)
+  --b0_threshold float  Threshold used to find b=0 directions
+  --bvecs_tol float     Threshold used so that norm(bvec)=1 (default 0.01)
+  --extract_pam_values  Wheter or not to save pam volumes as single nifti files.
+  --parallel            Whether to use parallelization in peak-finding during the calibration procedure. Default: False
+  --nbr_processes int   If `parallel` is True, the number of subprocesses to use (default multiprocessing.cpu_count()).
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory)
+  --out_pam str         Name of the peaks volume to be saved (default 'peaks.pam5')
+  --out_shm str         Name of the spherical harmonics volume to be saved (default 'shm.nii.gz')
+  --out_peaks_dir str   Name of the peaks directions volume to be saved (default 'peaks_dirs.nii.gz')
+  --out_peaks_values str
+                        Name of the peaks values volume to be saved (default 'peaks_values.nii.gz')
+  --out_peaks_indices str
+                        Name of the peaks indices volume to be saved (default 'peaks_indices.nii.gz')
+  --out_gfa str         Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
+
+References: 
+.. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging   with Solid Angle Consideration.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

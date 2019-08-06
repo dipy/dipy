@@ -1,0 +1,555 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples_index.html" />
+    <link rel="prev" title="Mission statement" href="mission.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples_index.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mission.html" title="Mission statement"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="#">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#installing-a-release">Installing a release</a><ul>
+<li><a class="reference internal" href="#using-anaconda">Using Anaconda:</a></li>
+<li><a class="reference internal" href="#using-packages">Using packages:</a><ul>
+<li><a class="reference internal" href="#windows">Windows</a></li>
+<li><a class="reference internal" href="#osx">OSX</a></li>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-pip">Using pip:</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#support">Support</a><ul>
+<li><a class="reference internal" href="#contact-us">Contact us:</a></li>
+<li><a class="reference internal" href="#common-problems">Common problems:</a><ul>
+<li><a class="reference internal" href="#multiple-installations">Multiple installations</a></li>
+<li><a class="reference internal" href="#alternatives-to-anaconda">Alternatives to Anaconda</a></li>
+<li><a class="reference internal" href="#memory-issues">Memory issues</a></li>
+<li><a class="reference internal" href="#note-on-python-versions">Note on python versions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installing-from-source">Installing from source</a><ul>
+<li><a class="reference internal" href="#getting-the-source">Getting the source</a></li>
+<li><a class="reference internal" href="#building-and-installing">Building and installing</a><ul>
+<li><a class="reference internal" href="#install-from-source-all-operating-systems">Install from source (all operating systems)</a></li>
+<li><a class="reference internal" href="#install-from-source-for-unix-e-g-linux-osx">Install from source for Unix (e.g Linux, OSX)</a></li>
+<li><a class="reference internal" href="#ubuntu-debian">Ubuntu/Debian</a></li>
+<li><a class="reference internal" href="#fedora-mandriva-maybe-redhat">Fedora / Mandriva maybe Redhat</a></li>
+<li><a class="reference internal" href="#id2">Windows</a></li>
+<li><a class="reference internal" href="#id3">OSX</a></li>
+<li><a class="reference internal" href="#openmp-with-osx">OpenMP with OSX</a><ul>
+<li><a class="reference internal" href="#under-anaconda">Under Anaconda</a></li>
+<li><a class="reference internal" href="#under-homebrew-python-or-python-org-python">Under Homebrew Python or python.org Python</a></li>
+<li><a class="reference internal" href="#id4">Building and installing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#testing">Testing</a></li>
+<li><a class="reference internal" href="#documentation-unix-only">Documentation (Unix only)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mission.html"
+                        title="previous chapter">Mission statement</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="examples_index.html"
+                        title="next chapter">Examples</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/installation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="http://dipy.org">DIPY</a> is in active development. You can install it from our latest release, but
+you may find that the release has gotten well behind the current development -
+at least - we hope so - if we’re developing fast enough!</p>
+<p>If you want install the latest and greatest from the bleeding edge of the
+development, skip to <a class="reference internal" href="#from-source"><span class="std std-ref">Installing from source</span></a>. If you just want to install a released
+version, read on for your platform.</p>
+<div class="section" id="installing-a-release">
+<h2>Installing a release<a class="headerlink" href="#installing-a-release" title="Permalink to this headline">¶</a></h2>
+<p>If you are on Debian or Ubuntu Linux we recommend you try
+<a class="reference internal" href="#install-packages"><span class="std std-ref">Using Anaconda:</span></a> first. Otherwise please try <a class="reference internal" href="#install-pip"><span class="std std-ref">Using pip:</span></a>.</p>
+<div class="section" id="using-anaconda">
+<span id="install-packages"></span><h3>Using Anaconda:<a class="headerlink" href="#using-anaconda" title="Permalink to this headline">¶</a></h3>
+<p>On all platforms, you can use <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> to install DIPY. To do so issue the following command in a terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">dipy</span>
+</pre></div>
+</div>
+<p>Some of the visualization methods require the <a class="reference external" href="https://fury.gl">FURY</a> library and this can be installed separately (for the time being only on Python 3.4+):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="o">-</span><span class="n">c</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span> <span class="n">fury</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-packages">
+<h3>Using packages:<a class="headerlink" href="#using-packages" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="windows">
+<h4>Windows<a class="headerlink" href="#windows" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic">
+<li><p>First, install the python library dependencies. One easy way to do that is to
+use the <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> distribution (see below for <a class="reference internal" href="#alternatives"><span class="std std-ref">Alternatives to Anaconda</span></a>).</p></li>
+<li><p>Even with <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> installed, you will still need to install the <a class="reference external" href="http://nipy.org/nibabel">nibabel</a>
+library, which supports reading and writing of neuroimaging data formats. Open
+a terminal and type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">nibabel</span>
+</pre></div>
+</div>
+</li>
+<li><p>Finally, we are ready to install DIPY itself. Same as with <cite>nibabel</cite> above,
+we will type at the terminal shell command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">dipy</span>
+</pre></div>
+</div>
+<p>When the installation has finished we can check if it is successful in the following way. From a Python console script try:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">dipy</span>
+</pre></div>
+</div>
+<p>This should work with no error.</p>
+</li>
+<li><p>Some of the visualization methods require the <a class="reference external" href="https://fury.gl">FURY</a> library and this can be installed by doing</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fury</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="osx">
+<h4>OSX<a class="headerlink" href="#osx" title="Permalink to this headline">¶</a></h4>
+<ol class="arabic">
+<li><p>To use <a class="reference external" href="http://dipy.org">DIPY</a>, you need to have some <a class="reference internal" href="dependencies.html#dependencies"><span class="std std-ref">Dependencies</span></a> installed. First of all, make sure that you have installed the Apple <a class="reference external" href="http://developer.apple.com/TOOLS/xcode">Xcode</a> developer tools. You’ll need those to install all the following dependencies.</p></li>
+<li><p>Next, install the python library dependencies. One easy way to do that is to use the <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> distribution (see below for <a class="reference internal" href="#alternatives"><span class="std std-ref">Alternatives to Anaconda</span></a>).</p></li>
+<li><p>Even with <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> installed, you will still need to install the <a class="reference external" href="http://nipy.org/nibabel">nibabel</a> library, which supports reading and writing of neuroimaging data formats. Open a terminal and type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">nibabel</span>
+</pre></div>
+</div>
+</li>
+<li><p>Finally, we are ready to install DIPY itself. Same as with <cite>nibabel</cite> above, we will type at the terminal shell command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">dipy</span>
+</pre></div>
+</div>
+<p>When the installation has finished we can check if it is successful in the following way. From a Python console script try:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">dipy</span>
+</pre></div>
+</div>
+<p>This should work with no error.</p>
+</li>
+<li><p>Some of the visualization methods require the <a class="reference external" href="https://fury.gl">FURY</a> library and this can be installed by doing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">fury</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="linux">
+<h4>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h4>
+<p>For Debian, Ubuntu and Mint set up the <a class="reference external" href="http://neuro.debian.net">NeuroDebian</a> repositories - see
+<a class="reference external" href="http://neuro.debian.net/#how-to-use-this-repository">NeuroDebian how to</a>. Then:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">dipy</span>
+</pre></div>
+</div>
+<p>We hope to get packages for the other Linux distributions, but for now, please
+try <a class="reference internal" href="#install-pip"><span class="std std-ref">Using pip:</span></a> instead.</p>
+</div>
+</div>
+<div class="section" id="using-pip">
+<span id="install-pip"></span><h3>Using pip:<a class="headerlink" href="#using-pip" title="Permalink to this headline">¶</a></h3>
+<p>This method should work under Linux, Mac OS X and Windows.</p>
+<p>Please install <a class="reference external" href="http://numpy.scipy.org">numpy</a> and <a class="reference external" href="http://www.scipy.org">scipy</a> using their respective binary installers if
+you haven’t already.</p>
+<p>For Windows and Mac OSX you can use <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> to get numpy, scipy, cython and lots
+of other useful python module. <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> is a big package but will install many
+tools and libraries that are useful for scientific processing.</p>
+<p>When you have numpy, scipy and cython installed then try:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">nibabel</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="n">dipy</span>
+</pre></div>
+</div>
+<p>Then from any python console or script try:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">dipy</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="support">
+<h2>Support<a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="contact-us">
+<h3>Contact us:<a class="headerlink" href="#contact-us" title="Permalink to this headline">¶</a></h3>
+<p>Do these installation instructions work for you? For any problems/suggestions please let us know by sending us an e-mail to the <a class="reference external" href="https://mail.python.org/mailman/listinfo/neuroimaging">nipy mailing list</a> with the subject line starting with <code class="docutils literal notranslate"><span class="pre">[DIPY]</span></code>.</p>
+</div>
+<div class="section" id="common-problems">
+<h3>Common problems:<a class="headerlink" href="#common-problems" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="multiple-installations">
+<h4>Multiple installations<a class="headerlink" href="#multiple-installations" title="Permalink to this headline">¶</a></h4>
+<p>Make sure that you have uninstalled all previous versions of DIPY before installing a new one. A simple and general way to uninstall DIPY is by removing the installation directory. You can find where DIPY is installed by using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dipy</span>
+<span class="n">dipy</span><span class="o">.</span><span class="vm">__file__</span>
+</pre></div>
+</div>
+<p>and then remove the DIPY directory that contains that file.</p>
+</div>
+<div class="section" id="alternatives-to-anaconda">
+<span id="alternatives"></span><h4>Alternatives to Anaconda<a class="headerlink" href="#alternatives-to-anaconda" title="Permalink to this headline">¶</a></h4>
+<p>If you have problems installing <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> we recommend using <a class="reference external" href="https://www.enthought.com/products/canopy">Canopy</a> or <a class="reference external" href="http://www.pythonxy.com">pythonxy</a>.</p>
+</div>
+<div class="section" id="memory-issues">
+<h4>Memory issues<a class="headerlink" href="#memory-issues" title="Permalink to this headline">¶</a></h4>
+<p>DIPY can process large diffusion datasets. For this reason we recommend using a 64bit operating system which can allocate larger memory chunks than 32bit operating systems. If you don’t have a 64bit computer that is okay DIPY works with 32bit too.</p>
+</div>
+<div class="section" id="note-on-python-versions">
+<span id="python-versions"></span><h4>Note on python versions<a class="headerlink" href="#note-on-python-versions" title="Permalink to this headline">¶</a></h4>
+<p>Most DIPY functionality can be used with Python versions 2.6 and newer, including Python 3.
+However, some visualization functionality depends on FURY, which only supports Python 3 in versions 7 and newer.</p>
+</div>
+</div>
+</div>
+<div class="section" id="installing-from-source">
+<span id="from-source"></span><h2>Installing from source<a class="headerlink" href="#installing-from-source" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="getting-the-source">
+<h3>Getting the source<a class="headerlink" href="#getting-the-source" title="Permalink to this headline">¶</a></h3>
+<p>More likely you will want to get the source repository to be able to follow the
+latest changes.  In that case, you can use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">nipy</span><span class="o">/</span><span class="n">dipy</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>For more information about this see <a class="reference internal" href="devel/gitwash/following_latest.html#following-latest"><span class="std std-ref">Following the latest source</span></a>.</p>
+<p>After you’ve cloned the repository, you will have a new directory, containing
+the DIPY <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file, among others.  We’ll call this directory - that
+contains the <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file - the <em>DIPY source root directory</em>.  Sometimes
+we’ll also call it the <code class="docutils literal notranslate"><span class="pre">&lt;dipy</span> <span class="pre">root&gt;</span></code> directory.</p>
+</div>
+<div class="section" id="building-and-installing">
+<h3>Building and installing<a class="headerlink" href="#building-and-installing" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="install-from-source-all-operating-systems">
+<h4>Install from source (all operating systems)<a class="headerlink" href="#install-from-source-all-operating-systems" title="Permalink to this headline">¶</a></h4>
+<p>Change directory into the <em>DIPY source root directory</em>.</p>
+<p>To clean your directory from temporary file, use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clean</span> <span class="o">-</span><span class="n">fxd</span>
+</pre></div>
+</div>
+<p>This command will delete all files not present in your github repository.</p>
+<p>Then, complete your installation by using this command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">user</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>This command will do the following :</dt><dd><ul class="simple">
+<li><p>remove the old dipy installation if present</p></li>
+<li><p>build dipy (equivalent to <cite>python setup.py build_ext –inplace</cite>)</p></li>
+<li><p>install dipy locally on your user environment</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="install-from-source-for-unix-e-g-linux-osx">
+<span id="install-source-nix"></span><h4>Install from source for Unix (e.g Linux, OSX)<a class="headerlink" href="#install-from-source-for-unix-e-g-linux-osx" title="Permalink to this headline">¶</a></h4>
+<p>Change directory into the <em>DIPY source root directory</em>.</p>
+<p>To install for the system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>To build DIPY in the source tree (locally) so you can run the code in the source tree (recommended for following the latest source) run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build_ext</span> <span class="o">--</span><span class="n">inplace</span>
+</pre></div>
+</div>
+<p>add the <em>DIPY source root directory</em> into your <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> environment variable. Search google for <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> for details or see <a class="reference external" href="http://docs.python.org/tutorial/modules.html#the-module-search-path">python module path</a> for an introduction.</p>
+<p>When adding <a class="reference external" href="http://dipy.org">dipy</a> to the <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>, we usually add the <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code> at
+the end of <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> or (OSX) <code class="docutils literal notranslate"><span class="pre">~/.bash_profile</span></code> so we don’t need to
+retype it every time. This should look something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PYTHONPATH</span><span class="o">=</span><span class="s2">&quot;/home/user_dir/Devel/dipy:$PYTHONPATH&quot;</span>
+</pre></div>
+</div>
+<p>After changing the <code class="docutils literal notranslate"><span class="pre">~/.bashrc</span></code> or (OSX) <code class="docutils literal notranslate"><span class="pre">~/.bash_profile</span></code> try:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">~/.</span><span class="n">bashrc</span>
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">~/.</span><span class="n">bash_profile</span>
+</pre></div>
+</div>
+<p>so that you can have immediate access to <a class="reference external" href="http://dipy.org">DIPY</a> without needing to
+restart your terminal.</p>
+</div>
+<div class="section" id="ubuntu-debian">
+<h4>Ubuntu/Debian<a class="headerlink" href="#ubuntu-debian" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">dev</span> <span class="n">python</span><span class="o">-</span><span class="n">setuptools</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">python</span><span class="o">-</span><span class="n">numpy</span> <span class="n">python</span><span class="o">-</span><span class="n">scipy</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">cython</span>
+</pre></div>
+</div>
+<p>then:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">nibabel</span>
+</pre></div>
+</div>
+<p>(we need the latest version of this one - hence <code class="docutils literal notranslate"><span class="pre">pip</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">apt-get</span></code>).</p>
+<p>You might want the optional packages too (highly recommended):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ipython</span> <span class="n">python</span><span class="o">-</span><span class="n">h5py</span> <span class="n">python</span><span class="o">-</span><span class="n">vtk</span> <span class="n">python</span><span class="o">-</span><span class="n">matplotlib</span>
+</pre></div>
+</div>
+<p>Now follow <a class="reference internal" href="#install-source-nix"><span class="std std-ref">Install from source for Unix (e.g Linux, OSX)</span></a>.</p>
+</div>
+<div class="section" id="fedora-mandriva-maybe-redhat">
+<h4>Fedora / Mandriva maybe Redhat<a class="headerlink" href="#fedora-mandriva-maybe-redhat" title="Permalink to this headline">¶</a></h4>
+<p>Same as above but use yum rather than apt-get when necessary.</p>
+<p>Now follow <a class="reference internal" href="#install-source-nix"><span class="std std-ref">Install from source for Unix (e.g Linux, OSX)</span></a>.</p>
+</div>
+<div class="section" id="id2">
+<h4>Windows<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference external" href="http://continuum.io/downloads">Anaconda</a> is probably the easiest way to install the dependencies that you need.
+To build from source, you will also need to install the exact compiler which is
+used with your specific version of python.</p>
+<p>For getting this information, type this command in shell like <code class="docutils literal notranslate"><span class="pre">cmd</span></code> or <a class="reference external" href="http://www.microsoft.com/powershell">Powershell</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;import platform;print(platform.python_compiler())&quot;</span>
+</pre></div>
+</div>
+<p>This command should print an information of this form:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">MSC</span> <span class="n">v</span><span class="o">.</span><span class="mi">1900</span> <span class="mi">64</span> <span class="n">bit</span> <span class="p">(</span><span class="n">AMD64</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now that you find the relevant compiler, you have to install the <a class="reference external" href="http://landinghub.visualstudio.com/visual-cpp-build-tools">VisualStudioBuildTools</a>
+by respecting the following table:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2008</span>  <span class="p">(</span><span class="mf">9.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1500</span>
+<span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2010</span> <span class="p">(</span><span class="mf">10.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1600</span>
+<span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2012</span> <span class="p">(</span><span class="mf">11.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1700</span>
+<span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2013</span> <span class="p">(</span><span class="mf">12.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1800</span>
+<span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2015</span> <span class="p">(</span><span class="mf">14.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1900</span>
+<span class="n">Visual</span> <span class="n">C</span><span class="o">++</span> <span class="mi">2017</span> <span class="p">(</span><span class="mf">15.0</span><span class="p">)</span>          <span class="n">MSC_VER</span><span class="o">=</span><span class="mi">1910</span>
+</pre></div>
+</div>
+<p>After the <a class="reference external" href="http://landinghub.visualstudio.com/visual-cpp-build-tools">VisualStudioBuildTools</a> installation,  restart a command shell and
+change directory into the <em>DIPY source root directory</em>.</p>
+<p>To install into your system:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span>
+</pre></div>
+</div>
+<p>To install inplace - so that DIPY is running out of the source code directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">develop</span>
+</pre></div>
+</div>
+<p>(this is the mode we recommend for following the latest source code).  If you
+get an error with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code> make sure you have installed
+<a class="reference external" href="http://pypi.python.org/pypi/setuptools">setuptools</a>.</p>
+<p>If you get an error saying  “unable to find vcvarsall.bat” then you need to
+check your environment variable <code class="docutils literal notranslate"><span class="pre">PATH</span></code> or reinstall <a class="reference external" href="http://landinghub.visualstudio.com/visual-cpp-build-tools">VisualStudioBuildTools</a>.
+Distutils should automatically detect the compiler and use it.</p>
+</div>
+<div class="section" id="id3">
+<h4>OSX<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<p>Make sure you have <a class="reference external" href="http://developer.apple.com/TOOLS/xcode">Xcode</a> and <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> installed.</p>
+<p>From here follow the <a class="reference internal" href="#install-source-nix"><span class="std std-ref">Install from source for Unix (e.g Linux, OSX)</span></a> instructions.</p>
+</div>
+<div class="section" id="openmp-with-osx">
+<h4>OpenMP with OSX<a class="headerlink" href="#openmp-with-osx" title="Permalink to this headline">¶</a></h4>
+<p><a class="reference external" href="http://www.openmp.org/">OpenMP</a> is a standard library for efficient multithreaded applications. This
+is used in DIPY for speeding up many different parts of the library (e.g., denoising
+and bundle registration). If you do not have an OpenMP-enabled compiler, you can
+still compile DIPY from source using the above instructions, but it might not take
+advantage of the multithreaded parts of the code. To be able to compile
+DIPY from source with OpenMP on Mac OSX, you will have to do a few more things. First
+of all, you will need to install the <a class="reference external" href="http://brew.sh/">Homebrew</a> package manager. Next you will need
+to install and configure the compiler. You have two options: using the GCC compiler
+or the CLANG compiler. This depends on your python installation:</p>
+<div class="section" id="under-anaconda">
+<h5>Under Anaconda<a class="headerlink" href="#under-anaconda" title="Permalink to this headline">¶</a></h5>
+<p>If you are using <a class="reference external" href="http://continuum.io/downloads">Anaconda</a>, you will need to use GCC. The first option is to run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">gcc</span>
+</pre></div>
+</div>
+<p>After this installation, gcc will be your default compiler in <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> environment.</p>
+<p>The second option is to install gcc via homebrew. Run the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brew</span> <span class="n">reinstall</span> <span class="n">gcc</span> <span class="o">--</span><span class="n">without</span><span class="o">-</span><span class="n">multilib</span>
+</pre></div>
+</div>
+<p>This should take about 45 minutes to complete. Then add to your bash
+configuration (usually in <code class="docutils literal notranslate"><span class="pre">~/.bash_profile</span></code>), the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;/usr/local/Cellar/gcc/5.2.0/bin/gcc-5:$PATH&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="under-homebrew-python-or-python-org-python">
+<h5>Under Homebrew Python or python.org Python<a class="headerlink" href="#under-homebrew-python-or-python-org-python" title="Permalink to this headline">¶</a></h5>
+<p>If you are already using the Homebrew Python, or the standard python.org Python,
+you will need to use the CLANG compiler with OMP. Run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">brew</span> <span class="n">install</span> <span class="n">clang</span><span class="o">-</span><span class="n">omp</span>
+</pre></div>
+</div>
+<p>And then edit the <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file to include the following line (e.g., on line 14,
+at the top of the file, but after the initial imports):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;CC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;/usr/local/bin/clang-omp&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id4">
+<h5>Building and installing<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h5>
+<p>Whether you are using <a class="reference external" href="http://continuum.io/downloads">Anaconda</a> or Hombrew/python.org Python, you will need to then
+run <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code>. When you do that, it should now
+compile the code with this OpenMP-enabled compiler, and things should go faster!</p>
+</div>
+</div>
+</div>
+<div class="section" id="testing">
+<h3>Testing<a class="headerlink" href="#testing" title="Permalink to this headline">¶</a></h3>
+<p>If you want to run the tests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">pytest</span> <span class="n">nose</span>
+</pre></div>
+</div>
+<p>Then (in python or <a class="reference external" href="http://www.ipython.org/">ipython</a>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">dipy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dipy</span><span class="o">.</span><span class="n">test</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You can also run the examples in <code class="docutils literal notranslate"><span class="pre">&lt;dipy</span> <span class="pre">root&gt;/doc</span></code>.</p>
+</div>
+<div class="section" id="documentation-unix-only">
+<h3>Documentation (Unix only)<a class="headerlink" href="#documentation-unix-only" title="Permalink to this headline">¶</a></h3>
+<p>To build the documentation in HTML in your computer you will need to do:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">sphinx</span>
+</pre></div>
+</div>
+<p>Then change directory to <code class="docutils literal notranslate"><span class="pre">&lt;dipy</span> <span class="pre">root&gt;</span></code> and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">doc</span>
+<span class="n">make</span> <span class="n">clean</span>
+<span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="examples_index.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mission.html" title="Mission statement"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="#">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+
+========================
+dipy_track_local
+========================
+
+usage: dipy_track_local [-h] [--use_binary_mask] [--stopping_thr float]
+                     [--seed_density int] [--step_size float]
+                     [--tracking_method str] [--pmf_threshold float]
+                     [--max_angle float] [--out_dir str]
+                     [--out_tractogram str] [--save_seeds]
+                     pam_files stopping_files seeding_files
+
+Workflow for Local Fiber Tracking.
+
+This workflow use a saved peaks and metrics (PAM) file as input.
+
+positional arguments:
+  pam_files             Path to the peaks and metrics files. This path may contain  wildcards to use multiple masks at once.
+  stopping_files        Path to images (e.g. FA) used for stopping criterion for tracking.
+  seeding_files         A binary image showing where we need to seed for tracking.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --use_binary_mask     If True, uses a binary stopping criterion. If the provided `stopping_files` are not binary, `stopping_thr` will be used to binarize the images.
+  --stopping_thr float  Threshold applied to stopping volume's data to identify where tracking has to stop (default 0.2).
+  --seed_density int    Number of seeds per dimension inside voxel (default 1).  For example, seed_density of 2 means 8 regularly distributed  points in the voxel. And seed density of 1 means 1 point at the  center of the voxel.
+  --step_size float     Step size used for tracking (default 0.5mm).
+  --tracking_method str
+                        Select direction getter strategy :  - "eudx" (Uses the peaks saved in the pam_files)  - "deterministic" or "det" for a deterministic tracking    (Uses the sh saved in the pam_files, default)  - "probabilistic" or "prob" for a Probabilistic tracking    (Uses the sh saved in the pam_files)  - "closestpeaks" or "cp" for a ClosestPeaks tracking    (Uses the sh saved in the pam_files)
+  --pmf_threshold float
+                        Threshold for ODF functions (default 0.1).
+  --max_angle float     Maximum angle between streamline segments (range [0, 90], default 30).
+  --save_seeds          If true, save the seeds associated to their streamline in the 'data_per_streamline' Tractogram dictionary using 'seeds' as the key.
+
+output arguments(optional):
+  --out_dir str         Output directory (default input file directory).
+  --out_tractogram str  Name of the tractogram file to be saved (default 'tractogram.trk').
+
+References: 
+Garyfallidis, University of Cambridge, PhD thesis 2012.Amirbekian, University of California San Francisco, PhD thesis 2017.
+Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem, S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a library for the analysis of diffusion MRI data. Frontiers in Neuroinformatics, 1-18, 2014.

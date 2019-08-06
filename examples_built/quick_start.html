@@ -1,0 +1,295 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/quick_start.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started-with-dipy">
+<span id="example-quick-start"></span><h1>Getting started with DIPY<a class="headerlink" href="#getting-started-with-dipy" title="Permalink to this headline">¶</a></h1>
+<p>In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
+diffusion weighted data, and two text files one with b-values and
+one with the b-vectors.</p>
+<p>In <a class="reference external" href="http://dipy.org">DIPY</a> we provide tools to load and process these files and we also provide
+access to publicly available datasets for those who haven’t acquired yet
+their own datasets.</p>
+<p>With the following commands we can download a dMRI dataset</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.data</span> <span class="k">import</span> <span class="n">fetch_sherbrooke_3shell</span>
+<span class="n">fetch_sherbrooke_3shell</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>By default these datasets will go in the <code class="docutils literal notranslate"><span class="pre">.dipy</span></code> folder inside your home directory.
+Here is how you can access them.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">os.path</span> <span class="k">import</span> <span class="n">expanduser</span><span class="p">,</span> <span class="n">join</span>
+<span class="n">home</span> <span class="o">=</span> <span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">dname</span></code> holds the directory name where the 3 files are in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dname</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">home</span><span class="p">,</span> <span class="s1">&#39;.dipy&#39;</span><span class="p">,</span> <span class="s1">&#39;sherbrooke_3shell&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, we show the complete filenames of the 3 files</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fdwi</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="s1">&#39;HARDI193.nii.gz&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">fdwi</span><span class="p">)</span>
+
+<span class="n">fbval</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="s1">&#39;HARDI193.bval&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">fbval</span><span class="p">)</span>
+
+<span class="n">fbvec</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">dname</span><span class="p">,</span> <span class="s1">&#39;HARDI193.bvec&#39;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">fbvec</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">/home/username/.dipy/sherbrooke_3shell/HARDI193.nii.gz</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">/home/username/.dipy/sherbrooke_3shell/HARDI193.bval</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">/home/username/.dipy/sherbrooke_3shell/HARDI193.bvec</span></code></p>
+<p>Now, that we have their filenames we can start checking what these look like.</p>
+<p>Let’s start first by loading the dMRI datasets. For this purpose, we
+use a python library called <a class="reference external" href="http://nipy.org/nibabel">nibabel</a> which enables us to read and write
+neuroimaging-specific file formats.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="n">img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fdwi</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">data</span></code> is a 4D array where the first 3 dimensions are the i, j, k voxel
+coordinates and the last dimension is the number of non-weighted (S0s) and
+diffusion-weighted volumes.</p>
+<p>We can very easily check the size of <code class="docutils literal notranslate"><span class="pre">data</span></code> in the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">128,</span> <span class="pre">60,</span> <span class="pre">193)</span></code></p>
+<p>We can also check the dimensions of each voxel in the following way:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">get_zooms</span><span class="p">()[:</span><span class="mi">3</span><span class="p">])</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">(2.0,</span> <span class="pre">2.0,</span> <span class="pre">2.0)</span></code></p>
+<p>We can quickly visualize the results using <a class="reference external" href="http://matplotlib.sourceforge.net">matplotlib</a>. For example,
+let’s show here the middle axial slices of volume 0 and volume 10.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">axial_middle</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="s1">&#39;Showing the datasets&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_middle</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">axial_middle</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;data.png&#39;</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/data.png" src="../_images/data.png" />
+<p class="caption"><span class="caption-text">Showing the middle axial slice without (left) and with (right) diffusion weighting.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<p>The next step is to load the b-values and b-vectors from the disk using
+the function <code class="docutils literal notranslate"><span class="pre">read_bvals_bvecs</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.io</span> <span class="k">import</span> <span class="n">read_bvals_bvecs</span>
+<span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span> <span class="o">=</span> <span class="n">read_bvals_bvecs</span><span class="p">(</span><span class="n">fbval</span><span class="p">,</span> <span class="n">fbvec</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In DIPY, we use an object called <code class="docutils literal notranslate"><span class="pre">GradientTable</span></code> which holds all the
+acquisition specific parameters, e.g. b-values, b-vectors, timings and others.
+To create this object you can use the function <code class="docutils literal notranslate"><span class="pre">gradient_table</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.core.gradients</span> <span class="k">import</span> <span class="n">gradient_table</span>
+<span class="n">gtab</span> <span class="o">=</span> <span class="n">gradient_table</span><span class="p">(</span><span class="n">bvals</span><span class="p">,</span> <span class="n">bvecs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, you can use <code class="docutils literal notranslate"><span class="pre">gtab</span></code> (the GradientTable object) to show some information about the
+acquisition parameters</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">info</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>B-values shape (193,)</dt><dd><p>min 0.000000
+max 3500.000000</p>
+</dd>
+<dt>B-vectors shape (193, 3)</dt><dd><p>min -0.964050
+max 0.999992</p>
+</dd>
+</dl>
+<p>You can also see the b-values using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvals</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>    <span class="mf">0.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>
+  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">1000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>
+  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">2000.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span>
+  <span class="mf">3500.</span>  <span class="mf">3500.</span>  <span class="mf">3500.</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Or, for example the 10 first b-vectors using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">gtab</span><span class="o">.</span><span class="n">bvecs</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="p">:])</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span><span class="p">([[</span> <span class="mf">0.</span>        <span class="p">,</span>  <span class="mf">0.</span>        <span class="p">,</span>  <span class="mf">0.</span>        <span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.999979</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.00504001</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.00402795</span><span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.</span>        <span class="p">,</span>  <span class="mf">0.999992</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.00398794</span><span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">0.0257055</span> <span class="p">,</span>  <span class="mf">0.653861</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.756178</span>  <span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.589518</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.769236</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.246462</span>  <span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">0.235785</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.529095</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.815147</span>  <span class="p">],</span>
+       <span class="p">[</span><span class="o">-</span><span class="mf">0.893578</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.263559</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.363394</span>  <span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.79784</span>   <span class="p">,</span>  <span class="mf">0.133726</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.587851</span>  <span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.232937</span>  <span class="p">,</span>  <span class="mf">0.931884</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.278087</span>  <span class="p">],</span>
+       <span class="p">[</span> <span class="mf">0.93672</span>   <span class="p">,</span>  <span class="mf">0.144139</span>  <span class="p">,</span> <span class="o">-</span><span class="mf">0.31903</span>   <span class="p">]])</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gtab</span></code>  can be used to tell what part of the data is the S0 volumes
+(volumes which correspond to b-values of 0).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">S0s</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Here, we had only 1 S0 as we can verify by looking at the dimensions of S0s</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">S0s</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">(128,</span> <span class="pre">128,</span> <span class="pre">60,</span> <span class="pre">1)</span></code></p>
+<p>Just, for fun let’s save this in a new Nifti file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">nib</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">nib</span><span class="o">.</span><span class="n">Nifti1Image</span><span class="p">(</span><span class="n">S0s</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">),</span> <span class="s1">&#39;HARDI193_S0.nii.gz&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, that we learned how to load dMRI datasets we can start the analysis.
+See example <a class="reference internal" href="reconst_dti.html#example-reconst-dti"><span class="std std-ref">Reconstruction of the diffusion signal with the Tensor model</span></a> to learn how to create FA maps.</p>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/c7d28a865ac2e1090bb9a6304c401c29/quick_start.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

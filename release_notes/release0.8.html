@@ -1,0 +1,571 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Release notes for DIPY version 0.7" href="release0.7.html" />
+    <link rel="prev" title="Release notes for DIPY version 0.9" href="release0.9.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.7.html" title="Release notes for DIPY version 0.7"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="release0.9.html" title="Release notes for DIPY version 0.9"
+             accesskey="P">previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" accesskey="U">A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="release0.9.html"
+                        title="previous chapter">Release notes for DIPY version 0.9</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="release0.7.html"
+                        title="next chapter">Release notes for DIPY version 0.7</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/release_notes/release0.8.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="release-notes-for-dipy-version-0-8">
+<span id="release0-8"></span><h1>Release notes for DIPY version 0.8<a class="headerlink" href="#release-notes-for-dipy-version-0-8" title="Permalink to this headline">¶</a></h1>
+<p>GitHub stats for 2013/12/24 - 2014/12/26 (tag: 0.7.0)</p>
+<p>The following 19 authors contributed 1176 commits.</p>
+<ul class="simple">
+<li><p>Andrew Lawrence</p></li>
+<li><p>Ariel Rokem</p></li>
+<li><p>Bago Amirbekian</p></li>
+<li><p>Demian Wassermann</p></li>
+<li><p>Eleftherios Garyfallidis</p></li>
+<li><p>Gabriel Girard</p></li>
+<li><p>Gregory R. Lee</p></li>
+<li><p>Jean-Christophe Houde</p></li>
+<li><p>Kesshi jordan</p></li>
+<li><p>Marc-Alexandre Cote</p></li>
+<li><p>Matthew Brett</p></li>
+<li><p>Matthias Ekman</p></li>
+<li><p>Matthieu Dumont</p></li>
+<li><p>Mauro Zucchelli</p></li>
+<li><p>Maxime Descoteaux</p></li>
+<li><p>Michael Paquette</p></li>
+<li><p>Omar Ocegueda</p></li>
+<li><p>Samuel St-Jean</p></li>
+<li><p>Stefan van der Walt</p></li>
+</ul>
+<p>We closed a total of 388 issues, 155 pull requests and 233 regular issues;
+this is the full list (generated with the script
+<code class="file docutils literal notranslate"><span class="pre">tools/github_stats.py</span></code>):</p>
+<p>Pull Requests (155):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/544/">PR #544</a>: Refactor propspeed - updated</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/543/">PR #543</a>: MRG: update to plot_2d fixes and tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/537/">PR #537</a>: NF: add requirements.txt file</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/534/">PR #534</a>: BF: removed ftmp variable</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/536/">PR #536</a>: Update Changelog</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/535/">PR #535</a>: Happy New Year PR!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/531/">PR #531</a>: BF: extend pip timeout to reduce install failures</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/527/">PR #527</a>: Remove npymath library from cython extensions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/528/">PR #528</a>: MRG: move conditional compiling to C</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/530/">PR #530</a>: BF: work round ugly MSVC manifest bug</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/529/">PR #529</a>: MRG: a couple of small cleanup fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/526/">PR #526</a>: Readme.rst and info.py update about the license</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/525/">PR #525</a>: Added shore gpl warning in the readme</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/524/">PR #524</a>: Replaced DiPy with DIPY in readme.rst and info.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/523/">PR #523</a>: RF: copy includes list for extensions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/522/">PR #522</a>: DOC: Web-site release notes, and some updates on front page.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/521/">PR #521</a>: Life bots</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/520/">PR #520</a>: Relaxing precision for win32</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/519/">PR #519</a>: Christmas PR! Correcting typos, linking and language for max odf tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/513/">PR #513</a>: BF + TST: Reinstated eig_from_lo_tri</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/508/">PR #508</a>: Tests for reslicing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/515/">PR #515</a>: TST: Increasing testing on life.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/516/">PR #516</a>: TST: Reduce sensitivity on these tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/495/">PR #495</a>: NF - Deterministic Maximum Direction Getter</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/514/">PR #514</a>: Website update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/510/">PR #510</a>: BF: another fvtk 5 to 6 incompatibility</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/509/">PR #509</a>: DOC: Small fixes in documentation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/497/">PR #497</a>: New sphere for ODF reconstruction</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/460/">PR #460</a>: Sparse Fascicle Model</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/499/">PR #499</a>: DOC: Warn about the GPL license of SHORE.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/491/">PR #491</a>: RF - Make peaks_from_model part of dipy.direction</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/501/">PR #501</a>: TST: Test for both data with and w/0 b0.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/507/">PR #507</a>: BF - use different sort method to avoid mergsort for older numpy.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/504/">PR #504</a>: Bug fix float overflow in estimate_sigma</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/494/">PR #494</a>: Fix round</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/503/">PR #503</a>: Fixed compatibility issues between vtk 5 and 6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/498/">PR #498</a>: DTI <cite>min_signal</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/471/">PR #471</a>: Use importlib instead of __import__</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/419/">PR #419</a>: LiFE</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/489/">PR #489</a>: Fix diffeomorphic registration test failures</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/484/">PR #484</a>: Clear tabs from examples for website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/490/">PR #490</a>: DOC: corrected typos in the tracking PR</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/341/">PR #341</a>: Traco Redesign</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/483/">PR #483</a>: NF: Find the closest vertex on a sphere for an input vector.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/488/">PR #488</a>: BF: fix travis version setting</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/485/">PR #485</a>: RF: deleted unused files</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/482/">PR #482</a>: Skipping tests for different versions of Scipy for optimize.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/480/">PR #480</a>: Enhance SLR to allow for series of registrations</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/479/">PR #479</a>: Report on coverage for old scipy.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/481/">PR #481</a>: BF - make examples was confusing files with similar names, fixed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/476/">PR #476</a>: Fix optimize defaults for older scipy versions for L-BFGS-B</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/478/">PR #478</a>: TST: Increase the timeout on the Travis pip install</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/477/">PR #477</a>: MAINT+TST: update minimum nibabel dependency</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/474/">PR #474</a>: RF: switch travis tests to use virtualenvs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/473/">PR #473</a>: TST: Make Travis provide verbose test outputs.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/472/">PR #472</a>: ENH: GradientTable now calculates qvalues</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/469/">PR #469</a>: Fix evolution save win32</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/463/">PR #463</a>: DOC: update RESTORE tutorial to use new noise estimation technique</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/466/">PR #466</a>: BF: cannot quote command for Windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/465/">PR #465</a>: BF: increased SCIPY version definition flag to 0.12</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/462/">PR #462</a>: BF: fix writing history to file in Python 3</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/433/">PR #433</a>: Added local variance estimation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/458/">PR #458</a>: DOC:  docstring fixes in dipy/align/crosscorr.pyx</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/448/">PR #448</a>: BF: fix link to npy_math function</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/447/">PR #447</a>: BF: supposed fix for the gh-439, but still unable to reproduce OP.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/443/">PR #443</a>: Fix buildbots errors introduced with the registration module</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/456/">PR #456</a>: MRG: relax threshold for failing test + cleanup</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/454/">PR #454</a>: DOC: fix docstring for compile-time checker</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/453/">PR #453</a>: BF: refactor conditional compiling again</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/446/">PR #446</a>: Streamline-based Linear Registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/445/">PR #445</a>: NF: generate config.pxi file with Cython DEF vars</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/440/">PR #440</a>: DOC - add info on how to change default tempdir (multiprocessing).</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/431/">PR #431</a>: Change the writeable flag back to its original state when finished.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/408/">PR #408</a>: Symmetric diffeomorphic non-linear registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/438/">PR #438</a>: Missing a blank line in examples/tracking_quick_start.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/405/">PR #405</a>: fixed frozen windows executable issue</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/418/">PR #418</a>: RF: move script running code into own module</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/437/">PR #437</a>: Update Cython download URL</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/435/">PR #435</a>: BF: replaced non-ascii character in dipy.reconst.dti line 956</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/434/">PR #434</a>: DOC: References for the DTI ODF calculation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/430/">PR #430</a>: Revert “Support read-only numpy array.”</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/427/">PR #427</a>: Support read-only numpy array.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/421/">PR #421</a>: Fix nans in gfa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/422/">PR #422</a>: BF: Use the short version to verify scipy version.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/415/">PR #415</a>: RF - move around some of the predict stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/420/">PR #420</a>: Rename README.txt to README.rst</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/413/">PR #413</a>: Faster spherical harmonics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/416/">PR #416</a>: Removed memory_leak unittest in test_strealine.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/417/">PR #417</a>: Fix streamlinespeed tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/411/">PR #411</a>: Fix memory leak in cython functions length and set_number_of_points</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/409/">PR #409</a>: minor corrections to pipe function</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/396/">PR #396</a>: TST : this is not exactly equal on some platforms.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/407/">PR #407</a>: BF: fixed problem with NANs in odfdeconv</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/406/">PR #406</a>: Revert “Merge pull request #346 from omarocegueda/syn_registration”</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/402/">PR #402</a>: Fix AE test error in test_peak_directions_thorough</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/403/">PR #403</a>: Added mask shape check in tenfit</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/346/">PR #346</a>: Symmetric diffeomorphic non-linear registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/401/">PR #401</a>: BF: fix skiptest invocation for missing mpl</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/340/">PR #340</a>: CSD fit issue</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/397/">PR #397</a>: BF: fix import statement for get_cmap</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/393/">PR #393</a>: RF: update Cython dependency</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/382/">PR #382</a>: Cythonized version of streamlines’ resample() and length() functions.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/386/">PR #386</a>: DOC: Small fix in the xval example.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/335/">PR #335</a>: Xval</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/352/">PR #352</a>: Fix utils docs and affine</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/384/">PR #384</a>: odf_sh_sharpening function fix and new test</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/374/">PR #374</a>: MRG: bumpy numpy requirement to 1.5 / compat fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/380/">PR #380</a>: DOC: Update a few Dipy links to link to the correct repo</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/378/">PR #378</a>: Fvtk cleanup</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/379/">PR #379</a>: fixed typos in shm.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/339/">PR #339</a>: FVTK small improvement: Arbitrary matplotlib colormaps can be used to color spherical functions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/373/">PR #373</a>: Fixed discrepancies between doc and code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/371/">PR #371</a>: RF: don’t use -fopenmp flag if it doesn’t work</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/372/">PR #372</a>: BF: set integer type for crossplatform compilation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/337/">PR #337</a>: Piesno</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/370/">PR #370</a>: Tone down the front page a bit.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/364/">PR #364</a>: Add the mode param for border management.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/368/">PR #368</a>: New banner for website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/367/">PR #367</a>: MRG: refactor API generation for sharing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/363/">PR #363</a>: RF: make cvxopt optional for tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/362/">PR #362</a>: Changes to fix issue #361: matrix sizing in tracking.utils.connectivity_matrix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/360/">PR #360</a>: Added missing :math:` sign</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/355/">PR #355</a>: DOC: Updated API change document to add target function change</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/357/">PR #357</a>: Changed the logo to full black as the one that I sent as suggestion for HBM and ISMRM</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/356/">PR #356</a>: Auto-generate API docs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/349/">PR #349</a>: Added api changes file to track breaks of backwards compatibility</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/348/">PR #348</a>: Website update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/347/">PR #347</a>: DOC: Updating citations</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/345/">PR #345</a>: TST: Make travis look at test coverage.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/338/">PR #338</a>: Add positivity constraint on the propagator</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/334/">PR #334</a>: Fix vec2vec</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/324/">PR #324</a>: Constrained optimisation for SHORE to set E(0)=1 when the CVXOPT package is available</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/320/">PR #320</a>: Denoising images using non-local means</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/331/">PR #331</a>: DOC: correct number of seeds in streamline_tools example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/326/">PR #326</a>: Fix brain extraction example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/327/">PR #327</a>: add small and big delta</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/323/">PR #323</a>: Shore pdf grid speed improvement</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/319/">PR #319</a>: DOC: Updated the highlights to promote the release and the upcoming paper</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/318/">PR #318</a>: Corrected some rendering problems with the installation instructions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/317/">PR #317</a>: BF: more problems with path quoting in windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/316/">PR #316</a>: MRG: more fixes for windows script tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/315/">PR #315</a>: BF: EuDX odf_vertices param has no default value</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/305/">PR #305</a>: DOC: Some more details in installation instructions.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/314/">PR #314</a>: BF - callable response does not work</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/311/">PR #311</a>: Bf seeds from mask</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/309/">PR #309</a>: MRG: Windows test fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/308/">PR #308</a>: typos + pep stuf</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/303/">PR #303</a>: BF: try and fix nibabel setup requirement</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/304/">PR #304</a>: Update README.txt</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/302/">PR #302</a>: Time for 0.8.0.dev!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/299/">PR #299</a>: BF: Put back utils.length.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/301/">PR #301</a>: Updated info.py and copyright year</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/300/">PR #300</a>: Bf fetcher bug on windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/298/">PR #298</a>: TST - rework tests so that we do not need to download any data</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/pull/290/">PR #290</a>: DOC: Started generating 0.7 release notes.</p></li>
+</ul>
+<p>Issues (233):</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/544/">#544</a>: Refactor propspeed - updated</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/540/">#540</a>: MRG: refactor propspeed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/542/">#542</a>: TST: Testing regtools</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/543/">#543</a>: MRG: update to plot_2d fixes and tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/541/">#541</a>: BUG:   plot_2d_diffeomorphic_map</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/439/">#439</a>: ValueError in RESTORE</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/538/">#538</a>: WIP: TEST: relaxed precision</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/449/">#449</a>: local variable ‘ftmp’ referenced before assignment</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/537/">#537</a>: NF: add requirements.txt file</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/534/">#534</a>: BF: removed ftmp variable</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/536/">#536</a>: Update Changelog</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/535/">#535</a>: Happy New Year PR!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/512/">#512</a>: reconst.dti.eig_from_lo_tri</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/467/">#467</a>: Optimize failure on Windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/464/">#464</a>: Diffeomorphic registration test failures on PPC</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/531/">#531</a>: BF: extend pip timeout to reduce install failures</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/527/">#527</a>: Remove npymath library from cython extensions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/528/">#528</a>: MRG: move conditional compiling to C</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/530/">#530</a>: BF: work round ugly MSVC manifest bug</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/529/">#529</a>: MRG: a couple of small cleanup fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/526/">#526</a>: Readme.rst and info.py update about the license</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/525/">#525</a>: Added shore gpl warning in the readme</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/524/">#524</a>: Replaced DiPy with DIPY in readme.rst and info.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/523/">#523</a>: RF: copy includes list for extensions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/522/">#522</a>: DOC: Web-site release notes, and some updates on front page.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/521/">#521</a>: Life bots</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/520/">#520</a>: Relaxing precision for win32</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/519/">#519</a>: Christmas PR! Correcting typos, linking and language for max odf tracking</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/513/">#513</a>: BF + TST: Reinstated eig_from_lo_tri</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/508/">#508</a>: Tests for reslicing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/515/">#515</a>: TST: Increasing testing on life.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/516/">#516</a>: TST: Reduce sensitivity on these tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/495/">#495</a>: NF - Deterministic Maximum Direction Getter</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/514/">#514</a>: Website update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/510/">#510</a>: BF: another fvtk 5 to 6 incompatibility</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/511/">#511</a>: Error estimating tensors on hcp dataset</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/509/">#509</a>: DOC: Small fixes in documentation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/497/">#497</a>: New sphere for ODF reconstruction</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/460/">#460</a>: Sparse Fascicle Model</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/499/">#499</a>: DOC: Warn about the GPL license of SHORE.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/491/">#491</a>: RF - Make peaks_from_model part of dipy.direction</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/501/">#501</a>: TST: Test for both data with and w/0 b0.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/507/">#507</a>: BF - use different sort method to avoid mergsort for older numpy.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/505/">#505</a>: stable/wheezy debian – ar.argsort(kind=’mergesort’) causes TypeError: requested sort not available for type (</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/506/">#506</a>: RF: Use integer datatype for unique_rows sorting.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/504/">#504</a>: Bug fix float overflow in estimate_sigma</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/399/">#399</a>: Multiprocessing runtime error in Windows 64 bit</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/383/">#383</a>: typo in multi tensor fit example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/350/">#350</a>: typo in SNR example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/424/">#424</a>: test more python versions with travis</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/493/">#493</a>: BF - older C compliers do not have round in math.h, uisng dpy_math instead</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/494/">#494</a>: Fix round</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/503/">#503</a>: Fixed compatibility issues between vtk 5 and 6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/500/">#500</a>: SHORE hyp2F1</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/502/">#502</a>: Fix record vtk6</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/498/">#498</a>: DTI <cite>min_signal</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/496/">#496</a>: Revert “BF: supposed fix for the gh-439, but still unable to reproduce O…</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/492/">#492</a>: TST - new DTI test to help develop min_signal handling</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/471/">#471</a>: Use importlib instead of __import__</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/419/">#419</a>: LiFE</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/489/">#489</a>: Fix diffeomorphic registration test failures</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/484/">#484</a>: Clear tabs from examples for website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/490/">#490</a>: DOC: corrected typos in the tracking PR</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/341/">#341</a>: Traco Redesign</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/410/">#410</a>: Faster spherical harmonics implemenation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/483/">#483</a>: NF: Find the closest vertex on a sphere for an input vector.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/487/">#487</a>: Travis Problem</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/488/">#488</a>: BF: fix travis version setting</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/485/">#485</a>: RF: deleted unused files</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/486/">#486</a>: cvxopt is gpl licensed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/482/">#482</a>: Skipping tests for different versions of Scipy for optimize.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/480/">#480</a>: Enhance SLR to allow for series of registrations</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/479/">#479</a>: Report on coverage for old scipy.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/481/">#481</a>: BF - make examples was confusing files with similar names, fixed</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/428/">#428</a>: WIP: refactor travis building</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/429/">#429</a>: WIP: Refactor travising</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/476/">#476</a>: Fix optimize defaults for older scipy versions for L-BFGS-B</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/478/">#478</a>: TST: Increase the timeout on the Travis pip install</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/477/">#477</a>: MAINT+TST: update minimum nibabel dependency</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/475/">#475</a>: Does the optimizer still need <cite>tmp_files</cite>?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/474/">#474</a>: RF: switch travis tests to use virtualenvs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/473/">#473</a>: TST: Make Travis provide verbose test outputs.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/470/">#470</a>: Enhance SLR with applying series of transformations and fix optimize bug for parameter missing in old scipy versions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/472/">#472</a>: ENH: GradientTable now calculates qvalues</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/469/">#469</a>: Fix evolution save win32</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/463/">#463</a>: DOC: update RESTORE tutorial to use new noise estimation technique</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/466/">#466</a>: BF: cannot quote command for Windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/461/">#461</a>: Buildbot failures with missing ‘nit’ key in dipy.core.optimize</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/465/">#465</a>: BF: increased SCIPY version definition flag to 0.12</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/462/">#462</a>: BF: fix writing history to file in Python 3</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/433/">#433</a>: Added local variance estimation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/432/">#432</a>: auto estimate the standard deviation globally for nlmeans</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/451/">#451</a>: Warning for DTI normalization</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/458/">#458</a>: DOC:  docstring fixes in dipy/align/crosscorr.pyx</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/448/">#448</a>: BF: fix link to npy_math function</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/447/">#447</a>: BF: supposed fix for the gh-439, but still unable to reproduce OP.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/443/">#443</a>: Fix buildbots errors introduced with the registration module</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/456/">#456</a>: MRG: relax threshold for failing test + cleanup</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/455/">#455</a>: Test failure on <cite>master</cite></p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/454/">#454</a>: DOC: fix docstring for compile-time checker</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/450/">#450</a>: Find if replacing matrix44 from streamlinear with compose_matrix from dipy.core.geometry is a good idea</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/453/">#453</a>: BF: refactor conditional compiling again</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/446/">#446</a>: Streamline-based Linear Registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/452/">#452</a>: Replace raise by auto normalization when creating a gradient table with un-normalized bvecs.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/398/">#398</a>: assert AE &lt; 2. failure in test_peak_directions_thorough</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/444/">#444</a>: heads up - MKL error in parallel mode</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/445/">#445</a>: NF: generate config.pxi file with Cython DEF vars</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/440/">#440</a>: DOC - add info on how to change default tempdir (multiprocessing).</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/431/">#431</a>: Change the writeable flag back to its original state when finished.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/408/">#408</a>: Symmetric diffeomorphic non-linear registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/333/">#333</a>: Bundle alignment</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/438/">#438</a>: Missing a blank line in examples/tracking_quick_start.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/426/">#426</a>: nlmeans_3d breaks with mask=None</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/405/">#405</a>: fixed frozen windows executable issue</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/418/">#418</a>: RF: move script running code into own module</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/437/">#437</a>: Update Cython download URL</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/435/">#435</a>: BF: replaced non-ascii character in dipy.reconst.dti line 956</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/434/">#434</a>: DOC: References for the DTI ODF calculation.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/425/">#425</a>: NF added class to save streamlines in vtk format</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/430/">#430</a>: Revert “Support read-only numpy array.”</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/427/">#427</a>: Support read-only numpy array.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/421/">#421</a>: Fix nans in gfa</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/422/">#422</a>: BF: Use the short version to verify scipy version.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/415/">#415</a>: RF - move around some of the predict stuff</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/420/">#420</a>: Rename README.txt to README.rst</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/413/">#413</a>: Faster spherical harmonics</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/416/">#416</a>: Removed memory_leak unittest in test_strealine.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/417/">#417</a>: Fix streamlinespeed tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/411/">#411</a>: Fix memory leak in cython functions length and set_number_of_points</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/412/">#412</a>: Use simple multiplication instead exponentiation and pow</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/409/">#409</a>: minor corrections to pipe function</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/396/">#396</a>: TST : this is not exactly equal on some platforms.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/407/">#407</a>: BF: fixed problem with NANs in odfdeconv</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/406/">#406</a>: Revert “Merge pull request #346 from omarocegueda/syn_registration”</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/402/">#402</a>: Fix AE test error in test_peak_directions_thorough</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/403/">#403</a>: Added mask shape check in tenfit</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/346/">#346</a>: Symmetric diffeomorphic non-linear registration</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/401/">#401</a>: BF: fix skiptest invocation for missing mpl</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/340/">#340</a>: CSD fit issue</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/397/">#397</a>: BF: fix import statement for get_cmap</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/393/">#393</a>: RF: update Cython dependency</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/391/">#391</a>: memory usage: 16GB wasn’t sufficient</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/382/">#382</a>: Cythonized version of streamlines’ resample() and length() functions.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/386/">#386</a>: DOC: Small fix in the xval example.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/385/">#385</a>: cross_validation example doesn’t render properly</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/335/">#335</a>: Xval</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/352/">#352</a>: Fix utils docs and affine</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/384/">#384</a>: odf_sh_sharpening function fix and new test</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/374/">#374</a>: MRG: bumpy numpy requirement to 1.5 / compat fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/381/">#381</a>: Bago fix utils docs and affine</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/380/">#380</a>: DOC: Update a few Dipy links to link to the correct repo</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/378/">#378</a>: Fvtk cleanup</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/379/">#379</a>: fixed typos in shm.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/376/">#376</a>: BF: Adjust the dimensionality of the peak_values, if provided.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/377/">#377</a>: Demianw fvtk colormap</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/339/">#339</a>: FVTK small improvement: Arbitrary matplotlib colormaps can be used to color spherical functions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/373/">#373</a>: Fixed discrepancies between doc and code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/371/">#371</a>: RF: don’t use -fopenmp flag if it doesn’t work</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/372/">#372</a>: BF: set integer type for crossplatform compilation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/337/">#337</a>: Piesno</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/370/">#370</a>: Tone down the front page a bit.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/364/">#364</a>: Add the mode param for border management.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/368/">#368</a>: New banner for website</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/367/">#367</a>: MRG: refactor API generation for sharing</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/359/">#359</a>: cvxopt dependency</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/363/">#363</a>: RF: make cvxopt optional for tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/361/">#361</a>: Matrix size wrong for tracking.utils.connectivity_matrix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/362/">#362</a>: Changes to fix issue #361: matrix sizing in tracking.utils.connectivity_matrix</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/360/">#360</a>: Added missing ` sign</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/358/">#358</a>: typo in doc</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/355/">#355</a>: DOC: Updated API change document to add target function change</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/357/">#357</a>: Changed the logo to full black as the one that I sent as suggestion for HBM and ISMRM</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/356/">#356</a>: Auto-generate API docs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/349/">#349</a>: Added api changes file to track breaks of backwards compatibility</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/348/">#348</a>: Website update</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/347/">#347</a>: DOC: Updating citations</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/345/">#345</a>: TST: Make travis look at test coverage.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/338/">#338</a>: Add positivity constraint on the propagator</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/334/">#334</a>: Fix vec2vec</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/343/">#343</a>: Please Ignore this PR!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/324/">#324</a>: Constrained optimisation for SHORE to set E(0)=1 when the CVXOPT package is available</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/277/">#277</a>: WIP: PIESNO framework for estimating the underlying std of the gaussian distribution</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/336/">#336</a>: Demianw shore e0 constrained</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/235/">#235</a>: WIP: Cross-validation</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/329/">#329</a>: WIP: Fix vec2vec</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/320/">#320</a>: Denoising images using non-local means</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/331/">#331</a>: DOC: correct number of seeds in streamline_tools example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/330/">#330</a>: DOC: number of seeds per voxel, inconsistent documentation?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/326/">#326</a>: Fix brain extraction example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/327/">#327</a>: add small and big delta</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/323/">#323</a>: Shore pdf grid speed improvement</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/319/">#319</a>: DOC: Updated the highlights to promote the release and the upcoming paper</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/318/">#318</a>: Corrected some rendering problems with the installation instructions</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/317/">#317</a>: BF: more problems with path quoting in windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/316/">#316</a>: MRG: more fixes for windows script tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/315/">#315</a>: BF: EuDX odf_vertices param has no default value</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/312/">#312</a>: Sphere and default used through the code</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/305/">#305</a>: DOC: Some more details in installation instructions.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/314/">#314</a>: BF - callable response does not work</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/16/">#16</a>: quickie: ‘from raw data to tractographies’ documentation implies dipy can’t do anything with nonisotropic voxel sizes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/311/">#311</a>: Bf seeds from mask</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/307/">#307</a>: Streamline_tools example stops working when I change density from 1 to 2</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/241/">#241</a>: Wrong normalization in peaks_from_model</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/248/">#248</a>: Clarify dsi example</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/220/">#220</a>: Add ndindex to peaks_from_model</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/253/">#253</a>: Parallel peaksFromModel timing out on buildbot</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/256/">#256</a>: writing data to /tmp peaks_from_model</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/278/">#278</a>: tenmodel.bvec, not existing anymore?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/282/">#282</a>: fvtk documentation is incomprehensible</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/228/">#228</a>: buildbot error in mask.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/197/">#197</a>: DOC: some docstrings are not rendered correctly</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/181/">#181</a>: OPT: Change dipy.core.sphere_stats.random_uniform_on_sphere</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/177/">#177</a>: Extension test in dipy_fit_tensor seems brittle</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/171/">#171</a>: Fix auto_attrs</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/31/">#31</a>: Plotting in test suite</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/42/">#42</a>: RuntimeWarning in dti.py</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/43/">#43</a>: Problems with edges and faces in create_half_unit_sphere</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/53/">#53</a>: Is ravel_multi_index a new thing?</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/64/">#64</a>: Fix examples that rely on old API and removed data-sets</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/67/">#67</a>: viz.projections.sph_projection is broken</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/92/">#92</a>: dti.fa division by 0 warning in tests</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/306/">#306</a>: Tests fail after windows 32 bit installation and running import dipy; dipy.test()</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/310/">#310</a>: Windows test failure for tracking test_rmi</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/309/">#309</a>: MRG: Windows test fixes</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/308/">#308</a>: typos + pep stuf</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/303/">#303</a>: BF: try and fix nibabel setup requirement</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/304/">#304</a>: Update README.txt</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/302/">#302</a>: Time for 0.8.0.dev!</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/299/">#299</a>: BF: Put back utils.length.</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/301/">#301</a>: Updated info.py and copyright year</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/300/">#300</a>: Bf fetcher bug on windows</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/298/">#298</a>: TST - rework tests so that we do not need to download any data</p></li>
+<li><p><a class="reference external" href="https://github.com/nipy/dipy/issues/290/">#290</a>: DOC: Started generating 0.7 release notes.</p></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="release0.7.html" title="Release notes for DIPY version 0.7"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="release0.9.html" title="Release notes for DIPY version 0.9"
+             >previous</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="../stateoftheart.html" >A quick overview of features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

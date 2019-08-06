@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/register_binary_fuzzy.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="diffeomorphic-registration-with-binary-and-fuzzy-images">
+<span id="example-register-binary-fuzzy"></span><h1>Diffeomorphic Registration with binary and fuzzy images<a class="headerlink" href="#diffeomorphic-registration-with-binary-and-fuzzy-images" title="Permalink to this headline">¶</a></h1>
+<p>This example demonstrates registration of a binary and a fuzzy image.
+This could be seen as aligning a fuzzy (sensed) image to a binary
+(e.g., template) image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">skimage</span> <span class="k">import</span> <span class="n">draw</span><span class="p">,</span> <span class="n">filters</span>
+<span class="kn">from</span> <span class="nn">dipy.align.imwarp</span> <span class="k">import</span> <span class="n">SymmetricDiffeomorphicRegistration</span>
+<span class="kn">from</span> <span class="nn">dipy.align.metrics</span> <span class="k">import</span> <span class="n">SSDMetric</span>
+<span class="kn">from</span> <span class="nn">dipy.viz</span> <span class="k">import</span> <span class="n">regtools</span>
+</pre></div>
+</div>
+<p>Let’s generate a sample template image as the combination of three ellipses.
+We will generate the fuzzy (sensed) version of the image by smoothing
+the reference image.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">draw_ellipse</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+    <span class="n">rr</span><span class="p">,</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">draw</span><span class="o">.</span><span class="n">ellipse</span><span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                          <span class="n">shape</span><span class="o">=</span><span class="n">img</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">img</span><span class="p">[</span><span class="n">rr</span><span class="p">,</span> <span class="n">cc</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">img</span>
+
+
+<span class="n">img_ref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">64</span><span class="p">,</span> <span class="mi">64</span><span class="p">))</span>
+<span class="n">img_ref</span> <span class="o">=</span> <span class="n">draw_ellipse</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">img_ref</span> <span class="o">=</span> <span class="n">draw_ellipse</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">45</span><span class="p">),</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">img_ref</span> <span class="o">=</span> <span class="n">draw_ellipse</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">15</span><span class="p">))</span>
+
+<span class="n">img_in</span> <span class="o">=</span> <span class="n">filters</span><span class="o">.</span><span class="n">gaussian</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Let’s define a small visualization function.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_warp</span><span class="p">,</span> <span class="n">fig_name</span><span class="p">):</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axarr</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">axarr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;warped image &amp; reference contour&#39;</span><span class="p">)</span>
+    <span class="n">axarr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img_warp</span><span class="p">)</span>
+    <span class="n">axarr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">ssd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">img_warp</span> <span class="o">-</span> <span class="n">img_ref</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">axarr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;difference, SSD=</span><span class="si">%.02f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">ssd</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">axarr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">img_warp</span> <span class="o">-</span> <span class="n">img_ref</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span> <span class="o">+</span> <span class="s1">&#39;.png&#39;</span><span class="p">)</span>
+
+
+<span class="n">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_in</span><span class="p">,</span> <span class="s1">&#39;input&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id1">
+<img alt="../_images/input.png" src="../_images/input.png" />
+<p class="caption"><span class="caption-text">Input images before alignment.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</div>
+<p>Let’s the use the general Registration function with some naive parameters,
+such as set <cite>step_length</cite> as 1 assuming maximal step 1 pixel and reasonable
+small number of iteration since the deformation with already aligned images
+should be minimal.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdr</span> <span class="o">=</span> <span class="n">SymmetricDiffeomorphicRegistration</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="n">SSDMetric</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">ndim</span><span class="p">),</span>
+                                         <span class="n">step_length</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                                         <span class="n">level_iters</span><span class="o">=</span><span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>
+                                         <span class="n">inv_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                                         <span class="n">ss_sigma_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                                         <span class="n">opt_tol</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform the registration with equal images.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">img_ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+<span class="n">img_warp</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_warp</span><span class="p">,</span> <span class="s1">&#39;output-0&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;map-0.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/output-0.png" src="../_images/output-0.png" />
+</div>
+<div class="figure align-center" id="id2">
+<img alt="../_images/map-0.png" src="../_images/map-0.png" />
+<p class="caption"><span class="caption-text">Registration results for default parameters and equal images.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+<p>Perform the registration with binary and fuzzy images.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">img_in</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+<span class="n">img_warp</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img_in</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_warp</span><span class="p">,</span> <span class="s1">&#39;output-1&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;map-1.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/output-1.png" src="../_images/output-1.png" />
+</div>
+<div class="figure align-center" id="id3">
+<img alt="../_images/map-1.png" src="../_images/map-1.png" />
+<p class="caption"><span class="caption-text">Registration results for a naive parameter configuration.</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</div>
+<p>Note, we are still using multi-scale approach which makes <cite>step_length</cite>
+in the upper level multiplicatively larger.
+What happens if we set <cite>step_length</cite> to a rather small value?</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdr</span><span class="o">.</span><span class="n">step_length</span> <span class="o">=</span> <span class="mf">0.1</span>
+</pre></div>
+</div>
+<p>Perform the registration and examine the output.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">img_in</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+<span class="n">img_warp</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img_in</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_warp</span><span class="p">,</span> <span class="s1">&#39;output-2&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;map-2.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/output-2.png" src="../_images/output-2.png" />
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/map-2.png" src="../_images/map-2.png" />
+<p class="caption"><span class="caption-text">Registration results for decreased step size.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>An alternative scenario is to use just a single scale level.
+Even though the warped image may look fine, the estimated deformations show
+that it is off the mark.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sdr</span> <span class="o">=</span> <span class="n">SymmetricDiffeomorphicRegistration</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="n">SSDMetric</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">ndim</span><span class="p">),</span>
+                                         <span class="n">step_length</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+                                         <span class="n">level_iters</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">],</span>
+                                         <span class="n">inv_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+                                         <span class="n">ss_sigma_factor</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+                                         <span class="n">opt_tol</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Perform the registration.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mapping</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="n">img_ref</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">img_in</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))</span>
+<span class="n">img_warp</span> <span class="o">=</span> <span class="n">mapping</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img_in</span><span class="p">,</span> <span class="s1">&#39;linear&#39;</span><span class="p">)</span>
+<span class="n">show_images</span><span class="p">(</span><span class="n">img_ref</span><span class="p">,</span> <span class="n">img_warp</span><span class="p">,</span> <span class="s1">&#39;output-3&#39;</span><span class="p">)</span>
+<span class="n">regtools</span><span class="o">.</span><span class="n">plot_2d_diffeomorphic_map</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;map-3.png&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center">
+<img alt="../_images/output-3.png" src="../_images/output-3.png" />
+</div>
+<div class="figure align-center" id="id5">
+<img alt="../_images/map-3.png" src="../_images/map-3.png" />
+<p class="caption"><span class="caption-text">Registration results for single level.</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</div>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/e4914788c2109e833aacd5a405a6b8f2/register_binary_fuzzy.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

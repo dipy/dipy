@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="A quick overview of features" href="stateoftheart.html" />
+    <link rel="prev" title="dipy_fit_ivim" href="reference_cmd/dipy_fit_ivim.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="index.html">
+  <img src="_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="stateoftheart.html" title="A quick overview of features"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="reference_cmd/dipy_fit_ivim.html" title="dipy_fit_ivim"
+             accesskey="P">previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" accesskey="U">Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="documentation.html">Documentation</a></li>
+    <li><a href="devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API changes</a><ul>
+<li><a class="reference internal" href="#dipy-1-0-changes">DIPY 1.0 changes</a></li>
+<li><a class="reference internal" href="#dipy-0-16-changes">DIPY 0.16 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-15-changes">DIPY 0.15 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-14-changes">DIPY 0.14 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-13-changes">DIPY 0.13 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-12-changes">DIPY 0.12 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-10-changes">DIPY 0.10 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-9-changes">DIPY 0.9 Changes</a></li>
+<li><a class="reference internal" href="#dipy-0-8-changes">DIPY 0.8 Changes</a></li>
+<li><a class="reference internal" href="#changes-between-0-7-1-and-0-6">Changes between 0.7.1 and 0.6</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="reference_cmd/dipy_fit_ivim.html"
+                        title="previous chapter">dipy_fit_ivim</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="stateoftheart.html"
+                        title="next chapter">A quick overview of features</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api_changes.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="api-changes">
+<h1>API changes<a class="headerlink" href="#api-changes" title="Permalink to this headline">¶</a></h1>
+<p>Here we provide information about functions or classes that have been removed,
+renamed or are deprecated (not recommended) during different release circles.</p>
+<div class="section" id="dipy-1-0-changes">
+<h2>DIPY 1.0 changes<a class="headerlink" href="#dipy-1-0-changes" title="Permalink to this headline">¶</a></h2>
+<p>Some of the changes introduced in the 1.0 release will break backwards
+compatibility with previous versions. This release is compatible with Python 3.5+</p>
+<p><strong>Reconstruction</strong></p>
+<p>The spherical harmonics bases <cite>mrtrix</cite> and <cite>fibernav</cite> have been renamed to
+<cite>tournier07</cite> and <cite>descoteaux07</cite> after the deprecation cycle started in the
+0.15 release.</p>
+<p>We changed <code class="docutils literal notranslate"><span class="pre">dipy.data.default_sphere</span></code> from symmetric724 to repulsion724 which is
+more evenly distributed.</p>
+<p><strong>Segmentation</strong></p>
+<p>The API of <code class="docutils literal notranslate"><span class="pre">dipy.segment.mask.median_otsu</span></code> has changed in the following ways:
+if you are providing a 4D volume, <cite>vol_idx</cite> is now a required argument.
+The order of parameters has also changed.</p>
+<p><strong>Tractogram loading and saving</strong></p>
+<p>The API of <code class="docutils literal notranslate"><span class="pre">dipy.io.streamlines.load_tractogram</span></code> and
+<code class="docutils literal notranslate"><span class="pre">dipy.io.streamlines.save_tractogram</span></code> has changed in the following ways:
+When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
+guarantee proper spatial transformation handling.</p>
+<p><strong>Spatial transformation handling</strong></p>
+<p>Functions from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.streamlines</span></code> were modified to enforce the
+affine parameter and uniform docstrings. <code class="docutils literal notranslate"><span class="pre">deform_streamlines</span></code>
+<code class="docutils literal notranslate"><span class="pre">select_by_rois</span></code>, <code class="docutils literal notranslate"><span class="pre">orient_by_rois</span></code>, <code class="docutils literal notranslate"><span class="pre">_extract_vals</span></code>
+and <code class="docutils literal notranslate"><span class="pre">values_from_volume</span></code>.</p>
+<p>Functions from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.utils</span></code> were modified to enforce the
+affine parameter and uniform docstring. <code class="docutils literal notranslate"><span class="pre">density_map</span></code>
+<code class="docutils literal notranslate"><span class="pre">connectivity_matrix</span></code>, <code class="docutils literal notranslate"><span class="pre">seeds_from_mask</span></code>, <code class="docutils literal notranslate"><span class="pre">random_seeds_from_mask</span></code>,
+<code class="docutils literal notranslate"><span class="pre">target</span></code>, <code class="docutils literal notranslate"><span class="pre">target_line_based</span></code>, <code class="docutils literal notranslate"><span class="pre">near_roi</span></code>, <code class="docutils literal notranslate"><span class="pre">length</span></code> and
+<code class="docutils literal notranslate"><span class="pre">path_length</span></code> were all modified.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">affine_for_trackvis</span></code>, <code class="docutils literal notranslate"><span class="pre">move_streamlines</span></code>,
+<code class="docutils literal notranslate"><span class="pre">flexi_tvis_affine</span></code> and <code class="docutils literal notranslate"><span class="pre">get_flexi_tvis_affine</span></code> were deleted.</p>
+<p>Functions from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.life</span></code> were modified to enforce the
+affine parameter and uniform docstring. <code class="docutils literal notranslate"><span class="pre">voxel2streamline</span></code>,
+<code class="docutils literal notranslate"><span class="pre">setup</span></code> and <code class="docutils literal notranslate"><span class="pre">fit</span></code> from class <code class="docutils literal notranslate"><span class="pre">FiberModel</span></code> were all modified.</p>
+<p><code class="docutils literal notranslate"><span class="pre">afq_profile</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.stats.analysis</span></code> was modified in a similar way.</p>
+<p><strong>Simulations</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.SingleTensor</span></code> has been replaced by <code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.single_tensor</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.MultiTensor</span></code> has been replaced by <code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.multi_tensor</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.SticksAndBall</span></code> has been replaced by <code class="docutils literal notranslate"><span class="pre">dipy.sims.voxel.sticks_and_ball</span></code></p></li>
+</ul>
+<p><strong>Interpolation</strong></p>
+<p>All interpolation functions have been moved to a new module name <cite>dipy.core.interpolation</cite></p>
+<p><strong>Tracking</strong></p>
+<p>The <cite>voxel_size</cite> parameter has been removed from the following function:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.tracking.utils.connectivity_matrix</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.tracking.utils.density_map</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.tracking.utils.stremline_mapping</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.tracking._util._mapping_to_voxel</span></code></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter</span></code> has
+been renamed <code class="docutils literal notranslate"><span class="pre">dipy.reconst.peak_direction_getter.EuDXDirectionGetter</span></code>.</p>
+<p>The <cite>LocalTracking</cite> and <cite>ParticleFilteringTracking</cite> functions were moved from
+<code class="docutils literal notranslate"><span class="pre">dipy.tracking.local.localtracking</span></code> to <code class="docutils literal notranslate"><span class="pre">dipy.tracking.local_tracking</span></code>.
+They now need to be imported from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.local_tracking</span></code>.</p>
+<ul class="simple">
+<li><p>functions argument <cite>tissue_classifier</cite> were renamed <cite>stopping_criterion</cite></p></li>
+</ul>
+<p>The <cite>TissueClassifier</cite> were renamed <cite>StoppingCriterion</cite> and moved from
+<code class="docutils literal notranslate"><span class="pre">dipy.tracking.local.tissue_classifier</span></code> to <code class="docutils literal notranslate"><span class="pre">dipy.tracking.stopping_criterion</span></code>.
+They now need to be imported from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.stopping_criterion</span></code>.</p>
+<ul class="simple">
+<li><p><cite>TissueClassifier</cite> -&gt; <cite>StoppingCriterion</cite></p></li>
+<li><p><cite>BinaryTissueClassifier</cite> -&gt; <cite>BinaryStoppingCriterion</cite></p></li>
+<li><p><cite>ThresholdTissueClassifier</cite> -&gt; <cite>ThresholdStoppingCriterion</cite></p></li>
+<li><p><cite>ConstrainedTissueClassifier</cite> -&gt; <cite>AnatomicalStoppingCriterion</cite></p></li>
+<li><p><cite>ActTissueClassifier</cite> -&gt; <cite>ActStoppingCriterion</cite></p></li>
+<li><p><cite>CmcTissueClassifier</cite> -&gt; <cite>CmcStoppingCriterion</cite></p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">dipy.tracking.local.tissue_classifier.TissueClass</span></code> was renamed
+<code class="docutils literal notranslate"><span class="pre">dipy.tracking.stopping_criterion.StreamlineStatus</span></code>.</p>
+<p>The <cite>EuDX</cite> tracking function has been removed. EuDX tractography can be
+performed using <code class="docutils literal notranslate"><span class="pre">dipy.tracking.local_tracking</span></code> using
+<code class="docutils literal notranslate"><span class="pre">dipy.reconst.peak_direction_getter.EuDXDirectionGetter</span></code>.</p>
+<p><strong>Streamlines</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.io.trackvis</span></code> has been removed. Use <code class="docutils literal notranslate"><span class="pre">dipy.io.streamline</span></code> instead.</p>
+<p><strong>Other</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.external</span></code> package has been removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.fixes</span></code> package has been removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.segment.quickbundes</span></code> module has been removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dipy.reconst.peaks</span></code> module has been removed.</p></li>
+<li><p>Compatibility with Python 2.7 has been removed.</p></li>
+</ul>
+</div>
+<div class="section" id="dipy-0-16-changes">
+<h2>DIPY 0.16 Changes<a class="headerlink" href="#dipy-0-16-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>Stats</strong></p>
+<p>Welcome to the new module <code class="docutils literal notranslate"><span class="pre">dipy.viz.stats</span></code>. This module will be used to integrate various analysis.</p>
+<p><strong>Tracking</strong></p>
+<ul class="simple">
+<li><p>New option to adjust number of threads for SLR in Recobundles</p></li>
+<li><p>The tracking algoritm excludes the stop point inside the mask during tracking process.</p></li>
+</ul>
+<p><strong>Notes</strong></p>
+<ul class="simple">
+<li><p>Replacement of Nose by Pytest</p></li>
+</ul>
+</div>
+<div class="section" id="dipy-0-15-changes">
+<h2>DIPY 0.15 Changes<a class="headerlink" href="#dipy-0-15-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>IO</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">load_tck</span></code> and <code class="docutils literal notranslate"><span class="pre">save_tck</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.io.streamline</span></code> has been added. They are highly recommended for managing streamlines.</p>
+<p><strong>Gradient Table</strong></p>
+<p>The default value of <code class="docutils literal notranslate"><span class="pre">b0_thresold</span></code> has been changed(from 0 to 50). This change can impact your algorithm.
+If you want to assure that your code runs in exactly the same manner as before, please initialize your gradient table with the keyword argument <code class="docutils literal notranslate"><span class="pre">b0_threshold</span></code> set to 0.</p>
+<p><strong>Visualization</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.viz.fvtk</span></code> module has been removed. Use <code class="docutils literal notranslate"><span class="pre">dipy.viz.*</span></code> instead. This implies the following important changes:
+- Use <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">dipy.viz</span> <span class="pre">import</span> <span class="pre">window,</span> <span class="pre">actor</span></code> instead of <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">dipy.viz</span> <span class="pre">import</span> <span class="pre">fvtk`.</span>
+<span class="pre">-</span> <span class="pre">Use</span> <span class="pre">``window.Renderer()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">fvtk.ren()</span></code>.
+- All available actors are in <code class="docutils literal notranslate"><span class="pre">dipy.viz.actor</span></code> instead of <code class="docutils literal notranslate"><span class="pre">dipy.fvtk.actor</span></code>.
+- UI elements are available in <code class="docutils literal notranslate"><span class="pre">dipy.viz.ui</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.viz</span></code> depends on FURY package. To get more informations about FURY, go to <a class="reference external" href="https://fury.gl">https://fury.gl</a></p>
+</div>
+<div class="section" id="dipy-0-14-changes">
+<h2>DIPY 0.14 Changes<a class="headerlink" href="#dipy-0-14-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>Streamlines</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.io.trackvis</span></code> module is deprecated. Use <code class="docutils literal notranslate"><span class="pre">dipy.io.streamline</span></code> instead. Furthermore,
+<code class="docutils literal notranslate"><span class="pre">load_trk</span></code> and <code class="docutils literal notranslate"><span class="pre">save_trk</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.io.streamline</span></code> is highly recommended for managing streamlines.
+When you create streamlines, you should use <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">dipy.tracking.streamlines</span> <span class="pre">import</span> <span class="pre">Streamlines</span></code>. This new
+object uses much less memory and it is easier to process.</p>
+<p><strong>Visualization</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.viz.fvtk</span></code> module is deprecated. Use <code class="docutils literal notranslate"><span class="pre">dipy.viz.*</span></code> instead. This implies the following important changes:
+- Use <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">dipy.viz</span> <span class="pre">import</span> <span class="pre">window,</span> <span class="pre">actor</span></code> instead of <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">dipy.viz</span> <span class="pre">import</span> <span class="pre">fvtk`.</span>
+<span class="pre">-</span> <span class="pre">Use</span> <span class="pre">``window.Renderer()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">fvtk.ren()</span></code>.
+- All available actors are in <code class="docutils literal notranslate"><span class="pre">dipy.viz.actor</span></code> instead of <code class="docutils literal notranslate"><span class="pre">dipy.fvtk.actor</span></code>.
+- UI elements are available in <code class="docutils literal notranslate"><span class="pre">dipy.viz.ui</span></code>.</p>
+</div>
+<div class="section" id="dipy-0-13-changes">
+<h2>DIPY 0.13 Changes<a class="headerlink" href="#dipy-0-13-changes" title="Permalink to this headline">¶</a></h2>
+<p>No major API changes.</p>
+<p><strong>Notes</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">dipy.io.trackvis</span></code> module will be deprecated on release 0.14. Use <code class="docutils literal notranslate"><span class="pre">dipy.io.streamline</span></code> instead.
+<code class="docutils literal notranslate"><span class="pre">dipy.viz.fvtk</span></code> module will be deprecated on release 0.14. Use <code class="docutils literal notranslate"><span class="pre">dipy.viz.ui</span></code> instead.</p>
+</div>
+<div class="section" id="dipy-0-12-changes">
+<h2>DIPY 0.12 Changes<a class="headerlink" href="#dipy-0-12-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>Dropped support for Python 2.6*</strong></p>
+<p>It has been 6 years since the release of Python 2.7, and multiple other
+versions have been released since. As far as we know, DIPY still works well
+on Python 2.6, but we no longer test on this version, and we recommend that
+users upgrade to Python 2.7 or newer to use DIPY.</p>
+<p><strong>Tracking</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">probabilistic_direction_getter.ProbabilisticDirectionGetter</span></code> input parameters
+have changed. Now the optional parameter <code class="docutils literal notranslate"><span class="pre">pmf_threshold=0.1</span></code> (previously fixed
+to 0.0) removes directions with probability lower than <code class="docutils literal notranslate"><span class="pre">pmf_threshold</span></code> from
+the probability mass function (pmf) when selecting the tracking direction.</p>
+<p><strong>DKI</strong></p>
+<p>Default of DKI model fitting was changed from “OLS” to “WLS”.</p>
+<p>The default max_kurtosis of the functions axial_kurtosis, mean_kurtosis,
+radial_kurotis was changed from 3 to 10.</p>
+<p><strong>Visualization</strong></p>
+<p>Prefer using the UI elements in <code class="docutils literal notranslate"><span class="pre">dipy.viz.ui</span></code> rather than
+<code class="docutils literal notranslate"><span class="pre">dipy.viz.widgets</span></code>.</p>
+<p><strong>IO</strong></p>
+<p>Use the module <code class="docutils literal notranslate"><span class="pre">nibabel.streamlines</span></code> for saving trk files and not
+<code class="docutils literal notranslate"><span class="pre">nibabel.trackvis</span></code>. Requires upgrading to nibabel 2+.</p>
+</div>
+<div class="section" id="dipy-0-10-changes">
+<h2>DIPY 0.10 Changes<a class="headerlink" href="#dipy-0-10-changes" title="Permalink to this headline">¶</a></h2>
+<p>** New visualization module**</p>
+<p><code class="docutils literal notranslate"><span class="pre">fvtk.slicer</span></code> input parameters have changed. Now the slicer function is
+more powerfull and supports RGB images too. See tutorial <code class="docutils literal notranslate"><span class="pre">viz_slice.py</span></code> for
+more information.</p>
+<p><strong>Interpolation</strong>
+The default behavior of the function <cite>core.sphere.interp_rbf</cite> has changed.
+The default smoothing parameter is now set to 0.1 (previously 0). In addition,
+the default norm is now <cite>angle</cite> (was previously <cite>euclidean_norm</cite>). Note that
+the use of <cite>euclidean_norm</cite> is discouraged, and this norm will be deprecated
+in the 0.11 release cycle.</p>
+<p><strong>Registration</strong></p>
+<p>The following utilty functions from <code class="docutils literal notranslate"><span class="pre">vector_fields</span></code> module were renamed:</p>
+<p><code class="docutils literal notranslate"><span class="pre">warp_2d_affine</span></code> is now <code class="docutils literal notranslate"><span class="pre">transform_2d_affine</span></code>
+<code class="docutils literal notranslate"><span class="pre">warp_2d_affine_nn</span></code> is now <code class="docutils literal notranslate"><span class="pre">transform_2d_affine_nn</span></code>
+<code class="docutils literal notranslate"><span class="pre">warp_3d_affine</span></code> is now <code class="docutils literal notranslate"><span class="pre">transform_3d_affine</span></code>
+<code class="docutils literal notranslate"><span class="pre">warp_3d_affine_nn</span></code> is now <code class="docutils literal notranslate"><span class="pre">transform_3d_affine_nn</span></code></p>
+</div>
+<div class="section" id="dipy-0-9-changes">
+<h2>DIPY 0.9 Changes<a class="headerlink" href="#dipy-0-9-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>GQI integration length</strong></p>
+<p>Calculation of integration length in GQI2 now matches the calculation in the
+‘standard’ method. Using values of 1-1.3 for either is recommended (see
+docs and references therein).</p>
+</div>
+<div class="section" id="dipy-0-8-changes">
+<h2>DIPY 0.8 Changes<a class="headerlink" href="#dipy-0-8-changes" title="Permalink to this headline">¶</a></h2>
+<p><strong>Peaks</strong></p>
+<p>The module <code class="docutils literal notranslate"><span class="pre">peaks</span></code> is now available from <code class="docutils literal notranslate"><span class="pre">dipy.direction</span></code> and it can still
+be accessed from <code class="docutils literal notranslate"><span class="pre">dipy.reconst</span></code> but it will be completelly removed in version
+0.10.</p>
+<p><strong>Resample</strong></p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">resample</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.align.aniso2iso</span></code> is deprecated. Please,
+use instead <code class="docutils literal notranslate"><span class="pre">reslice</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.align.reslice</span></code>. The module <code class="docutils literal notranslate"><span class="pre">aniso2iso</span></code>
+will be completely removed in version 0.10.</p>
+</div>
+<div class="section" id="changes-between-0-7-1-and-0-6">
+<h2>Changes between 0.7.1 and 0.6<a class="headerlink" href="#changes-between-0-7-1-and-0-6" title="Permalink to this headline">¶</a></h2>
+<p><strong>Peaks_from_model</strong></p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">peaks_from_model</span></code> is now available from <code class="docutils literal notranslate"><span class="pre">dipy.reconst.peaks</span></code>
+. Please replace all imports like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.odf</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+</pre></div>
+</div>
+<p>with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dipy.reconst.peaks</span> <span class="k">import</span> <span class="n">peaks_from_model</span>
+</pre></div>
+</div>
+<p><strong>Target</strong></p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">target</span></code> from <code class="docutils literal notranslate"><span class="pre">dipy.tracking.utils</span></code> now takes an affine
+transform instead of a voxel sizes array. Please update all code using
+<code class="docutils literal notranslate"><span class="pre">target</span></code> in a way similar to this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">anat</span><span class="p">)</span>
+<span class="n">voxel_dim</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;pixdim&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="n">voxel_dim</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>to something similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">anat</span><span class="p">)</span>
+<span class="n">streamlines</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">streamlines</span><span class="p">,</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">(),</span> <span class="n">img</span><span class="o">.</span><span class="n">affine</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="stateoftheart.html" title="A quick overview of features"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="reference_cmd/dipy_fit_ivim.html" title="dipy_fit_ivim"
+             >previous</a> |</li>
+  <li><a href="index.html">Home</a> |&nbsp;</li>
+  <li><a href="stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="installation.html">Download</a> |&nbsp;</li>
+  <li><a href="subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="cite.html">Cite</a> &nbsp;</li>
+
+          <li class="nav-item nav-item-1"><a href="documentation.html" >Documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>

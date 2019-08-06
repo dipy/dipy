@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>DIPY &#8212; dipy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/dipy.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="keywords" content="DIPY, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
+
+  </head><body>
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+ <a href="../index.html">
+  <img src="../_static/dipy-banner.png" alt="DIPY logo"  border="0" />
+</div>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+
+
+<h4> Site Navigation </h4>
+  <ul>
+    <li><a href="../documentation.html">Documentation</a></li>
+    <li><a href="../devel/index.html">Development</a></li>
+  </ul>
+
+<h4> NIPY Community </h4>
+  <ul class="simple">
+    <li><a class="reference external"
+	href="http://nipy.org/">Community Home</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/">NIPY Projects</a></li>
+    <li><a class="reference external"
+	href="https://mail.python.org/mailman/listinfo/neuroimaging">Mailing List</a></li>
+    <li><a class="reference external"
+	href="http://nipy.org/nipy/license.html">License</a></li>
+  </ul>
+
+
+  <h3><a href="../index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">K-fold cross-validation for model comparison</a><ul>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples_built/kfold_xval.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="k-fold-cross-validation-for-model-comparison">
+<span id="example-kfold-xval"></span><h1>K-fold cross-validation for model comparison<a class="headerlink" href="#k-fold-cross-validation-for-model-comparison" title="Permalink to this headline">¶</a></h1>
+<p>Different models of diffusion MRI can be compared based on their accuracy in
+fitting the diffusion signal. Here, we demonstrate this by comparing two
+models: the diffusion tensor model (DTI) and Constrained Spherical
+Deconvolution (CSD). These models differ from each other substantially. DTI
+approximates the diffusion pattern as a 3D Gaussian distribution, and has only
+6 free parameters. CSD, on the other hand, fits many more parameters. The
+models aare also not nested, so they cannot be compared using the
+log-likelihood ratio.</p>
+<p>A general way to perform model comparison is cross-validation <a class="reference internal" href="#hastie2008" id="id1"><span>[Hastie2008]</span></a>. In
+this method, a model is fit to some of the data (a <em>learning set</em>) and the
+model is then used to predict a held-out set (a <em>testing set</em>). The model
+predictions can then be compared to estimate prediction error on the held out
+set. This method has been used for comparison of models such as DTI and CSD
+<a class="reference internal" href="#rokem2014" id="id2"><span>[Rokem2014]</span></a>, and has the advantage that it the comparison is imprevious to
+differences in the number of parameters in the model, and it can be used to
+compare models that are not nested.</p>
+<p>In <a class="reference external" href="http://dipy.org">DIPY</a>, we include an implementation of k-fold cross-validation. In this
+method, the data is divided into <span class="math notranslate nohighlight">\(k\)</span> different segments. In each iteration
+<span class="math notranslate nohighlight">\(\frac{1}{k}th\)</span> of the data is held out and the model is fit to the other
+<span class="math notranslate nohighlight">\(\frac{k-1}{k}\)</span> parts of the data. A prediction of the held out data is done
+and recorded. At the end of <span class="math notranslate nohighlight">\(k\)</span> iterations a prediction of all of the data will
+have been conducted, and this can be compared directly to all of the data.</p>
+<p>First, we import that modules needed for this example. In particular, the
+<code class="xref py py-mod docutils literal notranslate"><span class="pre">reconst.cross_validation</span></code> module implements k-fold cross-validation</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">2014</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">dipy.data</span> <span class="k">as</span> <span class="nn">dpd</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.cross_validation</span> <span class="k">as</span> <span class="nn">xval</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.dti</span> <span class="k">as</span> <span class="nn">dti</span>
+<span class="kn">import</span> <span class="nn">dipy.reconst.csdeconv</span> <span class="k">as</span> <span class="nn">csd</span>
+<span class="kn">import</span> <span class="nn">scipy.stats</span> <span class="k">as</span> <span class="nn">stats</span>
+</pre></div>
+</div>
+<p>We fetch some data and select a couple of voxels to perform comparisons on. One
+lies in the corpus callosum (cc), while the other is in the centrum semiovale
+(cso), a part of the brain known to contain multiple crossing white matter
+fiber populations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dpd</span><span class="o">.</span><span class="n">fetch_stanford_hardi</span><span class="p">()</span>
+<span class="n">img</span><span class="p">,</span> <span class="n">gtab</span> <span class="o">=</span> <span class="n">dpd</span><span class="o">.</span><span class="n">read_stanford_hardi</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">get_data</span><span class="p">()</span>
+
+<span class="n">cc_vox</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">40</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="mi">38</span><span class="p">]</span>
+<span class="n">cso_vox</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">76</span><span class="p">,</span> <span class="mi">38</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>We initialize each kind of model:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dti_model</span> <span class="o">=</span> <span class="n">dti</span><span class="o">.</span><span class="n">TensorModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">)</span>
+<span class="n">response</span><span class="p">,</span> <span class="n">ratio</span> <span class="o">=</span> <span class="n">csd</span><span class="o">.</span><span class="n">auto_response</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">roi_radius</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fa_thr</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<span class="n">csd_model</span> <span class="o">=</span> <span class="n">csd</span><span class="o">.</span><span class="n">ConstrainedSphericalDeconvModel</span><span class="p">(</span><span class="n">gtab</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, we perform cross-validation for each kind of model, comparing model
+predictions to the diffusion MRI data in each one of these voxels.</p>
+<p>Note that we use 2-fold cross-validation, which means that in each iteration,
+the model will be fit to half of the data, and used to predict the other half.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dti_cc</span> <span class="o">=</span> <span class="n">xval</span><span class="o">.</span><span class="n">kfold_xval</span><span class="p">(</span><span class="n">dti_model</span><span class="p">,</span> <span class="n">cc_vox</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">csd_cc</span> <span class="o">=</span> <span class="n">xval</span><span class="o">.</span><span class="n">kfold_xval</span><span class="p">(</span><span class="n">csd_model</span><span class="p">,</span> <span class="n">cc_vox</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+<span class="n">dti_cso</span> <span class="o">=</span> <span class="n">xval</span><span class="o">.</span><span class="n">kfold_xval</span><span class="p">(</span><span class="n">dti_model</span><span class="p">,</span> <span class="n">cso_vox</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">csd_cso</span> <span class="o">=</span> <span class="n">xval</span><span class="o">.</span><span class="n">kfold_xval</span><span class="p">(</span><span class="n">csd_model</span><span class="p">,</span> <span class="n">cso_vox</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We plot a scatter plot of the data with the model predictions in each of these
+voxels, focusing only on the diffusion-weighted measurements (each point
+corresponds to a different gradient direction). The two models are compared in
+each sub-plot (blue=DTI, red=CSD).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_size_inches</span><span class="p">([</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cc_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">dti_cc</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cc_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">csd_cc</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cso_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">dti_cso</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;DTI&#39;</span><span class="p">)</span>
+<span class="n">ax</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cso_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">csd_cso</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;CSD&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">this_ax</span> <span class="ow">in</span> <span class="n">ax</span><span class="p">:</span>
+    <span class="n">this_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Data (relative to S0)&#39;</span><span class="p">)</span>
+    <span class="n">this_ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Model prediction (relative to S0)&#39;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;model_predictions.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<img alt="../_images/model_predictions.png" src="../_images/model_predictions.png" />
+<p class="caption"><span class="caption-text">Model predictions.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</div>
+<p>We can also quantify the goodness of fit of the models by calculating an
+R-squared score:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cc_dti_r2</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">cc_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">dti_cc</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">cc_csd_r2</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">cc_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">csd_cc</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">cso_dti_r2</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">cso_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">dti_cso</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">cso_csd_r2</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">pearsonr</span><span class="p">(</span><span class="n">cso_vox</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">],</span> <span class="n">csd_cso</span><span class="p">[</span><span class="o">~</span><span class="n">gtab</span><span class="o">.</span><span class="n">b0s_mask</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Corpus callosum</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;DTI R2 : </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;CSD R2 : </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;Centrum Semiovale</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;DTI R2 : </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span>
+      <span class="s2">&quot;CSD R2 : </span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">cc_dti_r2</span><span class="p">,</span> <span class="n">cc_csd_r2</span><span class="p">,</span> <span class="n">cso_dti_r2</span><span class="p">,</span> <span class="n">cso_csd_r2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This should look something like this:</p>
+<p>Corpus callosum</p>
+<p>DTI R2 : 0.782881752597</p>
+<p>CSD R2 : 0.805764364116</p>
+<p>Centrum Semiovale</p>
+<p>DTI R2 : 0.431921832012</p>
+<p>CSD R2 : 0.604806420501</p>
+<p>As you can see, DTI is a pretty good model for describing the signal in the CC,
+while CSD is much better in describing the signal in regions of multiple
+crossing fibers.</p>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<dl class="citation">
+<dt class="label" id="hastie2008"><span class="brackets"><a class="fn-backref" href="#id1">Hastie2008</a></span></dt>
+<dd><p>Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
+of Statistical Learning: Data Mining, Inference and
+Prediction. Springer-Verlag, Berlin</p>
+</dd>
+<dt class="label" id="rokem2014"><span class="brackets"><a class="fn-backref" href="#id2">Rokem2014</a></span></dt>
+<dd><p>Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
+Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple
+b-values with cross-validation. ISMRM 2014.</p>
+</dd>
+</dl>
+<div class="admonition-example-source-code admonition">
+<p class="admonition-title">Example source code</p>
+<p>You can download <a class="reference download internal" download="" href="../_downloads/e233fb3a8f47e4ce2c6e8c641c805c42/kfold_xval.py"><code class="xref download docutils literal notranslate"><span class="pre">the</span> <span class="pre">full</span> <span class="pre">source</span> <span class="pre">code</span> <span class="pre">of</span> <span class="pre">this</span> <span class="pre">example</span></code></a>. This same script is also included in the dipy source distribution under the <code class="file docutils literal notranslate"><span class="pre">doc/examples/</span></code> directory.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+  <li><a href="../index.html">Home</a> |&nbsp;</li>
+  <li><a href="../stateoftheart.html">Overview</a> |&nbsp;</li>
+  <li><a href="../examples_index.html">Gallery</a> |&nbsp;</li>
+  <li><a href="../installation.html">Download</a> |&nbsp;</li>
+  <li><a href="../subscribe.html">Subscribe</a> |&nbsp;</li>
+  <li><a href="../developers.html">Developers</a> |&nbsp;</li>
+  <li><a href="../cite.html">Cite</a> &nbsp;</li>
+ 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2008-2019, dipy developers &lt;neuroimaging@python.org&gt;.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2.
+    </div>
+  </body>
+</html>
