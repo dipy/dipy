@@ -23,7 +23,6 @@ The following 17 authors contributed 707 commits.
 * Marc-Alexandre Côté
 * Matt Cieslak
 * Rafael Neto Henriques
-* Samuel St-Jean
 * Scott Trinkle
 * Serge Koudoro
 * Shreyas Fadnavis
