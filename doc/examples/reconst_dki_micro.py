@@ -7,7 +7,7 @@ DKI can also be used to derive concrete biophysical parameters by applying
 microstructural models to DT and KT estimated from DKI. For instance,
 Fieremans et al. [Fierem2011]_ showed that DKI can be used to
 estimate the contribution of hindered and restricted diffusion for well-aligned
-fibers  - model that was later referred to as the white matter tract integrity
+fibers - a model that was later referred to as the white matter tract integrity
 WMTI technique [Fierem2013]_. The two tensors of WMTI can be also
 interpreted as the influences of intra- and extra-cellular compartments and can
 be used to estimate the axonal volume fraction and diffusion extra-cellular
@@ -15,7 +15,7 @@ tortuosity. According to previous studies [Fierem2012]_ [Fierem2013]_,
 these latter measures can be used to distinguish processes of axonal loss from
 processes of myelin degeneration.
 
-In this example, we show how to process a diffusion weighting dataset using
+In this example, we show how to process a dMRI dataset using
 the WMTI model.
 
 First, we import all relevant modules:
@@ -32,9 +32,9 @@ from scipy.ndimage.filters import gaussian_filter
 
 """
 As the standard DKI, WMTI requires multi-shell data, i.e. data acquired from
-more than one non-zero b-value. Here, we use fetch to download a multi-shell
-dataset which was kindly provided by Hansen and Jespersen (more details about
-the data are provided in their paper [Hansen2016]_).
+more than one non-zero b-value. Here, we use a fetcher to download a
+multi-shell dataset which was kindly provided by Hansen and Jespersen
+(more details about the data are provided in their paper [Hansen2016]_).
 """
 
 fetch_cfin_multib()
@@ -46,7 +46,7 @@ data = img.get_data()
 affine = img.affine
 
 """
-For comparison, this dataset is pre-processing using the same steps used in the
+For comparison, this dataset is pre-processed using the same steps used in the
 example for reconstructing DKI (see :ref:`example_reconst_dki`).
 """
 

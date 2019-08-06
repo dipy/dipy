@@ -61,7 +61,7 @@ axial_middle = data.shape[2] // 2
 before = data[:, :, axial_middle].T
 after = den[:, :, axial_middle].T
 
-difference = np.abs(after.astype('f8') - before.astype('f8'))
+difference = np.abs(after.astype(np.float64) - before.astype(np.float64))
 
 difference[~mask[:, :, axial_middle].T] = 0
 

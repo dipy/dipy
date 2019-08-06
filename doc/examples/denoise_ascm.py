@@ -106,7 +106,7 @@ axial_middle = data.shape[2] // 2
 
 original = data[:, :, axial_middle].T
 final_output = den_final[:, :, axial_middle].T
-difference = np.abs(final_output.astype('f8') - original.astype('f8'))
+difference = np.abs(final_output.astype(np.float64) - original.astype(np.float64))
 difference[~mask[:, :, axial_middle].T] = 0
 
 fig, ax = plt.subplots(1, 3)

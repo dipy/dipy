@@ -116,6 +116,7 @@ model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 """
 Extracting bundles using recobundles [Garyfallidis17]_
 """
+
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
@@ -162,6 +163,7 @@ in the space of the atlas, we save the streamlines that are in the original
 space of the subject anatomy.
 
 """
+
 reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
                                Space.RASMM)
 save_trk(reco_af_l, "AF_L.trk", bbox_valid_check=False)
@@ -210,6 +212,7 @@ if interactive:
 Save the bundle as a trk file:
 
 """
+
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
                                 Space.RASMM)
 save_trk(reco_cst_l, "CST_L.trk", bbox_valid_check=False)

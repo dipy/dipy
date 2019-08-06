@@ -13,7 +13,6 @@ The core development team consists of the following individuals:
 - **Marc-Alexandre Côté**,  Microsoft Research, Montreal, QC, CA
 - **Serge Koudoro**, Indiana University, IN, USA
 - **Gabriel Girard**, Swiss Federal Institute of Technology (EPFL), Lausanne, CH
-- **Mauro Zucchelli**, INRIA, Sophia-Antipolis, France
 - **Rafael Neto Henriques**, Cambridge University, UK
 - **Matthieu Dumont**, Imeka, Sherbrooke, QC, CA
 - **Ranveer Aggarwal**, Microsoft, Hyderabad, Telangana, India
@@ -23,9 +22,10 @@ And here is the rest of the wonderful contributors:
 - **Ian Nimmo-Smith**, retired, formerly at MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - **Maxime Descoteaux**, University of Sherbrooke, QC, CA
 - **Stefan Van der Walt**, University of California, Berkeley, CA, USA
+- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA and Imeka, Sherbrooke, QC, CA
+- **Francois Rhéault**, University of Sherbrooke, QC, CA
 - **Samuel St-Jean**, University Medical Center (UMC) Utrecht, Utrecht, NL
 - **Michael Paquette**, Max Planck Institute for Human Cognitive and Brain Sciences, Leipzig, DE
-- **Jean-Christophe Houde**, University of Sherbrooke, QC, CA and Imeka, Sherbrooke, QC, CA
 - **Christopher Nguyen**,  Massachusetts General Hospital, MA, USA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, IT
 - **Yaroslav Halchenco**, PBS Department, Dartmouth, NH, USA
@@ -35,6 +35,7 @@ And here is the rest of the wonderful contributors:
 - **Kimberly Chan**, Stanford University, CA, USA
 - **Chantal Tax**, Cardiff University, Cardiff, UK
 - **Demian Wassermann**, INRIA, Sophia Antipolis, FR
+- **Mauro Zucchelli**, INRIA, Sophia-Antipolis, France
 - **Rutger Fick**, INRIA, Sophia Antipolis, FR
 - **Gregory R. Lee**, Cincinnati Children's Hospital Medical Center, Cincinnati, OH, USA
 - **Endolith**, New-York, NY, USA
@@ -44,6 +45,7 @@ And here is the rest of the wonderful contributors:
 - **Maria Luisa Mandelli**, University of California, San Francisco, CA, USA
 - **Adam Rybinski**, Jagiellonian University, Krakow, PL
 - **Qiyuan Tian**, Stanford University, Stanford, CA, USA
+- **Jon Haitz Legarreta Gorroño**, University of Sherbrooke, QC, CA
 - **Rafael Neto Henriques**, Champalimaud Neuroscience Programme, Champalimaud Centre for the Unknown, Lisbon, PT
 - **Stephan Meesters**, Eindhoven University of Technology, NL
 - **Himanshu Mishra**, Indian Institute of Technology, Karaghpur, IN
@@ -56,6 +58,9 @@ And here is the rest of the wonderful contributors:
 - **Vatsala Swaroop**, Mombai, IN
 - **Shahnawaz Ahmed**, Birla Institute of Technology and Science, Pilani, Goa, IN
 - **Nil Goyette**, Imeka, Sherbrooke, QC, CA
+- **Scott Trinkle**, University of Chicago
+- **Kevin R. Sitek**, MIT McGovern Institute for Brain Research
+- **Derek Pisner**, University of Texas at Austin
 
 
 

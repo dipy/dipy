@@ -18,7 +18,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
-- :ref:`example_introduction_eudx`
+- :ref:`example_tracking_introduction_eudx`
 
 -------------
 Preprocessing

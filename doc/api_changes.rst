@@ -8,7 +8,7 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.0 changes
 ----------------
 Some of the changes introduced in the 1.0 release will break backwards
-compatibility with previous versions.
+compatibility with previous versions. This release is compatible with Python 3.5+
 
 **Reconstruction**
 
@@ -16,8 +16,8 @@ The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
 `tournier07` and `descoteaux07` after the deprecation cycle started in the
 0.15 release.
 
-We change ``dipy.data.default_sphere`` from symmetric724 to repulsion724. If you want to keep the
-previous behavior, make sure to initialize the sphere parameter on some functions.
+We changed ``dipy.data.default_sphere`` from symmetric724 to repulsion724 which is
+more evenly distributed.
 
 **Segmentation**
 
@@ -35,25 +35,26 @@ guarantee proper spatial transformation handling.
 **Spatial transformation handling**
 
 Functions from ``dipy.tracking.streamlines`` were modified to enforce the
-affine parameter and uniformize docstring. ``deform_streamlines``
-``select_by_rois``, ``orient_by_rois``, ``_extract_vals`` 
+affine parameter and uniform docstrings. ``deform_streamlines``
+``select_by_rois``, ``orient_by_rois``, ``_extract_vals``
 and ``values_from_volume``.
 
 Functions from ``dipy.tracking.utils`` were modified to enforce the
-affine parameter and uniformize docstring. ``density_map``
+affine parameter and uniform docstring. ``density_map``
 ``connectivity_matrix``, ``seeds_from_mask``, ``random_seeds_from_mask``,
 ``target``, ``target_line_based``, ``near_roi``, ``length`` and
 ``path_length`` were all modified.
+
 The function ``affine_for_trackvis``, ``move_streamlines``,
 ``flexi_tvis_affine`` and ``get_flexi_tvis_affine`` were deleted.
 
 Functions from ``dipy.tracking.life`` were modified to enforce the
-affine parameter and uniformize docstring. ``voxel2streamline``,
+affine parameter and uniform docstring. ``voxel2streamline``,
 ``setup`` and ``fit`` from class ``FiberModel`` were all modified.
 
 ``afq_profile`` from ``dipy.stats.analysis`` was modified in a similar way.
 
-**Simulation**
+**Simulations**
 
 - ``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
 - ``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
@@ -61,7 +62,7 @@ affine parameter and uniformize docstring. ``voxel2streamline``,
 
 **Interpolation**
 
-All interpolation functions has been moved to a new module name `dipy.core.interpolation`
+All interpolation functions have been moved to a new module name `dipy.core.interpolation`
 
 **Tracking**
 
@@ -93,7 +94,7 @@ They now need to be imported from ``dipy.tracking.stopping_criterion``.
 - `CmcTissueClassifier` -> `CmcStoppingCriterion`
 
 The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
-``dipy.tracking.stopping_criterion.StreamlineStatus`.
+``dipy.tracking.stopping_criterion.StreamlineStatus``.
 
 The `EuDX` tracking function has been removed. EuDX tractography can be
 performed using ``dipy.tracking.local_tracking`` using
@@ -103,10 +104,13 @@ performed using ``dipy.tracking.local_tracking`` using
 
 ``dipy.io.trackvis`` has been removed. Use ``dipy.io.streamline`` instead.
 
-**Notes**
+**Other**
 
-- ``dipy.external`` package has been removed
-- ``dipy.fixes`` package has been removed
+- ``dipy.external`` package has been removed.
+- ``dipy.fixes`` package has been removed.
+- ``dipy.segment.quickbundes`` module has been removed.
+- ``dipy.reconst.peaks`` module has been removed.
+- Compatibility with Python 2.7 has been removed.
 
 DIPY 0.16 Changes
 -----------------

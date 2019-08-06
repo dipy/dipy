@@ -47,7 +47,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - Many tutorials added or updated (5 New).
 - Large documentation update.
 - Moved visualization module to a new library: FURY.
-- Closed 287 issues and merged 93 pull requests.   
+- Closed 287 issues and merged 93 pull requests.
 
 * 0.14 (Tuesday, 1 May 2018)
 

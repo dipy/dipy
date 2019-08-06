@@ -23,7 +23,8 @@ module of dipy:
 
 from dipy.denoise.gibbs import gibbs_removal
 
-""" We first apply this algorithm to T1-weighted dataset which can be fetched
+"""
+We first apply this algorithm to T1-weighted dataset which can be fetched
 using the following code:
 """
 
@@ -35,7 +36,9 @@ t1_img = read_tissue_data(contrast='T1 denoised')
 
 t1 = t1_img.get_data()
 
-""" Let's plot a slice of this dataset. """
+"""
+Let's plot a slice of this dataset.
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -51,6 +54,7 @@ t1_slice = np.rot90(t1_slice)
 plt.subplot(1, 2, 1)
 plt.imshow(t1_slice, cmap='gray', vmin=100, vmax=400)
 plt.colorbar()
+fig.savefig('structural.png')
 
 """
 .. figure:: structural.png
@@ -61,7 +65,8 @@ plt.colorbar()
 Due to the high quality of the data, Gibbs artefacts are not visually
 evident in this dataset. Therefore, to analyse the benefits of the Gibbs
 suppression algorithm, Gibbs artefacts are artificially introduced by
-removing high frequencies of the image's Fourier transform."""
+removing high frequencies of the image's Fourier transform.
+"""
 
 c = np.fft.fft2(t1_slice)
 c = np.fft.fftshift(c)
@@ -70,12 +75,16 @@ c_crop = c[64: 192, 64: 192]
 N = c_crop.shape[0]
 t1_gibbs = abs(np.fft.ifft2(c_crop)/4)
 
-""" Gibbs oscillation suppression of this single data slice can be performed by
-running the following command:"""
+"""
+Gibbs oscillation suppression of this single data slice can be performed by
+running the following command:
+"""
 
 t1_unring = gibbs_removal(t1_gibbs)
 
-""" Let’s plot the results: """
+"""
+Let’s plot the results:
+"""
 
 fig1, ax = plt.subplots(1, 3, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
@@ -149,23 +158,27 @@ img, gtab = read_cenir_multib(bvals)
 
 data = img.get_data()
 
-""" For illustration proposes, we select two slices of this dataset """
+"""
+For illustration proposes, we select two slices of this dataset
+"""
 
 data_slices = data[:, :, 40:42, :]
 
-
-""" Gibbs oscillation suppression of all multi-shell data and all slices
+"""
+Gibbs oscillation suppression of all multi-shell data and all slices
 can be performed in the following way:
 """
 
 data_corrected = gibbs_removal(data_slices, slice_axis=2)
 
-""" Due to the high dimensionality of diffusion-weighted data, we recommend
+"""
+Due to the high dimensionality of diffusion-weighted data, we recommend
 that you specify which is the axis of data matrix that corresponds to different
 slices in the above step. This is done by using the optional parameter
 'slice_axis'.
 
-Below we plot the results for an image acquired with b-value=0: """
+Below we plot the results for an image acquired with b-value=0:
+"""
 
 fig2, ax = plt.subplots(1, 3, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
@@ -203,7 +216,7 @@ compute a brain mask.
 # Create a brain mask
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data_slices, vol_idx=range(10, 50), 
+maskdata, mask = median_otsu(data_slices, vol_idx=range(10, 50),
                              median_radius=3, numpass=1, autocrop=False,
                              dilate=1)
 

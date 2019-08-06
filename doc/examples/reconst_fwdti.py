@@ -32,9 +32,8 @@ the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 In this example, we show how to process a diffusion weighting dataset using
 an adapted version of the free water elimination proposed by [Hoy2014]_.
 
-The full details of Dipy's free water DTI implementation was published on
-the ReScience C initiative [Henriques2017]_. Please cite this work if you use
-this algorithm.
+The full details of Dipy's free water DTI implementation was published in
+[Henriques2017]_. Please cite this work if you use this algorithm.
 
 Let's start by importing the relevant modules:
 """

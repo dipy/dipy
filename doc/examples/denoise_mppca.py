@@ -218,7 +218,9 @@ setting the optional input parameter ``return_sigma`` to True.
 
 denoised_arr, sigma = mppca(data, patch_radius=2, return_sigma=True)
 
-""" Let's plot the noise standard deviation estimate """
+"""
+Let's plot the noise standard deviation estimate:
+"""
 
 fig3 = plt.figure('PCA Noise standard deviation estimation')
 plt.imshow(sigma[..., sli].T, cmap='gray', origin='lower')
