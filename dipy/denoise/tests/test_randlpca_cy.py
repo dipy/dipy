@@ -6,7 +6,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.randommatrix_lpca import randommatrix_lpca
+from dipy.denoise.randomlpca_denoise import randomlpca_denoise
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
@@ -96,13 +96,13 @@ def gen_gtab():
 
 def test_lpca_static():
     S0 = 100 * np.ones((20, 20, 20, 20), dtype='f8')
-    S0ns,_,_ = randommatrix_lpca(S0)
+    S0ns,_,_ = randomlpca_denoise(S0)
     assert_array_almost_equal(S0, S0ns)
 
 
 def test_lpca_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
-    S0ns,_,_ = randommatrix_lpca(S0)
+    S0ns,_,_ = randomlpca_denoise(S0)
 
     assert_(S0ns.min() > S0.min())
     assert_(S0ns.max() < S0.max())
@@ -115,7 +115,7 @@ def test_lpca_boundary_behaviour():
     S0[:, :, 0, :] = S0[:, :, 0, :] + 2 * \
         np.random.standard_normal((20, 20, 20))
     S0_first = S0[:, :, 0, :]
-    S0ns, _,_ = randommatrix_lpca(S0)
+    S0ns, _,_ = randomlpca_denoise(S0)
     S0ns_first = S0ns[:, :, 0, :]
     rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
         (100.0 * 20.0 * 20.0 * 20.0)
@@ -135,7 +135,7 @@ def test_lpca_boundary_behaviour():
 def test_lpca_rmse():
     S0_w_noise = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
     rmse_w_noise = np.sqrt(np.mean((S0_w_noise - 100) ** 2))
-    S0_denoised, _, _ = randommatrix_lpca(S0_w_noise)
+    S0_denoised, _, _ = randomlpca_denoise(S0_w_noise)
     rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
     # Denoising should always improve the RMSE:
     assert_(rmse_denoised < rmse_w_noise)
@@ -146,7 +146,7 @@ def test_lpca_sharpness():
     S0[10:20, 10:20, 10:20, :] = 50
     S0[20:30, 20:30, 20:30, :] = 0
     S0 = S0 + 20 * np.random.standard_normal((30, 30, 30, 20))
-    S0ns, _,_ = randommatrix_lpca(S0)
+    S0ns, _,_ = randomlpca_denoise(S0)
     # check the edge gradient
     edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20] - S0ns[12, 10:20, 10:20]) - 50)
     assert_(edgs < 2)
@@ -155,16 +155,16 @@ def test_lpca_sharpness():
 def test_lpca_dtype():
     # If out_dtype is not specified, we retain the original precision:
     S0 = 200 * np.ones((20, 20, 20, 3), dtype=np.float64)
-    S0ns,_,_ = randommatrix_lpca(S0)
+    S0ns,_,_ = randomlpca_denoise(S0)
     assert_equal(S0.dtype, S0ns.dtype)
 
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns,_,_ = randommatrix_lpca(S0)
+    S0ns,_,_ = randomlpca_denoise(S0)
     assert_equal(S0.dtype, S0ns.dtype)
 
     # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns,_,_ = randommatrix_lpca(S0,
+    S0ns,_,_ = randomlpca_denoise(S0,
                     out_dtype=np.float32)
     assert_equal(np.float32, S0ns.dtype)
 
@@ -172,7 +172,7 @@ def test_lpca_dtype():
     # Resulting denoised array:
     S0[5:8, 5:8, 5:8] = 0
     # But if we should always get all non-negative results:
-    S0ns,_,_ = randommatrix_lpca(S0, out_dtype=np.uint16)
+    S0ns,_,_ = randomlpca_denoise(S0, out_dtype=np.uint16)
     assert_(np.all(S0ns >= 0))
     # And no wrap-around to crazy high values:
     assert_(np.all(S0ns <= 200))
@@ -180,7 +180,7 @@ def test_lpca_dtype():
 
 def test_lpca_wrong():
     S0 = np.ones((20, 20))
-    assert_raises(ValueError, randommatrix_lpca, S0)
+    assert_raises(ValueError, randomlpca_denoise, S0)
 
 
 def test_phantom():
@@ -193,7 +193,7 @@ def test_phantom():
                      ((1 + 0.5 * temp) * sps.iv(0, 0.25 * temp) + 0.5 * temp *
                      sps.iv(1, 0.25 * temp))**2)
 
-    DWI_den,_,_ = randommatrix_lpca(DWI, patch_size=3)
+    DWI_den,_,_ = randomlpca_denoise(DWI, patch_extent=3)
     rmse_den = np.sum(np.abs(DWI_clean - DWI_den)) / np.sum(np.abs(DWI_clean))
     rmse_noisy = np.sum(np.abs(DWI_clean - DWI)) / np.sum(np.abs(DWI_clean))
 
@@ -213,7 +213,7 @@ def test_phantom():
     mask = np.zeros_like(DWI, dtype=bool)[..., 0]
     mask[2:-2, 2:-2, 2:-2] = True
 
-    DWI_den,_,_ = randommatrix_lpca(DWI,patch_size=3)
+    DWI_den,_,_ = randomlpca_denoise(DWI,patch_extent=3)
     DWI_den[~mask] = 0
     DWI_clean_masked = DWI_clean.copy()
     DWI_clean_masked[~mask] = 0
@@ -240,7 +240,7 @@ def test_phantom():
 # def test_lpca_ill_conditioned():
 #     gtab = gen_gtab()
 #     DWI, sigma = rfiw_phantom(gtab, snr=30)
-#     assert_raises(ValueError, randommatrix_lpca, DWI)
+#     assert_raises(ValueError, randomlpca_denoise, DWI)
 
 # Not input Sigma- so we are not testing this
 # def test_lpca_sigma_wrong_shape():
@@ -248,7 +248,7 @@ def test_phantom():
 #     DWI, sigma = rfiw_phantom(gtab, snr=30)
 #     print(sigma)
 #     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
-#     assert_raises(ValueError, randommatrix_lpca, sigma)
+#     assert_raises(ValueError, randomlpca_denoise, sigma)
 
 
 if __name__ == '__main__':
