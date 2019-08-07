@@ -10,6 +10,7 @@ from dipy.denoise.randommatrix_lpca import randommatrix_lpca
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
+
 # This is for python version testing
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
@@ -211,7 +212,7 @@ def test_phantom():
     mask = np.zeros_like(DWI, dtype=bool)[..., 0]
     mask[2:-2, 2:-2, 2:-2] = True
 
-    DWI_den, _, _ = randommatrix_lpca(DWI,patch_size=3)
+    DWI_den, _, _ = randommatrix_lpca(DWI, patch_size=3)
     DWI_den[~mask] = 0
     DWI_clean_masked = DWI_clean.copy()
     DWI_clean_masked[~mask] = 0

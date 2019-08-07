@@ -10,6 +10,7 @@ from dipy.denoise.randomlpca_denoise import randomlpca_denoise
 from dipy.core.gradients import gradient_table, generate_bvecs
 from dipy.sims.voxel import multi_tensor
 
+
 # This is for python version testing
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
@@ -207,13 +208,11 @@ def test_phantom():
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
-
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
     mask = np.zeros_like(DWI, dtype=bool)[..., 0]
     mask[2:-2, 2:-2, 2:-2] = True
-
-    DWI_den, _, _ = randomlpca_denoise(DWI,patch_extent=3)
+    DWI_den, _, _ = randomlpca_denoise(DWI, patch_extent=3)
     DWI_den[~mask] = 0
     DWI_clean_masked = DWI_clean.copy()
     DWI_clean_masked[~mask] = 0
