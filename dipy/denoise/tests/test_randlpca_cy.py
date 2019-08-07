@@ -165,8 +165,7 @@ def test_lpca_dtype():
 
     # If we set out_dtype, we get what we asked for:
     S0 = 200 * np.ones((20, 20, 20, 20), dtype=np.uint16)
-    S0ns, _, _ = randomlpca_denoise(S0,
-                    out_dtype=np.float32)
+    S0ns, _, _ = randomlpca_denoise(S0, out_dtype=np.float32)
     assert_equal(np.float32, S0ns.dtype)
 
     # If we set a few entries to zero, this induces negative entries in the

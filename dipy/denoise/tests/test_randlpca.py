@@ -206,7 +206,6 @@ def test_phantom():
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
-
     # Try this with a sigma volume, instead of a scalar
     sigma_vol = sigma * np.ones(DWI.shape[:-1])
     mask = np.zeros_like(DWI, dtype=bool)[..., 0]
