@@ -4,6 +4,7 @@ from dipy.tracking.streamline import length, Streamlines
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
+from dipy import __version__ as horizon_version
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -143,7 +144,10 @@ class Horizon(object):
     def build_scene(self):
 
         self.mem = GlobalHorizon()
-        scene = window.Renderer()
+        scene = window.Scene()
+        self.add_actors(scene, self.tractograms,
+                        self.cluster_thr, callbacks=False)
+        """
         for (t, streamlines) in enumerate(self.tractograms):
             if self.random_colors:
                 colors = self.prng.random_sample(3)
@@ -214,16 +218,21 @@ class Horizon(object):
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
                 self.mem.streamline_actors.append(streamline_actor)
+        """
         return scene
 
     def remove_actors(self, scene):
 
         for ca_ in self.mem.centroid_actors:
             scene.rm(ca_)
+            del self.cea[ca_]
         for ca_ in self.mem.cluster_actors:
             scene.rm(ca_)
+            del self.cla[ca_]
+        self.mem.centroid_actors = []
+        self.mem.cluster_actors = []
 
-    def add_actors(self, scene, tractograms, threshold):
+    def add_actors(self, scene, tractograms, threshold, callbacks=True):
         """ Add streamline actors to the scene
         """
         color_gen = distinguishable_colormap()
@@ -305,6 +314,9 @@ class Horizon(object):
                 scene.add(streamline_actor)
                 self.mem.streamline_actors.append(streamline_actor)
 
+        if not callbacks:
+            return
+
         def left_click_centroid_callback(obj, event):
 
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
@@ -331,7 +343,9 @@ class Horizon(object):
 
     def build_show(self, scene):
 
-        self.show_m = window.ShowManager(scene, size=(1200, 900),
+        title = 'Horizon ' + horizon_version
+        self.show_m = window.ShowManager(scene, title=title,
+                                         size=(1200, 900),
                                          order_transparent=True,
                                          reset_camera=False)
         self.show_m.initialize()
@@ -383,22 +397,38 @@ class Horizon(object):
 
             def change_threshold(istyle, obj, slider):
                 sv = np.round(slider.value, 0)
-                print('QBX threshold ...')
-                print(self.length_min)
-                print(self.size_min)
+                print('QBX threshold old ...')
+                print('mem.cluster_thr', self.mem.cluster_thr)
+                print('length_min', self.length_min)
+                print('size_min', self.size_min)
+                self.remove_actors(scene)
+                # self.build_scene()
+                # self.mem = GlobalHorizon()
+                self.add_actors(scene, self.tractograms, threshold=sv)
                 lengths = np.array(
                     [self.cla[c]['length'] for c in self.cla])
                 szs = [self.cla[c]['size'] for c in self.cla]
                 sizes = np.array(szs)
+                print('Lengths', lengths)
+                print('Sizes', sizes)
+
+                slider_size.min_value = sizes.min()
+                slider_size.max_value = sizes.max()
+                slider_size.value = sizes.min()
+                slider_size.update()
+
+                slider_length.min_value = lengths.min()
+                slider_length.max_value = lengths.max()
+                slider_length.value = lengths.min()
+                slider_length.update()
+
                 self.length_min = min(lengths)
                 self.size_min = min(sizes)
-                print(self.length_min)
-                print(self.size_min)
-                
-                self.remove_actors(scene)
-                # self.build_scene()
-                self.mem = GlobalHorizon()
-                self.add_actors(scene, self.tractograms, threshold=sv)
+                print('QBX threshold new ...')
+                print('mem.cluster_thr', self.mem.cluster_thr)
+                print('length_min', self.length_min)
+                print('size_min', self.size_min)
+
                 self.show_m.render()
 
             slider_threshold.handle_events(slider_threshold.handle.actor)
