@@ -138,10 +138,11 @@ class Horizon(object):
         self.tractogram_clusters = {}
         self.recorded_events = recorded_events
         self.show_m = None
-        self.mem = GlobalHorizon()
+        # self.mem = GlobalHorizon()
 
     def build_scene(self):
 
+        self.mem = GlobalHorizon()
         scene = window.Renderer()
         for (t, streamlines) in enumerate(self.tractograms):
             if self.random_colors:
@@ -382,8 +383,23 @@ class Horizon(object):
 
             def change_threshold(istyle, obj, slider):
                 sv = np.round(slider.value, 0)
+                print('QBX threshold ...')
+                print(self.length_min)
+                print(self.size_min)
+                lengths = np.array(
+                    [self.cla[c]['length'] for c in self.cla])
+                szs = [self.cla[c]['size'] for c in self.cla]
+                sizes = np.array(szs)
+                self.length_min = min(lengths)
+                self.size_min = min(sizes)
+                print(self.length_min)
+                print(self.size_min)
+                
                 self.remove_actors(scene)
+                # self.build_scene()
+                self.mem = GlobalHorizon()
                 self.add_actors(scene, self.tractograms, threshold=sv)
+                self.show_m.render()
 
             slider_threshold.handle_events(slider_threshold.handle.actor)
             slider_threshold.on_left_mouse_button_released = change_threshold
