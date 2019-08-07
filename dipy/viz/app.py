@@ -147,78 +147,6 @@ class Horizon(object):
         scene = window.Scene()
         self.add_actors(scene, self.tractograms,
                         self.cluster_thr, callbacks=False)
-        """
-        for (t, streamlines) in enumerate(self.tractograms):
-            if self.random_colors:
-                colors = self.prng.random_sample(3)
-            else:
-                colors = None
-
-            if self.cluster:
-
-                print(' Clustering threshold {} \n'.format(self.cluster_thr))
-                clusters = qbx_and_merge(streamlines,
-                                         [40, 30, 25, 20, self.cluster_thr])
-                self.tractogram_clusters[t] = clusters
-                centroids = clusters.centroids
-                print(' Number of centroids is {}'.format(len(centroids)))
-                sizes = np.array([len(c) for c in clusters])
-                linewidths = np.interp(sizes,
-                                       [sizes.min(), sizes.max()], [0.1, 2.])
-                centroid_lengths = np.array([length(c) for c in centroids])
-
-                print(' Minimum number of streamlines in cluster {}'
-                      .format(sizes.min()))
-
-                print(' Maximum number of streamlines in cluster {}'
-                      .format(sizes.max()))
-
-                print(' Construct cluster actors')
-                for (i, c) in enumerate(centroids):
-
-                    centroid_actor = actor.streamtube([c], colors,
-                                                      linewidth=linewidths[i],
-                                                      lod=False)
-                    scene.add(centroid_actor)
-                    self.mem.centroid_actors.append(centroid_actor)
-
-                    cluster_actor = actor.line(clusters[i],
-                                               lod=False)
-                    cluster_actor.GetProperty().SetRenderLinesAsTubes(1)
-                    cluster_actor.GetProperty().SetLineWidth(6)
-                    cluster_actor.GetProperty().SetOpacity(1)
-                    cluster_actor.VisibilityOff()
-
-                    scene.add(cluster_actor)
-                    self.mem.cluster_actors.append(cluster_actor)
-
-                    # Every centroid actor (cea) is paired to a cluster actor
-                    # (cla).
-
-                    self.cea[centroid_actor] = {
-                        'cluster_actor': cluster_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0, 'expanded': 0}
-
-                    self.cla[cluster_actor] = {
-                        'centroid_actor': centroid_actor,
-                        'cluster': i, 'tractogram': t,
-                        'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0}
-                    apply_shader(self, cluster_actor)
-                    apply_shader(self, centroid_actor)
-
-            else:
-
-                streamline_actor = actor.line(streamlines, colors=colors)
-                streamline_actor.GetProperty().SetEdgeVisibility(1)
-                streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
-                streamline_actor.GetProperty().SetLineWidth(6)
-                streamline_actor.GetProperty().SetOpacity(1)
-                scene.add(streamline_actor)
-                self.mem.streamline_actors.append(streamline_actor)
-        """
         return scene
 
     def remove_actors(self, scene):
@@ -518,6 +446,9 @@ class Horizon(object):
 
         self.show_m.initialize()
 
+        # TODO the twenty lines above are repeated in add_actor
+        # when callbacks parameter is True
+        # it would be much nicer if we can refactor here.
         def left_click_centroid_callback(obj, event):
 
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
@@ -589,9 +520,14 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
-                    sft = StatefulTractogram(saving_streamlines, 'same',
-                                             Space.RASMM)
-                    save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
+                    # TODO 'same' is not implemented
+                    # sft = StatefulTractogram(saving_streamlines, 'same',
+                    #                          Space.RASMM)
+                    # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
+                    from nibabel.streamlines import Tractogram, save
+                    tracto_save = Tractogram(saving_streamlines)
+                    tracto_save.affine_to_rasmm = np.eye(4)
+                    save(tracto_save, 'tmp.trk')
 
                 if key == 'y' or key == 'Y':
                     active_streamlines = Streamlines()
