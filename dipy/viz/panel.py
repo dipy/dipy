@@ -234,6 +234,13 @@ def slicer_panel(renderer, iren,
         r1, r2 = values
         apply_colormap(r1, r2)
 
+    # TODO trying to see why there is a small bug in double slider
+    double_slider.left_disk_value = 0
+    double_slider.right_disk_value = 98
+    double_slider.
+    double_slider.update(0)
+    double_slider.update(1)
+
     double_slider.on_change = on_change_ds
 
     opacity_slider = ui.LineSlider2D(min_value=0.0,
@@ -290,26 +297,26 @@ def slicer_panel(renderer, iren,
 
         x = mem.slicer_curr_x
         mem.slicer_curr_actor_x.display_extent(x,
-                                                   x, 0,
-                                                   shape[1] - 1, 0,
-                                                   shape[2] - 1)
+                                               x, 0,
+                                               shape[1] - 1, 0,
+                                               shape[2] - 1)
 
         mem.slicer_curr_actor_y = image_actor_z.copy()
         y = mem.slicer_curr_y
         mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1,
-                                                   y,
-                                                   y,
-                                                   0, shape[2] - 1)
+                                               y,
+                                               y,
+                                               0, shape[2] - 1)
 
         mem.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
-                                                left_click_picker_callback,
-                                                1.0)
+                                            left_click_picker_callback,
+                                            1.0)
         mem.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
-                                                left_click_picker_callback,
-                                                1.0)
+                                            left_click_picker_callback,
+                                            1.0)
         mem.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
-                                                left_click_picker_callback,
-                                                1.0)
+                                            left_click_picker_callback,
+                                            1.0)
         renderer.add(mem.slicer_curr_actor_z)
         renderer.add(mem.slicer_curr_actor_x)
         renderer.add(mem.slicer_curr_actor_y)
@@ -352,19 +359,19 @@ def slicer_panel(renderer, iren,
         mem.slicer_peaks_actor_z = peaks_actor_z
 
     mem.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
-                                            left_click_picker_callback,
-                                            1.0)
+                                        left_click_picker_callback,
+                                        1.0)
     mem.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
-                                            left_click_picker_callback,
-                                            1.0)
+                                        left_click_picker_callback,
+                                        1.0)
     mem.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
-                                            left_click_picker_callback,
-                                            1.0)
+                                        left_click_picker_callback,
+                                        1.0)
 
     if pam is not None:
         mem.slicer_peaks_actor_z.AddObserver('LeftButtonPressEvent',
-                                                 left_click_picker_callback,
-                                                 1.0)
+                                             left_click_picker_callback,
+                                             1.0)
 
     mem.slicer_curr_x = int(np.round(shape[0] / 2))
     mem.slicer_curr_y = int(np.round(shape[1] / 2))
@@ -478,7 +485,6 @@ def slicer_panel(renderer, iren,
     opacity_slider_label.actor.AddObserver('LeftButtonPressEvent',
                                            label_opacity_callback,
                                            1.0)
-
 
     if data.ndim == 4:
         panel_size = (400, 400 + 100)
