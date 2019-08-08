@@ -191,6 +191,8 @@ def slicer_panel(renderer, iren,
                                                    0, shape[2] - 1)
         mem.slicer_curr_y = y
 
+    # TODO there is some small bug when starting the app the handles
+    # are sitting a bit low
     double_slider = ui.LineDoubleSlider2D(length=140,
                                           initial_values=value_range,
                                           min_value=tmp.min(),
@@ -379,8 +381,6 @@ def slicer_panel(renderer, iren,
     volume_slider.handle_events(volume_slider.handle.actor)
     volume_slider.on_left_mouse_button_released = change_volume
 
-    # volume_slider.on_right_mouse_button_released = change_volume2
-
     line_slider_label_x = build_label(text="X Slice")
     line_slider_label_x.visibility = True
     x_counter = itertools.count()
@@ -459,6 +459,26 @@ def slicer_panel(renderer, iren,
     double_slider_label.actor.AddObserver('LeftButtonPressEvent',
                                           label_colormap_callback,
                                           1.0)
+
+    # volume_slider.on_right_mouse_button_released = change_volume2
+    def label_opacity_callback(obj, event):
+        if opacity_slider.value == 0:
+            opacity_slider.value = 100
+            opacity_slider.update()
+            slicer_opacity = 1
+        else:
+            opacity_slider.value = 0
+            opacity_slider.update()
+            slicer_opacity = 0
+        mem.slicer_curr_actor_x.opacity(slicer_opacity)
+        mem.slicer_curr_actor_y.opacity(slicer_opacity)
+        mem.slicer_curr_actor_z.opacity(slicer_opacity)
+        iren.Render()
+
+    opacity_slider_label.actor.AddObserver('LeftButtonPressEvent',
+                                           label_opacity_callback,
+                                           1.0)
+
 
     if data.ndim == 4:
         panel_size = (400, 400 + 100)

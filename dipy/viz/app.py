@@ -286,8 +286,8 @@ class Horizon(object):
             sizes = np.array(szs)
 
             # global self.panel2, slider_length, slider_size
-            self.panel2 = ui.Panel2D(size=(400, 400),
-                                     position=(850, 520),
+            self.panel2 = ui.Panel2D(size=(400, 200),
+                                     position=(850, 670),
                                      color=(1, 1, 1),
                                      opacity=0.1,
                                      align="right")
@@ -296,7 +296,7 @@ class Horizon(object):
             slider_threshold = ui.LineSlider2D(
                     min_value=5,
                     max_value=25,
-                    initial_value=15,
+                    initial_value=self.cluster_thr,
                     text_template="{value:.0f}",
                     length=140, shape='square')
             _color_slider(slider_threshold)
@@ -325,37 +325,22 @@ class Horizon(object):
 
             def change_threshold(istyle, obj, slider):
                 sv = np.round(slider.value, 0)
-                print('QBX threshold old ...')
-                print('mem.cluster_thr', self.mem.cluster_thr)
-                print('length_min', self.length_min)
-                print('size_min', self.size_min)
                 self.remove_actors(scene)
-                # self.build_scene()
-                # self.mem = GlobalHorizon()
                 self.add_actors(scene, self.tractograms, threshold=sv)
+
+                # TODO need to double check if this section is still needed
                 lengths = np.array(
                     [self.cla[c]['length'] for c in self.cla])
                 szs = [self.cla[c]['size'] for c in self.cla]
                 sizes = np.array(szs)
-                print('Lengths', lengths)
-                print('Sizes', sizes)
-
-                slider_size.min_value = sizes.min()
-                slider_size.max_value = sizes.max()
-                slider_size.value = sizes.min()
-                slider_size.update()
-
+                print(lengths)
+                print(sizes)
                 slider_length.min_value = lengths.min()
                 slider_length.max_value = lengths.max()
                 slider_length.value = lengths.min()
                 slider_length.update()
-
                 self.length_min = min(lengths)
                 self.size_min = min(sizes)
-                print('QBX threshold new ...')
-                print('mem.cluster_thr', self.mem.cluster_thr)
-                print('length_min', self.length_min)
-                print('size_min', self.size_min)
 
                 self.show_m.render()
 
@@ -390,29 +375,31 @@ class Horizon(object):
 
             slider_length.on_change = hide_clusters_length
 
-            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.133))
-            self.panel2.add_element(slider_threshold, coords=(0.4, 0.133))
+            # Clustering panel
+            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.26))
+            self.panel2.add_element(slider_threshold, coords=(0.4, 0.26))
 
-            self.panel2.add_element(slider_label_length, coords=(0.1, 0.333))
-            self.panel2.add_element(slider_length, coords=(0.4, 0.333))
+            self.panel2.add_element(slider_label_length, coords=(0.1, 0.52))
+            self.panel2.add_element(slider_length, coords=(0.4, 0.52))
 
             slider_size.on_change = hide_clusters_size
 
-            self.panel2.add_element(slider_label_size, coords=(0.1, 0.6666))
-            self.panel2.add_element(slider_size, coords=(0.4, 0.6666))
+            self.panel2.add_element(slider_label_size, coords=(0.1, 0.78))
+            self.panel2.add_element(slider_size, coords=(0.4, 0.78))
 
             scene.add(self.panel2)
 
-            text_block = build_label(HELP_MESSAGE, 16)
+            # Information panel
+            text_block = build_label(HELP_MESSAGE, 18)
             text_block.message = HELP_MESSAGE
 
-            help_panel = ui.Panel2D(size=(300, 200),
-                                    color=(1, 1, 1),
-                                    opacity=0.1,
+            self.help_panel = ui.Panel2D(size=(320, 200),
+                                    color=(0.8, 0.8, 1),
+                                    opacity=0.2,
                                     align="left")
 
-            help_panel.add_element(text_block, coords=(0.05, 0.1))
-            scene.add(help_panel)
+            self.help_panel.add_element(text_block, coords=(0.05, 0.1))
+            scene.add(self.help_panel)
 
         if len(self.images) > 0:
             # !!Only first image loading supported for now')
@@ -442,7 +429,7 @@ class Horizon(object):
                     self.panel.re_align(size_change)
                 if self.cluster:
                     self.panel2.re_align(size_change)
-                    help_panel.re_align(size_change)
+                    self.help_panel.re_align(size_change)
 
         self.show_m.initialize()
 
@@ -510,6 +497,11 @@ class Horizon(object):
                                 self.cea[ca]['selected']
                     self.show_m.render()
 
+                # retract help panel
+                if key == 'o' or key == 'O':
+                    self.help_panel._set_position((-300, 0))
+                    self.show_m.render()
+
                 # save current result
                 if key == 's' or key == 'S':
                     saving_streamlines = Streamlines()
@@ -520,7 +512,7 @@ class Horizon(object):
                             indices = self.tractogram_clusters[t][c]
                             saving_streamlines.extend(Streamlines(indices))
                     print('Saving result in tmp.trk')
-                    # TODO 'same' is not implemented
+                    # TODO 'same' is not implemented correctly
                     # sft = StatefulTractogram(saving_streamlines, 'same',
                     #                          Space.RASMM)
                     # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
@@ -540,7 +532,8 @@ class Horizon(object):
 
                     # self.tractograms = [active_streamlines]
                     hz2 = Horizon([active_streamlines],
-                                  self.images, cluster=True, cluster_thr=5,
+                                  self.images, cluster=True,
+                                  cluster_thr=self.cluster_thr/2.,
                                   random_colors=self.random_colors,
                                   length_lt=np.inf,
                                   length_gt=0, clusters_lt=np.inf,
@@ -607,9 +600,8 @@ class Horizon(object):
 
             self.mem.window_timer_cnt += 1
             # TODO possibly add automatic rotation option
-            # cnt = self.mem.window_timer_cnt
-            # show_m.scene.azimuth(0.05 * cnt)
-            # show_m.render()
+            # self.show_m.scene.azimuth(0.01 * self.mem.window_timer_cnt)
+            # self.show_m.render()
 
         scene.reset_camera()
         scene.zoom(1.5)
