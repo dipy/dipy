@@ -21,8 +21,8 @@ except ImportError:
 
 from distutils.version import LooseVersion
 import sphinx
-if LooseVersion(sphinx.__version__) < LooseVersion('1'):
-    raise RuntimeError('Need sphinx >= 1 for numpydoc to work correctly')
+if LooseVersion(sphinx.__version__) < LooseVersion('2'):
+    raise RuntimeError('Need sphinx >= 2 for numpydoc to work correctly')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -33,7 +33,8 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # We load the nibabel release info into a dict by explicit execution
 rel = {}
-execfile(os.path.join('..', 'dipy', 'info.py'), rel)
+with open(os.path.join('..', 'dipy', 'info.py')) as f:
+    exec(f.read(), rel)
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -226,7 +227,7 @@ latex_documents = [
 #latex_use_parts = False
 
 # Additional stuff for the LaTeX preamble.
-latex_preamble = """
+latex_preamble = r"""
 \usepackage{amsfonts}
 """
 
