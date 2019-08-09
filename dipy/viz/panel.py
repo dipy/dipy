@@ -235,11 +235,11 @@ def slicer_panel(renderer, iren,
         apply_colormap(r1, r2)
 
     # TODO trying to see why there is a small bug in double slider
-    double_slider.left_disk_value = 0
-    double_slider.right_disk_value = 98
-    double_slider.
-    double_slider.update(0)
-    double_slider.update(1)
+    # double_slider.left_disk_value = 0
+    # double_slider.right_disk_value = 98
+
+    # double_slider.update(0)
+    # double_slider.update(1)
 
     double_slider.on_change = on_change_ds
 
@@ -252,6 +252,7 @@ def slicer_panel(renderer, iren,
     _color_slider(opacity_slider)
 
     def change_opacity(slider):
+
         slicer_opacity = slider.value
         mem.slicer_curr_actor_x.opacity(slicer_opacity)
         mem.slicer_curr_actor_y.opacity(slicer_opacity)
