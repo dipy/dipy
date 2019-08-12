@@ -97,11 +97,16 @@ each sub-plot (blue=DTI, red=CSD).
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches([12, 6])
-ax[0].plot(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask], 'o', color='b', label='DTI in CC')
-ax[0].plot(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask], 'o', color='r', label='CSD in CC')
-ax[1].plot(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask], 'o', color='b', label='DTI in CSO')
-ax[1].plot(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask], 'o', color='r', label='CSD in CSO')
-plt.legend(loc='upper left')
+ax[0].plot(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask], 'o', color='b',
+           label='DTI in CC')
+ax[0].plot(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask], 'o', color='r',
+           label='CSD in CC')
+ax[1].plot(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask], 'o', color='b',
+           label='DTI in CSO')
+ax[1].plot(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask], 'o', color='r',
+           label='CSD in CSO')
+ax[0].legend(loc='upper left')
+ax[1].legend(loc='upper left')
 for this_ax in ax:
     this_ax.set_xlabel('Data (relative to S0)')
     this_ax.set_ylabel('Model prediction (relative to S0)')
@@ -165,7 +170,7 @@ References
 
 .. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
    of Statistical Learning: Data Mining, Inference and
-   Prediction. Springer-Verlag, Berlin  
+   Prediction. Springer-Verlag, Berlin
 
 .. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
    Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple
