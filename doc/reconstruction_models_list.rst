@@ -62,6 +62,14 @@
         <td><a href='https://www.sciencedirect.com/science/article/pii/S1053811911006148'>Fieremans 2011</a></td>
     </tr>
     <tr>
+        <td><a href='#diffusion-kurtosis-imaging'>Mean Signal DKI</a></td>
+        <td class='red'>No</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='https://www.repository.cam.ac.uk/handle/1810/281993'>Henriques, 2018</a></td>
+    </tr>
+    <tr>
         <td><a href='#q-ball-constant-solid-angle'>CSA</a></td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
@@ -84,6 +92,14 @@
         <td class='red'>No</td>
         <td></td>
         <td><a href=''>LeBihan 1984</a></td>
+    </tr>
+    <tr>
+        <td><a href='#intravoxel-incoherent-motion-ivim'>IVIM Variable Projection</a></td>
+        <td class='red'>No</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href=''>Fadnavis 2019</a></td>
     </tr>
     <tr>
         <td>SDT</td>
@@ -126,12 +142,12 @@
         <td><a href=''>Rokem 2015</a></td>
     </tr>
     <tr>
-        <td><a href='#q-ball-constant-solid-angle'>Q-Ball</a></td>
+        <td><a href='#q-ball-constant-solid-angle'>Q-Ball (OPDT)</a></td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href=''>Tuch 2004</a></td>
+        <td><a href=''>Tuch 2004</a>, <a href=''>Tristan-Vega 2010</a></td>
     </tr>
     <tr>
         <td><a href='#simple-harmonic-oscillator-based-reconstruction-and-estimation'>SHORE</a></td>
@@ -166,20 +182,12 @@
         <td><a href=''>Tournier 2017</a></td>
     </tr>
     <tr>
-        <td>M-CSD</td>
-        <td class='red'>No</td>
-        <td class='green'>Yes</td>
-        <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Jeurissen 2009</a></td>
-    </tr>
-    <tr>
         <td>MS/MT CSD</td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
-        <td></td>
+        <td><a href=''>Jeurissen 2009</a></td>
     </tr>
     <tr>
         <td><a href='#fiber-orientation-estimated-using-continuous-axially-symmetric-tensors'>ForeCast</a></td>
@@ -188,30 +196,6 @@
         <td class='red'>No</td>
         <td></td>
         <td><a href=''>Anderson 2005</a></td>
-    </tr>
-    <tr>
-        <td>OPDT</td>
-        <td class='green'>Yes</td>
-        <td class='red'>No</td>
-        <td class='red'>No</td>
-        <td></td>
-        <td><a href=''>Tristan-Vega 2010</a></td>
-    </tr>
-    <tr>
-        <td>ActiveAx</td>
-        <td class='red'>No</td>
-        <td class='green'>Yes</td>
-        <td class='red'>No</td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>Noddi / NoddiX</td>
-        <td class='red'>No</td>
-        <td class='green'>Yes</td>
-        <td class='red'>No</td>
-        <td></td>
-        <td></td>
     </tr>
     <tr>
         <td>Ball & Stick</td>
