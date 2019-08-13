@@ -8,7 +8,7 @@ import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import save_nifti
 from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow)
 
@@ -38,8 +38,6 @@ def test_nlmeans_flow():
 def test_lpca_flow():
     with TemporaryDirectory() as out_dir:
         data_path, fbvals, fbvecs = get_fnames()
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
 
         lpca_flow = LPCAFlow()
         lpca_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)

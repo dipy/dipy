@@ -19,8 +19,8 @@ class NLMeansFlow(Workflow):
     def get_short_name(cls):
         return 'nlmeans'
 
-    def run(self, input_files, sigma=0, out_dir='',
-            out_denoised='dwi_nlmeans.nii.gz'):
+    def run(self, input_files, sigma=0, patch_radius=1, block_radius=5,
+            rician=True, out_dir='', out_denoised='dwi_nlmeans.nii.gz'):
         """Workflow wrapping the nlmeans denoising method.
 
         It applies nlmeans denoise on each file found by 'globing'
@@ -35,10 +35,24 @@ class NLMeansFlow(Workflow):
         sigma : float, optional
             Sigma parameter to pass to the nlmeans algorithm
             (default: auto estimation).
+        patch_radius : int, optional
+            patch size is ``2 x patch_radius + 1``. Default is 1.
+        block_radius : int, optional
+            block size is ``2 x block_radius + 1``. Default is 5.
+        rician : bool, optional
+            If True the noise is estimated as Rician, otherwise Gaussian noise
+            is assumed.
         out_dir : string, optional
             Output directory (default input file directory)
         out_denoised : string, optional
             Name of the resulting denoised volume (default: dwi_nlmeans.nii.gz)
+
+        References
+        ----------
+        .. [Descoteaux08] Descoteaux, Maxime and Wiest-Daesslé, Nicolas and
+        Prima, Sylvain and Barillot, Christian and Deriche, Rachid.
+        Impact of Rician Adapted Non-Local Means Filtering on
+        HARDI, MICCAI 2008
 
         """
         io_it = self.get_io_iterator()
@@ -55,7 +69,10 @@ class NLMeansFlow(Workflow):
                     sigma = estimate_sigma(data)
                     logging.debug('Found sigma {0}'.format(sigma))
 
-                denoised_data = nlmeans(data, sigma)
+                denoised_data = nlmeans(data, sigma=sigma,
+                                        patch_radius=patch_radius,
+                                        block_radius=block_radius,
+                                        rician=rician)
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info('Denoised volume saved as {0}'.format(odenoised))
