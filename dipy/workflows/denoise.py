@@ -61,7 +61,7 @@ class NLMeansFlow(Workflow):
                 shutil.copy(fpath, odenoised)
                 logging.warning('Denoising skipped for now.')
             else:
-                logging.info('Denoising {0}'.format(fpath))
+                logging.info('Denoising %s', fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
 
                 if sigma == 0:
@@ -75,7 +75,7 @@ class NLMeansFlow(Workflow):
                                         rician=rician)
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
-                logging.info('Denoised volume saved as {0}'.format(odenoised))
+                logging.info('Denoised volume saved as %s', odenoised)
 
 
 class LPCAFlow(Workflow):
@@ -154,7 +154,7 @@ class LPCAFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, bval, bvec, odenoised in io_it:
-            logging.info('Denoising {0}'.format(dwi))
+            logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             if not sigma:
@@ -164,7 +164,7 @@ class LPCAFlow(Workflow):
                                       atol=bvecs_tol)
                 sigma = pca_noise_estimate(data, gtab, correct_bias=True,
                                            smooth=3)
-                logging.debug('Found sigma {0}'.format(sigma))
+                logging.debug('Found sigma %s', sigma)
 
             denoised_data = localpca(data, sigma=sigma,
                                      patch_radius=patch_radius,
@@ -172,7 +172,7 @@ class LPCAFlow(Workflow):
                                      tau_factor=tau_factor)
             save_nifti(odenoised, denoised_data, affine, image.header)
 
-            logging.info('Denoised volume saved as {0}'.format(odenoised))
+            logging.info('Denoised volume saved as %s', odenoised)
 
 
 class MPPCAFlow(Workflow):
@@ -223,7 +223,7 @@ class MPPCAFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, odenoised, osigma in io_it:
-            logging.info('Denoising {0}'.format(dwi))
+            logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             denoised_data, sigma = mppca(data, patch_radius=patch_radius,
@@ -231,10 +231,10 @@ class MPPCAFlow(Workflow):
                                          return_sigma=True)
 
             save_nifti(odenoised, denoised_data, affine, image.header)
-            logging.info('Denoised volume saved as {0}'.format(odenoised))
+            logging.info('Denoised volume saved as %s', odenoised)
             if return_sigma:
                 save_nifti(osigma, sigma, affine, image.header)
-                logging.info('Sigma volume saved as {0}'.format(osigma))
+                logging.info('Sigma volume saved as %s', osigma)
 
 
 class GibbsRingingFlow(Workflow):
@@ -275,11 +275,11 @@ class GibbsRingingFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         for dwi, ounring in io_it:
-            logging.info('Unringing {0}'.format(dwi))
+            logging.info('Unringing %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
 
             unring_data = gibbs_removal(data, slice_axis=slice_axis,
                                         n_points=n_points)
 
             save_nifti(ounring, unring_data, affine, image.header)
-            logging.info('Denoised volume saved as {0}'.format(ounring))
+            logging.info('Denoised volume saved as %s', ounring)
