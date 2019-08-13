@@ -43,7 +43,10 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/19623619'>Pasternak 2009</a></td>
+        <td>
+            <a href='https://www.ncbi.nlm.nih.gov/pubmed/19623619'>Pasternak 2009</a>,
+            <a href='https://github.com/ReScience-Archives/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017/raw/master/article/Henriques-Rokem-Garyfallidis-St-Jean-Peterson-Correia-2017.pdf'>Henriques et al., 2017</a>
+        </td>
     </tr>
     <tr>
         <td><a href='#diffusion-kurtosis-imaging'>DKI - Standard</a></td>
@@ -54,7 +57,7 @@
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/15906300'>Jensen 2005</a></td>
     </tr>
     <tr>
-        <td><a href='#diffusion-kurtosis-imaging'>DKI - Micro</a></td>
+        <td><a href='#diffusion-kurtosis-imaging'>DKI - Micro (WMTI)</a></td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
