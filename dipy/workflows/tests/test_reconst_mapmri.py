@@ -10,25 +10,25 @@ from dipy.reconst import mapmri
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
-from dipy.workflows.reconst import ReconstMAPMRIFlow
+from dipy.workflows.reconst import FitMAPMRIFlow
 
 
 def test_reconst_mmri_laplacian():
-    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
+    reconst_mmri_core(FitMAPMRIFlow, lap=True, pos=False)
 
 
 def test_reconst_mmri_none():
-    reconst_mmri_core(ReconstMAPMRIFlow, lap=False, pos=False)
+    reconst_mmri_core(FitMAPMRIFlow, lap=False, pos=False)
 
 
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_both():
-    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
+    reconst_mmri_core(FitMAPMRIFlow, lap=True, pos=True)
 
 
 @np.testing.dec.skipif(not mapmri.have_cvxpy)
 def test_reconst_mmri_positivity():
-    reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
+    reconst_mmri_core(FitMAPMRIFlow, lap=True, pos=False)
 
 
 def reconst_mmri_core(flow, lap, pos):

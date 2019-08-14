@@ -10,7 +10,7 @@ from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.workflows.mask import MaskFlow
-from dipy.workflows.reconst import ReconstCSDFlow
+from dipy.workflows.reconst import FitCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
 
@@ -73,7 +73,7 @@ def test_particle_filtering_traking_workflows():
                      path)
 
         # CSD Reconstruction
-        reconst_csd_flow = ReconstCSDFlow()
+        reconst_csd_flow = FitCSDFlow()
         reconst_csd_flow.run(dwi_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, extract_pam_values=True)
 
@@ -118,7 +118,7 @@ def test_local_fiber_tracking_workflow():
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
-        reconst_csd_flow = ReconstCSDFlow()
+        reconst_csd_flow = FitCSDFlow()
         reconst_csd_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir, extract_pam_values=True)
 

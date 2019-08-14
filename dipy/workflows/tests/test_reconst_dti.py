@@ -7,19 +7,19 @@ import numpy as np
 from numpy.testing import assert_equal
 
 from dipy.data import get_fnames
-from dipy.workflows.reconst import ReconstDtiFlow
+from dipy.workflows.reconst import FitDtiFlow
 
 
 def test_reconst_dti_wls():
-    reconst_flow_core(ReconstDtiFlow)
+    reconst_flow_core(FitDtiFlow)
 
 
 def test_reconst_dti_nlls():
-    reconst_flow_core(ReconstDtiFlow, extra_args=[], extra_kwargs={})
+    reconst_flow_core(FitDtiFlow, extra_args=[], extra_kwargs={})
 
 
 def test_reconst_dti_alt_tensor():
-    reconst_flow_core(ReconstDtiFlow, extra_args=[],
+    reconst_flow_core(FitDtiFlow, extra_args=[],
                       extra_kwargs={'nifti_tensor': False})
 
 

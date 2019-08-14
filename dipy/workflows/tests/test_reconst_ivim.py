@@ -9,7 +9,7 @@ from numpy.testing import assert_equal
 
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import generate_bvecs, gradient_table
-from dipy.workflows.reconst import ReconstIvimFlow
+from dipy.workflows.reconst import FitIvimFlow
 
 
 def test_reconst_ivim():
@@ -49,7 +49,7 @@ def test_reconst_ivim():
         mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
-        ivim_flow = ReconstIvimFlow()
+        ivim_flow = FitIvimFlow()
 
         args = [data_path, temp_bval_path, temp_bvec_path, mask_path]
 

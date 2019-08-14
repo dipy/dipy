@@ -11,7 +11,7 @@ from numpy.testing import assert_equal
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import generate_bvecs
-from dipy.workflows.reconst import ReconstDkiFlow
+from dipy.workflows.reconst import FitDkiFlow
 
 
 def test_reconst_dki():
@@ -24,7 +24,7 @@ def test_reconst_dki():
         mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
         nib.save(mask_img, mask_path)
 
-        dki_flow = ReconstDkiFlow()
+        dki_flow = FitDkiFlow()
 
         args = [data_path, bval_path, bvec_path, mask_path]
 

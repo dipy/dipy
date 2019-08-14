@@ -11,17 +11,17 @@ from dipy.core.gradients import generate_bvecs
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
-from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
+from dipy.workflows.reconst import FitCSDFlow, FitCSAFlow
 from dipy.reconst.shm import sph_harm_ind_list
 logging.getLogger().setLevel(logging.INFO)
 
 
 def test_reconst_csa():
-    reconst_flow_core(ReconstCSAFlow)
+    reconst_flow_core(FitCSAFlow)
 
 
 def test_reconst_csd():
-    reconst_flow_core(ReconstCSDFlow)
+    reconst_flow_core(FitCSDFlow)
 
 
 def reconst_flow_core(flow):
