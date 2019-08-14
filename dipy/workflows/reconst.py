@@ -29,7 +29,7 @@ from dipy.reconst.ivim import IvimModel
 from dipy.reconst import mapmri
 
 
-class ReconstMAPMRIFlow(Workflow):
+class FitMAPMRIFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'mapmri'
@@ -213,7 +213,7 @@ class ReconstMAPMRIFlow(Workflow):
                          format(os.path.dirname(out_dir)))
 
 
-class ReconstDtiFlow(Workflow):
+class FitDtiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'dti'
@@ -405,7 +405,7 @@ class ReconstDtiFlow(Workflow):
         return tenfit, gtab
 
 
-class ReconstCSDFlow(Workflow):
+class FitCSDFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'csd'
@@ -585,7 +585,7 @@ class ReconstCSDFlow(Workflow):
             return io_it
 
 
-class ReconstCSAFlow(Workflow):
+class FitCSAFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'csa'
@@ -711,7 +711,7 @@ class ReconstCSAFlow(Workflow):
             return io_it
 
 
-class ReconstDkiFlow(Workflow):
+class FitDkiFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'dki'
@@ -897,7 +897,7 @@ class ReconstDkiFlow(Workflow):
         return dkfit, gtab
 
 
-class ReconstIvimFlow(Workflow):
+class FitIvimFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'ivim'
@@ -1019,3 +1019,49 @@ class ReconstIvimFlow(Workflow):
         ivimfit = ivimmodel.fit(data, mask)
 
         return ivimfit, gtab
+
+
+# Deprecated Workflow
+# Should be deleted on DIPY 1.3.x
+
+def print_deprecated_message(old_name, new_name):
+    msg = "'{0}' class name is deprecated.".format(old_name)
+    msg += " It will be removed on DIPY 1.3.x."
+    msg += " Please, use '{0}' instead".format(new_name)
+    warn(msg, category=PendingDeprecationWarning)
+
+
+class ReconstMAPMRIFlow(FitMAPMRIFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstMAPMRIFlow", "FitMAPMRIFlow")
+        super().__init__(*args, **kwargs)
+
+
+class ReconstDtiFlow(FitDtiFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstDtiFlow", "FitDtiFlow")
+        super().__init__(*args, **kwargs)
+
+
+class ReconstCSDFlow(FitCSDFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstCSDFlow", "FitCSDFlow")
+        super().__init__(*args, **kwargs)
+
+
+class ReconstCSAFlow(FitCSAFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstCSAFlow", "FitCSAFlow")
+        super().__init__(*args, **kwargs)
+
+
+class ReconstDkiFlow(FitDkiFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstDkiFlow", "FitDkiFlow")
+        super().__init__(*args, **kwargs)
+
+
+class ReconstIvimFlow(FitIvimFlow):
+    def __init__(self, *args, **kwargs):
+        print_deprecated_message("ReconstIvimFlow", "FitIvimFlow")
+        super().__init__(*args, **kwargs)
