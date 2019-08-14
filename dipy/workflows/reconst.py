@@ -1,5 +1,3 @@
-from __future__ import division, print_function, absolute_import
-
 import logging
 import numpy as np
 import os.path
@@ -44,8 +42,9 @@ class FitMAPMRIFlow(Workflow):
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
             out_parng='parng.nii.gz'):
-        """ Workflow for fitting the MAPMRI model (with optional Laplacian
-        regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
+        """Workflow for fitting the MAPMRI model.
+
+        Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
         non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
         format in input files provided by `data_files` and saves the nifti
         files to an output directory specified by `out_dir`.
@@ -112,6 +111,7 @@ class FitMAPMRIFlow(Workflow):
             Name of the Non-Gaussianity perpendicular to be saved
         out_parng : string, optional
             Name of the Non-Gaussianity parallel to be saved
+
         """
         io_it = self.get_io_iterator()
         for (dwi, bval, bvec, out_rtop, out_lapnorm, out_msd, out_qiv,
@@ -223,8 +223,10 @@ class FitDtiFlow(Workflow):
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz', nifti_tensor=True):
-        """ Workflow for tensor reconstruction and for computing DTI metrics.
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
+            nifti_tensor=True):
+        """Workflow for tensor reconstruction and for computing DTI metrics.
+
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
         ``input_files`` and saves the DTI metrics in a directory specified by
@@ -419,7 +421,7 @@ class FitCSDFlow(Workflow):
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Constrained spherical deconvolution
+        """Constrained spherical deconvolution.
 
         Parameters
         ----------
@@ -490,6 +492,7 @@ class FitCSDFlow(Workflow):
         .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
            the fibre orientation distribution in diffusion MRI: Non-negativity
            constrained super-resolved spherical deconvolution.
+
         """
         io_it = self.get_io_iterator()
 
@@ -599,7 +602,7 @@ class FitCSAFlow(Workflow):
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Constant Solid Angle.
+        """Constant Solid Angle.
 
         Parameters
         ----------
@@ -655,6 +658,7 @@ class FitCSAFlow(Workflow):
         ----------
         .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
            with Solid Angle Consideration.
+
         """
         io_it = self.get_io_iterator()
 
@@ -724,8 +728,9 @@ class FitDkiFlow(Workflow):
             out_evec='evecs.nii.gz', out_eval='evals.nii.gz',
             out_dk_tensor="dki_tensors.nii.gz",
             out_mk="mk.nii.gz", out_ak="ak.nii.gz", out_rk="rk.nii.gz"):
-        """ Workflow for Diffusion Kurtosis reconstruction and for computing
-        DKI metrics. Performs a DKI reconstruction on the files by 'globing'
+        """Workflow for Diffusion Kurtosis reconstruction.
+
+        Performs a DKI reconstruction on the files by 'globing'
         ``input_files`` and saves the DKI metrics in a directory specified by
         ``out_dir``.
 
@@ -799,6 +804,7 @@ class FitDkiFlow(Workflow):
            and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
            Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
            Resonance Imaging. MRM 53 (6):1432-40.
+
         """
         io_it = self.get_io_iterator()
 
@@ -907,8 +913,9 @@ class FitIvimFlow(Workflow):
             out_dir='', out_S0_predicted='S0_predicted.nii.gz',
             out_perfusion_fraction='perfusion_fraction.nii.gz',
             out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
-        """ Workflow for Intra-voxel Incoherent Motion reconstruction and for
-        computing IVIM metrics. Performs a IVIM reconstruction on the files
+        """Workflow for Intra-voxel Incoherent Motion reconstruction.
+
+        Performs a IVIM reconstruction on the files
         by 'globing' ``input_files`` and saves the IVIM metrics in a directory
         specified by ``out_dir``.
 
@@ -968,6 +975,7 @@ class FitIvimFlow(Workflow):
         .. [LeBihan84] Le Bihan, Denis, et al. "Separation of diffusion
                        and perfusion in intravoxel incoherent motion MR
                        imaging." Radiology 168.2 (1988): 497-505.
+
         """
 
         io_it = self.get_io_iterator()
