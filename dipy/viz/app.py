@@ -333,12 +333,17 @@ class Horizon(object):
                     [self.cla[c]['length'] for c in self.cla])
                 szs = [self.cla[c]['size'] for c in self.cla]
                 sizes = np.array(szs)
-                print(lengths)
-                print(sizes)
+
                 slider_length.min_value = lengths.min()
                 slider_length.max_value = lengths.max()
                 slider_length.value = lengths.min()
                 slider_length.update()
+
+                slider_size.min_value = sizes.min()
+                slider_size.max_value = sizes.max()
+                slider_size.value = sizes.min()
+                slider_size.update()
+
                 self.length_min = min(lengths)
                 self.size_min = min(sizes)
 
