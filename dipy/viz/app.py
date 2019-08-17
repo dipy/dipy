@@ -399,9 +399,9 @@ class Horizon(object):
             text_block.message = HELP_MESSAGE
 
             self.help_panel = ui.Panel2D(size=(320, 200),
-                                    color=(0.8, 0.8, 1),
-                                    opacity=0.2,
-                                    align="left")
+                                         color=(0.8, 0.8, 1),
+                                         opacity=0.2,
+                                         align="left")
 
             self.help_panel.add_element(text_block, coords=(0.05, 0.1))
             scene.add(self.help_panel)
