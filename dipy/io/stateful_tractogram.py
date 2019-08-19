@@ -85,9 +85,9 @@ class StatefulTractogram(object):
                             'Nifti or Trk filename, Nifti1Image or TrkFile, ' +
                             'Nifti1Header or trk.header (dict)')
 
-        (self.affine, self.dimensions,
-         self.voxel_sizes, self.voxel_order) = space_attributes
-        self._inv_affine = np.linalg.inv(self.affine)
+        (self._affine, self._dimensions,
+         self._voxel_sizes, self._voxel_order) = space_attributes
+        self._inv_affine = np.linalg.inv(self._affine)
 
         if space not in Space:
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
@@ -101,14 +101,14 @@ class StatefulTractogram(object):
     def __str__(self):
         """ Generate the string for printing """
         text = 'Affine: \n{}'.format(
-            np.array2string(self.affine,
+            np.array2string(self._affine,
                             formatter={'float_kind': lambda x: "%.6f" % x}))
         text += '\ndimensions: {}'.format(
-            np.array2string(self.dimensions))
+            np.array2string(self._dimensions))
         text += '\nvoxel_sizes: {}'.format(
-            np.array2string(self.voxel_sizes,
+            np.array2string(self._voxel_sizes,
                             formatter={'float_kind': lambda x: "%.2f" % x}))
-        text += '\nvoxel_order: {}'.format(self.voxel_order)
+        text += '\nvoxel_order: {}'.format(self._voxel_order)
 
         text += '\nstreamline_count: {}'.format(self._get_streamline_count())
         text += '\npoint_count: {}'.format(self._get_point_count())
@@ -126,13 +126,33 @@ class StatefulTractogram(object):
     @property
     def space_attributes(self):
         """ Getter for spatial attribute """
-        return self.affine, self.dimensions, self.voxel_sizes, \
-            self.voxel_order
+        return self._affine, self._dimensions, self._voxel_sizes, \
+            self._voxel_order
 
     @property
     def space(self):
         """ Getter for the current space """
         return self._space
+
+    @property
+    def affine(self):
+        """ Getter for the reference affine """
+        return self._affine
+
+    @property
+    def dimensions(self):
+        """ Getter for the reference dimensions """
+        return self._dimensions
+
+    @property
+    def voxel_sizes(self):
+        """ Getter for the reference voxel sizes """
+        return self._voxel_sizes
+
+    @property
+    def voxel_order(self):
+        """ Getter for the reference voxel_order """
+        return self._voxel_order
 
     @property
     def shifted_origin(self):
@@ -160,7 +180,7 @@ class StatefulTractogram(object):
         self._tractogram._streamlines = Streamlines(streamlines)
         self.data_per_point = self.data_per_point
         self.data_per_streamline = self.data_per_streamline
-        logging.warning('Streamlines has been modified')
+        logging.warning('Streamlines has been modified, caution')
 
     @property
     def data_per_point(self):
@@ -284,9 +304,9 @@ class StatefulTractogram(object):
             logging.debug(bbox_corners)
             is_valid = False
 
-        if np.any(bbox_corners[:, 0] > self.dimensions[0]) or \
-                np.any(bbox_corners[:, 1] > self.dimensions[1]) or \
-                np.any(bbox_corners[:, 2] > self.dimensions[2]):
+        if np.any(bbox_corners[:, 0] > self._dimensions[0]) or \
+                np.any(bbox_corners[:, 1] > self._dimensions[1]) or \
+                np.any(bbox_corners[:, 2] > self._dimensions[2]):
             logging.error('Voxel space values higher than dimensions')
             logging.debug(bbox_corners)
             is_valid = False
@@ -323,7 +343,7 @@ class StatefulTractogram(object):
         min_condition = np.min(self._tractogram.streamlines.data,
                                axis=1) < 0.0
         max_condition = np.any(self._tractogram.streamlines.data >
-                               self.dimensions, axis=1)
+                               self._dimensions, axis=1)
         ic_offsets_indices = np.where(np.logical_or(min_condition,
                                                     max_condition))[0]
 
@@ -370,7 +390,7 @@ class StatefulTractogram(object):
         if self._space == Space.VOX:
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.streamlines._data *= np.asarray(
-                    self.voxel_sizes)
+                    self._voxel_sizes)
                 self._space = Space.VOXMM
                 logging.info('Moved streamlines from vox to voxmm')
         else:
@@ -382,7 +402,7 @@ class StatefulTractogram(object):
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
-                    self.voxel_sizes)
+                    self._voxel_sizes)
                 self._space = Space.VOX
                 logging.info('Moved streamlines from voxmm to vox')
         else:
@@ -393,7 +413,7 @@ class StatefulTractogram(object):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
             if self._tractogram.streamlines.data.size > 0:
-                self._tractogram.apply_affine(self.affine)
+                self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from vox to rasmm')
         else:
@@ -416,8 +436,8 @@ class StatefulTractogram(object):
         if self._space == Space.VOXMM:
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
-                    self.voxel_sizes)
-                self._tractogram.apply_affine(self.affine)
+                    self._voxel_sizes)
+                self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from voxmm to rasmm')
         else:
@@ -430,7 +450,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._tractogram.streamlines._data *= np.asarray(
-                    self.voxel_sizes)
+                    self._voxel_sizes)
                 self._space = Space.VOXMM
                 logging.info('Moved streamlines from rasmm to voxmm')
         else:
@@ -445,10 +465,10 @@ class StatefulTractogram(object):
 
         shift = np.asarray([0.5, 0.5, 0.5])
         if self._space == Space.VOXMM:
-            shift = shift * self.voxel_sizes
+            shift = shift * self._voxel_sizes
         elif self._space == Space.RASMM:
             tmp_affine = np.eye(4)
-            tmp_affine[0:3, 0:3] = self.affine[0:3, 0:3]
+            tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
             shift = apply_affine(tmp_affine, shift)
         if self._shifted_origin:
             shift *= -1
