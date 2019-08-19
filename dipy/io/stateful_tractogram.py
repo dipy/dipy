@@ -364,9 +364,6 @@ class StatefulTractogram(object):
                                       data_per_streamline=tmp_data_per_streamline,
                                       affine_to_rasmm=np.eye(4))
 
-        self._tractogram.data_per_point = tmp_data_per_point
-        self._tractogram.data_per_streamline = tmp_data_per_streamline
-
         if old_space == Space.RASMM:
             self.to_rasmm()
         elif old_space == Space.VOXMM:
