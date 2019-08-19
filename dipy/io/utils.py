@@ -199,7 +199,7 @@ def get_reference_info(reference):
         voxel_sizes = header['voxel_sizes']
         voxel_order = header['voxel_order']
     elif is_sft:
-        affine, dimensions, voxel_sizes, voxel_order = reference.space_attribute
+        affine, dimensions, voxel_sizes, voxel_order = reference.space_attributes
     else:
         raise TypeError('Input reference is not one of the supported format')
 

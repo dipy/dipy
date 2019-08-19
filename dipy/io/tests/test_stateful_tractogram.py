@@ -372,7 +372,7 @@ def bounding_bbox_valid(shift):
 def remove_invalid_streamlines(resize):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
     if resize:
-        sft._dimensions[2] = 5
+        sft.dimensions[2] = 5
 
     sft.remove_invalid_streamlines()
     return len(sft)

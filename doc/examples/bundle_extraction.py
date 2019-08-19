@@ -37,12 +37,12 @@ target_file = get_target_tractogram_hcp()
 sft_atlas = load_trk(atlas_file, "same", bbox_valid_check=False)
 atlas = sft_atlas.streamlines
 atlas_header = create_tractogram_header(atlas_file,
-                                        *sft_atlas.space_attribute)
+                                        *sft_atlas.space_attributes)
 
 sft_target = load_trk(target_file, "same", bbox_valid_check=False)
 target = sft_target.streamlines
 target_header = create_tractogram_header(atlas_file,
-                                         *sft_atlas.space_attribute)
+                                         *sft_atlas.space_attributes)
 
 """
 let's visualize atlas tractogram and target tractogram before registration

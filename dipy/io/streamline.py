@@ -24,6 +24,9 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         The stateful tractogram to save
     filename : string
         Filename with valid extension
+    bbox_valid_check : bool
+        Verification for negative voxel coordinates or values above the
+        volume dimensions. Default is True, to enforce valid file.
 
     Returns
     -------
@@ -49,7 +52,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     if extension in ['.trk', '.tck']:
         tractogram_type = detect_format(filename)
         header = create_tractogram_header(tractogram_type,
-                                          *sft.space_attribute)
+                                          *sft.space_attributes)
         new_tractogram = Tractogram(sft.streamlines,
                                     affine_to_rasmm=np.eye(4))
 
@@ -102,6 +105,12 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         Information on the position of the origin,
         False is Trackvis standard, default (center of the voxel)
         True is NIFTI standard (corner of the voxel)
+    bbox_valid_check : bool
+        Verification for negative voxel coordinates or values above the
+        volume dimensions. Default is True, to enforce valid file.
+    trk_header_check : bool
+        Verification that the reference has the same header as the spatial
+        attributes as the input tractogram when a Trk is loaded
 
     Returns
     -------
