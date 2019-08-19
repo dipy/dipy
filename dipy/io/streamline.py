@@ -178,24 +178,25 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
 def load_generator(ttype):
     def f_gen(filename, reference, to_space=Space.RASMM,
-                shifted_origin=False, bbox_valid_check=True,
-                trk_header_check=True):
+              shifted_origin=False, bbox_valid_check=True,
+              trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
             raise ValueError('This function can only load {} file, for more'
                              ' generability use load_tractogram instead.'.format(ttype))
 
         sft = load_tractogram(filename, reference,
-                            to_space=Space.RASMM,
-                            shifted_origin=shifted_origin,
-                            bbox_valid_check=bbox_valid_check,
-                            trk_header_check=trk_header_check)
+                              to_space=Space.RASMM,
+                              shifted_origin=shifted_origin,
+                              bbox_valid_check=bbox_valid_check,
+                              trk_header_check=trk_header_check)
         return sft
 
     f_gen.__doc__ = load_tractogram.__doc__.replace(
         'from any format (trk, tck, vtk, fib, dpy)',
         'of the {} format'.format(ttype))
     return f_gen
+
 
 def save_generator(ttype):
     def f_gen(sft, filename, bbox_valid_check=True):
@@ -211,13 +212,13 @@ def save_generator(ttype):
     return f_gen
 
 
-save_trk = save_generator('.trk')
 load_trk = load_generator('.trk')
-save_tck = save_generator('.tck')
 load_tck = load_generator('.tck')
-save_vtk = save_generator('.vtk')
 load_vtk = load_generator('.vtk')
-save_fib = save_generator('.fib')
 load_fib = load_generator('.fib')
-save_dpy = save_generator('.dpy')
 load_dpy = load_generator('.dpy')
+save_trk = save_generator('.trk')
+save_tck = save_generator('.tck')
+save_vtk = save_generator('.vtk')
+save_fib = save_generator('.fib')
+save_dpy = save_generator('.dpy')
