@@ -161,6 +161,42 @@ def switch_voxel_sizes_from_voxmm():
                     sft_switch.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
+def to_rasmm_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_rasmm()
+    sft_2.to_space(Space.RASMM)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
+def to_voxmm_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_voxmm()
+    sft_2.to_space(Space.VOXMM)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
+def to_vox_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.RASMM)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.RASMM)
+
+    sft_1.to_vox()
+    sft_2.to_space(Space.VOX)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
 def trk_iterative_saving_loading():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
@@ -491,6 +527,12 @@ def test_equal_in_voxmm_space():
 def test_switch_reference():
     switch_voxel_sizes_from_rasmm()
     switch_voxel_sizes_from_voxmm()
+
+
+def test_to_space():
+    to_rasmm_equivalence()
+    to_voxmm_equivalence()
+    to_vox_equivalence()
 
 
 def test_empty_sft():

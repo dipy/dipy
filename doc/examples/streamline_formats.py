@@ -166,7 +166,7 @@ software such as Trackvis or MI-Brain.
 
 To access volume information in a grid, the corner of the voxel must be
 considered the origin in order to prevent negative values.
-Any operation doing interpolation or accession in a grid must use the
+Any operation doing interpolation or accessing a grid must use the
 function 'to_vox()' and 'to_corner()'
 """
 
