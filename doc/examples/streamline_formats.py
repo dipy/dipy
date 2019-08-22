@@ -75,7 +75,7 @@ rpt_sft = load_tractogram(bundles_filename[4], reference_anatomy,
 
 """
 The function ``load_tractogram`` requires a reference, any of the following
-input is considered valid (as long as they are in the same share space)
+inputs is considered valid (as long as they are in the same share space)
 - Nifti filename
 - Trk filename
 - nib.nifti1.Nifti1Image
