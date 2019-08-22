@@ -31,7 +31,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     Returns
     -------
     output : bool
-        If the saving operation was successful
+        True if the saving operation was successful
     """
 
     _, extension = os.path.splitext(filename)
