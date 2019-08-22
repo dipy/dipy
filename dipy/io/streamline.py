@@ -195,7 +195,7 @@ def load_generator(ttype):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
             raise ValueError('This function can only load {} files, for a more'
-                             ' generability use load_tractogram instead.'.format(ttype))
+                             ' general purpose, use load_tractogram instead.'.format(ttype))
 
         sft = load_tractogram(filename, reference,
                               to_space=Space.RASMM,
