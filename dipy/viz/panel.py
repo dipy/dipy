@@ -1,8 +1,15 @@
+import os
 import numpy as np
 from dipy.utils.optpkg import optional_package
 import itertools
+from nibabel.tmpdirs import InTemporaryDirectory
 
 fury, have_fury, setup_module = optional_package('fury')
+_, have_imread, _ = optional_package('Image')
+matplotlib, have_mpl, _ = optional_package("matplotlib")
+
+if have_imread:
+    from scipy.misc import imread
 
 if have_fury:
     from dipy.viz import actor, ui, colormap
@@ -155,10 +162,10 @@ def slicer_panel(renderer, iren,
     def change_slice_z(slider):
         z = int(np.round(slider.value))
         mem.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
-                                                   0, shape[1] - 1, z, z)
+                                               0, shape[1] - 1, z, z)
         if pam is not None:
             mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
-                                                        0, shape[1] - 1, z, z)
+                                                    0, shape[1] - 1, z, z)
         mem.slicer_curr_z = z
 
     line_slider_x = ui.LineSlider2D(min_value=0,
@@ -172,7 +179,7 @@ def slicer_panel(renderer, iren,
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         mem.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                                   shape[2] - 1)
+                                               shape[2] - 1)
         mem.slicer_curr_x = x
         mem.window_timer_cnt += 100
 
@@ -188,7 +195,7 @@ def slicer_panel(renderer, iren,
         y = int(np.round(slider.value))
 
         mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
-                                                   0, shape[2] - 1)
+                                               0, shape[2] - 1)
         mem.slicer_curr_y = y
 
     # TODO there is some small bug when starting the app the handles
@@ -262,7 +269,8 @@ def slicer_panel(renderer, iren,
                                     max_value=data.shape[-1] - 1,
                                     initial_value=0,
                                     length=140,
-                                    text_template="{value:.0f}", shape='square')
+                                    text_template="{value:.0f}",
+                                    shape='square')
 
     _color_slider(volume_slider)
 
@@ -530,3 +538,51 @@ def slicer_panel(renderer, iren,
     apply_colormap(r1, r2)
 
     return panel
+
+
+def matplotlib_figure_to_numpy(fig, dpi=100, fname=None, flip_up_down=True,
+                               transparent=False):
+    r""" Convert a Matplotlib figure to a 3D numpy array with RGBA channels
+    Parameters
+    ----------
+    fig : obj,
+        A matplotlib figure object
+    dpi : int
+        Dots per inch
+    fname : str
+        If ``fname`` is given then the array will be saved as a png to this
+        position.
+    flip_up_down : bool
+        The origin is different from matlplotlib default and VTK's default
+        behaviour (default True).
+    transparent : bool
+        Make background transparent (default False).
+    Returns
+    -------
+    arr : ndarray
+        a numpy 3D array of RGBA values
+    Notes
+    ------
+    The safest way to read the pixel values from the figure was to save them
+    using savefig as a png and then read again the png. There is a cleaner
+    way found here http://www.icare.univ-lille1.fr/drupal/node/1141 where
+    you can actually use fig.canvas.tostring_argb() to get the values directly
+    without saving to the disk. However, this was not stable across different
+    machines and needed more investigation from what time permited.
+    """
+
+    if fname is None:
+        with InTemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'tmp.png')
+            fig.savefig(fname, dpi=dpi, transparent=transparent,
+                        bbox_inches='tight', pad_inches=0)
+            arr = imread(fname)
+    else:
+        fig.savefig(fname, dpi=dpi, transparent=transparent,
+                    bbox_inches='tight', pad_inches=0)
+        arr = imread(fname)
+
+    if flip_up_down:
+        arr = np.flipud(arr)
+
+    return arr
