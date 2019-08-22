@@ -251,7 +251,7 @@ class StatefulTractogram(object):
             self.to_rasmm()
         else:
             logging.error('Unsupported target space, please use Enum in '
-                          'Dipy.io.stateful_tractogram')
+                          'dipy.io.stateful_tractogram')
 
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
