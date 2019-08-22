@@ -359,7 +359,8 @@ class StatefulTractogram(object):
 
         tmp_streamlines = self.streamlines[indices_to_keep]
         tmp_data_per_point = self._tractogram.data_per_point[indices_to_keep]
-        tmp_data_per_streamline = self._tractogram.data_per_streamline[indices_to_keep]
+        tmp_data_per_streamline =\
+         self._tractogram.data_per_streamline[indices_to_keep]
 
         self._tractogram = Tractogram(list(tmp_streamlines),
                                       data_per_point=tmp_data_per_point,
