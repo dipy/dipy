@@ -194,7 +194,7 @@ def load_generator(ttype):
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
-            raise ValueError('This function can only load {} file, for more'
+            raise ValueError('This function can only load {} files, for a more'
                              ' generability use load_tractogram instead.'.format(ttype))
 
         sft = load_tractogram(filename, reference,
