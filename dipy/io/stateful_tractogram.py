@@ -180,7 +180,7 @@ class StatefulTractogram(object):
         self._tractogram._streamlines = Streamlines(streamlines)
         self.data_per_point = self.data_per_point
         self.data_per_streamline = self.data_per_streamline
-        logging.warning('Streamlines has been modified, caution')
+        logging.warning('Streamlines has been modified')
 
     @property
     def data_per_point(self):
@@ -241,6 +241,8 @@ class StatefulTractogram(object):
             self._voxmm_to_rasmm()
 
     def to_space(self, target_space):
+        """ Safe function to transform streamlines to a particular space using
+        an enum and update state """
         if target_space == Space.VOX:
             self.to_vox()
         elif target_space == Space.VOXMM:

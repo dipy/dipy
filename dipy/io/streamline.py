@@ -177,6 +177,18 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
 
 def load_generator(ttype):
+    """ Generate a loading function that performs a file extension 
+    check to restrict the user to a single file format.
+
+    Parameters
+    ----------
+    sft : string
+        Extension of the file format that requires a loader
+    Returns
+    -------
+    output : function
+        Function (load_tractogram) that handle only one file format
+    """
     def f_gen(filename, reference, to_space=Space.RASMM,
               shifted_origin=False, bbox_valid_check=True,
               trk_header_check=True):
@@ -199,6 +211,18 @@ def load_generator(ttype):
 
 
 def save_generator(ttype):
+    """ Generate a saving function that performs a file extension 
+    check to restrict the user to a single file format.
+
+    Parameters
+    ----------
+    sft : string
+        Extension of the file format that requires a saver
+    Returns
+    -------
+    output : function
+        Function (save_tractogram) that handle only one file format
+    """
     def f_gen(sft, filename, bbox_valid_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
