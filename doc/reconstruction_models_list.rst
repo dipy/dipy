@@ -158,7 +158,10 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href=''>Merlet 2013</a></td>
+        <td>
+            <a href=''>Merlet 2013</a>,
+            <a href=''>Özarslan 2009</a>,
+            <a href=''>Özarslan 2008</a></td>
     </tr>
     <tr>
         <td><a href='#mean-apparent-propagator-map-mri'>MAP-MRI</a></td>
