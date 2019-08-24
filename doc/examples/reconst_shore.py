@@ -4,8 +4,9 @@ Continuous and analytical diffusion signal modelling with 3D-SHORE
 ==================================================================
 
 We show how to model the diffusion signal as a linear combination
-of continuous functions from the SHORE basis [Merlet2013]_.
-We also compute the analytical Orientation Distribution Function (ODF).
+of continuous functions from the SHORE basis [Merlet2013]_, [Özarslan2008]_,
+[Özarslan2009]_. We also compute the analytical Orientation Distribution
+Function (ODF).
 
 First import the necessary modules:
 """
@@ -102,6 +103,13 @@ if interactive:
 
 References
 ----------
+.. [Özarslan2008] Özarslan E. et al., "Simple harmonic oscillator based
+   estimation and reconstruction for one-dimensional q-space MR,” in Proc Intl
+   Soc Mag Reson Med, 16, Toronto, Canada, 2008
+
+.. [Özarslan2009] Özarslan E. et al., "Simple harmonic oscillator based
+   reconstruction and estimation for three-dimensional q-space MRI," in Proc
+   Intl Soc Mag Reson Med, 17, Honolulu, HI, 2009
 
 .. [Merlet2013] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
    estimation via Compressive Sensing in diffusion MRI", Medical Image
