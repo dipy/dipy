@@ -475,9 +475,9 @@ class StatefulTractogram(object):
 
         self._tractogram.streamlines._data += shift
         if not self._shifted_origin:
-            logging.info('Origin moved to the center of voxel')
-        else:
             logging.info('Origin moved to the corner of voxel')
+        else:
+            logging.info('Origin moved to the center of voxel')
 
         self._shifted_origin = not self._shifted_origin
 
