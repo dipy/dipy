@@ -123,6 +123,7 @@ before_install:
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
           $PIPI xvfbwrapper;
+          XVFB_RUN = "xvfb-run ";
       fi
 install:
     - |
@@ -156,6 +157,6 @@ script:
       cp ../.codecov.yml .;
       COVER_CMD="coverage run -m ";
       fi
-    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
+    - $XVFB_RUN $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi

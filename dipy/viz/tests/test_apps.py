@@ -14,22 +14,78 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # we will have to skip this as creates issues with xvfb (XIO error)
-@npt.dec.skipif(True)
-@xvfb_it
+@npt.dec.skipif(skip_it or not has_fury)
+#@xvfb_it
 def test_horizon_events():
-
     affine = np.diag([2., 1, 1, 1]).astype('f8')
     data = 255 * np.random.rand(150, 150, 150)
     images = [(data, affine)]
+    # images = None
+    from dipy.segment.tests.test_bundles import setup_module
+    setup_module()
     from dipy.segment.tests.test_bundles import f1
     streamlines = f1.copy()
     tractograms = [streamlines]
-    fname = os.path.join(DATA_DIR, 'record_01.log.gz')
+    # tractograms = None
 
-    horizon(tractograms, images=images, cluster=True, cluster_thr=5,
-            random_colors=False, length_lt=np.inf, length_gt=0,
-            clusters_lt=np.inf, clusters_gt=0,
-            world_coords=True, interactive=True, recorded_events=fname)
+    # enable = [1, 2, 3, 4]
+    enable = [1, 2]
+
+    if 1 in enable: # just close
+        # Read interesting discussion here
+        # Passive observer should not call AddObserver or RemoveObserver in callback.
+        # https://stackoverflow.com/questions/2452532/memory-allocation-in-xvfb
+        fname = os.path.join(DATA_DIR, 'record_01.log.gz')
+
+        horizon(tractograms=tractograms, images=images, pams=None,
+                cluster=True, cluster_thr=5.0,
+                random_colors=False, length_gt=0, length_lt=np.inf,
+                clusters_gt=0, clusters_lt=np.inf,
+                world_coords=True, interactive=True, out_png='tmp.png',
+                recorded_events=fname)
+
+    if 2 in enable: # just zoom
+
+        fname = os.path.join(DATA_DIR, 'record_02.log.gz')
+
+        horizon(tractograms=tractograms, images=images, pams=None,
+                cluster=True, cluster_thr=5.0,
+                random_colors=False, length_gt=0, length_lt=np.inf,
+                clusters_gt=0, clusters_lt=np.inf,
+                world_coords=True, interactive=True, out_png='tmp.png',
+                recorded_events=fname)
+
+    if 3 in enable: # select all centroids and expand
+        # Generic Warning: In /work/standalone-x64-build/VTK-source/Common/Core/vtkObject.cxx, line 533
+        # Passive observer should not call AddObserver or RemoveObserver in callback.
+
+        fname = os.path.join(DATA_DIR, 'record_03.log.gz')
+
+        horizon(tractograms=tractograms, images=images, pams=None,
+                cluster=True, cluster_thr=5.0,
+                random_colors=False, length_gt=0, length_lt=np.inf,
+                clusters_gt=0, clusters_lt=np.inf,
+                world_coords=True, interactive=True, out_png='tmp.png',
+                recorded_events=fname)
+
+    if 4 in enable: # select all centroids and expand
+        # Generic Warning: In /work/standalone-x64-build/VTK-source/Common/Core/vtkObject.cxx, line 533
+        # Passive observer should not call AddObserver or RemoveObserver in callback.
+
+        fname = os.path.join(DATA_DIR, 'record_04.log.gz')
+
+        horizon(tractograms=tractograms, images=images, pams=None,
+                cluster=True, cluster_thr=5.0,
+                random_colors=False, length_gt=0, length_lt=np.inf,
+                clusters_gt=0, clusters_lt=np.inf,
+                world_coords=True, interactive=True, out_png='tmp.png',
+                recorded_events=fname)
+
+
+
+
+    # exit(0)
+
 
 # see comment above
 @npt.dec.skipif(True)
@@ -39,6 +95,8 @@ def test_horizon_events2():
     affine = np.diag([2., 1, 1, 1]).astype('f8')
     data = 255 * np.random.rand(150, 150, 150)
     images = [(data, affine)]
+    from dipy.segment.tests.test_bundles import setup_module
+    setup_module()
     from dipy.segment.tests.test_bundles import f1
     streamlines = f1.copy()
     tractograms = [streamlines]
@@ -86,7 +144,7 @@ def test_horizon():
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
-            world_coords=False, interactive=False)
+            world_coords=True, interactive=False)
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
 
@@ -109,7 +167,7 @@ def test_horizon():
 if __name__ == '__main__':
 
     test_horizon_events()
-    test_horizon_events2()
-    test_horizon()
+    # test_horizon_events2()
+    # test_horizon()
 
 

@@ -85,7 +85,7 @@ class Horizon(object):
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
-                 out_png='tmp.png', recorded_events=None):
+                 out_png='tmp.png', recorded_events=None, return_showm=False):
         """ Highly interactive visualization - invert the Horizon!
 
         Parameters
@@ -109,6 +109,7 @@ class Horizon(object):
         out_png : string
         recorded_events : string
             File path to replay recorded events
+        return_showm : bool
 
         References
         ----------
@@ -140,6 +141,7 @@ class Horizon(object):
         self.recorded_events = recorded_events
         self.show_m = None
         # self.mem = GlobalHorizon()
+        self.return_showm = return_showm
 
     def build_scene(self):
 
@@ -614,28 +616,81 @@ class Horizon(object):
 
         if self.interactive:
 
+            self.show_m.add_window_callback(win_callback)
+            self.show_m.add_timer_callback(True, 200, timer_callback)
+            self.show_m.iren.AddObserver('KeyPressEvent', key_press)
+
+            if self.return_showm:
+                return self.show_m
+
             if self.recorded_events is None:
 
-                self.show_m.add_window_callback(win_callback)
-                self.show_m.add_timer_callback(True, 200, timer_callback)
-                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
                 self.show_m.render()
                 self.show_m.start()
 
             else:
 
-                self.show_m.add_window_callback(win_callback)
-                self.show_m.add_timer_callback(True, 200, timer_callback)
-                self.show_m.iren.AddObserver('KeyPressEvent', key_press)
-
-                # set to True if event recording needs updating
+                # set to True if event recorded file needs updating
                 recording = False
                 recording_filename = self.recorded_events
 
                 if recording:
                     self.show_m.record_events_to_file(recording_filename)
                 else:
+                    # print(self.show_m.scene)
+                    # print(self.show_m.iren)
                     self.show_m.play_events_from_file(recording_filename)
+                    # print(self.show_m.scene)
+                    # print(self.show_m.iren)
+
+                    # self.show_m.window.RemoveAllObservers()
+                    # self.show_m.exit()
+                    """
+                    if self.show_m.timers:
+                        self.show_m.destroy_timers()
+                    # self.show_m.iren.RemoveAllObservers()
+                    self.show_m.iren.TerminateApp()
+                    self.show_m.window.Finalize()
+                    # self.show_m.iren.TerminateApp()
+
+                    del self.show_m.iren
+                    del self.show_m.scene
+                    del self.show_m.window
+
+                    self.show_m.iren = None
+                    self.show_m.scene = None
+                    self.show_m.window = None
+                    import gc
+
+                    #objs = gc.get_objects()
+                    #print(objs)
+                    gc.collect()
+
+                    def clearall():
+                        # all = [var for var in globals() if "__" not in (var[:2], var[-2:])]
+                        all = [var for var in globals() if (var[:2], var[-2:]) != ("__", "__")]
+                        for var in all:
+                            print('globals', var)
+                            del globals()[var]
+                            # var = None
+                        all2 = [var for var in locals() if (var[:2], var[-2:]) != ("__", "__")]
+                        for var in all2:
+                            print('locals', var)
+                            del locals()[var]
+                            # var = None
+
+                    clearall()
+                    # exit(0)
+                    """
+                    # self.show_m.exit() # EXIT changes to XIO 2 from 22
+                    # self.show_m.window.RemoveRenderer(self.scene)
+                    # self.show_m.scene.SetRenderWindow(None)
+                    # del self.show_m.iren
+                    # del self.show_m.window
+                    # del self.cea
+                    # del self.cla
+                    # del self.mem
+                    # Idea iterate to all memory and make everything None
 
         else:
 
@@ -649,7 +704,7 @@ def horizon(tractograms=None, images=None, pams=None,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png',
-            recorded_events=None):
+            recorded_events=None, return_showm=False):
     """Highly interactive visualization - invert the Horizon!
 
     Parameters
@@ -686,8 +741,10 @@ def horizon(tractograms=None, images=None, pams=None,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
-                 out_png, recorded_events)
+                 out_png, recorded_events, return_showm)
 
     scene = hz.build_scene()
 
+    if return_showm:
+        return hz.build_show(scene)
     hz.build_show(scene)
