@@ -155,10 +155,10 @@ def slicer_panel(renderer, iren,
     def change_slice_z(slider):
         z = int(np.round(slider.value))
         mem.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
-                                                   0, shape[1] - 1, z, z)
+                                               0, shape[1] - 1, z, z)
         if pam is not None:
             mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
-                                                        0, shape[1] - 1, z, z)
+                                                    0, shape[1] - 1, z, z)
         mem.slicer_curr_z = z
 
     line_slider_x = ui.LineSlider2D(min_value=0,
@@ -172,7 +172,7 @@ def slicer_panel(renderer, iren,
     def change_slice_x(slider):
         x = int(np.round(slider.value))
         mem.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
-                                                   shape[2] - 1)
+                                               shape[2] - 1)
         mem.slicer_curr_x = x
         mem.window_timer_cnt += 100
 
@@ -188,7 +188,7 @@ def slicer_panel(renderer, iren,
         y = int(np.round(slider.value))
 
         mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
-                                                   0, shape[2] - 1)
+                                               0, shape[2] - 1)
         mem.slicer_curr_y = y
 
     # TODO there is some small bug when starting the app the handles
@@ -262,7 +262,8 @@ def slicer_panel(renderer, iren,
                                     max_value=data.shape[-1] - 1,
                                     initial_value=0,
                                     length=140,
-                                    text_template="{value:.0f}", shape='square')
+                                    text_template="{value:.0f}",
+                                    shape='square')
 
     _color_slider(volume_slider)
 
