@@ -97,14 +97,14 @@ each sub-plot (blue=DTI, red=CSD).
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches([12, 6])
-ax[0].plot(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0], 'o', color='b',
-           label='DTI in CC')
-ax[0].plot(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0], 'o', color='r',
-           label='CSD in CC')
-ax[1].plot(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0], 'o', color='b',
-           label='DTI in CSO')
-ax[1].plot(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0], 'o', color='r',
-           label='CSD in CSO')
+ax[0].plot(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0], 'o',
+           color='b', label='DTI in CC')
+ax[0].plot(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0], 'o',
+           color='r', label='CSD in CC')
+ax[1].plot(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0], 'o',
+           color='b', label='DTI in CSO')
+ax[1].plot(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0], 'o',
+           color='r', label='CSD in CSO')
 ax[0].legend(loc='upper left')
 ax[1].legend(loc='upper left')
 for this_ax in ax:
@@ -129,10 +129,14 @@ R-squared score:
 
 """
 
-cc_dti_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0])[0]**2
-cc_csd_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0])[0]**2
-cso_dti_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0])[0]**2
-cso_csd_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0])[0]**2
+cc_dti_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
+                           dti_cc[gtab.b0s_mask == 0])[0]**2
+cc_csd_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
+                           csd_cc[gtab.b0s_mask == 0])[0]**2
+cso_dti_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
+                            dti_cso[gtab.b0s_mask == 0])[0]**2
+cso_csd_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
+                            csd_cso[gtab.b0s_mask == 0])[0]**2
 
 print("Corpus callosum\n"
       "DTI R2 : %s\n"
