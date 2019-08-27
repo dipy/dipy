@@ -233,7 +233,7 @@ def is_header_compatible(reference_1, reference_2):
         reference_2)
 
     identical_header = True
-    if not np.allclose(affine_1, affine_2):
+    if not np.allclose(affine_1, affine_2, rtol=1e-03, atol=1e-03):
         logging.error('Affine not equal')
         identical_header = False
 
