@@ -5,6 +5,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 from dipy import __version__ as horizon_version
+from dipy.viz.gmem import GlobalHorizon
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -12,8 +13,6 @@ if has_fury:
     from dipy.viz import actor, window, ui
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
-    from dipy.viz.gmem import GlobalHorizon
-    from fury.tests.test_ui import EventCounter
     from fury.colormap import distinguishable_colormap
 
 
