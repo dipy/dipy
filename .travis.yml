@@ -123,7 +123,7 @@ before_install:
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
           $PIPI xvfbwrapper;
-          XVFB_RUN=xvfb-run --server-args="-screen 0 1920x1080x24";
+          XVFB_RUN=(xvfb-run --server-args="-screen 0 1920x1080x24" );
       fi
 install:
     - |
