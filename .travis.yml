@@ -11,8 +11,33 @@ cache:
     - $HOME/.cache/pip
 addons:
   apt:
+    sources:
+    - sourceline: ppa:ubuntu-x-swat/updates
+    - sourceline: ppa:oibaf/graphics-drivers
+    update: true
     packages:
-      - libhdf5-serial-dev
+    - libhdf5-serial-dev
+    - libglew-dev
+    - freeglut3-dev
+    - libxi-dev
+    - libxmu-dev
+    - xorg-dev
+    - libgl1-mesa-dev
+    - libgl1-mesa-glx
+    - libglapi-mesa
+    - libgl1-mesa-dri
+    - libgbm1
+    - libxatracker-dev
+    - libxcursor-dev
+    - libpulse-dev
+    - libxinerama-dev
+    - libxrandr-dev
+    - libxv-dev
+    - libasound2-dev
+    - libudev-dev
+    - mesa-utils
+    - xvfb
+    - mesa-common-dev
 
 env:
     global:
