@@ -498,7 +498,7 @@ def disperse_charges(hemi, iters, const=.2):
     return HemiSphere(xyz=charges), potential
 
 
-def _equality_constraints(vects, *args):
+def _equality_constraints(vects):
     """Spherical equality constraint. Returns 0 if vects lies on the unit
     sphere. Note that a flattened array is returned because `scipy.optimize`
     expects a 1-D array.
