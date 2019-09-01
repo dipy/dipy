@@ -1,9 +1,9 @@
-from dipy.reconst.mcsd import MultiShellDeconvModel, sim_response
+from dipy.reconst.mcsd import MultiShellDeconvModel
 from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
 
-from dipy.sims.voxel import multi_tensor
+from dipy.sims.voxel import multi_shell_fiber_response, multi_tensor
 from dipy.reconst import shm
 from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
@@ -31,7 +31,8 @@ def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
     shells = np.unique(gtab.bvals // 100.) * 100.
-    response = sim_response(sh_order, shells, evals_d, csf_md, gm_md)
+    response = multi_shell_fiber_response(sh_order, shells, evals_d, csf_md,
+                                          gm_md)
     model = MultiShellDeconvModel(gtab, response)
     iso = response.iso
 
@@ -60,8 +61,8 @@ def test_compartments():
     # test for failure if no. of compartments less than 2
     gtab = get_3shell_gtab()
     sh_order = 8
-    response = sim_response(sh_order, [0, 1000, 2000, 3500], evals_d, csf_md,
-                            gm_md)
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          evals_d, csf_md, gm_md)
     npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
 
 
@@ -81,8 +82,8 @@ def test_MultiShellDeconvModel():
     S_csf = np.exp(-gtab.bvals * csf_md)
 
     sh_order = 8
-    response = sim_response(sh_order, [0, 1000, 2000, 3500], evals_d, csf_md,
-                            gm_md)
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          evals_d, csf_md, gm_md)
     model = MultiShellDeconvModel(gtab, response)
     vf = [1.3, .8, 1.9]
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
