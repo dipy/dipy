@@ -6,8 +6,9 @@ import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, disperse_charges,
-                              _get_forces, unit_octahedron, unit_icosahedron,
-                              hemi_icosahedron)
+                              disperse_charges_alt, _get_forces,
+                              _get_forces_alt, unit_octahedron,
+                              unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 
 from numpy.testing.decorators import skipif
@@ -355,6 +356,26 @@ def test_disperse_charges():
     d_charges = d_sphere.vertices
     norms = np.sqrt((d_charges*d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
+
+
+def test_disperse_charges_alt():
+    # Create a random set of points
+    charges = np.random.random((3, 3))
+    charges /= vector_norm(charges, keepdims=True)
+    init_pointset = HemiSphere(xyz=charges)
+
+    # Compute the associated electrostatic potential
+    init_charges_potential = _get_forces_alt(init_pointset)
+
+    # Disperse charges
+    dispersed_pointset = disperse_charges_alt(init_pointset, 10)
+
+    # Compute the associated electrostatic potential
+    dispersed_charges_potential = _get_forces_alt(dispersed_pointset)
+
+    # Verify that the potential of the optimal configuration is smaller than
+    # that of the original configuration
+    nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
 
 
 if __name__ == "__main__":
