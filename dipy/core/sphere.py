@@ -633,7 +633,7 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
 
     Returns
     -------
-    array-like (N * 3,)
+    array-like (N, 3)
         Distributed points on a unit sphere.
 
     """
@@ -643,7 +643,7 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
                                 f_eqcons=_equality_constraints,
                                 fprime=_get_grad_forces_alt, iter=iters,
                                 acc=tol, args=(), iprint=0)
-    return vects
+    return vects.reshape((K, 3))
 
 
 def euler_characteristic_check(sphere, chi=2):
