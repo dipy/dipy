@@ -193,6 +193,7 @@ Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_registration`
+- :ref:`example_streamline_registration`
 
 ------------
 Segmentation
