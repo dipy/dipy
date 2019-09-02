@@ -6,7 +6,6 @@ from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import GradientTable
-from dipy.data import default_sphere
 from dipy.reconst.mcsd import MultiShellResponse
 from dipy.reconst.utils import dki_design_matrix
 from dipy.reconst import shm
@@ -1001,7 +1000,8 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     return msd
 
 
-def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md):
+def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
+                               sphere=None):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
@@ -1016,6 +1016,8 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md):
         CSF tissue mean diffusivity value.
     gm_md : float
         GM tissue mean diffusivity value.
+    sphere : `dipy.core.Sphere` instance, optional
+        Sphere where the signal will be evaluated.
 
     Returns
     -------
@@ -1032,7 +1034,11 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md):
     n = np.arange(0, sh_order + 1, 2)
     m = np.zeros_like(n)
 
-    big_sphere = default_sphere.subdivide()
+    if sphere is None:
+        from dipy.data import default_sphere
+        sphere = default_sphere
+
+    big_sphere = sphere.subdivide()
     theta, phi = big_sphere.theta, big_sphere.phi
 
     B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
