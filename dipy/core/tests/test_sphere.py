@@ -5,11 +5,10 @@ import numpy.testing as nt
 import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
-                              faces_from_sphere_vertices, HemiSphere,
-                              disperse_charges, _get_forces,
-                              unit_octahedron, unit_icosahedron,
+                              faces_from_sphere_vertices, disperse_charges,
+                              _get_forces, unit_octahedron, unit_icosahedron,
                               hemi_icosahedron)
-from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
+from dipy.core.geometry import cart2sphere, vector_norm
 
 from numpy.testing.decorators import skipif
 
