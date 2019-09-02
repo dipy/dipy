@@ -21,6 +21,7 @@ addons:
     - freeglut3-dev
     - libxi-dev
     - libxmu-dev
+    - libx11-dev
     - xorg-dev
     - libgl1-mesa-dev
     - libgl1-mesa-glx
@@ -85,7 +86,7 @@ matrix:
       env:
         - COVERAGE=1
         - VTK=1
-        # - TEST_WITH_XVFB=true
+        - TEST_WITH_XVFB=true
         - MESA_GL_VERSION_OVERRIDE=3.3
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"

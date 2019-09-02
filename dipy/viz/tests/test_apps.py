@@ -166,8 +166,9 @@ def test_horizon():
 
 if __name__ == '__main__':
 
-    test_horizon_events()
+    # test_horizon_events()
     # test_horizon_events2()
-    # test_horizon()
+    for i in range(5):
+        test_horizon()
 
 
