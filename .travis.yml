@@ -15,9 +15,11 @@ addons:
     - sourceline: ppa:ubuntu-x-swat/updates
     - sourceline: ppa:oibaf/graphics-drivers
     update: true
-    packages:
+    packages: # libglu1-mesa-dev
     - libhdf5-serial-dev
     - libglew-dev
+    - libglu1-mesa-dev
+    - glew-utils
     - freeglut3-dev
     - libxi-dev
     - libxmu-dev
