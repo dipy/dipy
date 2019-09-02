@@ -218,7 +218,7 @@ class LifeSignalMaker(object):
         evals : list of 3 items
             The eigenvalues of the canonical tensor to use in calculating the
             signal.
-        n_points : `dipy.core.Sphere` class instance
+        sphere : `dipy.core.Sphere` class instance
             The discrete sphere to use as an approximation for the continuous
             sphere on which the signal is represented. If integer - we will use
             an instance of one of the symmetric spheres cached in
