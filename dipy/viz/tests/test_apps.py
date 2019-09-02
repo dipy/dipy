@@ -14,7 +14,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # we will have to skip this as creates issues with xvfb (XIO error)
-@npt.dec.skipif(skip_it or not has_fury)
+@npt.dec.skipif(True)
 #@xvfb_it
 def test_horizon_events():
     affine = np.diag([2., 1, 1, 1]).astype('f8')
