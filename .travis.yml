@@ -15,6 +15,9 @@ addons:
     packages:
       - libhdf5-serial-dev
 
+services:
+  - xvfb
+
 env:
     global:
         - DEPENDS="cython numpy matplotlib h5py nibabel cvxpy"
@@ -65,8 +68,6 @@ matrix:
         - MESA_GL_VERSION_OVERRIDE=3.3
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
-      services:
-        - xvfb
 
     - python: 3.7
       dist: xenial
