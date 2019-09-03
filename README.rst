@@ -94,3 +94,4 @@ Reference
     S. Van Der Walt, M. Descoteaux, I. Nimmo-Smith and DIPY contributors,
     "DIPY, a library for the analysis of diffusion MRI data",
     Frontiers in Neuroinformatics, vol. 8, p. 8, Frontiers, 2014.
+
