@@ -58,7 +58,7 @@ def test_horizon_flow():
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
-            world_coords=False, interactive=False)
+            world_coords=True, interactive=False)
 #
     affine = np.diag([2., 1, 1, 1]).astype('f8')
 #
