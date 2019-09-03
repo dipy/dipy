@@ -57,6 +57,8 @@ matrix:
     - python: 3.7
       dist: xenial
       sudo: true   # This is set to true for apt-get
+      services:
+        - xvfb
       env:
         - COVERAGE=1
         - VTK=1
