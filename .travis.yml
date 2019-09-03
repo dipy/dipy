@@ -9,14 +9,10 @@ language: python
 cache:
   directories:
     - $HOME/.cache/pip
-
 addons:
   apt:
     packages:
       - libhdf5-serial-dev
-
-services:
-  - xvfb
 
 env:
     global:
@@ -127,7 +123,6 @@ before_install:
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
           $PIPI xvfbwrapper;
-          # XVFB_RUN=(xvfb-run -a --server-args="-screen 0 1920x1080x24");
       fi
 install:
     - |
@@ -161,6 +156,6 @@ script:
       cp ../.codecov.yml .;
       COVER_CMD="coverage run -m ";
       fi
-    - $XVFB_RUN $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy.viz
+    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
