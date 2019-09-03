@@ -13,6 +13,42 @@ if has_fury:
 
 skip_it = use_xvfb == 'skip'
 
+"""
+def test_simple_interaction(recording=True):
+
+    from os.path import join as pjoin
+    from fury.tests.test_ui import EventCounter
+    from fury import window
+
+    filename = "test_ui_line_slider_2d"
+    recording_filename = pjoin(DATA_DIR, filename + ".log.gz")
+    expected_events_counts_filename = pjoin(DATA_DIR, filename + ".pkl")
+
+    line_slider_2d_test = ui.LineSlider2D(initial_value=-2,
+                                          min_value=-5, max_value=5)
+    line_slider_2d_test.center = (300, 300)
+
+    # Assign the counter callback to every possible event.
+    event_counter = EventCounter()
+    event_counter.monitor(line_slider_2d_test)
+
+    current_size = (600, 600)
+    show_manager = window.ShowManager(size=current_size,
+                                      title="FURY Line Slider")
+
+    show_manager.scene.add(line_slider_2d_test)
+
+    if recording:
+        show_manager.record_events_to_file(recording_filename)
+        print(list(event_counter.events_counts.items()))
+        event_counter.save(expected_events_counts_filename)
+
+    else:
+        show_manager.play_events_from_file(recording_filename)
+        expected = EventCounter.load(expected_events_counts_filename)
+        event_counter.check_counts(expected)
+"""
+
 # we will have to skip this as creates issues with xvfb (XIO error)
 @npt.dec.skipif(skip_it or not has_fury)
 # @xvfb_it
