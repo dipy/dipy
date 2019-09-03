@@ -13,7 +13,7 @@ cache:
 addons:
   apt:
     packages:
-    - libhdf5-serial-dev
+      - libhdf5-serial-dev
 
 env:
     global:
