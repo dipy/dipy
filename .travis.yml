@@ -84,7 +84,7 @@ matrix:
         - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
     # To test vtk functionality
     - python: 3.7
-      dist: xenial
+      dist: bionic
       sudo: true   # This is set to true for apt-get
       env:
         - COVERAGE=1
@@ -94,7 +94,7 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
       services:
-        - xvfb
+        - xvfb # this should enable xvfb by default
 
     - python: 3.7
       dist: xenial
@@ -188,6 +188,6 @@ script:
       cp ../.codecov.yml .;
       COVER_CMD="coverage run -m ";
       fi
-    - $XVFB_RUN $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
+    - $XVFB_RUN $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy.viz
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
