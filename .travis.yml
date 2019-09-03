@@ -93,6 +93,8 @@ matrix:
         - MESA_GL_VERSION_OVERRIDE=3.3
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
+      services:
+        - xvfb
 
     - python: 3.7
       dist: xenial
@@ -152,7 +154,7 @@ before_install:
           sudo apt-get install -y python-tk;
           sudo apt-get install -y python-imaging;
           $PIPI xvfbwrapper;
-          XVFB_RUN=(xvfb-run -a --server-args="-screen 0 1920x1080x24");
+          # XVFB_RUN=(xvfb-run -a --server-args="-screen 0 1920x1080x24");
       fi
 install:
     - |
