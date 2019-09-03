@@ -13,6 +13,7 @@ if has_fury:
 
 skip_it = use_xvfb == 'skip'
 
+
 """
 def test_simple_interaction(recording=True):
 
