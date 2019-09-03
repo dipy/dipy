@@ -94,7 +94,7 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
       services:
-        - xvfb # this should enable xvfb by default
+        - xvfb  # this should enable xvfb by default
 
     - python: 3.7
       dist: xenial
