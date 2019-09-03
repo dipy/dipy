@@ -14,8 +14,8 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # we will have to skip this as creates issues with xvfb (XIO error)
-@npt.dec.skipif(True)
-#@xvfb_it
+@npt.dec.skipif(skip_it or not has_fury)
+# @xvfb_it
 def test_horizon_events():
     affine = np.diag([2., 1, 1, 1]).astype('f8')
     data = 255 * np.random.rand(150, 150, 150)
@@ -29,7 +29,8 @@ def test_horizon_events():
     # tractograms = None
 
     # enable = [1, 2, 3, 4]
-    enable = [1, 2]
+    # enable = [1, 2]
+    enable = [1, 2, 3]
 
     if 1 in enable: # just close
         # Read interesting discussion here
@@ -107,7 +108,7 @@ def test_horizon_events2():
             world_coords=True, interactive=True, recorded_events=fname)
 
 
-@npt.dec.skipif(skip_it or not has_fury)
+@npt.dec.skipif(True)
 @xvfb_it
 def test_horizon():
 
@@ -166,9 +167,8 @@ def test_horizon():
 
 if __name__ == '__main__':
 
-    # test_horizon_events()
+    test_horizon_events()
     # test_horizon_events2()
-    for i in range(5):
-        test_horizon()
+    # test_horizon()
 
 
