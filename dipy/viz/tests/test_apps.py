@@ -145,8 +145,8 @@ def test_horizon_events2():
             world_coords=True, interactive=True, recorded_events=fname)
 
 
-@npt.dec.skipif(True)
-@xvfb_it
+@npt.dec.skipif(skip_it or not has_fury)
+# @xvfb_it
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -206,6 +206,6 @@ if __name__ == '__main__':
 
     test_horizon_events()
     # test_horizon_events2()
-    # test_horizon()
+    test_horizon()
 
 
