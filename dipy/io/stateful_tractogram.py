@@ -281,8 +281,9 @@ class StatefulTractogram(object):
         return np.zeros((8, 3))
 
     def is_bbox_in_vox_valid(self):
-        """ Verify that the bounding box is valid in voxel space
-        Will transform the streamlines for OBB, slow for big tractogram
+        """ Verify that the bounding box is valid in voxel space.
+        Negative coordinates or coordinates above the volume dimensions
+        are considered invalid in voxel space.
 
         Returns
         -------
