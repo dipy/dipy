@@ -118,9 +118,9 @@ class RecoBundles(object):
         self.filtered_indices = np.array(self.orig_indices[map_ind])
         self.streamlines = Streamlines(streamlines[map_ind])
         self.nb_streamlines = len(self.streamlines)
-        logger.info("target brain streamlines length = ", len(streamlines))
-        logger.info("After refining target brain streamlines length = ",
-                    len(self.streamlines))
+        logger.info("target brain streamlines length = %s" % len(streamlines))
+        logger.info("After refining target brain streamlines" +
+                    "length = %s" % len(self.streamlines))
 
         self.start_thr = [40, 25, 20]
         if rng is None:
