@@ -151,7 +151,7 @@ class StatefulTractogram(object):
 
     @property
     def voxel_order(self):
-        """ Getter for the reference voxel_order """
+        """ Getter for the reference voxel order """
         return self._voxel_order
 
     @property
