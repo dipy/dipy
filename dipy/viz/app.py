@@ -636,60 +636,7 @@ class Horizon(object):
                 if recording:
                     self.show_m.record_events_to_file(recording_filename)
                 else:
-                    # print(self.show_m.scene)
-                    # print(self.show_m.iren)
                     self.show_m.play_events_from_file(recording_filename)
-                    # print(self.show_m.scene)
-                    # print(self.show_m.iren)
-
-                    # self.show_m.window.RemoveAllObservers()
-                    # self.show_m.exit()
-                    """
-                    if self.show_m.timers:
-                        self.show_m.destroy_timers()
-                    # self.show_m.iren.RemoveAllObservers()
-                    self.show_m.iren.TerminateApp()
-                    self.show_m.window.Finalize()
-                    # self.show_m.iren.TerminateApp()
-
-                    del self.show_m.iren
-                    del self.show_m.scene
-                    del self.show_m.window
-
-                    self.show_m.iren = None
-                    self.show_m.scene = None
-                    self.show_m.window = None
-                    import gc
-
-                    #objs = gc.get_objects()
-                    #print(objs)
-                    gc.collect()
-
-                    def clearall():
-                        # all = [var for var in globals() if "__" not in (var[:2], var[-2:])]
-                        all = [var for var in globals() if (var[:2], var[-2:]) != ("__", "__")]
-                        for var in all:
-                            print('globals', var)
-                            del globals()[var]
-                            # var = None
-                        all2 = [var for var in locals() if (var[:2], var[-2:]) != ("__", "__")]
-                        for var in all2:
-                            print('locals', var)
-                            del locals()[var]
-                            # var = None
-
-                    clearall()
-                    # exit(0)
-                    """
-                    # self.show_m.exit() # EXIT changes to XIO 2 from 22
-                    # self.show_m.window.RemoveRenderer(self.scene)
-                    # self.show_m.scene.SetRenderWindow(None)
-                    # del self.show_m.iren
-                    # del self.show_m.window
-                    # del self.cea
-                    # del self.cla
-                    # del self.mem
-                    # Idea iterate to all memory and make everything None
 
         else:
 

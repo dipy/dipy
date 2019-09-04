@@ -29,30 +29,30 @@ python:
 
 matrix:
   include:
-    # - python: 3.7
-    #   dist: xenial
-    #   env:
-    #     - DEPENDS="$DEPENDS scipy"
-    # # To test minimum dependencies for Python 3.5:
-    # - python: 3.5
-    #   env:
-    #     # Check these values against requirements.txt and dipy/info.py
-    #     - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
-    # # To test minimum dependencies for Python 3.7:
-    # - python: 3.7
-    #   dist: xenial
-    #   env:
-    #     # Check these values against requirements.txt and dipy/info.py
-    #     - DEPENDS="cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==2.4.0 h5py==2.8.0"
-    # - python: 3.7
-    #   dist: xenial
-    #   env:
-    #     - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 "
-    # - python: 3.7
-    #   dist: xenial
-    #   env:
-    #     - COVERAGE=1
-    #     - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+    - python: 3.7
+      dist: xenial
+      env:
+        - DEPENDS="$DEPENDS scipy"
+    # To test minimum dependencies for Python 3.5:
+    - python: 3.5
+      env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
+    # To test minimum dependencies for Python 3.7:
+    - python: 3.7
+      dist: xenial
+      env:
+        # Check these values against requirements.txt and dipy/info.py
+        - DEPENDS="cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==2.4.0 h5py==2.8.0"
+    - python: 3.7
+      dist: xenial
+      env:
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 "
+    - python: 3.7
+      dist: xenial
+      env:
+        - COVERAGE=1
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
     # To test vtk functionality
     - python: 3.7
       dist: xenial
@@ -67,40 +67,40 @@ matrix:
         - LIBGL_ALWAYS_INDIRECT=y
         - DEPENDS="$DEPENDS scikit_learn vtk fury scipy"
 
-  #   - python: 3.7
-  #     dist: xenial
-  #     env:
-  #       - INSTALL_TYPE=sdist
-  #       - DEPENDS="$DEPENDS scipy"
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=sdist
+        - DEPENDS="$DEPENDS scipy"
 
-  #   - python: 3.7
-  #     dist: xenial
-  #     env:
-  #       - INSTALL_TYPE=pip
-  #       # Dependency checking should get all needed dependencies
-  #       - DEPENDS=""
-  #   - python: 3.7
-  #     dist: xenial
-  #     env:
-  #       - INSTALL_TYPE=wheel
-  #       - DEPENDS="$DEPENDS scipy"
-  #   - python: 3.7
-  #     dist: xenial
-  #     env:
-  #       - INSTALL_TYPE=requirements
-  #       - DEPENDS=""
-  #   - python: 3.7
-  #     dist: xenial
-  #     # Check against latest available pre-release version of all packages
-  #     env:
-  #       - USE_PRE=1
-  #       - DEPENDS="$DEPENDS scipy"
-  # allow_failures:
-  #   - python: 3.7
-  #     dist: xenial
-  #     env:
-  #       - USE_PRE=1
-  #       - DEPENDS="$DEPENDS scipy"
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=pip
+        # Dependency checking should get all needed dependencies
+        - DEPENDS=""
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=wheel
+        - DEPENDS="$DEPENDS scipy"
+    - python: 3.7
+      dist: xenial
+      env:
+        - INSTALL_TYPE=requirements
+        - DEPENDS=""
+    - python: 3.7
+      dist: xenial
+      # Check against latest available pre-release version of all packages
+      env:
+        - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
+  allow_failures:
+    - python: 3.7
+      dist: xenial
+      env:
+        - USE_PRE=1
+        - DEPENDS="$DEPENDS scipy"
 
 before_install:
     - PIPI="pip install $EXTRA_PIP_FLAGS"
