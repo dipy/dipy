@@ -158,6 +158,6 @@ script:
       cp ../.codecov.yml .;
       COVER_CMD="coverage run -m ";
       fi
-    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy.viz
+    - $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy
 after_success:
     - if [ "${COVERAGE}" == "1" ]; then coveralls; codecov; fi
