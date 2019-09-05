@@ -630,7 +630,7 @@ class Horizon(object):
             else:
 
                 # set to True if event recorded file needs updating
-                recording = False
+                recording = True
                 recording_filename = self.recorded_events
 
                 if recording:

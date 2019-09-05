@@ -25,16 +25,10 @@ def test_horizon_events():
     from dipy.segment.tests.test_bundles import f1
     streamlines = f1.copy()
     tractograms = [streamlines]
-    # tractograms = None
 
-    # enable = [1, 2, 3, 4]
-    # enable = [1, 2]
-    enable = [1, 2, 3]
+    enable = [3]
 
-    if 1 in enable: # just close
-        # Read interesting discussion here
-        # Passive observer should not call AddObserver or RemoveObserver in callback.
-        # https://stackoverflow.com/questions/2452532/memory-allocation-in-xvfb
+    if 1 in enable: # just close the window
         fname = os.path.join(DATA_DIR, 'record_01.log.gz')
 
         horizon(tractograms=tractograms, images=images, pams=None,
@@ -44,8 +38,7 @@ def test_horizon_events():
                 world_coords=True, interactive=True, out_png='tmp.png',
                 recorded_events=fname)
 
-    if 2 in enable: # just zoom
-
+    if 2 in enable: # just zoom and close
         fname = os.path.join(DATA_DIR, 'record_02.log.gz')
 
         horizon(tractograms=tractograms, images=images, pams=None,
@@ -56,9 +49,7 @@ def test_horizon_events():
                 recorded_events=fname)
 
     if 3 in enable: # select all centroids and expand and everything else
-        # Generic Warning: In /work/standalone-x64-build/VTK-source/Common/Core/vtkObject.cxx, line 533
-        # Passive observer should not call AddObserver or RemoveObserver in callback.
-
+        # save a trk at the end
         fname = os.path.join(DATA_DIR, 'record_03.log.gz')
 
         horizon(tractograms=tractograms, images=images, pams=None,
@@ -67,6 +58,9 @@ def test_horizon_events():
                 clusters_gt=0, clusters_lt=np.inf,
                 world_coords=True, interactive=True, out_png='tmp.png',
                 recorded_events=fname)
+        # npt.assert_equal(os.path.exists('tmp.trk'), True)
+        # npt.assert_equal(os.stat('tmp.trk').st_size > 0, True)
+        # os.remove('tmp.trk')
 
 
 @npt.dec.skipif(skip_it or not has_fury)
@@ -90,36 +84,42 @@ def test_horizon():
                         [3, 0.2, 0],
                         [4, 0.2, 0]], dtype='f8')
 
-    print(s1.shape)
-    print(s2.shape)
-    print(s3.shape)
-
     streamlines = Streamlines()
     streamlines.append(s1)
     streamlines.append(s2)
     streamlines.append(s3)
 
+    # only tractograms
     tractograms = [streamlines]
     images = None
-
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
-
     data = 255 * np.random.rand(150, 150, 150)
-
     images = [(data, affine)]
 
+    # tractograms in native coords (not supported for now)
+    with npt.assert_raises(ValueError) as ve:
+        horizon(tractograms, images=images, cluster=True, cluster_thr=5,
+                random_colors=False, length_lt=np.inf, length_gt=0,
+                clusters_lt=np.inf, clusters_gt=0,
+                world_coords=False, interactive=False)
+
+    msg = 'Currently native coordinates are not supported for streamlines'
+    npt.assert_(msg in str(ve.exception))
+
+    # only images
+    tractograms = None
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
-    tractograms = []
-    horizon(tractograms, images=images, cluster=True, cluster_thr=5,
+    # no clustering tractograms and images
+    horizon(tractograms, images=images, cluster=False, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
@@ -129,5 +129,7 @@ if __name__ == '__main__':
 
     test_horizon_events()
     test_horizon()
+
+
 
 
