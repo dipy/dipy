@@ -40,7 +40,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'save a valid file if some coordinates are invalid')
+                         'load a valid file if some coordinates are invalid.' +
+                         'Please use the function remove_invalid_streamlines' +
+                         'to discard invalid streamlines or set' +
+                         'bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
     old_shift = deepcopy(sft.shifted_origin)
@@ -171,13 +174,16 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are invalid')
+                         'load a valid file if some coordinates are invalid.' +
+                         'Please set bbox_valid_check to False and then use' +
+                         'the function remove_invalid_streamlines to discard' +
+                         'invalid streamlines.')
 
     return sft
 
 
 def load_generator(ttype):
-    """ Generate a loading function that performs a file extension 
+    """ Generate a loading function that performs a file extension
     check to restrict the user to a single file format.
 
     Parameters
@@ -211,7 +217,7 @@ def load_generator(ttype):
 
 
 def save_generator(ttype):
-    """ Generate a saving function that performs a file extension 
+    """ Generate a saving function that performs a file extension
     check to restrict the user to a single file format.
 
     Parameters
