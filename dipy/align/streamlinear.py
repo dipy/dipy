@@ -755,8 +755,8 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
 
     if x0 == 'translation' or x0 == 'rigid' or \
        x0 == 'similarity' or x0 == 'scaling' or x0 == 'affine':
-
-        logger.info(' Translation  (3 parameters)...')
+        if verbose:
+            logger.info(' Translation  (3 parameters)...')
         slr_t = StreamlineLinearRegistration(metric=metric,
                                              x0='translation',
                                              bounds=bounds[:3],

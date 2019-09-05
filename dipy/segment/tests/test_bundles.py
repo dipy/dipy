@@ -225,7 +225,7 @@ def test_rb_no_neighb():
                     reason="Little Endian architecture required")
 def test_rb_reduction_mam():
 
-    rb = RecoBundles(f, greater_than=0, clust_thr=10)
+    rb = RecoBundles(f, greater_than=0, clust_thr=10, verbose=True)
 
     rec_trans, rec_labels = rb.recognize(model_bundle=f2,
                                          model_clust_thr=5.,
