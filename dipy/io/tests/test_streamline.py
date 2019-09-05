@@ -1,6 +1,10 @@
-from __future__ import division, print_function, absolute_import
+# from __future__ import division, print_function, absolute_import
+import json
+import os
 
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.data import fetch_gold_standard_io
+from dipy.io.streamline import (load_tractogram, save_tractogram,
+                                load_trk, save_trk)
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
@@ -11,6 +15,17 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
+
+filepath_dix = {}
+files, folder = fetch_gold_standard_io()
+for filename in files:
+    filepath_dix[filename] = os.path.join(folder, filename)
+
+with open(filepath_dix['points_data.json']) as json_file:
+    points_data = dict(json.load(json_file))
+
+with open(filepath_dix['streamlines_data.json']) as json_file:
+    streamlines_data = dict(json.load(json_file))
 
 streamline = np.array([[82.20181274,  91.36505891,  43.15737152],
                        [82.38442231,  91.79336548,  43.87036514],
@@ -193,6 +208,52 @@ def test_low_io_vtk():
         tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(streamlines))
         npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
+
+
+def trk_loader(filename):
+    try:
+        with InTemporaryDirectory():
+            load_trk(filename, filepath_dix['gs.nii'])
+        return True
+    except (ValueError):
+        return False
+
+
+def trk_saver(filename):
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+
+    try:
+        with InTemporaryDirectory():
+            save_trk(sft, filename)
+        return True
+    except (ValueError):
+        return False
+
+
+def test_io_trk_load():
+    if not trk_loader(filepath_dix['gs.trk']):
+        raise AssertionError()
+    if trk_loader('fake_file.TRK'):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.tck']):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.fib']):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.dpy']):
+        raise AssertionError()
+
+
+def test_io_trk_save():
+    if not trk_saver(filepath_dix['gs.trk']):
+        raise AssertionError()
+    if trk_saver('fake_file.TRK'):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.tck']):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.fib']):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.dpy']):
+        raise AssertionError()
 
 
 if __name__ == '__main__':
