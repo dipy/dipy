@@ -669,7 +669,7 @@ class TreeClusterMap(ClusterMap):
 
 
 def qbx_and_merge(streamlines, thresholds,
-                  nb_pts=20, select_randomly=None, rng=None):
+                  nb_pts=20, select_randomly=None, rng=None, verbose=False):
     """ Run QuickBundlesX and then run again on the centroids of the last layer
 
     Running again QuickBundles at a layer has the effect of merging
@@ -690,7 +690,8 @@ def qbx_and_merge(streamlines, thresholds,
         streamlines are used.
     rng : RandomState
         If None then RandomState is initialized internally.
-
+    verbose : bool, optional.
+        If True, log information. Default False.
     Returns
     -------
     clusters : obj
@@ -719,10 +720,11 @@ def qbx_and_merge(streamlines, thresholds,
                          replace=False)
     sample_streamlines = set_number_of_points(streamlines, nb_pts)
 
-    logger.info(' Resampled to {} points'.format(nb_pts))
-    logger.info(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
-    logger.info(' Duration of resampling is %0.3f sec.' % (time() - t,))
-    logger.info(' QBX phase starting...')
+    if verbose:
+        logger.info(' Resampled to {} points'.format(nb_pts))
+        logger.info(' Size is %0.3f MB' % (nbytes(sample_streamlines),))
+        logger.info(' Duration of resampling is %0.3f sec.' % (time() - t,))
+        logger.info(' QBX phase starting...')
 
     qbx = QuickBundlesX(thresholds,
                         metric=AveragePointwiseEuclideanMetric())
@@ -730,7 +732,8 @@ def qbx_and_merge(streamlines, thresholds,
     t1 = time()
     qbx_clusters = qbx.cluster(sample_streamlines, ordering=indices)
 
-    logger.info(' Merging phase starting ...')
+    if verbose:
+        logger.info(' Merging phase starting ...')
 
     qbx_merge = QuickBundlesX([thresholds[-1]],
                               metric=AveragePointwiseEuclideanMetric())
@@ -754,9 +757,10 @@ def qbx_and_merge(streamlines, thresholds,
 
     merged_cluster_map.refdata = streamlines
 
-    logger.info(' QuickBundlesX time for %d random streamlines'
-                % (select_randomly,))
+    if verbose:
+        logger.info(' QuickBundlesX time for %d random streamlines'
+                    % (select_randomly,))
 
-    logger.info(' Duration %0.3f sec. \n' % (time() - t1,))
+        logger.info(' Duration %0.3f sec. \n' % (time() - t1,))
 
     return merged_cluster_map
