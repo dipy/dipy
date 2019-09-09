@@ -75,6 +75,8 @@ class StatefulTractogram(object):
         if data_per_streamline is None:
             data_per_streamline = {}
 
+        if isinstance(streamlines, Streamlines):
+            streamlines = streamlines.copy()
         self._tractogram = Tractogram(streamlines,
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
@@ -177,6 +179,8 @@ class StatefulTractogram(object):
         streamlines : list or ArraySequence (list and deepcopy recommanded)
             Streamlines of the tractogram
         """
+        if isinstance(streamlines, Streamlines):
+            streamlines = streamlines.copy()
         self._tractogram._streamlines = Streamlines(streamlines)
         self.data_per_point = self.data_per_point
         self.data_per_streamline = self.data_per_streamline
