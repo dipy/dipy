@@ -26,7 +26,7 @@ def test_horizon_events():
     streamlines = f1.copy()
     tractograms = [streamlines]
 
-    enable = [3]
+    enable = [4]
 
     if 1 in enable: # just close the window
         fname = os.path.join(DATA_DIR, 'record_01.log.gz')
@@ -61,6 +61,17 @@ def test_horizon_events():
         # npt.assert_equal(os.path.exists('tmp.trk'), True)
         # npt.assert_equal(os.stat('tmp.trk').st_size > 0, True)
         # os.remove('tmp.trk')
+
+    if 4 in enable: # select all centroids and expand and everything else
+        # save a trk at the end
+        fname = os.path.join(DATA_DIR, 'record_04.log.gz')
+
+        horizon(tractograms=tractograms, images=images, pams=None,
+                cluster=True, cluster_thr=5.0,
+                random_colors=False, length_gt=0, length_lt=np.inf,
+                clusters_gt=0, clusters_lt=np.inf,
+                world_coords=True, interactive=True, out_png='tmp.png',
+                recorded_events=fname)
 
 
 @npt.dec.skipif(skip_it or not has_fury)
@@ -128,7 +139,7 @@ def test_horizon():
 if __name__ == '__main__':
 
     test_horizon_events()
-    test_horizon()
+    # test_horizon()
 
 
 

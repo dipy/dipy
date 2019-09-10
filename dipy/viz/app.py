@@ -449,6 +449,22 @@ class Horizon(object):
                 self.cea[obj]['selected']
             self.show_m.render()
 
+        def right_click_centroid_callback(obj, event):
+
+            for c in self.cea:
+                if self.cea[c]['selected']:
+                    if not self.cea[c]['expanded']:
+                        len_ = self.cea[c]['length']
+                        sz_ = self.cea[c]['size']
+                        if (len_ >= self.length_min and
+                                sz_ >= self.size_min):
+                            self.cea[c]['cluster_actor']. \
+                                VisibilityOn()
+                            c.VisibilityOff()
+                            self.cea[c]['expanded'] = 1
+
+            self.show_m.render()
+
         def left_click_cluster_callback(obj, event):
 
             if self.cla[obj]['selected']:
@@ -465,9 +481,28 @@ class Horizon(object):
                            1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
+            self.cla[cl]['centroid_actor'].AddObserver(
+                'RightButtonPressEvent', right_click_centroid_callback, 1.0)
 
         self.hide_centroids = True
         self.select_all = False
+
+        options = ['hide', 'invert', 'all', 'expand', 'reset']
+        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 170),
+                               multiselection=False, font_size=18)
+
+        listbox.scroll_bar_active_color = (0.8, 0, 0)
+        listbox.scroll_bar_inactive_color = (1, 0, 0)
+
+        def display_element():
+            print(listbox.selected[0])
+            # listbox.slots[0].background.actor.GetProperty().SetColor(1, .5, 0)
+            self.show_m.render()
+
+        listbox.on_change = display_element
+        listbox.panel.opacity = 0.2
+        self.show_m.scene.add(listbox)
+
 
         def key_press(obj, event):
             key = obj.GetKeySym()
@@ -630,7 +665,7 @@ class Horizon(object):
             else:
 
                 # set to True if event recorded file needs updating
-                recording = False
+                recording = True
                 recording_filename = self.recorded_events
 
                 if recording:
