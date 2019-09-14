@@ -14,7 +14,6 @@ import gzip
 import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
-from dipy.sims.voxel import sticks_and_ball
 from dipy.data.fetcher import (fetch_scil_b0,
                                read_scil_b0,
                                fetch_stanford_hardi,
@@ -325,6 +324,7 @@ def dsi_voxels():
 
 
 def dsi_deconv_voxels():
+    from dipy.sims.voxel import sticks_and_ball
     gtab = gradient_table(np.loadtxt(get_fnames('dsi515btable')))
     data = np.zeros((2, 2, 2, 515))
     for ix in range(2):

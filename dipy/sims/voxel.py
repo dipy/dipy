@@ -6,6 +6,7 @@ from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import GradientTable
+from dipy.data import default_sphere
 from dipy.reconst.mcsd import MultiShellResponse
 from dipy.reconst.utils import dki_design_matrix
 from dipy.reconst import shm
@@ -1035,7 +1036,6 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     m = np.zeros_like(n)
 
     if sphere is None:
-        from dipy.data import default_sphere
         sphere = default_sphere
 
     big_sphere = sphere.subdivide()
