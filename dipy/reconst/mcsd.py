@@ -1,5 +1,6 @@
 import numpy as np
 from dipy.core import geometry as geo
+from dipy.core.gradients import GradientTable
 from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst.multi_voxel import multi_voxel_fit
