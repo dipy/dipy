@@ -624,7 +624,7 @@ def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
 
     Parameters
     ----------
-    init_pointset : (N,) ndarray
+    init_pointset : (N, 3) ndarray
         Points on a unit sphere.
     iters : int
         Number of iterations to run.

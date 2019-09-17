@@ -362,15 +362,18 @@ def test_disperse_charges_alt():
     # Create a random set of points
     charges = np.random.random((3, 3))
     charges /= vector_norm(charges, keepdims=True)
-    init_pointset = HemiSphere(xyz=charges)
+    init_pointset = HemiSphere(xyz=charges).vertices
 
     # Compute the associated electrostatic potential
+    init_pointset = init_pointset.reshape(init_pointset.shape[0] * 3)
     init_charges_potential = _get_forces_alt(init_pointset)
 
     # Disperse charges
+    init_pointset = init_pointset.reshape(3, 3)
     dispersed_pointset = disperse_charges_alt(init_pointset, 10)
 
     # Compute the associated electrostatic potential
+    dispersed_pointset = dispersed_pointset.reshape(init_pointset.shape[0] * 3)
     dispersed_charges_potential = _get_forces_alt(dispersed_pointset)
 
     # Verify that the potential of the optimal configuration is smaller than
