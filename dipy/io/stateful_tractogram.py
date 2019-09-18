@@ -48,8 +48,8 @@ class StatefulTractogram(object):
             the space is RASMM
         shifted_origin : bool
             Information on the position of the origin,
-            False is Trackvis standard, default (corner of the voxel)
-            True is NIFTI standard (center of the voxel)
+            True is Trackvis standard, default (corner of the voxel)
+            False is NIFTI standard (center of the voxel)
         data_per_point : dict
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
