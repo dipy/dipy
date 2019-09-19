@@ -1,18 +1,3 @@
-#!python
-# -*- coding: utf-8 -*-
-# -------------------------------------------------------------------------
-# Copyright (c) 2019,
-#
-# Developer : M. Okan Irfanoglu (irfanoglumo@mail.nih.gov)
-#             Anh Thai (15thai@cua.edu, thaias@nih.gov)
-# -------------------------------------------------------------------------
-# Adapted implementation of the random matrix theory procedure suggested by:
-#
-# [Veraart16] Veraart J, Fieremans E, Novikov DS (2016)
-#             Diffusion MRI noise mapping using random matrix theory.
-#             Magnetic resonance in Medicine 76(5), p1582-1593.
-#             https://doi.org/10.1002/mrm.26059
-# -------------------------------------------------------------------------
 
 import numpy as np
 import time
