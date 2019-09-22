@@ -6,7 +6,7 @@ from dipy.core import wavelet
 def adaptive_soft_matching(ima, fimau, fimao, sigma):
     r"""Adaptive Soft Coefficient Matching
 
-    Combines two filtered 3D-images at different resolutions and the orginal
+    Combines two filtered 3D-images at different resolutions and the original
     image. Returns the resulting combined image.
 
     Parameters
