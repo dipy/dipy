@@ -10,6 +10,7 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               _get_forces_alt, unit_octahedron,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
+from dipy.core.sphere_stats import random_uniform_on_sphere
 
 from numpy.testing.decorators import skipif
 
@@ -360,9 +361,8 @@ def test_disperse_charges():
 
 def test_disperse_charges_alt():
     # Create a random set of points
-    charges = np.random.random((3, 3))
-    charges /= vector_norm(charges, keepdims=True)
-    init_pointset = HemiSphere(xyz=charges).vertices
+    num_points = 3
+    init_pointset = random_uniform_on_sphere(n=num_points, coords='xyz')
 
     # Compute the associated electrostatic potential
     init_pointset = init_pointset.reshape(init_pointset.shape[0] * 3)
