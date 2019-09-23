@@ -499,6 +499,17 @@ fetch_gold_standard_io = _make_fetcher(
     ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
      'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
      'points_data.json', 'streamlines_data.json'],
+    ['3acf565779f4d5107f96b2ef90578d64',
+     '151a30cf356c002060d720bf9d577245',
+     'e9818e07bef5bd605dea0877df14a2b0',
+     '248606297e400d1a9b1786845aad8de3',
+     'a2d4d8f62d1de0ab9927782c7d51cb27',
+     '217b3ae0712a02b2463b8eedfe9a0a68',
+     'ca193a5508d3313d542231aaf262960f',
+     '3284de59dfd9ca3130e6e01258ed9022',
+     'a2a89c387f45adab733652a92f6602d5',
+     '4bcca0c6195871fc05e93cdfabec22b4',
+     '578f29052ac03a6d8a98580eb7c70d97'],
     doc="Downloads the gold standard for streamlines io testing.",
     data_size="47.KB")
 
@@ -1100,7 +1111,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     for bun in bundles:
 
         streams = load_tractogram(pjoin(dname, subj_id,
-                                     'bundles', 'bundles_' + bun + '.trk'),
+                                        'bundles', 'bundles_' + bun + '.trk'),
                                   'same',
                                   bbox_valid_check=False).streamlines
 

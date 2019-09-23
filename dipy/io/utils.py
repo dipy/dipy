@@ -199,7 +199,7 @@ def get_reference_info(reference):
         voxel_sizes = header['voxel_sizes']
         voxel_order = header['voxel_order']
     elif is_sft:
-        affine, dimensions, voxel_sizes, voxel_order = reference.space_attribute
+        affine, dimensions, voxel_sizes, voxel_order = reference.space_attributes
     else:
         raise TypeError('Input reference is not one of the supported format')
 
@@ -233,7 +233,7 @@ def is_header_compatible(reference_1, reference_2):
         reference_2)
 
     identical_header = True
-    if not np.allclose(affine_1, affine_2):
+    if not np.allclose(affine_1, affine_2, rtol=1e-03, atol=1e-03):
         logging.error('Affine not equal')
         identical_header = False
 
@@ -241,7 +241,7 @@ def is_header_compatible(reference_1, reference_2):
         logging.error('Dimensions not equal')
         identical_header = False
 
-    if not np.allclose(voxel_sizes_1, voxel_sizes_2):
+    if not np.allclose(voxel_sizes_1, voxel_sizes_2, rtol=1e-03, atol=1e-03):
         logging.error('Voxel_size not equal')
         identical_header = False
 

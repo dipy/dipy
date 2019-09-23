@@ -74,8 +74,8 @@ rpt_sft = load_tractogram(bundles_filename[4], reference_anatomy,
                           bbox_valid_check=False)
 
 """
-The function ``load_tractogram`` requires a reference, any of the following input
-is considered valid (as long as they are in the same share space)
+The function ``load_tractogram`` requires a reference, any of the following
+inputs is considered valid (as long as they are in the same share space)
 - Nifti filename
 - Trk filename
 - nib.nifti1.Nifti1Image
@@ -163,6 +163,11 @@ print(cc_sft.space)
 Now lets move them all to voxel space, subsample them to 100 streamlines,
 compute a density map and save everything for visualisation in another
 software such as Trackvis or MI-Brain.
+
+To access volume information in a grid, the corner of the voxel must be
+considered the origin in order to prevent negative values.
+Any operation doing interpolation or accessing a grid must use the
+function 'to_vox()' and 'to_corner()'
 """
 
 cc_sft.to_vox()
@@ -170,6 +175,12 @@ laf_sft.to_vox()
 raf_sft.to_vox()
 lpt_sft.to_vox()
 rpt_sft.to_vox()
+
+cc_sft.to_corner()
+laf_sft.to_corner()
+raf_sft.to_corner()
+lpt_sft.to_corner()
+rpt_sft.to_corner()
 
 cc_streamlines_vox = select_random_set_of_streamlines(cc_sft.streamlines,
                                                       1000)
@@ -183,7 +194,7 @@ rpt_streamlines_vox = select_random_set_of_streamlines(rpt_sft.streamlines,
                                                        1000)
 
 # Same dimensions for every stateful tractogram, can be re-use
-affine, dimensions, voxel_sizes, voxel_order = cc_sft.space_attribute
+affine, dimensions, voxel_sizes, voxel_order = cc_sft.space_attributes
 cc_density = density_map(cc_streamlines_vox, np.eye(4), dimensions)
 laf_density = density_map(laf_streamlines_vox, np.eye(4), dimensions)
 raf_density = density_map(raf_streamlines_vox, np.eye(4), dimensions)
