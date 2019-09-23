@@ -173,7 +173,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     Parameters
     ----------
     image : 2D ndarray
-        Matrix cotaining the 2D image.
+        Matrix containing the 2D image.
     n_points : int, optional
         Number of neighbours to access local TV (see note). Default is
         set to 3.
