@@ -1,0 +1,41 @@
+parameters:
+  name: ''
+  vmImage: ''
+  matrix: []
+
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmIMage: ${{ parameters.vmImage }}
+  variables:
+    AZURE_CI_WINDOWS: 'true'
+  strategy:
+    maxParallel: 3
+    matrix:
+      ${{ insert }}: ${{ parameters.matrix }}
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(python.version)
+      architecture: 'x64'
+      addToPath: true
+  - powershell: |
+      Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: Add Conda to PATH
+    condition: eq( variables['INSTALL_TYPE'], 'conda' )
+  - powershell: |
+      Set-StrictMode -Version Latest
+      $ErrorActionPreference = "Stop"
+      $PSDefaultParameterValues['*:ErrorAction']='Stop'
+      powershell ./ci/windows/install_opengl.ps1
+    displayName: 'Install OpenGL'
+  - powershell: |
+      Set-StrictMode -Version Latest
+      $ErrorActionPreference = "Stop"
+      $PSDefaultParameterValues['*:ErrorAction']='Stop'
+      ./ci/windows/install.ps1
+    displayName: 'Install dependencies'
+  - powershell: |
+      ./ci/windows/script.ps1
+    displayName: 'Run Tests'

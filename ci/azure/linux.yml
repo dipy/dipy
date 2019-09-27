@@ -1,0 +1,39 @@
+parameters:
+  name: ''
+  vmImage: ''
+  matrix: []
+
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmIMage: ${{ parameters.vmImage }}
+  variables:
+    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy"
+    VENV_ARGS: "--python=python"
+    INSTALL_TYPE: "setup"
+    EXTRA_WHEELS: "https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
+    PRE_WHEELS: "https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com"
+    EXTRA_PIP_FLAGS: "--timeout=60 --find-links=$EXTRA_WHEELS"
+  strategy:
+    maxParallel: 3
+    matrix:
+      ${{ insert }}: ${{ parameters.matrix }}
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(python.version)
+      architecture: 'x64'
+      addToPath: true
+  - script: |
+      sudo apt-get install -y libhdf5-serial-dev
+    displayName: 'Install packages'
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+    condition: eq( variables['INSTALL_TYPE'], 'conda' )
+  - script: |
+      ./ci/azure/install.sh
+    displayName: 'Install dependencies'
+  - script: |
+      ./ci/windows/script.sh
+    displayName: 'Install DIPY and Run Tests'
