@@ -26,19 +26,19 @@ jobs:
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         DEPENDS: "$DEPENDS scikit_learn vtk fury scipy"
-      Python37-64bit:
+      Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
         DEPENDS: "$DEPENDS scipy"
-      Python37-64bit:
+      Python37-64bit + PIP:
         python.version: '3.7'
         INSTALL_TYPE: "pip"
         DEPENDS: "" # Dependency checking should get all needed dependencies
-      Python37-64bit:
+      Python37-64bit + WHEEL:
         python.version: '3.7'
         INSTALL_TYPE: "wheel"
         DEPENDS: "$DEPENDS scipy"
-      Python37-64bit:
+      Python37-64bit + Requirements:
         python.version: '3.7'
         INSTALL_TYPE: "requirements"
         DEPENDS: ""
