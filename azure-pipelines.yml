@@ -34,11 +34,11 @@ jobs:
         python.version: '3.7'
         INSTALL_TYPE: "pip"
         DEPENDS: "" # Dependency checking should get all needed dependencies
-      Python37-64bit + VIZ:
+      Python37-64bit:
         python.version: '3.7'
         INSTALL_TYPE: "wheel"
         DEPENDS: "$DEPENDS scipy"
-      Python37-64bit + VIZ:
+      Python37-64bit:
         python.version: '3.7'
         INSTALL_TYPE: "requirements"
         DEPENDS: ""
