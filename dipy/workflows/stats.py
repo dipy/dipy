@@ -223,6 +223,20 @@ class LinearMixedModelsFlow(Workflow):
     def get_short_name(cls):
         return 'lmm'
 
+    def get_metric_name(self, name):
+        count = 0
+        i = len(name)-1
+        while i>0:
+            if count ==0 :
+                if name[i] == '.':
+                    count = i
+            else:
+                if name[i] == '_':
+                
+                    return name[i+1:count]
+            i = i-1
+        return " "
+
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
 
@@ -249,37 +263,55 @@ class LinearMixedModelsFlow(Workflow):
         for file_path in io_it:
 
             logging.info('Applying metric {0}'.format(file_path))
-            file_name = os.path.basename(file_path)[:-3]
-            df = pd.read_hdf(file_path)
-
-            if len(df) < 100:
-                raise ValueError("Dataset for Linear Mixed Model is too small")
-
-            all_bundles = df.bundle.unique()
-            # all_pvalues = []
-            for bundle in all_bundles:
-                sub_af = df[df['bundle'] == bundle]  # sub sample
-                pvalues = np.zeros(no_disks)
-
-                # run mixed linear model for every disk
-                for i in range(no_disks):
-
-                    sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
-
-                    if len(sub) > 0:
-                        criteria = file_name + " ~ group"
-                        md = smf.mixedlm(criteria, sub, groups=sub["subject"])
-
-                        mdf = md.fit()
-
-                        pvalues[i] = mdf.pvalues[1]
-
-                x = list(range(1, len(pvalues)+1))
-                y = -1*np.log10(pvalues)
-
-                title = bundle + " on " + file_name + " Values"
-                plot_file = os.path.join(out_dir, bundle + "_" +
-                                         file_name + ".png")
-
-                simple_plot(plot_file, title, x, y, "disk no",
-                            "-log10(pvalues)")
+            #file_name = os.path.basename(file_path)[:-3]
+            
+            if file_path[4:6] == "CC":
+                print("======== skipping CCMid =============")
+            
+            else:
+            
+                file_name = self.get_metric_name(file_path)
+                print(" file name = ", file_name)
+                df = pd.read_hdf(file_path)
+    
+                if len(df) < 100:
+                    raise ValueError("Dataset for Linear Mixed Model is too small")
+    
+                all_bundles = df.bundle.unique()
+                # all_pvalues = []
+                for bundle in all_bundles:
+                    sub_af = df[df['bundle'] == bundle]  # sub sample
+                    pvalues = np.zeros(no_disks)
+    
+                    # run mixed linear model for every disk
+                    for i in range(no_disks):
+    
+                        sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
+    
+                        if len(sub) > 20: # to have significant data to perform LMM
+                            criteria = file_name + " ~ group"
+                            md = smf.mixedlm(criteria, sub, groups=sub["subject"])
+    
+                            mdf = md.fit()
+    
+                            pvalues[i] = mdf.pvalues[1]
+    
+                    x = list(range(1, len(pvalues)+1))
+                    y = -1*np.log10(pvalues)
+                    
+                    
+                    plot_file = os.path.join(out_dir, bundle + file_name + "pvalues.npy")
+    
+                    np.save(plot_file, pvalues)
+                    
+                    plot_file = os.path.join(out_dir, bundle + file_name + "pvalues_log.npy")
+                    
+                    np.save(plot_file, y)
+                    
+                    
+                    #title = bundle + " on " + file_name + " Values"
+                    #plot_file = os.path.join(out_dir, bundle + "_" +
+                    #                         file_name + ".png")
+    
+                    #simple_plot(plot_file, title, x, y, "disk no",
+                     #           "-log10(pvalues)")
