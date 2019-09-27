@@ -247,7 +247,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     
     #mb = glob(model_bundle_folder+"/*.trk")
     # edit here remove this later, uncomment above line
-    mb = glob(model_bundle_folder+"ILF_R.trk")
+    mb = glob(model_bundle_folder+"IFOF_L.trk")
     print(mb)
     #edit end
     
@@ -255,12 +255,12 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     #bd = os.listdir(bundle_folder)
     #bd.sort()
     
-    bd = glob(bundle_folder+"/*ILF_R*.trk")
+    bd = glob(bundle_folder+"/*IFOF_L*.trk")
     bd.sort()
     print(bd)
     
     #org_bd = os.listdir(orig_bundle_folder)
-    org_bd = glob(orig_bundle_folder+"/*ILF_R*.trk")
+    org_bd = glob(orig_bundle_folder+"/*IFOF_L*.trk")
     org_bd.sort()
     print(org_bd)
     n = len(org_bd)
