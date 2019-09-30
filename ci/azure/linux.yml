@@ -15,7 +15,7 @@ jobs:
     PRE_WHEELS: "https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com"
     EXTRA_PIP_FLAGS: "--timeout=60 --find-links=$EXTRA_WHEELS"
   strategy:
-    maxParallel: 3
+    maxParallel: 4
     matrix:
       ${{ insert }}: ${{ parameters.matrix }}
 
@@ -37,5 +37,5 @@ jobs:
     displayName: 'Install dependencies'
   - script: |
       sudo chmod +x ci/azure/script.sh
-      ./ci/windows/script.sh
+      ./ci/azure/script.sh
     displayName: 'Install DIPY and Run Tests'

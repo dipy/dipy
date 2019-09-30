@@ -32,8 +32,10 @@ jobs:
     displayName: Add conda to PATH
     condition: eq( variables['INSTALL_TYPE'], 'conda' )
   - script: |
-      ci/azure/install.sh
+      sudo chmod +x ci/azure/install.sh
+      ./ci/azure/install.sh
     displayName: 'Install dependencies'
   - script: |
-      ci/windows/script.sh
+      sudo chmod +x ci/azure/script.sh
+      ./ci/windows/script.sh
     displayName: 'Install DIPY and Run Tests'
