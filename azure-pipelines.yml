@@ -21,11 +21,13 @@ jobs:
         DEPENDS: "$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
         COVERAGE: "1"
       Python37-64bit + VIZ:
+        TEST_WITH_XVFB: "1"
         COVERAGE: "1"
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         DEPENDS: "$DEPENDS scikit_learn vtk fury scipy"
+
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"

@@ -28,14 +28,15 @@ jobs:
       Set-StrictMode -Version Latest
       $ErrorActionPreference = "Stop"
       $PSDefaultParameterValues['*:ErrorAction']='Stop'
-      powershell ./ci/windows/install_opengl.ps1
+      powershell ./ci/azure/install_opengl.ps1
     displayName: 'Install OpenGL'
+    condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - powershell: |
       Set-StrictMode -Version Latest
       $ErrorActionPreference = "Stop"
       $PSDefaultParameterValues['*:ErrorAction']='Stop'
-      ./ci/windows/install.ps1
+      ./ci/azure/install.ps1
     displayName: 'Install dependencies'
   - powershell: |
-      ./ci/windows/script.ps1
+      ./ci/azure/script.ps1
     displayName: 'Run Tests'
