@@ -1,6 +1,13 @@
 #!/bin/bash
 set -ev
 
+PIPI="pip install $EXTRA_PIP_FLAGS"
+
+if [ -n "$USE_PRE" ]; then
+    PIPI="$PIPI --find-links=$PRE_WHEELS --pre";
+fi
+
+$PIPI list
 #---------- DIPY Installation -----------------
 
 if [ "$INSTALL_TYPE" == "setup" ]; then
@@ -28,7 +35,7 @@ cd for_testing
 # We need the setup.cfg for the pytest settings
 cp ../setup.cfg .
 # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
-'echo "backend : agg" > matplotlibrc'
+echo "backend : agg" > matplotlibrc
 if [ "${COVERAGE}" == "1" ]; then
     cp ../.coveragerc .;
     cp ../.codecov.yml .;

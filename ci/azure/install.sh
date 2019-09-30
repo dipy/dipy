@@ -19,7 +19,7 @@ $PIPI --upgrade pip setuptools
 # We need nose for numpy.testing<=1.15
 $PIPI pytest nose;
 $PIPI numpy;
-if [ -n "$DEPENDS" ]; then $PIPI ${DEPENDS}; fi
+if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
 if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
 if [ "${VTK}" == "1" ]; then
     sudo apt-get update;
