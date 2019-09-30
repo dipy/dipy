@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ev
 
+source venv/bin/activate
+
 PIPI="pip install $EXTRA_PIP_FLAGS"
 
 if [ -n "$USE_PRE" ]; then
