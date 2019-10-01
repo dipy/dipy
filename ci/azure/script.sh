@@ -1,15 +1,18 @@
 #!/bin/bash
 set -ev
 
-source venv/bin/activate
+if [ "$INSTALL_TYPE" == "conda" ]; then
+    conda activate venv
+else
+    source venv/bin/activate
+fi
 
-PIPI="pip install $EXTRA_PIP_FLAGS"
+PIPI="pip install --timeout=60 --find-links=$EXTRA_WHEELS"
 
 if [ -n "$USE_PRE" ]; then
     PIPI="$PIPI --find-links=$PRE_WHEELS --pre";
 fi
 
-$PIPI list
 #---------- DIPY Installation -----------------
 
 if [ "$INSTALL_TYPE" == "setup" ]; then
