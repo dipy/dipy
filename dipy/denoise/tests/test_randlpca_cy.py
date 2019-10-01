@@ -234,19 +234,6 @@ def test_phantom():
     assert_(rmse_den < rmse_noisy)
     assert_(rmse_den_wrc < rmse_noisy_wrc)
 
-#
-# def test_lpca_ill_conditioned():
-#     gtab = gen_gtab()
-#     DWI, sigma = rfiw_phantom(gtab, snr=30)
-#     assert_raises(ValueError, randomlpca_denoise, DWI)
-
-# Not input Sigma- so we are not testing this
-# def test_lpca_sigma_wrong_shape():
-#     gtab = gen_gtab()
-#     DWI, sigma = rfiw_phantom(gtab, snr=30)
-#     print(sigma)
-#     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
-#     assert_raises(ValueError, randomlpca_denoise, sigma)
 
 
 if __name__ == '__main__':
