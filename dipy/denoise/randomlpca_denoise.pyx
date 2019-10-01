@@ -3,6 +3,7 @@ import numpy as np
 import time
 cimport numpy as cnp
 cimport cython
+
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import prange
