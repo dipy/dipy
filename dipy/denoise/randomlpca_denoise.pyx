@@ -201,7 +201,6 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
     if out_dtype is None:
         out_dtype = arr.dtype
 
-
     # We perform all computations in float64 precision but return the
     # results in the original input's precision
     if arr.dtype == np.float32:
