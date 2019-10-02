@@ -20,7 +20,7 @@ if($env:INSTALL_TYPE -match "conda")
     Invoke-CmdScript $env:CONDA\Scripts\activate.bat testenv
 }
 
-$env:PIPI = "pip install $env:EXTRA_PIP_FLAGS"
+$env:PIPI = "pip install --timeout=60 --find-links=$env:EXTRA_WHEELS"
 # Print and check this environment variable
 Write-Output "Pip command: $env:PIPI"
 

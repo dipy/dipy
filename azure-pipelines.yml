@@ -18,7 +18,7 @@ jobs:
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==2.4.0 h5py==2.8.0"
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        DEPENDS: $(DEPENDS) + " scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
         COVERAGE: "1"
       Python37-64bit + VIZ:
         TEST_WITH_XVFB: "1"
@@ -26,12 +26,11 @@ jobs:
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        DEPENDS: "$(DEPENDS) scikit_learn vtk fury scipy"
-
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
-        DEPENDS: "$(DEPENDS) scipy"
+        EXTRA_DEPENDS: "scipy"
       Python37-64bit + PIP:
         python.version: '3.7'
         INSTALL_TYPE: "pip"
@@ -39,7 +38,7 @@ jobs:
       Python37-64bit + WHEEL:
         python.version: '3.7'
         INSTALL_TYPE: "wheel"
-        DEPENDS: "$(DEPENDS) scipy"
+        EXTRA_DEPENDS: "scipy"
       Python37-64bit + Requirements:
         python.version: '3.7'
         INSTALL_TYPE: "requirements"
