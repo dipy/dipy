@@ -27,6 +27,10 @@ jobs:
   - script: |
       sudo apt-get install -y libhdf5-serial-dev
     displayName: 'Install packages'
+  - script: |
+      sudo apt-get install -y xvfb
+    displayName: 'Install Xvfb package'
+    condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
     condition: eq( variables['INSTALL_TYPE'], 'conda' )

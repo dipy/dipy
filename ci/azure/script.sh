@@ -30,6 +30,8 @@ elif [ "$INSTALL_TYPE" == "wheel" ]; then
 elif [ "$INSTALL_TYPE" == "requirements" ]; then
     $PIPI -r requirements.txt
     python setup.py install
+elif [ "$INSTALL_TYPE" == "conda" ]; then
+    python setup.py install
 fi
 
 # -------------- Run the tests -----------------
