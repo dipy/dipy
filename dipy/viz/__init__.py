@@ -18,9 +18,10 @@ if has_fury:
                            DATA_DIR as FURY_DATA_DIR)
 
 else:
-    warnings.warn("You do not have FURY installed. "
-    "Some visualization functions might not work for you. "
-    "For installation instructions, please visit: https://fury.gl/")
+    warnings.warn(
+        "You do not have FURY installed. "
+        "Some visualization functions might not work for you. "
+        "For installation instructions, please visit: https://fury.gl/")
 
 # We make the visualization requirements optional imports:
 _, has_mpl, _ = optional_package(
