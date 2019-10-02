@@ -26,7 +26,7 @@ jobs:
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        EXTRA_DEPENDS: "scikit_learn vtk fury scipy"
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
@@ -61,7 +61,7 @@ jobs:
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        OPTIONAL_DEPS: true
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
       Python37-64bit:
         python.version: '3.7'
       Python36-64bit:
@@ -70,7 +70,7 @@ jobs:
         python.version: '3.5'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        OPTIONAL_DEPS: true
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 pytables scipy==1.1"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
@@ -78,6 +78,13 @@ jobs:
       CONDA Python36-64bit:
         python.version: '3.6'
         INSTALL_TYPE: "conda"
+      Python37-64bit + VIZ:
+        TEST_WITH_XVFB: "1"
+        COVERAGE: "1"
+        python.version: '3.7'
+        MESA_GL_VERSION_OVERRIDE: '3.3'
+        LIBGL_ALWAYS_INDIRECT: 'y'
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
 
 - template: ci/azure/windows.yml
   parameters:
@@ -86,7 +93,7 @@ jobs:
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        OPTIONAL_DEPS: true
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
       Python37-64bit:
         python.version: '3.7'
       Python36-64bit:
@@ -95,7 +102,7 @@ jobs:
         python.version: '3.5'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        OPTIONAL_DEPS: true
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
@@ -103,3 +110,10 @@ jobs:
       CONDA Python36-64bit:
         python.version: '3.6'
         INSTALL_TYPE: "conda"
+      Python37-64bit + VIZ:
+        TEST_WITH_XVFB: "1"
+        COVERAGE: "1"
+        python.version: '3.7'
+        MESA_GL_VERSION_OVERRIDE: '3.3'
+        LIBGL_ALWAYS_INDIRECT: 'y'
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy"

@@ -2,7 +2,7 @@
 set -ev
 
 if [ "$INSTALL_TYPE" == "conda" ]; then
-    conda activate venv
+    source activate venv
 else
     source venv/bin/activate
 fi
