@@ -439,69 +439,10 @@ class Horizon(object):
 
         self.show_m.initialize()
 
-        # TODO the twenty lines above are repeated in add_actor
-        # when callbacks parameter is True
-        # it would be much nicer if we can refactor here.
-        def left_click_centroid_callback(obj, event):
-
-            self.cea[obj]['selected'] = not self.cea[obj]['selected']
-            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
-                self.cea[obj]['selected']
-            self.show_m.render()
-
-        def right_click_centroid_callback(obj, event):
-            print("OKAY")
-            for c in self.cea:
-                if self.cea[c]['selected']:
-                    if not self.cea[c]['expanded']:
-                        len_ = self.cea[c]['length']
-                        sz_ = self.cea[c]['size']
-                        if (len_ >= self.length_min and
-                                sz_ >= self.size_min):
-                            self.cea[c]['cluster_actor']. \
-                                VisibilityOn()
-                            c.VisibilityOff()
-                            self.cea[c]['expanded'] = 1
-
-            self.show_m.render()
-
-        def left_click_cluster_callback(obj, event):
-
-            if self.cla[obj]['selected']:
-                self.cla[obj]['centroid_actor'].VisibilityOn()
-                ca = self.cla[obj]['centroid_actor']
-                self.cea[ca]['selected'] = 0
-                obj.VisibilityOff()
-                self.cea[ca]['expanded'] = 0
-
-            self.show_m.render()
-
-        for cl in self.cla:
-            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
-                           1.0)
-            self.cla[cl]['centroid_actor'].AddObserver(
-                'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
-            self.cla[cl]['centroid_actor'].AddObserver(
-                'RightButtonPressEvent', right_click_centroid_callback, 1.0)
 
         self.hide_centroids = True
         self.select_all = False
 
-        options = ['hide', 'invert', 'all', 'expand', 'reset']
-        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 170),
-                               multiselection=False, font_size=18)
-
-        listbox.scroll_bar_active_color = (0.8, 0, 0)
-        listbox.scroll_bar_inactive_color = (1, 0, 0)
-
-        def display_element():
-            print(listbox.selected[0])
-            # listbox.slots[0].background.actor.GetProperty().SetColor(1, .5, 0)
-            self.show_m.render()
-
-        listbox.on_change = display_element
-        listbox.panel.opacity = 0.2
-        self.show_m.scene.add(listbox)
 
         def hide():
             if self.hide_centroids:
@@ -650,6 +591,65 @@ class Horizon(object):
 
                 if key == 'r' or key == 'R':
                     reset()
+
+        options = ['hide', 'invert', 'all', 'expand', 'reset', 'focus']
+        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 170),
+                               multiselection=False, font_size=18)
+
+        def display_element():
+            action = listbox.selected[0]
+            if action == 'hide':
+                hide()
+            if action == 'invert':
+                invert()
+            if action == 'all':
+                show_all()
+            if action == 'expand':
+                expand()
+            if action == 'reset':
+                reset()
+            if action == 'focus':
+                new_window()
+            # listbox.slots[0].background.actor.GetProperty().SetColor(1, .5, 0)
+
+        listbox.on_change = display_element
+        listbox.panel.opacity = 0.2
+        listbox.set_visibility(0)
+
+        self.show_m.scene.add(listbox)
+
+        def left_click_centroid_callback(obj, event):
+
+            self.cea[obj]['selected'] = not self.cea[obj]['selected']
+            self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
+                self.cea[obj]['selected']
+            self.show_m.render()
+
+        def right_click_centroid_callback(obj, event):
+            for lactor in listbox._get_actors():
+               lactor.SetVisibility(not lactor.GetVisibility())
+
+            listbox.scroll_bar.set_visibility(False)
+            self.show_m.render()
+
+        def left_click_cluster_callback(obj, event):
+
+            if self.cla[obj]['selected']:
+                self.cla[obj]['centroid_actor'].VisibilityOn()
+                ca = self.cla[obj]['centroid_actor']
+                self.cea[ca]['selected'] = 0
+                obj.VisibilityOff()
+                self.cea[ca]['expanded'] = 0
+
+            self.show_m.render()
+
+        for cl in self.cla:
+            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
+                           1.0)
+            self.cla[cl]['centroid_actor'].AddObserver(
+                'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
+            self.cla[cl]['centroid_actor'].AddObserver(
+                'RightButtonPressEvent', right_click_centroid_callback, 1.0)
 
 
         self.mem.window_timer_cnt = 0
