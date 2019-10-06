@@ -450,7 +450,7 @@ class Horizon(object):
             self.show_m.render()
 
         def right_click_centroid_callback(obj, event):
-
+            print("OKAY")
             for c in self.cea:
                 if self.cea[c]['selected']:
                     if not self.cea[c]['expanded']:
@@ -503,6 +503,120 @@ class Horizon(object):
         listbox.panel.opacity = 0.2
         self.show_m.scene.add(listbox)
 
+        def hide():
+            if self.hide_centroids:
+                for ca in self.cea:
+                    if (self.cea[ca]['length'] >= self.length_min or
+                            self.cea[ca]['size'] >= self.size_min):
+                        if self.cea[ca]['selected'] == 0:
+                            ca.VisibilityOff()
+            else:
+                for ca in self.cea:
+                    if (self.cea[ca]['length'] >= self.length_min and
+                            self.cea[ca]['size'] >= self.size_min):
+                        if self.cea[ca]['selected'] == 0:
+                            ca.VisibilityOn()
+            self.hide_centroids = not self.hide_centroids
+            self.show_m.render()
+
+        def invert():
+            for ca in self.cea:
+                if (self.cea[ca]['length'] >= self.length_min and
+                        self.cea[ca]['size'] >= self.size_min):
+                    self.cea[ca]['selected'] = \
+                        not self.cea[ca]['selected']
+                    cas = self.cea[ca]['cluster_actor']
+                    self.cla[cas]['selected'] = \
+                        self.cea[ca]['selected']
+            self.show_m.render()
+
+        def save():
+            saving_streamlines = Streamlines()
+            for bundle in self.cla.keys():
+                if bundle.GetVisibility():
+                    t = self.cla[bundle]['tractogram']
+                    c = self.cla[bundle]['cluster']
+                    indices = self.tractogram_clusters[t][c]
+                    saving_streamlines.extend(Streamlines(indices))
+            print('Saving result in tmp.trk')
+            # TODO 'same' is not implemented correctly
+            # sft = StatefulTractogram(saving_streamlines, 'same',
+            #                          Space.RASMM)
+            # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
+            from nibabel.streamlines import Tractogram, save
+            tracto_save = Tractogram(saving_streamlines)
+            tracto_save.affine_to_rasmm = np.eye(4)
+            save(tracto_save, 'tmp.trk')
+
+        def new_window():
+            active_streamlines = Streamlines()
+            for bundle in self.cla.keys():
+                if bundle.GetVisibility():
+                    t = self.cla[bundle]['tractogram']
+                    c = self.cla[bundle]['cluster']
+                    indices = self.tractogram_clusters[t][c]
+                    active_streamlines.extend(Streamlines(indices))
+
+            # self.tractograms = [active_streamlines]
+            hz2 = Horizon([active_streamlines],
+                            self.images, cluster=True,
+                            cluster_thr=self.cluster_thr/2.,
+                            random_colors=self.random_colors,
+                            length_lt=np.inf,
+                            length_gt=0, clusters_lt=np.inf,
+                            clusters_gt=0,
+                            world_coords=True,
+                            interactive=True)
+            ren2 = hz2.build_scene()
+            hz2.build_show(ren2)
+
+        def show_all():
+            if self.select_all is False:
+                for ca in self.cea:
+                    if (self.cea[ca]['length'] >= self.length_min and
+                            self.cea[ca]['size'] >= self.size_min):
+                        self.cea[ca]['selected'] = 1
+                        cas = self.cea[ca]['cluster_actor']
+                        self.cla[cas]['selected'] = \
+                            self.cea[ca]['selected']
+                self.show_m.render()
+                self.select_all = True
+            else:
+                for ca in self.cea:
+                    if (self.cea[ca]['length'] >= self.length_min and
+                            self.cea[ca]['size'] >= self.size_min):
+                        self.cea[ca]['selected'] = 0
+                        cas = self.cea[ca]['cluster_actor']
+                        self.cla[cas]['selected'] = \
+                            self.cea[ca]['selected']
+                self.show_m.render()
+                self.select_all = False
+
+        def expand():
+            for c in self.cea:
+                if self.cea[c]['selected']:
+                    if not self.cea[c]['expanded']:
+                        len_ = self.cea[c]['length']
+                        sz_ = self.cea[c]['size']
+                        if (len_ >= self.length_min and
+                                sz_ >= self.size_min):
+                            self.cea[c]['cluster_actor']. \
+                                VisibilityOn()
+                            c.VisibilityOff()
+                            self.cea[c]['expanded'] = 1
+
+            self.show_m.render()
+
+        def reset():
+            for c in self.cea:
+
+                if (self.cea[c]['length'] >= self.length_min and
+                        self.cea[c]['size'] >= self.size_min):
+                    self.cea[c]['cluster_actor'].VisibilityOff()
+                    c.VisibilityOn()
+                    self.cea[c]['expanded'] = 0
+
+            self.show_m.render()
 
         def key_press(obj, event):
             key = obj.GetKeySym()
@@ -510,33 +624,11 @@ class Horizon(object):
 
                 # hide on/off unselected centroids
                 if key == 'h' or key == 'H':
-                    if self.hide_centroids:
-                        for ca in self.cea:
-                            if (self.cea[ca]['length'] >= self.length_min or
-                                    self.cea[ca]['size'] >= self.size_min):
-                                if self.cea[ca]['selected'] == 0:
-                                    ca.VisibilityOff()
-                    else:
-                        for ca in self.cea:
-                            if (self.cea[ca]['length'] >= self.length_min and
-                                    self.cea[ca]['size'] >= self.size_min):
-                                if self.cea[ca]['selected'] == 0:
-                                    ca.VisibilityOn()
-                    self.hide_centroids = not self.hide_centroids
-                    self.show_m.render()
+                    hide()
 
                 # invert selection
                 if key == 'i' or key == 'I':
-
-                    for ca in self.cea:
-                        if (self.cea[ca]['length'] >= self.length_min and
-                                self.cea[ca]['size'] >= self.size_min):
-                            self.cea[ca]['selected'] = \
-                                not self.cea[ca]['selected']
-                            cas = self.cea[ca]['cluster_actor']
-                            self.cla[cas]['selected'] = \
-                                self.cea[ca]['selected']
-                    self.show_m.render()
+                    invert()
 
                 # retract help panel
                 if key == 'o' or key == 'O':
@@ -545,95 +637,20 @@ class Horizon(object):
 
                 # save current result
                 if key == 's' or key == 'S':
-                    saving_streamlines = Streamlines()
-                    for bundle in self.cla.keys():
-                        if bundle.GetVisibility():
-                            t = self.cla[bundle]['tractogram']
-                            c = self.cla[bundle]['cluster']
-                            indices = self.tractogram_clusters[t][c]
-                            saving_streamlines.extend(Streamlines(indices))
-                    print('Saving result in tmp.trk')
-                    # TODO 'same' is not implemented correctly
-                    # sft = StatefulTractogram(saving_streamlines, 'same',
-                    #                          Space.RASMM)
-                    # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
-                    from nibabel.streamlines import Tractogram, save
-                    tracto_save = Tractogram(saving_streamlines)
-                    tracto_save.affine_to_rasmm = np.eye(4)
-                    save(tracto_save, 'tmp.trk')
+                    save()
 
                 if key == 'y' or key == 'Y':
-                    active_streamlines = Streamlines()
-                    for bundle in self.cla.keys():
-                        if bundle.GetVisibility():
-                            t = self.cla[bundle]['tractogram']
-                            c = self.cla[bundle]['cluster']
-                            indices = self.tractogram_clusters[t][c]
-                            active_streamlines.extend(Streamlines(indices))
-
-                    # self.tractograms = [active_streamlines]
-                    hz2 = Horizon([active_streamlines],
-                                  self.images, cluster=True,
-                                  cluster_thr=self.cluster_thr/2.,
-                                  random_colors=self.random_colors,
-                                  length_lt=np.inf,
-                                  length_gt=0, clusters_lt=np.inf,
-                                  clusters_gt=0,
-                                  world_coords=True,
-                                  interactive=True)
-                    ren2 = hz2.build_scene()
-                    hz2.build_show(ren2)
+                    new_window()
 
                 if key == 'a' or key == 'A':
-
-                    if self.select_all is False:
-                        for ca in self.cea:
-                            if (self.cea[ca]['length'] >= self.length_min and
-                                    self.cea[ca]['size'] >= self.size_min):
-                                self.cea[ca]['selected'] = 1
-                                cas = self.cea[ca]['cluster_actor']
-                                self.cla[cas]['selected'] = \
-                                    self.cea[ca]['selected']
-                        self.show_m.render()
-                        self.select_all = True
-                    else:
-                        for ca in self.cea:
-                            if (self.cea[ca]['length'] >= self.length_min and
-                                    self.cea[ca]['size'] >= self.size_min):
-                                self.cea[ca]['selected'] = 0
-                                cas = self.cea[ca]['cluster_actor']
-                                self.cla[cas]['selected'] = \
-                                    self.cea[ca]['selected']
-                        self.show_m.render()
-                        self.select_all = False
+                    show_all()
 
                 if key == 'e' or key == 'E':
-
-                    for c in self.cea:
-                        if self.cea[c]['selected']:
-                            if not self.cea[c]['expanded']:
-                                len_ = self.cea[c]['length']
-                                sz_ = self.cea[c]['size']
-                                if (len_ >= self.length_min and
-                                        sz_ >= self.size_min):
-                                    self.cea[c]['cluster_actor']. \
-                                        VisibilityOn()
-                                    c.VisibilityOff()
-                                    self.cea[c]['expanded'] = 1
-
-                    self.show_m.render()
+                    expand()
 
                 if key == 'r' or key == 'R':
+                    reset()
 
-                    for c in self.cea:
-
-                        if (self.cea[c]['length'] >= self.length_min and
-                                self.cea[c]['size'] >= self.size_min):
-                            self.cea[c]['cluster_actor'].VisibilityOff()
-                            c.VisibilityOn()
-                            self.cea[c]['expanded'] = 0
-
-                self.show_m.render()
 
         self.mem.window_timer_cnt = 0
 
