@@ -34,6 +34,9 @@ elif [ "$INSTALL_TYPE" == "conda" ]; then
     python setup.py install
 fi
 
+if [ "$TEST_WITH_XVFB" == "1" ]; then
+    export DISPLAY=:99
+fi
 # -------------- Run the tests -----------------
 
 # Change into an innocuous directory and find tests from installation
