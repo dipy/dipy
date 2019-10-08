@@ -22,7 +22,6 @@ skip_it = use_xvfb == 'skip'
 
 
 @npt.dec.skipif(skip_it or not has_fury)
-@xvfb_it
 def test_horizon_flow():
 
     s1 = 10 * np.array([[0, 0, 0],
