@@ -15,8 +15,9 @@ import warnings
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_array_less, run_module_suite,
-                           assert_, assert_equal, dec)
+                           assert_, assert_equal)
 from dipy.testing import assert_greater_equal
+import pytest
 
 from dipy.reconst.ivim import ivim_prediction, IvimModel
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -25,7 +26,7 @@ from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-needs_cvxpy = dec.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
 
 
 def setup_module():

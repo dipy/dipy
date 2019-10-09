@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import numpy.testing as npt
+import pytest
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package
@@ -14,7 +15,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # we will have to skip this as creates issues with xvfb (XIO error)
-@npt.dec.skipif(True)
+@pytest.mark.skipif(True)
 def test_horizon_events():
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
@@ -31,7 +32,7 @@ def test_horizon_events():
             world_coords=True, interactive=True, recorded_events=fname)
 
 # see comment above
-@npt.dec.skipif(True)
+@pytest.mark.skipif(True)
 def test_horizon_events2():
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
@@ -47,7 +48,7 @@ def test_horizon_events2():
             world_coords=True, interactive=True, recorded_events=fname)
 
 
-@npt.dec.skipif(skip_it or not has_fury)
+@pytest.mark.skipif(skip_it or not has_fury)
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],

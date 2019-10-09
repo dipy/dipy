@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti
@@ -18,7 +19,7 @@ _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
 
 
-@npt.dec.skipif(not have_pd or not have_smf or not have_tables)
+@pytest.mark.skipif(not have_pd or not have_smf or not have_tables)
 def test_ba():
 
     with TemporaryDirectory() as dirpath:

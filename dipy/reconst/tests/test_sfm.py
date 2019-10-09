@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+import pytest
 import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
@@ -20,7 +21,7 @@ def test_design_matrix():
                      (np.sum(~gtab.b0s_mask), sphere.vertices.shape[0]))
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn)
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = nib.load(fdata).get_data()
@@ -48,7 +49,7 @@ def test_sfm():
             np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn)
 def test_predict():
     SNR = 1000
     S0 = 100
@@ -129,7 +130,7 @@ def test_sfm_sklearnlinearsolver():
                       solver=EvenSillierSolver())
 
 
-@npt.dec.skipif(not sfm.has_sklearn)
+@pytest.mark.skipif(not sfm.has_sklearn)
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data_dti = nib.load(fdata).get_data()
