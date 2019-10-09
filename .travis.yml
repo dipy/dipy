@@ -111,9 +111,8 @@ before_install:
     - python --version # just to check
     # Needed for Python 3.5 wheel fetching
     - $PIPI --upgrade pip setuptools
-    # We need nose for numpy.testing<=1.15
-    - $PIPI pytest nose;
-    - $PIPI numpy;
+    - $PIPI pytest
+    - $PIPI numpy
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
     - if [ "${COVERAGE}" == "1" ]; then pip install coverage coveralls codecov; fi
     - if [ "${VTK}" == "1" ]; then
