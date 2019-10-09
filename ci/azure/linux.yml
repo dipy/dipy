@@ -24,14 +24,15 @@ jobs:
       versionSpec: $(python.version)
       architecture: 'x64'
       addToPath: true
-  - script: |
+  - bash: |
       sudo apt-get install -y libhdf5-serial-dev
     displayName: 'Install packages'
-  - script: |
+  - bash: |
       sudo apt-get install -y xvfb
-      Xvfb :99 -ac -screen 0 1920x1080x8 &
+      /usr/bin/Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+      echo ">>> Started xvfb"
     displayName: 'Install Xvfb package'
-    condition: eq( variables['TEST_WITH_XVFB'], '1' )
+    condition: and(succeeded(), eq( variables['TEST_WITH_XVFB'], '1' ))
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
     condition: eq( variables['INSTALL_TYPE'], 'conda' )
