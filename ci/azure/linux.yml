@@ -29,6 +29,7 @@ jobs:
     displayName: 'Install packages'
   - script: |
       sudo apt-get install -y xvfb
+      Xvfb :99 -ac -screen 0 1920x1080x8 &
     displayName: 'Install Xvfb package'
     condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
