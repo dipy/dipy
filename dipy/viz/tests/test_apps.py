@@ -48,7 +48,7 @@ def test_horizon_events2():
             world_coords=True, interactive=True, recorded_events=fname)
 
 
-@pytest.mark.skipif(skip_it or not has_fury)
+@pytest.mark.skipif(skip_it or not has_fury, reason='Requires FURY')
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],

@@ -45,6 +45,8 @@ def tck_equal_in_vox_space():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_vox_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
@@ -78,6 +80,8 @@ def tck_equal_in_rasmm_space():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_rasmm_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
@@ -111,6 +115,8 @@ def tck_equal_in_voxmm_space():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_voxmm_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
@@ -232,6 +238,8 @@ def tck_iterative_saving_loading():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_iterative_saving_loading():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
     with InTemporaryDirectory():

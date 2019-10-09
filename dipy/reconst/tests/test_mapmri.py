@@ -632,7 +632,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
     assert_almost_equal(radius_estimated, radius_gt, 4)
 
 
-@pytest.mark.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
 def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]

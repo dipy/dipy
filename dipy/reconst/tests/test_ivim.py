@@ -26,7 +26,7 @@ from dipy.sims.voxel import multi_tensor
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
-needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="REQUIRES CVXPY")
 
 
 def setup_module():

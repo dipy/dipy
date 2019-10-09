@@ -22,12 +22,12 @@ def test_reconst_mmri_none():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=False, pos=False)
 
 
-@pytest.mark.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason='Requires CVXPY')
 def test_reconst_mmri_both():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=True)
 
 
-@pytest.mark.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason='Requires CVXPY')
 def test_reconst_mmri_positivity():
     reconst_mmri_core(ReconstMAPMRIFlow, lap=True, pos=False)
 

@@ -27,7 +27,7 @@ def _expand(m, iso, coeff):
     return params
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
@@ -57,7 +57,7 @@ def test_mcsd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_compartments():
     # test for failure if no. of compartments less than 2
     gtab = get_3shell_gtab()
@@ -67,7 +67,7 @@ def test_compartments():
     npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
 
 
-@pytest.mark.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()

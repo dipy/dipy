@@ -22,7 +22,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@pytest.mark.skipif(skip_it or not has_fury)
+@pytest.mark.skipif(skip_it or not has_fury, reason='Requires FURY')
 def test_horizon_flow():
 
     s1 = 10 * np.array([[0, 0, 0],
