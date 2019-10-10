@@ -2,16 +2,16 @@
 
 ## Index
 
--   ``Devel``: Contains *.rst files for Developer Guide
--   ``examples``: Dipy app showcases. Add any tutorial here
--   ``examples_built``: keep it empty. Only for examples generation
--   ``releases_notes``: Contains all API changes / PR-issues resolve for a specific release
--   ``sphinx_ext``: Sphinx custom plugins
--   ``theory``: Diffusion theory + FAQ files
--   ``tools``: Scripts to generate some part of the documentation like API 
--   ``build``: Contains the generated documentation
--   ``_static``: Contains images, css, js for Sphinx to look at 
--   ``_templates``: Contains html layout for custom sphinx design
+- `_static`: Contains images, css, js for Sphinx to look at
+- `_templates`: Contains html layout for custom Sphinx design
+- `build`: Contains the generated documentation
+- `devel`: Contains `*.rst` files for the Developer's Guide
+- `examples`: DIPY application showcases. Add any tutorial here
+- `examples_built`: Keep it empty. Only for example generation
+- `releases_notes`: Contains all API changes / PRs, issues resolved for a specific release
+- `sphinxext`: Sphinx custom plugins
+- `theory`: Diffusion theory + FAQ files
+- `tools`: Scripts to generate some parts of the documentation, like the API
 
 ## Doc generation steps:
 
