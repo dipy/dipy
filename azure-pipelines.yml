@@ -1,3 +1,11 @@
+trigger:
+- master
+- maint/*
+
+pr:
+- master
+- maint/*
+
 jobs:
 - template: ci/azure/linux.yml
   parameters:
