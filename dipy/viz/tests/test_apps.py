@@ -14,8 +14,9 @@ if has_fury:
 
 skip_it = use_xvfb == 'skip'
 
-# we will have to skip this as creates issues with xvfb (XIO error)
-@pytest.mark.skipif(True)
+
+@pytest.mark.skipif(True, reason="we will have to skip this as creates issues"
+                                 " with xvfb (XIO error)")
 def test_horizon_events():
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')
@@ -31,8 +32,9 @@ def test_horizon_events():
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=True, recorded_events=fname)
 
-# see comment above
-@pytest.mark.skipif(True)
+
+@pytest.mark.skipif(True, reason="we will have to skip this as creates issues"
+                                 " with xvfb (XIO error)")
 def test_horizon_events2():
 
     affine = np.diag([2., 1, 1, 1]).astype('f8')

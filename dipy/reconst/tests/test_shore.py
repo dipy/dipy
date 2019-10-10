@@ -16,7 +16,7 @@ import pytest
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy, reason="Requires CVXPY")
 
 
 # Object to hold module global data
