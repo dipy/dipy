@@ -12,7 +12,6 @@ if has_fury:
     from dipy.viz import vtk
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from dipy.viz.gmem import HORIMEM
-    from fury.tests.test_ui import EventCounter
     from fury.colormap import distinguishable_colormap
 
 
