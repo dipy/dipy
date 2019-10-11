@@ -46,7 +46,7 @@ cd for_testing
 cp ../setup.cfg .
 # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
 echo "backend : agg" > matplotlibrc
-if [ "${COVERAGE}" == "1" ]; then
+if [ "$COVERAGE" == "1" ]; then
     cp ../.coveragerc .;
     cp ../.codecov.yml .;
     COVER_CMD="coverage run -m ";
