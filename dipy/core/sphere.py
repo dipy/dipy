@@ -544,8 +544,10 @@ def _grad_equality_constraints(vects):
 
 def _get_forces_alt(vects, alpha=2.0, **kwargs):
     """Electrostatic-repulsion objective function. The alpha parameter
-    controls the power repulsion (energy varies as $1 / r^\alpha$). For
+    controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
     $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
+    The weights ensure equal importance of each shell to the objective
+    function [2]_ [3]_.
 
     Parameters
     ----------
@@ -560,6 +562,18 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
     -------
     energy : float
         Sum of all interactions between any two vectors.
+
+    References
+    ----------
+    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
+           estimation of diffusion anisotropy." Magnetic Resonance Imaging
+           2000 Jul; 18(6): 671-679.
+    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
+           acquisition orders of diffusion‐weighted MRI measurements." Journal
+           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
+    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
+           multishell sampling schemes with uniform coverage in diffusion
+           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
 
     """
 
@@ -583,7 +597,9 @@ def _get_forces_alt(vects, alpha=2.0, **kwargs):
 
 
 def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
-    """1st-order derivative of electrostatic-like repulsion energy.
+    """1st-order derivative of electrostatic-like repulsion energy [1]_.
+    The weights ensure equal importance of each shell to the objective
+    function [2]_ [3]_.
 
     Parameters
     ----------
@@ -591,11 +607,25 @@ def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
         Points on the sphere.
     alpha : float
         Controls the power of the repulsion. Default is 1.0.
+    weights : array-like (N, N)
+        Weight values to the electrostatic energy.
 
     Returns
     -------
     grad : array-like (N * 3,)
         Gradient of the objective function.
+
+    References
+    ----------
+    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
+           estimation of diffusion anisotropy." Magnetic Resonance Imaging
+           2000 Jul; 18(6): 671-679.
+    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
+           acquisition orders of diffusion‐weighted MRI measurements." Journal
+           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
+    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
+           multishell sampling schemes with uniform coverage in diffusion
+           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
 
     """
 
