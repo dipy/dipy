@@ -37,7 +37,7 @@ matrix:
     - python: 3.5
       env:
         # Check these values against requirements.txt and dipy/info.py
-        - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0"
+        - DEPENDS="cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==2.4.0 h5py==2.4.0 nose"
     # To test minimum dependencies for Python 3.7:
     - python: 3.7
       dist: xenial
@@ -57,6 +57,8 @@ matrix:
     - python: 3.7
       dist: xenial
       sudo: true   # This is set to true for apt-get
+      services:
+        - xvfb
       env:
         - COVERAGE=1
         - VTK=1
