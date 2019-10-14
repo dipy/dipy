@@ -30,6 +30,7 @@ import os.path as op
 
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
+    vox_size = labels_img.header.get_zooms()
 else:
     from dipy.data import read_stanford_hardi
     hardi_img, gtab = read_stanford_hardi()
@@ -46,7 +47,7 @@ from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
 from dipy.align.reslice import reslice
 
 fetch_mni_template()
-img_t2_mni = read_mni_template("a", contrast = "T2")
+img_t2_mni = read_mni_template("a", contrast="T2")
 
 new_zooms = (2., 2., 2.)
 data2, affine2 = reslice(img_t2_mni.get_data(), img_t2_mni.affine,
@@ -322,7 +323,7 @@ from dipy.io.streamline import save_tractogram
 
 sft = StatefulTractogram(mni_streamlines, img_t2_mni, Space.RASMM)
 
-save_tractogram(sft, 'mni-lr-superiorfrontal.trk', bbox_valid_check=True)
+save_tractogram(sft, 'mni-lr-superiorfrontal.trk', bbox_valid_check=False)
 
 
 """
