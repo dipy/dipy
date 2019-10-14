@@ -40,10 +40,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are invalid.' +
-                         'Please use the function remove_invalid_streamlines' +
-                         'to discard invalid streamlines or set' +
-                         'bbox_valid_check to False')
+                         'load a valid file if some coordinates are ' +
+                         'invalid. Please use the function ' +
+                         'remove_invalid_streamlines to discard invalid ' +
+                         'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
     old_shift = deepcopy(sft.shifted_origin)
