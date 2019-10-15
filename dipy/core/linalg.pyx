@@ -1,6 +1,7 @@
 
 
 cimport cython
+
 from scipy.linalg.cython_blas cimport dgemm
 from scipy.linalg.cython_blas cimport dgemv
 from scipy.linalg.cython_lapack cimport dsyevd
@@ -126,7 +127,7 @@ cdef void fast_eig(double[:,::1] arr, double[::1] out_w, double[::1] out_work,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-cpdef void fast_dgemm(double[:,::1] in_arr, double[:,::1] out_arr) nogil:
+cdef void fast_dgemm(double[:,::1] in_arr, double[:,::1] out_arr) nogil:
     r"""Performs matrix multiplication (a*a.T or a.T*a).
 
     Parameters
