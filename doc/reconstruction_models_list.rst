@@ -22,12 +22,12 @@
 
     <table>
     <tr>
-        <th>Methods</th>
+        <th>Method</th>
         <th>Single Shell</th>
         <th>Multi Shell</th>
         <th>Cartesian</th>
         <th>Ideal Data Requirements</th>
-        <th>Citations</th>
+        <th>References</th>
     </tr>
     <tr>
         <td><a href='#diffusion-tensor-imaging'>DTI (SLS, WLS, NNLS)</a></td>
