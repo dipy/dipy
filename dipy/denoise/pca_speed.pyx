@@ -130,8 +130,9 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
         mask = np.ones_like(arr, dtype=bool)[..., 0]
 
 
-    cdef double [:,:,:,:] denoised_arr_view = denoised_arr
-    cdef double [:,:,:] noise_arr_view = noise_arr
+    cdef double [:, :, :, :] denoised_arr_view = denoised_arr
+    cdef double [:, :, :] noise_arr_view = noise_arr
+    cdef int [:, :, :] mask_arr_view = mask.astype(np.int)
 
     # OPENMP loop over slices
     for k in prange(0, sizes[2], nogil=True, schedule=static):
@@ -139,7 +140,7 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
             for i in range(0,sizes[0]):
                 cum_W[:] = 0.
 
-                if not mask[i, j, k]:
+                if mask_arr_view[i, j, k] == 0:
                     continue
                 # copy the local patch into array X
                 cnt =- 1
@@ -228,9 +229,9 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 denoised_arr_view[i, j, k, :] = temp2[k, :]
                 noise_arr_view[i, j, k] = sqrt(sigma2)
 
-    sigma = np.mean(noise_arr[noise_arr != 0])
+    # sigma = np.mean(noise_arr[noise_arr != 0])
     if return_sigma:
-        return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype), sigma
+        return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype)  # , sigma
     else:
         return denoised_arr.astype(out_dtype)
 
