@@ -34,7 +34,7 @@
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
-        <td></td>
+        <td>- All shells should be < 1000</td>
         <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/8130344'>Basser 1994</a></td>
     </tr>
     <tr>
@@ -93,7 +93,7 @@
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
-        <td></td>
+        <td>- low b-values are needed</td>
         <td><a href=''>LeBihan 1984</a></td>
     </tr>
     <tr>
@@ -150,7 +150,11 @@
         <td class='red'>No</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href=''>Tuch 2004</a>, <a href=''>Tristan-Vega 2010</a></td>
+        <td>
+            <a href=''>Tuch 2004</a>,
+            <a href='https://www.ncbi.nlm.nih.gov/pubmed/17763358'>Descoteaux 2007</a>,
+            <a href=''>Tristan-Vega 2010</a>
+        </td>
     </tr>
     <tr>
         <td><a href='#simple-harmonic-oscillator-based-reconstruction-and-estimation'>SHORE</a></td>
@@ -185,7 +189,10 @@
         <td class='red'>No</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href=''>Tournier 2017</a></td>
+        <td>
+            <a href=''>Tournier 2017</a>
+            <a href=''>Descoteaux 2008</a>
+            <a href=''>Tournier 2007</a></td>
     </tr>
     <tr>
         <td>MS/MT CSD</td>
@@ -193,7 +200,7 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
-        <td><a href=''>Jeurissen 2009</a></td>
+        <td><a href='https://www.ncbi.nlm.nih.gov/pubmed/25109526'>Jeurissen 2014</a></td>
     </tr>
     <tr>
         <td><a href='#fiber-orientation-estimated-using-continuous-axially-symmetric-tensors'>ForeCast</a></td>
@@ -209,7 +216,7 @@
         <td class='green'>Yes</td>
         <td class='red'>No</td>
         <td></td>
-        <td></td>
+        <td><a href='https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.10609'>Behrens 2013</a></td>
     </tr>
         <tr>
         <td><a href='#studying-diffusion-time-dependence-using-qt-dmri'>QTau-MRI</a></td>
