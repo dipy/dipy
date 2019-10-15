@@ -5,6 +5,7 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
+from dipy.testing import assert_greater, assert_less
 from dipy.denoise.localpca import (localpca, mppca, genpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -104,8 +105,8 @@ def test_lpca_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30, 20))
     S0ns = localpca(S0, sigma=np.std(S0))
 
-    assert_(S0ns.min() > S0.min())
-    assert_(S0ns.max() < S0.max())
+    assert_greater(S0ns.min(), S0.min())
+    assert_less(S0ns.max(), S0.max())
     assert_equal(np.round(S0ns.mean()), 100)
 
 
@@ -121,14 +122,14 @@ def test_lpca_boundary_behaviour():
         (100.0 * 20.0 * 20.0 * 20.0)
 
     # shows that S0n_first is not very close to S0_first
-    assert_(rmses > 0.0001)
+    assert_greater(rmses, 0.0001)
     assert_equal(np.round(S0ns_first.mean()), 100)
 
     rmses = np.sum(np.abs(S0ns_first - S0_first)) / \
         (100.0 * 20.0 * 20.0 * 20.0)
 
     # shows that S0n_first is not very close to S0_first
-    assert_(rmses > 0.0001)
+    assert_greater(rmses, 0.0001)
     assert_equal(np.round(S0ns_first.mean()), 100)
 
 
@@ -138,7 +139,7 @@ def test_lpca_rmse():
     S0_denoised = localpca(S0_w_noise, sigma=np.std(S0_w_noise))
     rmse_denoised = np.sqrt(np.mean((S0_denoised - 100) ** 2))
     # Denoising should always improve the RMSE:
-    assert_(rmse_denoised < rmse_w_noise)
+    assert_less(rmse_denoised, rmse_w_noise)
 
 
 def test_lpca_sharpness():
@@ -149,7 +150,7 @@ def test_lpca_sharpness():
     S0ns = localpca(S0, sigma=20.0)
     # check the edge gradient
     edgs = np.abs(np.mean(S0ns[8, 10:20, 10:20] - S0ns[12, 10:20, 10:20]) - 50)
-    assert_(edgs < 2)
+    assert_less(edgs, 2)
 
 
 def test_lpca_dtype():
@@ -201,10 +202,10 @@ def test_phantom():
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc - DWI)) / \
         np.sum(np.abs(DWI_clean_wrc))
 
-    assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
-    assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
-    assert_(rmse_den < rmse_noisy)
-    assert_(rmse_den_wrc < rmse_noisy_wrc)
+    assert_less(np.max(DWI_clean) / sigma, np.max(DWI_den) / sigma)
+    assert_less(np.max(DWI_den) / sigma, np.max(DWI) / sigma)
+    assert_less(rmse_den, rmse_noisy)
+    assert_less(rmse_den_wrc, rmse_noisy_wrc)
 
     # Check if the results of different PCA methods (eig, svd) are similar
     DWI_den_svd = localpca(DWI, sigma, pca_method='svd', patch_radius=3)
@@ -233,10 +234,10 @@ def test_phantom():
     rmse_noisy_wrc = np.sum(np.abs(DWI_clean_wrc_masked - DWI_masked)) / \
         np.sum(np.abs(DWI_clean_wrc_masked))
 
-    assert_(np.max(DWI_clean) / sigma < np.max(DWI_den) / sigma)
-    assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
-    assert_(rmse_den < rmse_noisy)
-    assert_(rmse_den_wrc < rmse_noisy_wrc)
+    assert_less(np.max(DWI_clean) / sigma, np.max(DWI_den) / sigma)
+    assert_less(np.max(DWI_den) / sigma, np.max(DWI) / sigma)
+    assert_less(rmse_den, rmse_noisy)
+    assert_less(rmse_den_wrc, rmse_noisy_wrc)
 
 
 def test_lpca_ill_conditioned():
@@ -281,11 +282,11 @@ def test_pca_classifier():
     # Therefore, expected noise components should be equal to size of L.
     # To allow some margin of error let's assess if c is higher than
     # L.size - 3.
-    assert_(c > L.size-3)
+    assert_greater(c, L.size-3)
 
     # Let's check if noise std estimate as an error less than 5%
     std_error = abs(std - std_gt)/std_gt * 100
-    assert_(std_error < 5)
+    assert_less(std_error, 5)
 
 
 def test_mppca_in_phantom():
@@ -293,12 +294,15 @@ def test_mppca_in_phantom():
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
-    DWIden = mppca(DWInoise, patch_radius=2)
+    extra_args = ({}, {'use_fast': True})
 
-    # Test if denoised data is closer to ground truth than noisy data
-    rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
-    rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
-    assert_(rmse_den < rmse_noisy)
+    for arg in extra_args:
+        DWIden = mppca(DWInoise, patch_radius=2, **arg)
+
+        # Test if denoised data is closer to ground truth than noisy data
+        rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
+        rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
+        assert_less(rmse_den, rmse_noisy)
 
 
 def test_mppca_returned_sigma():
@@ -307,22 +311,29 @@ def test_mppca_returned_sigma():
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
 
-    # Case that sigma is estimated using mpPCA
-    DWIden0, sigma = mppca(DWInoise, patch_radius=2, return_sigma=True)
-    msigma = np.mean(sigma)
-    std_error = abs(msigma - std_gt)/std_gt * 100
-    assert_(std_error < 5)
+    extra_args = ({}, {'use_fast': True})
 
-    # Case that sigma is inputed (sigma outputed should be the same as the one
-    # inputed)
-    DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
-                               patch_radius=2, return_sigma=True)
-    assert_array_almost_equal(rsigma, sigma)
+    for arg in extra_args:
+        print("arg: ", arg)
+        # Case that sigma is estimated using mpPCA
+        DWIden0, sigma = mppca(DWInoise, patch_radius=2,
+                               return_sigma=True, **arg)
+        msigma = np.mean(sigma)
+        if not arg:
+            print(msigma, sigma)
+        std_error = abs(msigma - std_gt) / std_gt * 100
+        assert_less(std_error, 5)
 
-    # DWIden1 should be very similar to DWIden0
-    rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
-    rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
-    assert_(rmse_den < rmse_ref)
+        # Case that sigma is inputed (sigma outputed should be the same as
+        # the one inputed)
+        DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
+                                 patch_radius=2, return_sigma=True)
+        assert_array_almost_equal(rsigma, sigma)
+
+        # DWIden1 should be very similar to DWIden0
+        rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
+        rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
+        assert_less(rmse_den, rmse_ref)
 
 
 if __name__ == '__main__':

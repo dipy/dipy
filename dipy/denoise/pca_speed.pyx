@@ -5,6 +5,7 @@ cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import prange
 from libc.math cimport sqrt
+from libc.stdio cimport printf
 from dipy.core.linalg cimport fast_matvec, fast_eig, fast_dgemm
 
 import numpy as np
@@ -201,7 +202,11 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 else:
                     r0 = p - p_hat - 1
                     sigma2 = cum_W[p_hat] / r0
+
+                # Todo: Check Why we have negative value
+                # printf("%f\n", sigma2)
                 noise_arr_view[i, j, k] = sqrt(sigma2)
+                # printf("%f\n", noise_arr_view[i, j, k])
 
                 # Reconstruct the images, by finding positive lambda (tmp0)
                 tmp0 = rr - p_hat - 1
@@ -227,7 +232,7 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                     fast_matvec(b'n', X[k, :, :], temp1[k, :], temp2[k, :])
 
                 denoised_arr_view[i, j, k, :] = temp2[k, :]
-                noise_arr_view[i, j, k] = sqrt(sigma2)
+                # noise_arr_view[i, j, k] = sqrt(sigma2)
 
     # sigma = np.mean(noise_arr[noise_arr != 0])
     if return_sigma:
