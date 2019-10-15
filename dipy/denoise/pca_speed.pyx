@@ -1,183 +1,19 @@
 
-import numpy as np
-cimport numpy as cnp
 cimport cython
 
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import prange
-from multiprocessing import cpu_count
 from libc.math cimport sqrt
-from math import floor
-from scipy.linalg.cython_blas cimport dgemm
-from scipy.linalg.cython_blas cimport dgemv
-from scipy.linalg.cython_lapack cimport dsyevd
-from scipy.linalg.cython_lapack cimport dlasrt
+from dipy.core.linalg cimport fast_matvec, fast_eig, fast_dgemm
 
-
-# Fast Matrix-Vector Multiplications
-@cython.wraparound(False)
-@cython.boundscheck(False)
-@cython.nonecheck(False)
-cdef void fast_matvec(char ta, double[:,::1] A, double[:] b,
-                      double[:] y, double alpha=1.0, double beta=0.0,
-                      int incx=1) nogil:
-    r"""Performing Matrix - Vector Multiplication A*x or A.T*x.
-
-    This function dgemv() function from LAPACK, originally function can perform
-    y := alpha*A*x + beta*y,   or   y := alpha*A.T*x + beta*y
-
-    Parameters
-    ----------
-    ta : string
-        Apply transpose to input matrix
-        'n' = no transpose, 't' = is transpose
-    A : ndarray
-        Matrix A
-    b : ndarray (N, 3)
-        vector
-    y : ndarray,
-        Matrix y (zeros)
-    alpha : float
-        (default=1.0)
-    beta : float
-        (default=0.0)
-
-    Returns
-    -------
-    y : int
-        y = A*x or A.T*x
-
-    Notes
-    -----
-    For more info: Look up LAPACK dgemv() function
-
-    """
-    cdef:
-        char transa
-        int m,n
-        double *a0=&A[0,0]
-        double *b0=&b[0]
-        double *y0=&y[0]
-
-    if ta == b'n':
-        transa=b'n'
-        n= A.shape[0]
-        m= A.shape[1]
-
-        dgemv(&transa, &m , &n, &alpha, a0, &m,  b0, &incx, &beta, y0, &incx)
-    else:
-        transa=b't'
-        n= A.shape[0]
-        m= A.shape[1]
-        dgemv(&transa, &m , &n, &alpha, a0, &m,  b0, &incx, &beta, y0, &incx)
-
-
-# Fast Computing Eigen Values
-@cython.wraparound(False)
-@cython.boundscheck(False)
-@cython.nonecheck(False)
-cdef void fast_eig(double[:,::1] arr, double[::1] out_w, double[::1] out_work,
-                   int lwork, int[::1] out_iwork, int liwork) nogil:
-    """Computes all eigenvalues and, optionally, eigenvectors of a real symmetric matrix A.
-
-    If eigenvectors are desired, it uses a divide and conquer algorithm. Using
-    method dsyevd() from LAPACK return eigen value in ascending order.
-
-    Parameters
-    ----------
-    arr : array
-        Matrix A to compute eigen val and eigen vec (in). We reuse this array to write
-        the Orthogonal Eigen vector (out)
-    out_w : array,
-        Eigen Value
-    out_work : arrray
-        return the optimal LWORK
-    lwork : int
-        if JOBZ = V,and N > 1 then  int LWORK > 1 + 6*N + 2*N**2.
-    out_iwork : array
-        return the optimal LIWORK
-    liwork : int
-         if JOBZ = V,and N > 1 then  int LIWORK > 3+5*N.
-
-    Notes
-    -----
-    - JOBZ :"V" for compute eigen values and eigen vectors (default)
-           :"N" for compute eigen values only
-    - UPLO :'U' for Upper triangle of A is stored; (default)
-           :'L' for Lower triangle of A is stored.
-    """
-    cdef:
-        char JOBA=b'D'
-        char JOBZ=b'V'
-        char UPLO=b'U'
-        int incx=1
-        # Matrix Order
-        int N = arr.shape[0]
-        double *a0=&arr[0,0]
-        double *w0=&out_w[0]
-        double *work0=&out_work[0]
-        int *iwork0=&out_iwork[0]
-
-        int lda=N
-        int lw=lwork
-        int liw= liwork
-        int info
-
-    # Output compute is in Ascending Order
-    dsyevd( &JOBZ, &UPLO, &N, a0, &lda, w0,work0,&lwork, iwork0,&liw,&info)
-    # Using dlasrt to turn sort data into Descending Order
-    dlasrt ( &JOBA, &N, w0, &info)
-
-
-# Fast Matrix-Matrix Multiplication
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.nonecheck(False)
-cpdef void fast_dgemm(double[:,::1] in_arr, double[:,::1] out_arr) nogil:
-    r"""Performs matrix multiplication (a*a.T or a.T*a).
-
-    Parameters
-    ----------
-    in_arr: array
-        2D Matrix
-    out_arr: array
-        2D Matrix to store result
-
-"""
-    cdef:
-        char transa
-        char transb
-        int m2, n2, m,n,k
-        double alpha=1.0
-        double beta=0.0
-        double *a0=&in_arr[0,0]
-        double *c0=&out_arr[0,0]
-
-    m2= in_arr.shape[0]
-    n2= in_arr.shape[1]
-    if m2 <= n2:           #a*a.T
-        transa=b't'
-        transb=b'n'
-        m=m2
-        n=m2
-        k=n2
-        dgemm(&transa, &transb, &m , &n, &k, &alpha, a0, &k, a0,
-               &k, &beta, c0, &m)
-    else:                # a.T*a
-        transa=b'n'
-        transb=b't'
-        m=n2
-        n=n2
-        k=m2
-        dgemm(&transa, &transb, &m , &n, &k, &alpha, a0, &m, a0,
-               &n, &beta, c0, &m)
+import numpy as np
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.nonecheck(False)
-def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
+def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -185,15 +21,9 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    patch_extent : int, optional
-        The diameter of the local patch to be taken around each voxel (in
-        voxels). The radius will be half of this value. If not provided,
-        the default will be automatically computed as:
-
-        .. math ::
-
-                patch_extent = max(5,\lfloor N^{1/3} \rfloor)
-
+    patch_radius : int (optional)
+        The radius of the local patch to be taken around each voxel (in
+        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -222,33 +52,22 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
 
     # We perform all computations in float64 precision but return the
     # results in the original input's precision
-    if arr.dtype == np.float32:
-        calc_dtype = np.double
-    else:
-        calc_dtype = np.double
-
-    arr=arr.astype(calc_dtype)
+    arr = arr.astype(np.double)
 
     if not arr.ndim == 4:
         raise ValueError("PCA denoising can only be performed on 4D arrays.",
                          arr.shape)
 
-    if patch_extent <= 0:
-        Nvols = arr.shape[3]
-        patch_extent = max(5,Nvols ** (1. / 3.))
-
     cdef:
-        #OPENMP variables
+        # OPENMP variables
         int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-        #looping and index variables
+        # looping and index variables
         int i,j,k,ii,jj,kk,v,vol,z, p,cnt, tmp, tmp0
-
         int sizes[3]                       # == arr.shape . Used because of nogil.
 
-        #denoising array dimension variables
-        int patch_radius = int(floor(patch_extent/2.))
+        # Denoising array dimension variables
         int mm = arr.shape[3]              # n_DWIs
         int nn = (2*patch_radius+1) ** 3   # number of voxels in local kernel
         int half_nn = int(nn/2.)
@@ -263,7 +82,7 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
         double[:, :, ::1] C = np.zeros([arr.shape[2], rr, rr], dtype=np.double)
         # diagonal eigenvalue matrix
         double[:, :, ::1] diag_eigmat = np.zeros([arr.shape[2], rr, rr],
-                                               dtype=np.double)
+                                                 dtype=np.double)
         # eigenvalue array
         double[:, ::1] W = np.zeros([arr.shape[2], rr], dtype=np.double)
         # eigenvalue cummulative
@@ -287,10 +106,7 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
         # for memoryviewing the original images
         double[:,:,:,:] arr_view =arr
 
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
+    threads_to_use = num_threads or all_cores
 
     if have_openmp:
         openmp.omp_set_dynamic(0)
@@ -304,8 +120,8 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
     denoised_arr = np.zeros(arr.shape, dtype=np.float64)
 
 
-    cdef double [:,:,:,:] denoised_arr_view =denoised_arr
-    cdef double [:,:,:] noise_arr_view =noise_arr
+    cdef double [:,:,:,:] denoised_arr_view = denoised_arr
+    cdef double [:,:,:] noise_arr_view = noise_arr
 
     # OPENMP loop over slices
     for k in prange(0, sizes[2], nogil=True, schedule=static):
@@ -314,7 +130,7 @@ def randomlpca_denoise(arr, patch_extent=0, out_dtype=None,num_threads=None):
                 cum_W[:] = 0.
 
                 # copy the local patch into array X
-                cnt=-1
+                cnt =- 1
                 for ii in range(i-patch_radius, i + patch_radius + 1):
                     for jj in range(j-patch_radius, j + patch_radius + 1):
                          for kk in range(k-patch_radius, k + patch_radius + 1):

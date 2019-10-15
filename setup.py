@@ -65,6 +65,11 @@ EXTS = []
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
+<<<<<<< HEAD
+=======
+        ('dipy.core.interpolation', [], 'c'),
+        ('dipy.core.linalg', [], 'c'),
+>>>>>>> new module linalg, renaming
         ('dipy.direction.pmf', [], 'c'),
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
@@ -92,7 +97,7 @@ for modulename, other_sources, language in (
         ('dipy.denoise.nlmeans_block', [], 'c'),
         ('dipy.denoise.enhancement_kernel', [], 'c'),
         ('dipy.denoise.shift_twist_convolution', [], 'c'),
-        ('dipy.denoise.randomlpca_denoise', [], 'c'),
+        ('dipy.denoise.pca_speed', [], 'c'),
         ('dipy.align.vector_fields', [], 'c'),
         ('dipy.align.sumsqdiff', [], 'c'),
         ('dipy.align.expectmax', [], 'c'),
@@ -220,7 +225,6 @@ def main(**extra_args):
 
           ext_modules=EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
-<<<<<<< HEAD
           # changing to data_files doesn't get this stuff included in the
           # source distribution -- not sure if it has something to do with the
           # magic above, but distutils is surely the worst piece of code in
@@ -228,16 +232,6 @@ def main(**extra_args):
           # admittedly only a workaround to get things started -- not a
           # solution
           package_data={'dipy': [pjoin('data', 'files', '*')],},
-=======
-          # changing to data_files doesn't get this stuff included in the source
-          # distribution -- not sure if it has something to do with the magic
-          # above, but distutils is surely the worst piece of code in all of
-          # python -- duplicating things into MANIFEST.in but this is admittedly
-          # only a workaround to get things started -- not a solution
-          package_data={'dipy':
-                            [pjoin('data', 'files', '*')
-                             ]},
->>>>>>> update setup.py
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc', 'examples', '*.py')))],
           scripts=glob(pjoin('bin', 'dipy_*')),
