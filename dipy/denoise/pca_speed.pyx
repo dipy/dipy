@@ -13,7 +13,8 @@ import numpy as np
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.nonecheck(False)
-def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
+def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
+                out_dtype=None, num_threads=None):
     r"""Local PCA-based denoising of diffusion datasets.
 
     Parameters
@@ -24,6 +25,10 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
     patch_radius : int (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    return_sigma : bool
+        If true, a noise standard deviation estimate based on the
+        Marcenko-Pastur distribution is returned [2]_.
+        Default: False.
     out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -69,7 +74,8 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
 
         # Denoising array dimension variables
         int mm = arr.shape[3]              # n_DWIs
-        int nn = (2*patch_radius+1) ** 3   # number of voxels in local kernel
+        int c_patch_radius = patch_radius
+        int nn = (2 * c_patch_radius + 1) ** 3   # number of voxels in local kernel
         int half_nn = int(nn/2.)
         int rr = mm if (mm<nn) else nn     # dimension of the square PCA matrix
 
@@ -104,7 +110,7 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
         int p_hat
 
         # for memoryviewing the original images
-        double[:,:,:,:] arr_view =arr
+        double[:,:,:,:] arr_view = arr
 
     threads_to_use = num_threads or all_cores
 
@@ -119,6 +125,10 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
     noise_arr = np.zeros([arr.shape[0],arr.shape[1],arr.shape[2]],dtype=np.float64)
     denoised_arr = np.zeros(arr.shape, dtype=np.float64)
 
+    if mask is None:
+        # If mask is not specified, use the whole volume
+        mask = np.ones_like(arr, dtype=bool)[..., 0]
+
 
     cdef double [:,:,:,:] denoised_arr_view = denoised_arr
     cdef double [:,:,:] noise_arr_view = noise_arr
@@ -129,11 +139,13 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
             for i in range(0,sizes[0]):
                 cum_W[:] = 0.
 
+                if not mask[i, j, k]:
+                    continue
                 # copy the local patch into array X
                 cnt =- 1
-                for ii in range(i-patch_radius, i + patch_radius + 1):
-                    for jj in range(j-patch_radius, j + patch_radius + 1):
-                         for kk in range(k-patch_radius, k + patch_radius + 1):
+                for ii in range(i - c_patch_radius, i + c_patch_radius + 1):
+                    for jj in range(j - c_patch_radius, j + c_patch_radius + 1):
+                         for kk in range(k - c_patch_radius, k + c_patch_radius + 1):
                             cnt=cnt+1
                             if((ii>=0) & (ii<sizes[0]) & (jj>=0) & (jj<sizes[1]) & (kk>=0) & (kk<sizes[2])):
                                 for vol in range(mm):
@@ -217,6 +229,9 @@ def fast_mp_pca(arr, patch_radius=2, out_dtype=None,num_threads=None):
                 noise_arr_view[i, j, k] = sqrt(sigma2)
 
     sigma = np.mean(noise_arr[noise_arr != 0])
-    return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype), sigma
+    if return_sigma:
+        return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype), sigma
+    else:
+        return denoised_arr.astype(out_dtype)
 
 
