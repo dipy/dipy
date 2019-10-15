@@ -49,6 +49,6 @@ echo "backend : agg" > matplotlibrc
 if [ "$COVERAGE" == "1" ]; then
     cp ../.coveragerc .;
     cp ../.codecov.yml .;
-    COVER_CMD="coverage run -m ";
+    export COVER_CMD="coverage run -m ";
 fi
 $COVER_CMD pytest -s --doctest-modules --verbose --durations=10 --pyargs dipy

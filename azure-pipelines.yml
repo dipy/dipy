@@ -24,17 +24,17 @@ jobs:
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==2.4.0 h5py==2.8.0"
-      Python37-64bit + OPTIONAL_DEPS:
+      Python37-64bit + OPTIONAL_DEPS + COVERAGE:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
         COVERAGE: "1"
-      Python37-64bit + VIZ:
+      Python37-64bit + VIZ + COVERAGE:
         TEST_WITH_XVFB: "1"
         COVERAGE: "1"
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy pandas statsmodels==0.9.0 tables xvfbwrapper"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
