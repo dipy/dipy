@@ -1,4 +1,5 @@
 import numpy as np
+from dipy.denoise.pca_speed import fast_mp_pca
 try:
     from scipy.linalg.lapack import dgesvd as svd
     svd_args = [1, 0]
@@ -313,7 +314,7 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
 
 
 def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
-          return_sigma=False, out_dtype=None):
+          return_sigma=False, use_fast=False, out_dtype=None):
     r"""Performs PCA-based denoising using the Marcenko-Pastur
     distribution [1]_.
 
@@ -338,6 +339,10 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned [2]_.
         Default: False.
+    use_fast: bool (optional)
+        If True, use a parallelized version. Works only with 'eig' method.
+        Be aware that the parallelized version do not give the exact same
+        result as the non-parallel version. (default: False)
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -360,6 +365,14 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
            mapping using random matrix theory. Magnetic Resonance in Medicine.
            doi: 10.1002/mrm.26059.
     """
+    if use_fast:
+        if pca_method.lower() == 'eig':
+            return fast_mp_pca(arr, mask=mask, patch_radius=patch_radius,
+                               return_sigma=return_sigma, out_dtype=out_dtype)
+        else:
+            raise ValueError("The fast version is not yet available with " +
+                             "{} method. Please use 'eigh'.".format(pca_method))
+
     return genpca(arr, sigma=None, mask=mask, patch_radius=patch_radius,
                   pca_method=pca_method, tau_factor=None,
                   return_sigma=return_sigma, out_dtype=out_dtype)
