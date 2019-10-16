@@ -34,7 +34,7 @@ jobs:
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        EXTRA_DEPENDS: "scikit_learn vtk fury scipy pandas statsmodels==0.9.0 tables xvfbwrapper"
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy==1.1 pandas statsmodels==0.9.0 tables xvfbwrapper"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
