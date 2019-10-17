@@ -5,7 +5,7 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 
 from dipy.utils.optpkg import optional_package
 
-tf , have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
@@ -14,7 +14,7 @@ if have_tf:
     from dipy.nn.model import SingleLayerPerceptron
 
 
-@pytest.mark.skipif(not have_tf)
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_mnist_sequential():
 
     mnist = tf.keras.datasets.mnist
@@ -41,7 +41,7 @@ def test_default_mnist_sequential():
     assert_equal(accuracy > 0.9, True)
 
 
-@pytest.mark.skipif(not have_tf)
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_mnist_slp():
 
     mnist = tf.keras.datasets.mnist
