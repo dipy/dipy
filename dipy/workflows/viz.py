@@ -71,8 +71,12 @@ class HorizonFlow(Workflow):
             if ends('.trk') or ends('.tck'):
 
                 streamlines = nib.streamlines.load(fname).streamlines
+                # TODO: to be able to save bundles with header information
+                # we should allow option for loading tractogram objects
+                # as whole (possibly using load_tractogram)
                 tractograms.append(streamlines)
-            elif ends('dpy'):
+
+            elif ends('.dpy'):
 
                 dpy_obj = Dpy(fname, mode='r')
                 streamlines = list(dpy_obj.read_tracks())

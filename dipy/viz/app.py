@@ -69,7 +69,7 @@ def apply_shader(hz, actor):
 HELP_MESSAGE = """
 >> left click: select centroid
 >> e: expand centroids
->> r: collapse open clusters
+>> r: collapse all clusters
 >> h: hide unselected centroids
 >> i: invert selection
 >> a: select all centroids
@@ -229,7 +229,7 @@ class Horizon(object):
                         'centroid_actor': centroid_actor,
                         'cluster': i, 'tractogram': t,
                         'size': sizes[i], 'length': centroid_lengths[i],
-                        'selected': 0}
+                        'selected': 0, 'highlighted': 0}
                     apply_shader(self, cluster_actor)
                     apply_shader(self, centroid_actor)
 
@@ -480,7 +480,7 @@ class Horizon(object):
                     indices = self.tractogram_clusters[t][c]
                     saving_streamlines.extend(Streamlines(indices))
             print('Saving result in tmp.trk')
-            # TODO 'same' is not implemented correctly
+            # TODO Need to provide header information or anatomy file
             # sft = StatefulTractogram(saving_streamlines, 'same',
             #                          Space.RASMM)
             # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
@@ -593,7 +593,7 @@ class Horizon(object):
                     reset()
 
         options = ['hide', 'invert', 'all', 'expand', 'reset', 'focus']
-        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 170),
+        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 200),
                                multiselection=False, font_size=18)
 
         def display_element():
@@ -608,9 +608,10 @@ class Horizon(object):
                 expand()
             if action == 'reset':
                 reset()
+            if action == 'save':
+                save()
             if action == 'focus':
                 new_window()
-            # listbox.slots[0].background.actor.GetProperty().SetColor(1, .5, 0)
 
         listbox.on_change = display_element
         listbox.panel.opacity = 0.2
@@ -643,8 +644,14 @@ class Horizon(object):
 
             self.show_m.render()
 
+        def right_click_cluster_callback(obj, event):
+            print('Cluster Area Selected')
+            self.show_m.render()
+
         for cl in self.cla:
             cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
+                           1.0)
+            cl.AddObserver('RightButtonPressEvent', right_click_cluster_callback,
                            1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
