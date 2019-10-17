@@ -5,12 +5,7 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 
 from dipy.utils.optpkg import optional_package
 
-tf_gpu , have_tf_gpu, _ = optional_package('tensorflow-gpu')
 tf , have_tf, _ = optional_package('tensorflow')
-
-if have_tf_gpu:
-    tf = tf_gpu
-    have_tf = have_tf_gpu
 
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
@@ -18,7 +13,7 @@ if have_tf:
 
 
 @pytest.mark.skipif(not have_tf)
-def test_default_mnist():
+def test_default_mnist_sequential():
 
     mnist = tf.keras.datasets.mnist
 
@@ -42,4 +37,4 @@ def test_default_mnist():
 
 
 if __name__ == "__main__":
-    test_default_mnist()
+    test_default_mnist_sequential()
