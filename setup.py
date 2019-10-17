@@ -26,8 +26,8 @@ if 'force_setuptools' not in globals():
 if force_setuptools:
     import setuptools
 
-# Import distutils _after_ potential setuptools import above, and after removing
-# MANIFEST
+# Import distutils _after_ potential setuptools import above, and after
+# removing MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
 
@@ -51,12 +51,12 @@ if using_setuptools:
     sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
     # Set setuptools extra arguments
     extra_setuptools_args = dict(
-        tests_require=['nose'],
+        tests_require=['pytest', 'nose'],
         test_suite='nose.collector',
         zip_safe=False,
         extras_require=dict(
             doc=['Sphinx>=1.0'],
-            test=['nose>=0.10.1']))
+            test=['pytest', 'nose>=0.10.1']))
 
 # Define extensions
 EXTS = []
@@ -65,11 +65,8 @@ EXTS = []
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
-<<<<<<< HEAD
-=======
         ('dipy.core.interpolation', [], 'c'),
         ('dipy.core.linalg', [], 'c'),
->>>>>>> new module linalg, renaming
         ('dipy.direction.pmf', [], 'c'),
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
@@ -105,7 +102,6 @@ for modulename, other_sources, language in (
         ('dipy.align.bundlemin', [], 'c'),
         ('dipy.align.transforms', [], 'c'),
         ('dipy.align.parzenhist', [], 'c'),
-        #('dipy.align.quadratictransform', [], 'c'),
         ('dipy.utils.omp', [], 'c'),
         ('dipy.utils.fast_numpy', [], 'c')):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
@@ -113,11 +109,11 @@ for modulename, other_sources, language in (
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
-# Do our own build and install time dependency checking. setup.py gets called in
-# many different ways, and may be called just to collect information (egg_info).
-# We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec We may
-# make tripwire versions of build_ext, build_py, install
+# Do our own build and install time dependency checking. setup.py gets called
+# in many different ways, and may be called just to collect information
+# (egg_info). We need to set up tripwires to raise errors when actually doing
+# things, like building, rather than unconditionally in the setup.py import or
+# exec We may make tripwire versions of build_ext, build_py, install
 need_cython = True
 pybuilder = get_comrec_build('dipy')
 # Cython is a dependency for building extensions, iff we don't have stamped
