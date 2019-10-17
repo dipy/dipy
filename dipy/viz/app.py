@@ -592,25 +592,26 @@ class Horizon(object):
                 if key == 'r' or key == 'R':
                     reset()
 
-        options = ['hide', 'invert', 'all', 'expand', 'reset', 'focus']
-        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 200),
+        options = ['un\hide centroids', 'invert selection',
+                   'un\select all', 'expand clusters', 'collapse clusters', 'recluster']
+        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 270),
                                multiselection=False, font_size=18)
 
         def display_element():
             action = listbox.selected[0]
-            if action == 'hide':
+            if action == 'un\hide centroids':
                 hide()
-            if action == 'invert':
+            if action == 'invert selection':
                 invert()
-            if action == 'all':
+            if action == 'un\select all':
                 show_all()
-            if action == 'expand':
+            if action == 'expand clusters':
                 expand()
-            if action == 'reset':
+            if action == 'collapse clusters':
                 reset()
-            if action == 'save':
+            if action == 'save streamlines':
                 save()
-            if action == 'focus':
+            if action == 'recluster':
                 new_window()
 
         listbox.on_change = display_element
