@@ -47,12 +47,12 @@ matrix:
     - python: 3.7
       dist: xenial
       env:
-        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 "
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 tensorflow"
     - python: 3.7
       dist: xenial
       env:
         - COVERAGE=1
-        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+        - DEPENDS="$DEPENDS scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1 tensorflow"
     # To test vtk functionality
     - python: 3.7
       dist: xenial
