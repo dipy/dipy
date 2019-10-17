@@ -218,12 +218,15 @@ def main(**extra_args):
                     'dipy.segment.tests',
                     'dipy.sims',
                     'dipy.sims.tests',
+                    'dipy.stats',
+                    'dipy.stats.tests',
                     'dipy.denoise',
                     'dipy.denoise.tests',
                     'dipy.workflows',
                     'dipy.workflows.tests'],
 
           ext_modules=EXTS,
+          python_requires=">= 3.5",
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the
           # source distribution -- not sure if it has something to do with the
