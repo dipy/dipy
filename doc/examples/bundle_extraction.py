@@ -72,7 +72,8 @@ registeration (SLR) [Garyfallidis15]_
 """
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
-    atlas, target, x0='affine', verbose=True, progressive=True)
+    atlas, target, x0='affine', verbose=True, progressive=True,
+    rng=np.random.RandomState(1984))
 
 
 """
@@ -120,7 +121,7 @@ Extracting bundles using recobundles [Garyfallidis17]_
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
-rb = RecoBundles(moved, verbose=True)
+rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
 
 recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
                                             model_clust_thr=5.,
