@@ -2,10 +2,9 @@
 
 .. _reconst-mcsd:
 
-==================================================================
-Reconstruction with Multi-Shell Multi-Tissue Constrained Spherical
-Deconvolution
-==================================================================
+================================================
+Reconstruction with Multi-Shell Multi-Tissue CSD
+================================================
 
 This example shows how to use Multi-Shell Multi-Tissue Constrained Spherical
 Deconvolution (MSMT-CSD) introduced by Tournier et al. [Jeurissen2014]_. This
@@ -123,7 +122,7 @@ As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
 used for tissue classification using Hidden Markov Random Fields (HMRF). The
 HMRF needs the specification of the number of classes. For the case of MSMT-CSD
 the ``nclass`` parameter needs to be ``>=2``. In our case, we set it to 3:
-namely corticospinal fluid (CSF), white matter (WM) and gray matter (GM).
+namely corticospinal fluid (csf), white matter (wm) and gray matter (gm).
 """
 
 nclass = 3
@@ -133,11 +132,13 @@ Then, the smoothness factor of the segmentation. Good performance is achieved
 with values between 0 and 0.5.
 """
 
-beta = 0.2
+
+beta = 0.1
+
 
 """
- We then call the ``TissueClassifierHMRF`` with the parameters specified as
- above:
+We then call the ``TissueClassifierHMRF`` with the parameters specified as
+above:
 """
 
 hmrf = TissueClassifierHMRF()
@@ -146,7 +147,7 @@ print(PVE.shape)
 
 """
 Now that we hae the segmentation step, we would like to classify the tissues
-into White Matter (WM), Grey Matter (GM) and corticospinal fluid (CSF). We do
+into ``wm``, ``gm`` and ``csf`` We do
 so using the Fractional Anisotropy (FA) and Mean Diffusivity (MD) metrics
 obtained from the Diffusion Tensor Imaging Model (DTI) fit as follows:
 """
@@ -162,51 +163,78 @@ FA = tenfit.fa
 MD = tenfit.md
 
 """
-
+Now that we have the FA and the MD obtained from DTI, we use it to distinguish
+between the ``wm``, ``gm`` and ``csf``. As we can see
+from the shape of the PVE, the last dimension refers to the classification. We
+will now index them as: 0 -> ``csf``, 1 -> ``gm`` and 2 ->``wm`` as per their
+FA values and the confidence of prediction obtained from
+``TissueClassifierHMRF``.
 """
 
 csf = PVE[..., 0]
-cgm = PVE[..., 1]
-
+gm = PVE[..., 1]
+wm = PVE[..., 2]
 
 indices_csf = np.where(((FA < 0.2) & (csf > 0.95)))
-indices_cgm = np.where(((FA < 0.2) & (cgm > 0.95)))
+indices_gm = np.where(((FA < 0.2) & (gm > 0.95)))
 
 selected_csf = np.zeros(FA.shape, dtype='bool')
-selected_cgm = np.zeros(FA.shape, dtype='bool')
+selected_gm = np.zeros(FA.shape, dtype='bool')
 
 selected_csf[indices_csf] = True
-selected_cgm[indices_cgm] = True
+selected_gm[indices_gm] = True
 
 csf_md = np.mean(MD[selected_csf])
-cgm_md = np.mean(MD[selected_cgm])
+gm_md = np.mean(MD[selected_gm])
 
+"""
+The ``auto_response`` function will calculate FA for an ROI of radius equal to
+``roi_radius`` in the center of the volume and return the response function
+estimated in that region for the voxels with FA higher than 0.7.
+"""
 
 response, ratio = auto_response(gtab, denoised_arr, roi_radius=10, fa_thr=0.7)
 evals_d = response[0]
 
+"""
+We will now use the evals obtained from the ``auto_response`` to generate the
+``multi_shell_fiber_response`` rquired by the MSMT-CSD model. Note that we
+mead diffusivities of ``csf`` and ``gm`` as inputs to generate th response.
+"""
+
 response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
                                            evals=evals_d, csf_md=csf_md,
-                                           gm_md=cgm_md)
+                                           gm_md=gm_md)
+
+"""
+Now we build the MSMT-CSD model with the ``response_mcsd`` as input. We then
+call the ``fit`` function to fit one slice of the 3D data and visualize it.
+"""
 
 mcsd_model = MultiShellDeconvModel(gtab, response_mcsd)
+mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
 
-mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:10+1])
+"""
+From the fit obtained in the previous step, we generate the ODFs which can be
+visualized as follows:
+"""
+
 mcsd_odf = mcsd_fit.odf(sphere)
 fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=0.01,
                                 norm=False, colormap='plasma')
 interactive = False
 ren = window.Renderer()
 ren.add(fodf_spheres)
+ren.reset_camera_tight()
 
-print('Saving illustration as mcsd_peaks.png')
-window.record(ren, out_path='mcsd_peaks.png', size=(600, 600))
+print('Saving illustration as msdodf.png')
+window.record(ren, out_path='msdodf.png', size=(600, 600))
 
 if interactive:
     window.show(ren)
 
 """
-.. figure:: mcsd_peaks.png
+.. figure:: msdodf.png
    :align: center
 
    CSD Peaks and ODFs.
