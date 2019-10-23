@@ -190,7 +190,7 @@ class RecoBundles(object):
         model_clust_thr : float
         reduction_thr : float
         reduction_distance : string
-            mdf or mam (default mam)
+            mdf or mam (default mdf)
         slr : bool
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
@@ -463,7 +463,7 @@ class RecoBundles(object):
         elif reduction_distance.lower() == 'mam':
             if self.verbose:
                 print(' Using MAM')
-            centroid_matrix = bundles_distances_mdf(model_centroids,
+            centroid_matrix = bundles_distances_mam(model_centroids,
                                                     self.centroids)
         else:
             raise ValueError('Given reduction distance not known')
