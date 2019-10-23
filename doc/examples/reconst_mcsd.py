@@ -2,10 +2,10 @@
 
 .. _reconst-mcsd:
 
-=======================================================
+==================================================================
 Reconstruction with Multi-Shell Multi-Tissue Constrained Spherical
 Deconvolution
-=======================================================
+==================================================================
 
 This example shows how to use Multi-Shell Multi-Tissue Constrained Spherical
 Deconvolution (MSMT-CSD) introduced by Tournier et al. [Jeurissen2014]_. This
@@ -92,32 +92,78 @@ As one can see from its shape, the selected data contains a total of 67
 volumes of images corresponding to all the diffusion gradient directions
 of the selected b-values and call the ``mppca`` as follows:
 """
+
 denoised_arr = mppca(data, mask=mask, patch_radius=2)
 
 """
-"""
-model = shm.QballModel(gtab, 8)
+Now we will use the denoised array (``denoised_arr``) obtained from ``mppca``
+in the rest of the steps in the tutorial.
 
-peaks = dp.peaks_from_model(model=model, data=denoised_arr,
+As for the next step, we generate the anisotropic powermap introduced by
+[Dell'Acqua2014]_. To do so, we make use of the Qball Model as follows:
+"""
+
+qball_model = shm.QballModel(gtab, 8)
+
+"""
+We generate the peaks from the ``qball_model`` as follows:
+"""
+
+peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
                             relative_peak_threshold=.5,
                             min_separation_angle=25,
                             sphere=sphere, mask=mask)
 
 ap = shm.anisotropic_power(peaks.shm_coeff)
 
-tenmodel = dti.TensorModel(gtab)
-tenfit = tenmodel.fit(denoised_arr)
+print(ap.shape)
+
+"""
+As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
+used for tissue classification using Hidden Markov Random Fields (HMRF). The
+HMRF needs the specification of the number of classes. For the case of MSMT-CSD
+the ``nclass`` parameter needs to be ``>=2``. In our case, we set it to 3:
+namely corticospinal fluid (CSF), white matter (WM) and gray matter (GM).
+"""
 
 nclass = 3
-beta = 0.1
 
+"""
+Then, the smoothness factor of the segmentation. Good performance is achieved
+with values between 0 and 0.5.
+"""
+
+beta = 0.2
+
+"""
+ We then call the ``TissueClassifierHMRF`` with the parameters specified as
+ above:
+"""
+
+hmrf = TissueClassifierHMRF()
+initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
+print(PVE.shape)
+
+"""
+Now that we hae the segmentation step, we would like to classify the tissues
+into White Matter (WM), Grey Matter (GM) and corticospinal fluid (CSF). We do
+so using the Fractional Anisotropy (FA) and Mean Diffusivity (MD) metrics
+obtained from the Diffusion Tensor Imaging Model (DTI) fit as follows:
+"""
+
+# Construct the  DTI model
+tenmodel = dti.TensorModel(gtab)
+
+# fit the denoised data with DTI model
+tenfit = tenmodel.fit(denoised_arr)
+
+# obtain the FA and MD metrics
 FA = tenfit.fa
 MD = tenfit.md
 
-hmrf = TissueClassifierHMRF()
-initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass,
-                                                              beta)
+"""
 
+"""
 
 csf = PVE[..., 0]
 cgm = PVE[..., 1]
@@ -132,8 +178,8 @@ selected_cgm = np.zeros(FA.shape, dtype='bool')
 selected_csf[indices_csf] = True
 selected_cgm[indices_cgm] = True
 
-csf_md = np.mean(tenfit.md[selected_csf])
-cgm_md = np.mean(tenfit.md[selected_cgm])
+csf_md = np.mean(MD[selected_csf])
+cgm_md = np.mean(MD[selected_cgm])
 
 
 response, ratio = auto_response(gtab, denoised_arr, roi_radius=10, fa_thr=0.7)
@@ -167,16 +213,5 @@ if interactive:
 
 References
 ----------
-
-.. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust
-   determination of the fibre orientation distribution in diffusion MRI:
-   Non-negativity constrained super-resolved spherical deconvolution",
-   Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
-
-.. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans,
-   "Recursive calibration of the fiber response function for spherical
-   deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80, 2014.
-
-.. include:: ../links_names.inc
 
 """
