@@ -101,7 +101,7 @@ Now we will use the denoised array (``denoised_arr``) obtained from ``mppca``
 in the rest of the steps in the tutorial.
 
 As for the next step, we generate the anisotropic powermap introduced by
-[Dell'Acqua2014]_. To do so, we make use of the Qball Model as follows:
+[DellAcqua2014]_. To do so, we make use of the Qball Model as follows:
 """
 
 qball_model = shm.QballModel(gtab, 8)
@@ -183,7 +183,7 @@ MD = tenfit.md
 Now that we have the FA and the MD obtained from DTI, we use it to distinguish
 between the ``wm``, ``gm`` and ``csf``. As we can see
 from the shape of the PVE, the last dimension refers to the classification. We
-will now index them as: 0 -> ``csf``, 1 -> ``gm`` and 2 ->``wm`` as per their
+will now index them as: 0 -> ``csf``, 1 -> ``gm`` and 2 -> ``wm`` as per their
 FA values and the confidence of prediction obtained from
 ``TissueClassifierHMRF``.
 """
@@ -270,12 +270,12 @@ References
                     spherical deconvolution", Neuroimage, vol. 35, no. 4,
                     pp. 1459-1472, (2007).
 
-.. [Hansen2016]  B. Hansen and SN. Jespersen Data for evaluation of fast
+.. [Hansen2016] B. Hansen and SN. Jespersen, " Data for evaluation of fast
                     kurtosis strategies, b-value optimization and exploration
-                    of diffusion MRI contrast. Scientific Data 3: 160072
+                    of diffusion MRI contrast", Scientific Data 3: 160072
                     doi:10.1038/sdata.2016.72, (2016)
 
-.. [Dell'Acqua2014], F. Dell'Acqua, et. al., "Anisotropic Power Maps: A
+.. [DellAcqua2014] F. Dell'Acqua, et. al., "Anisotropic Power Maps: A
                     diffusion contrast to reveal low anisotropy tissues from
                     HARDI data", Proceedings of International Society for
                     Magnetic Resonance in Medicine. Milan, Italy, (2014).
