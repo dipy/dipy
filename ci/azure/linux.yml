@@ -25,6 +25,7 @@ jobs:
       architecture: 'x64'
       addToPath: true
   - bash: |
+      sudo apt-get update
       sudo apt-get install -y libhdf5-serial-dev
     displayName: 'Install packages'
   - bash: |

@@ -2,7 +2,10 @@
 set -ev
 
 if [ "$INSTALL_TYPE" == "conda" ]; then
+  # Workaround: https://github.com/conda/conda/issues/9337
+  pip uninstall -y setuptools
   conda config --set always_yes yes --set changeps1 no
+  conda install -yq setuptools
   conda update -yq conda
   conda install conda-build anaconda-client
   conda config --add channels conda-forge
