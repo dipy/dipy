@@ -21,9 +21,10 @@ The reconstruction of the fiber orientation distribution function
     1. Generate a mask using Median Otsu (optional step)
     2. Denoise the data using MP-PCA (optional step)
     3. Generate  Anisotropic Powermap (if T1 unavailable)
-    4. Tissue Classification (needs to be at least two classes of tissues)
-    5. Estimation of the fiber response function
-    6. Use the response function to reconstruct the fODF
+    4. Fit DTI model to the data
+    5. Tissue Classification (needs to be at least two classes of tissues)
+    6. Estimation of the fiber response function
+    7. Use the response function to reconstruct the fODF
 
 First, we import all the modules we need from dipy as follows:
 """
@@ -32,6 +33,7 @@ import numpy as np
 import dipy.reconst.shm as shm
 import dipy.direction.peaks as dp
 import dipy.reconst.dti as dti
+import matplotlib.pyplot as plt
 
 from dipy.denoise.localpca import mppca
 from dipy.data import (fetch_cfin_multib, read_cfin_dwi)
@@ -115,9 +117,24 @@ peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
 
 ap = shm.anisotropic_power(peaks.shm_coeff)
 
+plt.matshow(np.rot90(ap[:, :, 10]), cmap=plt.cm.bone)
+plt.savefig("anisotropic_power_map.png")
+plt.close()
+
+"""
+.. figure:: anisotropic_power_map.png
+   :align: center
+
+   Anisotropic Power Map (Axial Slice)
+"""
+
 print(ap.shape)
 
 """
+The above figure is a visualization of the axial slice of the Anisotropic
+Power Map. It can be treated as a peudo-T1 for the classification purposes
+using the HMRF classifier if the T1 image is not available.
+
 As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
 used for tissue classification using Hidden Markov Random Fields (HMRF). The
 HMRF needs the specification of the number of classes. For the case of MSMT-CSD
@@ -222,13 +239,14 @@ visualized as follows:
 mcsd_odf = mcsd_fit.odf(sphere)
 fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=0.01,
                                 norm=False, colormap='plasma')
+
 interactive = False
 ren = window.Renderer()
 ren.add(fodf_spheres)
 ren.reset_camera_tight()
 
 print('Saving illustration as msdodf.png')
-window.record(ren, out_path='msdodf.png', size=(600, 600))
+window.record(ren, out_path='msdodf.png', size=(600, 600), magnification=2)
 
 if interactive:
     window.show(ren)
@@ -237,9 +255,30 @@ if interactive:
 .. figure:: msdodf.png
    :align: center
 
-   CSD Peaks and ODFs.
+   MSMT-CSD Peaks and ODFs.
 
 References
 ----------
 
+.. [Jeurissen2014] B. Jeurissen, et al., "Multi-tissue constrained spherical
+                    deconvolution for improved analysis of multi-shell
+                    diffusion MRI data." NeuroImage 103 (2014): 411-426.
+
+.. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust
+                    determination of the fibre orientation distribution in
+                    diffusion MRI: Non-negativity constrained super-resolved
+                    spherical deconvolution", Neuroimage, vol. 35, no. 4,
+                    pp. 1459-1472, (2007).
+
+.. [Hansen2016]  B. Hansen and SN. Jespersen Data for evaluation of fast
+                    kurtosis strategies, b-value optimization and exploration
+                    of diffusion MRI contrast. Scientific Data 3: 160072
+                    doi:10.1038/sdata.2016.72, (2016)
+
+.. [Dell'Acqua2014], F. Dell'Acqua, et. al., "Anisotropic Power Maps: A
+                    diffusion contrast to reveal low anisotropy tissues from
+                    HARDI data", Proceedings of International Society for
+                    Magnetic Resonance in Medicine. Milan, Italy, (2014).
+
+.. include:: ../links_names.inc
 """
