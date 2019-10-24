@@ -246,7 +246,7 @@ ren.add(fodf_spheres)
 ren.reset_camera_tight()
 
 print('Saving illustration as msdodf.png')
-window.record(ren, out_path='msdodf.png', size=(600, 600), magnification=2)
+window.record(ren, out_path='msdodf.png', size=(600, 600))
 
 if interactive:
     window.show(ren)
