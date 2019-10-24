@@ -55,21 +55,13 @@ candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
 candidate_sl_sft.to_vox()
 candidate_sl = candidate_sl_sft.streamlines
 
-"""
-
-The streamlines that are entered into the model are termed 'candidate
-streamlines' (or a 'candidate connectome'):
-
-"""
-
-
-"""
-
-Let's visualize the initial candidate group of streamlines in 3D, relative to
-the anatomical structure of this brain:
-
-"""
-
+###############################################################################
+# The streamlines that are entered into the model are termed 'candidate
+# streamlines' (or a 'candidate connectome'):
+#
+#
+# Let's visualize the initial candidate group of streamlines in 3D, relative to
+# the anatomical structure of this brain:
 
 # Enables/disables interactive visualization
 interactive = False
@@ -97,71 +89,60 @@ window.record(ren, n_frames=1,
 if interactive:
     window.show(ren)
 
-"""
-
-.. figure:: life_candidates.png
-   :align: center
-
-   **Candidate connectome before life optimization**
-
-"""
-
-
-"""
-
-Next, we initialize a LiFE model. We import the ``dipy.tracking.life`` module,
-which contains the classes and functions that implement the model:
-
-"""
+###############################################################################
+# .. figure:: life_candidates.png
+#    :align: center
+#
+#    **Candidate connectome before life optimization**
+#
+#
+#
+# Next, we initialize a LiFE model. We import the ``dipy.tracking.life``
+# module, which contains the classes and functions that implement the model:
 
 fiber_model = life.FiberModel(gtab)
 
-"""
-
-Since we read the streamlines from a file, already in the voxel space, we do
-not need to transform them into this space. Otherwise, if the streamline
-coordinates were in the world space (relative to the scanner iso-center, or
-relative to the mid-point of the AC-PC-connecting line), we would use this::
-
-   inv_affine = np.linalg.inv(hardi_img.affine)
-
-the inverse transformation from world space to the voxel space as the affine
-for the following model fit.
-
-The next step is to fit the model, producing a ``FiberFit`` class instance,
-that stores the data, as well as the results of the fitting procedure.
-
-The LiFE model posits that the signal in the diffusion MRI volume can be
-explained by the streamlines, by the equation
-
-.. math::
-
-    y = X\beta
-
-Where $y$ is the diffusion MRI signal, $\beta$ are a set of weights on the
-streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
-$n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
-voxels in the ROI that contains the streamlines considered in this model. The
-$i^{th}$ column of the matrix contains the expected contributions of the
-$i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
-sparse matrix, because each streamline traverses only a small percentage of the
-voxels. The  expected contributions of the streamline are calculated using a
-forward model, where each node of the streamline is modeled as a cylindrical
-fiber compartment with Gaussian diffusion, using the diffusion tensor model.
-See [Pestilli2014]_ for more detail on the model, and variations of this model.
-
-"""
+###############################################################################
+# Since we read the streamlines from a file, already in the voxel space, we do
+# not need to transform them into this space. Otherwise, if the streamline
+# coordinates were in the world space (relative to the scanner iso-center, or
+# relative to the mid-point of the AC-PC-connecting line), we would use this::
+#
+#    inv_affine = np.linalg.inv(hardi_img.affine)
+#
+# the inverse transformation from world space to the voxel space as the affine
+# for the following model fit.
+#
+# The next step is to fit the model, producing a ``FiberFit`` class instance,
+# that stores the data, as well as the results of the fitting procedure.
+#
+# The LiFE model posits that the signal in the diffusion MRI volume can be
+# explained by the streamlines, by the equation
+#
+# .. math::
+#
+#     y = X\beta
+#
+# Where $y$ is the diffusion MRI signal, $\beta$ are a set of weights on the
+# streamlines and $X$ is a design matrix. This matrix has the dimensions $m$ by
+# $n$, where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set
+# of voxels in the ROI that contains the streamlines considered in this model.
+# The $i^{th}$ column of the matrix contains the expected contributions of the
+# $i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
+# sparse matrix, because each streamline traverses only a small percentage of
+# the voxels. The  expected contributions of the streamline are calculated
+# using a forward model, where each node of the streamline is modeled as a
+# cylindrical fiber compartment with Gaussian diffusion, using the diffusion
+# tensor model. See [Pestilli2014]_ for more detail on the model, and
+# variations of this model.
 
 fiber_fit = fiber_model.fit(data, candidate_sl, affine=np.eye(4))
 
-"""
-
-The ``FiberFit`` class instance holds various properties of the model fit. For
-example, it has the weights $\beta$, that are assigned to each streamline. In
-most cases, a tractography through some region will include redundant
-streamlines, and these streamlines will have $\beta_i$ that are 0.
-
-"""
+###############################################################################
+# The ``FiberFit`` class instance holds various properties of the model fit.
+# For example, it has the weights $\beta$, that are assigned to each
+# streamline. In most cases, a tractography through some region will include
+# redundant streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 fig, ax = plt.subplots(1)
 ax.hist(fiber_fit.beta, bins=100, histtype='step')
@@ -169,22 +150,15 @@ ax.set_xlabel('Fiber weights')
 ax.set_ylabel('# fibers')
 fig.savefig('beta_histogram.png')
 
-"""
-
-
-.. figure:: beta_histogram.png
-   :align: center
-
-   **LiFE streamline weights**
-
-"""
-
-"""
-
-We use $\beta$ to filter out these redundant streamlines, and generate an
-optimized group of streamlines:
-
-"""
+###############################################################################
+# .. figure:: beta_histogram.png
+#    :align: center
+#
+#    **LiFE streamline weights**
+#
+#
+# We use $\beta$ to filter out these redundant streamlines, and generate an
+# optimized group of streamlines:
 
 optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
 ren = window.Renderer()
@@ -196,55 +170,44 @@ window.record(ren, n_frames=1, out_path='life_optimized.png',
 if interactive:
     window.show(ren)
 
-"""
+###############################################################################
+# .. figure:: life_optimized.png
+#    :align: center
+#
+#    **Streamlines selected via LiFE optimization**
+#
+#
+#
+#
+# The new set of streamlines should do well in fitting the data, and redundant
+# streamlines have presumably been removed (in this case, about 50% of the
+# streamlines).
 
-.. figure:: life_optimized.png
-   :align: center
+# But how well does the model do in explaining the diffusion data? We can
+# quantify that: the ``FiberFit`` class instance has a `predict` method, which
+# can be used to invert the model and predict back either the data that was
+# used to fit the model, or other unseen data (e.g. in cross-validation, see
+# :ref:`kfold_xval`).
 
-   **Streamlines selected via LiFE optimization**
-
-"""
-
-
-"""
-
-The new set of streamlines should do well in fitting the data, and redundant
-streamlines have presumably been removed (in this case, about 50% of the
-streamlines).
-
-But how well does the model do in explaining the diffusion data? We can
-quantify that: the ``FiberFit`` class instance has a `predict` method, which
-can be used to invert the model and predict back either the data that was used
-to fit the model, or other unseen data (e.g. in cross-validation, see
-:ref:`kfold_xval`).
-
-Without arguments, the ``.predict()`` method will predict the diffusion signal
-for the same gradient table that was used in the fit data, but ``gtab`` and
-``S0`` keyword arguments can be used to predict for other acquisition schemes
-and other baseline non-diffusion-weighted signals.
-
-"""
+# Without arguments, the ``.predict()`` method will predict the diffusion
+# signal for the same gradient table that was used in the fit data, but
+# ``gtab`` and ``S0`` keyword arguments can be used to predict for other
+# acquisition schemes and other baseline non-diffusion-weighted signals.
 
 model_predict = fiber_fit.predict()
 
-"""
-
-We will focus on the error in prediction of the diffusion-weighted data, and
-calculate the root of the mean squared error.
-
-"""
+###############################################################################
+# We will focus on the error in prediction of the diffusion-weighted data, and
+# calculate the root of the mean squared error.
 
 model_error = model_predict - fiber_fit.data
 model_rmse = np.sqrt(np.mean(model_error[:, 10:] ** 2, -1))
 
-"""
-
-As a baseline against which we can compare, we calculate another error term. In
-this case, we assume that the weight for each streamline is equal
-to zero. This produces the naive prediction of the mean of the signal in each
-voxel.
-
-"""
+###############################################################################
+# As a baseline against which we can compare, we calculate another error term.
+# In this case, we assume that the weight for each streamline is equal
+# to zero. This produces the naive prediction of the mean of the signal in each
+# voxel.
 
 beta_baseline = np.zeros(fiber_fit.beta.shape[0])
 pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
@@ -253,12 +216,9 @@ pred_weighted = np.reshape(opt.spdot(fiber_fit.life_matrix, beta_baseline),
 mean_pred = np.empty((fiber_fit.vox_coords.shape[0], gtab.bvals.shape[0]))
 S0 = fiber_fit.b0_signal
 
-"""
-
-Since the fitting is done in the demeaned S/S0 domain, we need
-to add back the mean and then multiply by S0 in every voxel:
-
-"""
+###############################################################################
+# Since the fitting is done in the demeaned S/S0 domain, we need
+# to add back the mean and then multiply by S0 in every voxel:
 
 mean_pred[..., gtab.b0s_mask] = S0[:, None]
 mean_pred[..., ~gtab.b0s_mask] =\
@@ -266,15 +226,12 @@ mean_pred[..., ~gtab.b0s_mask] =\
 mean_error = mean_pred - fiber_fit.data
 mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 
-"""
-
-First, we can compare the overall distribution of errors between these two
-alternative models of the ROI. We show the distribution of differences in error
-(improvement through model fitting, relative to the baseline model). Here,
-positive values denote an improvement in error with model fit, relative to
-without the model fit.
-
-"""
+###############################################################################
+# First, we can compare the overall distribution of errors between these two
+# alternative models of the ROI. We show the distribution of differences in
+# error (improvement through model fitting, relative to the baseline model).
+# Here, positive values denote an improvement in error with model fit, relative
+# to without the model fit.
 
 fig, ax = plt.subplots(1)
 ax.hist(mean_rmse - model_rmse, bins=100, histtype='step')
@@ -290,22 +247,16 @@ ax.set_xlabel('RMS Error')
 ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
 
-"""
-
-.. figure:: error_histograms.png
-   :align: center
-
-   Improvement in error with fitting of the LiFE model.
-
-"""
-
-
-"""
-
-Second, we can show the spatial distribution of the two error terms,
-and of the improvement with the model fit:
-
-"""
+###############################################################################
+# .. figure:: error_histograms.png
+#    :align: center
+#
+#    Improvement in error with fitting of the LiFE model.
+#
+#
+#
+# Second, we can show the spatial distribution of the two error terms,
+# and of the improvement with the model fit:
 
 vol_model = np.ones(data.shape[:3]) * np.nan
 vol_model[fiber_fit.vox_coords[:, 0],
@@ -345,37 +296,32 @@ for lax in ax:
     lax.set_yticks([])
 fig.savefig("spatial_errors.png")
 
-"""
-
-.. figure:: spatial_errors.png
-   :align: center
-
-   Spatial distribution of error and improvement.
-
-"""
-
-"""
-
-This image demonstrates that in many places, fitting the LiFE model results in
-substantial reduction of the error.
-
-Note that for full-brain tractographies *LiFE* can require large amounts of
-memory. For detailed memory profiling of the algorithm, based on the
-streamlines generated in :ref:`example_probabilistic_fiber_tracking`, see `this
-IPython notebook
-<http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
-
-For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
-webpage <http://francopestilli.github.io/life/>`_.
-
-References
-----------
-
-.. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A.
-   (2014). Validation and statistical inference in living connectomes. Nature
-   Methods 11: 1058-1063. doi:10.1038/nmeth.3098
-
-.. include:: ../links_names.inc
-
-
-"""
+###############################################################################
+# .. figure:: spatial_errors.png
+#    :align: center
+#
+#    Spatial distribution of error and improvement.
+#
+#
+#
+#
+# This image demonstrates that in many places, fitting the LiFE model results
+# in substantial reduction of the error.
+#
+# Note that for full-brain tractographies *LiFE* can require large amounts of
+# memory. For detailed memory profiling of the algorithm, based on the
+# streamlines generated in :ref:`example_probabilistic_fiber_tracking`, see
+# `this IPython notebook
+# <http://nbviewer.ipython.org/gist/arokem/bc29f34ebc97510d9def>`_.
+#
+# For the Matlab implementation of LiFE, head over to `Franco Pestilli's github
+# webpage <http://francopestilli.github.io/life/>`_.
+#
+# References
+# ----------
+#
+# .. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A.
+#    (2014). Validation and statistical inference in living connectomes. Nature
+#    Methods 11: 1058-1063. doi:10.1038/nmeth.3098
+#
+# .. include:: ../links_names.inc

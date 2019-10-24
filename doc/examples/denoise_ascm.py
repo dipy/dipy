@@ -36,9 +36,8 @@ from time import time
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 
-"""
-Choose one of the data from the datasets in dipy_
-"""
+###############################################################################
+# Choose one of the data from the datasets in dipy_
 
 dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
 data, affine = load_nifti(dwi_fname)
@@ -52,19 +51,17 @@ print("vol size", data.shape)
 
 t = time()
 
-"""
-In order to generate the two pre-denoised versions of the data we will use the
-``non_local_means`` denoising. For ``non_local_means`` first we need to
-estimate the standard deviation of the noise. We use N=4 since the Sherbrooke
-dataset was acquired on a 1.5T Siemens scanner with a 4 array head coil.
-"""
+###############################################################################
+# In order to generate the two pre-denoised versions of the data we will use
+# the ``non_local_means`` denoising. For ``non_local_means`` first we need to
+# estimate the standard deviation of the noise. We use N=4 since the Sherbrooke
+# dataset was acquired on a 1.5T Siemens scanner with a 4 array head coil.
 
 sigma = estimate_sigma(data, N=4)
 
-"""
-For the denoised version of the original data which preserves sharper features,
-we perform non-local means with smaller patch size.
-"""
+###############################################################################
+# For the denoised version of the original data which preserves sharper
+# features, we perform non-local means with smaller patch size.
 
 den_small = non_local_means(
     data,
@@ -74,10 +71,9 @@ den_small = non_local_means(
     block_radius=1,
     rician=True)
 
-"""
-For the denoised version of the original data that implies more smoothing, we
-perform non-local means with larger patch size.
-"""
+###############################################################################
+# For the denoised version of the original data that implies more smoothing, we
+# perform non-local means with larger patch size.
 
 den_large = non_local_means(
     data,
@@ -87,20 +83,18 @@ den_large = non_local_means(
     block_radius=1,
     rician=True)
 
-"""
-Now we perform the adaptive soft coefficient matching. Empirically we set the
-adaptive parameter in ascm to be the average of the local noise variance,
-in this case the sigma itself.
-"""
+###############################################################################
+# Now we perform the adaptive soft coefficient matching. Empirically we set the
+# adaptive parameter in ascm to be the average of the local noise variance,
+# in this case the sigma itself.
 
 den_final = adaptive_soft_matching(data, den_small, den_large, sigma[0])
 
 print("total time", time() - t)
 
-"""
-To access the quality of this denoising procedure, we plot the an axial slice
-of the original data, it's denoised output and residuals.
-"""
+###############################################################################
+# To access the quality of this denoising procedure, we plot the an axial slice
+# of the original data, it's denoised output and residuals.
 
 axial_middle = data.shape[2] // 2
 
@@ -123,28 +117,26 @@ plt.savefig('denoised_ascm.png', bbox_inches='tight')
 
 print("The ascm result saved in denoised_ascm.png")
 
-"""
-.. figure:: denoised_ascm.png
-   :align: center
-
-   Showing the axial slice without (left) and with (middle) ASCM denoising.
-"""
-
-"""
-From the above figure we can see that the residual is really uniform in nature
-which dictates that ASCM denoises the data while preserving the sharpness of
-the features.
-"""
+###############################################################################
+# .. figure:: denoised_ascm.png
+#    :align: center
+#
+#    Showing the axial slice without (left) and with (middle) ASCM denoising.
+#
+#
+#
+# From the above figure we can see that the residual is really uniform in nature
+# which dictates that ASCM denoises the data while preserving the sharpness of
+# the features.
 
 save_nifti('denoised_ascm.nii.gz', den_final, affine)
 
 print("Saving the entire denoised output in denoised_ascm.nii.gz")
 
-"""
-For comparison propose we also plot the outputs of the ``non_local_means``
-(both with the larger as well as with the smaller patch radius) with the ASCM
-output.
-"""
+###############################################################################
+# For comparison propose we also plot the outputs of the ``non_local_means``
+# (both with the larger as well as with the smaller patch radius) with the ASCM
+# output.
 
 fig, ax = plt.subplots(1, 4)
 ax[0].imshow(original, cmap='gray', origin='lower')
@@ -164,26 +156,24 @@ plt.savefig('ascm_comparison.png', bbox_inches='tight')
 
 print("The comparison result saved in ascm_comparison.png")
 
-"""
-.. figure:: ascm_comparison.png
-   :align: center
-
-   Comparing outputs of the NLMEANS and ASCM.
-"""
-
-"""
-From the above figure, we can observe that the information of two pre-denoised
-versions of the raw data, ASCM outperforms standard non-local means in
-supressing noise and preserving feature sharpness.
-
-References
-----------
-
-..  [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
-    Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising.
-    IET Image Processing, Institution of Engineering and Technology,
-    2011. <00645538>
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. figure:: ascm_comparison.png
+#    :align: center
+#
+#    Comparing outputs of the NLMEANS and ASCM.
+#
+#
+#
+# From the above figure, we can observe that the information of two pre-denoised
+# versions of the raw data, ASCM outperforms standard non-local means in
+# supressing noise and preserving feature sharpness.
+#
+# References
+# ----------
+#
+# ..  [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
+#     Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising.
+#     IET Image Processing, Institution of Engineering and Technology,
+#     2011. <00645538>
+#
+# .. include:: ../links_names.inc

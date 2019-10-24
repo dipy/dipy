@@ -1,5 +1,4 @@
 """
-
 ============================================
 K-fold cross-validation for model comparison
 ============================================
@@ -47,15 +46,11 @@ from dipy.core.gradients import gradient_table
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 
-
-"""
-
-We fetch some data and select a couple of voxels to perform comparisons on. One
-lies in the corpus callosum (cc), while the other is in the centrum semiovale
-(cso), a part of the brain known to contain multiple crossing white matter
-fiber populations.
-
-"""
+###############################################################################
+# We fetch some data and select a couple of voxels to perform comparisons on.
+# One lies in the corpus callosum (cc), while the other is in the centrum
+# semiovale (cso), a part of the brain known to contain multiple crossing white
+# matter fiber populations.
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames('stanford_hardi')
 
@@ -67,39 +62,31 @@ gtab = gradient_table(bvals, bvecs)
 cc_vox = data[40, 70, 38]
 cso_vox = data[30, 76, 38]
 
-"""
-
-We initialize each kind of model:
-
-"""
+###############################################################################
+# We initialize each kind of model:
 
 dti_model = dti.TensorModel(gtab)
 response, ratio = csd.auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model = csd.ConstrainedSphericalDeconvModel(gtab, response)
 
-"""
-
-Next, we perform cross-validation for each kind of model, comparing model
-predictions to the diffusion MRI data in each one of these voxels.
-
-Note that we use 2-fold cross-validation, which means that in each iteration,
-the model will be fit to half of the data, and used to predict the other half.
-
-"""
+###############################################################################
+# Next, we perform cross-validation for each kind of model, comparing model
+# predictions to the diffusion MRI data in each one of these voxels.
+#
+# Note that we use 2-fold cross-validation, which means that in each iteration,
+# the model will be fit to half of the data, and used to predict the other
+# half.
 
 dti_cc = xval.kfold_xval(dti_model, cc_vox, 2)
 csd_cc = xval.kfold_xval(csd_model, cc_vox, 2, response)
 dti_cso = xval.kfold_xval(dti_model, cso_vox, 2)
 csd_cso = xval.kfold_xval(csd_model, cso_vox, 2, response)
 
-"""
-
-We plot a scatter plot of the data with the model predictions in each of these
-voxels, focusing only on the diffusion-weighted measurements (each point
-corresponds to a different gradient direction). The two models are compared in
-each sub-plot (blue=DTI, red=CSD).
-
-"""
+###############################################################################
+# We plot a scatter plot of the data with the model predictions in each of
+# these voxels, focusing only on the diffusion-weighted measurements (each
+# point corresponds to a different gradient direction). The two models are
+# compared in each sub-plot (blue=DTI, red=CSD).
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches([12, 6])
@@ -118,22 +105,16 @@ for this_ax in ax:
     this_ax.set_ylabel('Model prediction (relative to S0)')
 fig.savefig("model_predictions.png")
 
-"""
-
-.. figure:: model_predictions.png
-   :align: center
-
-   Model predictions.
-
-"""
-
-
-"""
-
-We can also quantify the goodness of fit of the models by calculating an
-R-squared score:
-
-"""
+###############################################################################
+# .. figure:: model_predictions.png
+#    :align: center
+#
+#    Model predictions.
+#
+#
+#
+# We can also quantify the goodness of fit of the models by calculating an
+# R-squared score:
 
 cc_dti_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
                            dti_cc[gtab.b0s_mask == 0])[0]**2
@@ -152,40 +133,37 @@ print("Corpus callosum\n"
       "DTI R2 : %s\n"
       "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
 
-
-"""
-
-This should look something like this::
-
-Corpus callosum
-
-DTI R2 : 0.782881752597
-
-CSD R2 : 0.805764364116
-
-Centrum Semiovale
-
-DTI R2 : 0.431921832012
-
-CSD R2 : 0.604806420501
-
-
-As you can see, DTI is a pretty good model for describing the signal in the CC,
-while CSD is much better in describing the signal in regions of multiple
-crossing fibers.
-
-
-References
-----------
-
-.. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
-   of Statistical Learning: Data Mining, Inference and
-   Prediction. Springer-Verlag, Berlin
-
-.. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
-   Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple
-   b-values with cross-validation. ISMRM 2014.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+#
+# This should look something like this::
+#
+# Corpus callosum
+#
+# DTI R2 : 0.782881752597
+#
+# CSD R2 : 0.805764364116
+#
+# Centrum Semiovale
+#
+# DTI R2 : 0.431921832012
+#
+# CSD R2 : 0.604806420501
+#
+#
+# As you can see, DTI is a pretty good model for describing the signal in the
+# CC, while CSD is much better in describing the signal in regions of multiple
+# crossing fibers.
+#
+#
+# References
+# ----------
+#
+# .. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
+#    of Statistical Learning: Data Mining, Inference and
+#    Prediction. Springer-Verlag, Berlin
+#
+# .. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
+#    Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
+#    multiple b-values with cross-validation. ISMRM 2014.
+#
+# .. include:: ../links_names.inc

@@ -37,12 +37,9 @@ from dipy.data import get_fnames
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 
-"""
-
-Load one of the datasets. These data were acquired with 63 gradients and 1
-non-diffusion (b=0) image.
-
-"""
+###############################################################################
+# Load one of the datasets. These data were acquired with 63 gradients and 1
+# non-diffusion (b=0) image.
 
 dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('isbi2013_2shell')
 data, affine = load_nifti(dwi_fname)
@@ -51,38 +48,37 @@ gtab = gradient_table(bvals, bvecs)
 
 print("Input Volume", data.shape)
 
-"""
-## Estimate the noise standard deviation
-
-We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
-used in local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
-It takes both data and the gradient table object as input and returns an
-estimate of local noise standard deviation as a 3D array. We return a smoothed
-version, where a Gaussian filter with radius 3 voxels has been applied to the
-estimate of the noise before returning it.
-
-We correct for the bias due to Rician noise, based on an equation developed by
-Koay and Basser [Koay2006]_.
-
-"""
+###############################################################################
+# Estimate the noise standard deviation
+# -------------------------------------
+#
+# We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
+# used in local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
+# It takes both data and the gradient table object as input and returns an
+# estimate of local noise standard deviation as a 3D array. We return a
+# smoothed version, where a Gaussian filter with radius 3 voxels has been
+# applied to the estimate of the noise before returning it.
+#
+# We correct for the bias due to Rician noise, based on an equation developed
+# by Koay and Basser [Koay2006]_.
 
 t = time()
 sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
 print("Sigma estimation time", time() - t)
 
-"""
-## Perform the localPCA using the function localpca.
-
-The localpca algorithm takes into account the multi-dimensional information of
-the diffusion MR data. It performs PCA on local 4D patch and
-then removes the noise components by thresholding the lowest eigenvalues.
-The eigenvalue threshold will be computed from the local variance estimate
-performed by the ``pca_noise_estimate`` function, if this is inputted in the
-main ``localpca`` function. The relationship between the noise variance
-estimate and the eigenvalue threshold can be adjusted using the input parameter
-``tau_factor``. According to Manjon et al. [Manjon2013]_, this parameter is set
-to 2.3.
-"""
+###############################################################################
+# Perform the localPCA using the function localpca.
+# -------------------------------------------------
+#
+# The localpca algorithm takes into account the multi-dimensional information
+# of the diffusion MR data. It performs PCA on local 4D patch and then removes
+# the noise components by thresholding the lowest eigenvalues.
+# The eigenvalue threshold will be computed from the local variance estimate
+# performed by the ``pca_noise_estimate`` function, if this is inputted in the
+# main ``localpca`` function. The relationship between the noise variance
+# estimate and the eigenvalue threshold can be adjusted using the input
+# parameter ``tau_factor``. According to Manjon et al. [Manjon2013]_, this
+# parameter is set to 2.3.
 
 t = time()
 
@@ -90,11 +86,10 @@ denoised_arr = localpca(data, sigma, tau_factor=2.3, patch_radius=2)
 
 print("Time taken for local PCA (slow)", -t + time())
 
-"""
-The ``localpca`` function returns the denoised data which is plotted below
-(middle panel) together with the original version of the data (left panel) and
-the algorithm residual (right panel) .
-"""
+###############################################################################
+# The ``localpca`` function returns the denoised data which is plotted below
+# (middle panel) together with the original version of the data (left panel)
+# and the algorithm residual (right panel) .
 
 sli = data.shape[2] // 2
 gra = data.shape[3] // 2
@@ -116,26 +111,24 @@ plt.savefig('denoised_localpca.png', bbox_inches='tight')
 
 print("The result saved in denoised_localpca.png")
 
-"""
-.. figure:: denoised_localpca.png
-   :align: center
-
-Below we show how the denoised data can be saved.
-"""
+###############################################################################
+# .. figure:: denoised_localpca.png
+#    :align: center
+#
+# Below we show how the denoised data can be saved.
 
 nib.save(nib.Nifti1Image(denoised_arr,
                          affine), 'denoised_localpca.nii.gz')
 
 print("Entire denoised data saved in denoised_localpca.nii.gz")
 
-"""
-.. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
-                Weighted Image Denoising Using Overcomplete Local PCA" (2013).
-                PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
-
-.. [Koay2006]  Koay CG, Basser PJ (2006). "Analytically exact correction scheme
-               for signal extraction from noisy magnitude MR signals". JMR 179:
-               317-322.
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# .. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
+#                 Weighted Image Denoising Using Overcomplete Local PCA" (2013)
+#                 PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
+#
+# .. [Koay2006]  Koay CG, Basser PJ (2006). "Analytically exact correction
+#                scheme for signal extraction from noisy magnitude MR signals".
+#                JMR 179: 317-322.
+#
+# .. include:: ../links_names.inc

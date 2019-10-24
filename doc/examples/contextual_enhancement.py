@@ -69,9 +69,7 @@ the process for contour enhancement of 2D images.
 In practice, as the exact analytical formulas for the kernel :math:`P_t`
 are unknown, we use the approximation given in [Portegies2015b]_.
 
-"""
 
-"""
 The enhancement is evaluated on the Stanford HARDI dataset
 (150 orientations, b=2000 $s/mm^2$) where Rician noise is added. Constrained
 spherical deconvolution is used to model the fiber orientations.
@@ -105,16 +103,14 @@ data_noisy_small = data_noisy[25-padding:40+padding,
                               65-padding:80+padding,
                               35:42]
 
-"""
-Enables/disables interactive visualization
-"""
+###############################################################################
+# Enables/disables interactive visualization
 
 interactive = False
 
-"""
-Fit an initial model to the data, in this case Constrained Spherical
-Deconvolution is used.
-"""
+###############################################################################
+# Fit an initial model to the data, in this case Constrained Spherical
+# Deconvolution is used.
 
 # Perform CSD on the original data
 from dipy.reconst.csdeconv import auto_response
@@ -130,14 +126,12 @@ csd_model_noisy = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff
 
-"""
-Inspired by [Rodrigues2010]_, a lookup-table is created, containing
-rotated versions of the kernel :math:`P_t` sampled over a discrete set of
-orientations. In order to ensure rotationally invariant processing, the
-discrete orientations are required to be equally distributed over a sphere.
-By default, a sphere with 100 directions is used.
-
-"""
+###############################################################################
+# Inspired by [Rodrigues2010]_, a lookup-table is created, containing
+# rotated versions of the kernel :math:`P_t` sampled over a discrete set of
+# orientations. In order to ensure rotationally invariant processing, the
+# discrete orientations are required to be equally distributed over a sphere.
+# By default, a sphere with 100 directions is used.
 
 from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.denoise.shift_twist_convolution import convolve
@@ -148,9 +142,8 @@ D44 = 0.02
 t = 1
 k = EnhancementKernel(D33, D44, t)
 
-"""
-Visualize the kernel
-"""
+###############################################################################
+# Visualize the kernel
 
 from dipy.viz import window, actor
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
@@ -174,24 +167,21 @@ window.record(ren, out_path='kernel.png', size=(900, 900))
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: kernel.png
-   :align: center
-
-   Visualization of the contour enhancement kernel.
-"""
-
-"""
-Shift-twist convolution is applied on the noisy data
-"""
+###############################################################################
+# .. figure:: kernel.png
+#    :align: center
+#
+#    Visualization of the contour enhancement kernel.
+#
+#
+#
+# Shift-twist convolution is applied on the noisy data
 
 # Perform convolution
 csd_shm_enh = convolve(csd_shm_noisy, k, sh_order=8)
 
-
-"""
-The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
-"""
+###############################################################################
+# The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 
 # Sharpen via the Sharpening Deconvolution Transform
 from dipy.reconst.csdeconv import odf_sh_to_sharp
@@ -207,10 +197,9 @@ csd_sf_enh_sharp = sh_to_sf(csd_shm_enh_sharp, default_sphere, sh_order=8)
 # Normalize the sharpened ODFs
 csd_sf_enh_sharp = csd_sf_enh_sharp * np.amax(csd_sf_orig)/np.amax(csd_sf_enh_sharp) * 1.25
 
-"""
-The end results are visualized. It can be observed that the end result after
-diffusion and sharpening is closer to the original noiseless dataset.
-"""
+###############################################################################
+# The end results are visualized. It can be observed that the end result after
+# diffusion and sharpening is closer to the original noiseless dataset.
 
 ren = window.Renderer()
 
@@ -251,40 +240,38 @@ window.record(ren, out_path='enhancements.png', size=(900, 900))
 if interactive:
     window.show(ren)
 
-"""
-
-.. figure:: enhancements.png
-   :align: center
-
-   The results after enhancements. Top-left: original noiseless data.
-   Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
-   After enhancement of noisy data. Top-right: After enhancement and sharpening
-   of noisy data.
-
-References
-----------
-
-.. [Meesters2016] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
-   R. Duits. (2016) Fast implementations of contextual PDE’s for HARDI data
-   processing in DIPY. ISMRM 2016 conference.
-
-.. [Portegies2015a] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
-   G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI by
-   Combining Contextual PDE flow with Constrained Spherical Deconvolution.
-   PLoS One.
-
-.. [Portegies2015b] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
-   (2015) New Approximation of a Scale Space Kernel on SE(3) and Applications
-   in Neuroimaging. Fifth International Conference on Scale Space and
-   Variational Methods in Computer Vision.
-
-.. [DuitsAndFranken2011] R. Duits and E. Franken (2011) Left-invariant
-   diffusions on the space of positions and orientations and their application
-   to crossing-preserving smoothing of HARDI images. International Journal of
-   Computer Vision, 92:231-264.
-
-.. [Rodrigues2010] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
-   Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics Workshop
-   on Visual Computing for Biology and Medicine. The Eurographics Association.
-
-"""
+###############################################################################
+# .. figure:: enhancements.png
+#    :align: center
+#
+#    The results after enhancements. Top-left: original noiseless data.
+#    Bottom-left: original data with added Rician noise (SNR=10). Bottom-right:
+#    After enhancement of noisy data. Top-right: After enhancement and
+#    sharpening of noisy data.
+#
+# References
+# ----------
+#
+# .. [Meesters2016] S. Meesters, G. Sanguinetti, E. Garyfallidis, J. Portegies,
+#    R. Duits. (2016) Fast implementations of contextual PDE’s for HARDI data
+#    processing in DIPY. ISMRM 2016 conference.
+#
+# .. [Portegies2015a] J. Portegies, R. Fick, G. Sanguinetti, S. Meesters,
+#    G.Girard, and R. Duits. (2015) Improving Fiber Alignment in HARDI by
+#    Combining Contextual PDE flow with Constrained Spherical Deconvolution.
+#    PLoS One.
+#
+# .. [Portegies2015b] J. Portegies, G. Sanguinetti, S. Meesters, and R. Duits.
+#    (2015) New Approximation of a Scale Space Kernel on SE(3) and Applications
+#    in Neuroimaging. Fifth International Conference on Scale Space and
+#    Variational Methods in Computer Vision.
+#
+# .. [DuitsAndFranken2011] R. Duits and E. Franken (2011) Left-invariant
+#    diffusions on the space of positions and orientations and their
+#    application to crossing-preserving smoothing of HARDI images.
+#    International Journal of Computer Vision, 92:231-264.
+#
+# .. [Rodrigues2010] P. Rodrigues, R. Duits, B. Romeny, A. Vilanova (2010).
+#    Accelerated Diffusion Operators for Enhancing DW-MRI. Eurographics
+#    Workshop on Visual Computing for Biology and Medicine. The Eurographics
+#    Association.

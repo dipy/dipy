@@ -23,10 +23,8 @@ from dipy.io.streamline import load_trk, save_trk
 from dipy.io.utils import create_tractogram_header
 
 
-"""
-Download and read data for this tutorial
-"""
-
+###############################################################################
+# Download and read data for this tutorial
 
 target_file, target_folder = fetch_target_tractogram_hcp()
 atlas_file, atlas_folder = fetch_bundle_atlas_hcp842()
@@ -44,9 +42,8 @@ target = sft_target.streamlines
 target_header = create_tractogram_header(atlas_file,
                                          *sft_atlas.space_attributes)
 
-"""
-let's visualize atlas tractogram and target tractogram before registration
-"""
+###############################################################################
+# let's visualize atlas tractogram and target tractogram before registration
 
 interactive = False
 
@@ -58,35 +55,28 @@ window.record(ren, out_path='tractograms_initial.png', size=(600, 600))
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: tractograms_initial.png
-   :align: center
-
-   Atlas and target before registration.
-
-"""
-
-"""
-We will register target tractogram to model atlas' space using streamlinear
-registeration (SLR) [Garyfallidis15]_
-"""
+###############################################################################
+# .. figure:: tractograms_initial.png
+#    :align: center
+#
+#    Atlas and target before registration.
+#
+#
+# We will register target tractogram to model atlas' space using streamlinear
+# registeration (SLR) [Garyfallidis15]_
 
 moved, transform, qb_centroids1, qb_centroids2 = whole_brain_slr(
     atlas, target, x0='affine', verbose=True, progressive=True,
     rng=np.random.RandomState(1984))
 
-
-"""
-We save the transform generated in this registration, so that we can use
-it in the bundle profiles example
-"""
+###############################################################################
+# We save the transform generated in this registration, so that we can use
+# it in the bundle profiles example
 
 np.save("slr_transform.npy", transform)
 
-
-"""
-let's visualize atlas tractogram and target tractogram after registration
-"""
+###############################################################################
+# let's visualize atlas tractogram and target tractogram after registration
 
 interactive = False
 
@@ -99,24 +89,20 @@ window.record(ren, out_path='tractograms_after_registration.png',
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: tractograms_after_registration.png
-   :align: center
-
-   Atlas and target after registration.
-
-"""
-
-"""
-Read AF left and CST left bundles from already fetched atlas data to use them
-as model bundles
-"""
+###############################################################################
+# .. figure:: tractograms_after_registration.png
+#    :align: center
+#
+#    Atlas and target after registration.
+#
+#
+# Read AF left and CST left bundles from already fetched atlas data to use them
+# as model bundles
 
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-"""
-Extracting bundles using recobundles [Garyfallidis17]_
-"""
+###############################################################################
+# Extracting bundles using recobundles [Garyfallidis17]_
 
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
@@ -131,10 +117,9 @@ recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
                                             slr_metric='asymmetric',
                                             pruning_distance='mam')
 
-"""
-let's visualize extracted Arcuate Fasciculus Left bundle and model bundle
-together
-"""
+###############################################################################
+# let's visualize extracted Arcuate Fasciculus Left bundle and model bundle
+# together
 
 interactive = False
 
@@ -149,21 +134,17 @@ window.record(ren, out_path='AF_L_recognized_bundle.png',
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: AF_L_recognized_bundle.png
-   :align: center
-
-   Extracted Arcuate Fasciculus Left bundle and model bundle
-
-"""
-
-"""
-
-Save the bundle as a trk file. Rather than saving the recognized streamlines
-in the space of the atlas, we save the streamlines that are in the original
-space of the subject anatomy.
-
-"""
+###############################################################################
+# .. figure:: AF_L_recognized_bundle.png
+#    :align: center
+#
+#    Extracted Arcuate Fasciculus Left bundle and model bundle
+#
+#
+#
+# Save the bundle as a trk file. Rather than saving the recognized streamlines
+# in the space of the atlas, we save the streamlines that are in the original
+# space of the subject anatomy.
 
 reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
                                Space.RASMM)
@@ -180,10 +161,9 @@ recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
                                               slr_metric='asymmetric',
                                               pruning_distance='mam')
 
-"""
-let's visualize extracted Corticospinal Tract (CST) Left bundle and model
-bundle together
-"""
+###############################################################################
+# let's visualize extracted Corticospinal Tract (CST) Left bundle and model
+# bundle together
 
 interactive = False
 
@@ -199,33 +179,25 @@ window.record(ren, out_path='CST_L_recognized_bundle.png',
 if interactive:
     window.show(ren)
 
-
-"""
-.. figure:: CST_L_recognized_bundle.png
-   :align: center
-
-   Extracted Corticospinal Tract (CST) Left bundle and model bundle
-
-"""
-
-"""
-
-Save the bundle as a trk file:
-
-"""
+###############################################################################
+# .. figure:: CST_L_recognized_bundle.png
+#    :align: center
+#
+#    Extracted Corticospinal Tract (CST) Left bundle and model bundle
+#
+#
+#
+# Save the bundle as a trk file:
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
                                 Space.RASMM)
 save_trk(reco_cst_l, "CST_L.trk", bbox_valid_check=False)
 
-
-"""
-
-References
-----------
-
-.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
-   bundles using local and global streamline-based registration
-   and clustering, Neuroimage, 2017.
-
-"""
+###############################################################################
+#
+# References
+# ----------
+#
+# .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+#    bundles using local and global streamline-based registration
+#    and clustering, Neuroimage, 2017.
