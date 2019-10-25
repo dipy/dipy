@@ -46,32 +46,27 @@ seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 
-"""
-Next, we fit the CSD model.
-"""
+###############################################################################
+# Next, we fit the CSD model.
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 
-"""
-we use the CSA fit to calculate GFA, which will serve as our stopping
-criterion.
-"""
+###############################################################################
+# we use the CSA fit to calculate GFA, which will serve as our stopping
+# criterion.
 
 csa_model = CsaOdfModel(gtab, sh_order=6)
 gfa = csa_model.fit(data, mask=white_matter).gfa
 stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
-"""
-Next, we need to set up our two direction getters
-"""
-
-"""
-Example #1: Bootstrap direction getter with CSD Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-"""
-
+###############################################################################
+# Next, we need to set up our two direction getters
+#
+#
+# Example #1: Bootstrap direction getter with CSD Model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 boot_dg_csd = BootDirectionGetter.from_data(data, csd_model, max_angle=30.,
                                             sphere=small_sphere)
@@ -88,22 +83,20 @@ if has_fury:
     if interactive:
         window.show(r)
 
-"""
-.. figure:: tractogram_bootstrap_dg.png
-   :align: center
-
-   **Corpus Callosum Bootstrap Probabilistic Direction Getter**
-
-We have created a bootstrapped probabilistic set of streamlines. If you repeat
-the fiber tracking (keeping all inputs the same) you will NOT get exactly the
-same set of streamlines.
-"""
-
-"""
-Example #2: Closest peak direction getter with CSD Model
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-"""
-
+###############################################################################
+# .. figure:: tractogram_bootstrap_dg.png
+#    :align: center
+#
+#    **Corpus Callosum Bootstrap Probabilistic Direction Getter**
+#
+# We have created a bootstrapped probabilistic set of streamlines. If you repeat
+# the fiber tracking (keeping all inputs the same) you will NOT get exactly the
+# same set of streamlines.
+#
+#
+#
+# Example #2: Closest peak direction getter with CSD Model
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 pmf = csd_fit.odf(small_sphere).clip(min=0)
 peak_dg = ClosestPeakDirectionGetter.from_pmf(pmf, max_angle=30.,
@@ -122,24 +115,22 @@ if has_fury:
     if interactive:
         window.show(r)
 
-"""
-.. figure:: tractogram_closest_peak_dg.png
-   :align: center
-
-   **Corpus Callosum Closest Peak Deterministic Direction Getter**
-
-We have created a set of streamlines using the closest peak direction getter,
-which is a type of deterministic tracking. If you repeat the fiber tracking
-(keeping all inputs the same) you will get exactly the same set of streamlines.
-"""
-
-
-"""
-References
-----------
-.. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
-tractography using the residual bootstrap, NeuroImage, vol 39, no 1, 2008
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. figure:: tractogram_closest_peak_dg.png
+#    :align: center
+#
+#    **Corpus Callosum Closest Peak Deterministic Direction Getter**
+#
+# We have created a set of streamlines using the closest peak direction getter,
+# which is a type of deterministic tracking. If you repeat the fiber tracking
+# (keeping all inputs the same) you will get exactly the same set of
+# streamlines.
+#
+#
+#
+# References
+# ----------
+# .. [Berman2008] Berman, J. et al., Probabilistic streamline q-ball
+# tractography using the residual bootstrap, NeuroImage, vol 39, no 1, 2008
+#
+# .. include:: ../links_names.inc

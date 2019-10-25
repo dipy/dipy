@@ -275,6 +275,7 @@ if interactive:
 #
 # .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans,
 #    "Recursive calibration of the fiber response function for spherical
-#    deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80, 2014.
+#    deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80,
+#    2014.
 #
 # .. include:: ../links_names.inc

@@ -32,12 +32,11 @@ from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from scipy.ndimage.filters import gaussian_filter
 
-"""
-As the standard DKI, WMTI requires multi-shell data, i.e. data acquired from
-more than one non-zero b-value. Here, we use a fetcher to download a
-multi-shell dataset which was kindly provided by Hansen and Jespersen
-(more details about the data are provided in their paper [Hansen2016]_).
-"""
+###############################################################################
+# As the standard DKI, WMTI requires multi-shell data, i.e. data acquired from
+# more than one non-zero b-value. Here, we use a fetcher to download a
+# multi-shell dataset which was kindly provided by Hansen and Jespersen
+# (more details about the data are provided in their paper [Hansen2016]_).
 
 fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
@@ -45,10 +44,9 @@ data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 
-"""
-For comparison, this dataset is pre-processed using the same steps used in the
-example for reconstructing DKI (see :ref:`example_reconst_dki`).
-"""
+###############################################################################
+# For comparison, this dataset is pre-processed using the same steps used in
+# the example for reconstructing DKI (see :ref:`example_reconst_dki`).
 
 # data masking
 maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
@@ -62,24 +60,23 @@ for v in range(data.shape[-1]):
     data_smooth[..., v] = gaussian_filter(data[..., v], sigma=gauss_std)
 
 
-"""
-The WMTI model can be defined in DIPY by instantiating the
-'KurtosisMicrostructureModel' object in the following way:
-"""
+###############################################################################
+# The WMTI model can be defined in DIPY by instantiating the
+# 'KurtosisMicrostructureModel' object in the following way:
 
 dki_micro_model = dki_micro.KurtosisMicrostructureModel(gtab)
 
-"""
-Before fitting this microstructural model, it is useful to indicate the
-regions in which this model provides meaningful information (i.e. voxels of
-well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple way
-to select this region is to generate a well-aligned fiber mask based on the
-values of diffusion sphericity, planarity and linearity. Here we will follow
-these selection criteria for a better comparison of our figures with the
-original article published by Fieremans et al. [Fieremans2011]_. Nevertheless,
-it is important to note that voxels with well-aligned fibers can be selected
-based on other approaches such as using predefined regions of interest.
-"""
+###############################################################################
+# Before fitting this microstructural model, it is useful to indicate the
+# regions in which this model provides meaningful information (i.e. voxels of
+# well-aligned fibers). Following Fieremans et al. [Fieremans2011]_, a simple
+# way to select this region is to generate a well-aligned fiber mask based on
+# the values of diffusion sphericity, planarity and linearity. Here we will
+# follow these selection criteria for a better comparison of our figures with
+# the original article published by Fieremans et al. [Fieremans2011]_.
+# Nevertheless, it is important to note that voxels with well-aligned fibers
+# can be selected based on other approaches such as using predefined regions
+# of interest.
 
 # Diffusion Tensor is computed based on the standard DKI model
 dkimodel = dki.DiffusionKurtosisModel(gtab)
@@ -108,25 +105,22 @@ well_aligned_mask[np.isnan(cl)] = False
 well_aligned_mask[np.isnan(cp)] = False
 well_aligned_mask[np.isnan(cs)] = False
 
-"""
-Analogous to DKI, the data fit can be done by calling the ``fit`` function of
-the model's object as follows:
-"""
+###############################################################################
+# Analogous to DKI, the data fit can be done by calling the ``fit`` function of
+# the model's object as follows:
 
 dki_micro_fit = dki_micro_model.fit(data_smooth, mask=well_aligned_mask)
 
-"""
-The KurtosisMicrostructureFit object created by this ``fit`` function can then
-be used to extract model parameters such as the axonal water fraction and
-diffusion hindered tortuosity:
-"""
+###############################################################################
+# The KurtosisMicrostructureFit object created by this ``fit`` function can
+# then be used to extract model parameters such as the axonal water fraction
+# and diffusion hindered tortuosity:
 
 AWF = dki_micro_fit.awf
 TORT = dki_micro_fit.tortuosity
 
-"""
-These parameters are plotted below on top of the mean kurtosis maps:
-"""
+###############################################################################
+# These parameters are plotted below on top of the mean kurtosis maps:
 
 MK = dkifit.mk(0, 3)
 
@@ -152,37 +146,36 @@ fig1.colorbar(im1, ax=ax.flat[1])
 
 fig1.savefig('Kurtosis_Microstructural_measures.png')
 
-"""
-.. figure:: Kurtosis_Microstructural_measures.png
-   :align: center
-
-   Axonal water fraction (left panel) and tortuosity (right panel) values
-   of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
-   image.
-
-
-References
-----------
-
-.. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
-                characterization with diffusion kurtosis imaging. NeuroImage
-                58: 177-188
-.. [Fierem2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
-                Inglese M, Novikov DS. (2012). Diffusion distinguishes between
-                axonal loss and demyelination in brain white matter.
-                Proceedings of the 20th Annual Meeting of the International
-                Society for Magnetic Resonance Medicine; Melbourne, Australia.
-                May 5-11.
-.. [Fierem2013] Fieremans, E., Benitez, A., Jensen, J.H., Falangola, M.F.,
-                Tabesh, A., Deardorff, R.L., Spampinato, M.V., Babb, J.S.,
-                Novikov, D.S., Ferris, S.H., Helpern, J.A., 2013. Novel
-                white matter tract integrity metrics sensitive to Alzheimer
-                disease progression. AJNR Am. J. Neuroradiol. 34(11),
-                2105-2112. doi: 10.3174/ajnr.A3553
-.. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
-                kurtosis strategies, b-value optimization and exploration of
-                diffusion MRI contrast. Scientific Data 3: 160072
-                doi:10.1038/sdata.2016.72
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# .. figure:: Kurtosis_Microstructural_measures.png
+#    :align: center
+#
+#    Axonal water fraction (left panel) and tortuosity (right panel) values
+#    of well-aligned fiber regions overlaid on a top of a mean kurtosis all-brain
+#    image.
+#
+#
+# References
+# ----------
+#
+# .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
+#                 characterization with diffusion kurtosis imaging. NeuroImage
+#                 58: 177-188
+# .. [Fierem2012] Fieremans E, Jensen JH, Helpern JA, Kim S, Grossman RI,
+#                 Inglese M, Novikov DS. (2012). Diffusion distinguishes between
+#                 axonal loss and demyelination in brain white matter.
+#                 Proceedings of the 20th Annual Meeting of the International
+#                 Society for Magnetic Resonance Medicine; Melbourne, Australia.
+#                 May 5-11.
+# .. [Fierem2013] Fieremans, E., Benitez, A., Jensen, J.H., Falangola, M.F.,
+#                 Tabesh, A., Deardorff, R.L., Spampinato, M.V., Babb, J.S.,
+#                 Novikov, D.S., Ferris, S.H., Helpern, J.A., 2013. Novel
+#                 white matter tract integrity metrics sensitive to Alzheimer
+#                 disease progression. AJNR Am. J. Neuroradiol. 34(11),
+#                 2105-2112. doi: 10.3174/ajnr.A3553
+# .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
+#                 kurtosis strategies, b-value optimization and exploration of
+#                 diffusion MRI contrast. Scientific Data 3: 160072
+#                 doi:10.1038/sdata.2016.72
+#
+# .. include:: ../links_names.inc

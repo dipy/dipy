@@ -69,18 +69,17 @@ seed_mask = (labels == 2)
 seed_mask[pve_wm_data < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
-"""
-CMC/ACT Stopping Criterion
-==========================
-Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
-tractography (ACT) [Smith2012]_ both uses PVEs information from
-anatomical images to determine when the tractography stops.
-Both stopping criterion use a trilinear interpolation
-at the tracking position. CMC stopping criterion uses a probability derived
-from the PVE maps to determine if the streamline reaches a 'valid' or 'invalid'
-region. ACT uses a fixed threshold on the PVE maps. Both stopping criterion can
-be used in conjunction with PFT. In this example, we used CMC.
-"""
+###############################################################################
+# CMC/ACT Stopping Criterion
+# ==========================
+# Continuous map criterion (CMC) [Girard2014]_ and Anatomically-constrained
+# tractography (ACT) [Smith2012]_ both uses PVEs information from
+# anatomical images to determine when the tractography stops.
+# Both stopping criterion use a trilinear interpolation
+# at the tracking position. CMC stopping criterion uses a probability derived
+# from the PVE maps to determine if the streamline reaches a 'valid' or
+# 'invalid' region. ACT uses a fixed threshold on the PVE maps. Both stopping
+# criterion can be used in conjunction with PFT. In this example, we used CMC.
 
 from dipy.tracking.stopping_criterion import CmcStoppingCriterion
 
@@ -117,12 +116,11 @@ if has_fury:
     if interactive:
         window.show(r)
 
-"""
-.. figure:: tractogram_pft.png
- :align: center
-
- **Corpus Callosum using particle filtering tractography**
-"""
+###############################################################################
+# .. figure:: tractogram_pft.png
+#  :align: center
+#
+#  **Corpus Callosum using particle filtering tractography**
 
 # Local Probabilistic Tractography
 prob_streamline_generator = LocalTracking(dg,
@@ -145,24 +143,23 @@ if has_fury:
     if interactive:
         window.show(r)
 
-"""
-.. figure:: tractogram_probabilistic_cmc.png
- :align: center
-
- **Corpus Callosum using probabilistic tractography**
-"""
-
-"""
-References
-----------
-.. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
-    Towards quantitative connectivity analysis: reducing tractography biases.
-    NeuroImage, 98, 266-278, 2014.
-
-.. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-    Anatomically-constrained tractography: Improved diffusion MRI
-    streamlines tractography through effective use of anatomical
-    information. NeuroImage, 63(3), 1924-1938, 2012.
-
-.. include:: ../links_names.inc
-"""
+###############################################################################
+# .. figure:: tractogram_probabilistic_cmc.png
+#  :align: center
+#
+#  **Corpus Callosum using probabilistic tractography**
+#
+#
+#
+# References
+# ----------
+# .. [Girard2014] Girard, G., Whittingstall, K., Deriche, R., & Descoteaux, M.
+#     Towards quantitative connectivity analysis: reducing tractography biases.
+#     NeuroImage, 98, 266-278, 2014.
+#
+# .. [Smith2012] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
+#     Anatomically-constrained tractography: Improved diffusion MRI
+#     streamlines tractography through effective use of anatomical
+#     information. NeuroImage, 63(3), 1924-1938, 2012.
+#
+# .. include:: ../links_names.inc

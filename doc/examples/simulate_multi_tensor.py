@@ -11,47 +11,41 @@ import numpy as np
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
 
-"""
-For the simulation we will need a GradientTable with the b-values and b-vectors
-Here we use the one we created in :ref:`example_gradients_spheres`.
-"""
+###############################################################################
+# For the simulation we will need a GradientTable with the b-values and
+# b-vectors. Here we use the one we created in :ref:`example_gradients_spheres`
 
 from gradients_spheres import gtab
 
-"""
-In ``mevals`` we save the eigenvalues of each tensor.
-"""
+###############################################################################
+# In ``mevals`` we save the eigenvalues of each tensor.
 
 mevals = np.array([[0.0015, 0.0003, 0.0003],
                    [0.0015, 0.0003, 0.0003]])
 
-"""
-In ``angles`` we save in polar coordinates (:math:`\theta, \phi`) the principal
-axis of each tensor.
-"""
+###############################################################################
+# In ``angles`` we save in polar coordinates (:math:`\theta, \phi`) the
+# principal axis of each tensor.
 
 angles = [(0, 0), (60, 0)]
 
-"""
-In ``fractions`` we save the percentage of the contribution of each tensor.
-"""
+###############################################################################
+# In ``fractions`` we save the percentage of the contribution of each tensor.
 
 fractions = [50, 50]
 
-"""
-The function ``multi_tensor`` will return the simulated signal and an array
-with the principal axes of the tensors in cartesian coordinates.
-"""
+###############################################################################
+# The function ``multi_tensor`` will return the simulated signal and an array
+# with the principal axes of the tensors in cartesian coordinates.
 
 signal, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
-                         fractions=fractions, snr=None)
+                              fractions=fractions, snr=None)
 
-"""
-We can also add Rician noise with a specific SNR.
-"""
+###############################################################################
+# We can also add Rician noise with a specific SNR.
 
 signal_noisy, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
-                         fractions=fractions, snr=20)
+                                    fractions=fractions, snr=20)
 
 
 import matplotlib.pyplot as plt
@@ -60,22 +54,21 @@ plt.plot(signal, label='noiseless')
 
 plt.plot(signal_noisy, label='with noise')
 plt.legend()
-#plt.show()
+# plt.show()
 plt.savefig('simulated_signal.png')
 
-"""
-.. figure:: simulated_signal.png
-   :align: center
-
-   **Simulated MultiTensor signal**
-"""
-
-"""
-For the ODF simulation we will need a sphere. Because we are interested in a
-simulation of only a single voxel, we can use a sphere with very high
-resolution. We generate that by subdividing the triangles of one of DIPY_'s
-cached spheres, which we can read in the following way.
-"""
+###############################################################################
+# .. figure:: simulated_signal.png
+#    :align: center
+#
+#    **Simulated MultiTensor signal**
+#
+#
+#
+# For the ODF simulation we will need a sphere. Because we are interested in a
+# simulation of only a single voxel, we can use a sphere with very high
+# resolution. We generate that by subdividing the triangles of one of DIPY_'s
+# cached spheres, which we can read in the following way.
 
 sphere = get_sphere('repulsion724')
 sphere = sphere.subdivide(2)
@@ -89,7 +82,8 @@ interactive = False
 
 ren = window.Renderer()
 
-odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap='plasma')
+odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere,
+                             colormap='plasma')
 odf_actor.RotateX(90)
 
 ren.add(odf_actor)
@@ -99,13 +93,10 @@ window.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
 if interactive:
     window.show(ren)
 
-
-"""
-.. figure:: multi_tensor_simulation.png
-   :align: center
-
-   Simulating a MultiTensor ODF.
-
-.. include:: ../links_names.inc
-
-"""
+###############################################################################
+# .. figure:: multi_tensor_simulation.png
+#    :align: center
+#
+#    Simulating a MultiTensor ODF.
+#
+# .. include:: ../links_names.inc

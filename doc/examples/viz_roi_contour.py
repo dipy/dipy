@@ -21,11 +21,10 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 
-"""
-First, we need to generate some streamlines. For a more complete
-description of these steps, please refer to the CSA Probabilistic Tracking
-Tutorial.
-"""
+###############################################################################
+# First, we need to generate some streamlines. For a more complete
+# description of these steps, please refer to the CSA Probabilistic Tracking
+# Tutorial.
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')
@@ -55,18 +54,16 @@ streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
 # Compute streamlines and store as a list.
 streamlines = Streamlines(streamlines)
 
-"""
-We will create a streamline actor from the streamlines.
-"""
+###############################################################################
+# We will create a streamline actor from the streamlines.
 
 streamlines_actor = actor.line(streamlines, cmap.line_colors(streamlines))
 
-"""
-Next, we create a surface actor from the corpus callosum seed ROI. We
-provide the ROI data, the affine, the color in [R,G,B], and the opacity as
-a decimal between zero and one. Here, we set the color as blue/green with
-50% opacity.
-"""
+###############################################################################
+# Next, we create a surface actor from the corpus callosum seed ROI. We
+# provide the ROI data, the affine, the color in [R,G,B], and the opacity as
+# a decimal between zero and one. Here, we set the color as blue/green with
+# 50% opacity.
 
 surface_opacity = 0.5
 surface_color = [0, 1, 1]
@@ -74,19 +71,17 @@ surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(seed_mask, affine,
                                        surface_color, surface_opacity)
 
-"""
-Next, we initialize a ''Renderer'' object and add both actors
-to the rendering.
-"""
+###############################################################################
+# Next, we initialize a ''Renderer'' object and add both actors
+# to the rendering.
 
 ren = window.ren()
 ren.add(streamlines_actor)
 ren.add(seedroi_actor)
 
-"""
-If you uncomment the following line, the rendering will pop up in an
-interactive window.
-"""
+###############################################################################
+# If you uncomment the following line, the rendering will pop up in an
+# interactive window.
 
 interactive = False
 if interactive:
@@ -94,10 +89,9 @@ if interactive:
 
 window.record(ren, out_path='contour_from_roi_tutorial.png', size=(1200, 900))
 
-"""
-.. figure:: contour_from_roi_tutorial.png
-   :align: center
-
-   **A top view of corpus callosum streamlines with the blue transparent
-   seed ROI in the center**.
-"""
+###############################################################################
+# .. figure:: contour_from_roi_tutorial.png
+#    :align: center
+#
+#    **A top view of corpus callosum streamlines with the blue transparent
+#    seed ROI in the center**.

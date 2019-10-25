@@ -51,7 +51,8 @@ Extending `Feature`
 ===================
 This section will guide you through the creation of a new feature extraction
 method that can be used in the context of this clustering framework. For a
-list of available features in DIPY see :ref:`example_segment_clustering_features`.
+list of available features in DIPY see
+:ref:`example_segment_clustering_features`.
 
 Assuming a set of streamlines, the type of features we want to extract is the
 arc length (i.e. the sum of the length of each segment for a given streamline).
@@ -71,16 +72,16 @@ from dipy.segment.metric import SumPointwiseEuclideanMetric
 from dipy.segment.metric import Metric
 from dipy.segment.metric import VectorOfEndpointsFeature
 
-"""
-We now define the class ``ArcLengthFeature`` that will perform the desired
-feature extraction. When subclassing ``Feature``, two methods have to be
-redefined: ``infer_shape`` and ``extract``.
+###############################################################################
+# We now define the class ``ArcLengthFeature`` that will perform the desired
+# feature extraction. When subclassing ``Feature``, two methods have to be
+# redefined: ``infer_shape`` and ``extract``.
 
-Also, an important property about feature extraction is whether or not
-its process is invariant to the order of the points within a streamline.
-This is needed as there is no way one can tell which extremity of a
-streamline is the beginning and which one is the end.
-"""
+# Also, an important property about feature extraction is whether or not
+# its process is invariant to the order of the points within a streamline.
+# This is needed as there is no way one can tell which extremity of a
+# streamline is the beginning and which one is the end.
+
 
 class ArcLengthFeature(Feature):
     """ Computes the arc length of a streamline. """
@@ -96,17 +97,18 @@ class ArcLengthFeature(Feature):
     def extract(self, streamline):
         """ Extracts features from `streamline`. """
         # return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
-        # or use a DIPY's function that computes the arc length of a streamline.
+        # or use a DIPY's function that computes the arc length of a
+        # streamline.
         return length(streamline)
 
-"""
-The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's use
-it to cluster a set of streamlines by their arc length. For educational
-purposes we will try to cluster a small streamline bundle known from
-neuroanatomy as the fornix.
+###############################################################################
+# The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's
+# use it to cluster a set of streamlines by their arc length. For educational
+# purposes we will try to cluster a small streamline bundle known from
+# neuroanatomy as the fornix.
+#
+# We start by loading the fornix streamlines.
 
-We start by loading the fornix streamlines.
-"""
 
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same',
@@ -114,18 +116,16 @@ fornix = load_tractogram(fname, 'same',
 
 streamlines = Streamlines(fornix)
 
-"""
-Perform QuickBundles clustering using the metric
-``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
-"""
+###############################################################################
+# Perform QuickBundles clustering using the metric
+# ``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
 
 metric = SumPointwiseEuclideanMetric(feature=ArcLengthFeature())
 qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
 
-"""
-We will now visualize the clustering result.
-"""
+###############################################################################
+# We will now visualize the clustering result.
 
 # Color each streamline according to the cluster they belong to.
 colormap = actor.create_colormap(np.ravel(clusters.centroids))
@@ -143,39 +143,39 @@ interactive = False
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: fornix_clusters_arclength.png
-   :align: center
+###############################################################################
+# .. figure:: fornix_clusters_arclength.png
+#    :align: center
+#
+#    Showing the different clusters obtained by using the arc length.
+#
+#
+# Extending `Metric`
+# ==================
+# This section will guide you through the creation of a new metric that can be
+# used in the context of this clustering framework. For a list of available
+# metrics in DIPY see :ref:`example_segment_clustering_metrics`.
+#
+# Assuming a set of streamlines, we want a metric that computes the cosine
+# distance giving the vector between endpoints of each streamline (i.e. one
+# minus the cosine of the angle between two vectors). For more information
+# about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
+#
+# Let's start by importing the necessary modules.
 
-   Showing the different clusters obtained by using the arc length.
+###############################################################################
+# We now define the class ``CosineMetric`` that will perform the desired
+# distance computation. When subclassing ``Metric``, two methods have to be
+# redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
+# ``dist`` method, one needs to make sure the distance returned is symmetric
+# (i.e. `dist(A, B) == dist(B, A)`).
 
-
-Extending `Metric`
-==================
-This section will guide you through the creation of a new metric that can be
-used in the context of this clustering framework. For a list of available
-metrics in DIPY see :ref:`example_segment_clustering_metrics`.
-
-Assuming a set of streamlines, we want a metric that computes the cosine
-distance giving the vector between endpoints of each streamline (i.e. one
-minus the cosine of the angle between two vectors). For more information
-about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
-
-Let's start by importing the necessary modules.
-"""
-
-"""
-We now define the class ``CosineMetric`` that will perform the desired
-distance computation. When subclassing ``Metric``, two methods have to be
-redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
-``dist`` method, one needs to make sure the distance returned is symmetric
-(i.e. `dist(A, B) == dist(B, A)`).
-"""
 
 class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
     def __init__(self):
-        # For simplicity, features will be the vector between endpoints of a streamline.
+        # For simplicity, features will be the vector between endpoints of a
+        # streamline.
         super(CosineMetric, self).__init__(feature=VectorOfEndpointsFeature())
 
     def are_compatible(self, shape1, shape2):
@@ -196,30 +196,28 @@ class CosineMetric(Metric):
         cos_theta = np.maximum(cos_theta, -1.)
         return np.arccos(cos_theta) / np.pi  # Normalized cosine distance
 
-"""
-The new distance ``CosineMetric`` is ready to be used. Let's use
-it to cluster a set of streamlines according to the cosine distance of the
-vector between their endpoints. For educational purposes we will try to
-cluster a small streamline bundle known from neuroanatomy as the fornix.
+###############################################################################
+# The new distance ``CosineMetric`` is ready to be used. Let's use
+# it to cluster a set of streamlines according to the cosine distance of the
+# vector between their endpoints. For educational purposes we will try to
+# cluster a small streamline bundle known from neuroanatomy as the fornix.
+#
+# We start by loading the fornix streamlines.
 
-We start by loading the fornix streamlines.
-"""
 
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
 streamlines = fornix.streamlines
 
-"""
-Perform QuickBundles clustering using our metric ``CosineMetric``.
-"""
+###############################################################################
+# Perform QuickBundles clustering using our metric ``CosineMetric``.
 
 metric = CosineMetric()
 qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
-"""
-We will now visualize the clustering result.
-"""
+###############################################################################
+# We will now visualize the clustering result.
 
 # Color each streamline according to the cluster they belong to.
 colormap = actor.create_colormap(np.arange(len(clusters)))
@@ -234,19 +232,17 @@ window.record(ren, out_path='fornix_clusters_cosine.png', size=(600, 600))
 if interactive:
     window.show(ren)
 
-"""
-.. figure:: fornix_clusters_cosine.png
-   :align: center
-
-   Showing the different clusters obtained by using the cosine metric.
-
-.. include:: ../links_names.inc
-
-References
-----------
-
-.. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
-   tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
-   2012.
-
-"""
+###############################################################################
+# .. figure:: fornix_clusters_cosine.png
+#    :align: center
+#
+#    Showing the different clusters obtained by using the cosine metric.
+#
+# .. include:: ../links_names.inc
+#
+# References
+# ----------
+#
+# .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+#    tractography simplification, Frontiers in Neuroscience, vol 6, no 175,
+#    2012.
