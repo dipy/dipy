@@ -38,22 +38,20 @@ response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 data = maskdata[:, :, 33:37]
 mask = mask[:, :, 33:37]
 
-"""
-Now we are ready to import the CSD model and fit the datasets.
-"""
+###############################################################################
+# Now we are ready to import the CSD model and fit the datasets.
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
-"""
-Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
-parameter called ``parallel`` which allows for the voxels to be processed in
-parallel. If ``nbr_processes`` is None it will figure out automatically the
-number of CPUs available in your system. Alternatively, you can set
-``nbr_processes`` manually. Here, we show an example where we compare the
-duration of execution with or without parallelism.
-"""
+###############################################################################
+# Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
+# parameter called ``parallel`` which allows for the voxels to be processed in
+# parallel. If ``nbr_processes`` is None it will figure out automatically the
+# number of CPUs available in your system. Alternatively, you can set
+# ``nbr_processes`` manually. Here, we show an example where we compare the
+# duration of execution with or without parallelism.
 
 import time
 from dipy.direction import peaks_from_model
@@ -76,9 +74,8 @@ time_parallel = time.time() - start_time
 print("peaks_from_model using " + str(multiprocessing.cpu_count())
       + " process ran in :" + str(time_parallel) + " seconds")
 
-"""
-``peaks_from_model`` using 8 processes ran in 114.425682068 seconds
-"""
+###############################################################################
+# ``peaks_from_model`` using 8 processes ran in 114.425682068 seconds
 
 start_time = time.time()
 csd_peaks = peaks_from_model(model=csd_model,
@@ -97,21 +94,18 @@ csd_peaks = peaks_from_model(model=csd_model,
 time_single = time.time() - start_time
 print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
-"""
-``peaks_from_model`` ran in 242.772505999 seconds
-"""
+###############################################################################
+# ``peaks_from_model`` ran in 242.772505999 seconds
 
 print("Speedup factor : " + str(time_single / time_parallel))
 
-"""
-Speedup factor : 2.12166099088
-
-In Windows if you get a runtime error about frozen executable please start
-your script by adding your code above in a ``main`` function and use::
-
-    if __name__ == '__main__':
-        import multiprocessing
-        multiprocessing.freeze_support()
-        main()
-
-"""
+###############################################################################
+# Speedup factor : 2.12166099088
+#
+# In Windows if you get a runtime error about frozen executable please start
+# your script by adding your code above in a ``main`` function and use::
+#
+#     if __name__ == '__main__':
+#         import multiprocessing
+#         multiprocessing.freeze_support()
+#         main()
