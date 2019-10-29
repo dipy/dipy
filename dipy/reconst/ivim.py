@@ -557,8 +557,8 @@ class IvimModelVP(ReconstModel):
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
 
-		# Done because the MIX framework does not set bounds on S0.
-		# This unifies the interface to take bounds as input to both methods.
+        # Done because the MIX framework does not set bounds on S0.
+        # This unifies the interface to take 'bounds' as input to both methods.
         self.bounds = (bounds[0][1:], [1][1:])or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
