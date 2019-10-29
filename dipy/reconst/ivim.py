@@ -11,7 +11,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 # global variable for bounding least_squares in both models
-BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
+BOUNDS = ([0., 0., 0., 0.], [np.inf, 0.2, 1., 1.])
 
 
 def ivim_prediction(params, gtab):
@@ -499,7 +499,7 @@ class IvimModelTRR(ReconstModel):
             return ivim_params
         except ValueError:
             warningMsg = "x0 is unfeasible for leastsq fitting."
-            warningMsg += " Returning x0 values from the linear fit."
+            warningMsg += " Returning x0 values from the trr fit."
             warnings.warn(warningMsg, UserWarning)
             return x0
 
@@ -551,6 +551,7 @@ class IvimModelVP(ReconstModel):
 
         self.maxiter = maxiter
         self.xtol = xtol
+        self.gtab = gtab
         self.bvals = gtab.bvals
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
@@ -603,13 +604,9 @@ class IvimModelVP(ReconstModel):
         f = self.cvx_fit(data, phi)
         x_f = self.x_and_f_to_x_f(x, f)
 
-        # Setting up the bounds for least_squares
-        bounds = self.bounds
-
         # Optimizer #3: Nonlinear-Least Squares
-        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
-                            xtol=self.xtol, args=(data,))
-        result = res.x
+        result = self._leastsq_vp(self.gtab, data, x_f)
+
         f_est = result[0]
         D_star_est = result[1]
         D_est = result[2]
@@ -621,6 +618,49 @@ class IvimModelVP(ReconstModel):
         # final result containing the four fit parameters: S0, f, D* and D
         result = np.insert(result, 0, np.mean(S0_est), axis=0)
         return IvimFit(self, result)
+
+    def _leastsq_vp(self, gtab, data, x_f):
+        """Use leastsq to find ivim_params
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
+        Gradient directions and bvalues.
+
+        data : array, (len(bvals))
+            An array containing the signal from a voxel.
+            If the data was a 3D image of 10x10x10 grid with 21 bvalues,
+            the multi_voxel decorator will run the single voxel fitting
+            on all the 1000 voxels to get the parameters in
+            IvimFit.model_paramters. The shape of the parameter array
+            will be (data[:-1], 4).
+
+        x_f : array
+              Initial guesses for the parameters S0, f, D_star and D
+              calculated using a linear fitting.
+
+        Returns
+        -------
+        x0 : array
+            Estimates of the parameters S0, f, D_star and D.
+        """
+        # bounds for nonlinear least squares fit
+        bounds = self.bounds
+
+        try:
+            res = least_squares(self.nlls_cost,
+                                x_f,
+                                bounds=bounds,
+                                args=(data,))
+            ivim_params = res.x
+            if np.all(np.isnan(ivim_params)):
+                return np.array([-1, -1, -1, -1])
+            return ivim_params
+
+        except ValueError:
+            ivimmodel = IvimModel(gtab, fit_method='trr')
+            ivimfit = ivimmodel.fit(data)
+            return ivimfit.model_params[1:]
 
     def stoc_search_cost(self, x, signal):
         """
