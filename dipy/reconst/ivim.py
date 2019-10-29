@@ -499,7 +499,7 @@ class IvimModelTRR(ReconstModel):
             return ivim_params
         except ValueError:
             warningMsg = "x0 is unfeasible for leastsq fitting."
-            warningMsg += " Returning x0 values from the trr fit."
+            warningMsg += " Returning x0 values from the linear fit."
             warnings.warn(warningMsg, UserWarning)
             return x0
 
