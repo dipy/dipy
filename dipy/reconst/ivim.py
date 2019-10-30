@@ -556,10 +556,7 @@ class IvimModelVP(ReconstModel):
         self.yhat_perfusion = np.zeros(self.bvals.shape[0])
         self.yhat_diffusion = np.zeros(self.bvals.shape[0])
         self.exp_phi1 = np.zeros((self.bvals.shape[0], 2))
-
-        # Done because the MIX framework does not set bounds on S0.
-        # This unifies the interface to take 'bounds' as input to both methods.
-        self.bounds = (bounds[0][1:], [1][1:])or (BOUNDS[0][1:], BOUNDS[1][1:])
+        self.bounds = bounds or np.array(BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
     def fit(self, data, bounds_de=None):
@@ -599,7 +596,7 @@ class IvimModelVP(ReconstModel):
         # Optimizer #1: Differential Evolution
         res_one = differential_evolution(self.stoc_search_cost, bounds_de,
                                          maxiter=self.maxiter, args=(data,),
-                                         disp=False, polish=True, popsize=28)
+                                         disp=True, polish=True, popsize=28)
         x = res_one.x
         phi = self.phi(x)
 
