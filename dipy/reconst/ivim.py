@@ -596,7 +596,7 @@ class IvimModelVP(ReconstModel):
         # Optimizer #1: Differential Evolution
         res_one = differential_evolution(self.stoc_search_cost, bounds_de,
                                          maxiter=self.maxiter, args=(data,),
-                                         disp=True, polish=True, popsize=28)
+                                         disp=False, polish=True, popsize=28)
         x = res_one.x
         phi = self.phi(x)
 
