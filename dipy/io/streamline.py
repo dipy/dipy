@@ -40,10 +40,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are invalid.' +
-                         'Please use the function remove_invalid_streamlines' +
-                         'to discard invalid streamlines or set' +
-                         'bbox_valid_check to False')
+                         'load a valid file if some coordinates are ' +
+                         'invalid. Please use the function ' +
+                         'remove_invalid_streamlines to discard invalid ' +
+                         'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
     old_shift = deepcopy(sft.shifted_origin)
@@ -101,9 +101,8 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         Reference that provides the spatial attribute.
         Typically a nifti-related object from the native diffusion used for
         streamlines generation
-    space : string
-        Space in which the streamlines will be transformed after loading
-        (vox, voxmm or rasmm)
+    to_space : Enum (dipy.io.stateful_tractogram.Space)
+        Space to which the streamlines will be transformed after loading.
     shifted_origin : bool
         Information on the position of the origin,
         False is Trackvis standard, default (center of the voxel)
