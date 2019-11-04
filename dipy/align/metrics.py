@@ -4,7 +4,8 @@ from __future__ import print_function
 import abc
 import numpy as np
 import scipy as sp
-from scipy import gradient, ndimage
+from numpy import gradient
+from scipy import ndimage
 from dipy.align import vector_fields as vfu
 from dipy.align import sumsqdiff as ssd
 from dipy.align import crosscorr as cc
@@ -263,7 +264,7 @@ class CCMetric(SimilarityMetric):
 
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
-        for i, grad in enumerate(sp.gradient(self.moving_image)):
+        for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
         # Convert moving image's gradient field from voxel to physical space
@@ -275,7 +276,7 @@ class CCMetric(SimilarityMetric):
 
         self.gradient_static = np.empty(
             shape=(self.static_image.shape)+(self.dim,), dtype=floating)
-        for i, grad in enumerate(sp.gradient(self.static_image)):
+        for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
         # Convert moving image's gradient field from voxel to physical space
@@ -438,7 +439,7 @@ class EMMetric(SimilarityMetric):
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
 
-        for i, grad in enumerate(sp.gradient(self.moving_image)):
+        for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
         # Convert moving image's gradient field from voxel to physical space
@@ -451,7 +452,7 @@ class EMMetric(SimilarityMetric):
         self.gradient_static = np.empty(
             shape=(self.static_image.shape)+(self.dim,), dtype=floating)
 
-        for i, grad in enumerate(sp.gradient(self.static_image)):
+        for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
         # Convert moving image's gradient field from voxel to physical space
@@ -473,10 +474,10 @@ class EMMetric(SimilarityMetric):
         self.movingq_sigma_sq_field = self.movingq_variances[movingq]
         self.movingq_means_field = self.movingq_means[movingq]
         if self.use_double_gradient:
-            for i, grad in enumerate(sp.gradient(self.staticq_means_field)):
+            for i, grad in enumerate(gradient(self.staticq_means_field)):
                 self.gradient_moving[..., i] += grad
 
-            for i, grad in enumerate(sp.gradient(self.movingq_means_field)):
+            for i, grad in enumerate(gradient(self.movingq_means_field)):
                 self.gradient_static[..., i] += grad
 
     def free_iteration(self):
