@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
 
 from dipy.utils.optpkg import optional_package
 
-tf , have_tf, _ = optional_package('tensorflow')
+tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
@@ -41,8 +41,8 @@ class SingleLayerPerceptron(object):
             ])
 
         model.compile(optimizer='adam',
-                loss='sparse_categorical_crossentropy',
-                metrics=['accuracy'])
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
 
         self.model = model
 
@@ -57,5 +57,3 @@ class SingleLayerPerceptron(object):
 
     def predict(self, x_test):
         return self.model.predict(x_test)
-
-
