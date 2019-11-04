@@ -1,7 +1,6 @@
 import pytest
 from distutils.version import LooseVersion
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_, assert_raises, assert_equal)
+from numpy.testing import assert_equal
 
 from dipy.utils.optpkg import optional_package
 
@@ -36,7 +35,7 @@ def test_default_mnist_sequential():
                   metrics=['accuracy'])
 
     hist = model.fit(x_train, y_train, epochs=epochs)
-    model.evaluate(x_test,  y_test, verbose=2)
+    model.evaluate(x_test, y_test, verbose=2)
     accuracy = hist.history['accuracy'][0]
     assert_equal(accuracy > 0.9, True)
 
@@ -52,7 +51,7 @@ def test_default_mnist_slp():
 
     slp = SingleLayerPerceptron(input_shape=(28, 28))
     hist = slp.fit(x_train, y_train, epochs=epochs)
-    slp.evaluate(x_test,  y_test, verbose=2)
+    slp.evaluate(x_test, y_test, verbose=2)
     x_test_prob = slp.predict(x_test)
 
     accuracy = hist.history['accuracy'][0]

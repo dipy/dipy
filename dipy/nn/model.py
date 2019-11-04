@@ -1,6 +1,4 @@
 from distutils.version import LooseVersion
-from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_, assert_raises)
 
 from dipy.utils.optpkg import optional_package
 
@@ -9,8 +7,6 @@ tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
-
-    from tensorflow.keras import Model, layers
 
 
 class SingleLayerPerceptron(object):
