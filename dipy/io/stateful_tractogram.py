@@ -277,9 +277,9 @@ class StatefulTractogram(object):
         output : ndarray
             8 corners of the XYZ aligned box, all zeros if no streamlines
         """
-        if self._tractogram.streamlines.data.size > 0:
-            bbox_min = np.min(self._tractogram.streamlines.data, axis=0)
-            bbox_max = np.max(self._tractogram.streamlines.data, axis=0)
+        if self._tractogram.streamlines._data.size > 0:
+            bbox_min = np.min(self._tractogram.streamlines._data, axis=0)
+            bbox_max = np.max(self._tractogram.streamlines._data, axis=0)
             return np.asarray(list(product(*zip(bbox_min, bbox_max))))
 
         return np.zeros((8, 3))
@@ -347,9 +347,9 @@ class StatefulTractogram(object):
         self.to_vox()
         self.to_corner()
 
-        min_condition = np.min(self._tractogram.streamlines.data,
+        min_condition = np.min(self._tractogram.streamlines._data,
                                axis=1) < 0.0
-        max_condition = np.any(self._tractogram.streamlines.data >
+        max_condition = np.any(self._tractogram.streamlines._data >
                                self._dimensions, axis=1)
         ic_offsets_indices = np.where(np.logical_or(min_condition,
                                                     max_condition))[0]
@@ -393,7 +393,7 @@ class StatefulTractogram(object):
     def _vox_to_voxmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
@@ -405,7 +405,7 @@ class StatefulTractogram(object):
     def _voxmm_to_vox(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOX
@@ -417,7 +417,7 @@ class StatefulTractogram(object):
     def _vox_to_rasmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOX:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
                 logging.info('Moved streamlines from vox to rasmm')
@@ -428,7 +428,7 @@ class StatefulTractogram(object):
     def _rasmm_to_vox(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._space = Space.VOX
                 logging.info('Moved streamlines from rasmm to vox')
@@ -439,7 +439,7 @@ class StatefulTractogram(object):
     def _voxmm_to_rasmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.VOXMM:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
@@ -452,7 +452,7 @@ class StatefulTractogram(object):
     def _rasmm_to_voxmm(self):
         """ Unsafe function to transform streamlines """
         if self._space == Space.RASMM:
-            if self._tractogram.streamlines.data.size > 0:
+            if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)

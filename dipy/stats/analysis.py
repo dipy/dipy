@@ -235,15 +235,15 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
         clusters = qb.cluster(mbundle_streamlines)
         centroids = Streamlines(clusters.centroids)
 
-        print('Number of centroids ', len(centroids.data))
+        print('Number of centroids ', len(centroids._data))
         print('Model bundle ', mb[io])
         print('Number of streamlines in bundle in common space ',
               len(bundles))
         print('Number of streamlines in bundle in original space ',
               len(orig_bundles))
 
-        _, indx = cKDTree(centroids.data, 1,
-                          copy_data=True).query(bundles.data, k=1)
+        _, indx = cKDTree(centroids._data, 1,
+                          copy_data=True).query(bundles._data, k=1)
 
         metric_files_names = os.listdir(metric_folder)
         _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
@@ -313,7 +313,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         # This should come back as a 3D covariance matrix with the spatial
         # variance covariance of this node across the different streamlines
         # This is a 3-by-3 array:
-        node_coords = bundle.data[node::n_points]
+        node_coords = bundle._data[node::n_points]
         c = np.cov(node_coords.T, ddof=0)
         # Reorganize as an upper diagonal matrix for expected Mahalanobis
         # input:
