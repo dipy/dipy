@@ -6,6 +6,7 @@ Decorators for dipy tests
 
 import re
 import os
+import platform
 
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
@@ -53,6 +54,7 @@ def doctest_skip_parser(func):
 # xvfbwrapper) conditioned on an environment variable (that we set in
 # .travis.yml for these cases):
 use_xvfb = os.environ.get('TEST_WITH_XVFB', False)
+is_windows = platform.system().lower() == "windows"
 
 
 def xvfb_it(my_test):
@@ -70,4 +72,4 @@ def xvfb_it(my_test):
             display.stop()
     # Plant it back in and return the new function:
     test_with_xvfb.__name__ = fname
-    return test_with_xvfb
+    return test_with_xvfb if not is_windows else my_test

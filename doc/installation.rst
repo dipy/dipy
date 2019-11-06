@@ -383,7 +383,7 @@ Testing
 
 If you want to run the tests::
 
-    sudo pip install pytest nose
+    sudo pip install pytest
 
 Then (in python or ipython_)::
 

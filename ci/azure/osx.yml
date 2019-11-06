@@ -1,0 +1,49 @@
+parameters:
+  name: ''
+  vmImage: ''
+  matrix: []
+
+jobs:
+- job: ${{ parameters.name }}
+  pool:
+    vmIMage: ${{ parameters.vmImage }}
+  variables:
+    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy"
+    VENV_ARGS: "--python=python"
+    INSTALL_TYPE: "setup"
+    EXTRA_WHEELS: "https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"
+    PRE_WHEELS: "https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com"
+  strategy:
+    # maxParallel: 3
+    matrix:
+      ${{ insert }}: ${{ parameters.matrix }}
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(python.version)
+      architecture: 'x64'
+      addToPath: true
+  - script: |
+      brew install hdf5
+    displayName: 'Install packages'
+  - script: |
+      brew cask install xquartz
+    displayName: 'Install Xquartz package'
+    condition: eq( variables['TEST_WITH_XVFB'], '1' )
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
+    condition: eq( variables['INSTALL_TYPE'], 'conda' )
+  # On Hosted macOS, the agent user doesn't have ownership of Miniconda's installation directory/
+  # We need to take ownership if we want to update conda or install packages globally
+  - bash: sudo chown -R $USER $CONDA
+    displayName: Take ownership of conda installation
+    condition: eq( variables['INSTALL_TYPE'], 'conda' )
+  - script: |
+      sudo chmod +x ci/azure/install.sh
+      ./ci/azure/install.sh
+    displayName: 'Install dependencies'
+  - script: |
+      sudo chmod +x ci/azure/script.sh
+      ./ci/azure/script.sh
+    displayName: 'Install DIPY and Run Tests'

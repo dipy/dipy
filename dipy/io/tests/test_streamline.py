@@ -11,6 +11,7 @@ from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 import numpy as np
 import numpy.testing as npt
+import pytest
 from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
@@ -189,7 +190,7 @@ def test_io_tck():
     io_tractogram('tck')
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_io_vtk():
     io_tractogram('vtk')
 
@@ -198,7 +199,7 @@ def test_io_dpy():
     io_tractogram('dpy')
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
     with InTemporaryDirectory():
         fname = 'test.fib'

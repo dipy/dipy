@@ -4,8 +4,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import random
-from numpy.testing import assert_array_almost_equal
-from nose.tools import assert_raises
+from numpy.testing import assert_array_almost_equal, assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)

@@ -5,6 +5,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_allclose, assert_array_equal
+import pytest
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -42,8 +43,10 @@ def tck_equal_in_vox_space():
                     sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_vox_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
@@ -75,8 +78,10 @@ def tck_equal_in_rasmm_space():
                     sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_rasmm_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
@@ -108,8 +113,10 @@ def tck_equal_in_voxmm_space():
                     sft.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_equal_in_voxmm_space():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
@@ -229,8 +236,10 @@ def tck_iterative_saving_loading():
             save_tractogram(sft_iter, 'gs_iter.tck')
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def fib_iterative_saving_loading():
+    if not have_fury:
+        return
     sft = load_tractogram(filepath_dix['gs.fib'], filepath_dix['gs.nii'],
                           to_space=Space.RASMM)
     with InTemporaryDirectory():

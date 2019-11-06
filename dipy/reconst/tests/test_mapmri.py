@@ -11,7 +11,7 @@ from numpy.testing import (assert_almost_equal,
                            assert_equal, assert_,
                            run_module_suite,
                            assert_raises)
-
+import pytest
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.data import get_gtab_taiwan_dsi, default_sphere
@@ -632,7 +632,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
     assert_almost_equal(radius_estimated, radius_gt, 4)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
 def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]

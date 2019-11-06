@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import numpy.testing as nt
+import pytest
 import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
@@ -11,15 +12,12 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               unit_icosahedron, hemi_icosahedron)
 from dipy.core.geometry import cart2sphere, vector_norm
 from dipy.core.sphere_stats import random_uniform_on_sphere
+from dipy.utils.optpkg import optional_package
 
-from numpy.testing.decorators import skipif
-
-try:
+delaunay, have_delaunay, _ = optional_package('scipy.spatial.Delaunay')
+if have_delaunay:
     from scipy.spatial import Delaunay
-except ImportError:
-    needs_delaunay = skipif(True, "Need scipy.spatial.Delaunay")
-else:
-    needs_delaunay = skipif(False)
+
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
@@ -111,7 +109,8 @@ def test_unique_sets():
     nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
@@ -127,7 +126,8 @@ def test_sphere_attrs():
     nt.assert_array_almost_equal(s.z, verts[:, 2])
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_edges_faces():
     s = Sphere(xyz=verts)
     faces = oct_faces
@@ -145,7 +145,8 @@ def test_edges_faces():
                     array_to_set([[0, 1]]))
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_sphere_subdivide():
     sphere1 = unit_octahedron.subdivide(4)
     sphere2 = Sphere(xyz=sphere1.vertices)
@@ -177,7 +178,8 @@ def test_hemisphere_find_closest():
                         ii)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_subdivide():
 
     def flip(vertices):
@@ -228,7 +230,8 @@ def test_hemisphere_constructor():
     nt.assert_array_almost_equal(s0.phi, phiU)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_mirror():
     verts = [[0, 0, 1],
              [0, 1, 0],
@@ -257,17 +260,18 @@ def test_mirror():
         nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_faces():
 
     t = (1 + np.sqrt(5)) / 2
     vertices = np.array(
-        [[ -t, -1,  0],
-         [ -t,  1,  0],
-         [  1,  0,  t],
-         [ -1,  0,  t],
-         [  0,  t,  1],
-         [  0, -t,  1],
+        [[-t, -1, 0],
+         [-t, 1, 0],
+         [1, 0, t],
+         [-1, 0, t],
+         [0, t, 1],
+         [0, -t, 1],
          ])
     vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
