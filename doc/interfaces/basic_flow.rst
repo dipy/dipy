@@ -1,8 +1,8 @@
 .. _basic_flow:
 
-=======================================
-Get Started with a basic DIPY pipelines
-=======================================
+====================================================
+Get Started with a basic DIPY Workflow command lines
+====================================================
 
 In a terminal, Let's get some data. This is multi-shell dataset which was
 kindly provided by Hansen and Jespersen (more details about the data are
