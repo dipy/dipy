@@ -133,7 +133,7 @@ print(ap.shape)
 """
 The above figure is a visualization of the axial slice of the Anisotropic
 Power Map. It can be treated as a pseudo-T1 for classification purposes
-using the HMRF classifier if the T1 image is not available.
+using the Hidden Markov Random Fields (HMRF) classifier, if the T1 image is not available.
 
 As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
 used for tissue classification using Hidden Markov Random Fields (HMRF). The
