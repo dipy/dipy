@@ -62,7 +62,7 @@ def test_split_flow():
         assert_true(os.path.isfile(
          split_flow.last_generated_outputs['out_split']))
         split_flow._force_overwrite = True
-        split_flow.run(data_path, grad_dir=0, out_dir=out_dir)
+        split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
         split_path = split_flow.last_generated_outputs['out_split']
         assert_true(os.path.isfile(split_path))
         split_img = nib.load(split_path)

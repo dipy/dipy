@@ -1,5 +1,3 @@
-from __future__ import division, print_function, absolute_import
-
 import os
 import sys
 import shutil
@@ -214,7 +212,7 @@ class SplitFlow(Workflow):
     def get_short_name(cls):
         return 'split'
 
-    def run(self, input_files, grad_dir=0, out_dir='',
+    def run(self, input_files, vol_idx=0, out_dir='',
             out_split='split.nii.gz'):
         """ Splits the input 4D file and extracts the required 3D volume.
 
@@ -222,24 +220,20 @@ class SplitFlow(Workflow):
         ----------
         input_files : variable string
             Any number of Nifti1 files
-        grad_dir : int, optional
+        vol_idx : int, optional
             (default 0)
         out_dir : string, optional
             Output directory. Default: dipy home folder (~/.dipy)
         """
         io_it = self.get_io_iterator()
         for fpath, osplit in io_it:
-            if self._skip:
-                shutil.copy(fpath, osplit)
-                logging.warning('Splitting skipped for now.')
-            else:
-                logging.info('Splitting {0}'.format(fpath))
-                data, affine, image = load_nifti(fpath, return_img=True)
+            logging.info('Splitting {0}'.format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
 
-                if grad_dir == 0:
-                    logging.info('Splitting and extracting 1st b0')
+            if vol_idx == 0:
+                logging.info('Splitting and extracting 1st b0')
 
-                split_vol = data[..., grad_dir]
-                save_nifti(osplit, split_vol, affine, image.header)
+            split_vol = data[..., vol_idx]
+            save_nifti(osplit, split_vol, affine, image.header)
 
-                logging.info('Denoised volume saved as {0}'.format(osplit))
+            logging.info('Split volume saved as {0}'.format(osplit))
