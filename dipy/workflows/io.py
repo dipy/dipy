@@ -139,6 +139,8 @@ class FetchFlow(Workflow):
     def run(self, data_names, out_dir=''):
         """Download files to folder and check their md5 checksums.
 
+        To see all available datasets, please type "list" in data_names.
+
         Parameters
         ----------
         data_names : variable string
@@ -156,8 +158,7 @@ class FetchFlow(Workflow):
         available_data = dict([(name.replace('fetch_', ''), func)
                                for name, func in getmembers(fetcher_module,
                                                             isfunction)
-                               if name.lower().startswith("fetch_")
-                               if not len(getfullargspec(func).args)])
+                               if name.lower().startswith("fetch_")])
 
         data_names = [name.lower() for name in data_names]
 
