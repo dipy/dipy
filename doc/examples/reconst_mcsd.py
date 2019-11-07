@@ -136,7 +136,7 @@ Power Map. It can be treated as a pseudo-T1 for classification purposes
 using the Hidden Markov Random Fields (HMRF) classifier, if the T1 image is not available.
 
 As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
-used for tissue classification using Hidden Markov Random Fields (HMRF). The
+used for tissue classification using HMRF. The
 HMRF needs the specification of the number of classes. For the case of MSMT-CSD
 the ``nclass`` parameter needs to be ``>=2``. In our case, we set it to 3:
 namely corticospinal fluid (csf), white matter (wm) and gray matter (gm).
