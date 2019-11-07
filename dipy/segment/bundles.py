@@ -464,7 +464,7 @@ class RecoBundles(object):
         elif reduction_distance.lower() == 'mam':
             if self.verbose:
                 logger.info(' Using MAM')
-            centroid_matrix = bundles_distances_am(model_centroids,
+            centroid_matrix = bundles_distances_mam(model_centroids,
                                                     self.centroids)
         else:
             raise ValueError('Given reduction distance not known')
