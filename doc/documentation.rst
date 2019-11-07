@@ -12,6 +12,7 @@ Contents:
    mission
    installation
    examples_index
+   pipelines/index
    faq
    developers
    cite
