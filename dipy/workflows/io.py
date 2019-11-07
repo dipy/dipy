@@ -224,6 +224,9 @@ class SplitFlow(Workflow):
             (default 0)
         out_dir : string, optional
             Output directory. Default: dipy home folder (~/.dipy)
+        out_split : string, optional
+            Name of the resulting split volume (default: split.nii.gz)
+
         """
         io_it = self.get_io_iterator()
         for fpath, osplit in io_it:
