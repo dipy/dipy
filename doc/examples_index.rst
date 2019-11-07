@@ -60,6 +60,7 @@ Constrained Spherical Deconvolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_csd`
+- :ref:`example_reconst_mcsd`
 
 Fiber Orientation Estimated using Continuous Axially Symmetric Tensors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

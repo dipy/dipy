@@ -16,6 +16,7 @@
  reconst_dsid.py
  reconst_ivim.py
  reconst_mapmri.py
+ reconst_mcsd.py
  reconst_qtdmri.py
  reconst_shore.py
  reconst_shore_metrics.py
