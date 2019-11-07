@@ -101,7 +101,7 @@ Now we will use the denoised array (``denoised_arr``) obtained from ``mppca``
 in the rest of the steps in the tutorial.
 
 As for the next step, we generate the anisotropic powermap introduced by
-[DellAcqua2014]_. To do so, we make use of the Qball Model as follows:
+[DellAcqua2014]_. To do so, we make use of the Q-ball Model as follows:
 """
 
 qball_model = shm.QballModel(gtab, 8)
@@ -163,7 +163,7 @@ initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
 print(PVE.shape)
 
 """
-Now that we hae the segmentation step, we would like to classify the tissues
+Now that we have the segmentation step, we would like to classify the tissues
 into ``wm``, ``gm`` and ``csf`` We do
 so using the Fractional Anisotropy (FA) and Mean Diffusivity (MD) metrics
 obtained from the Diffusion Tensor Imaging Model (DTI) fit as follows:
@@ -281,4 +281,5 @@ References
                     Magnetic Resonance in Medicine. Milan, Italy, (2014).
 
 .. include:: ../links_names.inc
+
 """
