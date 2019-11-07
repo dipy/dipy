@@ -161,6 +161,7 @@ if __name__ == '__main__':
     # generate index.rst
     print("Generating index.rst")
     with open(pjoin(outdir, "index.rst"), "w") as index:
+        index.write(".. _workflows_reference:\n\n")
         index.write("Command Line Utilities Reference\n")
         index.write("================================\n\n")
         index.write(".. toctree::\n\n")

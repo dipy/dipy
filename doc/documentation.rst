@@ -12,6 +12,7 @@ Contents:
    mission
    installation
    examples_index
+   interfaces/index
    faq
    developers
    cite
