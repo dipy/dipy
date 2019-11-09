@@ -1,12 +1,12 @@
-from __future__ import division, print_function, absolute_import
-
 import os
 import sys
+import shutil
+
 import numpy as np
 import logging
 import importlib
 from inspect import getmembers, isfunction, getfullargspec
-from dipy.io.image import load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 
 
@@ -206,3 +206,38 @@ class FetchFlow(Workflow):
             # the same process, we don't have the env variable pointing to the
             # wrong place
             self.load_module('dipy.data.fetcher')
+
+
+class SplitFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'split'
+
+    def run(self, input_files, vol_idx=0, out_dir='',
+            out_split='split.nii.gz'):
+        """ Splits the input 4D file and extracts the required 3D volume.
+
+        Parameters
+        ----------
+        input_files : variable string
+            Any number of Nifti1 files
+        vol_idx : int, optional
+            (default 0)
+        out_dir : string, optional
+            Output directory. Default: dipy home folder (~/.dipy)
+        out_split : string, optional
+            Name of the resulting split volume (default: split.nii.gz)
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, osplit in io_it:
+            logging.info('Splitting {0}'.format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
+
+            if vol_idx == 0:
+                logging.info('Splitting and extracting 1st b0')
+
+            split_vol = data[..., vol_idx]
+            save_nifti(osplit, split_vol, affine, image.header)
+
+            logging.info('Split volume saved as {0}'.format(osplit))
