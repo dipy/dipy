@@ -158,7 +158,8 @@ class FetchFlow(Workflow):
         available_data = dict([(name.replace('fetch_', ''), func)
                                for name, func in getmembers(fetcher_module,
                                                             isfunction)
-                               if name.lower().startswith("fetch_")])
+                               if name.lower().startswith("fetch_") and
+                               func is not fetcher_module.fetch_data])
 
         data_names = [name.lower() for name in data_names]
 

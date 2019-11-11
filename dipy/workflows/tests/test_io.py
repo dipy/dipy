@@ -7,6 +7,7 @@ from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
+from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 
@@ -50,6 +51,11 @@ def test_io_fetch():
         npt.assert_equal(os.path.isdir(os.path.join(out_dir,
                                                     'bundle_fa_hcp')),
                          True)
+
+        fetch_flow.run(['all'])
+        npt.assert_equal(
+            len(list(filter(lambda x: os.path.isdir(pjoin(dipy_home, x)),
+                            os.listdir(dipy_home)))), 18)
 
 
 def test_split_flow():
