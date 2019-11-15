@@ -118,7 +118,29 @@ class FetchFlow(Workflow):
     def get_short_name(cls):
         return 'fetch'
 
-    def load_module(self, module_path):
+    @staticmethod
+    def get_fetcher_datanames():
+        """Gets available dataset and function names.
+
+        Returns
+        -------
+        available_data: dict
+            Available dataset and function names.
+
+        """
+
+        fetcher_module = FetchFlow.load_module('dipy.data.fetcher')
+
+        available_data = dict([(name.replace('fetch_', ''), func)
+                               for name, func in getmembers(fetcher_module,
+                                                            isfunction)
+                               if name.lower().startswith("fetch_") and
+                               func is not fetcher_module.fetch_data])
+
+        return available_data
+
+    @staticmethod
+    def load_module(module_path):
         """Load / reload an external module.
 
         Parameters
@@ -153,13 +175,7 @@ class FetchFlow(Workflow):
             dipy_home = os.environ.get('DIPY_HOME', None)
             os.environ['DIPY_HOME'] = out_dir
 
-        fetcher_module = self.load_module('dipy.data.fetcher')
-
-        available_data = dict([(name.replace('fetch_', ''), func)
-                               for name, func in getmembers(fetcher_module,
-                                                            isfunction)
-                               if name.lower().startswith("fetch_") and
-                               func is not fetcher_module.fetch_data])
+        available_data = FetchFlow.get_fetcher_datanames()
 
         data_names = [name.lower() for name in data_names]
 
