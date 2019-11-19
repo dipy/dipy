@@ -7,6 +7,7 @@ from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
+from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 
@@ -52,6 +53,24 @@ def test_io_fetch():
                          True)
 
 
+def test_io_fetch_fetcher_datanames():
+    available_data = FetchFlow.get_fetcher_datanames()
+
+    dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
+                     'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
+                     'file_formats', 'gold_standard_io', 'isbi2013_2shell',
+                     'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
+                     'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
+                     'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
+                     'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
+                     'tissue_data']
+
+    num_expected_fetch_methods = len(dataset_names)
+    npt.assert_equal(len(available_data), num_expected_fetch_methods)
+    npt.assert_equal(all(dataset_name in available_data.keys()
+                         for dataset_name in dataset_names), True)
+
+
 def test_split_flow():
     with TemporaryDirectory() as out_dir:
         split_flow = SplitFlow()
@@ -73,5 +92,6 @@ def test_split_flow():
 
 if __name__ == '__main__':
     test_io_fetch()
+    test_io_fetch_fetcher_datanames()
     test_io_info()
     test_split_flow()
