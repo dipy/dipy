@@ -367,6 +367,7 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
     """
     if use_fast:
         if pca_method.lower() == 'eig':
+            print("Calling cython")
             return fast_mp_pca(arr, mask=mask, patch_radius=patch_radius,
                                return_sigma=return_sigma, out_dtype=out_dtype)
         else:

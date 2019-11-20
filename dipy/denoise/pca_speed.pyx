@@ -166,14 +166,9 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 # Compute Eigen Value and Eigen Vector
                 fast_eig(C[k,:, :], W[k,:], WORK[k,:], LWORK,IWORK[k,:],LIWORK)
                 eigenV[:] = W[k,:]
+
+                # Rearrange into Descending order
                 eigenV[:] = eigenV[::-1]
-                # ANH Debug
-                printf("Eigen V: %d \n", rr)
-                for e in range(rr):
-                   printf("%f ", eigenV[e])
-                printf("\n")
-
-
 
                 # Initializing variables
                 gamma = 0.
@@ -184,7 +179,6 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 # noise eigenvalue cutoff computation
                 # Find non-positive eigen value index
                 z = rr
-
                 # Find cut-off index for non-positive eigen values
                 for p in range(rr):
                     tamp = eigenV[p]
@@ -197,10 +191,16 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                     eigenV[p] = eigenV[p] / nn
 
                 # ANH Debug
-                printf("cut off: ")
-                for e in range(m2):
-                   printf("%f ", eigenV[e])
-                printf("\n")
+                #printf("cut off: ")
+                #for e in range(m2):
+                #   printf("%f ", eigenV[e])
+                #printf("\n")
+
+                 # ANH Debug
+                #printf("Eigen V: %d \n", rr)
+                #for e in range(rr):
+                #   printf("%f ", eigenV[e])
+                #printf("\n")
 
                 cum_W[m2-1] = 0
                 for p in range(m2-2):
@@ -218,21 +218,19 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                         p_hat = p
                         break
 
-                # Noise images
-                printf("AAAAAA")
-                printf("%f %f %f %f \n", p, p_hat, rhs, cum_W[p_hat])
-                if m2 == p_hat- 1:
+
+                if m2 == p_hat+ 1:
                     sigma2 = 0.
                 else:
                     r0 = m2 - p_hat - 1
+
                     sigma2 = cum_W[p_hat + 1] / r0
-                    printf("r0 %f, cum %f", r0, cum_W[p_hat])
 
                 # Todo: Check Why we have negative value
                 if sigma2 < 0:
-                    printf("Sigma %f\n", sigma2)
+                    printf("r0 %f Sigma %f\n",r0, sigma2)
                 noise_arr_view[i, j, k] = sqrt(sigma2)
-                printf("%f\n", noise_arr_view[i, j, k])
+                #printf("%f\n", noise_arr_view[i, j, k])
 
                 # Reconstruct the images, by finding positive lambda (tmp0)
                 tmp0 = rr - p_hat - 1
@@ -258,9 +256,9 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                     fast_matvec(b'n', X[k, :, :], temp1[k, :], temp2[k, :])
 
                 denoised_arr_view[i, j, k, :] = temp2[k, :]
-                # noise_arr_view[i, j, k] = sqrt(sigma2)
+                noise_arr_view[i, j, k] = sqrt(sigma2)
 
-    # sigma = np.mean(noise_arr[noise_arr != 0])
+    #sigma = np.mean(noise_arr[noise_arr != 0])
     if return_sigma:
         return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype)  # , sigma
     else:
