@@ -4,7 +4,7 @@ cimport cython
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import prange
-from libc.math cimport sqrt
+from libc.math cimport sqrt, round
 from libc.stdio cimport printf
 from dipy.core.linalg cimport fast_matvec, fast_eig, fast_dgemm
 
@@ -56,6 +56,7 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
     if out_dtype is None:
         out_dtype = arr.dtype
 
+    print("aaaa")
     # We perform all computations in float64 precision but return the
     # results in the original input's precision
     arr = arr.astype(np.double)
@@ -128,12 +129,16 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
 
     if mask is None:
         # If mask is not specified, use the whole volume
-        mask = np.ones_like(arr, dtype=bool)[..., 0]
+        mask = np.ones_like(arr, dtype=int)[..., 0]
 
 
     cdef double [:, :, :, :] denoised_arr_view = denoised_arr
     cdef double [:, :, :] noise_arr_view = noise_arr
-    cdef int [:, :, :] mask_arr_view = mask.astype(np.int)
+    cdef int [:, :, :] mask_arr_view = mask.astype(np.int32)
+    ### Anh Debug
+    cdef int e = 0
+    cdef double tamp = 0.
+    cdef int m2 = 0
 
     # OPENMP loop over slices
     for k in prange(0, sizes[2], nogil=True, schedule=static):
@@ -161,6 +166,13 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 # Compute Eigen Value and Eigen Vector
                 fast_eig(C[k,:, :], W[k,:], WORK[k,:], LWORK,IWORK[k,:],LIWORK)
                 eigenV[:] = W[k,:]
+                eigenV[:] = eigenV[::-1]
+                # ANH Debug
+                printf("Eigen V: %d \n", rr)
+                for e in range(rr):
+                   printf("%f ", eigenV[e])
+                printf("\n")
+
 
 
                 # Initializing variables
@@ -172,41 +184,55 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 # noise eigenvalue cutoff computation
                 # Find non-positive eigen value index
                 z = rr
-                for p in range(rr):
-                    eigenV[p] = eigenV[p] / nn
 
                 # Find cut-off index for non-positive eigen values
                 for p in range(rr):
-                    if eigenV[p] <= 0:
+                    tamp = eigenV[p]
+                    if tamp < 1e-13:
                         z = p
                         break
 
-                for p in range(z-2):
-                    v = z - 2 - p
+                m2 = z
+                for p in range(rr):
+                    eigenV[p] = eigenV[p] / nn
+
+                # ANH Debug
+                printf("cut off: ")
+                for e in range(m2):
+                   printf("%f ", eigenV[e])
+                printf("\n")
+
+                cum_W[m2-1] = 0
+                for p in range(m2-2):
+                    v = m2 - 2 - p
                     cum_W[v] = cum_W[v+1]+ eigenV[v+1]
 
                 # Find p_hat, cut-off index for noise.
                 p_hat = z
-                for p in range(z-1):
-                    r0 = z-p-1
+                for p in range(m2-1):
+                    r0 = m2-p-1
                     gamma = r0 / nn
-                    sigma_hat = (eigenV[p+1] - eigenV[z-1])/(4. * sqrt(gamma))
+                    sigma_hat = (eigenV[p+1] - eigenV[m2-1])/(4. * sqrt(gamma))
                     rhs = r0 * sigma_hat
                     if cum_W[p] >= rhs:
                         p_hat = p
                         break
 
                 # Noise images
-                if p_hat == p - 1:
+                printf("AAAAAA")
+                printf("%f %f %f %f \n", p, p_hat, rhs, cum_W[p_hat])
+                if m2 == p_hat- 1:
                     sigma2 = 0.
                 else:
-                    r0 = p - p_hat - 1
-                    sigma2 = cum_W[p_hat] / r0
+                    r0 = m2 - p_hat - 1
+                    sigma2 = cum_W[p_hat + 1] / r0
+                    printf("r0 %f, cum %f", r0, cum_W[p_hat])
 
                 # Todo: Check Why we have negative value
-                # printf("%f\n", sigma2)
+                if sigma2 < 0:
+                    printf("Sigma %f\n", sigma2)
                 noise_arr_view[i, j, k] = sqrt(sigma2)
-                # printf("%f\n", noise_arr_view[i, j, k])
+                printf("%f\n", noise_arr_view[i, j, k])
 
                 # Reconstruct the images, by finding positive lambda (tmp0)
                 tmp0 = rr - p_hat - 1

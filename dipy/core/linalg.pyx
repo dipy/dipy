@@ -8,6 +8,7 @@ from scipy.linalg.cython_lapack cimport dsyevd
 from scipy.linalg.cython_lapack cimport dlasrt
 
 
+
 # Fast Matrix-Vector Multiplications
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -120,7 +121,7 @@ cdef void fast_eig(double[:,::1] arr, double[::1] out_w, double[::1] out_work,
     # Output compute is in Ascending Order
     dsyevd( &JOBZ, &UPLO, &N, a0, &lda, w0,work0,&lwork, iwork0,&liw,&info)
     # Using dlasrt to turn sort data into Descending Order
-    dlasrt ( &JOBA, &N, w0, &info)
+    #dlasrt ( &JOBA, &N, w0, &info)
 
 
 # Fast Matrix-Matrix Multiplication
