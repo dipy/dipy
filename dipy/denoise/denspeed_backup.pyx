@@ -110,10 +110,12 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
 
         # for memoryviewing the original images
         double[:,:,:,:] arr_view = arr
+
     threads_to_use = num_threads or all_cores
     patch_size = 2 * patch_radius + 1
     if patch_size **3 < mm:
         return arr
+    print("cy patch_size", patch_size, nn)
 
     if have_openmp:
         openmp.omp_set_dynamic(0)
@@ -135,12 +137,9 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
     cdef double [:, :, :] noise_arr_view = noise_arr
     cdef int [:, :, :] mask_arr_view = mask.astype(np.int32)
 
-    ### Anh Debug
     cdef int e = 0
     cdef double tamp = 0.
     cdef int m2 = 0
-    print("rr", rr)
-    print("cy patch_size", patch_size, nn)
 
     # OPENMP loop over slices
     for k in prange(0, sizes[2], nogil=True, schedule=static):
@@ -175,6 +174,7 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
 
                 for p in range(rr):
                     eigenV[p] = eigenV[p] / nn
+
                 # Initializing variables
                 gamma = 0.
                 sigma_hat = 0.
@@ -186,34 +186,36 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
                 z = rr
                 # Find cut-off index for non-positive eigen values
                 for p in range(rr):
-                    #tamp = eigenV[p]
+                    tamp = eigenV[p]
                     if eigenV[p] < 1e-18:
                         z = p
                         break
 
                 m2 = z
-                for p in range(rr):
-                    eigenV[p] = eigenV[p] / nn
-
                 cum_W[m2-1]=0
+
+                ########
+                for p in range(m2-2):
+                    print("%d", p)
+
                 for p in range(m2-2):
                     v = m2 - 2 - p
-                    printf("v %d ", v)
+
                     cum_W[v] = cum_W[v+1]+ eigenV[v+1]
-                printf("\n")
+
 
                 # Find p_hat, cut-off index for noise.
                 p_hat = z
                 for p in range(m2-1):
                     r0 = m2-p-1
                     gamma = r0 / nn
-                    sigma_hat = (eigenV[p+1] - eigenV[m2-1])/(4.* sqrt(gamma))
+                    sigma_hat = (eigenV[p+1] - eigenV[m2-1])/(4.)/ (sqrt(gamma))
                     rhs = r0 * sigma_hat
                     if cum_W[p] >= rhs:
                         p_hat = p
                         break
-                printf("p_hat:%d ", p_hat)
 
+                print("p_hat:%d \n",p_hat)
                 if m2 <= p_hat+ 1:
                     sigma2 = 0.
                 else:
@@ -226,12 +228,11 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
 
                 # Reconstruct the images, by finding positive lambda (tmp0)
                 tmp0 = rr - p_hat - 1
-                #v = rr
+                v = rr
                 # Nultify all lamda <= positive lamda,
-                printf("tmp0 %d:\n", tmp0)
                 for p in range(tmp0):
                     diag_eigmat[k, p, p] = 0
-                for p in range(tmp0, rr):
+                for p in range(tmp0, v):
                     diag_eigmat[k, p, p] = 1
 
                 # Equivalent to equation [6] in the reference
@@ -250,11 +251,11 @@ def fast_mp_pca(arr, mask=None, patch_radius=2, return_sigma=False,
 
                 denoised_arr_view[i, j, k, :] = temp2[k, :]
                 noise_arr_view[i, j, k] = sqrt(sigma2)
-    print(r0)
+
     #sigma = np.mean(noise_arr[noise_arr != 0])
     if return_sigma:
-        return denoised_arr.astype(out_dtype)/r0, noise_arr.astype(out_dtype)  # , sigma
+        return denoised_arr.astype(out_dtype), noise_arr.astype(out_dtype)  # , sigma
     else:
-        return denoised_arr.astype(out_dtype)/r0
+        return denoised_arr.astype(out_dtype)
 
 

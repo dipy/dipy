@@ -141,7 +141,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         raise ValueError("pca_method should be either 'eig' or 'svd'")
 
     patch_size = 2 * patch_radius + 1
-
+    print("patch_size", patch_size)
     if patch_size ** 3 < arr.shape[-1]:
         e_s = "You asked for PCA denoising with a "
         e_s += "patch_radius of {0} ".format(patch_radius)
@@ -219,9 +219,11 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 # Threshold by tau:
                 tau = tau_factor ** 2 * this_var
-
+                # print(d.shape)
+                # print(d[d<tau].shape)
                 # Update ncomps according to tau_factor
                 ncomps = np.sum(d < tau)
+                print("ncomps", ncomps)
                 W[:, :ncomps] = 0
 
                 # This is equations 1 and 2 in Manjon 2013:
