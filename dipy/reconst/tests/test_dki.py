@@ -425,14 +425,16 @@ def test_compare_MK_method():
     dkiF = dkiM.fit(signal_cross)
 
     # MK analytical solution
-    MK_as = dkiF.mk()
+    MK_as = dkiF.mk(None, None, analytical=True)
 
     # MK numerical method
-    sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-    MK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, sph),
-                    axis=-1)
+    MK_nm = dkiF.mk(None, None, analytical=False)
 
-    assert_array_almost_equal(MK_as, MK_nm, decimal=1)
+    # sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
+    # MK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, sph),
+    #                axis=-1)
+
+    assert_array_almost_equal(MK_as, MK_nm, decimal=2)
 
 
 def test_single_voxel_DKI_stats():
