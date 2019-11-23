@@ -18,6 +18,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere)
 from dipy.data import get_sphere
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
+from dipy.data import get_tdesign
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -315,8 +316,7 @@ def _F2m(a, b, c):
     ----------
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    """
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836 """
     # Eigenvalues are considered equal if they are not 2.5% different to each
     # other. This value is adjusted according to the analysis reported in:
     # http://gsoc2015dipydki.blogspot.co.uk/2015/08/rnh-post-13-start-wrapping-up-test.html
@@ -634,8 +634,9 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
     return akc.reshape((outshape + (len(V),)))
 
 
-def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
-    r""" Computes mean Kurtosis (MK) from the kurtosis tensor [1]_.
+def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
+                  analytical=True):
+    r""" Computes mean Kurtosis (MK) from the kurtosis tensor [1]_, [2]_.
 
     Parameters
     ----------
@@ -655,6 +656,10 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`. Default = 10
+    analytical : bool
+        If True, MK is calculated using its analytical solution, otherwise an
+        exact numerical estimator is used (see Notes). Default is set to False,
+        to avoid the singularities of the analytical solution.
 
     Returns
     -------
@@ -663,7 +668,18 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
 
     Notes
     --------
-    The MK analytical solution is calculated using the following equation [1]_:
+    The MK is defined as the averaged kurtosis across all spatial
+    directions, which can be formalated as surface integral of
+    directional kurtosis coefficients [1]_:
+
+    .. math::
+
+         MK \equiv \frac{1}{4\pi} \int d\Omega_\mathbf{n} K(\mathbf{n})
+
+    This equation can be exactly computed by averaging directional kurtosis
+    value sampled using unif
+
+    The MK analytical solution is calculated using the following equation [2]_:
 
     .. math::
 
@@ -705,7 +721,10 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+    .. [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. [3] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
            Robust estimation from DW-MRI using homogeneous polynomials.
            Proceedings of the 8th {IEEE} International Symposium on Biomedical
            Imaging: From Nano to Macro, ISBI 2011, 262-265.
@@ -716,28 +735,36 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
     outshape = dki_params.shape[:-1]
     dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
 
-    # Split the model parameters to three variable containing the evals, evecs,
-    # and kurtosis elements
-    evals, evecs, kt = split_dki_param(dki_params)
+    if analytical:
+        # Split the model parameters to three variable containing the evals,
+        # evecs, and kurtosis elements
+        evals, evecs, kt = split_dki_param(dki_params)
 
-    # Rotate the kurtosis tensor from the standard Cartesian coordinate system
-    # to another coordinate system in which the 3 orthonormal eigenvectors of
-    # DT are the base coordinate
-    Wxxxx = Wrotate_element(kt, 0, 0, 0, 0, evecs)
-    Wyyyy = Wrotate_element(kt, 1, 1, 1, 1, evecs)
-    Wzzzz = Wrotate_element(kt, 2, 2, 2, 2, evecs)
-    Wxxyy = Wrotate_element(kt, 0, 0, 1, 1, evecs)
-    Wxxzz = Wrotate_element(kt, 0, 0, 2, 2, evecs)
-    Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
+        # Rotate the kurtosis tensor from the standard Cartesian coordinate
+        # system to another coordinate system in which the 3 orthonormal
+        # eigenvectors of DT are the base coordinate
+        Wxxxx = Wrotate_element(kt, 0, 0, 0, 0, evecs)
+        Wyyyy = Wrotate_element(kt, 1, 1, 1, 1, evecs)
+        Wzzzz = Wrotate_element(kt, 2, 2, 2, 2, evecs)
+        Wxxyy = Wrotate_element(kt, 0, 0, 1, 1, evecs)
+        Wxxzz = Wrotate_element(kt, 0, 0, 2, 2, evecs)
+        Wyyzz = Wrotate_element(kt, 1, 1, 2, 2, evecs)
 
-    # Compute MK
-    MK = \
-        _F1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wxxxx + \
-        _F1m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wyyyy + \
-        _F1m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wzzzz + \
-        _F2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz + \
-        _F2m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wxxzz + \
-        _F2m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wxxyy
+        # Compute MK
+        MK = \
+            _F1m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wxxxx + \
+            _F1m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wyyyy + \
+            _F1m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wzzzz + \
+            _F2m(evals[..., 0], evals[..., 1], evals[..., 2]) * Wyyzz + \
+            _F2m(evals[..., 1], evals[..., 0], evals[..., 2]) * Wxxzz + \
+            _F2m(evals[..., 2], evals[..., 1], evals[..., 0]) * Wxxyy
+
+    else:
+        # Numerical Solution using t-design of 45 directions
+        V = get_tdesign()
+        sph = dps.Sphere(xyz=V)
+        KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
+        MK = np.mean(KV, axis=-1)
 
     if min_kurtosis is not None:
         MK = MK.clip(min=min_kurtosis)
@@ -1446,7 +1473,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3./7, max_kurtosis=10):
+    def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=False):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
@@ -1521,7 +1548,8 @@ class DiffusionKurtosisFit(TensorFit):
                Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
                doi: 10.1109/ISBI.2011.5872402
         """
-        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis)
+        return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
+                             analytical)
 
     def ak(self, min_kurtosis=-3./7, max_kurtosis=10):
         r"""
