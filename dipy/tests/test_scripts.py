@@ -15,6 +15,7 @@ from os.path import (dirname, join as pjoin, abspath)
 
 from dipy.testing import assert_true, assert_false
 import numpy.testing as nt
+import pytest
 
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
@@ -118,7 +119,7 @@ def test_dipy_fit_tensor_again():
                                   affine)
 
 
-@nt.dec.skipif(no_mpl)
+@pytest.mark.skipif(no_mpl)
 def test_qb_commandline():
     with InTemporaryDirectory():
         tracks_file = get_fnames('fornix')
@@ -127,7 +128,7 @@ def test_qb_commandline():
         out = run_command(cmd)
         npt.assert_equal(out[0], 0)
 
-@nt.dec.skipif(no_mpl)
+@pytest.mark.skipif(no_mpl)
 def test_qb_commandline_output_path_handling():
     with InTemporaryDirectory():
         # Create temporary subdirectory for input and for output

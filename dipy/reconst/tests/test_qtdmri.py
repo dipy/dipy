@@ -7,13 +7,14 @@ from numpy.testing import (assert_,
                            assert_equal,
                            assert_raises,
                            run_module_suite)
-
+import pytest
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
 from dipy.reconst import qtdmri, mapmri
 from dipy.sims.voxel import multi_tensor, add_noise
 
-
+needs_cvxpy = pytest.mark.skipif(not qtdmri.have_cvxpy,
+                                 reason="REQUIRES CVXPY")
 
 
 def generate_gtab4D(number_of_tau_shells=4, delta=0.01):
@@ -345,7 +346,7 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
                               laplacian_matrix_regular)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     gtab_4d = generate_gtab4D()
     tau = gtab_4d.tau
@@ -412,7 +413,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     assert_almost_equal(odf_integral, 1.)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -436,7 +437,7 @@ def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     assert_(laplacian_norm_no_reg > laplacian_norm_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
                                                     time_order=2):
     gtab_4d = generate_gtab4D()
@@ -462,7 +463,7 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
     assert_(laplacian_norm_no_reg > laplacian_norm_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -480,7 +481,7 @@ def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -507,7 +508,7 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_(sparsity_density_no_reg > sparsity_density_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -536,7 +537,7 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_(sparsity_density_no_reg > sparsity_density_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_l1_CV(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -550,7 +551,7 @@ def test_l1_CV(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.alpha >= 0)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_elastic_GCV_CV(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -566,7 +567,7 @@ def test_elastic_GCV_CV(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.alpha >= 0)
 
 
-@np.testing.dec.skipif(not qtdmri.have_plt)
+@pytest.mark.skipif(not qtdmri.have_plt, reason="Requires Matplotlib")
 def test_visualise_gradient_table_G_Delta_rainbow():
     gtab_4d = generate_gtab4D()
     qtdmri.visualise_gradient_table_G_Delta_rainbow(gtab_4d)

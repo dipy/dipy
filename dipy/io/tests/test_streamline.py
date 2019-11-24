@@ -1,16 +1,32 @@
-from __future__ import division, print_function, absolute_import
+# from __future__ import division, print_function, absolute_import
+import json
+import os
 
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.data import fetch_gold_standard_io
+from dipy.io.streamline import (load_tractogram, save_tractogram,
+                                load_trk, save_trk)
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.utils import create_nifti_header
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.tracking.streamline import Streamlines
 import numpy as np
 import numpy.testing as npt
+import pytest
 from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
+
+filepath_dix = {}
+files, folder = fetch_gold_standard_io()
+for filename in files:
+    filepath_dix[filename] = os.path.join(folder, filename)
+
+with open(filepath_dix['points_data.json']) as json_file:
+    points_data = dict(json.load(json_file))
+
+with open(filepath_dix['streamlines_data.json']) as json_file:
+    streamlines_data = dict(json.load(json_file))
 
 streamline = np.array([[82.20181274,  91.36505891,  43.15737152],
                        [82.38442231,  91.79336548,  43.87036514],
@@ -156,7 +172,7 @@ def io_tractogram(extension):
             reference = nii_header
 
         sft = load_tractogram(fname, reference, bbox_valid_check=False)
-        affine, dimensions, voxel_sizes, _ = sft.space_attribute
+        affine, dimensions, voxel_sizes, _ = sft.space_attributes
 
         npt.assert_array_equal(in_affine, affine)
         npt.assert_array_equal(in_voxel_sizes, voxel_sizes)
@@ -174,7 +190,7 @@ def test_io_tck():
     io_tractogram('tck')
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_io_vtk():
     io_tractogram('vtk')
 
@@ -183,7 +199,7 @@ def test_io_dpy():
     io_tractogram('dpy')
 
 
-@npt.dec.skipif(not have_fury)
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
     with InTemporaryDirectory():
         fname = 'test.fib'
@@ -193,6 +209,52 @@ def test_low_io_vtk():
         tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(streamlines))
         npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
+
+
+def trk_loader(filename):
+    try:
+        with InTemporaryDirectory():
+            load_trk(filename, filepath_dix['gs.nii'])
+        return True
+    except (ValueError):
+        return False
+
+
+def trk_saver(filename):
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+
+    try:
+        with InTemporaryDirectory():
+            save_trk(sft, filename)
+        return True
+    except (ValueError):
+        return False
+
+
+def test_io_trk_load():
+    if not trk_loader(filepath_dix['gs.trk']):
+        raise AssertionError()
+    if trk_loader('fake_file.TRK'):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.tck']):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.fib']):
+        raise AssertionError()
+    if trk_loader(filepath_dix['gs.dpy']):
+        raise AssertionError()
+
+
+def test_io_trk_save():
+    if not trk_saver(filepath_dix['gs.trk']):
+        raise AssertionError()
+    if trk_saver('fake_file.TRK'):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.tck']):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.fib']):
+        raise AssertionError()
+    if trk_saver(filepath_dix['gs.dpy']):
+        raise AssertionError()
 
 
 if __name__ == '__main__':

@@ -1,9 +1,10 @@
-from dipy.reconst.mcsd import MultiShellDeconvModel, MultiShellResponse
+from dipy.reconst.mcsd import MultiShellDeconvModel
 from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
+import pytest
 
-from dipy.sims.voxel import (multi_tensor, single_tensor)
+from dipy.sims.voxel import multi_shell_fiber_response, multi_tensor
 from dipy.reconst import shm
 from dipy.data import default_sphere, get_3shell_gtab
 from dipy.core.gradients import GradientTable
@@ -11,40 +12,12 @@ from dipy.core.gradients import GradientTable
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
 
-needs_cvxpy = npt.dec.skipif(not have_cvxpy)
+needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
 
 
 csf_md = 3e-3
 gm_md = .76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
-
-
-def sim_response(sh_order, bvals, evals=evals_d, csf_md=csf_md, gm_md=gm_md):
-    bvals = np.array(bvals, copy=True)
-    evecs = np.zeros((3, 3))
-    z = np.array([0, 0, 1.])
-    evecs[:, 0] = z
-    evecs[:2, 1:] = np.eye(2)
-
-    n = np.arange(0, sh_order + 1, 2)
-    m = np.zeros_like(n)
-
-    big_sphere = default_sphere.subdivide()
-    theta, phi = big_sphere.theta, big_sphere.phi
-
-    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
-    A = shm.real_sph_harm(0, 0, 0, 0)
-
-    response = np.empty([len(bvals), len(n) + 2])
-    for i, bvalue in enumerate(bvals):
-        gtab = GradientTable(big_sphere.vertices * bvalue)
-        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
-        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
-
-        response[i, 0] = np.exp(-bvalue * csf_md) / A
-        response[i, 1] = np.exp(-bvalue * gm_md) / A
-
-    return MultiShellResponse(response, sh_order, bvals)
 
 
 def _expand(m, iso, coeff):
@@ -54,12 +27,13 @@ def _expand(m, iso, coeff):
     return params
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
     shells = np.unique(gtab.bvals // 100.) * 100.
-    response = sim_response(sh_order, shells, evals_d)
+    response = multi_shell_fiber_response(sh_order, shells, evals_d, csf_md,
+                                          gm_md)
     model = MultiShellDeconvModel(gtab, response)
     iso = response.iso
 
@@ -83,16 +57,17 @@ def test_mcsd_model_delta():
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_compartments():
     # test for failure if no. of compartments less than 2
     gtab = get_3shell_gtab()
     sh_order = 8
-    response = sim_response(sh_order, [0, 1000, 2000, 3500])
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          evals_d, csf_md, gm_md)
     npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
 
 
-@npt.dec.skipif(not mcsd.have_cvxpy)
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_MultiShellDeconvModel():
 
     gtab = get_3shell_gtab()
@@ -108,7 +83,8 @@ def test_MultiShellDeconvModel():
     S_csf = np.exp(-gtab.bvals * csf_md)
 
     sh_order = 8
-    response = sim_response(sh_order, [0, 1000, 2000, 3500])
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          evals_d, csf_md, gm_md)
     model = MultiShellDeconvModel(gtab, response)
     vf = [1.3, .8, 1.9]
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))

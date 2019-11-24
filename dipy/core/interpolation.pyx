@@ -1,3 +1,5 @@
+# cython: boundscheck=False, wraparound=False, cdivision=True
+
 cimport cython
 cimport numpy as np
 cimport numpy as cnp

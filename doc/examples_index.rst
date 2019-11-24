@@ -60,6 +60,7 @@ Constrained Spherical Deconvolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_csd`
+- :ref:`example_reconst_mcsd`
 
 Fiber Orientation Estimated using Continuous Axially Symmetric Tensors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,6 +194,7 @@ Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_registration`
+- :ref:`example_streamline_registration`
 
 ------------
 Segmentation

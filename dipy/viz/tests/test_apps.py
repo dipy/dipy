@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import numpy.testing as npt
+import pytest
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package

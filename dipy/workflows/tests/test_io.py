@@ -1,11 +1,13 @@
 import logging
 import os
 import numpy.testing as npt
-
+import nibabel as nib
 from dipy.data import get_fnames
+from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
-from dipy.workflows.io import IoInfoFlow, FetchFlow
+from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
+from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 
@@ -51,6 +53,45 @@ def test_io_fetch():
                          True)
 
 
+def test_io_fetch_fetcher_datanames():
+    available_data = FetchFlow.get_fetcher_datanames()
+
+    dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
+                     'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
+                     'file_formats', 'gold_standard_io', 'isbi2013_2shell',
+                     'ivim', 'mni_template', 'qtdMRI_test_retest_2subjects',
+                     'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
+                     'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
+                     'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
+                     'tissue_data']
+
+    num_expected_fetch_methods = len(dataset_names)
+    npt.assert_equal(len(available_data), num_expected_fetch_methods)
+    npt.assert_equal(all(dataset_name in available_data.keys()
+                         for dataset_name in dataset_names), True)
+
+
+def test_split_flow():
+    with TemporaryDirectory() as out_dir:
+        split_flow = SplitFlow()
+        data_path, _, _ = get_fnames()
+        vol_img = nib.load(data_path)
+        volume = vol_img.get_data()
+        split_flow.run(data_path, out_dir=out_dir)
+        assert_true(os.path.isfile(
+         split_flow.last_generated_outputs['out_split']))
+        split_flow._force_overwrite = True
+        split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
+        split_path = split_flow.last_generated_outputs['out_split']
+        assert_true(os.path.isfile(split_path))
+        split_img = nib.load(split_path)
+        split_data = split_img.get_data()
+        npt.assert_equal(split_data.shape, volume[..., 0].shape)
+        npt.assert_array_almost_equal(split_img.affine, vol_img.affine)
+
+
 if __name__ == '__main__':
     test_io_fetch()
+    test_io_fetch_fetcher_datanames()
     test_io_info()
+    test_split_flow()

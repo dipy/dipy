@@ -1,12 +1,12 @@
-from __future__ import division, print_function, absolute_import
-
 import os
 import sys
+import shutil
+
 import numpy as np
 import logging
 import importlib
 from inspect import getmembers, isfunction, getfullargspec
-from dipy.io.image import load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 
 
@@ -118,7 +118,29 @@ class FetchFlow(Workflow):
     def get_short_name(cls):
         return 'fetch'
 
-    def load_module(self, module_path):
+    @staticmethod
+    def get_fetcher_datanames():
+        """Gets available dataset and function names.
+
+        Returns
+        -------
+        available_data: dict
+            Available dataset and function names.
+
+        """
+
+        fetcher_module = FetchFlow.load_module('dipy.data.fetcher')
+
+        available_data = dict([(name.replace('fetch_', ''), func)
+                               for name, func in getmembers(fetcher_module,
+                                                            isfunction)
+                               if name.lower().startswith("fetch_") and
+                               func is not fetcher_module.fetch_data])
+
+        return available_data
+
+    @staticmethod
+    def load_module(module_path):
         """Load / reload an external module.
 
         Parameters
@@ -139,6 +161,8 @@ class FetchFlow(Workflow):
     def run(self, data_names, out_dir=''):
         """Download files to folder and check their md5 checksums.
 
+        To see all available datasets, please type "list" in data_names.
+
         Parameters
         ----------
         data_names : variable string
@@ -151,13 +175,7 @@ class FetchFlow(Workflow):
             dipy_home = os.environ.get('DIPY_HOME', None)
             os.environ['DIPY_HOME'] = out_dir
 
-        fetcher_module = self.load_module('dipy.data.fetcher')
-
-        available_data = dict([(name.replace('fetch_', ''), func)
-                               for name, func in getmembers(fetcher_module,
-                                                            isfunction)
-                               if name.lower().startswith("fetch_")
-                               if not len(getfullargspec(func).args)])
+        available_data = FetchFlow.get_fetcher_datanames()
 
         data_names = [name.lower() for name in data_names]
 
@@ -205,3 +223,38 @@ class FetchFlow(Workflow):
             # the same process, we don't have the env variable pointing to the
             # wrong place
             self.load_module('dipy.data.fetcher')
+
+
+class SplitFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'split'
+
+    def run(self, input_files, vol_idx=0, out_dir='',
+            out_split='split.nii.gz'):
+        """ Splits the input 4D file and extracts the required 3D volume.
+
+        Parameters
+        ----------
+        input_files : variable string
+            Any number of Nifti1 files
+        vol_idx : int, optional
+            (default 0)
+        out_dir : string, optional
+            Output directory. Default: dipy home folder (~/.dipy)
+        out_split : string, optional
+            Name of the resulting split volume (default: split.nii.gz)
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, osplit in io_it:
+            logging.info('Splitting {0}'.format(fpath))
+            data, affine, image = load_nifti(fpath, return_img=True)
+
+            if vol_idx == 0:
+                logging.info('Splitting and extracting 1st b0')
+
+            split_vol = data[..., vol_idx]
+            save_nifti(osplit, split_vol, affine, image.header)
+
+            logging.info('Split volume saved as {0}'.format(osplit))

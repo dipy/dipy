@@ -10,6 +10,7 @@ from dipy.utils.optpkg import optional_package
 from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -21,8 +22,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not has_fury)
-@xvfb_it
+@pytest.mark.skipif(skip_it or not has_fury, reason='Requires FURY')
 def test_horizon_flow():
 
     s1 = 10 * np.array([[0, 0, 0],

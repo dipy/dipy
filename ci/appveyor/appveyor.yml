@@ -74,7 +74,7 @@ install:
 build: false # Not a C# project, build stuff at the test step instead.
 
 test_script:
-  - pip install pytest nose coverage coveralls codecov
+  - pip install pytest coverage coveralls codecov
   - mkdir for_testing
   - cd for_testing
   - echo backend:Agg > matplotlibrc

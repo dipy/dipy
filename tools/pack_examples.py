@@ -21,7 +21,7 @@ archive_name = dpv + '-doc-examples.tar.gz'
 try:
     out_root = sys.argv[1]
 except IndexError:
-    print __doc__
+    print(__doc__)
     sys.exit(1)
 try:
     os.mkdir(out_root)
@@ -39,8 +39,12 @@ eg_out_base = pjoin(out_root, dpv, 'doc')
 eg_out_dir = pjoin(eg_out_base, EG_BUILT_SDIR)
 if os.path.isdir(eg_out_dir):
     shutil.rmtree(eg_out_dir)
+
+
 def ignorandi(src, names):
     return [name for name in names if name == 'README' or name == '.gitignore']
+
+
 shutil.copytree(eg_built_dir, eg_out_dir, ignore=ignorandi)
 os.chdir(out_root)
 tar = tarfile.open(archive_fname, 'w|gz')

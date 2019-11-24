@@ -14,17 +14,9 @@ from numpy.random import randn
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 
-from numpy.testing import measure, dec
-
-try:
-    np.einsum
-except AttributeError:
-    with_einsum = dec.skipif(True, "Need einsum for benchmark")
-else:
-    def with_einsum(f): return f
+from numpy.testing import measure
 
 
-@with_einsum
 def bench_vec_val_vect():
     repeat = 100
     etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)",

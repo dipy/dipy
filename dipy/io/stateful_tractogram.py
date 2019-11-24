@@ -3,7 +3,6 @@ from copy import deepcopy
 import enum
 from itertools import product
 import logging
-from operator import itemgetter
 
 from nibabel.affines import apply_affine
 from nibabel.streamlines.tractogram import (Tractogram,
@@ -40,17 +39,17 @@ class StatefulTractogram(object):
             Streamlines of the tractogram
         reference : Nifti or Trk filename, Nifti1Image or TrkFile,
             Nifti1Header, trk.header (dict) or another Stateful Tractogram
-            Reference that provides the spatial attribute.
+            Reference that provides the spatial attributes.
             Typically a nifti-related object from the native diffusion used for
             streamlines generation
-        space : string
+        space : Enum (dipy.io.stateful_tractogram.Space)
             Current space in which the streamlines are (vox, voxmm or rasmm)
             Typically after tracking the space is VOX, after nibabel loading
             the space is RASMM
         shifted_origin : bool
             Information on the position of the origin,
-            False is Trackvis standard, default (corner of the voxel)
-            True is NIFTI standard (center of the voxel)
+            False is Trackvis standard, default (center of the voxel)
+            True is NIFTI standard (corner of the voxel)
         data_per_point : dict
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
@@ -76,18 +75,20 @@ class StatefulTractogram(object):
         if data_per_streamline is None:
             data_per_streamline = {}
 
+        if isinstance(streamlines, Streamlines):
+            streamlines = streamlines.copy()
         self._tractogram = Tractogram(streamlines,
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
 
-        space_attribute = get_reference_info(reference)
-        if space_attribute is None:
+        space_attributes = get_reference_info(reference)
+        if space_attributes is None:
             raise TypeError('Reference MUST be one of the following:\n' +
                             'Nifti or Trk filename, Nifti1Image or TrkFile, ' +
                             'Nifti1Header or trk.header (dict)')
 
         (self._affine, self._dimensions,
-         self._voxel_sizes, self._voxel_order) = space_attribute
+         self._voxel_sizes, self._voxel_order) = space_attributes
         self._inv_affine = np.linalg.inv(self._affine)
 
         if space not in Space:
@@ -125,7 +126,7 @@ class StatefulTractogram(object):
         return self._get_streamline_count()
 
     @property
-    def space_attribute(self):
+    def space_attributes(self):
         """ Getter for spatial attribute """
         return self._affine, self._dimensions, self._voxel_sizes, \
             self._voxel_order
@@ -134,6 +135,26 @@ class StatefulTractogram(object):
     def space(self):
         """ Getter for the current space """
         return self._space
+
+    @property
+    def affine(self):
+        """ Getter for the reference affine """
+        return self._affine
+
+    @property
+    def dimensions(self):
+        """ Getter for the reference dimensions """
+        return self._dimensions
+
+    @property
+    def voxel_sizes(self):
+        """ Getter for the reference voxel sizes """
+        return self._voxel_sizes
+
+    @property
+    def voxel_order(self):
+        """ Getter for the reference voxel order """
+        return self._voxel_order
 
     @property
     def shifted_origin(self):
@@ -158,6 +179,8 @@ class StatefulTractogram(object):
         streamlines : list or ArraySequence (list and deepcopy recommanded)
             Streamlines of the tractogram
         """
+        if isinstance(streamlines, Streamlines):
+            streamlines = streamlines.copy()
         self._tractogram._streamlines = Streamlines(streamlines)
         self.data_per_point = self.data_per_point
         self.data_per_streamline = self.data_per_streamline
@@ -221,6 +244,19 @@ class StatefulTractogram(object):
         elif self._space == Space.VOXMM:
             self._voxmm_to_rasmm()
 
+    def to_space(self, target_space):
+        """ Safe function to transform streamlines to a particular space using
+        an enum and update state """
+        if target_space == Space.VOX:
+            self.to_vox()
+        elif target_space == Space.VOXMM:
+            self.to_voxmm()
+        elif target_space == Space.RASMM:
+            self.to_rasmm()
+        else:
+            logging.error('Unsupported target space, please use Enum in '
+                          'dipy.io.stateful_tractogram')
+
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
@@ -244,14 +280,14 @@ class StatefulTractogram(object):
         if self._tractogram.streamlines.data.size > 0:
             bbox_min = np.min(self._tractogram.streamlines.data, axis=0)
             bbox_max = np.max(self._tractogram.streamlines.data, axis=0)
-
             return np.asarray(list(product(*zip(bbox_min, bbox_max))))
 
         return np.zeros((8, 3))
 
     def is_bbox_in_vox_valid(self):
-        """ Verify that the bounding box is valid in voxel space
-        Will transform the streamlines for OBB, slow for big tractogram
+        """ Verify that the bounding box is valid in voxel space.
+        Negative coordinates or coordinates above the volume dimensions
+        are considered invalid in voxel space.
 
         Returns
         -------
@@ -326,24 +362,15 @@ class StatefulTractogram(object):
         indices_to_keep = np.setdiff1d(np.arange(len(self._tractogram)),
                                        np.array(indices_to_remove)).astype(int)
 
-        tmp_streamlines = \
-            itemgetter(*indices_to_keep)(self.get_streamlines_copy())
-        tmp_data_per_point = {}
-        tmp_data_per_streamline = {}
+        tmp_streamlines = self.streamlines[indices_to_keep]
+        tmp_data_per_point = self._tractogram.data_per_point[indices_to_keep]
+        tmp_data_per_streamline =\
+            self._tractogram.data_per_streamline[indices_to_keep]
 
-        for key in self._tractogram.data_per_point:
-            tmp_data_per_point[key] = \
-                self._tractogram.data_per_point[key][indices_to_keep]
-
-        for key in self._tractogram.data_per_streamline:
-            tmp_data_per_streamline[key] = \
-                self._tractogram.data_per_streamline[key][indices_to_keep]
-
-        self._tractogram = Tractogram(tmp_streamlines,
+        self._tractogram = Tractogram(tmp_streamlines.copy(),
+                                      data_per_point=tmp_data_per_point,
+                                      data_per_streamline=tmp_data_per_streamline,
                                       affine_to_rasmm=np.eye(4))
-
-        self._tractogram.data_per_point = tmp_data_per_point
-        self._tractogram.data_per_streamline = tmp_data_per_streamline
 
         if old_space == Space.RASMM:
             self.to_rasmm()
@@ -453,9 +480,9 @@ class StatefulTractogram(object):
 
         self._tractogram.streamlines._data += shift
         if not self._shifted_origin:
-            logging.info('Origin moved to the center of voxel')
-        else:
             logging.info('Origin moved to the corner of voxel')
+        else:
+            logging.info('Origin moved to the center of voxel')
 
         self._shifted_origin = not self._shifted_origin
 
