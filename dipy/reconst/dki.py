@@ -635,8 +635,8 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
 
 def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
-                  analytical=True):
-    r""" Computes mean Kurtosis (MK) from the kurtosis tensor [1]_, [2]_.
+                  analytical=False):
+    r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
     Parameters
     ----------
@@ -651,12 +651,12 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [2]_)
+        that consist of water confined to spherical pores [4]_)
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, mean
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`. Default = 10
-    analytical : bool
+    analytical : bool (optional)
         If True, MK is calculated using its analytical solution, otherwise an
         exact numerical estimator is used (see Notes). Default is set to False,
         to avoid the singularities of the analytical solution.
@@ -668,18 +668,19 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
 
     Notes
     --------
-    The MK is defined as the averaged kurtosis across all spatial
-    directions, which can be formalated as surface integral of
-    directional kurtosis coefficients [1]_:
+    The MK is defined as the average of directional kurtosis coefficients
+    across all spatial directions, which can be formulated by the following
+    surface integral[1]_:
 
     .. math::
 
          MK \equiv \frac{1}{4\pi} \int d\Omega_\mathbf{n} K(\mathbf{n})
 
-    This equation can be exactly computed by averaging directional kurtosis
-    value sampled using unif
+    This integral can be numerically solved by averaging directional
+    kurtosis values sampled for directions of a spherical t-design [2]_.
 
-    The MK analytical solution is calculated using the following equation [2]_:
+    Alternatively, MK can be solved from the analytical solution derived by
+    Tabesh et al. [3]_. This solution is given by:
 
     .. math::
 
@@ -718,16 +719,19 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
 
     References
     ----------
-    .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+    .. [1] Jensen, J.H., Helpern, J.A., 2010. MRI quantification of
+           non-Gaussian water diffusion by kurtosis analysis. NMR in
+           Biomedicine 23(7): 698-710
+    .. [2] Hardin, R.H., Sloane, N.J.A., 1996. McLaren's Improved Snub Cube and
+           Other New Spherical Designs in Three Dimensions. Discrete and
+           Computational Geometry 15, 429-441.
+    .. [3] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    .. [3] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+    .. [4] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
            Robust estimation from DW-MRI using homogeneous polynomials.
-           Proceedings of the 8th {IEEE} International Symposium on Biomedical
-           Imaging: From Nano to Macro, ISBI 2011, 262-265.
+           Proceedings of the 8th {IEEE} International Symposium on
+           Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
            doi: 10.1109/ISBI.2011.5872402
     """
     # Flat parameters. For numpy versions more recent than 1.6.0, this step
@@ -1482,11 +1486,15 @@ class DiffusionKurtosisFit(TensorFit):
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are smaller than `min_kurtosis` are replaced
             with `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit
-            for regions that consist of water confined to spherical pores [2]_)
+            for regions that consist of water confined to spherical pores [4]_)
         max_kurtosis : float (optional)
             To keep kurtosis values within a plausible biophysical range, mean
             kurtosis values that are larger than `max_kurtosis` are replaced
             with `max_kurtosis`. Default = 10
+        analytical : bool (optional)
+            If True, MK is calculated using its analytical solution, otherwise
+            an exact numerical estimator is used (see Notes). Default is set to
+            False, to avoid the singularities of the analytical solution.
 
         Returns
         -------
@@ -1495,17 +1503,28 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         --------
-        The MK analytical solution is calculated using the following equation
-        [1]_:
+        The MK is defined as the average of directional kurtosis coefficients
+        across all spatial directions, which can be formulated by the following
+        surface integral[1]_:
+
+        .. math::
+
+             MK \equiv \frac{1}{4\pi} \int d\Omega_\mathbf{n} K(\mathbf{n})
+
+        This integral can be numerically solved by averaging directional
+        kurtosis values sampled for directions of a spherical t-design [2]_.
+
+        Alternatively, MK can be solved from the analytical solution derived by
+        Tabesh et al. [3]_. This solution is given by:
 
         .. math::
 
             MK=F_1(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{1111}+
-            F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
-            F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
-            F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
-            F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
-            F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
+               F_1(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{2222}+
+               F_1(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{3333}+ \\
+               F_2(\lambda_1,\lambda_2,\lambda_3)\hat{W}_{2233}+
+               F_2(\lambda_2,\lambda_1,\lambda_3)\hat{W}_{1133}+
+               F_2(\lambda_3,\lambda_2,\lambda_1)\hat{W}_{1122}
 
         where $\hat{W}_{ijkl}$ are the components of the $W$ tensor in the
         coordinates system defined by the eigenvectors of the diffusion tensor
@@ -1523,10 +1542,6 @@ class DiffusionKurtosisFit(TensorFit):
             {3\lambda_1 \sqrt{\lambda_2 \lambda_3}}
             R_D(\frac{\lambda_1}{\lambda_2},\frac{\lambda_1}{\lambda_3},1)-1 ]
 
-        and
-
-        .. math::
-
             F_2(\lambda_1,\lambda_2,\lambda_3)=
             \frac{(\lambda_1+\lambda_2+\lambda_3)^2}
             {3(\lambda_2-\lambda_3)^2}
@@ -1539,10 +1554,16 @@ class DiffusionKurtosisFit(TensorFit):
 
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+        .. [1] Jensen, J.H., Helpern, J.A., 2010. MRI quantification of
+               non-Gaussian water diffusion by kurtosis analysis. NMR in
+               Biomedicine 23(7): 698-710
+        .. [2] Hardin, R.H., Sloane, N.J.A., 1996. McLaren's Improved Snub Cube
+               and Other New Spherical Designs in Three Dimensions. Discrete
+               and Computational Geometry 15, 429-441.
+        .. [3] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
                Estimation of tensors and tensor-derived measures in diffusional
                kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+        .. [4] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
                Robust estimation from DW-MRI using homogeneous polynomials.
                Proceedings of the 8th {IEEE} International Symposium on
                Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
