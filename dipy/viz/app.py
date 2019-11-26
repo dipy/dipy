@@ -1,8 +1,6 @@
 import numpy as np
 from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import length, Streamlines
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram
 from dipy.utils.optpkg import optional_package
 from dipy import __version__ as horizon_version
 from dipy.viz.gmem import GlobalHorizon
@@ -109,6 +107,7 @@ class Horizon(object):
         recorded_events : string
             File path to replay recorded events
         return_showm : bool
+            Return ShowManager object. Used only at Python level.
 
         References
         ----------
@@ -139,18 +138,18 @@ class Horizon(object):
         self.tractogram_clusters = {}
         self.recorded_events = recorded_events
         self.show_m = None
-        # self.mem = GlobalHorizon()
         self.return_showm = return_showm
 
     def build_scene(self):
 
         self.mem = GlobalHorizon()
         scene = window.Scene()
-        self.add_actors(scene, self.tractograms,
-                        self.cluster_thr, callbacks=False)
+        self.add_cluster_actors(scene, self.tractograms,
+                                self.cluster_thr,
+                                enable_callbacks=False)
         return scene
 
-    def remove_actors(self, scene):
+    def remove_cluster_actors(self, scene):
 
         for ca_ in self.mem.centroid_actors:
             scene.rm(ca_)
@@ -161,8 +160,19 @@ class Horizon(object):
         self.mem.centroid_actors = []
         self.mem.cluster_actors = []
 
-    def add_actors(self, scene, tractograms, threshold, callbacks=True):
+    def add_cluster_actors(self, scene, tractograms,
+                           threshold, enable_callbacks=True):
         """ Add streamline actors to the scene
+
+        Parameters
+        ----------
+        scene : Scene
+        tractograms : list
+            list of tractograms
+        threshold : float
+            Cluster threshold
+        enable_callbacks : bool
+            Enable callbacks for selecting clusters
         """
         color_gen = distinguishable_colormap()
         for (t, streamlines) in enumerate(tractograms):
@@ -243,7 +253,7 @@ class Horizon(object):
                 scene.add(streamline_actor)
                 self.mem.streamline_actors.append(streamline_actor)
 
-        if not callbacks:
+        if not enable_callbacks:
             return
 
         def left_click_centroid_callback(obj, event):
@@ -326,8 +336,8 @@ class Horizon(object):
 
             def change_threshold(istyle, obj, slider):
                 sv = np.round(slider.value, 0)
-                self.remove_actors(scene)
-                self.add_actors(scene, self.tractograms, threshold=sv)
+                self.remove_cluster_actors(scene)
+                self.add_cluster_actors(scene, self.tractograms, threshold=sv)
 
                 # TODO need to double check if this section is still needed
                 lengths = np.array(
@@ -439,10 +449,8 @@ class Horizon(object):
 
         self.show_m.initialize()
 
-
         self.hide_centroids = True
         self.select_all = False
-
 
         def hide():
             if self.hide_centroids:
@@ -500,14 +508,14 @@ class Horizon(object):
 
             # self.tractograms = [active_streamlines]
             hz2 = Horizon([active_streamlines],
-                            self.images, cluster=True,
-                            cluster_thr=self.cluster_thr/2.,
-                            random_colors=self.random_colors,
-                            length_lt=np.inf,
-                            length_gt=0, clusters_lt=np.inf,
-                            clusters_gt=0,
-                            world_coords=True,
-                            interactive=True)
+                          self.images, cluster=True,
+                          cluster_thr=self.cluster_thr/2.,
+                          random_colors=self.random_colors,
+                          length_lt=np.inf,
+                          length_gt=0, clusters_lt=np.inf,
+                          clusters_gt=0,
+                          world_coords=True,
+                          interactive=True)
             ren2 = hz2.build_scene()
             hz2.build_show(ren2)
 
@@ -592,18 +600,19 @@ class Horizon(object):
                 if key == 'r' or key == 'R':
                     reset()
 
-        options = ['un\hide centroids', 'invert selection',
-                   'un\select all', 'expand clusters', 'collapse clusters', 'recluster']
+        options = [r'un\hide centroids', 'invert selection',
+                   r'un\select all', 'expand clusters',
+                   'collapse clusters', 'recluster']
         listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 270),
                                multiselection=False, font_size=18)
 
         def display_element():
             action = listbox.selected[0]
-            if action == 'un\hide centroids':
+            if action == r'un\hide centroids':
                 hide()
             if action == 'invert selection':
                 invert()
-            if action == 'un\select all':
+            if action == r'un\select all':
                 show_all()
             if action == 'expand clusters':
                 expand()
@@ -658,7 +667,6 @@ class Horizon(object):
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'RightButtonPressEvent', right_click_centroid_callback, 1.0)
-
 
         self.mem.window_timer_cnt = 0
 

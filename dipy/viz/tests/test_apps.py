@@ -29,7 +29,7 @@ def test_horizon_events():
 
     enable = [4]
 
-    if 1 in enable: # just close the window
+    if 1 in enable:  # just close the window
         fname = os.path.join(DATA_DIR, 'record_01.log.gz')
 
         horizon(tractograms=tractograms, images=images, pams=None,
@@ -39,7 +39,7 @@ def test_horizon_events():
                 world_coords=True, interactive=True, out_png='tmp.png',
                 recorded_events=fname)
 
-    if 2 in enable: # just zoom and close
+    if 2 in enable:  # just zoom and close
         fname = os.path.join(DATA_DIR, 'record_02.log.gz')
 
         horizon(tractograms=tractograms, images=images, pams=None,
@@ -49,7 +49,7 @@ def test_horizon_events():
                 world_coords=True, interactive=True, out_png='tmp.png',
                 recorded_events=fname)
 
-    if 3 in enable: # select all centroids and expand and everything else
+    if 3 in enable:  # select all centroids and expand and everything else
         # save a trk at the end
         fname = os.path.join(DATA_DIR, 'record_03.log.gz')
 
@@ -63,7 +63,7 @@ def test_horizon_events():
         # npt.assert_equal(os.stat('tmp.trk').st_size > 0, True)
         # os.remove('tmp.trk')
 
-    if 4 in enable: # select all centroids and expand and everything else
+    if 4 in enable:  # select all centroids and expand and everything else
         # save a trk at the end
         fname = os.path.join(DATA_DIR, 'record_04.log.gz')
 
