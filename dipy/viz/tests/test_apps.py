@@ -44,7 +44,7 @@ def test_horizon_events():
     tractograms = [sft]
 
     # select all centroids and expand and everything else
-    fname = os.path.join(DATA_DIR, 'record_04.log.gz')
+    fname = os.path.join(DATA_DIR, 'record_horizon.log.gz')
 
     horizon(tractograms=tractograms, images=images, pams=None,
             cluster=True, cluster_thr=5.0,
