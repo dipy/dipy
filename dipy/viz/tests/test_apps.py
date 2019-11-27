@@ -21,7 +21,7 @@ skip_it = use_xvfb == 'skip'
 
 @npt.dec.skipif(skip_it or not has_fury)
 def test_horizon_events():
-    # using here MNI template affine
+    # using here MNI template affine 2009a
     affine = np.array([[1., 0., 0., -98.],
                        [0., 1., 0., -134.],
                        [0., 0., 1., -72.],
@@ -43,52 +43,15 @@ def test_horizon_events():
 
     tractograms = [sft]
 
-    enable = [4]
+    # select all centroids and expand and everything else
+    fname = os.path.join(DATA_DIR, 'record_04.log.gz')
 
-    if 1 in enable:  # just close the window
-        fname = os.path.join(DATA_DIR, 'record_01.log.gz')
-
-        horizon(tractograms=tractograms, images=images, pams=None,
-                cluster=True, cluster_thr=5.0,
-                random_colors=False, length_gt=0, length_lt=np.inf,
-                clusters_gt=0, clusters_lt=np.inf,
-                world_coords=True, interactive=True, out_png='tmp.png',
-                recorded_events=fname)
-
-    if 2 in enable:  # just zoom and close
-        fname = os.path.join(DATA_DIR, 'record_02.log.gz')
-
-        horizon(tractograms=tractograms, images=images, pams=None,
-                cluster=True, cluster_thr=5.0,
-                random_colors=False, length_gt=0, length_lt=np.inf,
-                clusters_gt=0, clusters_lt=np.inf,
-                world_coords=True, interactive=True, out_png='tmp.png',
-                recorded_events=fname)
-
-    if 3 in enable:  # select all centroids and expand and everything else
-        # save a trk at the end
-        fname = os.path.join(DATA_DIR, 'record_03.log.gz')
-
-        horizon(tractograms=tractograms, images=images, pams=None,
-                cluster=True, cluster_thr=5.0,
-                random_colors=False, length_gt=0, length_lt=np.inf,
-                clusters_gt=0, clusters_lt=np.inf,
-                world_coords=True, interactive=True, out_png='tmp.png',
-                recorded_events=fname)
-        # npt.assert_equal(os.path.exists('tmp.trk'), True)
-        # npt.assert_equal(os.stat('tmp.trk').st_size > 0, True)
-        # os.remove('tmp.trk')
-
-    if 4 in enable:  # select all centroids and expand and everything else
-        # save a trk at the end
-        fname = os.path.join(DATA_DIR, 'record_04.log.gz')
-
-        horizon(tractograms=tractograms, images=images, pams=None,
-                cluster=True, cluster_thr=5.0,
-                random_colors=False, length_gt=0, length_lt=np.inf,
-                clusters_gt=0, clusters_lt=np.inf,
-                world_coords=True, interactive=True, out_png='tmp.png',
-                recorded_events=fname)
+    horizon(tractograms=tractograms, images=images, pams=None,
+            cluster=True, cluster_thr=5.0,
+            random_colors=False, length_gt=0, length_lt=np.inf,
+            clusters_gt=0, clusters_lt=np.inf,
+            world_coords=True, interactive=True, out_png='tmp.png',
+            recorded_events=fname)
 
 
 @npt.dec.skipif(skip_it or not has_fury)
@@ -117,16 +80,27 @@ def test_horizon():
     streamlines.append(s2)
     streamlines.append(s3)
 
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = 255 * np.random.rand(197, 233, 189)
+    vox_size = (1., 1., 1.)
+
+    streamlines._data += np.array([-98., -134., -72.])
+
+    header = create_nifti_header(affine, data.shape, vox_size)
+    sft = StatefulTractogram(streamlines, header, Space.RASMM)
+
     # only tractograms
-    tractograms = [streamlines]
+    tractograms = [sft]
     images = None
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
 
-    affine = np.diag([2., 1, 1, 1]).astype('f8')
-    data = 255 * np.random.rand(150, 150, 150)
     images = [(data, affine)]
 
     # tractograms in native coords (not supported for now)
@@ -156,7 +130,7 @@ def test_horizon():
 if __name__ == '__main__':
 
     test_horizon_events()
-    # test_horizon()
+    test_horizon()
 
 
 

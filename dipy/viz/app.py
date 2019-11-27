@@ -4,6 +4,8 @@ from dipy.tracking.streamline import length, Streamlines
 from dipy.utils.optpkg import optional_package
 from dipy import __version__ as horizon_version
 from dipy.viz.gmem import GlobalHorizon
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -66,6 +68,7 @@ def apply_shader(hz, actor):
 
 HELP_MESSAGE = """
 >> left click: select centroid
+>> right click: see menu
 >> e: expand centroids
 >> r: collapse all clusters
 >> h: hide unselected centroids
@@ -306,6 +309,7 @@ class Horizon(object):
                                      align="right")
 
             slider_label_threshold = build_label(text="Threshold")
+            print("Cluster threshold", self.cluster_thr)
             slider_threshold = ui.LineSlider2D(
                     min_value=5,
                     max_value=25,
@@ -490,15 +494,11 @@ class Horizon(object):
                     indices = self.tractogram_clusters[t][c]
                     saving_streamlines.extend(Streamlines(indices))
             print('Saving result in tmp.trk')
-            # TODO Need to provide header information or anatomy file
-            sft_new = StatefulTractogram(saving_streamlines, sft,
-                                         Space.RASMM)
-            save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
 
-            # from nibabel.streamlines import Tractogram, save
-            # tracto_save = Tractogram(saving_streamlines)
-            # tracto_save.affine_to_rasmm = np.eye(4)
-            # save(tracto_save, 'tmp.trk')
+            # Using the header of the first of the tractograms
+            sft_new = StatefulTractogram(saving_streamlines, self.tractograms[0],
+                                         Space.RASMM)
+            save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
 
         def new_window():
             active_streamlines = Streamlines()
@@ -509,9 +509,10 @@ class Horizon(object):
                     indices = self.tractogram_clusters[t][c]
                     active_streamlines.extend(Streamlines(indices))
 
-            # self.tractograms = [active_streamlines]
-            active_sft = StatefulTractogram(active_streamlines, sft,
-                                             Space.RASMM)
+            # Using the header of the first of the tractograms
+            active_sft = StatefulTractogram(active_streamlines,
+                                            self.tractograms[0],
+                                            Space.RASMM)
             hz2 = Horizon([active_sft],
                           self.images, cluster=True,
                           cluster_thr=self.cluster_thr/2.,
@@ -607,8 +608,10 @@ class Horizon(object):
 
         options = [r'un\hide centroids', 'invert selection',
                    r'un\select all', 'expand clusters',
-                   'collapse clusters', 'recluster']
-        listbox = ui.ListBox2D(values=options, position=(10, 300), size=(200, 270),
+                   'collapse clusters', 'save streamlines',
+                   'recluster']
+        listbox = ui.ListBox2D(values=options, position=(10, 300),
+                               size=(200, 270),
                                multiselection=False, font_size=18)
 
         def display_element():
@@ -704,7 +707,7 @@ class Horizon(object):
             else:
 
                 # set to True if event recorded file needs updating
-                recording = True
+                recording = False
                 recording_filename = self.recorded_events
 
                 if recording:

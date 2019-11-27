@@ -1,11 +1,13 @@
 import numpy as np
 from os.path import join as pjoin
-import nibabel as nib
 from dipy.workflows.workflow import Workflow
 from dipy.io.streamline import Dpy
 from dipy.io.image import load_nifti
 from dipy.viz.app import horizon
 from dipy.io.peaks import load_peaks
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.utils import create_nifti_header
 
 
 class HorizonFlow(Workflow):
@@ -17,7 +19,8 @@ class HorizonFlow(Workflow):
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
-            stealth=False, out_dir='', out_stealth_png='tmp.png'):
+            stealth=False, emergency_header='icbm_2009a', out_dir='',
+            out_stealth_png='tmp.png'):
         """ Highly interactive visualization - invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -35,9 +38,11 @@ class HorizonFlow(Workflow):
         clusters_lt : int
         native_coords : bool
         stealth : bool
+        emergency_header : str
+            If no anatomy reference is provided an emergency header is provided.
+            Current options 'icbm_2009a' and 'icbm_2009c'.
         out_dir : string
         out_stealth_png : string
-
 
         References
         ----------
@@ -54,6 +59,31 @@ class HorizonFlow(Workflow):
         interactive = not stealth
         world_coords = not native_coords
 
+        mni_2009a = {}
+        mni_2009a['affine'] = np.array([[1., 0., 0., -98.],
+                                        [0., 1., 0., -134.],
+                                        [0., 0., 1., -72.],
+                                        [0., 0., 0., 1.]])
+        mni_2009a['dims'] = (197, 233, 189)
+        mni_2009a['vox_size'] = (1., 1., 1.)
+        mni_2009a['vox_space'] = 'RAS'
+
+        mni_2009c = {}
+        mni_2009c['affine']= np.array([[1., 0., 0., -96.],
+                                       [0., 1., 0., -132.],
+                                       [0., 0., 1., -78.],
+                                       [0., 0., 0., 1.]])
+        mni_2009c['dims'] = (193, 229, 193)
+        mni_2009c['vox_size'] = (1., 1., 1.)
+        mni_2009c['vox_space'] = 'RAS'
+
+        if emergency_header == 'icbm_2009a':
+            hdr = mni_2009c
+        else:
+            hdr = mni_2009c
+        emergency_ref = create_nifti_header(hdr['affine'], hdr['dims'],
+                                            hdr['vox_size'])
+
         io_it = self.get_io_iterator()
 
         for input_output in io_it:
@@ -68,19 +98,15 @@ class HorizonFlow(Workflow):
             fl = fname.lower()
             ends = fl.endswith
 
-            if ends('.trk') or ends('.tck'):
+            if ends('.trk'):
 
-                streamlines = nib.streamlines.load(fname).streamlines
-                # TODO: to be able to save bundles with header information
-                # we should allow option for loading tractogram objects
-                # as whole (possibly using load_tractogram)
-                tractograms.append(streamlines)
+                sft = load_tractogram(fname, 'same',
+                                      bbox_valid_check=False)
+                tractograms.append(sft)
 
-            elif ends('.dpy'):
-
-                dpy_obj = Dpy(fname, mode='r')
-                streamlines = list(dpy_obj.read_tracks())
-                dpy_obj.close()
+            if ends('.dpy') or ends('.tck'):
+                sft = load_tractogram(fname, emergency_ref)
+                tractograms.append(sft)
 
             if ends('.nii.gz') or ends('.nii'):
 
