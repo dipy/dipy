@@ -3,6 +3,10 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 from dipy.tracking.streamline import Streamlines
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.utils import (create_nifti_header, get_reference_info,
+                           is_header_compatible)
 from dipy.testing.decorators import xvfb_it, use_xvfb
 from dipy.utils.optpkg import optional_package
 from dipy.data import DATA_DIR
@@ -17,15 +21,27 @@ skip_it = use_xvfb == 'skip'
 
 @npt.dec.skipif(skip_it or not has_fury)
 def test_horizon_events():
-    affine = np.diag([2., 1, 1, 1]).astype('f8')
-    data = 255 * np.random.rand(150, 150, 150)
+    # using here MNI template affine
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = 255 * np.random.rand(197, 233, 189)
+    vox_size = (1., 1., 1.)
+
     images = [(data, affine)]
     # images = None
     from dipy.segment.tests.test_bundles import setup_module
     setup_module()
     from dipy.segment.tests.test_bundles import f1
     streamlines = f1.copy()
-    tractograms = [streamlines]
+    streamlines._data += np.array([-98., -134., -72.])
+
+    header = create_nifti_header(affine, data.shape, vox_size)
+    sft = StatefulTractogram(streamlines, header, Space.RASMM)
+
+    tractograms = [sft]
 
     enable = [4]
 

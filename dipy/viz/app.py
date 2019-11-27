@@ -87,8 +87,8 @@ class Horizon(object):
 
         Parameters
         ----------
-        tractograms : sequence of Streamlines
-            Sequence of Streamlines objects
+        tractograms : sequence of StatefulTractograms
+            Sequence of StatefulTractograms
         images : sequence of tuples
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
@@ -175,7 +175,9 @@ class Horizon(object):
             Enable callbacks for selecting clusters
         """
         color_gen = distinguishable_colormap()
-        for (t, streamlines) in enumerate(tractograms):
+        for (t, sft) in enumerate(tractograms):
+            streamlines = sft.streamlines
+
             if self.random_colors:
                 colors = next(color_gen)
             else:
@@ -489,13 +491,14 @@ class Horizon(object):
                     saving_streamlines.extend(Streamlines(indices))
             print('Saving result in tmp.trk')
             # TODO Need to provide header information or anatomy file
-            # sft = StatefulTractogram(saving_streamlines, 'same',
-            #                          Space.RASMM)
-            # save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
-            from nibabel.streamlines import Tractogram, save
-            tracto_save = Tractogram(saving_streamlines)
-            tracto_save.affine_to_rasmm = np.eye(4)
-            save(tracto_save, 'tmp.trk')
+            sft_new = StatefulTractogram(saving_streamlines, sft,
+                                         Space.RASMM)
+            save_tractogram(sft, 'tmp.trk', bbox_valid_check=False)
+
+            # from nibabel.streamlines import Tractogram, save
+            # tracto_save = Tractogram(saving_streamlines)
+            # tracto_save.affine_to_rasmm = np.eye(4)
+            # save(tracto_save, 'tmp.trk')
 
         def new_window():
             active_streamlines = Streamlines()
@@ -507,7 +510,9 @@ class Horizon(object):
                     active_streamlines.extend(Streamlines(indices))
 
             # self.tractograms = [active_streamlines]
-            hz2 = Horizon([active_streamlines],
+            active_sft = StatefulTractogram(active_streamlines, sft,
+                                             Space.RASMM)
+            hz2 = Horizon([active_sft],
                           self.images, cluster=True,
                           cluster_thr=self.cluster_thr/2.,
                           random_colors=self.random_colors,
@@ -638,7 +643,7 @@ class Horizon(object):
 
         def right_click_centroid_callback(obj, event):
             for lactor in listbox._get_actors():
-               lactor.SetVisibility(not lactor.GetVisibility())
+                lactor.SetVisibility(not lactor.GetVisibility())
 
             listbox.scroll_bar.set_visibility(False)
             self.show_m.render()
@@ -659,9 +664,11 @@ class Horizon(object):
             self.show_m.render()
 
         for cl in self.cla:
-            cl.AddObserver('LeftButtonPressEvent', left_click_cluster_callback,
+            cl.AddObserver('LeftButtonPressEvent',
+                           left_click_cluster_callback,
                            1.0)
-            cl.AddObserver('RightButtonPressEvent', right_click_cluster_callback,
+            cl.AddObserver('RightButtonPressEvent',
+                           right_click_cluster_callback,
                            1.0)
             self.cla[cl]['centroid_actor'].AddObserver(
                 'LeftButtonPressEvent', left_click_centroid_callback, 1.0)
@@ -691,7 +698,6 @@ class Horizon(object):
                 return self.show_m
 
             if self.recorded_events is None:
-
                 self.show_m.render()
                 self.show_m.start()
 
@@ -724,7 +730,7 @@ def horizon(tractograms=None, images=None, pams=None,
     Parameters
     ----------
     tractograms : sequence
-        Sequence of Streamlines objects
+        Sequence of StatefulTractogram objects
     images : sequence of tuples
         Each tuple contains data and affine
     pams : peaks
