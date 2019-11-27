@@ -1,13 +1,11 @@
 import os
 import numpy as np
-import numpy.testing as npt
 import pytest
+import numpy.testing as npt
 from dipy.tracking.streamline import Streamlines
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.io.utils import (create_nifti_header, get_reference_info,
-                           is_header_compatible)
-from dipy.testing.decorators import xvfb_it, use_xvfb
+from dipy.io.utils import create_nifti_header
+from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
 from dipy.data import DATA_DIR
 
@@ -19,7 +17,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not has_fury)
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_horizon_events():
     # using here MNI template affine 2009a
     affine = np.array([[1., 0., 0., -98.],
@@ -54,7 +52,7 @@ def test_horizon_events():
             recorded_events=fname)
 
 
-@npt.dec.skipif(skip_it or not has_fury)
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -131,7 +129,3 @@ if __name__ == '__main__':
 
     test_horizon_events()
     test_horizon()
-
-
-
-

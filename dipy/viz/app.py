@@ -5,7 +5,7 @@ from dipy.utils.optpkg import optional_package
 from dipy import __version__ as horizon_version
 from dipy.viz.gmem import GlobalHorizon
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.streamline import save_tractogram
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -496,9 +496,11 @@ class Horizon(object):
             print('Saving result in tmp.trk')
 
             # Using the header of the first of the tractograms
-            sft_new = StatefulTractogram(saving_streamlines, self.tractograms[0],
+            sft_new = StatefulTractogram(saving_streamlines,
+                                         self.tractograms[0],
                                          Space.RASMM)
             save_tractogram(sft_new, 'tmp.trk', bbox_valid_check=False)
+            print('Saved!')
 
         def new_window():
             active_streamlines = Streamlines()

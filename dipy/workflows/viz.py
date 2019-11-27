@@ -1,12 +1,10 @@
 import numpy as np
 from os.path import join as pjoin
 from dipy.workflows.workflow import Workflow
-from dipy.io.streamline import Dpy
 from dipy.io.image import load_nifti
 from dipy.viz.app import horizon
 from dipy.io.peaks import load_peaks
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.streamline import save_tractogram
 from dipy.io.utils import create_nifti_header
 
 
@@ -69,10 +67,10 @@ class HorizonFlow(Workflow):
         mni_2009a['vox_space'] = 'RAS'
 
         mni_2009c = {}
-        mni_2009c['affine']= np.array([[1., 0., 0., -96.],
-                                       [0., 1., 0., -132.],
-                                       [0., 0., 1., -78.],
-                                       [0., 0., 0., 1.]])
+        mni_2009c['affine'] = np.array([[1., 0., 0., -96.],
+                                        [0., 1., 0., -132.],
+                                        [0., 0., 1., -78.],
+                                        [0., 0., 0., 1.]])
         mni_2009c['dims'] = (193, 229, 193)
         mni_2009c['vox_size'] = (1., 1., 1.)
         mni_2009c['vox_space'] = 'RAS'
