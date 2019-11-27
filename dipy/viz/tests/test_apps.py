@@ -41,7 +41,9 @@ def test_horizon_events():
 
     tractograms = [sft]
 
-    # select all centroids and expand and everything else
+    # select all centroids and expand and click everything else
+    # do not press the key shortcuts as vtk generates warning that
+    # blocks recording
     fname = os.path.join(DATA_DIR, 'record_horizon.log.gz')
 
     horizon(tractograms=tractograms, images=images, pams=None,
