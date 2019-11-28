@@ -1018,21 +1018,27 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     else:
         # Numerical Solution using 10 perpendicular directions samples
         npa = 10
-        RK = np.zeros(dki_params.shape[:-1])
 
-        # To avoid calculations in voxels with all eigenvalues = zero
-        cond = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-        par_sel = dki_params[cond]
+        # Initialize RK
+        RK = np.zeros(kt.shape[:-1])
 
-        KV = np.zeros((par_sel.shape[0], npa))
-        for vox in range(len(par_sel)):
-            V = perpendicular_directions(evecs[vox, :, 0], num=npa, half=True)
+        # select relevant voxels to process
+        rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+        dki_params = dki_params[rel_i]
+        evecs = evecs[rel_i]
+        RKi = RK[rel_i]
+
+        # loop over all voxels
+        KV = np.zeros((dki_params.shape[0], npa))
+        for vox in range(len(dki_params)):
+            V = perpendicular_directions(np.array(evecs[vox, :, 0]), num=npa,
+                                         half=True)
             sph = dps.Sphere(xyz=V)
             KV[vox, :] = apparent_kurtosis_coef(dki_params[vox], sph,
                                                 min_kurtosis=min_kurtosis)
-        RKv = np.mean(KV, axis=-1)
+        RKi = np.mean(KV, axis=-1)
 
-        RK[cond] = RKv
+        RK[rel_i] = RKi
 
     if min_kurtosis is not None:
         RK = RK.clip(min=min_kurtosis)
