@@ -1135,14 +1135,22 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     evals = evals[rel_i]
     AKi = AK[rel_i]
 
-    # Compute MD
+    # Compute mean diffusivity
     md = mean_diffusivity(evals)
-    dt = lower_triangular(vec_val_vect(evecs, evals))
 
-    # loop over all voxels
-    for vox in range(len(kt)):
-        AKi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox],
-                                        np.array([evecs[vox, :, 0]]))
+    if analytical:
+        # Rotate the kurtosis tensor from the standard Cartesian coordinate
+        # system to another coordinate system in which the 3 orthonormal
+        # eigenvectors of DT are the base coordinate
+        Wxxxx = Wrotate_element(kt, 0, 0, 0, 0, evecs)
+        AKi = Wxxxx * (md ** 2) / (evals[..., 0] ** 2)
+
+    else:
+        # Compute apparent directional kurtosis along evecs[0]
+        dt = lower_triangular(vec_val_vect(evecs, evals))
+        for vox in range(len(kt)):
+            AKi[vox] = directional_kurtosis(dt[vox], md[vox], kt[vox],
+                                            np.array([evecs[vox, :, 0]]))
 
     # reshape data according to input data
     AK[rel_i] = AKi
