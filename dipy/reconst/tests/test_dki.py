@@ -404,15 +404,15 @@ def test_spherical_dki_statistics():
     MRef[1, 1, 1] = MRef[1, 0, 0] = MRef[1, 0, 1] = 0
 
     # Mean kurtosis analytical solution
-    MK_multi = mean_kurtosis(MParam)
+    MK_multi = mean_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(MK_multi, MRef)
 
     # radial kurtosis analytical solution
-    RK_multi = radial_kurtosis(MParam)
+    RK_multi = radial_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(RK_multi, MRef)
 
     # axial kurtosis analytical solution
-    AK_multi = axial_kurtosis(MParam)
+    AK_multi = axial_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(AK_multi, MRef)
 
 
@@ -434,7 +434,7 @@ def test_compare_MK_method():
     # MK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, sph),
     #                axis=-1)
 
-    assert_array_almost_equal(MK_as, MK_nm, decimal=2)
+    assert_array_almost_equal(MK_as, MK_nm, decimal=3)
 
 
 def test_single_voxel_DKI_stats():
@@ -492,15 +492,11 @@ def test_compare_RK_methods():
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal_cross)
 
-    # MK analytical solution
-    RK_as = dkiF.rk()
+    # RK analytical solution
+    RK_as = dkiF.rk(analytical=True)
 
-    # MK numerical method
-    evecs = dkiF.evecs
-    p_dir = perpendicular_directions(evecs[:, 0], num=30, half=True)
-    ver = Sphere(xyz=p_dir)
-    RK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, ver),
-                    axis=-1)
+    # RK numerical method
+    RK_nm = dkiF.rk(analytical=False)
 
     assert_array_almost_equal(RK_as, RK_nm)
 
@@ -520,13 +516,10 @@ def test_MK_singularities():
                                               angles=angles_90,
                                               fractions=frac_cross, snr=None)
         dkiF = dkiM.fit(s_90)
-        MK = dkiF.mk()
+        MK_an = dkiF.mk(analytical=True)
+        MK_nm = dkiF.mk(analytical=False)
 
-        sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-
-        MK_nm = np.mean(dkiF.akc(sph))
-
-        assert_almost_equal(MK, MK_nm, decimal=2)
+        assert_almost_equal(MK_an, MK_nm, decimal=3)
 
         # test singularity L1 == L3 and L1 != L2
         # since L1 is defined as the larger eigenvalue and L3 the smallest
@@ -546,10 +539,10 @@ def test_MK_singularities():
         dki_params[10] = dkiF.model_params[11]
         dki_params[11] = dkiF.model_params[10]
 
-        MK = dki.mean_kurtosis(dki_params)
-        MK_nm = np.mean(dki.apparent_kurtosis_coef(dki_params, sph))
+        MK_an = dki.mean_kurtosis(dki_params, analytical=True)
+        MK_nm = dki.mean_kurtosis(dki_params, analytical=False)
 
-        assert_almost_equal(MK, MK_nm, decimal=2)
+        assert_almost_equal(MK_an, MK_nm, decimal=3)
 
 
 def test_dki_errors():
