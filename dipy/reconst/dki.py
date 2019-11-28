@@ -943,8 +943,8 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         Calculated RK.
 
     Notes
-    --------
-    RK is defined as the average of the directional kurtosis perpendicularly
+    -----
+    RK is defined as the average of the directional kurtosis perpendicular
     to the fiber's main direction e1 [1]_, [2]_:
 
     .. math::
@@ -952,9 +952,10 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta} K(\mathbf{\theta})
               \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
-    This equation can be computed by numerically computed by averaging
-    directional kurtosis sampled for directions perpendicular to e1.
-    Otherwise, RK can be calculated from its analytical solution o[2]_:
+    This equation can be numerically computed by averaging apparent
+    directional kurtosis samples for directions perpendicular to e1.
+
+    Otherwise, RK can be calculated from its analytical solution [2]_:
 
     .. math::
 
@@ -1051,7 +1052,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
 
 def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
                    analytical=False):
-    r"""  Computes axial Kurtosis (AK) from the kurtosis tensor.
+    r"""  Computes axial Kurtosis (AK) from the kurtosis tensor [1]_, [2]_.
 
     Parameters
     ----------
@@ -1066,20 +1067,52 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are smaller than `min_kurtosis` are replaced with
         `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
-        that consist of water confined to spherical pores [1]_)
+        that consist of water confined to spherical pores [3]_)
     max_kurtosis : float (optional)
         To keep kurtosis values within a plausible biophysical range, axial
         kurtosis values that are larger than `max_kurtosis` are replaced with
         `max_kurtosis`. Default = 10
+    analytical : bool (optional)
+        If True, AK is calculated from rotated diffusion kurtosis tensor,
+        otherwise it will be computed from the apparent diffusion kurtosis
+        values along the principal axis of the diffusion tensor (see notes).
+        Default is set to False.
 
     Returns
     -------
     ak : array
         Calculated AK.
 
+    Notes
+    -----
+    AK is defined as the directional kurtosis parallel to the fiber's main
+    direction e1 [1]_, [2]_. You can compute AK using to approaches:
+
+    1) AK is calculated from rotated diffusion kurtosis tensor [2]_, i.e.:
+
+    .. math::
+        AK = \hat{W}_{1111}
+            \frac{(\lambda_{1}+\lambda_{2}+\lambda_{3})^2}{(9 \lambda_{1}^2)}
+
+    2) AK can be sampled from the principal axis of the diffusion tensor:
+
+    .. math::
+        AK = K(\mathbf{\mathbf{e}_1)
+
+    Although both approaches leads to an exactly calculation of AK, the first
+    approach will be refered to as the analytical method whilte the second
+    approach will be refered to as the numerical method based on their analogy
+    to the estimation strategies for MK and RK.
+
     References
     ----------
-    .. [1] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+    .. [1] Jensen, J.H., Helpern, J.A., 2010. MRI quantification of
+           non-Gaussian water diffusion by kurtosis analysis. NMR in
+           Biomedicine 23(7): 698-710
+    .. [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+           Estimation of tensors and tensor-derived measures in diffusional
+           kurtosis imaging. Magn Reson Med. 65(3), 823-836
+    .. [3] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
            Robust estimation from DW-MRI using homogeneous polynomials.
            Proceedings of the 8th {IEEE} International Symposium on
            Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
@@ -1630,18 +1663,47 @@ class DiffusionKurtosisFit(TensorFit):
             To keep kurtosis values within a plausible biophysical range, axial
             kurtosis values that are larger than `max_kurtosis` are replaced
             with `max_kurtosis`. Default = 10
+        analytical : bool (optional)
+            If True, AK is calculated from rotated diffusion kurtosis tensor,
+            otherwise it will be computed from the apparent diffusion kurtosis
+            values along the principal axis of the diffusion tensor
+            (see notes). Default is set to False.
 
         Returns
         -------
         ak : array
             Calculated AK.
 
+        Notes
+        -----
+        AK is defined as the directional kurtosis parallel to the fiber's main
+        direction e1 [1]_, [2]_. You can compute AK using to approaches:
+
+        1) AK is calculated from rotated diffusion kurtosis tensor [2]_, i.e.:
+
+        .. math::
+            AK = \hat{W}_{1111}
+            \frac{(\lambda_{1}+\lambda_{2}+\lambda_{3})^2}{(9 \lambda_{1}^2)}
+
+        2) AK can be sampled from the principal axis of the diffusion tensor:
+
+        .. math::
+            AK = K(\mathbf{\mathbf{e}_1)
+
+        Although both approaches leads to an exactly calculation of AK, the
+        first approach will be refered to as the analytical method whilte the
+        second approach will be refered to as the numerical method based on
+        their analogy to the estimation strategies for MK and RK.
+
         References
         ----------
-        .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
+        .. [1] Jensen, J.H., Helpern, J.A., 2010. MRI quantification of
+               non-Gaussian water diffusion by kurtosis analysis. NMR in
+               Biomedicine 23(7): 698-710
+        .. [2] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
                Estimation of tensors and tensor-derived measures in diffusional
                kurtosis imaging. Magn Reson Med. 65(3), 823-836
-        .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+        .. [3] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
                Robust estimation from DW-MRI using homogeneous polynomials.
                Proceedings of the 8th {IEEE} International Symposium on
                Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
@@ -1677,17 +1739,18 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         --------
-        RK is defined as the average of the directional kurtosis
-        perpendicularly to the fiber's main direction e1 [1]_, [2]_:
+        RK is defined as the average of the directional kurtosis perpendicular
+        to the fiber's main direction e1 [1]_, [2]_:
 
         .. math::
 
         RK \equiv \frac{1}{2\pi} \int d\Omega _\mathbf{\theta}
-             K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
+            K(\mathbf{\theta}) \delta (\mathbf{\theta}\cdot \mathbf{e}_1)
 
-        This equation can be computed by numerically computed by averaging
-        directional kurtosis sampled for directions perpendicular to e1.
-        Otherwise, RK can be calculated from its analytical solution o[2]_:
+        This equation can be numerically computed by averaging apparent
+        directional kurtosis samples for directions perpendicular to e1.
+
+        Otherwise, RK can be calculated from its analytical solution [2]_:
 
         .. math::
 
