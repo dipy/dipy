@@ -1348,7 +1348,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
 
     Notes
     --------
-    The MKT is devided as [1]_:
+    The MKT is defined as [1]_:
 
     .. math::
 
@@ -1379,7 +1379,91 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
         2 * dki_params[..., 21] + 2 * dki_params[..., 22] + \
         2 * dki_params[..., 23]
 
+    if min_kurtosis is not None:
+        MKT = MKT.clip(min=min_kurtosis)
+
+    if max_kurtosis is not None:
+        MKT = MKT.clip(max=max_kurtosis)
+
     return 1/5 * MKT
+
+
+def kurtosis_fractional_anisotropy(dki_params):
+    r""" Computes the anisotropy of the kurtosis tensor (KFA) [1]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    Returns
+    -------
+    kfa : array
+        Calculated mean kurtosis tensor.
+
+    Notes
+    --------
+    The KFA is defined as [1]_:
+
+    .. math::
+
+         KFA \equiv
+         \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
+
+    where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$ is
+    the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the tensor's
+    Frobenius norm [1]_.
+
+    References
+    ----------
+    .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H. (2015).
+           Quantitative assessment of diffusional387kurtosis anisotropy.
+           NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
+    """
+    Wxxxx = dki_params[..., 12]
+    Wyyyy = dki_params[..., 13]
+    Wzzzz = dki_params[..., 14]
+    Wxxxy = dki_params[..., 15]
+    Wxxxz = dki_params[..., 16]
+    Wxyyy = dki_params[..., 17]
+    Wyyyz = dki_params[..., 18]
+    Wxzzz = dki_params[..., 19]
+    Wyzzz = dki_params[..., 20]
+    Wxxyy = dki_params[..., 21]
+    Wxxzz = dki_params[..., 22]
+    Wyyzz = dki_params[..., 23]
+    Wxxyz = dki_params[..., 24]
+    Wxyyz = dki_params[..., 25]
+    Wxyzz = dki_params[..., 26]
+
+    W = 1.0/5.0 * (Wxxxx + Wyyyy + Wzzzz + 2*Wxxyy + 2*Wxxzz + 2*Wyyzz)
+
+    # Compute's equation numerator
+    A = (Wxxxx - W) ** 2 + (Wyyyy - W) ** 2 + (Wzzzz - W) ** 2 + \
+        4 * Wxxxy ** 2 + 4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + \
+        4 * Wxzzz ** 2 + 4 * Wyzzz ** 2 + \
+        6 * (Wxxyy - W/3) ** 2 + 6 * (Wxxzz - W/3) ** 2 + \
+        6 * (Wyyzz - W/3) ** 2 + \
+        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+
+    # Compute's equation denominator
+    B = Wxxxx ** 2 + Wyyyy ** 2 + Wzzzz ** 2 + 4 * Wxxxy ** 2 + \
+        4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + 4 * Wxzzz ** 2 + \
+        4 * Wyzzz ** 2 + 6 * Wxxyy ** 2 + 6 * Wxxzz ** 2 + 6 * Wyyzz ** 2 + \
+        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+
+    # Compute KFA
+    KFA = A / B
+
+    # Singularity (if B = 0, KFA = 0)
+    cond = B == 0
+    KFA[cond] = 0
+
+    return KFA
 
 
 def dki_prediction(dki_params, gtab, S0=1.):
@@ -1884,7 +1968,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
 
-    def mean_kurtosis_tensor(self, min_kurtosis=-3./7, max_kurtosis=10):
+    def mkt(self, min_kurtosis=-3./7, max_kurtosis=10):
         r""" Computes mean of the kurtosis tensor (MKT) [1]_.
 
         Parameters
@@ -1906,7 +1990,7 @@ class DiffusionKurtosisFit(TensorFit):
 
         Notes
         --------
-        The MKT is devided as [1]_:
+        The MKT is defined as [1]_:
 
         .. math::
 
@@ -1935,6 +2019,31 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return mean_kurtosis_tensor(self.model_params, min_kurtosis,
                                     max_kurtosis)
+
+    @property
+    def kfa(self):
+        r""" Returns the kurtosis tensor (KFA) [1]_.
+
+        Notes
+        --------
+        The KFA is defined as [1]_:
+
+        .. math::
+
+             KFA \equiv
+             \frac{||\mathbf{W} - MKT \mathbf{I}^{(4)}||_F}{||\mathbf{W}||_F}
+
+        where $W$ is the kurtosis tensor, MKT the kurtosis tensor mean, $I^(4)$
+        is the fully symmetric rank 2 isotropic tensor and $||...||_F$ is the
+        tensor's Frobenius norm [1]_.
+
+        References
+        ----------
+        .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H.
+               (2015). Quantitative assessment of diffusional387kurtosis
+               anisotropy. NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
+        """
+        return kurtosis_fractional_anisotropy(self.model_params)
 
     def predict(self, gtab, S0=1.):
         r""" Given a DKI model fit, predict the signal on the vertices of a
