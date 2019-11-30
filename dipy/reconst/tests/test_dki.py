@@ -14,12 +14,13 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
-                              axial_kurtosis, radial_kurtosis, _positive_evals,
-                              lower_triangular)
+                              axial_kurtosis, radial_kurtosis,
+                              mean_kurtosis_tensor,
+                              _positive_evals, lower_triangular)
 
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
-from dipy.core.geometry import (sphere2cart, perpendicular_directions)
+from dipy.core.geometry import sphere2cart
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -389,7 +390,7 @@ def test_Wcons():
 
 
 def test_spherical_dki_statistics():
-    # tests if MK, AK and RK are equal to expected values of a spherical
+    # tests if MK, AK, RK and MSK are equal to expected values of a spherical
     # kurtosis tensor
 
     # Define multi voxel spherical kurtosis simulations
@@ -414,6 +415,10 @@ def test_spherical_dki_statistics():
     # axial kurtosis analytical solution
     AK_multi = axial_kurtosis(MParam, analytical=True)
     assert_array_almost_equal(AK_multi, MRef)
+
+    # mean kurtosis tensor analytical solution
+    MSK_multi = mean_kurtosis_tensor(MParam)
+    assert_array_almost_equal(MSK_multi, MRef)
 
 
 def test_compare_MK_method():
