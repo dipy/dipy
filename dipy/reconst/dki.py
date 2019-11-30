@@ -911,7 +911,7 @@ def _G2m(a, b, c):
 
 
 def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
-                    analytical=False):
+                    analytical=True):
     r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_, [2]_.
 
     Parameters
@@ -934,8 +934,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         `max_kurtosis`. Default = 10
     analytical : bool (optional)
         If True, RK is calculated using its analytical solution, otherwise an
-        exact numerical estimator is used (see Notes). Default is set to False,
-        to avoid the singularities of the analytical solution.
+        exact numerical estimator is used (see Notes). Default is set to True.
 
     Returns
     -------
@@ -1051,7 +1050,7 @@ def radial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
 
 
 def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
-                   analytical=False):
+                   analytical=True):
     r"""  Computes axial Kurtosis (AK) from the kurtosis tensor [1]_, [2]_.
 
     Parameters
@@ -1076,7 +1075,7 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
         If True, AK is calculated from rotated diffusion kurtosis tensor,
         otherwise it will be computed from the apparent diffusion kurtosis
         values along the principal axis of the diffusion tensor (see notes).
-        Default is set to False.
+        Default is set to True.
 
     Returns
     -------
@@ -1561,7 +1560,7 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return apparent_kurtosis_coef(self.model_params, sphere)
 
-    def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=False):
+    def mk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
         r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
         Parameters
@@ -1656,7 +1655,7 @@ class DiffusionKurtosisFit(TensorFit):
         return mean_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
                              analytical)
 
-    def ak(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=False):
+    def ak(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
         r"""
         Axial Kurtosis (AK) of a diffusion kurtosis tensor [1]_.
 
@@ -1720,7 +1719,7 @@ class DiffusionKurtosisFit(TensorFit):
         return axial_kurtosis(self.model_params, min_kurtosis, max_kurtosis,
                               analytical)
 
-    def rk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=False):
+    def rk(self, min_kurtosis=-3./7, max_kurtosis=10, analytical=True):
         r""" Radial Kurtosis (RK) of a diffusion kurtosis tensor [1]_.
 
         Parameters
