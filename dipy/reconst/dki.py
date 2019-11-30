@@ -636,7 +636,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
 
 
 def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
-                  analytical=False):
+                  analytical=True):
     r""" Computes mean Kurtosis (MK) from the kurtosis tensor.
 
     Parameters
@@ -659,8 +659,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
         `max_kurtosis`. Default = 10
     analytical : bool (optional)
         If True, MK is calculated using its analytical solution, otherwise an
-        exact numerical estimator is used (see Notes). Default is set to False,
-        to avoid the singularities of the analytical solution.
+        exact numerical estimator is used (see Notes). Default is set to True
 
     Returns
     -------
@@ -1321,6 +1320,68 @@ def kurtosis_maximum(dki_params, sphere='repulsion100', gtol=1e-2,
     return kt_max
 
 
+def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
+    r""" Computes mean of the kurtosis tensor (MKT) [1]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    min_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, mean
+        kurtosis values that are smaller than `min_kurtosis` are replaced with
+        `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit for regions
+        that consist of water confined to spherical pores [2]_)
+    max_kurtosis : float (optional)
+        To keep kurtosis values within a plausible biophysical range, mean
+        kurtosis values that are larger than `max_kurtosis` are replaced with
+        `max_kurtosis`. Default = 10
+    Returns
+    -------
+    mkt : array
+        Calculated mean kurtosis tensor.
+
+    Notes
+    --------
+    The MKT is devided as [1]_:
+
+    .. math::
+
+         MKT \equiv \frac{1}{4\pi} \int d
+         \Omega_{\mathnbf{n}} n_i n_j n_k n_l W_{ijkl}
+
+
+    which can be directly computed from the trace of the kurtosis tensor:
+
+    .. math::
+
+    MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
+    (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
+
+    References
+    ----------
+    .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. (2013).
+           Experimentally and computationally387fast method for estimation of
+           a mean kurtosis.Magnetic Resonance in Medicine69,  1754–1760.388
+           doi:10.1002/mrm.24743
+    .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+           Robust estimation from DW-MRI using homogeneous polynomials.
+           Proceedings of the 8th {IEEE} International Symposium on
+           Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
+           doi: 10.1109/ISBI.2011.5872402
+    """
+    MKT = dki_params[..., 6] + dki_params[..., 7] + dki_params[..., 8] + \
+        2 * dki_params[..., 15] + 2 * dki_params[..., 16] + \
+        2 * dki_params[..., 17]
+
+    return 1/5 * MKT
+
+
 def dki_prediction(dki_params, gtab, S0=1.):
     """ Predict a signal given diffusion kurtosis imaging parameters.
 
@@ -1577,7 +1638,7 @@ class DiffusionKurtosisFit(TensorFit):
         analytical : bool (optional)
             If True, MK is calculated using its analytical solution, otherwise
             an exact numerical estimator is used (see Notes). Default is set to
-            False, to avoid the singularities of the analytical solution.
+            True.
 
         Returns
         -------
@@ -1674,7 +1735,7 @@ class DiffusionKurtosisFit(TensorFit):
             If True, AK is calculated from rotated diffusion kurtosis tensor,
             otherwise it will be computed from the apparent diffusion kurtosis
             values along the principal axis of the diffusion tensor
-            (see notes). Default is set to False.
+            (see notes). Default is set to True.
 
         Returns
         -------
@@ -1737,7 +1798,7 @@ class DiffusionKurtosisFit(TensorFit):
         analytical : bool (optional)
             If True, RK is calculated using its analytical solution, otherwise
             an exact numerical estimator is used (see Notes). Default is set to
-            False, to avoid the singularities of the analytical solution.
+            True
 
         Returns
         -------
@@ -1822,6 +1883,58 @@ class DiffusionKurtosisFit(TensorFit):
             kurtosis tensor maximum value
         """
         return kurtosis_maximum(self.model_params, sphere, gtol, mask)
+
+    def mean_kurtosis_tensor(self, min_kurtosis=-3./7, max_kurtosis=10):
+        r""" Computes mean of the kurtosis tensor (MKT) [1]_.
+
+        Parameters
+        ----------
+        min_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, mean
+            kurtosis values that are smaller than `min_kurtosis` are replaced
+            with `min_kurtosis`. Default = -3./7 (theoretical kurtosis limit
+            for regions that consist of water confined to spherical pores [2]_)
+        max_kurtosis : float (optional)
+            To keep kurtosis values within a plausible biophysical range, mean
+            kurtosis values that are larger than `max_kurtosis` are replaced
+            with `max_kurtosis`. Default = 10
+
+        Returns
+        -------
+        mkt : array
+            Calculated mean kurtosis tensor.
+
+        Notes
+        --------
+        The MKT is devided as [1]_:
+
+        .. math::
+
+             MKT \equiv \frac{1}{4\pi} \int d
+             \Omega_{\mathnbf{n}} n_i n_j n_k n_l W_{ijkl}
+
+
+        which can be directly computed from the trace of the kurtosis tensor:
+
+        .. math::
+
+        MKT = \frac{1}{5} Tr(\mathbf{W}) = \frac{1}{5}
+        (W_{1111} + W_{2222} + W_{3333} + 2W_{1122} + 2W_{1133} + 2W_{2233})
+
+        References
+        ----------
+        .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. 2013.
+               Experimentally and computationally387fast method for estimation
+               of a mean kurtosis. Magnetic Resonance in Medicine69, 1754–1760.
+               388. doi:10.1002/mrm.24743
+        .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
+               Robust estimation from DW-MRI using homogeneous polynomials.
+               Proceedings of the 8th {IEEE} International Symposium on
+               Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
+               doi: 10.1109/ISBI.2011.5872402
+        """
+        return mean_kurtosis_tensor(self.model_params, min_kurtosis,
+                                    max_kurtosis)
 
     def predict(self, gtab, S0=1.):
         r""" Given a DKI model fit, predict the signal on the vertices of a
