@@ -2,11 +2,12 @@ import os
 
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram
+from dipy.io.streamline import save_tractogram, load_tractogram
 from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
-from dipy.testing.decorators import xvfb_it, use_xvfb
+from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 import numpy.testing as npt
@@ -43,27 +44,32 @@ def test_horizon_flow():
                         [3, 0.2, 0],
                         [4, 0.2, 0]], dtype='f8')
 
-    print(s1.shape)
-    print(s2.shape)
-    print(s3.shape)
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = 255 * np.random.rand(197, 233, 189)
+    vox_size = (1., 1., 1.)
 
     streamlines = Streamlines()
     streamlines.append(s1)
     streamlines.append(s2)
     streamlines.append(s3)
 
-    tractograms = [streamlines]
+    header = create_nifti_header(affine, data.shape, vox_size)
+    sft = StatefulTractogram(streamlines, header, Space.RASMM)
+
+    tractograms = [sft]
     images = None
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
             world_coords=True, interactive=False)
-#
-    affine = np.diag([2., 1, 1, 1]).astype('f8')
-#
-    data = 255 * np.random.rand(150, 150, 150)
-#
+
+    data = 255 * np.random.rand(197, 233, 189)
+
     images = [(data, affine)]
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
@@ -78,8 +84,7 @@ def test_horizon_flow():
 
         save_nifti(fimg, data, affine)
         dimensions = data.shape
-        voxel_sizes = np.array([2, 1.0, 1.0])
-        nii_header = create_nifti_header(affine, dimensions, voxel_sizes)
+        nii_header = create_nifti_header(affine, dimensions, vox_size)
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
         save_tractogram(sft, ftrk, bbox_valid_check=False)
 
