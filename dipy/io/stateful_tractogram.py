@@ -323,8 +323,8 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if old_shift:
-            self.to_corner()
+        if not old_shift:
+            self.to_center()
 
         return is_valid
 
@@ -377,8 +377,8 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if old_shift:
-            self.to_corner()
+        if not old_shift:
+            self.to_center()
 
         return indices_to_remove, indices_to_keep
 
