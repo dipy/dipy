@@ -118,11 +118,20 @@ def test_dki_fits():
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
 
+    # NLS fitting
+    dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
+    dki_nlsF = dki_nlsM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
+
     # testing multi-voxels
     dkiF_multi = dkiM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
     dkiF_multi = dki_wlsM.fit(DWI)
+    assert_array_almost_equal(dkiF_multi.model_params, multi_params)
+
+    dkiF_multi = dki_nlsM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
 
