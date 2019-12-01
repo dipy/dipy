@@ -1776,15 +1776,27 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     of tensors by outlier rejection. MRM, 53: 1088-95.
 
     """
+    # Detect number of parameters to estimate from design_matrix lenght plus
+    # 5 due to diffusion tensor conversion to eigenvalue and eigenvectors
+    npa = design_matrix.shape[-1] + 5
+
+    # Detect if number of parameters corresponds to dti
+    dti = (npa == 12)
+
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
+
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
     log_s = np.log(flat_data)
     D = np.dot(inv_design, log_s.T).T
+
+    # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
-    # 12 parameters per voxel (evals + evecs):
-    dti_params = np.empty((flat_data.shape[0], 12))
+
+    # Initialize parameter matrix
+    params = np.empty((flat_data.shape[0], npa))
+
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
@@ -1794,42 +1806,43 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
         if jac:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                              args=(design_matrix,
-                                                    flat_data[vox],
-                                                    'sigma',
-                                                    sigma),
-                                              Dfun=_nlls_jacobian_func)
+            this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                                             args=(design_matrix,
+                                                   flat_data[vox],
+                                                   'sigma',
+                                                   sigma),
+                                             Dfun=_nlls_jacobian_func)
         else:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                              args=(design_matrix,
-                                                    flat_data[vox],
-                                                    'sigma',
-                                                    sigma))
+            this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                                             args=(design_matrix,
+                                                   flat_data[vox],
+                                                   'sigma',
+                                                   sigma))
 
         # Get the residuals:
-        pred_sig = np.exp(np.dot(design_matrix, this_tensor))
+        pred_sig = np.exp(np.dot(design_matrix, this_param))
         residuals = flat_data[vox] - pred_sig
+
         # If any of the residuals are outliers (using 3 sigma as a criterion
         # following Chang et al., e.g page 1089):
         if np.any(np.abs(residuals) > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
-                this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                  start_params,
-                                                  args=(design_matrix,
-                                                        flat_data[vox],
-                                                        'gmm'),
-                                                  Dfun=_nlls_jacobian_func)
+                this_param, status = opt.leastsq(_nlls_err_func,
+                                                 start_params,
+                                                 args=(design_matrix,
+                                                       flat_data[vox],
+                                                       'gmm'),
+                                                 Dfun=_nlls_jacobian_func)
             else:
-                this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                  start_params,
-                                                  args=(design_matrix,
-                                                        flat_data[vox],
-                                                        'gmm'))
+                this_param, status = opt.leastsq(_nlls_err_func,
+                                                 start_params,
+                                                 args=(design_matrix,
+                                                       flat_data[vox],
+                                                       'gmm'))
 
             # How are you doin' on those residuals?
-            pred_sig = np.exp(np.dot(design_matrix, this_tensor))
+            pred_sig = np.exp(np.dot(design_matrix, this_param))
             residuals = flat_data[vox] - pred_sig
             if np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
@@ -1842,37 +1855,51 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                     this_sigma = sigma
 
                 if jac:
-                    this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                      start_params,
-                                                      args=(clean_design,
-                                                            clean_sig,
-                                                            'sigma',
-                                                            this_sigma),
-                                                      Dfun=_nlls_jacobian_func)
+                    this_param, status = opt.leastsq(_nlls_err_func,
+                                                     start_params,
+                                                     args=(clean_design,
+                                                           clean_sig,
+                                                           'sigma',
+                                                           this_sigma),
+                                                     Dfun=_nlls_jacobian_func)
                 else:
-                    this_tensor, status = opt.leastsq(_nlls_err_func,
-                                                      start_params,
-                                                      args=(clean_design,
-                                                            clean_sig,
-                                                            'sigma',
-                                                            this_sigma))
+                    this_param, status = opt.leastsq(_nlls_err_func,
+                                                     start_params,
+                                                     args=(clean_design,
+                                                           clean_sig,
+                                                           'sigma',
+                                                           this_sigma))
 
-        # The parameters are the evals and the evecs:
-        evals, evecs = _decompose_tensor_nan(
-            from_lower_triangular(this_tensor[:6]),
-            from_lower_triangular(start_params[:6]))
-        dti_params[vox, :3] = evals
-        dti_params[vox, 3:] = evecs.ravel()
-        if return_S0_hat:
-            model_S0[vox] = np.exp(-this_tensor[6])
+        # Convert diffusion tensor parameters to the evals and the evecs:
+        try:
+            evals, evecs = decompose_tensor(
+                from_lower_triangular(this_param[:6]))
+            params[vox, :3] = evals
+            params[vox, 3:12] = evecs.ravel()
+            if return_S0_hat:
+                model_S0[vox] = np.exp(-this_param[-1])
+            if not dti:
+                md2 = evals.mean(0) ** 2
+                params[vox, 12:] = this_param[6:-1] / md2
+        # If leastsq failed to converge and produced nans, we'll resort to the
+        # OLS solution in this voxel:
+        except np.linalg.LinAlgError:
+            evals, evecs = decompose_tensor(
+                from_lower_triangular(start_params[:6]))
+            params[vox, :3] = evals
+            params[vox, 3:12] = evecs.ravel()
+            if return_S0_hat:
+                model_S0[vox] = np.exp(-start_params[-1])
+            if not dti:
+                md2 = evals.mean(0) ** 2
+                params[vox, 12:] = start_params[6:-1] / md2
 
-    dti_params.shape = data.shape[:-1] + (12,)
-    restore_params = dti_params
+    params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (restore_params, model_S0)
+        return (params, model_S0)
     else:
-        return restore_params
+        return params
 
 
 _lt_indices = np.array([[0, 1, 3],
