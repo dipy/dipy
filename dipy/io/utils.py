@@ -195,7 +195,7 @@ def get_reference_info(reference):
 
         if not affine.any():
             raise TypeError('Invalid affine, contains only zeros.'
-                            'cannot determine voxel order from transformation')
+                            'Cannot determine voxel order from transformation')
         voxel_order = ''.join(nib.aff2axcodes(affine))
     elif is_trk:
         affine = header['voxel_to_rasmm']
