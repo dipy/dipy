@@ -1625,13 +1625,16 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 def nlls_fit_tensor(design_matrix, data, weighting=None,
                     sigma=None, jac=True, return_S0_hat=False):
     """
-    Fit the tensor params using non-linear least-squares.
+    Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
+    least-squares.
 
     Parameters
     ----------
-    design_matrix : array (g, 7)
+    design_matrix : array (g, Npar)
         Design matrix holding the covariants used to solve for the regression
-        coefficients.
+        coefficients. First six parameters of design matrix should correspond
+        to the six unique diffusion tensor elements in the lower triangular
+        order (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz), while last parameter to -log(S0)
 
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
@@ -1658,8 +1661,14 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     -------
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
         voxel.
-
     """
+    # Detect number of parameters to estimate from design_matrix lenght plus
+    # 5 due to diffusion tensor conversion to eigenvalue and eigenvectors
+    npa = design_matrix.shape[-1] + 5
+
+    # Detect if number of parameters corresponds to dti
+    dti = (npa == 12)
+
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
@@ -1669,8 +1678,10 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
-    # 12 parameters per voxel (evals + evecs):
-    dti_params = np.empty((flat_data.shape[0], 12))
+
+    # Initialize parameter matrix
+    params = np.empty((flat_data.shape[0], npa))
+
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
@@ -1680,43 +1691,49 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
         if jac:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                              args=(design_matrix,
-                                                    flat_data[vox],
-                                                    weighting,
-                                                    sigma),
-                                              Dfun=_nlls_jacobian_func)
+            this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                                             args=(design_matrix,
+                                                   flat_data[vox],
+                                                   weighting,
+                                                   sigma),
+                                             Dfun=_nlls_jacobian_func)
         else:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                              args=(design_matrix,
-                                                    flat_data[vox],
-                                                    weighting,
-                                                    sigma))
+            this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                                             args=(design_matrix,
+                                                   flat_data[vox],
+                                                   weighting,
+                                                   sigma))
 
-        # The parameters are the evals and the evecs:
+        # Convert diffusion tensor parameters to the evals and the evecs:
         try:
             evals, evecs = decompose_tensor(
-                from_lower_triangular(this_tensor[:6]))
-            dti_params[vox, :3] = evals
-            dti_params[vox, 3:] = evecs.ravel()
+                from_lower_triangular(this_param[:6]))
+            params[vox, :3] = evals
+            params[vox, 3:12] = evecs.ravel()
             if return_S0_hat:
-                model_S0[vox] = np.exp(-this_tensor[6])
+                model_S0[vox] = np.exp(-this_param[-1])
+            if not dti:
+                md2 = evals.mean(0) ** 2
+                params[vox, 12:] = this_param[6:-1] / md2
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             evals, evecs = decompose_tensor(
                 from_lower_triangular(start_params[:6]))
-            dti_params[vox, :3] = evals
-            dti_params[vox, 3:] = evecs.ravel()
+            params[vox, :3] = evals
+            params[vox, 3:12] = evecs.ravel()
             if return_S0_hat:
-                model_S0[vox] = np.exp(-start_params[6])
+                model_S0[vox] = np.exp(-start_params[-1])
+            if not dti:
+                md2 = evals.mean(0) ** 2
+                params[vox, 12:] = start_params[6:-1] / md2
 
-    dti_params.shape = data.shape[:-1] + (12,)
+    params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (dti_params, model_S0)
+        return (params, model_S0)
     else:
-        return dti_params
+        return params
 
 
 def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
