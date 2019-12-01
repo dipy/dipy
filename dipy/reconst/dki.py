@@ -1375,9 +1375,9 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
            Biomedical Imaging: From Nano to Macro, ISBI 2011, 262-265.
            doi: 10.1109/ISBI.2011.5872402
     """
-    MKT = dki_params[..., 12] + dki_params[..., 13] + dki_params[..., 14] + \
-        2 * dki_params[..., 21] + 2 * dki_params[..., 22] + \
-        2 * dki_params[..., 23]
+    MKT = 1/5 * (dki_params[..., 12] + dki_params[..., 13] +
+                 dki_params[..., 14] + 2 * dki_params[..., 21] +
+                 2 * dki_params[..., 22] + 2 * dki_params[..., 23])
 
     if min_kurtosis is not None:
         MKT = MKT.clip(min=min_kurtosis)
@@ -1385,7 +1385,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     if max_kurtosis is not None:
         MKT = MKT.clip(max=max_kurtosis)
 
-    return 1/5 * MKT
+    return MKT
 
 
 def kurtosis_fractional_anisotropy(dki_params):
