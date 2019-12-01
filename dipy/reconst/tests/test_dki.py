@@ -16,7 +16,8 @@ from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
                               axial_kurtosis, radial_kurtosis,
                               mean_kurtosis_tensor,
-                              _positive_evals, lower_triangular)
+                              _positive_evals, lower_triangular,
+                              kurtosis_fractional_anisotropy)
 
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
@@ -124,6 +125,12 @@ def test_dki_fits():
 
     assert_array_almost_equal(dki_nlsF.model_params, crossing_ref)
 
+    # Restore fitting
+    dki_rtM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="RT", sigma=2)
+    dki_rtF = dki_rtM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_rtF.model_params, crossing_ref)
+
     # testing multi-voxels
     dkiF_multi = dkiM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
@@ -131,7 +138,7 @@ def test_dki_fits():
     dkiF_multi = dki_wlsM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
-    dkiF_multi = dki_nlsM.fit(DWI)
+    dkiF_multi = dki_rtM.fit(DWI)
     assert_array_almost_equal(dkiF_multi.model_params, multi_params)
 
 
@@ -428,6 +435,10 @@ def test_spherical_dki_statistics():
     # mean kurtosis tensor analytical solution
     MSK_multi = mean_kurtosis_tensor(MParam)
     assert_array_almost_equal(MSK_multi, MRef)
+
+    # kurtosis fractional anisotropy (isotropic case kfa=0)
+    KFA_multi = kurtosis_fractional_anisotropy(MParam)
+    assert_array_almost_equal(KFA_multi, 0*MRef)
 
 
 def test_compare_MK_method():
@@ -739,3 +750,33 @@ def test_multi_voxel_kurtosis_maximum():
     RK[1, 1, 1] = 0
     k_max = dki.kurtosis_maximum(dkiF.model_params, mask=mask)
     assert_almost_equal(k_max, RK, decimal=4)
+
+
+def test_kurtosis_fa():
+    # KFA = sqrt(4/5) if kurtosis is non-zero only in one direction
+    mevals = np.array([[0.002, 0, 0], [0.003, 0, 0]])
+    angles = [(45, 0), (45, 0)]
+    fie = 0.5
+    frac = [fie*100, (1-fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
+                                      fractions=frac, snr=None)
+
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(signal)
+    dkiF.kfa
+    assert_almost_equal(dkiF.kfa, np.sqrt(4/5))
+
+    # KFA = sqrt(13/5) for systems of two tensors with same AD and RD values
+    # See appendix of Gleen et al., 2015 Quantitative assessment of diffusional
+    # kurtosis anisotropy. NMR Biomed 28; 448-459. doi:10.1002/nbm.3271
+    mevals = np.array([[0.003, 0.001, 0.001], [0.003, 0.001, 0.001]])
+    angles = [(40, -10), (-45, 10)]
+    fie = 0.5
+    frac = [fie*100, (1-fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
+                                      fractions=frac, snr=None)
+
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(signal)
+    dkiF.kfa
+    assert_almost_equal(dkiF.kfa, np.sqrt(13/15))
