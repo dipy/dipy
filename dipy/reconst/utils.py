@@ -45,6 +45,6 @@ def dki_design_matrix(gtab):
     B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
     B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
     B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
-    B[:, 21] = np.ones(len(b))
+    B[:, 21] = -np.ones(len(b))
 
     return B
