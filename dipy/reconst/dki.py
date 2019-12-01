@@ -8,8 +8,8 @@ import dipy.core.sphere as dps
 from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
-                              MIN_POSITIVE_SIGNAL, nlls_fit_tensor)
-
+                              MIN_POSITIVE_SIGNAL, nlls_fit_tensor,
+                              restore_fit_tensor)
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.recspeed import local_maxima
 from dipy.reconst.base import ReconstModel
@@ -1457,11 +1457,9 @@ def kurtosis_fractional_anisotropy(dki_params):
         12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
 
     # Compute KFA
-    KFA = A / B
-
-    # Singularity (if B = 0, KFA = 0)
-    cond = B == 0
-    KFA[cond] = 0
+    KFA = np.zeros(A.shape)
+    cond = B > 0  # Avoiding Singularity (if B = 0, KFA = 0)
+    KFA[cond] = np.sqrt(A[cond]/B[cond])
 
     return KFA
 
@@ -2498,4 +2496,7 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'WLLS': wls_fit_dki,
                       'OLLS': ols_fit_dki,
                       'NLLS': nlls_fit_tensor,
+                      'RT': restore_fit_tensor,
+                      'restore': restore_fit_tensor,
+                      'RESTORE': restore_fit_tensor
                       }
