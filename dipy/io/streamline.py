@@ -46,7 +46,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
                          'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
-    old_shift = deepcopy(sft.shifted_origin)
+    old_shift = deepcopy(sft.origin_at_corner)
 
     sft.to_rasmm()
     sft.to_center()
@@ -88,7 +88,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
 
 def load_tractogram(filename, reference, to_space=Space.RASMM,
-                    shifted_origin=False, bbox_valid_check=True,
+                    origin_at_corner=False, bbox_valid_check=True,
                     trk_header_check=True):
     """ Load the stateful tractogram from any format (trk, tck, vtk, fib, dpy)
 
@@ -103,10 +103,10 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         streamlines generation
     to_space : Enum (dipy.io.stateful_tractogram.Space)
         Space to which the streamlines will be transformed after loading.
-    shifted_origin : bool
+    origin_at_corner : bool
         Information on the position of the origin,
-        False is Trackvis standard, default (center of the voxel)
-        True is NIFTI standard (corner of the voxel)
+        False is NIFTI standard, default (center of the voxel)
+        True is TrackVis standard (corner of the voxel)
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
@@ -162,7 +162,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                   filename, len(streamlines), round(time.time() - timer, 3))
 
     sft = StatefulTractogram(streamlines, reference, Space.RASMM,
-                             shifted_origin=shifted_origin,
+                             origin_at_corner=origin_at_corner,
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
 
@@ -195,7 +195,7 @@ def load_generator(ttype):
         Function (load_tractogram) that handle only one file format
     """
     def f_gen(filename, reference, to_space=Space.RASMM,
-              shifted_origin=False, bbox_valid_check=True,
+              origin_at_corner=False, bbox_valid_check=True,
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
@@ -204,7 +204,7 @@ def load_generator(ttype):
 
         sft = load_tractogram(filename, reference,
                               to_space=Space.RASMM,
-                              shifted_origin=shifted_origin,
+                              origin_at_corner=origin_at_corner,
                               bbox_valid_check=bbox_valid_check,
                               trk_header_check=trk_header_check)
         return sft

@@ -29,7 +29,7 @@ class StatefulTractogram(object):
     """
 
     def __init__(self, streamlines, reference, space,
-                 shifted_origin=False,
+                 origin_at_corner=False,
                  data_per_point=None, data_per_streamline=None):
         """ Create a strict, state-aware, robust tractogram
 
@@ -46,10 +46,10 @@ class StatefulTractogram(object):
             Current space in which the streamlines are (vox, voxmm or rasmm)
             Typically after tracking the space is VOX, after nibabel loading
             the space is RASMM
-        shifted_origin : bool
+        origin_at_corner : bool
             Information on the position of the origin,
-            False is Trackvis standard, default (center of the voxel)
-            True is NIFTI standard (corner of the voxel)
+            False is NIFTI standard, default (center of the voxel)
+            True is TrackVis standard (corner of the voxel)
         data_per_point : dict
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
@@ -95,9 +95,9 @@ class StatefulTractogram(object):
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
         self._space = space
 
-        if not isinstance(shifted_origin, bool):
-            raise TypeError('shifted_origin MUST be a boolean')
-        self._shifted_origin = shifted_origin
+        if not isinstance(origin_at_corner, bool):
+            raise TypeError('origin_at_corner MUST be a boolean')
+        self._origin_at_corner = origin_at_corner
         logging.debug(self)
 
     def __str__(self):
@@ -157,9 +157,9 @@ class StatefulTractogram(object):
         return self._voxel_order
 
     @property
-    def shifted_origin(self):
+    def origin_at_corner(self):
         """ Getter for shift """
-        return self._shifted_origin
+        return self._origin_at_corner
 
     @property
     def streamlines(self):
@@ -260,13 +260,13 @@ class StatefulTractogram(object):
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
-        if self._shifted_origin:
+        if self._origin_at_corner:
             self._shift_voxel_origin()
 
     def to_corner(self):
         """ Safe function to shift streamlines so the corner of voxel is
         the origin """
-        if not self._shifted_origin:
+        if not self._origin_at_corner:
             self._shift_voxel_origin()
 
     def compute_bounding_box(self):
@@ -298,7 +298,7 @@ class StatefulTractogram(object):
             return True
 
         old_space = deepcopy(self.space)
-        old_shift = deepcopy(self.shifted_origin)
+        old_shift = deepcopy(self.origin_at_corner)
 
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
@@ -323,8 +323,8 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if not old_shift:
-            self.to_center()
+        if old_shift:
+            self.to_corner()
 
         return is_valid
 
@@ -342,7 +342,7 @@ class StatefulTractogram(object):
             return
 
         old_space = deepcopy(self.space)
-        old_shift = deepcopy(self.shifted_origin)
+        old_shift = deepcopy(self.origin_at_corner)
 
         self.to_vox()
         self.to_corner()
@@ -377,8 +377,8 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if not old_shift:
-            self.to_center()
+        if old_shift:
+            self.to_corner()
 
         return indices_to_remove, indices_to_keep
 
@@ -475,16 +475,16 @@ class StatefulTractogram(object):
             tmp_affine = np.eye(4)
             tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
             shift = apply_affine(tmp_affine, shift)
-        if self._shifted_origin:
+        if self._origin_at_corner:
             shift *= -1
 
         self._tractogram.streamlines._data += shift
-        if not self._shifted_origin:
+        if not self._origin_at_corner:
             logging.info('Origin moved to the corner of voxel')
         else:
             logging.info('Origin moved to the center of voxel')
 
-        self._shifted_origin = not self._shifted_origin
+        self._origin_at_corner = not self._origin_at_corner
 
 
 def _is_data_per_point_valid(streamlines, data):
