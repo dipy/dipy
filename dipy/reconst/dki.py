@@ -8,7 +8,7 @@ import dipy.core.sphere as dps
 from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
-                              MIN_POSITIVE_SIGNAL)
+                              MIN_POSITIVE_SIGNAL, nlls_fit_tensor)
 
 from dipy.reconst.utils import dki_design_matrix as design_matrix
 from dipy.reconst.recspeed import local_maxima
@@ -1518,7 +1518,7 @@ def dki_prediction(dki_params, gtab, S0=1.):
         else:
             this_S0 = S0_vol
         X = np.concatenate((dt, fkt[v] * MD * MD,
-                            np.array([np.log(this_S0)])),
+                            np.array([-np.log(this_S0)])),
                            axis=0)
         pred_sig[v] = np.exp(np.dot(A, X))
 
@@ -2087,62 +2087,6 @@ class DiffusionKurtosisFit(TensorFit):
         return dki_prediction(self.model_params, gtab, S0)
 
 
-def ols_fit_dki(design_matrix, data):
-    r""" Computes ordinary least squares (OLS) fit to calculate the diffusion
-    tensor and kurtosis tensor using a linear regression diffusion kurtosis
-    model [1]_.
-
-    Parameters
-    ----------
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array (N, g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
-
-    Returns
-    -------
-    dki_params : array (N, 27)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    See Also
-    --------
-    wls_fit_dki
-
-    References
-    ----------
-       [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-           Estimation of tensors and tensor-derived measures in diffusional
-           kurtosis imaging. Magn Reson Med. 65(3), 823-836
-    """
-    tol = 1e-6
-
-    # preparing data and initializing parameters
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 27))
-
-    # inverting design matrix and defining minimum diffusion
-    min_diffusivity = tol / -design_matrix.min()
-    inv_design = np.linalg.pinv(design_matrix)
-
-    # looping OLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        dki_params[vox] = _ols_iter(inv_design, data_flat[vox],
-                                    min_diffusivity)
-
-    # Reshape data according to the input data shape
-    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
-
-    return dki_params
-
-
 def _ols_iter(inv_design, sig, min_diffusivity):
     """ Helper function used by ols_fit_dki - Applies OLS fit of the diffusion
     kurtosis model to single voxel signals.
@@ -2190,10 +2134,9 @@ def _ols_iter(inv_design, sig, min_diffusivity):
     return dki_params
 
 
-def wls_fit_dki(design_matrix, data):
-    r""" Computes weighted linear least squares (WLS) fit to calculate
-    the diffusion tensor and kurtosis tensor using a weighted linear
-    regression diffusion kurtosis model [1]_.
+def ols_fit_dki(design_matrix, data):
+    r""" Computes the diffusion and kurtosis tensors using an ordinary linear
+    least squares (OLS) approach [1]_.
 
     Parameters
     ----------
@@ -2203,29 +2146,28 @@ def wls_fit_dki(design_matrix, data):
     data : array (N, g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
-    min_signal : default = 1
-        All values below min_signal are repalced with min_signal. This is done
-        in order to avoid taking log(0) durring the tensor fitting.
 
     Returns
     -------
     dki_params : array (N, 27)
-        All parameters estimated from the diffusion kurtosis model for all N
-        voxels.
+        All parameters estimated from the diffusion kurtosis model.
         Parameters are ordered as follows:
             1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first
+            2) Three lines of the eigenvector matrix each containing the first,
                second and third coordinates of the eigenvector
             3) Fifteen elements of the kurtosis tensor
 
+    See Also
+    --------
+    wls_fit_dki, nls_fit_dki
+
     References
     ----------
-    [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
-        2013. Weighted linear least squares estimation of diffusion MRI
-        parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
-        335-346.
+    [1] Lu, H., Jensen, J. H., Ramani, A., and Helpern, J. A. (2006).
+        Three-dimensional characterization of non-gaussian water diffusion in
+        humans using diffusion kurtosis imaging. NMR in Biomedicine 19,
+        236–247. doi:10.1002/nbm.1020
     """
-
     tol = 1e-6
 
     # preparing data and initializing parameters
@@ -2237,9 +2179,9 @@ def wls_fit_dki(design_matrix, data):
     min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
-    # looping WLS solution on all data voxels
+    # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
+        dki_params[vox] = _ols_iter(inv_design, data_flat[vox],
                                     min_diffusivity)
 
     # Reshape data according to the input data shape
@@ -2279,7 +2221,7 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     """
     A = design_matrix
 
-    # DKI ordinary linear least square solution
+    # DKI ordinary linear least square solution (initial guess)
     log_s = np.log(sig)
     ols_result = np.dot(inv_design, log_s)
 
@@ -2303,6 +2245,60 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     # Write output
     dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
                                  KT_elements), axis=0)
+
+    return dki_params
+
+
+def wls_fit_dki(design_matrix, data):
+    r""" Computes the diffusion and kurtosis tensors using a weighted linear
+    least squares (WLS) approach [1]_.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array (N, g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    Returns
+    -------
+    dki_params : array (N, 27)
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    References
+    ----------
+    [1] Veraart, J., Sijbers, J., Sunaert, S., Leemans, A., Jeurissen, B.,
+        2013. Weighted linear least squares estimation of diffusion MRI
+        parameters: Strengths, limitations, and pitfalls. Magn Reson Med 81,
+        335-346.
+    """
+
+    tol = 1e-6
+
+    # preparing data and initializing parameters
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dki_params = np.empty((len(data_flat), 27))
+
+    # inverting design matrix and defining minimum diffusion
+    min_diffusivity = tol / -design_matrix.min()
+    inv_design = np.linalg.pinv(design_matrix)
+
+    # looping WLS solution on all data voxels
+    for vox in range(len(data_flat)):
+        dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
+                                    min_diffusivity)
+
+    # Reshape data according to the input data shape
+    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
 
     return dki_params
 
@@ -2496,8 +2492,10 @@ def split_dki_param(dki_params):
 
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
+                      'NLS': nlls_fit_tensor,
                       'UWLLS': wls_fit_dki,
                       'ULLS': ols_fit_dki,
                       'WLLS': wls_fit_dki,
                       'OLLS': ols_fit_dki,
+                      'NLLS': nlls_fit_tensor,
                       }
