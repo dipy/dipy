@@ -172,7 +172,7 @@ panels) and the tensor model (lower panels) are plotted for a selected axial
 slice.
 """
 
-axial_slice = 9
+axial_slice = 13
 
 fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
@@ -255,7 +255,7 @@ fig2.savefig('Kurtosis_tensor_standard_measures.png')
 .. figure:: Kurtosis_tensor_standard_measures.png
    :align: center
 
-   Kurtosis tensor standard measures obtained from the kurtosis tensor.
+   DKI standard kurtosis measures.
 
 The non-Gaussian behaviour of the diffusion signal is larger when water
 diffusion is restricted by compartments and barriers (e.g., myelin sheath).
@@ -263,9 +263,48 @@ Therefore, as the figure above shows, white matter kurtosis values are smaller
 along the axial direction of fibers (smaller amplitudes shown in the AK map)
 than for the radial directions (larger amplitudes shown in the RK map).
 
+As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
+depends on the information of both diffusion and kurtosis tensor. DKI measures
+that only depend on the kurtosis tensor include the mean of the kurtosis tensor
+[Hansen2013]_, and the kurtosis fractional anisotropy [GlennR2015]_. This
+measures are computed and illustrated bellow:
+"""
+
+MKT = dkifit.mkt(0, 3)
+KFA = dkifit.kfa
+
+fig3, ax = plt.subplots(1, 2, figsize=(10, 6),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig3.subplots_adjust(hspace=0.3, wspace=0.05)
+
+ax.flat[0].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1.5,
+                  origin='lower')
+ax.flat[0].set_title('MKT')
+ax.flat[1].imshow(AK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1,
+                  origin='lower')
+ax.flat[1].set_title('KFA')
+
+plt.show()
+fig3.savefig('Measures_from_kurtosis_tensor_only.png')
+
+"""
+.. figure:: Measures_from_kurtosis_tensor_only.png
+   :align: center
+
+   DKI measures obtained from the kurtosis tensor only.
+
+As reported by [Hansen2013]_, the mean of the kurtosis tensor (MKT) produces
+similar maps than the standard mean kurtosis (MK). On the other hand, as
+previously reported by [GlennR2015]_, the kurtosis fractional anisotropy (KFA)
+ellucidates high fractional anisotropies in specific white matter tracts which
+was not resolved by conventional diffusion tensor FA measures.
+
 References
 ----------
-
+.. [GlennR2015] Glenn GR, Helpern JA, Tabesh A, Jensen JH (2015).
+                Quantitative assessment of diffusional387kurtosis anisotropy.
+                NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
 .. [TaxCMW2015] Tax CMW, Otte WM, Viergever MA, Dijkhuizen RM, Leemans A
                 (2014). REKINDLE: Robust extraction of kurtosis INDices with
                 linear estimation. Magnetic Resonance in Medicine 73(2):
@@ -280,6 +319,10 @@ References
 .. [Fierem2011] Fieremans E, Jensen JH, Helpern JA (2011). White matter
                 characterization with diffusion kurtosis imaging. NeuroImage
                 58: 177-188
+.. [Hansen2013] Hansen B, Lund TE, Sangill R, and Jespersen SN (2013).
+                Experimentally and computationally393fast method for estimation
+                of a mean kurtosis. Magnetic Resonance in Medicine 69,
+                1754–1760.394doi:10.1002/mrm.24743
 .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
                 kurtosis strategies, b-value optimization and exploration of
                 diffusion MRI contrast. Scientific Data 3: 160072
