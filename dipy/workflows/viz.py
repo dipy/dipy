@@ -19,7 +19,7 @@ class HorizonFlow(Workflow):
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', out_dir='',
             out_stealth_png='tmp.png'):
-        """ Highly interactive visualization - invert the Horizon!
+        """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
         files .nii or .nii.gz. Cluster streamlines on loading.
@@ -28,19 +28,36 @@ class HorizonFlow(Workflow):
         ----------
         input_files : variable string
         cluster : bool
+            Enable QuickBundlesX clustering
         cluster_thr : float
+            Distance threshold used for clustering. Default value 15.0 for
+            small animal brains you may need to use something smaller such
+            as 2.0. The distance is in mm. For this parameter to be active
+            ``cluster`` should be enabled
         random_colors : bool
+            Given multiple tractograms have been included then each tractogram
+            will be shown with different color
         length_gt : float
+            Clusters with average length greater than ``length_gt`` amount
+            in mm will be shown
         length_lt : float
+            Clusters with average length less than ``length_lt`` amount in
+            mm will be shown
         clusters_gt : int
+            Clusters with size greater than ``clusters_gt`` will be shown.
         clusters_lt : int
+            Clusters with size less than ``clusters_gt`` will be shown.
         native_coords : bool
+            Show results in native coordinates
         stealth : bool
+            Do not use interactive mode just save figure.
         emergency_header : str
-            If no anatomy reference is provided an emergency header is provided.
-            Current options 'icbm_2009a' and 'icbm_2009c'.
+            If no anatomy reference is provided an emergency header is
+            provided. Current options 'icbm_2009a' and 'icbm_2009c'.
         out_dir : string
+            Output directory. Default current directory.
         out_stealth_png : string
+            Filename of saved picture.
 
         References
         ----------

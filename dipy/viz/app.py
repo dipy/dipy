@@ -86,31 +86,52 @@ class Horizon(object):
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
                  out_png='tmp.png', recorded_events=None, return_showm=False):
-        """ Highly interactive visualization - invert the Horizon!
+        """Interactive medical visualization - Invert the Horizon!
+
 
         Parameters
         ----------
         tractograms : sequence of StatefulTractograms
-            Sequence of StatefulTractograms
+            StatefulTractograms are used for making sure that the coordinate
+            systems are correct
         images : sequence of tuples
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
+            Contains peak directions and spherical harmonic coefficients
         cluster : bool
             Enable QuickBundlesX clustering
         cluster_thr : float
-            Distance threshold used for clustering
+            Distance threshold used for clustering. Default value 15.0 for
+            small animal data you may need to use something smaller such
+            as 2.0. The threshold is in mm. For this parameter to be active
+            ``cluster`` should be enabled.
         random_colors : bool
+            Given multiple tractograms have been included then each tractogram
+            will be shown with different color
         length_gt : float
+            Clusters with average length greater than ``length_gt`` amount
+            in mm will be shown.
         length_lt : float
+            Clusters with average length less than ``length_lt`` amount in mm
+            will be shown.
         clusters_gt : int
+            Clusters with size greater than ``clusters_gt`` will be shown.
         clusters_lt : int
+            Clusters with size less than ``clusters_lt`` will be shown.
         world_coords : bool
+            Show data in their world coordinates (not native voxel coordinates)
+            Default True.
         interactive : bool
+            Allow user interaction. If False then Horizon goes on stealth mode
+            and just saves pictures.
         out_png : string
+            Filename of saved picture.
         recorded_events : string
             File path to replay recorded events
         return_showm : bool
-            Return ShowManager object. Used only at Python level.
+            Return ShowManager object. Used only at Python level. Can be used
+            for extending Horizon's cababilities externally and for testing
+            purposes.
 
         References
         ----------
@@ -730,29 +751,52 @@ def horizon(tractograms=None, images=None, pams=None,
             clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png',
             recorded_events=None, return_showm=False):
-    """Highly interactive visualization - invert the Horizon!
+    """Interactive medical visualization - Invert the Horizon!
+
 
     Parameters
     ----------
-    tractograms : sequence
-        Sequence of StatefulTractogram objects
-    images : sequence of tuples
-        Each tuple contains data and affine
-    pams : peaks
-    cluster : bool
-        Enable QuickBundlesX clustering
-    cluster_thr : float
-        Distance threshold used for clustering
-    random_colors : bool
-    length_gt : float
-    length_lt : float
-    clusters_gt : int
-    clusters_lt : int
-    world_coords : bool
-    interactive : bool
-    out_png : string
-    recorded_events : string
-        File path to replay recorded events
+    tractograms : sequence of StatefulTractograms
+            StatefulTractograms are used for making sure that the coordinate
+            systems are correct
+        images : sequence of tuples
+            Each tuple contains data and affine
+        pams : sequence of PeakAndMetrics
+            Contains peak directions and spherical harmonic coefficients
+        cluster : bool
+            Enable QuickBundlesX clustering
+        cluster_thr : float
+            Distance threshold used for clustering. Default value 15.0 for
+            small animal data you may need to use something smaller such
+            as 2.0. The threshold is in mm. For this parameter to be active
+            ``cluster`` should be enabled.
+        random_colors : bool
+            Given multiple tractograms have been included then each tractogram
+            will be shown with different color
+        length_gt : float
+            Clusters with average length greater than ``length_gt`` amount
+            in mm will be shown.
+        length_lt : float
+            Clusters with average length less than ``length_lt`` amount in mm
+            will be shown.
+        clusters_gt : int
+            Clusters with size greater than ``clusters_gt`` will be shown.
+        clusters_lt : int
+            Clusters with size less than ``clusters_lt`` will be shown.
+        world_coords : bool
+            Show data in their world coordinates (not native voxel coordinates)
+            Default True.
+        interactive : bool
+            Allow user interaction. If False then Horizon goes on stealth mode
+            and just saves pictures.
+        out_png : string
+            Filename of saved picture.
+        recorded_events : string
+            File path to replay recorded events
+        return_showm : bool
+            Return ShowManager object. Used only at Python level. Can be used
+            for extending Horizon's cababilities externally and for testing
+            purposes.
 
     References
     ----------
