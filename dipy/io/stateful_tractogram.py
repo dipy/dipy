@@ -14,6 +14,8 @@ from dipy.io.dpy import Streamlines
 from dipy.io.utils import get_reference_info
 
 
+logger = logging.getLogger('StatefulTractogram')
+
 class Space(enum.Enum):
     """ Enum to simplify future change to convention """
     VOX = 'vox'
@@ -98,7 +100,7 @@ class StatefulTractogram(object):
         if not isinstance(origin_at_corner, bool):
             raise TypeError('origin_at_corner MUST be a boolean')
         self._origin_at_corner = origin_at_corner
-        logging.debug(self)
+        logger.debug(self)
 
     def __str__(self):
         """ Generate the string for printing """
@@ -184,7 +186,7 @@ class StatefulTractogram(object):
         self._tractogram._streamlines = Streamlines(streamlines)
         self.data_per_point = self.data_per_point
         self.data_per_streamline = self.data_per_streamline
-        logging.warning('Streamlines has been modified')
+        logger.warning('Streamlines has been modified')
 
     @property
     def data_per_point(self):
@@ -203,7 +205,7 @@ class StatefulTractogram(object):
             Y_i being the number of points on streamlines #i
         """
         self._tractogram.data_per_point = data
-        logging.warning('Data_per_point has been modified')
+        logger.warning('Data_per_point has been modified')
 
     @property
     def data_per_streamline(self):
@@ -221,7 +223,7 @@ class StatefulTractogram(object):
             X being the number of streamlines
         """
         self._tractogram.data_per_streamline = data
-        logging.warning('Data_per_streamline has been modified')
+        logger.warning('Data_per_streamline has been modified')
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
@@ -254,7 +256,7 @@ class StatefulTractogram(object):
         elif target_space == Space.RASMM:
             self.to_rasmm()
         else:
-            logging.error('Unsupported target space, please use Enum in '
+            logger.error('Unsupported target space, please use Enum in '
                           'dipy.io.stateful_tractogram')
 
     def to_center(self):
@@ -307,15 +309,15 @@ class StatefulTractogram(object):
 
         is_valid = True
         if np.any(bbox_corners < 0):
-            logging.error('Voxel space values lower than 0.0')
-            logging.debug(bbox_corners)
+            logger.error('Voxel space values lower than 0.0')
+            logger.debug(bbox_corners)
             is_valid = False
 
         if np.any(bbox_corners[:, 0] > self._dimensions[0]) or \
                 np.any(bbox_corners[:, 1] > self._dimensions[1]) or \
                 np.any(bbox_corners[:, 2] > self._dimensions[2]):
-            logging.error('Voxel space values higher than dimensions')
-            logging.debug(bbox_corners)
+            logger.error('Voxel space values higher than dimensions')
+            logger.debug(bbox_corners)
             is_valid = False
 
         if old_space == Space.RASMM:
@@ -397,9 +399,9 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logging.info('Moved streamlines from vox to voxmm')
+                logger.info('Moved streamlines from vox to voxmm')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _voxmm_to_vox(self):
@@ -409,9 +411,9 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOX
-                logging.info('Moved streamlines from voxmm to vox')
+                logger.info('Moved streamlines from voxmm to vox')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _vox_to_rasmm(self):
@@ -420,9 +422,9 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logging.info('Moved streamlines from vox to rasmm')
+                logger.info('Moved streamlines from vox to rasmm')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _rasmm_to_vox(self):
@@ -431,9 +433,9 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._space = Space.VOX
-                logging.info('Moved streamlines from rasmm to vox')
+                logger.info('Moved streamlines from rasmm to vox')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _voxmm_to_rasmm(self):
@@ -444,9 +446,9 @@ class StatefulTractogram(object):
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logging.info('Moved streamlines from voxmm to rasmm')
+                logger.info('Moved streamlines from voxmm to rasmm')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _rasmm_to_voxmm(self):
@@ -457,9 +459,9 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logging.info('Moved streamlines from rasmm to voxmm')
+                logger.info('Moved streamlines from rasmm to voxmm')
         else:
-            logging.warning('Wrong initial space for this function')
+            logger.warning('Wrong initial space for this function')
             return
 
     def _shift_voxel_origin(self):
@@ -480,9 +482,9 @@ class StatefulTractogram(object):
 
         self._tractogram.streamlines._data += shift
         if not self._origin_at_corner:
-            logging.info('Origin moved to the corner of voxel')
+            logger.info('Origin moved to the corner of voxel')
         else:
-            logging.info('Origin moved to the center of voxel')
+            logger.info('Origin moved to the center of voxel')
 
         self._origin_at_corner = not self._origin_at_corner
 
@@ -506,7 +508,7 @@ def _is_data_per_point_valid(streamlines, data):
         Does all the streamlines and metadata attribute match
     """
     if not isinstance(data, (dict, PerArraySequenceDict)):
-        logging.error('data_per_point MUST be a dictionary')
+        logger.error('data_per_point MUST be a dictionary')
         return False
     elif data == {}:
         return True
@@ -520,14 +522,14 @@ def _is_data_per_point_valid(streamlines, data):
     for key in data.keys():
         total_point_entries = 0
         if not len(data[key]) == total_streamline:
-            logging.error('Missing entry for streamlines points data (1)')
+            logger.error('Missing entry for streamlines points data (1)')
             return False
 
         for values in data[key]:
             total_point_entries += len(values)
 
         if total_point_entries != total_point:
-            logging.error('Missing entry for streamlines points data (2)')
+            logger.error('Missing entry for streamlines points data (2)')
             return False
 
     return True
@@ -550,7 +552,7 @@ def _is_data_per_streamline_valid(streamlines, data):
         Does all the streamlines and metadata attribute match
     """
     if not isinstance(data, (dict, PerArrayDict)):
-        logging.error('data_per_point MUST be a dictionary')
+        logger.error('data_per_point MUST be a dictionary')
         return False
     elif data == {}:
         return True
@@ -561,7 +563,7 @@ def _is_data_per_streamline_valid(streamlines, data):
 
     for key in data.keys():
         if not len(data[key]) == total_streamline:
-            logging.error('Missing entry for streamlines data (3)')
+            logger.error('Missing entry for streamlines data (3)')
             return False
 
     return True
