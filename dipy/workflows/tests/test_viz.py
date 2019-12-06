@@ -2,12 +2,11 @@ import os
 
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tractogram, load_tractogram
+from dipy.io.streamline import save_tractogram
 from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 import numpy.testing as npt
