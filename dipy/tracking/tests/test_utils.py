@@ -98,12 +98,12 @@ def test_to_voxel_coordinates_precision():
 
 def test_connectivity_matrix():
     label_volume = np.array([[[3, 0, 0],
-                              [0, 0, 0],
+                              [0, 0, 5],
                               [0, 0, 4]]])
-    streamlines = [np.array([[0, 0, 0], [0, 0, 0], [0, 2, 2]], 'float'),
+    streamlines = [np.array([[0, 0, 0], [0, 1, 2], [0, 2, 2]], 'float'),
                    np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], 'float'),
                    np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], 'float')]
-    expected = np.zeros((5, 5), 'int')
+    expected = np.zeros((6, 6), 'int')
     expected[3, 4] = 2
     expected[4, 3] = 1
     # Check basic Case
@@ -135,6 +135,58 @@ def test_connectivity_matrix():
     assert_true(mapping[3, 4][0] is streamlines[0])
     assert_true(mapping[3, 4][1] is streamlines[1])
     assert_true(mapping[4, 3][0] is streamlines[2])
+
+    # Test Inclusive streamline analysis
+    # Check basic Case (inclusive)
+    expected[3, 5] = 1
+    expected[5, 4] = 1
+    expected[0,3:5] = 1
+    expected[3:5,0] = 1
+
+    matrix = connectivity_matrix(streamlines, np.eye(4), label_volume,
+                                 symmetric=False, inclusive=True)
+    npt.assert_array_equal(matrix, expected)
+
+    # Test mapping
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
+                                          inclusive=True,symmetric=False,
+                                          return_mapping=True)
+    npt.assert_array_equal(matrix, expected)
+    npt.assert_equal(mapping[3, 4], [0, 1])
+    npt.assert_equal(mapping[4, 3], [2])
+    npt.assert_equal(mapping[0, 4], [1])
+    npt.assert_equal(mapping[3, 5], [0])
+    npt.assert_equal(mapping.get((0, 0)), None)
+
+    # Test mapping and symmetric
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume, inclusive=True,
+                                          symmetric=True, return_mapping=True)
+    npt.assert_equal(mapping[3, 4], [0, 1, 2])
+    npt.assert_equal(mapping[0, 3], [1, 2])
+    npt.assert_equal(mapping[0, 4], [1, 2])
+    npt.assert_equal(mapping[3, 5], [0])
+    npt.assert_equal(mapping[4, 5], [0])
+
+    # When symmetric only (3,4) is a key, not (4,3)
+    npt.assert_equal(mapping.get((4, 3)), None)
+
+    # expected output matrix is symmetric version of expected
+    expected = expected + expected.T
+    npt.assert_array_equal(matrix, expected)
+    # Test mapping_as_streamlines, mapping dict has lists of streamlines
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
+                                          symmetric=False, inclusive=True,
+                                          return_mapping=True,
+                                          mapping_as_streamlines=True)
+    assert_true(mapping[0, 3][0] is streamlines[2])
+    assert_true(mapping[0, 4][0] is streamlines[1])
+    assert_true(mapping[3, 0][0] is streamlines[1])
+    assert_true(mapping[3, 4][0] is streamlines[0])
+    assert_true(mapping[3, 4][1] is streamlines[1])
+    assert_true(mapping[3, 5][0] is streamlines[0])
+    assert_true(mapping[4, 0][0] is streamlines[2])
+    assert_true(mapping[4, 3][0] is streamlines[2])
+    assert_true(mapping[5, 4][0] is streamlines[0])
 
     # Test passing affine to connectivity_matrix
     affine = np.diag([-1, -1, -1, 1.])
