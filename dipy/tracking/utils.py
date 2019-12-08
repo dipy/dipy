@@ -170,29 +170,29 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         #Create ndarray to store streamline connections
         edges = np.ndarray(shape=(3,0),dtype=int)
         lin_T, offset = _mapping_to_voxel(affine)
-        for s in range(len(streamlines)):
+        for sl in range(len(streamlines)):
             # Convert streamline to voxel coordinates
-            entire = _to_voxel_coordinates(streamlines[s], lin_T, offset)
+            entire = _to_voxel_coordinates(streamlines[sl], lin_T, offset)
             i, j, k = entire.T
             
             if symmetric:
                 # Create list of all labels streamline passes through
                 entirelabels = list(OrderedDict.fromkeys(label_volume[i,j,k]))
                 # Append all connection combinations along with streamline number
-                for e in combinations(entirelabels,2):
-                    edges=np.append(edges,[[e[0]],[e[1]],[s]], axis=1)
+                for comb in combinations(entirelabels,2):
+                    edges=np.append(edges,[[comb[0]],[comb[1]],[sl]], axis=1)
             else:
                 # Create list of all labels streamline passes through, preserving order
                 # and whether a label was entered multiple times
                 entirelabels = list(groupby(label_volume[i,j,k]))
                 # Append all connection combinations along with streamline number, removing
                 # duplicates and connections from a label to itself
-                comb = set(combinations([z[0] for z in entirelabels],2))
-                for e in comb:
-                    if e[0] == e[1]:
+                combs = set(combinations([z[0] for z in entirelabels],2))
+                for comb in combs:
+                    if comb[0] == comb[1]:
                         pass
                     else:
-                        edges=np.append(edges,[[e[0]],[e[1]],[s]], axis=1)
+                        edges=np.append(edges,[[comb[0]],[comb[1]],[sl]], axis=1)
         if symmetric:
             edges[0:2].sort(0)
         mx = label_volume.max() + 1
