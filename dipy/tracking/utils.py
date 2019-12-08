@@ -57,7 +57,8 @@ from numpy import ravel_multi_index
 
 from dipy.core.geometry import dist_to_corner
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
+from itertools import combinations, groupby
 
 import numpy as np
 from numpy import (asarray, ceil, empty, sqrt)
@@ -111,7 +112,7 @@ def density_map(streamlines, affine, vol_dims):
     return counts
 
 
-def connectivity_matrix(streamlines, affine, label_volume,
+def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                         symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair.
@@ -126,6 +127,10 @@ def connectivity_matrix(streamlines, affine, label_volume,
     label_volume : ndarray
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
+    inclusive: bool
+        Whether to analyze the entire streamline, as opposed to just the endpoints.
+        Allowing this will increase calculation time and mapping size, especially
+        if mapping_as_streamlines is selected. False by default.
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -160,37 +165,86 @@ def connectivity_matrix(streamlines, affine, label_volume,
     # If streamlines is an iterators
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
-    # take the first and last point of each streamline
-    endpoints = [sl[0::len(sl)-1] for sl in streamlines]
+    
+    if inclusive:
+        #Create ndarray to store streamline connections
+        edges = np.ndarray(shape=(3,0),dtype=int)
+        lin_T, offset = _mapping_to_voxel(affine)
+        for s in range(len(streamlines)):
+            # Convert streamline to voxel coordinates
+            entire = _to_voxel_coordinates(streamlines[s], lin_T, offset)
+            i, j, k = entire.T
+            
+            if symmetric:
+                # Create list of all labels streamline passes through
+                entirelabels = list(OrderedDict.fromkeys(label_volume[i,j,k]))
+                # Append all connection combinations along with streamline number
+                for e in combinations(entirelabels,2):
+                    edges=np.append(edges,[[e[0]],[e[1]],[s]], axis=1)
+            else:
+                # Create list of all labels streamline passes through, preserving order
+                # and whether a label was entered multiple times
+                entirelabels = list(groupby(label_volume[i,j,k]))
+                # Append all connection combinations along with streamline number, removing
+                # duplicates and connections from a label to itself
+                comb = set(combinations([z[0] for z in entirelabels],2))
+                for e in comb:
+                    if e[0] == e[1]:
+                        pass
+                    else:
+                        edges=np.append(edges,[[e[0]],[e[1]],[s]], axis=1)
+        if symmetric:
+            edges[0:2].sort(0)
+        mx = label_volume.max() + 1
+        matrix = ndbincount(edges[0:2], shape=(mx, mx))
+        if symmetric:
+            matrix = np.maximum(matrix, matrix.T)
 
-    # Map the streamlines coordinates to voxel coordinates
-    lin_T, offset = _mapping_to_voxel(affine)
-    endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
+        if return_mapping:
+            mapping = defaultdict(list)
+            for i, (a, b, c) in enumerate(edges.T):
+                mapping[a, b].append(c)
 
-    # get labels for label_volume
-    i, j, k = endpoints.T
-    endlabels = label_volume[i, j, k]
-    if symmetric:
-        endlabels.sort(0)
-    mx = label_volume.max() + 1
-    matrix = ndbincount(endlabels, shape=(mx, mx))
-    if symmetric:
-        matrix = np.maximum(matrix, matrix.T)
-
-    if return_mapping:
-        mapping = defaultdict(list)
-        for i, (a, b) in enumerate(endlabels.T):
-            mapping[a, b].append(i)
-
-        # Replace each list of indices with the streamlines they index
-        if mapping_as_streamlines:
-            for key in mapping:
-                mapping[key] = [streamlines[i] for i in mapping[key]]
-
-        # Return the mapping matrix and the mapping
-        return matrix, mapping
+            # Replace each list of indices with the streamlines they index
+            if mapping_as_streamlines:
+                for key in mapping:
+                    mapping[key] = [streamlines[i] for i in mapping[key]]
+            
+            return matrix, mapping
+        else:
+            return matrix
     else:
-        return matrix
+        # take the first and last point of each streamline
+        endpoints = [sl[0::len(sl)-1] for sl in streamlines]
+
+        # Map the streamlines coordinates to voxel coordinates
+        lin_T, offset = _mapping_to_voxel(affine)
+        endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
+
+        # get labels for label_volume
+        i, j, k = endpoints.T
+        endlabels = label_volume[i, j, k]
+        if symmetric:
+            endlabels.sort(0)
+        mx = label_volume.max() + 1
+        matrix = ndbincount(endlabels, shape=(mx, mx))
+        if symmetric:
+            matrix = np.maximum(matrix, matrix.T)
+
+        if return_mapping:
+            mapping = defaultdict(list)
+            for i, (a, b) in enumerate(endlabels.T):
+                mapping[a, b].append(i)
+
+            # Replace each list of indices with the streamlines they index
+            if mapping_as_streamlines:
+                for key in mapping:
+                    mapping[key] = [streamlines[i] for i in mapping[key]]
+
+            # Return the mapping matrix and the mapping
+            return matrix, mapping
+        else:
+            return matrix
 
 
 def ndbincount(x, weights=None, shape=None):
