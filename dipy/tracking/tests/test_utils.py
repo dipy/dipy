@@ -138,6 +138,9 @@ def test_connectivity_matrix():
 
     # Test Inclusive streamline analysis
     # Check basic Case (inclusive)
+    expected = np.zeros((6, 6), 'int')
+    expected[3, 4] = 2
+    expected[4, 3] = 1
     expected[3, 5] = 1
     expected[5, 4] = 1
     expected[0,3:5] = 1
