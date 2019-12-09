@@ -180,7 +180,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                 entirelabels = list(OrderedDict.fromkeys(label_volume[i, j, k]))
                 # Append all connection combinations with streamline number
                 for comb in combinations(entirelabels, 2):
-                    edges = np.append(edges,[[comb[0]], [comb[1]], [sl]], axis=1)
+                    edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
+                                      axis=1)
             else:
                 # Create list of all labels streamline passes through, keeping
                 # order and whether a label was entered multiple times
