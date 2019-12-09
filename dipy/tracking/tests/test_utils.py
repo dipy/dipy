@@ -143,8 +143,8 @@ def test_connectivity_matrix():
     expected[4, 3] = 1
     expected[3, 5] = 1
     expected[5, 4] = 1
-    expected[0,3:5] = 1
-    expected[3:5,0] = 1
+    expected[0, 3:5] = 1
+    expected[3:5, 0] = 1
 
     matrix = connectivity_matrix(streamlines, np.eye(4), label_volume,
                                  symmetric=False, inclusive=True)
@@ -152,7 +152,7 @@ def test_connectivity_matrix():
 
     # Test mapping
     matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
-                                          inclusive=True,symmetric=False,
+                                          inclusive=True, symmetric=False,
                                           return_mapping=True)
     npt.assert_array_equal(matrix, expected)
     npt.assert_equal(mapping[3, 4], [0, 1])
@@ -162,8 +162,9 @@ def test_connectivity_matrix():
     npt.assert_equal(mapping.get((0, 0)), None)
 
     # Test mapping and symmetric
-    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume, inclusive=True,
-                                          symmetric=True, return_mapping=True)
+    matrix, mapping = connectivity_matrix(streamlines, np.eye(4), label_volume,
+                                          inclusive=True, symmetric=True,
+                                          return_mapping=True)
     npt.assert_equal(mapping[3, 4], [0, 1, 2])
     npt.assert_equal(mapping[0, 3], [1, 2])
     npt.assert_equal(mapping[0, 4], [1, 2])

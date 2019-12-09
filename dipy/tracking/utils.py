@@ -128,9 +128,9 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
     inclusive: bool
-        Whether to analyze the entire streamline, as opposed to just the endpoints.
-        Allowing this will increase calculation time and mapping size, especially
-        if mapping_as_streamlines is selected. False by default.
+        Whether to analyze the entire streamline, as opposed to just the
+        endpoints. Allowing this will increase calculation time and mapping
+        size, especially if mapping_as_streamlines is True. False by default.
     symmetric : bool, True by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -165,51 +165,51 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
     # If streamlines is an iterators
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
-    
+
     if inclusive:
-        #Create ndarray to store streamline connections
-        edges = np.ndarray(shape=(3,0),dtype=int)
+        # Create ndarray to store streamline connections
+        edges = np.ndarray(shape=(3, 0), dtype=int)
         lin_T, offset = _mapping_to_voxel(affine)
         for sl in range(len(streamlines)):
             # Convert streamline to voxel coordinates
             entire = _to_voxel_coordinates(streamlines[sl], lin_T, offset)
             i, j, k = entire.T
-            
+
             if symmetric:
                 # Create list of all labels streamline passes through
-                entirelabels = list(OrderedDict.fromkeys(label_volume[i,j,k]))
-                # Append all connection combinations along with streamline number
-                for comb in combinations(entirelabels,2):
-                    edges=np.append(edges,[[comb[0]],[comb[1]],[sl]], axis=1)
+                entirelabels = list(OrderedDict.fromkeys(label_volume[i, j, k]))
+                # Append all connection combinations with streamline number
+                for comb in combinations(entirelabels, 2):
+                    edges = np.append(edges,[[comb[0]], [comb[1]], [sl]], axis=1)
             else:
-                # Create list of all labels streamline passes through, preserving order
-                # and whether a label was entered multiple times
-                entirelabels = list(groupby(label_volume[i,j,k]))
-                # Append all connection combinations along with streamline number, removing
-                # duplicates and connections from a label to itself
-                combs = set(combinations([z[0] for z in entirelabels],2))
+                # Create list of all labels streamline passes through, keeping
+                # order and whether a label was entered multiple times
+                entirelabels = list(groupby(label_volume[i, j, k]))
+                # Append connection combinations along with streamline number,
+                # removing duplicates and connections from a label to itself
+                combs = set(combinations([z[0] for z in entirelabels], 2))
                 for comb in combs:
                     if comb[0] == comb[1]:
                         pass
                     else:
-                        edges=np.append(edges,[[comb[0]],[comb[1]],[sl]], axis=1)
+                        edges = np.append(edges, [[comb[0]], [comb[1]], [sl]],
+                                          axis=1)
         if symmetric:
             edges[0:2].sort(0)
         mx = label_volume.max() + 1
         matrix = ndbincount(edges[0:2], shape=(mx, mx))
+
         if symmetric:
             matrix = np.maximum(matrix, matrix.T)
-
         if return_mapping:
             mapping = defaultdict(list)
             for i, (a, b, c) in enumerate(edges.T):
                 mapping[a, b].append(c)
-
             # Replace each list of indices with the streamlines they index
             if mapping_as_streamlines:
                 for key in mapping:
                     mapping[key] = [streamlines[i] for i in mapping[key]]
-            
+
             return matrix, mapping
         else:
             return matrix
