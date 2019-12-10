@@ -1,6 +1,8 @@
 """ Utility functions for file formats """
 import logging
+import numbers
 import os
+import six
 
 import dipy
 import nibabel as nib
@@ -136,6 +138,52 @@ def decfa_to_float(img_orig):
     return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
 
 
+def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
+    all_valid = True
+    only_3d_warning = False
+
+    if not affine.shape == (4,4):
+        all_valid = False
+        logging.warning('Transformation matrix must be 4x4')
+
+    if not affine[0:3, 0:3].any():
+        all_valid = False
+        logging.warning('Rotation matrix cannot be all zeros')
+
+    if not len(dimensions) >= 3:
+        all_valid = False
+        only_3d_warning = True
+
+    for i in dimensions:
+        if not isinstance(i, numbers.Integral):
+            all_valid = False
+            logging.warning('Dimensions must be int.')
+            break
+
+    if not len(voxel_sizes) >= 3:
+        all_valid = False
+        only_3d_warning = True
+    for i in voxel_sizes:
+        if not isinstance(i, numbers.Number):
+            all_valid = False
+            logging.warning('Voxel size must be int/float.')
+            break
+
+    if not len(voxel_order) >= 3:
+        all_valid = False
+        only_3d_warning = True
+    for i in voxel_order:
+        if not isinstance(i, six.string_types):
+            all_valid = False
+            logging.warning('Voxel order must be string/char.')
+            break
+
+    if only_3d_warning:
+        logging.warning('Only 3D (and above) reference are considered valid.')
+
+    return all_valid
+
+
 def get_reference_info(reference):
     """ Will compare the spatial attribute of 2 references
 
@@ -209,6 +257,9 @@ def get_reference_info(reference):
 
     if isinstance(voxel_order, np.bytes_):
         voxel_order = voxel_order.decode('utf-8')
+
+    # Run this function to logging the warning from it
+    is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
     return affine, dimensions, voxel_sizes, voxel_order
 

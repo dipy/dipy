@@ -10,6 +10,7 @@ from nibabel.streamlines.tractogram import (Tractogram,
                                             PerArrayDict)
 import numpy as np
 
+import dipy
 from dipy.io.dpy import Streamlines
 from dipy.io.utils import get_reference_info
 
@@ -96,6 +97,12 @@ class StatefulTractogram(object):
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
 
+        if isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
+            logging.warning('Using a StatefulTractogram as reference, this will' +
+                            ' copy only the space_attributes, not the state.' +
+                            ' Variables space shifted_origin must be specified' +
+                            ' separately.')
+
         space_attributes = get_reference_info(reference)
         if space_attributes is None:
             raise TypeError('Reference MUST be one of the following:\n' +
@@ -114,6 +121,36 @@ class StatefulTractogram(object):
             raise TypeError('origin_at_corner MUST be a boolean')
         self._origin_at_corner = origin_at_corner
         logger.debug(self)
+
+
+    @staticmethod
+    def from_sft(streamlines, sft,
+                 data_per_point=None,
+                 data_per_streamline=None):
+        """ Re-create a strict, state-aware, robust tractogram from another
+
+        Parameters
+        ----------
+        streamlines : list or ArraySequence
+            Streamlines of the tractogram
+        sft : StatefulTractgram,
+            The other StatefulTractgram to copy the space_attribute AND
+            state from.
+        data_per_point : dict
+            Dictionary in which each key has X items, each items has Y_i items
+            X being the number of streamlines
+            Y_i being the number of points on streamlines #i
+        data_per_streamline : dict
+            Dictionary in which each key has X items
+            X being the number of streamlines
+        -----
+        """
+        new_sft = StatefulTractogram(streamlines, sft.space_attributes, sft.space,
+                                     shifted_origin=sft.shifted_origin,
+                                     data_per_point=data_per_point,
+                                     data_per_streamline=data_per_streamline)
+        return new_sft
+
 
     def __str__(self):
         """ Generate the string for printing """
