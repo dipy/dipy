@@ -78,7 +78,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     sft.to_space(old_space)
     sft.change_origin(old_origin)
-    
+
     return True
 
 
@@ -194,7 +194,7 @@ def load_generator(ttype):
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
-            raise ValueError('This function can only load {} files, for a more'
+            raise ValueError('This function can only load {} files, for a more
                              ' general purpose, use load_tractogram instead.'.format(ttype))
 
         sft = load_tractogram(filename, reference,

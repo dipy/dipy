@@ -8,7 +8,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 import pytest
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 
 from dipy.utils.optpkg import optional_package
@@ -200,6 +200,30 @@ def to_vox_equivalence():
 
     sft_1.to_vox()
     sft_2.to_space(Space.VOX)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
+def to_corner_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_corner()
+    sft_2.change_origin(Origin.TRACKVIS)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
+def to_center_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_center()
+    sft_2.change_origin(Origin.NIFTI)
     assert_allclose(sft_1.streamlines.data,
                     sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
 
@@ -553,6 +577,11 @@ def test_to_space():
     to_rasmm_equivalence()
     to_voxmm_equivalence()
     to_vox_equivalence()
+
+
+def test_change_origin():
+    to_center_equivalence()
+    to_corner_equivalence()
 
 
 def test_empty_sft():

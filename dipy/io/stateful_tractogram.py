@@ -36,6 +36,7 @@ class Space(enum.Enum):
     VOXMM = 'voxmm'
     RASMM = 'rasmm'
 
+
 class Origin(enum.Enum):
     """ Enum to simplify future change to convention """
     NIFTI = False
@@ -323,12 +324,13 @@ class StatefulTractogram(object):
                          'dipy.io.stateful_tractogram')
 
     def change_origin(self, target_origin):
-        """ Safe function to change streamlines to a particular origin standard 
+        """ Safe function to change streamlines to a particular origin standard
         False means NIFTI (center) and True means TrackVis (corner) """
-        print(Origin.NIFTI)
-        if target_origin == Origin.NIFTI.value:
+        if target_origin == Origin.NIFTI or \
+                target_origin == Origin.NIFTI.value:
             self.to_center()
-        elif target_origin == Origin.TRACKVIS.value:
+        elif target_origin == Origin.TRACKVIS or \
+                target_origin == Origin.TRACKVIS.value:
             self.to_corner()
         else:
             logger.error('Unsupported origin standard, please use Enum in '
