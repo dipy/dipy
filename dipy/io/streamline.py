@@ -39,10 +39,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         raise TypeError('Output filename is not one of the supported format')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
-        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are ' +
-                         'invalid. Please use the function ' +
-                         'remove_invalid_streamlines to discard invalid ' +
+        raise ValueError('Bounding box is not valid in voxel space, cannot '
+                         'load a valid file if some coordinates are '
+                         'invalid. Please use the function '
+                         'remove_invalid_streamlines to discard invalid '
                          'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
@@ -127,13 +127,13 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         if extension == '.trk':
             reference = filename
         else:
-            logging.error('Reference must be provided, "same" is only ' +
+            logging.error('Reference must be provided, "same" is only '
                           'available for Trk file.')
             return False
 
     if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):
-            logging.error('Trk file header does not match the provided ' +
+            logging.error('Trk file header does not match the provided '
                           'reference')
             return False
 
@@ -167,10 +167,10 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         sft.to_voxmm()
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
-        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are invalid.' +
-                         'Please set bbox_valid_check to False and then use' +
-                         'the function remove_invalid_streamlines to discard' +
+        raise ValueError('Bounding box is not valid in voxel space, cannot '
+                         'load a valid file if some coordinates are invalid.'
+                         'Please set bbox_valid_check to False and then use'
+                         'the function remove_invalid_streamlines to discard'
                          'invalid streamlines.')
 
     return sft
@@ -194,7 +194,7 @@ def load_generator(ttype):
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
-            raise ValueError('This function can only load {} files, for a more
+            raise ValueError('This function can only load {} files, for a more'
                              ' general purpose, use load_tractogram instead.'.format(ttype))
 
         sft = load_tractogram(filename, reference,

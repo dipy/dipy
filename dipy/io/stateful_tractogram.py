@@ -104,23 +104,23 @@ class StatefulTractogram(object):
                                       data_per_streamline=data_per_streamline)
 
         if isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
-            logging.warning('Using a StatefulTractogram as reference, this ' +
-                            'will copy only the space_attributes, not ' +
-                            'the state. The variables space and origin_at_corner ' +
+            logging.warning('Using a StatefulTractogram as reference, this '
+                            'will copy only the space_attributes, not '
+                            'the state. The variables space and origin_at_corner '
                             'must be specified separately.')
 
         if isinstance(reference, tuple) and len(reference) == 4:
             if is_reference_info_valid(*reference):
                 space_attributes = reference
             else:
-                raise TypeError('The provided space attributes are not ' +
-                                'considered valid, please correct before ' +
+                raise TypeError('The provided space attributes are not '
+                                'considered valid, please correct before '
                                 'using them with StatefulTractogram.')
         else:
             space_attributes = get_reference_info(reference)
             if space_attributes is None:
-                raise TypeError('Reference MUST be one of the following:\n' +
-                                'Nifti or Trk filename, Nifti1Image or ' +
+                raise TypeError('Reference MUST be one of the following:\n'
+                                'Nifti or Trk filename, Nifti1Image or '
                                 'TrkFile, Nifti1Header or trk.header (dict).')
 
         (self._affine, self._dimensions,
@@ -131,8 +131,12 @@ class StatefulTractogram(object):
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
         self._space = space
 
+        if origin_at_corner in Origin:
+            origin_at_corner = origin_at_corner.value
+
         if not isinstance(origin_at_corner, bool):
-            raise TypeError('origin_at_corner MUST be a boolean')
+            raise TypeError('origin_at_corner MUST be a boolean or from '
+                            'Origin enum, e.g Origin.NIFTI')
         self._origin_at_corner = origin_at_corner
         logger.debug(self)
 
