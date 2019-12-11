@@ -106,7 +106,7 @@ class StatefulTractogram(object):
         if isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
             logging.warning('Using a StatefulTractogram as reference, this ' +
                             'will copy only the space_attributes, not ' +
-                            'the state. Variables space origin_at_corner ' +
+                            'the state. The variables space and origin_at_corner ' +
                             'must be specified separately.')
 
         if isinstance(reference, tuple) and len(reference) == 4:
