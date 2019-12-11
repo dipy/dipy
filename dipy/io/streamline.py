@@ -76,13 +76,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     logging.debug('Save %s with %s streamlines in %s seconds',
                   filename, len(sft), round(time.time() - timer, 3))
 
-    if old_space == Space.VOX:
-        sft.to_vox()
-    elif old_space == Space.VOXMM:
-        sft.to_voxmm()
-
-    if old_origin:
-        sft.to_corner()
+    sft.to_space(old_space)
+    sft.change_origin(old_shift)
 
     return True
 

@@ -36,6 +36,11 @@ class Space(enum.Enum):
     VOXMM = 'voxmm'
     RASMM = 'rasmm'
 
+class Origin(enum.Enum):
+    """ Enum to simplify future change to convention """
+    NIFTI = False
+    TRACKVIS = True
+
 
 class StatefulTractogram(object):
     """ Class for stateful representation of collections of streamlines
@@ -317,6 +322,18 @@ class StatefulTractogram(object):
             logger.error('Unsupported target space, please use Enum in '
                          'dipy.io.stateful_tractogram')
 
+    def change_origin(self, target_origin):
+        """ Safe function to change streamlines to a particular origin standard 
+        False means NIFTI (center) and True means TrackVis (corner) """
+        print(Origin.NIFTI)
+        if target_origin == Origin.NIFTI.value:
+            self.to_center()
+        elif target_origin == Origin.TRACKVIS.value:
+            self.to_corner()
+        else:
+            logger.error('Unsupported origin standard, please use Enum in '
+                         'dipy.io.stateful_tractogram')
+
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
@@ -378,13 +395,8 @@ class StatefulTractogram(object):
             logger.debug(bbox_corners)
             is_valid = False
 
-        if old_space == Space.RASMM:
-            self.to_rasmm()
-        elif old_space == Space.VOXMM:
-            self.to_voxmm()
-
-        if not old_origin:
-            self.to_center()
+        self.to_space(old_space)
+        self.change_origin(old_shift)
 
         return is_valid
 
@@ -432,13 +444,8 @@ class StatefulTractogram(object):
                                       data_per_streamline=tmp_data_per_streamline,
                                       affine_to_rasmm=np.eye(4))
 
-        if old_space == Space.RASMM:
-            self.to_rasmm()
-        elif old_space == Space.VOXMM:
-            self.to_voxmm()
-
-        if not old_origin:
-            self.to_center()
+        self.to_space(old_space)
+        self.change_origin(old_shift)
 
         return indices_to_remove, indices_to_keep
 
