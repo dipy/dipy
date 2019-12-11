@@ -139,10 +139,32 @@ def decfa_to_float(img_orig):
 
 
 def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
+    """ Will validate basic data type and value of spatial attribute.
+    Does not ensure that voxel_sizes and voxel_order are self-coherent with
+    affine.
+    The listed parameters are what is expected, provide something else and this
+    function should fail (cover common mistakes).
+
+    Parameters
+    ----------
+        affine: ndarray (4,4)
+            Tranformation of VOX to RASMM
+        dimensions: ndarray (3,), int16
+            Volume shape for each axis
+        voxel_sizes:  ndarray (3,), float32
+            Size of voxel for each axis
+        voxel_order: string
+            Typically 'RAS' or 'LPS'
+
+    Returns
+    -------
+    output : bool
+        Does the input represent a valid 'state' of spatial attribute
+    """
     all_valid = True
     only_3d_warning = False
 
-    if not affine.shape == (4,4):
+    if not affine.shape == (4, 4):
         all_valid = False
         logging.warning('Transformation matrix must be 4x4')
 
@@ -158,7 +180,9 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
         if not isinstance(i, numbers.Integral):
             all_valid = False
             logging.warning('Dimensions must be int.')
-            break
+        if i <= 0:
+            all_valid = False
+            logging.warning('Dimensions must be above 0.')
 
     if not len(voxel_sizes) >= 3:
         all_valid = False
@@ -167,7 +191,9 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
         if not isinstance(i, numbers.Number):
             all_valid = False
             logging.warning('Voxel size must be int/float.')
-            break
+        if i <= 0:
+            all_valid = False
+            logging.warning('Voxel size must be above 0.')
 
     if not len(voxel_order) >= 3:
         all_valid = False
@@ -176,7 +202,9 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
         if not isinstance(i, six.string_types):
             all_valid = False
             logging.warning('Voxel order must be string/char.')
-            break
+        if i not in ['R', 'A', 'S', 'L', 'P', 'I']:
+            all_valid = False
+            logging.warning('Voxel order does not follow convention.')
 
     if only_3d_warning:
         logging.warning('Only 3D (and above) reference are considered valid.')
@@ -197,8 +225,8 @@ def get_reference_info(reference):
     -------
     output : tuple
         - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
-        - dimensions list (3), int, volume shape for each axis
-        - voxel_sizes  list (3), float, size of voxel for each axis
+        - dimensions ndarray (3,), int16, volume shape for each axis
+        - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
     """
 

@@ -499,6 +499,17 @@ def out_of_grid(value):
     except (TypeError, ValueError):
         return True
 
+    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
+    sft.to_vox()
+    tmp_streamlines = list(sft.get_streamlines_copy())
+    tmp_streamlines[0] += value
+
+    try:
+        sft.streamlines = tmp_streamlines
+        return sft.is_bbox_in_vox_valid()
+    except (TypeError, ValueError):
+        return True
+
 
 def test_iterative_transformation():
     iterative_to_vox_transformation()
@@ -594,6 +605,26 @@ def test_trk_coloring():
     if not random_point_gray():
         raise AssertionError()
     if not random_point_color():
+        raise AssertionError()
+
+
+def test_create_from_sft():
+    sft_1 = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
+    sft_2 = StatefulTractogram.from_sft(
+        sft_1.streamlines, sft_1,
+        data_per_point=sft_1.data_per_point,
+        data_per_streamline=sft_1.data_per_streamline)
+
+    if not (np.array_equal(sft_1.streamlines, sft_2.streamlines)
+            and sft_1.space_attributes == sft_2.space_attributes
+            and sft_1.space == sft_2.space
+            and sft_1.origin_at_corner == sft_2.origin_at_corner
+            and sft_1.data_per_point == sft_2.data_per_point
+            and sft_1.data_per_streamline == sft_2.data_per_streamline):
+        raise AssertionError()
+
+    sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
+    if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()
 
 

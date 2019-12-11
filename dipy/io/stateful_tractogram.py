@@ -12,7 +12,7 @@ import numpy as np
 
 import dipy
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import get_reference_info
+from dipy.io.utils import get_reference_info, is_reference_info_valid
 
 
 logger = logging.getLogger('StatefulTractogram')
@@ -98,16 +98,24 @@ class StatefulTractogram(object):
                                       data_per_streamline=data_per_streamline)
 
         if isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
-            logging.warning('Using a StatefulTractogram as reference, this will' +
-                            ' copy only the space_attributes, not the state.' +
-                            ' Variables space shifted_origin must be specified' +
-                            ' separately.')
+            logging.warning('Using a StatefulTractogram as reference, this ' +
+                            'will copy only the space_attributes, not ' +
+                            'the state. Variables space origin_at_corner ' +
+                            'must be specified separately.')
 
-        space_attributes = get_reference_info(reference)
-        if space_attributes is None:
-            raise TypeError('Reference MUST be one of the following:\n' +
-                            'Nifti or Trk filename, Nifti1Image or TrkFile, ' +
-                            'Nifti1Header or trk.header (dict)')
+        if isinstance(reference, tuple) and len(reference) == 4:
+            if is_reference_info_valid(*reference):
+                space_attributes = reference
+            else:
+                raise TypeError('The provided space attributes are not ' +
+                                'considered valid, please correct before ' +
+                                'using them with StatefulTractogram.')
+        else:
+            space_attributes = get_reference_info(reference)
+            if space_attributes is None:
+                raise TypeError('Reference MUST be one of the following:\n' +
+                                'Nifti or Trk filename, Nifti1Image or ' +
+                                'TrkFile, Nifti1Header or trk.header (dict).')
 
         (self._affine, self._dimensions,
          self._voxel_sizes, self._voxel_order) = space_attributes
@@ -121,7 +129,6 @@ class StatefulTractogram(object):
             raise TypeError('origin_at_corner MUST be a boolean')
         self._origin_at_corner = origin_at_corner
         logger.debug(self)
-
 
     @staticmethod
     def from_sft(streamlines, sft,
@@ -145,12 +152,13 @@ class StatefulTractogram(object):
             X being the number of streamlines
         -----
         """
-        new_sft = StatefulTractogram(streamlines, sft.space_attributes, sft.space,
-                                     shifted_origin=sft.shifted_origin,
+        new_sft = StatefulTractogram(streamlines,
+                                     sft.space_attributes,
+                                     sft.space,
+                                     origin_at_corner=sft.origin_at_corner,
                                      data_per_point=data_per_point,
                                      data_per_streamline=data_per_streamline)
         return new_sft
-
 
     def __str__(self):
         """ Generate the string for printing """
