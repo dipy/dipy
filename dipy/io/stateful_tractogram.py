@@ -396,7 +396,7 @@ class StatefulTractogram(object):
             is_valid = False
 
         self.to_space(old_space)
-        self.change_origin(old_shift)
+        self.change_origin(old_origin)
 
         return is_valid
 
@@ -445,7 +445,7 @@ class StatefulTractogram(object):
                                       affine_to_rasmm=np.eye(4))
 
         self.to_space(old_space)
-        self.change_origin(old_shift)
+        self.change_origin(old_origin)
 
         return indices_to_remove, indices_to_keep
 

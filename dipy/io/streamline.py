@@ -77,8 +77,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
                   filename, len(sft), round(time.time() - timer, 3))
 
     sft.to_space(old_space)
-    sft.change_origin(old_shift)
-
+    sft.change_origin(old_origin)
+    
     return True
 
 
