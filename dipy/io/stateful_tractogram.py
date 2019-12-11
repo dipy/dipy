@@ -160,7 +160,7 @@ class StatefulTractogram(object):
 
     @property
     def origin_at_corner(self):
-        """ Getter for shift """
+        """ Getter for origin standard """
         return self._origin_at_corner
 
     @property
@@ -300,7 +300,7 @@ class StatefulTractogram(object):
             return True
 
         old_space = deepcopy(self.space)
-        old_shift = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin_at_corner)
 
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
@@ -325,7 +325,7 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if not old_shift:
+        if not old_origin:
             self.to_center()
 
         return is_valid
@@ -344,7 +344,7 @@ class StatefulTractogram(object):
             return
 
         old_space = deepcopy(self.space)
-        old_shift = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin_at_corner)
 
         self.to_vox()
         self.to_corner()
@@ -379,7 +379,7 @@ class StatefulTractogram(object):
         elif old_space == Space.VOXMM:
             self.to_voxmm()
 
-        if not old_shift:
+        if not old_origin:
             self.to_center()
 
         return indices_to_remove, indices_to_keep

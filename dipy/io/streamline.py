@@ -46,7 +46,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
                          'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
-    old_shift = deepcopy(sft.origin_at_corner)
+    old_origin = deepcopy(sft.origin_at_corner)
 
     sft.to_rasmm()
     sft.to_center()
@@ -81,7 +81,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     elif old_space == Space.VOXMM:
         sft.to_voxmm()
 
-    if old_shift:
+    if old_origin:
         sft.to_corner()
 
     return True
