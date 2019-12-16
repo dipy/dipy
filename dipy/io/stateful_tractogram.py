@@ -16,6 +16,19 @@ from dipy.io.utils import get_reference_info
 
 logger = logging.getLogger('StatefulTractogram')
 
+
+def set_sft_logger_level(log_level):
+    """ Change the logger of the StatefulTractogram
+    to one on the following: DEBUG, INFO, WARNING, ERROR
+
+    Parameters
+    ----------
+    log_level : str
+        Log level for the StatefulTractogram only
+    """
+    logger.setLevel(level=log_level)
+
+
 class Space(enum.Enum):
     """ Enum to simplify future change to convention """
     VOX = 'vox'
@@ -257,7 +270,7 @@ class StatefulTractogram(object):
             self.to_rasmm()
         else:
             logger.error('Unsupported target space, please use Enum in '
-                          'dipy.io.stateful_tractogram')
+                         'dipy.io.stateful_tractogram')
 
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
