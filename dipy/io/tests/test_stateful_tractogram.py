@@ -409,7 +409,7 @@ def reassign_both_data_sep():
 
 def bounding_bbox_valid(shift):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          shifted_origin=shift, bbox_valid_check=False)
+                          origin_at_corner=shift, bbox_valid_check=False)
 
     return sft.is_bbox_in_vox_valid()
 

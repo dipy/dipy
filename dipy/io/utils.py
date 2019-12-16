@@ -192,6 +192,10 @@ def get_reference_info(reference):
         affine[2, 0:4] = header['srow_z']
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
+
+        if not affine[0:3, 0:3].any():
+            raise ValueError('Invalid affine, contains only zeros.'
+                             'Cannot determine voxel order from transformation')
         voxel_order = ''.join(nib.aff2axcodes(affine))
     elif is_trk:
         affine = header['voxel_to_rasmm']
