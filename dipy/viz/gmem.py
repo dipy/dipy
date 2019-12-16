@@ -1,3 +1,5 @@
+# Shared objects across Horizon's systems
+
 class GlobalHorizon(object):
     def __init__(self):
         # window level sharing
@@ -31,9 +33,11 @@ class GlobalHorizon(object):
 
         # tractogram level sharing
         self.cluster_thr = 15
+        # self.cluster_lengths = []  # not used
+        # self.cluster_sizes = []  # not used
+        # self.cluster_thr_min_max = []  # not used
         self.streamline_actors = []
         self.centroid_actors = []
         self.cluster_actors = []
 
 
-HORIMEM = GlobalHorizon()
