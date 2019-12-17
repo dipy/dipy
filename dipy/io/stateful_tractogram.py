@@ -144,7 +144,7 @@ class StatefulTractogram(object):
     def from_sft(streamlines, sft,
                  data_per_point=None,
                  data_per_streamline=None):
-        """ Re-create a strict, state-aware, robust tractogram from another
+        """ Create an instance of `StatefulTractogram` from another instance of `StatefulTractogram`.
 
         Parameters
         ----------
