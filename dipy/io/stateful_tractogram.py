@@ -10,7 +10,6 @@ from nibabel.streamlines.tractogram import (Tractogram,
                                             PerArrayDict)
 import numpy as np
 
-import dipy
 from dipy.io.dpy import Streamlines
 from dipy.io.utils import get_reference_info, is_reference_info_valid
 
@@ -103,7 +102,7 @@ class StatefulTractogram(object):
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
 
-        if isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
+        if isinstance(reference, type(self)):
             logging.warning('Using a StatefulTractogram as reference, this '
                             'will copy only the space_attributes, not '
                             'the state. The variables space and origin_at_corner '
