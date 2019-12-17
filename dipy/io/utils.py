@@ -141,20 +141,26 @@ def decfa_to_float(img_orig):
 def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     """ Will validate basic data type and value of spatial attribute.
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
-    affine.
+    the affine.
+    Only verify
+    - affine is of the right type (float) and dimension (4,4)
+    - affine contain values in the rotation part
+    - dimensions is of right type (int) and length (3) 
+    - voxel_sizes is of right type (float) and length (3) 
+    - voxel_order is of right type (str) and length (3) 
     The listed parameters are what is expected, provide something else and this
     function should fail (cover common mistakes).
 
     Parameters
     ----------
-        affine: ndarray (4,4)
-            Tranformation of VOX to RASMM
-        dimensions: ndarray (3,), int16
-            Volume shape for each axis
-        voxel_sizes:  ndarray (3,), float32
-            Size of voxel for each axis
-        voxel_order: string
-            Typically 'RAS' or 'LPS'
+    affine: ndarray (4,4)
+        Tranformation of VOX to RASMM
+    dimensions: ndarray (3,), int16
+        Volume shape for each axis
+    voxel_sizes:  ndarray (3,), float32
+        Size of voxel for each axis
+    voxel_order: string
+        Typically 'RAS' or 'LPS'
 
     Returns
     -------
