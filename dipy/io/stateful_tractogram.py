@@ -68,15 +68,15 @@ class StatefulTractogram(object):
             Current space in which the streamlines are (vox, voxmm or rasmm)
             Typically after tracking the space is VOX, after nibabel loading
             the space is RASMM
-        origin_at_corner : bool
+        origin_at_corner : bool, optional
             Information on the position of the origin,
             False is NIFTI standard, default (center of the voxel)
             True is TrackVis standard (corner of the voxel)
-        data_per_point : dict
+        data_per_point : dict, optional
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
             Y_i being the number of points on streamlines #i
-        data_per_streamline : dict
+        data_per_streamline : dict, optional
             Dictionary in which each key has X items
             X being the number of streamlines
 
@@ -157,7 +157,7 @@ class StatefulTractogram(object):
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
             Y_i being the number of points on streamlines #i
-        data_per_streamline : dict
+        data_per_streamline : dict, optional
             Dictionary in which each key has X items
             X being the number of streamlines
         -----

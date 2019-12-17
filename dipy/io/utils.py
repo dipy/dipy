@@ -2,7 +2,6 @@
 import logging
 import numbers
 import os
-import six
 
 import dipy
 import nibabel as nib
@@ -145,9 +144,9 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     Only verify
     - affine is of the right type (float) and dimension (4,4)
     - affine contain values in the rotation part
-    - dimensions is of right type (int) and length (3) 
-    - voxel_sizes is of right type (float) and length (3) 
-    - voxel_order is of right type (str) and length (3) 
+    - dimensions is of right type (int) and length (3)
+    - voxel_sizes is of right type (float) and length (3)
+    - voxel_order is of right type (str) and length (3)
     The listed parameters are what is expected, provide something else and this
     function should fail (cover common mistakes).
 
@@ -205,7 +204,7 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
         all_valid = False
         only_3d_warning = True
     for i in voxel_order:
-        if not isinstance(i, six.string_types):
+        if not isinstance(i, str):
             all_valid = False
             logging.warning('Voxel order must be string/char.')
         if i not in ['R', 'A', 'S', 'L', 'P', 'I']:
