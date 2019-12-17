@@ -153,7 +153,7 @@ class StatefulTractogram(object):
         sft : StatefulTractgram,
             The other StatefulTractgram to copy the space_attribute AND
             state from.
-        data_per_point : dict
+        data_per_point : dict, optional
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
             Y_i being the number of points on streamlines #i
