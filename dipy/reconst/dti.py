@@ -1662,7 +1662,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     nlls_params: the eigen-values and eigen-vectors of the tensor in each
         voxel.
     """
-    # Detect number of parameters to estimate from design_matrix lenght plus
+    # Detect number of parameters to estimate from design_matrix length plus
     # 5 due to diffusion tensor conversion to eigenvalue and eigenvectors
     npa = design_matrix.shape[-1] + 5
 
@@ -1710,23 +1710,21 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
                 from_lower_triangular(this_param[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
-            if return_S0_hat:
-                model_S0[vox] = np.exp(-this_param[-1])
-            if not dti:
-                md2 = evals.mean(0) ** 2
-                params[vox, 12:] = this_param[6:-1] / md2
+
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
+            this_params = start_params
             evals, evecs = decompose_tensor(
-                from_lower_triangular(start_params[:6]))
+                from_lower_triangular(this_params[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
-            if return_S0_hat:
-                model_S0[vox] = np.exp(-start_params[-1])
-            if not dti:
-                md2 = evals.mean(0) ** 2
-                params[vox, 12:] = start_params[6:-1] / md2
+
+        if return_S0_hat:
+            model_S0[vox] = np.exp(-this_param[-1])
+        if not dti:
+            md2 = evals.mean(0) ** 2
+            params[vox, 12:] = this_param[6:-1] / md2
 
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
@@ -1776,7 +1774,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     of tensors by outlier rejection. MRM, 53: 1088-95.
 
     """
-    # Detect number of parameters to estimate from design_matrix lenght plus
+    # Detect number of parameters to estimate from design_matrix length plus
     # 5 due to diffusion tensor conversion to eigenvalue and eigenvectors
     npa = design_matrix.shape[-1] + 5
 
@@ -1876,23 +1874,21 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                 from_lower_triangular(this_param[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
-            if return_S0_hat:
-                model_S0[vox] = np.exp(-this_param[-1])
-            if not dti:
-                md2 = evals.mean(0) ** 2
-                params[vox, 12:] = this_param[6:-1] / md2
+
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
+            this_params = start_params
             evals, evecs = decompose_tensor(
-                from_lower_triangular(start_params[:6]))
+                from_lower_triangular(this_params[:6]))
             params[vox, :3] = evals
             params[vox, 3:12] = evecs.ravel()
-            if return_S0_hat:
-                model_S0[vox] = np.exp(-start_params[-1])
-            if not dti:
-                md2 = evals.mean(0) ** 2
-                params[vox, 12:] = start_params[6:-1] / md2
+
+        if return_S0_hat:
+            model_S0[vox] = np.exp(-this_param[-1])
+        if not dti:
+            md2 = evals.mean(0) ** 2
+            params[vox, 12:] = this_param[6:-1] / md2
 
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
