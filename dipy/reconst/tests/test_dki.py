@@ -455,10 +455,6 @@ def test_compare_MK_method():
     # MK numerical method
     MK_nm = dkiF.mk(None, None, analytical=False)
 
-    # sph = Sphere(xyz=gtab.bvecs[gtab.bvals > 0])
-    # MK_nm = np.mean(dki.apparent_kurtosis_coef(dkiF.model_params, sph),
-    #                axis=-1)
-
     assert_array_almost_equal(MK_as, MK_nm, decimal=3)
 
 
