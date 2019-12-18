@@ -1097,9 +1097,9 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     .. math::
         AK = K(\mathbf{\mathbf{e}_1)
 
-    Although both approaches leads to an exactly calculation of AK, the first
-    approach will be refered to as the analytical method whilte the second
-    approach will be refered to as the numerical method based on their analogy
+    Although both approaches leads to an exact calculation of AK, the first
+    approach will be referred to as the analytical method while the second
+    approach will be referred to as the numerical method based on their analogy
     to the estimation strategies for MK and RK.
 
     References
@@ -1366,7 +1366,7 @@ def mean_kurtosis_tensor(dki_params, min_kurtosis=-3./7, max_kurtosis=10):
     References
     ----------
     .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. (2013).
-           Experimentally and computationally387fast method for estimation of
+           Experimentally and computationally fast method for estimation of
            a mean kurtosis.Magnetic Resonance in Medicine69,  1754–1760.388
            doi:10.1002/mrm.24743
     .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
@@ -1421,8 +1421,8 @@ def kurtosis_fractional_anisotropy(dki_params):
     References
     ----------
     .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H. (2015).
-           Quantitative assessment of diffusional387kurtosis anisotropy.
-           NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
+           Quantitative assessment of diffusional kurtosis anisotropy.
+           NMR in Biomedicine 28, 448–459. doi:10.1002/nbm.3271
     """
     Wxxxx = dki_params[..., 12]
     Wyyyy = dki_params[..., 13]
@@ -1840,9 +1840,9 @@ class DiffusionKurtosisFit(TensorFit):
         .. math::
             AK = K(\mathbf{\mathbf{e}_1)
 
-        Although both approaches leads to an exactly calculation of AK, the
-        first approach will be refered to as the analytical method whilte the
-        second approach will be refered to as the numerical method based on
+        Although both approaches leads to an exact calculation of AK, the
+        first approach will be referred to as the analytical method while the
+        second approach will be referred to as the numerical method based on
         their analogy to the estimation strategies for MK and RK.
 
         References
@@ -2006,7 +2006,7 @@ class DiffusionKurtosisFit(TensorFit):
         References
         ----------
         .. [1] Hansen, B., Lund, T. E., Sangill, R., and Jespersen, S. N. 2013.
-               Experimentally and computationally387fast method for estimation
+               Experimentally and computationally fast method for estimation
                of a mean kurtosis. Magnetic Resonance in Medicine69, 1754–1760.
                388. doi:10.1002/mrm.24743
         .. [2] Barmpoutis, A., & Zhuo, J., 2011. Diffusion kurtosis imaging:
@@ -2038,8 +2038,8 @@ class DiffusionKurtosisFit(TensorFit):
         References
         ----------
         .. [1] Glenn, G. R., Helpern, J. A., Tabesh, A., and Jensen, J. H.
-               (2015). Quantitative assessment of diffusional387kurtosis
-               anisotropy. NMR in Biomedicine28, 448–459. doi:10.1002/nbm.3271
+               (2015). Quantitative assessment of diffusional kurtosis
+               anisotropy. NMR in Biomedicine 28, 448–459. doi:10.1002/nbm.3271
         """
         return kurtosis_fractional_anisotropy(self.model_params)
 
