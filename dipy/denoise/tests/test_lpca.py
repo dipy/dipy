@@ -316,7 +316,7 @@ def test_mppca_returned_sigma():
     # Case that sigma is inputed (sigma outputed should be the same as the one
     # inputed)
     DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
-                               patch_radius=2, return_sigma=True)
+                             patch_radius=2, return_sigma=True)
     assert_array_almost_equal(rsigma, sigma)
 
     # DWIden1 should be very similar to DWIden0
