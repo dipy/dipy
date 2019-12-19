@@ -20,11 +20,17 @@ class SingleLayerPerceptron(object):
         Parameters
         ----------
         input_shape : tuple
+            Shape of data to be trained
         num_hidden : int
+            Number of nodes in hidden layer
         act_hidden : string
+            Activation function used in hidden layer
         dropout : float
+            Dropout ratio
         num_out : 10
+            Number of nodes in output layer
         act_out : string
+            Activation function used in output layer
         """
         self.accuracy = None
         self.loss = None
