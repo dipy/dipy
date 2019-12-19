@@ -4,7 +4,7 @@ import os
 from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_
 import pytest
 
 from dipy.data import fetch_gold_standard_io
@@ -598,43 +598,41 @@ def test_shifting_corner():
 
 def test_replace_streamlines():
     # First two is expected to fail
-    if not subsample_streamlines():
-        raise AssertionError()
-    if not replace_streamlines():
-        raise AssertionError()
-    if not reassign_both_data_sep():
-        raise AssertionError()
-    if not reassign_both_data_sep_to_empty():
-        raise AssertionError()
+    assert_(subsample_streamlines(),
+            msg='Subsampling streamlines should not fail')
+    assert_(replace_streamlines(),
+            msg='Replacing streamlines should not fail')
+    assert_(reassign_both_data_sep(),
+            msg='Reassigning streamline/point data should not fail')
+    assert_(reassign_both_data_sep_to_empty(),
+            msg='Emptying streamline/point data should not fail')
 
 
 def test_bounding_box():
-    # First is expected to fail
-    if not bounding_bbox_valid(Origin.NIFTI):
-        raise AssertionError()
-    if not bounding_bbox_valid(Origin.TRACKVIS):
-        raise AssertionError()
-    # Last two are expected to fail
-    if out_of_grid(100):
-        raise AssertionError()
-    if out_of_grid(-100):
-        raise AssertionError()
+    assert_(bounding_bbox_valid(Origin.NIFTI),
+            msg='Bounding box should be valid with proper declaration')
+    assert_(bounding_bbox_valid(Origin.TRACKVIS),
+            msg='Bounding box should be valid with proper declaration')
+    assert_(not out_of_grid(100),
+            msg='Positive translation should make the bbox check fail')
+    assert_(not out_of_grid(-100),
+            msg='Negative translation should make the bbox check fail')
 
 
 def test_invalid_streamlines():
-    if not remove_invalid_streamlines(True) == 5:
-        raise AssertionError()
-    if not remove_invalid_streamlines(False) == 13:
-        raise AssertionError()
+    assert_(remove_invalid_streamlines(True) == 5,
+            msg='A shifted gold standard should have 8 invalid streamlines')
+    assert_(remove_invalid_streamlines(False) == 13,
+            msg='A unshifted gold standard should have 0 invalid streamlines')
 
 
 def test_trk_coloring():
-    if not random_streamline_color():
-        raise AssertionError()
-    if not random_point_gray():
-        raise AssertionError()
-    if not random_point_color():
-        raise AssertionError()
+    assert_(random_streamline_color(),
+            msg='Streamlines color assignement failed')
+    assert_(random_point_gray(),
+            msg='Streamlines points gray assignement failed')
+    assert_(random_point_color(),
+            msg='Streamlines points color assignement failed')
 
 
 def test_create_from_sft():

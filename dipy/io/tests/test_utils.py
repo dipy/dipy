@@ -7,7 +7,7 @@ from dipy.io.utils import (create_nifti_header,
                            is_reference_info_valid)
 from nibabel import Nifti1Image
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_
 
 filepath_dix = {}
 files, folder = fetch_gold_standard_io()
@@ -73,41 +73,41 @@ def is_voxel_order_valid(voxel_order):
 
 
 def test_reference_info_validity():
-    if is_affine_valid(np.eye(3)):
-        raise AssertionError()
-    if is_affine_valid(np.zeros((4, 4))):
-        raise AssertionError()
-    if not is_affine_valid(np.eye(4)):
-        raise AssertionError()
+    assert_(not is_affine_valid(np.eye(3)),
+            msg='3x3 affine is invalid')
+    assert_(not is_affine_valid(np.zeros((4, 4))),
+            msg='All zeroes affine is invalid')
+    assert_(is_affine_valid(np.eye(4)),
+            msg='Identity should be valid')
 
-    if is_dimensions_valid([0, 0]):
-        raise AssertionError()
-    if is_dimensions_valid([1, 1.0, 1]):
-        raise AssertionError()
-    if is_dimensions_valid([1, -1.0, 1]):
-        raise AssertionError()
-    if not is_dimensions_valid([1, 1, 1]):
-        raise AssertionError()
+    assert_(not is_dimensions_valid([0, 0]),
+            msg='Dimensions of the wrong length')
+    assert_(not is_dimensions_valid([1, 1.0, 1]),
+            msg='Dimensions cannot be float')
+    assert_(not is_dimensions_valid([1, -1, 1]),
+            msg='Dimensions cannot be negative')
+    assert_(is_dimensions_valid([1, 1, 1]),
+            msg='Dimensions of [1,1,1] should be valid')
 
-    if is_voxel_sizes_valid([0, 0]):
-        raise AssertionError()
-    if is_voxel_sizes_valid([1, -1.0, 1]):
-        raise AssertionError()
-    if not is_voxel_sizes_valid([1.0, 1.0, 1.0]):
-        raise AssertionError()
+    assert_(not is_voxel_sizes_valid([0, 0]),
+            msg='Voxel sizes of the wrong length')
+    assert_(not is_voxel_sizes_valid([1, -1, 1]),
+            msg='Voxel sizes cannot be negative')
+    assert_(is_voxel_sizes_valid([1.0, 1.0, 1.0]),
+            msg='Voxel sizes of [1.0,1.0,1.0] should be valid')
 
-    if is_voxel_order_valid('RA'):
-        raise AssertionError()
-    if is_voxel_order_valid(['RAS']):
-        raise AssertionError()
-    if is_voxel_order_valid(['R', 'A', 'Z']):
-        raise AssertionError()
-    if is_voxel_order_valid('RAZ'):
-        raise AssertionError()
-    if not is_voxel_order_valid('RAS'):
-        raise AssertionError()
-    if not is_voxel_order_valid(['R', 'A', 'S']):
-        raise AssertionError()
+    assert_(not is_voxel_order_valid('RA'),
+            msg='Voxel order of the wrong length')
+    assert_(not is_voxel_order_valid(['RAS']),
+            msg='List of string is not a valid voxel order')
+    assert_(not is_voxel_order_valid(['R', 'A', 'Z']),
+            msg='Invalid value for voxel order (Z)')
+    assert_(not is_voxel_order_valid('RAZ'),
+            msg='Invalid value for voxel order (Z)')
+    assert_(is_voxel_order_valid('RAS'),
+            msg='RAS should be a valid voxel order')
+    assert_(is_voxel_order_valid(['R', 'A', 'S']),
+            msg='RAS should be a valid voxel order')
 
 
 def reference_info_zero_affine():
@@ -132,5 +132,5 @@ def test_reference_info_identical():
 
 
 def test_all_zeros_affine():
-    if reference_info_zero_affine():
-        raise AssertionError()
+    assert_(not reference_info_zero_affine(),
+            msg='An all zeros affine should not be valid')
