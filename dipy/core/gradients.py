@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolute_import
+import logging
 from warnings import warn
 
 import numpy as np
@@ -10,6 +10,8 @@ from dipy.core.geometry import vector_norm
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
+
+logger = logging.getLogger(__name__)
 
 
 class GradientTable(object):
@@ -101,12 +103,12 @@ class GradientTable(object):
 
     @property
     def info(self):
-        print('B-values shape (%d,)' % self.bvals.shape)
-        print('         min %f ' % self.bvals.min())
-        print('         max %f ' % self.bvals.max())
-        print('B-vectors shape (%d, %d)' % self.bvecs.shape)
-        print('         min %f ' % self.bvecs.min())
-        print('         max %f ' % self.bvecs.max())
+        logger.info('B-values shape (%d,)' % self.bvals.shape)
+        logger.info('         min %f ' % self.bvals.min())
+        logger.info('         max %f ' % self.bvals.max())
+        logger.info('B-vectors shape (%d, %d)' % self.bvecs.shape)
+        logger.info('         min %f ' % self.bvecs.min())
+        logger.info('         max %f ' % self.bvecs.max())
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
