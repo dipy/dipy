@@ -38,8 +38,8 @@ class Space(enum.Enum):
 
 class Origin(enum.Enum):
     """ Enum to simplify future change to convention """
-    NIFTI = False
-    TRACKVIS = True
+    NIFTI = 'center'
+    TRACKVIS = 'corner'
 
 
 class StatefulTractogram(object):
@@ -50,7 +50,7 @@ class StatefulTractogram(object):
     """
 
     def __init__(self, streamlines, reference, space,
-                 origin_at_corner=False,
+                 origin=Origin.NIFTI,
                  data_per_point=None, data_per_streamline=None):
         """ Create a strict, state-aware, robust tractogram
 
@@ -65,12 +65,11 @@ class StatefulTractogram(object):
             streamlines generation
         space : Enum (dipy.io.stateful_tractogram.Space)
             Current space in which the streamlines are (vox, voxmm or rasmm)
-            Typically after tracking the space is VOX, after nibabel loading
+            After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin_at_corner : bool, optional
-            Information on the position of the origin,
-            False is NIFTI standard, default (center of the voxel)
-            True is TrackVis standard (corner of the voxel)
+        origin : Enum (dipy.io.stateful_tractogram.Origin), optional
+            Current origin in which the streamlines are (center or corner)
+            After loading with nibabel the origin is CENTER
         data_per_point : dict, optional
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
@@ -105,7 +104,7 @@ class StatefulTractogram(object):
         if isinstance(reference, type(self)):
             logging.warning('Using a StatefulTractogram as reference, this '
                             'will copy only the space_attributes, not '
-                            'the state. The variables space and origin_at_corner '
+                            'the state. The variables space and origin '
                             'must be specified separately.')
 
         if isinstance(reference, tuple) and len(reference) == 4:
@@ -130,20 +129,17 @@ class StatefulTractogram(object):
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
         self._space = space
 
-        if origin_at_corner in Origin:
-            origin_at_corner = origin_at_corner.value
-
-        if not isinstance(origin_at_corner, bool):
-            raise TypeError('origin_at_corner MUST be a boolean or from '
-                            'Origin enum, e.g Origin.NIFTI')
-        self._origin_at_corner = origin_at_corner
+        if origin not in Origin:
+            raise ValueError('Origin MUST be from Origin enum, e.g Origin.NIFTI')
+        self._origin = origin
         logger.debug(self)
 
     @staticmethod
     def from_sft(streamlines, sft,
                  data_per_point=None,
                  data_per_streamline=None):
-        """ Create an instance of `StatefulTractogram` from another instance of `StatefulTractogram`.
+        """ Create an instance of `StatefulTractogram` from another instance
+        of `StatefulTractogram`.
 
         Parameters
         ----------
@@ -164,7 +160,7 @@ class StatefulTractogram(object):
         new_sft = StatefulTractogram(streamlines,
                                      sft.space_attributes,
                                      sft.space,
-                                     origin_at_corner=sft.origin_at_corner,
+                                     origin=sft.origin,
                                      data_per_point=data_per_point,
                                      data_per_streamline=data_per_streamline)
         return new_sft
@@ -226,9 +222,9 @@ class StatefulTractogram(object):
         return self._voxel_order
 
     @property
-    def origin_at_corner(self):
+    def origin(self):
         """ Getter for origin standard """
-        return self._origin_at_corner
+        return self._origin
 
     @property
     def streamlines(self):
@@ -326,14 +322,12 @@ class StatefulTractogram(object):
             logger.error('Unsupported target space, please use Enum in '
                          'dipy.io.stateful_tractogram')
 
-    def change_origin(self, target_origin):
+    def to_origin(self, target_origin):
         """ Safe function to change streamlines to a particular origin standard
         False means NIFTI (center) and True means TrackVis (corner) """
-        if target_origin == Origin.NIFTI or \
-                target_origin == Origin.NIFTI.value:
+        if target_origin == Origin.NIFTI:
             self.to_center()
-        elif target_origin == Origin.TRACKVIS or \
-                target_origin == Origin.TRACKVIS.value:
+        elif target_origin == Origin.TRACKVIS:
             self.to_corner()
         else:
             logger.error('Unsupported origin standard, please use Enum in '
@@ -342,13 +336,13 @@ class StatefulTractogram(object):
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
-        if self._origin_at_corner:
+        if self._origin == Origin.TRACKVIS:
             self._shift_voxel_origin()
 
     def to_corner(self):
         """ Safe function to shift streamlines so the corner of voxel is
         the origin """
-        if not self._origin_at_corner:
+        if self._origin == Origin.NIFTI:
             self._shift_voxel_origin()
 
     def compute_bounding_box(self):
@@ -380,7 +374,7 @@ class StatefulTractogram(object):
             return True
 
         old_space = deepcopy(self.space)
-        old_origin = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin)
 
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
@@ -401,7 +395,7 @@ class StatefulTractogram(object):
             is_valid = False
 
         self.to_space(old_space)
-        self.change_origin(old_origin)
+        self.to_origin(old_origin)
 
         return is_valid
 
@@ -419,7 +413,7 @@ class StatefulTractogram(object):
             return
 
         old_space = deepcopy(self.space)
-        old_origin = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin)
 
         self.to_vox()
         self.to_corner()
@@ -450,7 +444,7 @@ class StatefulTractogram(object):
                                       affine_to_rasmm=np.eye(4))
 
         self.to_space(old_space)
-        self.change_origin(old_origin)
+        self.to_origin(old_origin)
 
         return indices_to_remove, indices_to_keep
 
@@ -547,16 +541,16 @@ class StatefulTractogram(object):
             tmp_affine = np.eye(4)
             tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
             shift = apply_affine(tmp_affine, shift)
-        if self._origin_at_corner:
+        if self._origin == Origin.TRACKVIS:
             shift *= -1
 
         self._tractogram.streamlines._data += shift
-        if not self._origin_at_corner:
+        if self._origin == Origin.NIFTI:
             logger.info('Origin moved to the corner of voxel')
+            self._origin = Origin.TRACKVIS
         else:
             logger.info('Origin moved to the center of voxel')
-
-        self._origin_at_corner = not self._origin_at_corner
+            self._origin = Origin.NIFTI
 
 
 def _is_data_per_point_valid(streamlines, data):

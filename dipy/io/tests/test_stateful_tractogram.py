@@ -211,7 +211,7 @@ def to_corner_equivalence():
                             to_space=Space.VOX)
 
     sft_1.to_corner()
-    sft_2.change_origin(Origin.TRACKVIS)
+    sft_2.to_origin(Origin.TRACKVIS)
     assert_allclose(sft_1.streamlines.data,
                     sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
 
@@ -223,7 +223,7 @@ def to_center_equivalence():
                             to_space=Space.VOX)
 
     sft_1.to_center()
-    sft_2.change_origin(Origin.NIFTI)
+    sft_2.to_origin(Origin.NIFTI)
     assert_allclose(sft_1.streamlines.data,
                     sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
 
@@ -431,9 +431,9 @@ def reassign_both_data_sep():
     return True
 
 
-def bounding_bbox_valid(shift):
+def bounding_bbox_valid(standard):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          origin_at_corner=shift, bbox_valid_check=False)
+                          to_origin=standard, bbox_valid_check=False)
 
     return sft.is_bbox_in_vox_valid()
 
@@ -579,7 +579,7 @@ def test_to_space():
     to_vox_equivalence()
 
 
-def test_change_origin():
+def test_to_origin():
     to_center_equivalence()
     to_corner_equivalence()
 
@@ -610,9 +610,9 @@ def test_replace_streamlines():
 
 def test_bounding_box():
     # First is expected to fail
-    if not bounding_bbox_valid(False):
+    if not bounding_bbox_valid(Origin.NIFTI):
         raise AssertionError()
-    if bounding_bbox_valid(True):
+    if not bounding_bbox_valid(Origin.TRACKVIS):
         raise AssertionError()
     # Last two are expected to fail
     if out_of_grid(100):
@@ -647,7 +647,7 @@ def test_create_from_sft():
     if not (np.array_equal(sft_1.streamlines, sft_2.streamlines)
             and sft_1.space_attributes == sft_2.space_attributes
             and sft_1.space == sft_2.space
-            and sft_1.origin_at_corner == sft_2.origin_at_corner
+            and sft_1.origin == sft_2.origin
             and sft_1.data_per_point == sft_2.data_per_point
             and sft_1.data_per_streamline == sft_2.data_per_streamline):
         raise AssertionError()
