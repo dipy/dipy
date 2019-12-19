@@ -19,7 +19,7 @@ logger = logging.getLogger('StatefulTractogram')
 
 def set_sft_logger_level(log_level):
     """ Change the logger of the StatefulTractogram
-    to one on the following: DEBUG, INFO, WARNING, ERROR
+    to one on the following: DEBUG, INFO, WARNING, CRITICAL, ERROR
 
     Parameters
     ----------
@@ -106,6 +106,9 @@ class StatefulTractogram(object):
                             'will copy only the space_attributes, not '
                             'the state. The variables space and origin '
                             'must be specified separately.')
+            logging.warning('To copy the state from another StatefulTractogram'
+                            'you may want to use the function from_sft'
+                            '(static function of the StatefulTractogram)')
 
         if isinstance(reference, tuple) and len(reference) == 4:
             if is_reference_info_valid(*reference):
@@ -130,7 +133,8 @@ class StatefulTractogram(object):
         self._space = space
 
         if origin not in Origin:
-            raise ValueError('Origin MUST be from Origin enum, e.g Origin.NIFTI')
+            raise ValueError('Origin MUST be from Origin enum, '
+                             'e.g Origin.NIFTI')
         self._origin = origin
         logger.debug(self)
 
@@ -463,7 +467,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logger.info('Moved streamlines from vox to voxmm')
+                logger.debug('Moved streamlines from vox to voxmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -475,7 +479,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOX
-                logger.info('Moved streamlines from voxmm to vox')
+                logger.debug('Moved streamlines from voxmm to vox')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -486,7 +490,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logger.info('Moved streamlines from vox to rasmm')
+                logger.debug('Moved streamlines from vox to rasmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -497,7 +501,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines.data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._space = Space.VOX
-                logger.info('Moved streamlines from rasmm to vox')
+                logger.debug('Moved streamlines from rasmm to vox')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -510,7 +514,7 @@ class StatefulTractogram(object):
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logger.info('Moved streamlines from voxmm to rasmm')
+                logger.debug('Moved streamlines from voxmm to rasmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -523,7 +527,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logger.info('Moved streamlines from rasmm to voxmm')
+                logger.debug('Moved streamlines from rasmm to voxmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -546,10 +550,10 @@ class StatefulTractogram(object):
 
         self._tractogram.streamlines._data += shift
         if self._origin == Origin.NIFTI:
-            logger.info('Origin moved to the corner of voxel')
+            logger.debug('Origin moved to the corner of voxel')
             self._origin = Origin.TRACKVIS
         else:
-            logger.info('Origin moved to the center of voxel')
+            logger.debug('Origin moved to the center of voxel')
             self._origin = Origin.NIFTI
 
 
@@ -586,14 +590,16 @@ def _is_data_per_point_valid(streamlines, data):
     for key in data.keys():
         total_point_entries = 0
         if not len(data[key]) == total_streamline:
-            logger.error('Missing entry for streamlines points data (1)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of streamlines.')
             return False
 
         for values in data[key]:
             total_point_entries += len(values)
 
         if total_point_entries != total_point:
-            logger.error('Missing entry for streamlines points data (2)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of points per streamlines.')
             return False
 
     return True
@@ -627,7 +633,8 @@ def _is_data_per_streamline_valid(streamlines, data):
 
     for key in data.keys():
         if not len(data[key]) == total_streamline:
-            logger.error('Missing entry for streamlines data (3)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of streamlines.')
             return False
 
     return True
