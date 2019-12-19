@@ -11,7 +11,7 @@ from nibabel.streamlines.tractogram import (Tractogram,
 import numpy as np
 
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import get_reference_info
+from dipy.io.utils import get_reference_info, is_reference_info_valid
 
 
 logger = logging.getLogger('StatefulTractogram')
@@ -19,7 +19,7 @@ logger = logging.getLogger('StatefulTractogram')
 
 def set_sft_logger_level(log_level):
     """ Change the logger of the StatefulTractogram
-    to one on the following: DEBUG, INFO, WARNING, ERROR
+    to one on the following: DEBUG, INFO, WARNING, CRITICAL, ERROR
 
     Parameters
     ----------
@@ -36,6 +36,12 @@ class Space(enum.Enum):
     RASMM = 'rasmm'
 
 
+class Origin(enum.Enum):
+    """ Enum to simplify future change to convention """
+    NIFTI = 'center'
+    TRACKVIS = 'corner'
+
+
 class StatefulTractogram(object):
     """ Class for stateful representation of collections of streamlines
     Object designed to be identical no matter the file format
@@ -44,7 +50,7 @@ class StatefulTractogram(object):
     """
 
     def __init__(self, streamlines, reference, space,
-                 origin_at_corner=False,
+                 origin=Origin.NIFTI,
                  data_per_point=None, data_per_streamline=None):
         """ Create a strict, state-aware, robust tractogram
 
@@ -59,17 +65,16 @@ class StatefulTractogram(object):
             streamlines generation
         space : Enum (dipy.io.stateful_tractogram.Space)
             Current space in which the streamlines are (vox, voxmm or rasmm)
-            Typically after tracking the space is VOX, after nibabel loading
+            After tracking the space is VOX, after loading with nibabel
             the space is RASMM
-        origin_at_corner : bool
-            Information on the position of the origin,
-            False is NIFTI standard, default (center of the voxel)
-            True is TrackVis standard (corner of the voxel)
-        data_per_point : dict
+        origin : Enum (dipy.io.stateful_tractogram.Origin), optional
+            Current origin in which the streamlines are (center or corner)
+            After loading with nibabel the origin is CENTER
+        data_per_point : dict, optional
             Dictionary in which each key has X items, each items has Y_i items
             X being the number of streamlines
             Y_i being the number of points on streamlines #i
-        data_per_streamline : dict
+        data_per_streamline : dict, optional
             Dictionary in which each key has X items
             X being the number of streamlines
 
@@ -96,11 +101,28 @@ class StatefulTractogram(object):
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
 
-        space_attributes = get_reference_info(reference)
-        if space_attributes is None:
-            raise TypeError('Reference MUST be one of the following:\n' +
-                            'Nifti or Trk filename, Nifti1Image or TrkFile, ' +
-                            'Nifti1Header or trk.header (dict)')
+        if isinstance(reference, type(self)):
+            logging.warning('Using a StatefulTractogram as reference, this '
+                            'will copy only the space_attributes, not '
+                            'the state. The variables space and origin '
+                            'must be specified separately.')
+            logging.warning('To copy the state from another StatefulTractogram'
+                            'you may want to use the function from_sft'
+                            '(static function of the StatefulTractogram)')
+
+        if isinstance(reference, tuple) and len(reference) == 4:
+            if is_reference_info_valid(*reference):
+                space_attributes = reference
+            else:
+                raise TypeError('The provided space attributes are not '
+                                'considered valid, please correct before '
+                                'using them with StatefulTractogram.')
+        else:
+            space_attributes = get_reference_info(reference)
+            if space_attributes is None:
+                raise TypeError('Reference MUST be one of the following:\n'
+                                'Nifti or Trk filename, Nifti1Image or '
+                                'TrkFile, Nifti1Header or trk.header (dict).')
 
         (self._affine, self._dimensions,
          self._voxel_sizes, self._voxel_order) = space_attributes
@@ -110,10 +132,42 @@ class StatefulTractogram(object):
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX')
         self._space = space
 
-        if not isinstance(origin_at_corner, bool):
-            raise TypeError('origin_at_corner MUST be a boolean')
-        self._origin_at_corner = origin_at_corner
+        if origin not in Origin:
+            raise ValueError('Origin MUST be from Origin enum, '
+                             'e.g Origin.NIFTI')
+        self._origin = origin
         logger.debug(self)
+
+    @staticmethod
+    def from_sft(streamlines, sft,
+                 data_per_point=None,
+                 data_per_streamline=None):
+        """ Create an instance of `StatefulTractogram` from another instance
+        of `StatefulTractogram`.
+
+        Parameters
+        ----------
+        streamlines : list or ArraySequence
+            Streamlines of the tractogram
+        sft : StatefulTractgram,
+            The other StatefulTractgram to copy the space_attribute AND
+            state from.
+        data_per_point : dict, optional
+            Dictionary in which each key has X items, each items has Y_i items
+            X being the number of streamlines
+            Y_i being the number of points on streamlines #i
+        data_per_streamline : dict, optional
+            Dictionary in which each key has X items
+            X being the number of streamlines
+        -----
+        """
+        new_sft = StatefulTractogram(streamlines,
+                                     sft.space_attributes,
+                                     sft.space,
+                                     origin=sft.origin,
+                                     data_per_point=data_per_point,
+                                     data_per_streamline=data_per_streamline)
+        return new_sft
 
     def __str__(self):
         """ Generate the string for printing """
@@ -172,9 +226,9 @@ class StatefulTractogram(object):
         return self._voxel_order
 
     @property
-    def origin_at_corner(self):
+    def origin(self):
         """ Getter for origin standard """
-        return self._origin_at_corner
+        return self._origin
 
     @property
     def streamlines(self):
@@ -272,16 +326,27 @@ class StatefulTractogram(object):
             logger.error('Unsupported target space, please use Enum in '
                          'dipy.io.stateful_tractogram')
 
+    def to_origin(self, target_origin):
+        """ Safe function to change streamlines to a particular origin standard
+        False means NIFTI (center) and True means TrackVis (corner) """
+        if target_origin == Origin.NIFTI:
+            self.to_center()
+        elif target_origin == Origin.TRACKVIS:
+            self.to_corner()
+        else:
+            logger.error('Unsupported origin standard, please use Enum in '
+                         'dipy.io.stateful_tractogram')
+
     def to_center(self):
         """ Safe function to shift streamlines so the center of voxel is
         the origin """
-        if self._origin_at_corner:
+        if self._origin == Origin.TRACKVIS:
             self._shift_voxel_origin()
 
     def to_corner(self):
         """ Safe function to shift streamlines so the corner of voxel is
         the origin """
-        if not self._origin_at_corner:
+        if self._origin == Origin.NIFTI:
             self._shift_voxel_origin()
 
     def compute_bounding_box(self):
@@ -313,7 +378,7 @@ class StatefulTractogram(object):
             return True
 
         old_space = deepcopy(self.space)
-        old_origin = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin)
 
         # Do to rotation, equivalent of a OBB must be done
         self.to_vox()
@@ -333,13 +398,8 @@ class StatefulTractogram(object):
             logger.debug(bbox_corners)
             is_valid = False
 
-        if old_space == Space.RASMM:
-            self.to_rasmm()
-        elif old_space == Space.VOXMM:
-            self.to_voxmm()
-
-        if not old_origin:
-            self.to_center()
+        self.to_space(old_space)
+        self.to_origin(old_origin)
 
         return is_valid
 
@@ -357,7 +417,7 @@ class StatefulTractogram(object):
             return
 
         old_space = deepcopy(self.space)
-        old_origin = deepcopy(self.origin_at_corner)
+        old_origin = deepcopy(self.origin)
 
         self.to_vox()
         self.to_corner()
@@ -387,13 +447,8 @@ class StatefulTractogram(object):
                                       data_per_streamline=tmp_data_per_streamline,
                                       affine_to_rasmm=np.eye(4))
 
-        if old_space == Space.RASMM:
-            self.to_rasmm()
-        elif old_space == Space.VOXMM:
-            self.to_voxmm()
-
-        if not old_origin:
-            self.to_center()
+        self.to_space(old_space)
+        self.to_origin(old_origin)
 
         return indices_to_remove, indices_to_keep
 
@@ -412,7 +467,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logger.info('Moved streamlines from vox to voxmm')
+                logger.debug('Moved streamlines from vox to voxmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -424,7 +479,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data /= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOX
-                logger.info('Moved streamlines from voxmm to vox')
+                logger.debug('Moved streamlines from voxmm to vox')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -435,7 +490,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logger.info('Moved streamlines from vox to rasmm')
+                logger.debug('Moved streamlines from vox to rasmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -446,7 +501,7 @@ class StatefulTractogram(object):
             if self._tractogram.streamlines._data.size > 0:
                 self._tractogram.apply_affine(self._inv_affine)
                 self._space = Space.VOX
-                logger.info('Moved streamlines from rasmm to vox')
+                logger.debug('Moved streamlines from rasmm to vox')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -459,7 +514,7 @@ class StatefulTractogram(object):
                     self._voxel_sizes)
                 self._tractogram.apply_affine(self._affine)
                 self._space = Space.RASMM
-                logger.info('Moved streamlines from voxmm to rasmm')
+                logger.debug('Moved streamlines from voxmm to rasmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -472,7 +527,7 @@ class StatefulTractogram(object):
                 self._tractogram.streamlines._data *= np.asarray(
                     self._voxel_sizes)
                 self._space = Space.VOXMM
-                logger.info('Moved streamlines from rasmm to voxmm')
+                logger.debug('Moved streamlines from rasmm to voxmm')
         else:
             logger.warning('Wrong initial space for this function')
             return
@@ -490,16 +545,16 @@ class StatefulTractogram(object):
             tmp_affine = np.eye(4)
             tmp_affine[0:3, 0:3] = self._affine[0:3, 0:3]
             shift = apply_affine(tmp_affine, shift)
-        if self._origin_at_corner:
+        if self._origin == Origin.TRACKVIS:
             shift *= -1
 
         self._tractogram.streamlines._data += shift
-        if not self._origin_at_corner:
-            logger.info('Origin moved to the corner of voxel')
+        if self._origin == Origin.NIFTI:
+            logger.debug('Origin moved to the corner of voxel')
+            self._origin = Origin.TRACKVIS
         else:
-            logger.info('Origin moved to the center of voxel')
-
-        self._origin_at_corner = not self._origin_at_corner
+            logger.debug('Origin moved to the center of voxel')
+            self._origin = Origin.NIFTI
 
 
 def _is_data_per_point_valid(streamlines, data):
@@ -535,14 +590,16 @@ def _is_data_per_point_valid(streamlines, data):
     for key in data.keys():
         total_point_entries = 0
         if not len(data[key]) == total_streamline:
-            logger.error('Missing entry for streamlines points data (1)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of streamlines.')
             return False
 
         for values in data[key]:
             total_point_entries += len(values)
 
         if total_point_entries != total_point:
-            logger.error('Missing entry for streamlines points data (2)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of points per streamlines.')
             return False
 
     return True
@@ -576,7 +633,8 @@ def _is_data_per_streamline_valid(streamlines, data):
 
     for key in data.keys():
         if not len(data[key]) == total_streamline:
-            logger.error('Missing entry for streamlines data (3)')
+            logger.error('Missing entry for streamlines points data, '
+                         'incoherent number of streamlines.')
             return False
 
     return True

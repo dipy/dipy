@@ -4,11 +4,11 @@ import os
 from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_
 import pytest
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 
 from dipy.utils.optpkg import optional_package
@@ -202,6 +202,30 @@ def to_vox_equivalence():
     sft_2.to_space(Space.VOX)
     assert_allclose(sft_1.streamlines._data,
                     sft_2.streamlines._data, atol=1e-3, rtol=1e-6)
+
+
+def to_corner_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_corner()
+    sft_2.to_origin(Origin.TRACKVIS)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+
+
+def to_center_equivalence():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
+                            to_space=Space.VOX)
+
+    sft_1.to_center()
+    sft_2.to_origin(Origin.NIFTI)
+    assert_allclose(sft_1.streamlines.data,
+                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
 
 
 def trk_iterative_saving_loading():
@@ -407,9 +431,9 @@ def reassign_both_data_sep():
     return True
 
 
-def bounding_bbox_valid(shift):
+def bounding_bbox_valid(standard):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'],
-                          origin_at_corner=shift, bbox_valid_check=False)
+                          to_origin=standard, bbox_valid_check=False)
 
     return sft.is_bbox_in_vox_valid()
 
@@ -499,6 +523,17 @@ def out_of_grid(value):
     except (TypeError, ValueError):
         return True
 
+    sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
+    sft.to_vox()
+    tmp_streamlines = list(sft.get_streamlines_copy())
+    tmp_streamlines[0] += value
+
+    try:
+        sft.streamlines = tmp_streamlines
+        return sft.is_bbox_in_vox_valid()
+    except (TypeError, ValueError):
+        return True
+
 
 def test_iterative_transformation():
     iterative_to_vox_transformation()
@@ -544,6 +579,11 @@ def test_to_space():
     to_vox_equivalence()
 
 
+def test_to_origin():
+    to_center_equivalence()
+    to_corner_equivalence()
+
+
 def test_empty_sft():
     empty_space_change()
     empty_shift_change()
@@ -558,42 +598,60 @@ def test_shifting_corner():
 
 def test_replace_streamlines():
     # First two is expected to fail
-    if not subsample_streamlines():
-        raise AssertionError()
-    if not replace_streamlines():
-        raise AssertionError()
-    if not reassign_both_data_sep():
-        raise AssertionError()
-    if not reassign_both_data_sep_to_empty():
-        raise AssertionError()
+    assert_(subsample_streamlines(),
+            msg='Subsampling streamlines should not fail')
+    assert_(replace_streamlines(),
+            msg='Replacing streamlines should not fail')
+    assert_(reassign_both_data_sep(),
+            msg='Reassigning streamline/point data should not fail')
+    assert_(reassign_both_data_sep_to_empty(),
+            msg='Emptying streamline/point data should not fail')
 
 
 def test_bounding_box():
-    # First is expected to fail
-    if not bounding_bbox_valid(False):
-        raise AssertionError()
-    if bounding_bbox_valid(True):
-        raise AssertionError()
-    # Last two are expected to fail
-    if out_of_grid(100):
-        raise AssertionError()
-    if out_of_grid(-100):
-        raise AssertionError()
+    assert_(bounding_bbox_valid(Origin.NIFTI),
+            msg='Bounding box should be valid with proper declaration')
+    assert_(bounding_bbox_valid(Origin.TRACKVIS),
+            msg='Bounding box should be valid with proper declaration')
+    assert_(not out_of_grid(100),
+            msg='Positive translation should make the bbox check fail')
+    assert_(not out_of_grid(-100),
+            msg='Negative translation should make the bbox check fail')
 
 
 def test_invalid_streamlines():
-    if not remove_invalid_streamlines(True) == 5:
-        raise AssertionError()
-    if not remove_invalid_streamlines(False) == 13:
-        raise AssertionError()
+    assert_(remove_invalid_streamlines(True) == 5,
+            msg='A shifted gold standard should have 8 invalid streamlines')
+    assert_(remove_invalid_streamlines(False) == 13,
+            msg='A unshifted gold standard should have 0 invalid streamlines')
 
 
 def test_trk_coloring():
-    if not random_streamline_color():
+    assert_(random_streamline_color(),
+            msg='Streamlines color assignement failed')
+    assert_(random_point_gray(),
+            msg='Streamlines points gray assignement failed')
+    assert_(random_point_color(),
+            msg='Streamlines points color assignement failed')
+
+
+def test_create_from_sft():
+    sft_1 = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
+    sft_2 = StatefulTractogram.from_sft(
+        sft_1.streamlines, sft_1,
+        data_per_point=sft_1.data_per_point,
+        data_per_streamline=sft_1.data_per_streamline)
+
+    if not (np.array_equal(sft_1.streamlines, sft_2.streamlines)
+            and sft_1.space_attributes == sft_2.space_attributes
+            and sft_1.space == sft_2.space
+            and sft_1.origin == sft_2.origin
+            and sft_1.data_per_point == sft_2.data_per_point
+            and sft_1.data_per_streamline == sft_2.data_per_streamline):
         raise AssertionError()
-    if not random_point_gray():
-        raise AssertionError()
-    if not random_point_color():
+
+    sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
+    if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()
 
 

@@ -8,7 +8,7 @@ from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
 
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
 from dipy.io.dpy import Dpy
 from dipy.io.utils import (create_tractogram_header,
@@ -39,14 +39,14 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         raise TypeError('Output filename is not one of the supported format')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
-        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are ' +
-                         'invalid. Please use the function ' +
-                         'remove_invalid_streamlines to discard invalid ' +
+        raise ValueError('Bounding box is not valid in voxel space, cannot '
+                         'load a valid file if some coordinates are '
+                         'invalid. Please use the function '
+                         'remove_invalid_streamlines to discard invalid '
                          'streamlines or set bbox_valid_check to False')
 
     old_space = deepcopy(sft.space)
-    old_origin = deepcopy(sft.origin_at_corner)
+    old_origin = deepcopy(sft.origin)
 
     sft.to_rasmm()
     sft.to_center()
@@ -76,19 +76,14 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     logging.debug('Save %s with %s streamlines in %s seconds',
                   filename, len(sft), round(time.time() - timer, 3))
 
-    if old_space == Space.VOX:
-        sft.to_vox()
-    elif old_space == Space.VOXMM:
-        sft.to_voxmm()
-
-    if old_origin:
-        sft.to_corner()
+    sft.to_space(old_space)
+    sft.to_origin(old_origin)
 
     return True
 
 
 def load_tractogram(filename, reference, to_space=Space.RASMM,
-                    origin_at_corner=False, bbox_valid_check=True,
+                    to_origin=Origin.NIFTI, bbox_valid_check=True,
                     trk_header_check=True):
     """ Load the stateful tractogram from any format (trk, tck, vtk, fib, dpy)
 
@@ -102,11 +97,11 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         Typically a nifti-related object from the native diffusion used for
         streamlines generation
     to_space : Enum (dipy.io.stateful_tractogram.Space)
-        Space to which the streamlines will be transformed after loading.
-    origin_at_corner : bool
-        Information on the position of the origin,
-        False is NIFTI standard, default (center of the voxel)
-        True is TrackVis standard (corner of the voxel)
+        Space to which the streamlines will be transformed after loading
+    to_origin : Enum (dipy.io.stateful_tractogram.Origin)
+        Origin to which the streamlines will be transformed after loading
+            NIFTI standard, default (center of the voxel)
+            TRACKVIS standard (corner of the voxel)
     bbox_valid_check : bool
         Verification for negative voxel coordinates or values above the
         volume dimensions. Default is True, to enforce valid file.
@@ -132,13 +127,13 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         if extension == '.trk':
             reference = filename
         else:
-            logging.error('Reference must be provided, "same" is only ' +
+            logging.error('Reference must be provided, "same" is only '
                           'available for Trk file.')
             return False
 
     if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):
-            logging.error('Trk file header does not match the provided ' +
+            logging.error('Trk file header does not match the provided '
                           'reference')
             return False
 
@@ -162,20 +157,18 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                   filename, len(streamlines), round(time.time() - timer, 3))
 
     sft = StatefulTractogram(streamlines, reference, Space.RASMM,
-                             origin_at_corner=origin_at_corner,
+                             origin=Origin.NIFTI,
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
 
-    if to_space == Space.VOX:
-        sft.to_vox()
-    elif to_space == Space.VOXMM:
-        sft.to_voxmm()
+    sft.to_space(to_space)
+    sft.to_origin(to_origin)
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
-        raise ValueError('Bounding box is not valid in voxel space, cannot ' +
-                         'load a valid file if some coordinates are invalid.' +
-                         'Please set bbox_valid_check to False and then use' +
-                         'the function remove_invalid_streamlines to discard' +
+        raise ValueError('Bounding box is not valid in voxel space, cannot '
+                         'load a valid file if some coordinates are invalid.'
+                         'Please set bbox_valid_check to False and then use'
+                         'the function remove_invalid_streamlines to discard'
                          'invalid streamlines.')
 
     return sft
@@ -195,7 +188,7 @@ def load_generator(ttype):
         Function (load_tractogram) that handle only one file format
     """
     def f_gen(filename, reference, to_space=Space.RASMM,
-              origin_at_corner=False, bbox_valid_check=True,
+              to_origin=Origin.NIFTI, bbox_valid_check=True,
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
@@ -204,7 +197,7 @@ def load_generator(ttype):
 
         sft = load_tractogram(filename, reference,
                               to_space=Space.RASMM,
-                              origin_at_corner=origin_at_corner,
+                              to_origin=to_origin,
                               bbox_valid_check=bbox_valid_check,
                               trk_header_check=trk_header_check)
         return sft

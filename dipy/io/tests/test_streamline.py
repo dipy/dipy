@@ -232,29 +232,29 @@ def trk_saver(filename):
 
 
 def test_io_trk_load():
-    if not trk_loader(filepath_dix['gs.trk']):
-        raise AssertionError()
-    if trk_loader('fake_file.TRK'):
-        raise AssertionError()
-    if trk_loader(filepath_dix['gs.tck']):
-        raise AssertionError()
-    if trk_loader(filepath_dix['gs.fib']):
-        raise AssertionError()
-    if trk_loader(filepath_dix['gs.dpy']):
-        raise AssertionError()
+    npt.assert_(trk_loader(filepath_dix['gs.trk']),
+                msg='trk_loader should be able to load a trk')
+    npt.assert_(not trk_loader('fake_file.TRK'),
+                msg='trk_loader should not be able to load a TRK')
+    npt.assert_(not trk_loader(filepath_dix['gs.tck']),
+                msg='trk_loader should not be able to load a tck')
+    npt.assert_(not trk_loader(filepath_dix['gs.fib']),
+                msg='trk_loader should not be able to load a fib')
+    npt.assert_(not trk_loader(filepath_dix['gs.dpy']),
+                msg='trk_loader should not be able to load a dpy')
 
 
 def test_io_trk_save():
-    if not trk_saver(filepath_dix['gs.trk']):
-        raise AssertionError()
-    if trk_saver('fake_file.TRK'):
-        raise AssertionError()
-    if trk_saver(filepath_dix['gs.tck']):
-        raise AssertionError()
-    if trk_saver(filepath_dix['gs.fib']):
-        raise AssertionError()
-    if trk_saver(filepath_dix['gs.dpy']):
-        raise AssertionError()
+    npt.assert_(trk_saver(filepath_dix['gs.trk']),
+                msg='trk_saver should be able to save a trk')
+    npt.assert_(not trk_saver('fake_file.TRK'),
+                msg='trk_saver should not be able to save a TRK')
+    npt.assert_(not trk_saver(filepath_dix['gs.tck']),
+                msg='trk_saver should not be able to save a tck')
+    npt.assert_(not trk_saver(filepath_dix['gs.fib']),
+                msg='trk_saver should not be able to save a fib')
+    npt.assert_(not trk_saver(filepath_dix['gs.dpy']),
+                msg='trk_saver should not be able to save a dpy')
 
 
 if __name__ == '__main__':
