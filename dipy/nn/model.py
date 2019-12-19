@@ -14,7 +14,9 @@ class SingleLayerPerceptron(object):
     def __init__(self, input_shape=(28, 28),
                  num_hidden=128, act_hidden='relu',
                  dropout=0.2,
-                 num_out=10, act_out='softmax'):
+                 num_out=10, act_out='softmax',
+                 optimizer='adam',
+                 loss='sparse_categorical_crossentropy'):
         """ Single Layer Perceptron with Dropout
 
         Parameters
@@ -31,6 +33,11 @@ class SingleLayerPerceptron(object):
             Number of nodes in output layer
         act_out : string
             Activation function used in output layer
+        optimizer :  string
+            Select optimizer. Default adam.
+        loss : string
+            Select loss function for measuring accuracy.
+            Default sparse_categorical_crossentropy.
         """
         self.accuracy = None
         self.loss = None
@@ -42,8 +49,8 @@ class SingleLayerPerceptron(object):
             tf.keras.layers.Dense(num_out, activation=act_out)
             ])
 
-        model.compile(optimizer='adam',
-                      loss='sparse_categorical_crossentropy',
+        model.compile(optimizer=optimizer,
+                      loss=loss,
                       metrics=['accuracy'])
 
         self.model = model
