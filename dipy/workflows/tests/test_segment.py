@@ -18,7 +18,7 @@ from dipy.align.streamlinear import BundleMinDistanceMetric
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
-        volume = nib.load(data_path).get_data()
+        volume = nib.load(data_path).get_fdata()
         save_masked = True
         median_radius = 3
         numpass = 3
@@ -40,10 +40,10 @@ def test_median_otsu_flow():
                                    numpass=numpass,
                                    autocrop=autocrop, dilate=dilate)
 
-        result_mask_data = nib.load(join(out_dir, mask_name)).get_data()
+        result_mask_data = nib.load(join(out_dir, mask_name)).get_fdata()
         npt.assert_array_equal(result_mask_data, mask)
 
-        result_masked_data = nib.load(join(out_dir, masked_name)).get_data()
+        result_masked_data = nib.load(join(out_dir, masked_name)).get_fdata()
         npt.assert_array_equal(result_masked_data, masked)
 
 

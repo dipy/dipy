@@ -76,7 +76,7 @@ def test_split_flow():
         split_flow = SplitFlow()
         data_path, _, _ = get_fnames()
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
         split_flow.run(data_path, out_dir=out_dir)
         assert_true(os.path.isfile(
          split_flow.last_generated_outputs['out_split']))
@@ -85,7 +85,7 @@ def test_split_flow():
         split_path = split_flow.last_generated_outputs['out_split']
         assert_true(os.path.isfile(split_path))
         split_img = nib.load(split_path)
-        split_data = split_img.get_data()
+        split_data = split_img.get_fdata()
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_img.affine, vol_img.affine)
 

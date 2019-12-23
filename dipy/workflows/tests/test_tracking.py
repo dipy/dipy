@@ -19,7 +19,7 @@ def test_particle_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(dwi_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
 
         # Create some mask
         mask = np.ones_like(volume[:, :, :, 0])
@@ -112,7 +112,7 @@ def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
         mask = np.ones_like(volume[:, :, :, 0])
         mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
@@ -132,7 +132,7 @@ def test_local_fiber_tracking_workflow():
         mask_path = mask_flow.last_generated_outputs['out_mask']
 
         gfa_img = nib.load(gfa_path)
-        save_nifti(gfa_path, gfa_img.get_data(), vol_img.affine, gfa_img.header)
+        save_nifti(gfa_path, gfa_img.get_fdata(), vol_img.affine, gfa_img.header)
 
         # Test tracking with pam no sh
         lf_track_pam = LocalFiberTrackingPAMFlow()

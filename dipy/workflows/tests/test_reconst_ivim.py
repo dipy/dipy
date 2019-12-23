@@ -56,19 +56,19 @@ def test_reconst_ivim():
         ivim_flow.run(*args, out_dir=out_dir)
 
         S0_path = ivim_flow.last_generated_outputs['out_S0_predicted']
-        S0_data = nib.load(S0_path).get_data()
+        S0_data = nib.load(S0_path).get_fdata()
         assert_equal(S0_data.shape, data_img.shape[:-1])
 
         f_path = ivim_flow.last_generated_outputs['out_perfusion_fraction']
-        f_data = nib.load(f_path).get_data()
+        f_data = nib.load(f_path).get_fdata()
         assert_equal(f_data.shape, data_img.shape[:-1])
 
         D_star_path = ivim_flow.last_generated_outputs['out_D_star']
-        D_star_data = nib.load(D_star_path).get_data()
+        D_star_data = nib.load(D_star_path).get_fdata()
         assert_equal(D_star_data.shape, data_img.shape[:-1])
 
         D_path = ivim_flow.last_generated_outputs['out_D']
-        D_data = nib.load(D_path).get_data()
+        D_data = nib.load(D_path).get_fdata()
         assert_equal(D_data.shape, data_img.shape[:-1])
 
 
