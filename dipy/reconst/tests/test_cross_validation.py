@@ -36,7 +36,7 @@ def test_dti_xval():
     """
     Test k-fold cross-validation
     """
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
     gtab = gt.gradient_table(fbval, fbvec)
     dm = dti.TensorModel(gtab, 'LS')
     # The data has 102 directions, so will not divide neatly into 10 bits
@@ -69,7 +69,7 @@ def test_dti_xval():
 
 def test_csd_xval():
     # First, let's see that it works with some data:
-    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
+    data = nib.load(fdata).get_fdata()[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)
     S0 = np.mean(data[..., gtab.b0s_mask])
     response = ([0.0015, 0.0003, 0.0001], S0)
@@ -126,6 +126,6 @@ def test_no_predict():
 
     gtab = gt.gradient_table(fbval, fbvec)
     my_model = NoPredictModel(gtab)
-    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Whatever
+    data = nib.load(fdata).get_fdata()[1:3, 1:3, 1:3]  # Whatever
 
     npt.assert_raises(ValueError,  xval.kfold_xval, my_model, data, 2)

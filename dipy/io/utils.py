@@ -81,7 +81,7 @@ def decfa(img_orig, scale=False):
     dest_dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
     out_data = np.zeros(img_orig.shape[:3], dtype=dest_dtype)
 
-    data_orig = img_orig.get_data()
+    data_orig = img_orig.get_fdata()
 
     if scale:
         data_orig = (data_orig * 255).astype('uint8')
@@ -120,7 +120,7 @@ def decfa_to_float(img_orig):
     https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
     """
 
-    data_orig = img_orig.get_data()
+    data_orig = img_orig.get_fdata()
     out_data = np.zeros(data_orig.shape + (3, ), dtype=np.uint8)
 
     for ii in np.ndindex(img_orig.shape[:3]):

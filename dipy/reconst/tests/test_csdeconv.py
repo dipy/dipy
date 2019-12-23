@@ -115,7 +115,7 @@ def test_recursive_response_calibration():
 def test_auto_response():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
 
     gtab = gradient_table(bvals, bvecs)
     radius = 3
@@ -160,7 +160,7 @@ def test_auto_response():
 def test_response_from_mask():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
 
     gtab = gradient_table(bvals, bvecs)
     ten = TensorModel(gtab)

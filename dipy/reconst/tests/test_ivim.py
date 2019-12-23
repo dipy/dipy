@@ -248,7 +248,7 @@ def test_bounds_x0():
 
        from dipy.data.fetcher import read_ivim
        img, gtab = read_ivim()
-       data = img.get_data()
+       data = img.get_fdata()
        signal = data[160, 98, 33, :]
 
     """

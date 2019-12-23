@@ -118,7 +118,7 @@ def test_FiberModel_init():
 def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     data_ni = nib.load(data_file)
-    data = data_ni.get_data()
+    data = data_ni.get_fdata()
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
@@ -158,7 +158,7 @@ def test_fit_data():
     fstreamlines = dpd.get_fnames('small_25_streamlines')
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
-    data = ni_data.get_data()
+    data = ni_data.get_fdata()
 
     tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
     sft = StatefulTractogram(tensor_streamlines, ni_data, Space.RASMM)

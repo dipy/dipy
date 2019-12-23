@@ -4,6 +4,7 @@ from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_almost_equal)
+from dipy.io.image import load_nifti
 from dipy.data import get_fnames
 from dipy.align.reslice import reslice
 from dipy.denoise.noise_estimate import estimate_sigma
@@ -11,10 +12,7 @@ from dipy.denoise.noise_estimate import estimate_sigma
 
 def test_resample():
     fimg, _, _ = get_fnames("small_25")
-    img = nib.load(fimg)
-    data = img.get_data()
-    affine = img.affine
-    zooms = img.header.get_zooms()[:3]
+    data, affine, zooms = load_nifti(f_name, return_voxsize=True)
 
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)

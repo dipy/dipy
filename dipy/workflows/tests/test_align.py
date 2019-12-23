@@ -25,14 +25,14 @@ def test_reslice():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
 
         reslice_flow = ResliceFlow()
         reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=out_dir)
 
         out_path = reslice_flow.last_generated_outputs['out_resliced']
         out_img = nib.load(out_path)
-        resliced = out_img.get_data()
+        resliced = out_img.get_fdata()
 
         npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
         npt.assert_equal(resliced.shape[1] > volume.shape[1], True)

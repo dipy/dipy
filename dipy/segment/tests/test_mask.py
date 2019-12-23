@@ -86,7 +86,7 @@ def test_bounding_box():
 def test_median_otsu():
     fname = get_fnames('S0_10')
     img = nib.load(fname)
-    data = img.get_data()
+    data = img.get_fdata()
     data = np.squeeze(data.astype('f8'))
     dummy_mask = data > data.mean()
     data_masked, mask = median_otsu(data, median_radius=3, numpass=2,

@@ -51,16 +51,13 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
 
     Examples
     --------
-    >>> import nibabel as nib
+    >>> from dipy.io.image import load_nifti
     >>> from dipy.align.reslice import reslice
     >>> from dipy.data import get_fnames
-    >>> fimg = get_fnames('aniso_vox')
-    >>> img = nib.load(fimg)
-    >>> data = img.get_data()
+    >>> f_name = get_fnames('aniso_vox')
+    >>> data, affine, zooms = load_nifti(f_name, return_voxsize=True)
     >>> data.shape == (58, 58, 24)
     True
-    >>> affine = img.affine
-    >>> zooms = img.header.get_zooms()[:3]
     >>> zooms
     (4.0, 4.0, 5.0)
     >>> new_zooms = (3.,3.,3.)
