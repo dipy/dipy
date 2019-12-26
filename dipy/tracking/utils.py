@@ -162,7 +162,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         raise ValueError("label_volume must be a 3d integer array with"
                          "non-negative label values")
 
-    # If streamlines is an iterators
+    # If streamlines is an iterator
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
 
@@ -170,7 +170,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
         # Create ndarray to store streamline connections
         edges = np.ndarray(shape=(3, 0), dtype=int)
         lin_T, offset = _mapping_to_voxel(affine)
-        for sl in range(len(streamlines)):
+        for sl, _ in enumerate(streamlines):
             # Convert streamline to voxel coordinates
             entire = _to_voxel_coordinates(streamlines[sl], lin_T, offset)
             i, j, k = entire.T
@@ -212,8 +212,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                     mapping[key] = [streamlines[i] for i in mapping[key]]
 
             return matrix, mapping
-        else:
-            return matrix
+        
+        return matrix
     else:
         # take the first and last point of each streamline
         endpoints = [sl[0::len(sl)-1] for sl in streamlines]
@@ -244,8 +244,8 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
 
             # Return the mapping matrix and the mapping
             return matrix, mapping
-        else:
-            return matrix
+        
+        return matrix
 
 
 def ndbincount(x, weights=None, shape=None):
