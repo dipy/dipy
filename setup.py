@@ -216,7 +216,9 @@ def main(**extra_args):
                     'dipy.denoise',
                     'dipy.denoise.tests',
                     'dipy.workflows',
-                    'dipy.workflows.tests'],
+                    'dipy.workflows.tests',
+                    'dipy.nn',
+                    'dipy.nn.tests'],
 
           ext_modules=EXTS,
           python_requires=">= 3.5",
