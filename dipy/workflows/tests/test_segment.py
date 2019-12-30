@@ -40,11 +40,14 @@ def test_median_otsu_flow():
                                    numpass=numpass,
                                    autocrop=autocrop, dilate=dilate)
 
-        result_mask_data = nib.load(join(out_dir, mask_name)).get_fdata()
+        result_mask_data = nib.load(join(out_dir, mask_name)) \
+            .get_fdata().astype(np.uint8)
         npt.assert_array_equal(result_mask_data, mask)
 
-        result_masked_data = nib.load(join(out_dir, masked_name)).get_fdata()
-        npt.assert_array_equal(result_masked_data, masked)
+        result_masked = nib.load(join(out_dir, masked_name))
+        result_masked_data = np.asanyarray(result_masked.dataobj)
+
+        npt.assert_array_equal(np.round(result_masked_data), masked)
 
 
 def test_recobundles_flow():

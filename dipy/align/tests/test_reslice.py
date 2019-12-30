@@ -12,7 +12,7 @@ from dipy.denoise.noise_estimate import estimate_sigma
 
 def test_resample():
     fimg, _, _ = get_fnames("small_25")
-    data, affine, zooms = load_nifti(f_name, return_voxsize=True)
+    data, affine, zooms = load_nifti(fimg, return_voxsize=True)
 
     # test that new zooms are correctly from the affine (check with 3D volume)
     new_zooms = (1, 1.2, 2.1)

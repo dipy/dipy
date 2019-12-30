@@ -72,7 +72,7 @@ class MedianOtsuFlow(Workflow):
                 numpass=numpass,
                 autocrop=autocrop, dilate=dilate)
 
-            save_nifti(mask_out_path, mask_volume.astype(np.float32), affine)
+            save_nifti(mask_out_path, mask_volume.astype(np.float64), affine)
 
             logging.info('Mask saved as {0}'.format(mask_out_path))
 

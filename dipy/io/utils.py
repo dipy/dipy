@@ -120,7 +120,7 @@ def decfa_to_float(img_orig):
     https://nifti.nimh.nih.gov/nifti-1/documentation/nifti1fields/nifti1fields_pages/datatype.html
     """
 
-    data_orig = img_orig.get_fdata()
+    data_orig = np.asanyarray(img_orig.dataobj)
     out_data = np.zeros(data_orig.shape + (3, ), dtype=np.uint8)
 
     for ii in np.ndindex(img_orig.shape[:3]):
