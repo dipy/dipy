@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import nibabel as nib
 from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
 

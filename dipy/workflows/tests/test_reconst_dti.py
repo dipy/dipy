@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_equal
 
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data,  load_nifti, save_nifti
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 from dipy.workflows.reconst import ReconstDtiFlow
 
 

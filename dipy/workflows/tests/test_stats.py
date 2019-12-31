@@ -5,7 +5,6 @@ from os.path import join
 from dipy.utils.optpkg import optional_package
 import numpy.testing as npt
 import pytest
-import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 from dipy.tracking.streamline import Streamlines

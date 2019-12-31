@@ -67,8 +67,7 @@ def test_particle_filtering_traking_workflows():
 
         for path, arr in zip([wm_path, gm_path, csf_path],
                              [simple_wm, simple_gm, simple_csf]):
-            nib.save(nib.Nifti1Image(arr.astype(np.uint8), vol_img.affine),
-                     path)
+            save_nifti(path, arr.astype(np.uint8), affine)
 
         # CSD Reconstruction
         reconst_csd_flow = ReconstCSDFlow()
