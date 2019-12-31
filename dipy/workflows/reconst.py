@@ -12,7 +12,7 @@ from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti, save_nifti, load_nifti_data
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
@@ -322,7 +322,7 @@ class ReconstDtiFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_fdata().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                                b0_threshold, bvecs_tol)
@@ -507,7 +507,7 @@ class ReconstCSDFlow(Workflow):
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
-            mask_vol = nib.load(maskfile).get_fdata().astype(np.bool)
+            mask_vol = load_nifti_data(maskfile).astype(np.bool)
 
             n_params = ((sh_order + 1) * (sh_order + 2)) / 2
             if data.shape[-1] < n_params:
@@ -671,7 +671,7 @@ class ReconstCSAFlow(Workflow):
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
-            mask_vol = nib.load(maskfile).get_fdata().astype(np.bool)
+            mask_vol = load_nifti_data(maskfile).astype(np.bool)
 
             peaks_sphere = default_sphere
 
@@ -809,7 +809,7 @@ class ReconstDkiFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_fdata().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                               b0_threshold)
@@ -979,7 +979,7 @@ class ReconstIvimFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_fdata().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec,
                                               b0_threshold)

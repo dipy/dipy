@@ -4,11 +4,10 @@ import numpy.testing as npt
 from dipy.testing import (assert_true, assert_false, assert_greater,
                           assert_less)
 
-import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti
+from dipy.io.image import save_nifti, load_nifti, load_nifti_data
 from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow)
 
@@ -16,8 +15,7 @@ from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
 def test_nlmeans_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames()
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_fdata()
+        volume, affine = load_nifti(data_path)
 
         nlmeans_flow = NLMeansFlow()
 
@@ -29,10 +27,9 @@ def test_nlmeans_flow():
         nlmeans_flow.run(data_path, sigma=4, out_dir=out_dir)
         denoised_path = nlmeans_flow.last_generated_outputs['out_denoised']
         assert_true(os.path.isfile(denoised_path))
-        denoised_img = nib.load(denoised_path)
-        denoised_data = denoised_img.get_fdata()
+        denoised_data, denoised_affine = load_nifti(denoised_path)
         npt.assert_equal(denoised_data.shape, volume.shape)
-        npt.assert_array_almost_equal(denoised_img.affine, vol_img.affine)
+        npt.assert_array_almost_equal(denoised_affine, affine)
 
 
 def test_lpca_flow():
@@ -67,8 +64,7 @@ def test_mppca_flow():
                 mppca_flow.last_generated_outputs['out_sigma']))
 
         denoised_path = mppca_flow.last_generated_outputs['out_denoised']
-        denoised_img = nib.load(denoised_path)
-        denoised_data = denoised_img.get_fdata()
+        denoised_data = load_nifti_data(denoised_path)
         assert_greater(denoised_data.min(), S0.min())
         assert_less(denoised_data.max(), S0.max())
         npt.assert_equal(np.round(denoised_data.mean()), 100)

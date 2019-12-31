@@ -5,12 +5,11 @@ from os.path import join
 from dipy.utils.optpkg import optional_package
 import numpy.testing as npt
 import pytest
-import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
 from dipy.tracking.streamline import Streamlines
 from dipy.testing import assert_true
-from dipy.io.image import save_nifti
+from dipy.io.image import save_nifti, load_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.data import get_fnames
@@ -25,12 +24,10 @@ _, have_tables, _ = optional_package("tables")
 def test_stats():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_101D')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_fdata()
-        mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        volume, affine = load_nifti(data_path)
+        mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask, affine)
 
         snr_flow = SNRinCCFlow(force=True)
         args = [data_path, bval_path, bvec_path, mask_path]

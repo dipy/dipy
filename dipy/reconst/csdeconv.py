@@ -349,7 +349,7 @@ def estimate_response(gtab, evals, S0):
 
 
 def forward_sdt_deconv_mat(ratio, n, r2_term=False):
-    """ Build forward sharpening deconvolution transform (SDT) matrix
+    r""" Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
     ----------
@@ -378,7 +378,6 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     .. [1] Descoteaux, M. PhD Thesis. INRIA Sophia-Antipolis. 2008.
 
     """
-
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     n_degrees = n.max() // 2 + 1

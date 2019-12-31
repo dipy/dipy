@@ -3,6 +3,7 @@ import os.path as op
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.data as dpd
+from dipy.io.image import load_nifti_data
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 import dipy.tracking.life as life
@@ -117,8 +118,7 @@ def test_FiberModel_init():
 
 def test_FiberFit():
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
-    data_ni = nib.load(data_file)
-    data = data_ni.get_fdata()
+    data = load_nifti_data(data_file)
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)

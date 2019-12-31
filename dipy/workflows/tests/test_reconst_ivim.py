@@ -1,6 +1,5 @@
 from os.path import join as pjoin
 
-import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 import numpy as np
@@ -9,6 +8,7 @@ from numpy.testing import assert_equal
 
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import generate_bvecs, gradient_table
+from dipy.io.image import load_nifti_data, save_nifti
 from dipy.workflows.reconst import ReconstIvimFlow
 
 
@@ -37,17 +37,15 @@ def test_reconst_ivim():
         data_single = data[0]
         temp_affine = np.eye(4)
 
-        data_multi = np.zeros((2, 2, 1, len(gtab.bvals)))
+        data_multi = np.zeros((2, 2, 1, len(gtab.bvals)), dtype=int)
         data_multi[0, 0, 0] = data_multi[0, 1, 0] = data_multi[
             1, 0, 0] = data_multi[1, 1, 0] = data_single
-        data_img = nib.Nifti1Image(data_multi.astype(int), temp_affine)
         data_path = pjoin(out_dir, 'tmp_data.nii.gz')
-        nib.save(data_img, data_path)
+        save_nifti(data_path, data_multi, temp_affine)
 
-        mask = np.ones_like(data_multi[..., 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), data_img.affine)
+        mask = np.ones_like(data_multi[..., 0], dtype=np.uint8)
         mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask, temp_affine)
 
         ivim_flow = ReconstIvimFlow()
 
@@ -56,20 +54,20 @@ def test_reconst_ivim():
         ivim_flow.run(*args, out_dir=out_dir)
 
         S0_path = ivim_flow.last_generated_outputs['out_S0_predicted']
-        S0_data = nib.load(S0_path).get_fdata()
-        assert_equal(S0_data.shape, data_img.shape[:-1])
+        S0_data = load_nifti_data(S0_path)
+        assert_equal(S0_data.shape, data_multi.shape[:-1])
 
         f_path = ivim_flow.last_generated_outputs['out_perfusion_fraction']
-        f_data = nib.load(f_path).get_fdata()
-        assert_equal(f_data.shape, data_img.shape[:-1])
+        f_data = load_nifti_data(f_path)
+        assert_equal(f_data.shape, data_multi.shape[:-1])
 
         D_star_path = ivim_flow.last_generated_outputs['out_D_star']
-        D_star_data = nib.load(D_star_path).get_fdata()
-        assert_equal(D_star_data.shape, data_img.shape[:-1])
+        D_star_data = load_nifti_data(D_star_path)
+        assert_equal(D_star_data.shape, data_multi.shape[:-1])
 
         D_path = ivim_flow.last_generated_outputs['out_D']
-        D_data = nib.load(D_path).get_fdata()
-        assert_equal(D_data.shape, data_img.shape[:-1])
+        D_data = load_nifti_data(D_path)
+        assert_equal(D_data.shape, data_multi.shape[:-1])
 
 
 if __name__ == '__main__':

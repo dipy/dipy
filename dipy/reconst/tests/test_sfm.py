@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
-import nibabel as nib
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.core.gradients as grad
@@ -9,6 +8,7 @@ import dipy.sims.voxel as sims
 import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 
 needs_sklearn = pytest.mark.skipif(not sfm.has_sklearn,
                                    reason="Requires Scikit-Learn")
@@ -26,7 +26,7 @@ def test_design_matrix():
 @needs_sklearn
 def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    data = nib.load(fdata).get_fdata()
+    data = load_nifti_data(fdata)
     gtab = grad.gradient_table(fbvals, fbvecs)
     for iso in [sfm.ExponentialIsotropicModel, None]:
         sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
@@ -77,7 +77,7 @@ def test_predict():
 
 def test_sfm_background():
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    data = nib.load(fdata).get_fdata()
+    data = load_nifti_data(fdata)
     gtab = grad.gradient_table(fbvals, fbvecs)
     to_fit = data[0, 0, 0]
     to_fit[gtab.b0s_mask] = 0
@@ -88,7 +88,7 @@ def test_sfm_background():
 
 def test_sfm_stick():
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    data = nib.load(fdata).get_fdata()
+    data = load_nifti_data(fdata)
     gtab = grad.gradient_table(fbvals, fbvecs)
     sfmodel = sfm.SparseFascicleModel(gtab, solver='NNLS',
                                       response=[0.001, 0, 0])
@@ -135,7 +135,7 @@ def test_sfm_sklearnlinearsolver():
 @needs_sklearn
 def test_exponential_iso():
     fdata, fbvals, fbvecs = dpd.get_fnames()
-    data_dti = nib.load(fdata).get_fdata()
+    data_dti = load_nifti_data(fdata)
     gtab_dti = grad.gradient_table(fbvals, fbvecs)
     data_multi, gtab_multi = dpd.dsi_deconv_voxels()
 
