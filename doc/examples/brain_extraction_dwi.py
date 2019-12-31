@@ -9,6 +9,7 @@ We show how to extract brain information and mask from a b0 image using DIPY_'s
 First import the necessary modules:
 """
 
+from os.path import join as pjoin
 import numpy as np
 import nibabel as nib
 
@@ -19,10 +20,13 @@ The ``scil_b0`` dataset contains different data from different companies and
 models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 """
 
-from dipy.data.fetcher import fetch_scil_b0, read_siemens_scil_b0
-fetch_scil_b0()
-img = read_siemens_scil_b0()
-data = np.squeeze(img.get_data())
+from dipy.data.fetcher import fetch_scil_b0
+from dipy.io.image import load_nifti_data
+
+files, folder = fetch_scil_b0()
+data = load_nifti_data(pjoin(folder, 'datasets_multi-site_all_companies',
+                             '1.5T', 'Siemens', 'b0.nii.gz'))
+data = np.squeeze(data)
 
 """
 ``img`` contains a nibabel Nifti1Image object. Data is the actual brain data as

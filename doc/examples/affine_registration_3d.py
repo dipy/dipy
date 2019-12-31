@@ -7,10 +7,12 @@ This example explains how to compute an affine transformation to register two
 optimization strategy is similar to that implemented in ANTS [Avants11]_.
 """
 
+from os.path import join as pjoin
 import numpy as np
 from dipy.viz import regtools
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-from dipy.data.fetcher import fetch_syn_data, read_syn_data
+from dipy.data import fetch_stanford_hardi
+from dipy.data.fetcher import fetch_syn_data
+from dipy.io.image import load_nifti
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
@@ -24,19 +26,19 @@ Let's fetch two b0 volumes, the static image will be the b0 from the Stanford
 HARDI dataset
 """
 
-fetch_stanford_hardi()
-nib_stanford, gtab_stanford = read_stanford_hardi()
-static = np.squeeze(nib_stanford.get_data())[..., 0]
-static_grid2world = nib_stanford.affine
+files, folder = fetch_stanford_hardi()
+static_data, static_affine = load_nifti(pjoin(folder, 'HARDI150.nii.gz'))
+static = np.squeeze(static_data)[..., 0]
+static_grid2world = static_affine
 
 """
 Now the moving image
 """
 
-fetch_syn_data()
-nib_syn_t1, nib_syn_b0 = read_syn_data()
-moving = np.array(nib_syn_b0.get_data())
-moving_grid2world = nib_syn_b0.affine
+files, folder = fetch_syn_data()
+moving_data, moving_affine = load_nifti(pjoin(folder, 'b0.nii.gz'))
+moving = moving_data
+moving_grid2world = moving_affine
 
 """
 We can see that the images are far from aligned by drawing one on top of
