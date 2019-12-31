@@ -115,7 +115,7 @@ def test_recursive_response_calibration():
 def test_auto_response():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata).
+    data = load_nifti_data(fdata)
 
     gtab = gradient_table(bvals, bvecs)
     radius = 3
