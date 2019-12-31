@@ -1,8 +1,8 @@
 import logging
 import os
 import numpy.testing as npt
-import nibabel as nib
 from dipy.data import get_fnames
+from dipy.io.image import load_nifti
 from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
@@ -75,8 +75,7 @@ def test_split_flow():
     with TemporaryDirectory() as out_dir:
         split_flow = SplitFlow()
         data_path, _, _ = get_fnames()
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_fdata()
+        volume, affine = load_nifti(data_path)
         split_flow.run(data_path, out_dir=out_dir)
         assert_true(os.path.isfile(
          split_flow.last_generated_outputs['out_split']))
@@ -84,10 +83,9 @@ def test_split_flow():
         split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
         split_path = split_flow.last_generated_outputs['out_split']
         assert_true(os.path.isfile(split_path))
-        split_img = nib.load(split_path)
-        split_data = split_img.get_fdata()
+        split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
-        npt.assert_array_almost_equal(split_img.affine, vol_img.affine)
+        npt.assert_array_almost_equal(split_affine, affine)
 
 
 if __name__ == '__main__':

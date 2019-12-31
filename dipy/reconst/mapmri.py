@@ -1824,7 +1824,7 @@ def delta(n, m):
 
 
 def map_laplace_u(n, m):
-    """S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
+    r"""S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
 
     Parameters
     ----------

@@ -5,6 +5,7 @@ from dipy.io.utils import (create_nifti_header,
                            decfa, decfa_to_float,
                            get_reference_info,
                            is_reference_info_valid)
+from dipy.io.image import load_nifti_data
 from nibabel import Nifti1Image
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
@@ -47,7 +48,7 @@ def test_decfa():
                                        ('B', 'uint8')])
 
     round_trip = decfa_to_float(img_new)
-    data_rt = round_trip.get_fdata()
+    data_rt = load_nifti_data(round_trip)
     assert data_rt.shape == (4, 4, 4, 3)
     assert np.all(data_rt[0, 0, 0] == np.array([25, 0, 0]))
 

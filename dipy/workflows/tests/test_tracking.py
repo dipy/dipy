@@ -7,7 +7,7 @@ import nibabel as nib
 from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti
+from dipy.io.image import save_nifti, load_nifti
 from dipy.io.streamline import load_tractogram
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
@@ -18,14 +18,12 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
 def test_particle_filtering_traking_workflows():
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = get_fnames('small_64D')
-        vol_img = nib.load(dwi_path)
-        volume = vol_img.get_fdata()
+        volume, affine = load_nifti(dwi_path)
 
         # Create some mask
-        mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask, affine)
 
         simple_wm = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                               [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -111,12 +109,10 @@ def test_particle_filtering_traking_workflows():
 def test_local_fiber_tracking_workflow():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_fdata()
-        mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        volume, affine = load_nifti(data_path)
+        mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask, affine)
 
         reconst_csd_flow = ReconstCSDFlow()
         reconst_csd_flow.run(data_path, bval_path, bvec_path, mask_path,
@@ -131,8 +127,8 @@ def test_local_fiber_tracking_workflow():
         seeds_path = mask_flow.last_generated_outputs['out_mask']
         mask_path = mask_flow.last_generated_outputs['out_mask']
 
-        gfa_img = nib.load(gfa_path)
-        save_nifti(gfa_path, gfa_img.get_fdata(), vol_img.affine, gfa_img.header)
+        gfa_img, gfa_affine = load_nifti(gfa_path)
+        save_nifti(gfa_path, gfa_img, gfa_affine)
 
         # Test tracking with pam no sh
         lf_track_pam = LocalFiberTrackingPAMFlow()

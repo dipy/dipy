@@ -1,13 +1,17 @@
-from __future__ import division, print_function, absolute_import
 
 import nibabel as nib
 import numpy as np
 
 
-def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=False):
+def load_nifti_data(fname, dtype=np.float64):
     img = nib.load(fname)
-    data = img.get_fdata()
+    return img.get_fdata(dtype=dtype)
+
+
+def load_nifti(fname, return_img=False, return_voxsize=False,
+               return_coords=False, dtype=np.float64):
+    img = nib.load(fname)
+    data = img.get_fdata(dtype=dtype)
     vox_size = img.header.get_zooms()[:3]
 
     ret_val = [data, img.affine]

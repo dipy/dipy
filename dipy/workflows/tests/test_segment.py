@@ -10,6 +10,7 @@ from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.image import load_nifti_data
 from os.path import join as pjoin
 from dipy.tracking.streamline import set_number_of_points
 from dipy.align.streamlinear import BundleMinDistanceMetric
@@ -18,7 +19,7 @@ from dipy.align.streamlinear import BundleMinDistanceMetric
 def test_median_otsu_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
-        volume = nib.load(data_path).get_fdata()
+        volume = load_nifti_data(data_path)
         save_masked = True
         median_radius = 3
         numpass = 3
@@ -40,9 +41,8 @@ def test_median_otsu_flow():
                                    numpass=numpass,
                                    autocrop=autocrop, dilate=dilate)
 
-        result_mask_data = nib.load(join(out_dir, mask_name)) \
-            .get_fdata().astype(np.uint8)
-        npt.assert_array_equal(result_mask_data, mask)
+        result_mask_data = load_nifti_data(join(out_dir, mask_name))
+        npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
         result_masked = nib.load(join(out_dir, masked_name))
         result_masked_data = np.asanyarray(result_masked.dataobj)

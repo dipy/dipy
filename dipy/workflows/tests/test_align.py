@@ -11,7 +11,7 @@ from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti
+from dipy.io.image import save_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
@@ -24,15 +24,13 @@ def test_reslice():
 
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_fdata()
+        volume = load_nifti_data(data_path)
 
         reslice_flow = ResliceFlow()
         reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=out_dir)
 
         out_path = reslice_flow.last_generated_outputs['out_resliced']
-        out_img = nib.load(out_path)
-        resliced = out_img.get_fdata()
+        resliced = load_nifti_data(out_path)
 
         npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
         npt.assert_equal(resliced.shape[1] > volume.shape[1], True)

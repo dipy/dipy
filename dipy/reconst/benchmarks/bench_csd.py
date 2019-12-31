@@ -5,6 +5,7 @@ import numpy.testing as npt
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.core.gradients import GradientTable
 from dipy.data import read_stanford_labels
+from dipy.io.image import load_nifti_data
 
 
 def num_grad(gtab):
@@ -13,9 +14,9 @@ def num_grad(gtab):
 
 def bench_csdeconv(center=(50, 40, 40), width=12):
     img, gtab, labels_img = read_stanford_labels()
-    data = img.get_fdata()
+    data = load_nifti_data(img)
 
-    labels = labels_img.get_fdata()
+    labels = load_nifti_data(labels_img)
     shape = labels.shape
     mask = np.in1d(labels, [1, 2])
     mask.shape = shape

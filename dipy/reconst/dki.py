@@ -190,7 +190,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
 
 
 def _F1m(a, b, c):
-    """ Helper function that computes function $F_1$ which is required to
+    r""" Helper function that computes function $F_1$ which is required to
     compute the analytical solution of the Mean kurtosis.
 
     Parameters
@@ -280,7 +280,7 @@ def _F1m(a, b, c):
 
 
 def _F2m(a, b, c):
-    """ Helper function that computes function $F_2$ which is required to
+    r""" Helper function that computes function $F_2$ which is required to
     compute the analytical solution of the Mean kurtosis.
 
     Parameters
@@ -749,7 +749,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3):
 
 
 def _G1m(a, b, c):
-    """ Helper function that computes function $G_1$ which is required to
+    r""" Helper function that computes function $G_1$ which is required to
     compute the analytical solution of the Radial kurtosis.
 
     Parameters
@@ -815,7 +815,7 @@ def _G1m(a, b, c):
 
 
 def _G2m(a, b, c):
-    """ Helper function that computes function $G_2$ which is required to
+    r""" Helper function that computes function $G_2$ which is required to
     compute the analytical solution of the Radial kurtosis.
 
     Parameters

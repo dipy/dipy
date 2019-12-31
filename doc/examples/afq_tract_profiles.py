@@ -17,7 +17,6 @@ trajectory of the bundle at that location.
 """
 
 import dipy.stats.analysis as dsa
-import nibabel as nib
 import dipy.tracking.streamline as dts
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
@@ -25,6 +24,7 @@ from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
 from dipy.data.fetcher import get_two_hcp842_bundles
 import dipy.data as dpd
 from dipy.io.streamline import load_trk
+from dipy.io.image import load_nifti
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as op
@@ -117,9 +117,7 @@ subject.
 
 files, folder = dpd.fetch_bundle_fa_hcp()
 
-img = nib.load(op.join(folder, "hcp_bundle_fa.nii.gz"))
-fa = img.get_fdata()
-
+fa, fa_affine = load_nifti(op.join(folder, "hcp_bundle_fa.nii.gz"))
 
 """
 Calculate weights for each bundle:

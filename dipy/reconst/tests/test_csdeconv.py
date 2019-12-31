@@ -1,5 +1,4 @@
 import warnings
-import nibabel as nib
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
@@ -32,6 +31,7 @@ from dipy.reconst.shm import lazy_index
 import dipy.reconst.dti as dti
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 
 
 def test_recursive_response_calibration():
@@ -115,7 +115,7 @@ def test_recursive_response_calibration():
 def test_auto_response():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = nib.load(fdata).get_fdata()
+    data = load_nifti_data(fdata).
 
     gtab = gradient_table(bvals, bvecs)
     radius = 3
@@ -160,7 +160,7 @@ def test_auto_response():
 def test_response_from_mask():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = nib.load(fdata).get_fdata()
+    data = load_nifti_data(fdata)
 
     gtab = gradient_table(bvals, bvecs)
     ten = TensorModel(gtab)

@@ -4,6 +4,7 @@ import numbers
 import os
 
 import dipy
+from dipy.io.image import load_nifti_data
 import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
@@ -81,7 +82,7 @@ def decfa(img_orig, scale=False):
     dest_dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
     out_data = np.zeros(img_orig.shape[:3], dtype=dest_dtype)
 
-    data_orig = img_orig.get_fdata()
+    data_orig = load_nifti_data(img_orig)
 
     if scale:
         data_orig = (data_orig * 255).astype('uint8')
