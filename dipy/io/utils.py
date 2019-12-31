@@ -82,7 +82,7 @@ def decfa(img_orig, scale=False):
     dest_dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
     out_data = np.zeros(img_orig.shape[:3], dtype=dest_dtype)
 
-    data_orig = load_nifti_data(img_orig)
+    data_orig = np.asanyarray(img_orig.dataobj)
 
     if scale:
         data_orig = (data_orig * 255).astype('uint8')

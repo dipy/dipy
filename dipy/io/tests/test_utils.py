@@ -48,7 +48,7 @@ def test_decfa():
                                        ('B', 'uint8')])
 
     round_trip = decfa_to_float(img_new)
-    data_rt = load_nifti_data(round_trip)
+    data_rt = np.asanyarray(round_trip.dataobj)
     assert data_rt.shape == (4, 4, 4, 3)
     assert np.all(data_rt[0, 0, 0] == np.array([25, 0, 0]))
 
