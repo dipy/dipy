@@ -4,7 +4,6 @@ import numbers
 import os
 
 import dipy
-from dipy.io.image import load_nifti_data
 import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image

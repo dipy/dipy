@@ -5,7 +5,6 @@ from dipy.io.utils import (create_nifti_header,
                            decfa, decfa_to_float,
                            get_reference_info,
                            is_reference_info_valid)
-from dipy.io.image import load_nifti_data
 from nibabel import Nifti1Image
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
