@@ -569,13 +569,8 @@ class ImageRegistrationFlow(Workflow):
                 qual_val_file in io_it:
 
             # Load the data from the input files and store into objects.
-            image = nib.load(static_img)
-            static = np.array(image.get_data())
-            static_grid2world = image.affine
-
-            image = nib.load(mov_img)
-            moving = np.array(image.get_data())
-            moving_grid2world = image.affine
+            static, static_grid2world = load_nifti(static_img)
+            moving, moving_grid2world = load_nifti(mov_img)
 
             check_dimensions(static, moving)
 
@@ -714,17 +709,16 @@ class ApplyTransformFlow(Workflow):
 
             elif transform_type.lower() == 'diffeomorphic':
                 # Loading the diffeomorphic map.
-                disp = nib.load(transform_file)
+                disp_data, disp_affine = load_nifti(transform_file)
 
                 mapping = DiffeomorphicMap(
-                    3, disp.shape[:3],
-                    disp_grid2world=np.linalg.inv(disp.affine),
+                    3, disp_data.shape[:3],
+                    disp_grid2world=np.linalg.inv(disp_affine),
                     domain_shape=static_image.shape,
                     domain_grid2world=static_grid2world,
                     codomain_shape=moving_image.shape,
                     codomain_grid2world=moving_grid2world)
 
-                disp_data = disp.get_data()
                 mapping.forward = disp_data[..., 0]
                 mapping.backward = disp_data[..., 1]
                 mapping.is_inverse = True

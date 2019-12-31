@@ -50,7 +50,7 @@ def test_tensor_algebra():
 def test_odf_with_zeros():
     fdata, fbval, fbvec = get_fnames('small_25')
     gtab = grad.gradient_table(fbval, fbvec)
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
     dm = dti.TensorModel(gtab)
     df = dm.fit(data)
     df.evals[0, 0, 0] = np.array([0, 0, 0])
@@ -61,7 +61,7 @@ def test_odf_with_zeros():
 
 def test_tensor_model():
     fdata, fbval, fbvec = get_fnames('small_25')
-    data1 = nib.load(fdata).get_data()
+    data1 = nib.load(fdata).get_fdata()
     gtab1 = grad.gradient_table(fbval, fbvec)
     data2, gtab2 = dsi_voxels()
     for data, gtab in zip([data1, data2], [gtab1, gtab2]):
@@ -605,7 +605,7 @@ def test_nlls_fit_tensor():
     data, bvals, bvecs = get_fnames('small_25')
     gtab = grad.gradient_table(bvals, bvecs)
     tm1 = dti.TensorModel(gtab, fit_method='NLLS')
-    dd = nib.load(data).get_data()
+    dd = nib.load(data).get_fdata()
     tf1 = tm1.fit(dd)
     tm2 = dti.TensorModel(gtab)
     tf2 = tm2.fit(dd)
@@ -706,7 +706,7 @@ def test_predict():
     npt.assert_array_almost_equal(dm.predict(dmfit.model_params, S0=100), S)
 
     fdata, fbvals, fbvecs = get_fnames()
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
     # Make the data cube a bit larger:
     data = np.tile(data.T, 2).T
     gtab = grad.gradient_table(fbvals, fbvecs)
@@ -772,7 +772,7 @@ def test_eig_from_lo_tri():
 
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_fnames()
-    data = nib.load(fdata).get_data()
+    data = nib.load(fdata).get_fdata()
     gtab = grad.gradient_table(fbvals, fbvecs)
 
     idx = tuple(np.array(np.where(data == np.min(data)))[:-1, 0])

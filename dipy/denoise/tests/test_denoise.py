@@ -3,7 +3,7 @@ import numpy.testing as npt
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.nlmeans import nlmeans
 import dipy.data as dpd
-import nibabel as nib
+from dipy.io.image import load_nifti
 
 
 def test_denoise():
@@ -12,7 +12,7 @@ def test_denoise():
     """
     fdata, fbval, fbvec = dpd.get_fnames()
     # Test on 4D image:
-    data = nib.load(fdata).get_data()
+    data, _ = load_nifti(fdata)
     sigma1 = estimate_sigma(data)
     nlmeans(data, sigma=sigma1)
 

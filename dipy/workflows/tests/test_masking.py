@@ -13,7 +13,7 @@ def test_mask():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
 
         mask_flow = MaskFlow()
 
@@ -23,7 +23,7 @@ def test_mask():
         mask_flow.run(data_path, 10, out_dir=out_dir)
         mask_path = mask_flow.last_generated_outputs['out_mask']
         mask_img = nib.load(mask_path)
-        mask_data = mask_img.get_data()
+        mask_data = mask_img.get_fdata().astype(np.uint8)
         npt.assert_equal(mask_data.shape, volume.shape)
         npt.assert_array_almost_equal(mask_img.affine, vol_img.affine)
         npt.assert_equal(mask_data.dtype, np.uint8)

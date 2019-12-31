@@ -101,8 +101,9 @@ def test_sharpness():
 
 
 def test_ascm_accuracy():
-    test_ascm_data_ref = nib.load(dpd.get_fnames("ascm_test")).get_data()
-    test_data = nib.load(dpd.get_fnames("aniso_vox")).get_data()
+    f_name = dpd.get_fnames("ascm_test")
+    test_ascm_data_ref = np.asanyarray(nib.load(f_name).dataobj)
+    test_data = np.asanyarray(nib.load(dpd.get_fnames("aniso_vox")).dataobj)
 
     # the test data was constructed in this manner
     mask = test_data > 50
@@ -128,6 +129,7 @@ def test_ascm_accuracy():
                                           den_small, den_large, sigma[0]))
 
     assert_array_almost_equal(S0n, test_ascm_data_ref)
+
 
 if __name__ == '__main__':
 

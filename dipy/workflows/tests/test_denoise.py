@@ -17,7 +17,7 @@ def test_nlmeans_flow():
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames()
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
 
         nlmeans_flow = NLMeansFlow()
 
@@ -30,7 +30,7 @@ def test_nlmeans_flow():
         denoised_path = nlmeans_flow.last_generated_outputs['out_denoised']
         assert_true(os.path.isfile(denoised_path))
         denoised_img = nib.load(denoised_path)
-        denoised_data = denoised_img.get_data()
+        denoised_data = denoised_img.get_fdata()
         npt.assert_equal(denoised_data.shape, volume.shape)
         npt.assert_array_almost_equal(denoised_img.affine, vol_img.affine)
 
@@ -68,7 +68,7 @@ def test_mppca_flow():
 
         denoised_path = mppca_flow.last_generated_outputs['out_denoised']
         denoised_img = nib.load(denoised_path)
-        denoised_data = denoised_img.get_data()
+        denoised_data = denoised_img.get_fdata()
         assert_greater(denoised_data.min(), S0.min())
         assert_less(denoised_data.max(), S0.max())
         npt.assert_equal(np.round(denoised_data.mean()), 100)

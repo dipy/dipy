@@ -51,6 +51,7 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                fetch_gold_standard_io)
 
 from ..utils.arrfuncs import as_native_array
+from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 
 if sys.version_info[0] < 3:
@@ -230,13 +231,12 @@ def get_fnames(name='small_64D'):
     Examples
     ----------
     >>> import numpy as np
+    >>> from dipy.io.image import load_nifti
     >>> from dipy.data import get_fnames
-    >>> fimg,fbvals,fbvecs=get_fnames('small_101D')
+    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
     >>> bvals=np.loadtxt(fbvals)
     >>> bvecs=np.loadtxt(fbvecs).T
-    >>> import nibabel as nib
-    >>> img=nib.load(fimg)
-    >>> data=img.get_data()
+    >>> data, affine = load_nifti(fimg)
     >>> data.shape == (6, 10, 10, 102)
     True
     >>> bvals.shape == (102,)
@@ -315,8 +315,7 @@ def dsi_voxels():
     fimg, fbvals, fbvecs = get_fnames('small_101D')
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
-    img = load(fimg)
-    data = img.get_data()
+    data, _ = load_nifti(fimg)
     gtab = gradient_table(bvals, bvecs)
     return data, gtab
 
@@ -358,8 +357,8 @@ def mrtrix_spherical_functions():
     These coefficients were obtained by using the dwi2SH command of mrtrix.
 
     """
-    func_discrete = load(pjoin(DATA_DIR, "func_discrete.nii.gz")).get_data()
-    func_coef = load(pjoin(DATA_DIR, "func_coef.nii.gz")).get_data()
+    func_discrete, _ = load_nifti(pjoin(DATA_DIR, "func_discrete.nii.gz"))
+    func_coef, _ = load_nifti(pjoin(DATA_DIR, "func_coef.nii.gz"))
     gradients = np.loadtxt(pjoin(DATA_DIR, "sphere_grad.txt"))
     # gradients[0] and the first volume of func_discrete,
     # func_discrete[..., 0], are associated with the b=0 signal.

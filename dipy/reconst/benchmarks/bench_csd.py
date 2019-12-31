@@ -13,9 +13,9 @@ def num_grad(gtab):
 
 def bench_csdeconv(center=(50, 40, 40), width=12):
     img, gtab, labels_img = read_stanford_labels()
-    data = img.get_data()
+    data = img.get_fdata()
 
-    labels = labels_img.get_data()
+    labels = labels_img.get_fdata()
     shape = labels.shape
     mask = np.in1d(labels, [1, 2])
     mask.shape = shape

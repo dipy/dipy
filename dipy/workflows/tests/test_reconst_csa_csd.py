@@ -28,7 +28,7 @@ def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
         vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = vol_img.get_fdata()
         mask = np.ones_like(volume[:, :, :, 0])
         mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
@@ -50,29 +50,29 @@ def reconst_flow_core(flow):
                                  out_dir=out_dir, extract_pam_values=True)
 
             gfa_path = reconst_flow.last_generated_outputs['out_gfa']
-            gfa_data = nib.load(gfa_path).get_data()
+            gfa_data = nib.load(gfa_path).get_fdata()
             npt.assert_equal(gfa_data.shape, volume.shape[:-1])
 
             peaks_dir_path =\
                 reconst_flow.last_generated_outputs['out_peaks_dir']
-            peaks_dir_data = nib.load(peaks_dir_path).get_data()
+            peaks_dir_data = nib.load(peaks_dir_path).get_fdata()
             npt.assert_equal(peaks_dir_data.shape[-1], 15)
             npt.assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
 
             peaks_idx_path = \
                 reconst_flow.last_generated_outputs['out_peaks_indices']
-            peaks_idx_data = nib.load(peaks_idx_path).get_data()
+            peaks_idx_data = nib.load(peaks_idx_path).get_fdata()
             npt.assert_equal(peaks_idx_data.shape[-1], 5)
             npt.assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
 
             peaks_vals_path = \
                 reconst_flow.last_generated_outputs['out_peaks_values']
-            peaks_vals_data = nib.load(peaks_vals_path).get_data()
+            peaks_vals_data = nib.load(peaks_vals_path).get_fdata()
             npt.assert_equal(peaks_vals_data.shape[-1], 5)
             npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
 
             shm_path = reconst_flow.last_generated_outputs['out_shm']
-            shm_data = nib.load(shm_path).get_data()
+            shm_data = nib.load(shm_path).get_fdata()
             # Test that the number of coefficients is what you would expect
             # given the order of the sh basis:
             npt.assert_equal(shm_data.shape[-1],

@@ -16,6 +16,7 @@ import zipfile
 from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 
 from urllib.request import urlopen
 
@@ -559,7 +560,7 @@ def read_qtdMRI_test_retest_2subjects():
     ]
     for data_name in data_names:
         data_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', data_name)
-        data.append(nib.load(data_loc).get_data())
+        data.append(nib.load(data_loc).get_fdata())
 
     cc_masks = []
     mask_names = [
@@ -568,7 +569,7 @@ def read_qtdMRI_test_retest_2subjects():
     ]
     for mask_name in mask_names:
         mask_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', mask_name)
-        cc_masks.append(nib.load(mask_loc).get_data())
+        cc_masks.append(nib.load(mask_loc).get_fdata())
 
     gtabs = []
     gtab_txt_names = [
@@ -1026,7 +1027,7 @@ def read_cenir_multib(bvals=None):
     bval_list = []
     bvec_list = []
     for bval in bvals:
-        data.append(nib.load(file_dict[bval]['DWI']).get_data())
+        data.append(nib.load(file_dict[bval]['DWI']).get_fdata())
         bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
@@ -1095,15 +1096,11 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     res = {}
 
     if 't1' in metrics:
-        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
-        data = img.get_data()
-        affine = img.affine
+        data, affine = load_nifti(pjoin(dname, subj_id, 't1_warped.nii.gz'))
         res['t1'] = data
 
     if 'fa' in metrics:
-        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
-        fa = img_fa.get_data()
-        affine = img_fa.affine
+        fa, affine = load_nifti(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
         res['fa'] = fa
 
     res['affine'] = affine
