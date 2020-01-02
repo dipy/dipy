@@ -1,9 +1,10 @@
-"""
-Read test or example data
-"""
+"""Read test or example data."""
+
+import os
 import sys
 import json
 import warnings
+import pickle
 
 from nibabel import load
 from os.path import join as pjoin, dirname
@@ -12,7 +13,8 @@ import gzip
 import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
-from dipy.data.fetcher import (fetch_scil_b0,
+from dipy.data.fetcher import (get_fnames,
+                               fetch_scil_b0,
                                read_scil_b0,
                                fetch_stanford_hardi,
                                read_stanford_hardi,
@@ -54,17 +56,9 @@ from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 
-if sys.version_info[0] < 3:
-    import cPickle
 
-    def loads_compat(bytes):
-        return cPickle.loads(bytes)
-else:  # Python 3
-    import pickle
-    # Need to load pickles saved in Python 2
-
-    def loads_compat(bytes):
-        return pickle.loads(bytes, encoding='latin1')
+def loads_compat(bytes):
+    return pickle.loads(bytes, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
@@ -201,98 +195,6 @@ def get_sphere(name='symmetric362'):
 
 default_sphere = HemiSphere.from_sphere(get_sphere('repulsion724'))
 small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
-
-
-def get_fnames(name='small_64D'):
-    """ provides filenames of some test datasets or other useful parametrisations
-
-    Parameters
-    ----------
-    name : str
-        the filename/s of which dataset to return, one of:
-        'small_64D' small region of interest nifti,bvecs,bvals 64 directions
-        'small_101D' small region of interest nifti,bvecs,bvals 101 directions
-        'aniso_vox' volume with anisotropic voxel size as Nifti
-        'fornix' 300 tracks in Trackvis format (from Pittsburgh
-            Brain Competition)
-        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
-            of 101 directions tested on Siemens 3T Trio
-        'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
-        'test_piesno' slice of N=8, K=14 diffusion data
-        'reg_c' small 2D image used for validating registration
-        'reg_o' small 2D image used for validation registration
-        'cb_2' two vectorized cingulum bundles
-
-    Returns
-    -------
-    fnames : tuple
-        filenames for dataset
-
-    Examples
-    ----------
-    >>> import numpy as np
-    >>> from dipy.io.image import load_nifti
-    >>> from dipy.data import get_fnames
-    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
-    >>> bvals=np.loadtxt(fbvals)
-    >>> bvecs=np.loadtxt(fbvecs).T
-    >>> data, affine = load_nifti(fimg)
-    >>> data.shape == (6, 10, 10, 102)
-    True
-    >>> bvals.shape == (102,)
-    True
-    >>> bvecs.shape == (102, 3)
-    True
-    """
-
-    if name == 'small_64D':
-        fbvals = pjoin(DATA_DIR, 'small_64D.bval')
-        fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
-        fimg = pjoin(DATA_DIR, 'small_64D.nii')
-        return fimg, fbvals, fbvecs
-    if name == '55dir_grad.bvec':
-        return pjoin(DATA_DIR, '55dir_grad.bvec')
-    if name == 'small_101D':
-        fbvals = pjoin(DATA_DIR, 'small_101D.bval')
-        fbvecs = pjoin(DATA_DIR, 'small_101D.bvec')
-        fimg = pjoin(DATA_DIR, 'small_101D.nii.gz')
-        return fimg, fbvals, fbvecs
-    if name == 'aniso_vox':
-        return pjoin(DATA_DIR, 'aniso_vox.nii.gz')
-    if name == 'ascm_test':
-        return pjoin(DATA_DIR, 'ascm_out_test.nii.gz')
-    if name == 'fornix':
-        return pjoin(DATA_DIR, 'tracks300.trk')
-    if name == 'gqi_vectors':
-        return pjoin(DATA_DIR, 'ScannerVectors_GQI101.txt')
-    if name == 'dsi515btable':
-        return pjoin(DATA_DIR, 'dsi515_b_table.txt')
-    if name == 'dsi4169btable':
-        return pjoin(DATA_DIR, 'dsi4169_b_table.txt')
-    if name == 'grad514':
-        return pjoin(DATA_DIR, 'grad_514.txt')
-    if name == "small_25":
-        fbvals = pjoin(DATA_DIR, 'small_25.bval')
-        fbvecs = pjoin(DATA_DIR, 'small_25.bvec')
-        fimg = pjoin(DATA_DIR, 'small_25.nii.gz')
-        return fimg, fbvals, fbvecs
-    if name == 'small_25_streamlines':
-        fstreamlines = pjoin(DATA_DIR, 'EuDX_small_25.trk')
-        return fstreamlines
-    if name == "S0_10":
-        fimg = pjoin(DATA_DIR, 'S0_10slices.nii.gz')
-        return fimg
-    if name == "test_piesno":
-        fimg = pjoin(DATA_DIR, 'test_piesno.nii.gz')
-        return fimg
-    if name == "reg_c":
-        return pjoin(DATA_DIR, 'C.npy')
-    if name == "reg_o":
-        return pjoin(DATA_DIR, 'circle.npy')
-    if name == 'cb_2':
-        return pjoin(DATA_DIR, 'cb_2.npz')
-    if name == "t1_coronal_slice":
-        return pjoin(DATA_DIR, 't1_coronal_slice.npy')
 
 
 def _gradient_from_file(filename):
