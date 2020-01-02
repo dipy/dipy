@@ -197,7 +197,7 @@ small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
 def get_fnames(name='small_64D'):
-    """Provide filenames of some datasets or other useful parametrisations.
+    """Provides full paths to example datasets.
 
     Parameters
     ----------
