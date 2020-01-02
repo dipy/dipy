@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import warnings
+import pickle
 
 from nibabel import load
 from os.path import join as pjoin, dirname
@@ -54,17 +55,9 @@ from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 
-if sys.version_info[0] < 3:
-    import cPickle
 
-    def loads_compat(bytes):
-        return cPickle.loads(bytes)
-else:  # Python 3
-    import pickle
-    # Need to load pickles saved in Python 2
-
-    def loads_compat(bytes):
-        return pickle.loads(bytes, encoding='latin1')
+def loads_compat(bytes):
+    return pickle.loads(bytes, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
