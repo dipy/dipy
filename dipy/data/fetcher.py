@@ -773,7 +773,7 @@ def read_scil_b0():
 
 
 def read_siemens_scil_b0():
-    """Load Siemens 1.5T b0 image form the scil b0 dataset.
+    """Load Siemens 1.5T b0 image from the scil b0 dataset.
 
     Returns
     -------
