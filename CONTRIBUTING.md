@@ -60,12 +60,6 @@ nicely formatted interactive coverage report.
 Contributions to tests that extend test coverage in older modules that are not
 fully covered are very welcome!
 
-### Supporting both Python 2 and 3
-
-Most of the functionality in DIPY works on both Python 3 and Python 2. Please
-follow the instructions [here](http://dipy.org/devel/python3.html) to
-write code that works on both versions.
-
 ### Code style
 
 Code contributions should be formatted according to the [DIPY Coding Style Guideline](./doc/devel/coding_style_guideline.rst).
