@@ -789,6 +789,8 @@ def fetch_tissue_data():
     else:
         _already_there_msg(folder)
 
+    return fname_list, folder
+
 
 def read_tissue_data(contrast='T1'):
     """ Load images to be used for tissue classification

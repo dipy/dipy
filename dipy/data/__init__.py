@@ -1,6 +1,6 @@
-"""
-Read test or example data
-"""
+"""Read test or example data."""
+
+import os
 import sys
 import json
 import warnings
@@ -204,7 +204,7 @@ small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
 def get_fnames(name='small_64D'):
-    """ provides filenames of some test datasets or other useful parametrisations
+    """Provide filenames of some datasets or other useful parametrisations.
 
     Parameters
     ----------
@@ -243,8 +243,8 @@ def get_fnames(name='small_64D'):
     True
     >>> bvecs.shape == (102, 3)
     True
-    """
 
+    """
     if name == 'small_64D':
         fbvals = pjoin(DATA_DIR, 'small_64D.bval')
         fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
@@ -293,6 +293,80 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == 'scil_b0':
+        files, folder = fetch_scil_b0()
+        files = files['datasets_multi-site_all_companies.zip'][2]
+        files = [pjoin(folder, f) for f in files]
+        return [f for f in files if os.path.isfile(f)]
+    if name == 'stanford_hardi':
+        files, folder = fetch_stanford_hardi()
+        fraw = pjoin(folder, 'HARDI150.nii.gz')
+        fbval = pjoin(folder, 'HARDI150.bval')
+        fbvec = pjoin(folder, 'HARDI150.bvec')
+        return fraw, fbval, fbvec
+    if name == 'taiwan_ntu_dsi':
+        files, folder = fetch_taiwan_ntu_dsi()
+        fraw = pjoin(folder, 'DSI203.nii.gz')
+        fbval = pjoin(folder, 'DSI203.bval')
+        fbvec = pjoin(folder, 'DSI203.bvec')
+        return fraw, fbval, fbvec
+    if name == 'sherbrooke_3shell':
+        files, folder = fetch_sherbrooke_3shell()
+        fraw = pjoin(folder, 'HARDI193.nii.gz')
+        fbval = pjoin(folder, 'HARDI193.bval')
+        fbvec = pjoin(folder, 'HARDI193.bvec')
+        return fraw, fbval, fbvec
+    if name == 'isbi2013_2shell':
+        files, folder = fetch_isbi2013_2shell()
+        fraw = pjoin(folder, 'phantom64.nii.gz')
+        fbval = pjoin(folder, 'phantom64.bval')
+        fbvec = pjoin(folder, 'phantom64.bvec')
+        return fraw, fbval, fbvec
+    if name == 'stanford_labels':
+        files, folder = fetch_stanford_labels()
+        return pjoin(folder, "aparc-reduced.nii.gz")
+    if name == 'syn_data':
+        files, folder = fetch_syn_data()
+        t1_name = pjoin(folder, 't1.nii.gz')
+        b0_name = pjoin(folder, 'b0.nii.gz')
+        return t1_name, b0_name
+    if name == 'stanford_t1':
+        files, folder = fetch_stanford_t1()
+        return pjoin(folder, 't1.nii.gz')
+    if name == 'stanford_pve_maps':
+        files, folder = fetch_stanford_pve_maps()
+        f_pve_csf = pjoin(folder, 'pve_csf.nii.gz')
+        f_pve_gm = pjoin(folder, 'pve_gm.nii.gz')
+        f_pve_wm = pjoin(folder, 'pve_wm.nii.gz')
+        return f_pve_csf, f_pve_gm, f_pve_wm
+    if name == 'ivim':
+        files, folder = fetch_ivim()
+        fraw = pjoin(folder, 'ivim.nii.gz')
+        fbval = pjoin(folder, 'ivim.bval')
+        fbvec = pjoin(folder, 'ivim.bvec')
+        return fraw, fbval, fbvec
+    if name == 'tissue_data':
+        files, folder = fetch_tissue_data()
+        t1_name = pjoin(folder, 'tissue_data', 't1_brain.nii.gz')
+        t1d_name = pjoin(folder, 'tissue_data', 't1_brain_denoised.nii.gz')
+        ap_name = pjoin(folder, 'tissue_data', 'power_map.nii.gz')
+        return t1_name, t1d_name, ap_name
+    if name == 'cfin_multib':
+        files, folder = fetch_cfin_multib()
+        t1_name = pjoin(folder, 'T1.nii')
+        fraw = pjoin(folder, '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
+        fbval = pjoin(folder,
+                      '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
+        fbvec = pjoin(folder,
+                      '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
+        return fraw, fbval, fbvec, t1_name
+    if name == 'target_tractrogram_hcp':
+        files, folder = fetch_target_tractogram_hcp()
+        return pjoin(folder, 'target_tractogram_hcp', 'hcp_tractogram',
+                     'streamlines.trk')
+    if name == 'bundle_atlas_hcp842':
+        files, folder = fetch_bundle_atlas_hcp842()
+        return get_bundle_atlas_hcp842()
 
 
 def _gradient_from_file(filename):
