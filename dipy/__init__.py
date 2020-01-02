@@ -33,8 +33,6 @@ Utilities
 
 """
 import sys
-if sys.version[0:3] < '2.6':
-    raise ImportError('Dipy needs Python version 2.6 or above')
 
 from .info import __version__
 from .testing import setup_test
