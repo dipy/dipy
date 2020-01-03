@@ -8,11 +8,10 @@ Here we present an example for visualizing slices from 3D images.
 
 """
 
-from __future__ import division
-
 import os
 import nibabel as nib
 from dipy.data import fetch_bundles_2_subjects
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.viz import window, actor, ui
 
 """
@@ -25,10 +24,7 @@ fname_t1 = os.path.join(os.path.expanduser('~'), '.dipy',
                         'exp_bundles_and_maps', 'bundles_2_subjects',
                         'subj_1', 't1_warped.nii.gz')
 
-
-img = nib.load(fname_t1)
-data = img.get_data()
-affine = img.affine
+data, affine = load_nifti(fname_t1)
 
 """
 Create a Renderer object which holds all the actors which we want to visualize.
@@ -112,8 +108,7 @@ fname_fa = os.path.join(os.path.expanduser('~'), '.dipy',
                         'exp_bundles_and_maps', 'bundles_2_subjects',
                         'subj_1', 'fa_1x1x1.nii.gz')
 
-img = nib.load(fname_fa)
-fa = img.get_data()
+fa = load_nifti_data(fname_fa)
 
 """
 Notice here how the scale range is (0, 255) and not (0, 1) which is the usual

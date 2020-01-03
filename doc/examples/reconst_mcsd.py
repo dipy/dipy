@@ -36,8 +36,9 @@ import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 
 from dipy.denoise.localpca import mppca
-from dipy.data import (fetch_cfin_multib, read_cfin_dwi)
 from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from dipy.reconst.csdeconv import auto_response
 from dipy.segment.tissue import TissueClassifierHMRF
@@ -45,7 +46,7 @@ from dipy.sims.voxel import multi_shell_fiber_response
 from dipy.reconst.mcsd import MultiShellDeconvModel
 from dipy.viz import window, actor
 
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_fnames
 sphere = get_sphere('symmetric724')
 
 """
@@ -55,10 +56,11 @@ provided in their paper [Hansen2016]_). The total size of the downloaded data
 is 192 MBytes, however you only need to fetch it once.
 """
 
-fetch_cfin_multib()
-img, gtab = read_cfin_dwi()
-data = img.get_data()
-affine = img.affine
+fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
+
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 For the sake of simplicity, we only select two non-zero b-values for this

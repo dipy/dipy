@@ -64,8 +64,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
-from dipy.data import fetch_cfin_multib
-from dipy.data import read_cfin_dwi
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from scipy.ndimage.filters import gaussian_filter
 
@@ -77,13 +79,11 @@ their paper [Hansen2016]_). The total size of the downloaded data is 192
 MBytes, however you only need to fetch it once.
 """
 
-fetch_cfin_multib()
+fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
 
-img, gtab = read_cfin_dwi()
-
-data = img.get_data()
-
-affine = img.affine
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 Function ``read_cfin_multib`` return img and gtab which contains respectively

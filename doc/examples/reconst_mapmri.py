@@ -29,8 +29,10 @@ First import the necessary modules:
 
 from dipy.reconst import mapmri
 from dipy.viz import window, actor
-from dipy.data import fetch_cfin_multib, read_cfin_dwi, get_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -44,7 +46,7 @@ The total size of the downloaded data is 187.66 MBytes, however you only need
 to fetch it once.
 """
 
-fetch_cfin_multib()
+fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
 
 """
 ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
@@ -58,13 +60,16 @@ explicitly state the ``big_delta`` and ``small_delta`` parameters in the
 gradient table.
 """
 
-img, gtab = read_cfin_dwi()
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
+
 big_delta = 0.0365  # seconds
 small_delta = 0.0157  # seconds
 gtab = gradient_table(bvals=gtab.bvals, bvecs=gtab.bvecs,
                       big_delta=big_delta,
                       small_delta=small_delta)
-data = img.get_data()
+
 data_small = data[40:65, 50:51]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)

@@ -25,8 +25,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import dipy.reconst.dki as dki
 import dipy.reconst.dki_micro as dki_micro
-from dipy.data import fetch_cfin_multib
-from dipy.data import read_cfin_dwi
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from scipy.ndimage.filters import gaussian_filter
 
@@ -37,13 +39,11 @@ multi-shell dataset which was kindly provided by Hansen and Jespersen
 (more details about the data are provided in their paper [Hansen2016]_).
 """
 
-fetch_cfin_multib()
+fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
 
-img, gtab = read_cfin_dwi()
-
-data = img.get_data()
-
-affine = img.affine
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 For comparison, this dataset is pre-processed using the same steps used in the

@@ -30,12 +30,18 @@ to your computer.
 # Enables/disables interactive visualization
 interactive = False
 
-from dipy.data import read_stanford_labels
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 This dataset provides a label map in which all white matter tissues are

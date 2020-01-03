@@ -13,7 +13,7 @@ First import the necessary modules:
 import matplotlib.pyplot as plt
 from dipy.reconst.forecast import ForecastModel
 from dipy.viz import actor, window
-from dipy.data import fetch_cenir_multib, read_cenir_multib, get_sphere
+from dipy.data import get_fnames, get_sphere
 
 """
 Download and read the data for this tutorial.

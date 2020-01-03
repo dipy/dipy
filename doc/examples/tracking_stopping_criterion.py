@@ -24,16 +24,14 @@ fitting a Constrained Spherical Deconvolution (CSD) reconstruction
 model and creating the maximum deterministic direction getter.
 """
 
-# Enables/disables interactive visualization
-interactive = False
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dipy.data import (read_stanford_labels,
-                       default_sphere,
-                       read_stanford_pve_maps)
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
 from dipy.direction import DeterministicMaximumDirectionGetter
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
@@ -48,15 +46,22 @@ from dipy.tracking.stopping_criterion import (ActStoppingCriterion,
 from dipy.viz import window, actor, colormap, has_fury
 
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-_, _, img_pve_wm = read_stanford_pve_maps()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
-white_matter = img_pve_wm.get_data()
+# Enables/disables interactive visualization
+interactive = False
+
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+_, _, f_pve_wm = get_fnames('stanford_pve_maps')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
+
+white_matter = load_nifti_data(f_pve_wm)
 
 seed_mask = (labels == 2)
-seed_mask[img_pve_wm.get_data() < 0.5] = 0
+seed_mask[white_matter < 0.5] = 0
 seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
@@ -246,16 +251,17 @@ is anatomically not plausible.
 """
 
 
-img_pve_csf, img_pve_gm, img_pve_wm = read_stanford_pve_maps()
+f_pve_csf, f_pve_gm, f_pve_wm = get_fnames('stanford_pve_maps')
+pve_csf_data = load_nifti_data(f_pve_csf)
+pve_gm_data = load_nifti_data(f_pve_gm)
+pve_wm_data = load_nifti_data(f_pve_wm)
 
-background = np.ones(img_pve_gm.shape)
-background[(img_pve_gm.get_data() +
-            img_pve_wm.get_data() +
-            img_pve_csf.get_data()) > 0] = 0
+background = np.ones(pve_gm_data.shape)
+background[(pve_gm_data + pve_wm_data + pve_csf_data) > 0] = 0
 
-include_map = img_pve_gm.get_data()
+include_map = pve_gm_data
 include_map[background > 0] = 1
-exclude_map = img_pve_csf.get_data()
+exclude_map = pve_csf_data
 
 act_criterion = ActStoppingCriterion(include_map, exclude_map)
 
