@@ -43,6 +43,9 @@ import dipy.reconst.cross_validation as xval
 import dipy.reconst.dti as dti
 import dipy.reconst.csdeconv as csd
 import scipy.stats as stats
+from dipy.core.gradients import gradient_table
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 
 
 """
@@ -54,9 +57,12 @@ fiber populations.
 
 """
 
-dpd.fetch_stanford_hardi()
-img, gtab = dpd.read_stanford_hardi()
-data = img.get_data()
+hardi_fname, hardi_bval, hardi_bvec = dpd.get_fnames('stanford_hardi')
+
+data, affine = load_nifti(hardi_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
+
 
 cc_vox = data[40, 70, 38]
 cso_vox = data[30, 76, 38]

@@ -27,10 +27,11 @@ Let us load the necessary modules
 
 import numpy as np
 import matplotlib.pyplot as plt
-import nibabel as nib
-from dipy.data import (fetch_sherbrooke_3shell,
-                       read_sherbrooke_3shell)
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
 from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.io.image import load_nifti, save_nifti
+from dipy.io.gradients import read_bvals_bvecs
 from time import time
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
@@ -39,11 +40,10 @@ from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 Choose one of the data from the datasets in dipy_
 """
 
-fetch_sherbrooke_3shell()
-img, gtab = read_sherbrooke_3shell()
-
-data = img.get_data()
-affine = img.affine
+dwi_fname, dwi_bval, dwi_bvec = get_fnames('sherbrooke_3shell')
+data, affine = load_nifti(dwi_fname)
+bvals, bvecs = read_bvals_bvecs(dwi_bval, dwi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 mask = data[..., 0] > 80
 data = data[..., 1]
@@ -136,7 +136,7 @@ which dictates that ASCM denoises the data while preserving the sharpness of
 the features.
 """
 
-nib.save(nib.Nifti1Image(den_final, affine), 'denoised_ascm.nii.gz')
+save_nifti('denoised_ascm.nii.gz', den_final, affine)
 
 print("Saving the entire denoised output in denoised_ascm.nii.gz")
 

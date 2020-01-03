@@ -34,10 +34,12 @@ from time import time
 from dipy.denoise.localpca import mppca
 
 # load functions to fetch data for this example
-from dipy.data import (fetch_cfin_multib, read_cfin_dwi)
+from dipy.data import get_fnames
 
 # load other dipy's functions that will be used for auxiliar analysis
 from dipy.core.gradients import gradient_table
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.segment.mask import median_otsu
 import dipy.reconst.dki as dki
 
@@ -48,13 +50,10 @@ provided in their paper [Hansen2016]_). The total size of the downloaded data
 is 192 MBytes, however you only need to fetch it once.
 """
 
-fetch_cfin_multib()
-
-img, gtab = read_cfin_dwi()
-
-data = img.get_data()
-
-affine = img.affine
+dwi_fname, dwi_bval, dwi_bvec, _ = get_fnames('cfin_multib')
+data, affine = load_nifti(dwi_fname)
+bvals, bvecs = read_bvals_bvecs(dwi_bval, dwi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 For the sake of simplicity, we only select two non-zero b-values for this

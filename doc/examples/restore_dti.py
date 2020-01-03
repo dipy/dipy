@@ -44,6 +44,15 @@ import dipy.reconst.dti as dti
 import dipy.data as dpd
 
 """
+``dipy.io.image`` is for loading / saving imaging datasets
+``dipy.io.gradients`` is for loading / saving our bvals and bvecs
+"""
+
+from dipy.io.image import load_nifti, save_nifti
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import gradient_table
+
+"""
 ``dipy.viz`` package is used for 3D visualization and matplotlib for 2D
 visualizations:
 """
@@ -60,8 +69,11 @@ dataset of a single subject. The size of this dataset is 87 MBytes. You only
 need to fetch once.
 """
 
-dpd.fetch_stanford_hardi()
-img, gtab = dpd.read_stanford_hardi()
+hardi_fname, hardi_bval, hardi_bvec = dpd.get_fnames('stanford_hardi')
+data, affine = load_nifti(hardi_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 We initialize a DTI model class instance using the gradient table used in the
@@ -84,7 +96,7 @@ roi_idx = (slice(20, 50), slice(55, 85), slice(38, 39))
 And use them to index into the data:
 """
 
-data = img.get_data()[roi_idx]
+data = data[roi_idx]
 
 """
 This dataset is not very noisy, so we will artificially corrupt it to simulate
@@ -141,7 +153,8 @@ evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
 ren = window.Renderer()
-ren.add(actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere, scale=0.3))
+ren.add(actor.tensor_slicer(evals2, evecs2, scalar_colors=cfa2, sphere=sphere,
+                            scale=0.3))
 print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
 window.record(ren, out_path='tensor_ellipsoids_wls_noisy.png', size=(600, 600))
 if interactive:
@@ -179,9 +192,11 @@ evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
 ren = window.Renderer()
-ren.add(actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere, scale=0.3))
+ren.add(actor.tensor_slicer(evals3, evecs3, scalar_colors=cfa3, sphere=sphere,
+                            scale=0.3))
 print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
-window.record(ren, out_path='tensor_ellipsoids_restore_noisy.png', size=(600, 600))
+window.record(ren, out_path='tensor_ellipsoids_restore_noisy.png',
+              size=(600, 600))
 if interactive:
     window.show(ren)
 

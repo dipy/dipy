@@ -19,12 +19,11 @@ The ``scil_b0`` dataset contains different data from different companies and
 models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 """
 
-from dipy.data.fetcher import fetch_scil_b0
+from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 
-files, folder = fetch_scil_b0()
-data, affine = load_nifti(pjoin(folder, 'datasets_multi-site_all_companies',
-                                '1.5T', 'Siemens', 'b0.nii.gz'))
+data_fnames = get_fnames('scil_b0')
+data, affine = load_nifti(data_fnames[1])
 data = np.squeeze(data)
 
 """

@@ -15,9 +15,11 @@ on a tractography model of the local white matter anatomy, as described in
 NOTE: The background value is set to -1 by default
 """
 
-from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
@@ -25,7 +27,6 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 from dipy.tracking.utils import path_length
-import nibabel as nib
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import AxesGrid
@@ -37,10 +38,14 @@ description of these steps, please refer to the
 Surface Rendered with Streamlines Tutorials.
 """
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -121,13 +126,12 @@ path_length_map_base_roi = seed_mask
 wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 
 # save the WMPL as a nifti
-path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
-nib.save(path_length_img, 'example_cc_path_length_map.nii.gz')
+save_nifti('example_cc_path_length_map.nii.gz', wmpl.astype(np.float32),
+           affine)
 
 # get the T1 to show anatomical context of the WMPL
-fetch_stanford_t1()
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+t1_fname = get_fnames('stanford_t1')
+t1_data = load_nifti_data(t1_fname)
 
 
 fig = mpl.pyplot.figure()

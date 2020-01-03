@@ -9,8 +9,11 @@ have similar pathways. The details can be found in [Jordan_2018_plm]_.
 
 """
 
-from dipy.data import default_sphere, read_stanford_labels
+from dipy.core.gradients import gradient_table
+from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
+from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
@@ -26,13 +29,16 @@ import matplotlib.pyplot as plt
 First, we need to generate some streamlines. For a more complete
 description of these steps, please refer to the CSA Probabilistic Tracking and
 the Visualization of ROI Surface Rendered with Streamlines Tutorials.
- """
+"""
 
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+data, affine = load_nifti(hardi_fname)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
+
 white_matter = (labels == 1) | (labels == 2)
 csa_model = CsaOdfModel(gtab, sh_order=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,

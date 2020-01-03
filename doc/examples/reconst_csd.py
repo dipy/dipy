@@ -27,12 +27,17 @@ with b-value 2000.
 
 import numpy as np
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
 
-data = img.get_data()
+data, affine = load_nifti(hardi_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 You can verify the b-values of the dataset by looking at the attribute
@@ -190,7 +195,7 @@ ren.rm(response_actor)
 """
 ## Step 2. fODF reconstruction
 
-After estimating a response function for one of the strategies shown above, 
+After estimating a response function for one of the strategies shown above,
 we are ready to start the deconvolution process. Let's import the CSD model
 and fit the datasets.
 """

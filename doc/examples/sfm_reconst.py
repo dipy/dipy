@@ -14,6 +14,9 @@ First, we import the modules we will use in this example:
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.direction.peaks as dpp
+from dipy.io.image import load_nifti, save_nifti
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.gradients import gradient_table
 from dipy.viz import window, actor
 
 """
@@ -26,9 +29,11 @@ other examples.
 
 """
 
-from dipy.data import read_stanford_hardi
-img, gtab = read_stanford_hardi()
-data = img.get_data()
+hardi_fname, hardi_bval, hardi_bvec = dpd.get_fnames('stanford_hardi')
+data, affine = load_nifti(hardi_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 # Enables/disables interactive visualization
 interactive = False
@@ -117,7 +122,8 @@ model on the sphere, and plot it.
 sf_fit = sf_model.fit(data_small)
 sf_odf = sf_fit.odf(sphere)
 
-fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8, colormap='plasma')
+fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8,
+                                colormap='plasma')
 
 ren = window.Renderer()
 ren.add(fodf_spheres)

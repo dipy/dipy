@@ -21,7 +21,10 @@ modules and download the data we'll be using.
 import numpy as np
 from scipy.ndimage.morphology import binary_dilation
 
-from dipy.data import read_stanford_labels, read_stanford_t1
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 from dipy.direction import peaks
 from dipy.reconst import shm
 from dipy.tracking import utils
@@ -29,12 +32,16 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
 
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+t1_data = load_nifti_data(t1_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 We've loaded an image called ``labels_img`` which is a map of tissue types such
@@ -180,6 +187,7 @@ scale to make small values in the matrix easier to see.
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 plt.imshow(np.log1p(M), interpolation='nearest')
 plt.savefig("connectivity.png")
 
@@ -221,21 +229,18 @@ visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
 
-To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
-import nibabel as nib
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
 # Save density map
-dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
-dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
+save_nifti("lr-superiorfrontal-dm.nii.gz", dm.astype("int16"), affine)
 
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-sft = StatefulTractogram(lr_sf_trk, dm_img, Space.VOX)
+sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.VOX)
 save_trk(sft, "lr-superiorfrontal.trk")
 
 """
@@ -250,6 +255,6 @@ save_trk(sft, "lr-superiorfrontal.trk")
        `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
        that can represent scaling, rotation, sheer, translation and reflection.
-       Affine transformations are often represented using a 4x4 matrix where the
-       last row of the matrix is ``[0, 0, 0, 1]``.
+       Affine transformations are often represented using a 4x4 matrix where
+       the last row of the matrix is ``[0, 0, 0, 1]``.
 """

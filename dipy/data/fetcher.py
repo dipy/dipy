@@ -660,9 +660,9 @@ def get_fnames(name='small_64D'):
         return fraw, fbval, fbvec
     if name == 'tissue_data':
         files, folder = fetch_tissue_data()
-        t1_name = pjoin(folder, 'tissue_data', 't1_brain.nii.gz')
-        t1d_name = pjoin(folder, 'tissue_data', 't1_brain_denoised.nii.gz')
-        ap_name = pjoin(folder, 'tissue_data', 'power_map.nii.gz')
+        t1_name = pjoin(folder, 't1_brain.nii.gz')
+        t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+        ap_name = pjoin(folder, 'power_map.nii.gz')
         return t1_name, t1d_name, ap_name
     if name == 'cfin_multib':
         files, folder = fetch_cfin_multib()
