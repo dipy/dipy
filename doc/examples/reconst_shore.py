@@ -13,7 +13,10 @@ First import the necessary modules:
 
 from dipy.reconst.shore import ShoreModel
 from dipy.viz import window, actor
-from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell, get_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 
 """
 Download and read the data for this tutorial.
@@ -27,9 +30,11 @@ the data. They respectively correspond to ``(xmin,xmax,ymin,ymax,zmin,zmax)``
 with x, y, z and the three axis defining the spatial positions of the voxels.
 """
 
-fetch_isbi2013_2shell()
-img, gtab = read_isbi2013_2shell()
-data = img.get_data()
+fraw, fbval, fbvec = get_fnames('isbi2013_2shell')
+
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
 data_small = data[10:40, 22, 10:40]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)

@@ -48,6 +48,8 @@ else:
     bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
     gtab = gradient_table(bvals, bvecs)
 
+    cc_slice = labels == 2
+
 # Read the candidates from file in voxel space:
 candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
 candidate_sl_sft.to_vox()

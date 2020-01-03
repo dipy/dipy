@@ -36,7 +36,10 @@ coefficients. First, we import all relevant modules:
 import matplotlib.pyplot as plt
 import numpy as np
 from dipy.reconst.ivim import IvimModel
-from dipy.data.fetcher import read_ivim
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 
 """
 We get an IVIM dataset using DIPY_'s data fetcher ``read_ivim``.
@@ -48,15 +51,17 @@ of b-values. In order to use this model the data should contain signals
 measured at 0 bvalue.
 """
 
-img, gtab = read_ivim()
+fraw, fbval, fbvec = get_fnames('ivim')
 
 """
-The variable ``img`` contains a nibabel NIfTI image object (with the data)
-and gtab contains a GradientTable object (information about the gradients e.g.
-b-values and b-vectors). We get the data from img using ``read_data``.
+The gtab contains a GradientTable object (information about the gradients e.g.
+b-values and b-vectors). We get the data from the file using
+``load_nifti_data``.
 """
 
-data = img.get_data()
+data = load_nifti_data(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs, b0_threshold=0)
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
@@ -110,13 +115,13 @@ multi-exponential model explained above. We first fit the model with a simple
 fitting approach by passing the option `fit_method='trr'`. This method uses
 a two-stage approach: first, a linear fit used to get quick initial guesses
 for the parameters $\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values
-greater than ``split_b_D`` (default: 400))and assuming a mono-exponential signal.
-This is based on the assumption that at high b-values the signal can be
-approximated as a mono exponential decay and by taking the logarithm of the signal
-values a linear fit can be obtained. Another linear fit for ``S0`` (bvals <
-``split_b_S0`` (default: 200)) follows and ``f`` is estimated using $1 -
-S0_{prime}/S0$. Then a non-linear least-squares fitting is performed to fit
-``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
+greater than ``split_b_D`` (default: 400))and assuming a mono-exponential
+signal. This is based on the assumption that at high b-values the signal can be
+approximated as a mono exponential decay and by taking the logarithm of the
+signal values a linear fit can be obtained. Another linear fit for ``S0``
+(bvals < ``split_b_S0`` (default: 200)) follows and ``f`` is estimated using
+$1 - S0_{prime}/S0$. Then a non-linear least-squares fitting is performed to
+fit ``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
 initializing the model, a final non-linear least squares fitting is performed
 for all the parameters. All initializations for the model such as ``split_b_D``
 are passed while creating the ``IvimModel``. If you are using Scipy 0.17, you

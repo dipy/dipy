@@ -30,12 +30,19 @@ import os.path as op
 
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
-    vox_size = labels_img.header.get_zooms()
-else:
-    from dipy.data import read_stanford_hardi
-    hardi_img, gtab = read_stanford_hardi()
-    data = hardi_img.get_data()
     vox_size = hardi_img.header.get_zooms()[0]
+else:
+    from dipy.core.gradients import gradient_table
+    from dipy.data import get_fnames
+    from dipy.io.gradients import read_bvals_bvecs
+    from dipy.io.image import load_nifti_data, load_nifti, save_nifti
+
+    hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+
+    data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+    vox_size = hardi_img.header.get_zooms()[0]
+    bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+    gtab = gradient_table(bvals, bvecs)
 
 """
 The second one will be the T2-contrast MNI template image, which we'll need to
@@ -50,7 +57,7 @@ fetch_mni_template()
 img_t2_mni = read_mni_template("a", contrast="T2")
 
 new_zooms = (2., 2., 2.)
-data2, affine2 = reslice(img_t2_mni.get_data(), img_t2_mni.affine,
+data2, affine2 = reslice(img_t2_mni.get_fdata(), img_t2_mni.affine,
 img_t2_mni.header.get_zooms(), new_zooms)
 img_t2_mni = nib.Nifti1Image(data2, affine=affine2)
 
@@ -104,7 +111,7 @@ from dipy.align.imaffine import (MutualInformationMetric, AffineRegistration,
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 
-static = img_t2_mni.get_data()
+static = img_t2_mni.get_fdata()
 static_affine = img_t2_mni.affine
 moving = mean_b0_masked_stanford
 moving_affine = hardi_img.affine
@@ -158,8 +165,8 @@ We bump up the iterations to get a more exact fit:
 
 affine_reg.level_iters = [1000, 1000, 100]
 highres_map = affine_reg.optimize(static, moving, transform, params0,
-                                 static_affine, moving_affine,
-                                 starting_affine=rigid_map.affine)
+                                  static_affine, moving_affine,
+                                  starting_affine=rigid_map.affine)
 transformed = highres_map.transform(moving)
 
 
@@ -278,6 +285,7 @@ We display the original streamlines and the registered streamlines:
 """
 
 from dipy.viz import has_fury
+
 
 def show_template_bundles(bundles, show=True, fname=None):
 

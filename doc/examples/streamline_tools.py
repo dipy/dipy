@@ -165,7 +165,8 @@ by their endpoints. Notice that this function only considers the endpoints of
 each streamline.
 """
 
-M, grouping = utils.connectivity_matrix(cc_streamlines, affine, labels,
+M, grouping = utils.connectivity_matrix(cc_streamlines, affine,
+                                        labels.astype(np.uint8),
                                         return_mapping=True,
                                         mapping_as_streamlines=True)
 M[:3, :] = 0
