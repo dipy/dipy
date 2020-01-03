@@ -649,7 +649,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
     # define vector of DKI parameters
     MD = (dt[0] + dt[2] + dt[5]) / 3
-    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+    X = np.concatenate((dt, kt*MD*MD, np.array([-np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
     S = np.exp(dot(A, X))
