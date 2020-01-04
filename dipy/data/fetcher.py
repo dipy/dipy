@@ -606,6 +606,9 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == "t-design":
+        N = 45
+        return pjoin(DATA_DIR, 'tdesign' + str(N) + '.txt')
     if name == 'scil_b0':
         files, folder = fetch_scil_b0()
         files = files['datasets_multi-site_all_companies.zip'][2]
