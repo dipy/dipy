@@ -8,9 +8,18 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.1.0 changes
 ----------------
 
+**Tractogram**
+
+``dipy.io.streamlines.StatefulTractogram``can be created by an other one
+
 **Workflows**
 
 ``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``
+
+**Others**
+
+``get_data`` has been deprecated by Nibabel and replaced by ``get_fdata``. This modification has been
+applied to all the code base. The default datatype is now float64.
 
 
 DIPY 1.0.0 changes

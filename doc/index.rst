@@ -20,7 +20,7 @@ Highlights
 - Non-linear and RESTORE fits from DTI compatible now with DKI.
 - Numerical solutions for estimating axial, radial and mean kurtosis.
 - Added Kurtosis Fractional Anisotropy by Glenn et al. 2015.
-- Adde Mean Kurtosis Tensor by Hansen et al. 2013.
+- Added Mean Kurtosis Tensor by Hansen et al. 2013.
 - Nibabel minimum version is 3.0.0.
 - Azure CI added and Appveyor CI removed.
 - New command line interfaces for LPCA, MPPCA and Gibbs Unringing.
