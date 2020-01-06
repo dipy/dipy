@@ -5,7 +5,7 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-DIPY 1.1 changes
+DIPY 1.1.0 changes
 ----------------
 
 **Workflows**
@@ -13,7 +13,7 @@ DIPY 1.1 changes
 ``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``
 
 
-DIPY 1.0 changes
+DIPY 1.0.0 changes
 ----------------
 Some of the changes introduced in the 1.0 release will break backwards
 compatibility with previous versions. This release is compatible with Python 3.5+
