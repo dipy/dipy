@@ -19,11 +19,11 @@ from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
 
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
 data, affine = load_nifti(hardi_fname)
 
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,

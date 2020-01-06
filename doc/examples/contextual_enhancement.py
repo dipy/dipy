@@ -86,9 +86,9 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.sims.voxel import add_noise
 
 # Read data
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data = load_nifti_data(hardi_fname)
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 # Add Rician noise

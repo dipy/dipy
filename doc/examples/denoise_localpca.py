@@ -44,9 +44,9 @@ non-diffusion (b=0) image.
 
 """
 
-dwi_fname, dwi_bval, dwi_bvec = get_fnames('isbi2013_2shell')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('isbi2013_2shell')
 data, affine = load_nifti(dwi_fname)
-bvals, bvecs = read_bvals_bvecs(dwi_bval, dwi_bvec)
+bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 print("Input Volume", data.shape)

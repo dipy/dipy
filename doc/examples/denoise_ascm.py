@@ -40,9 +40,9 @@ from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 Choose one of the data from the datasets in dipy_
 """
 
-dwi_fname, dwi_bval, dwi_bvec = get_fnames('sherbrooke_3shell')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
 data, affine = load_nifti(dwi_fname)
-bvals, bvecs = read_bvals_bvecs(dwi_bval, dwi_bvec)
+bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 mask = data[..., 0] > 80

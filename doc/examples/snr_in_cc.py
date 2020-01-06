@@ -37,10 +37,10 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
 data, affine = load_nifti(hardi_fname)
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 print('Computing brain mask...')

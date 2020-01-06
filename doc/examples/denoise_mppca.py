@@ -50,9 +50,9 @@ provided in their paper [Hansen2016]_). The total size of the downloaded data
 is 192 MBytes, however you only need to fetch it once.
 """
 
-dwi_fname, dwi_bval, dwi_bvec, _ = get_fnames('cfin_multib')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname, _ = get_fnames('cfin_multib')
 data, affine = load_nifti(dwi_fname)
-bvals, bvecs = read_bvals_bvecs(dwi_bval, dwi_bvec)
+bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 """

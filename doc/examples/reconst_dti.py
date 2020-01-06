@@ -78,7 +78,7 @@ The size of the dataset is 87 MBytes. You only need to fetch once. It
 will return the file names of our data.
 """
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
 """
 Next, we read the saved dataset. gtab contains a ``GradientTable``
@@ -87,7 +87,7 @@ object (information about the gradients e.g. b-values and b-vectors).
 
 data, affine = load_nifti(hardi_fname)
 
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)

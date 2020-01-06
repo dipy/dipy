@@ -35,12 +35,12 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 """

@@ -39,7 +39,7 @@ multi-shell dataset which was kindly provided by Hansen and Jespersen
 (more details about the data are provided in their paper [Hansen2016]_).
 """
 
-fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)

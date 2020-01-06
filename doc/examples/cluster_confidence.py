@@ -31,12 +31,12 @@ description of these steps, please refer to the CSA Probabilistic Tracking and
 the Visualization of ROI Surface Rendered with Streamlines Tutorials.
 """
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')
 
 data, affine = load_nifti(hardi_fname)
 labels = load_nifti_data(label_fname)
-bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)

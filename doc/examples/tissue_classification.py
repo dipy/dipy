@@ -27,8 +27,8 @@ from dipy.segment.tissue import TissueClassifierHMRF
 First we fetch the T1 volume from the Syn dataset and determine its shape.
 """
 
-t1_name, _, _ = get_fnames('tissue_data')
-t1 = load_nifti_data(t1_name)
+t1_fname, _, _ = get_fnames('tissue_data')
+t1 = load_nifti_data(t1_fname)
 print('t1.shape (%d, %d, %d)' % t1.shape)
 
 """

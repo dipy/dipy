@@ -79,7 +79,7 @@ their paper [Hansen2016]_). The total size of the downloaded data is 192
 MBytes, however you only need to fetch it once.
 """
 
-fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
@@ -172,7 +172,7 @@ the FA, MD, AD, and RD obtained from the diffusion kurtosis model (upper
 panels) and the tensor model (lower panels) are plotted for a selected axial
 slice. DTI's diffusion estimates present lower values than DKI's estimates,
 showing that DTI's diffusion measurements are underestimated  by higher order
-effects. 
+effects.
 """
 
 axial_slice = 9

@@ -26,7 +26,7 @@ Let's fetch two b0 volumes, the first one will be the b0 from the Stanford
 HARDI dataset
 """
 
-hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
 stanford_b0, stanford_b0_affine = load_nifti(hardi_fname)
 stanford_b0 = np.squeeze(stanford_b0)[..., 0]
@@ -35,8 +35,8 @@ stanford_b0 = np.squeeze(stanford_b0)[..., 0]
 The second one will be the same b0 we used for the 2D registration tutorial
 """
 
-t1_name, b0_name = get_fnames('syn_data')
-syn_b0, syn_b0_affine = load_nifti(b0_name)
+t1_fname, b0_fname = get_fnames('syn_data')
+syn_b0, syn_b0_affine = load_nifti(b0_fname)
 
 """
 We first remove the skull from the b0's

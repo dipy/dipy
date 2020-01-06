@@ -38,14 +38,14 @@ else:
     from dipy.io.gradients import read_bvals_bvecs
     from dipy.io.image import load_nifti_data, load_nifti
 
-    hardi_fname, hardi_bval, hardi_bvec = get_fnames('stanford_hardi')
+    hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
     label_fname = get_fnames('stanford_labels')
     t1_fname = get_fnames('stanford_t1')
 
     data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
     labels = load_nifti_data(label_fname)
     t1_data = load_nifti_data(t1_fname)
-    bvals, bvecs = read_bvals_bvecs(hardi_bval, hardi_bvec)
+    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
     gtab = gradient_table(bvals, bvecs)
 
     cc_slice = labels == 2

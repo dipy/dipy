@@ -39,7 +39,7 @@ from dipy.denoise.noise_estimate import piesno
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
 
-dwi_fname, dwi_bval, dwi_bvec = get_fnames('sherbrooke_3shell')
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
 data, affine = load_nifti(dwi_fname)
 
 

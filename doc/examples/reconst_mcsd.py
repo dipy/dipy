@@ -56,7 +56,7 @@ provided in their paper [Hansen2016]_). The total size of the downloaded data
 is 192 MBytes, however you only need to fetch it once.
 """
 
-fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)

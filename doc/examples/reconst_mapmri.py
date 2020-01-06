@@ -46,7 +46,7 @@ The total size of the downloaded data is 187.66 MBytes, however you only need
 to fetch it once.
 """
 
-fraw, fbval, fbvec, t1_name = get_fnames('cfin_multib')
+fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
 """
 ``data`` contains the voxel data and ``gtab`` contains a ``GradientTable``
