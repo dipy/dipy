@@ -582,7 +582,7 @@ cdef class QuickBundles(object):
         nearest_cluster = self.find_nearest_cluster(self.features)
 
         # Find nearest cluster to s_i_flip if metric is not order invariant
-        if not self.metric.feature.is_order_invariant:
+        if self.metric.feature.is_order_invariant != 0:
             self.metric.feature.c_extract(datum[::-1], self.features_flip)
             nearest_cluster_flip = self.find_nearest_cluster(self.features_flip)
 
