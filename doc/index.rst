@@ -15,7 +15,7 @@ Highlights
 
 **DIPY 1.1.0** is now available. New features include:
 
-- New module for deep learning DIPY.NN (uses TensorFlow 2.0).
+- New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
 - Improved DKI performance and increased utilities.
 - Non-linear and RESTORE fits from DTI compatible now with DKI.
 - Numerical solutions for estimating axial, radial and mean kurtosis.
