@@ -194,6 +194,19 @@ def test_quickbundles_with_not_order_invariant_metric():
     assert_array_equal(clusters[0].centroid, streamline)
 
 
+def test_quickbundles_with_not_order_invariant_metric_multiple_clusters():
+    metric = dipymetric.AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=0.1, metric=metric)
+
+    streamline = np.arange(10*3, dtype=dtype).reshape((-1, 3))
+    streamlines = [streamline, streamline[::-1]]
+
+    clusters = qb.cluster(streamlines)
+    assert_equal(len(clusters), 2)
+    assert_array_equal(clusters[0].centroid, streamlines[0])
+    assert_array_equal(clusters[1].centroid, streamlines[1])
+
+
 def test_quickbundles_memory_leaks():
     qb = QuickBundles(threshold=2*threshold)
 
