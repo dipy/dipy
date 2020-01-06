@@ -13,24 +13,18 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 1.0.0** is now available. New features include:
+**DIPY 1.1.0** is now available. New features include:
 
-- Critical :doc:`API changes <api_changes>`
-- Large refactoring of tracking API.
-- New denoising algorithm: MP-PCA.
-- New Gibbs ringing removal.
-- New interpolation module: ``dipy.core.interpolation``.
-- New reconstruction models: MTMS-CSD, Mean Signal DKI.
-- Increased coordinate systems consistency.
-- New object to manage safely tractography data: StatefulTractogram
-- New command line interface for downloading datasets: FetchFlow
+- Speeded up all cython modules
+- New module for deep learning (uses TensorFlow 2.0)
+- Improve DKI performance
+- Nibabel minimum version is 3.0.0
+- Azure CI Integration and Appveyor CI removal
+- New command line interfaces : LpcaFlow, MppcaFlow, GibbsFlow, SplitFlow
 - Horizon updated, medical visualization interface powered by QuickBundlesX.
-- Removed all deprecated functions and parameters.
-- Removed compatibility with Python 2.7.
-- Updated minimum dependencies version (Numpy, Scipy).
-- All tutorials updated to API changes and 3 new added.
+- All tutorials updated to API changes and 2 new added.
 - Large documentation update.
-- Closed 289 issues and merged 98 pull requests.
+- Closed 126 issues and merged 50 pull requests.
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -38,7 +32,7 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
-- DIPY Workshop - Titanium Edition (March 11-15, 2019) is now open for registration:
+- DIPY Workshop - Titanium Edition (March 16-20, 2020) is now open for registration:
 
 .. raw :: html
 
@@ -47,9 +41,9 @@ Announcements
   </div>
 
 
+- :doc:`DIPY 1.1 <release_notes/release1.1>` released January 5, 2020.
 - :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
 - :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
-- :doc:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
 
 
 See some of our :ref:`Past Announcements <old_news>`
