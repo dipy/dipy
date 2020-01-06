@@ -29,17 +29,19 @@ example for further explanations).
 
 """
 
-from __future__ import division, print_function
-import nibabel as nib
 import numpy as np
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
-data = img.get_data()
-affine = img.affine
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+
+data, affine = load_nifti(hardi_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 print('Computing brain mask...')
 b0_mask, mask = median_otsu(data, vol_idx=[0])
@@ -84,9 +86,8 @@ CC_box[bounds_min[0]:bounds_max[0],
 mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
                                      return_cfa=True)
 
-cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
-nib.save(mask_cc_part_img, 'mask_CC_part.nii.gz')
+save_nifti('cfa_CC_part.nii.gz', (cfa*255).astype(np.uint8), affine)
+save_nifti('mask_CC_part.nii.gz', mask_cc_part.astype(np.uint8), affine)
 
 import matplotlib.pyplot as plt
 region = 40
@@ -128,8 +129,8 @@ from scipy.ndimage.morphology import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
 mask_noise[..., :mask_noise.shape[-1]//2] = 1
 mask_noise = ~mask_noise
-mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
-nib.save(mask_noise_img, 'mask_noise.nii.gz')
+
+save_nifti('mask_noise.nii.gz', mask_noise.astype(np.uint8), affine)
 
 noise_std = np.std(data[mask_noise, :])
 print('Noise standard deviation sigma= ', noise_std)

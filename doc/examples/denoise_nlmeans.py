@@ -15,14 +15,12 @@ import matplotlib.pyplot as plt
 from time import time
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti
 
 
-fetch_sherbrooke_3shell()
-img, gtab = read_sherbrooke_3shell()
-
-data = img.get_data()
-affine = img.affine
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
+data, affine = load_nifti(dwi_fname)
 
 mask = data[..., 0] > 80
 
@@ -49,7 +47,8 @@ Calling the main function ``non_local_means``
 
 t = time()
 
-den = nlmeans(data, sigma=sigma, mask=mask, patch_radius= 1, block_radius = 1, rician= True)
+den = nlmeans(data, sigma=sigma, mask=mask, patch_radius=1,
+              block_radius=1, rician=True)
 
 print("total time", time() - t)
 """

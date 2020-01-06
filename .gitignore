@@ -13,6 +13,7 @@
 *.mat
 *.pkl
 *.orig
+*.trk
 build
 *~
 doc/_build

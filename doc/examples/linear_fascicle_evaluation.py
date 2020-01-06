@@ -33,16 +33,22 @@ if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
 else:
     # We'll need to know where the corpus callosum is from these variables:
-    from dipy.data import (read_stanford_labels,
-                           fetch_stanford_t1,
-                           read_stanford_t1)
-    hardi_img, gtab, labels_img = read_stanford_labels()
-    labels = labels_img.get_data()
+    from dipy.core.gradients import gradient_table
+    from dipy.data import get_fnames
+    from dipy.io.gradients import read_bvals_bvecs
+    from dipy.io.image import load_nifti_data, load_nifti
+
+    hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+    label_fname = get_fnames('stanford_labels')
+    t1_fname = get_fnames('stanford_t1')
+
+    data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+    labels = load_nifti_data(label_fname)
+    t1_data = load_nifti_data(t1_fname)
+    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+    gtab = gradient_table(bvals, bvecs)
+
     cc_slice = labels == 2
-    fetch_stanford_t1()
-    t1 = read_stanford_t1()
-    t1_data = t1.get_data()
-    data = hardi_img.get_data()
 
 # Read the candidates from file in voxel space:
 candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
@@ -112,15 +118,15 @@ fiber_model = life.FiberModel(gtab)
 
 """
 
-Since we read the streamlines from a file, already in the voxel space, we do not
-need to transform them into this space. Otherwise, if the streamline coordinates
-were in the world space (relative to the scanner iso-center, or relative to the
-mid-point of the AC-PC-connecting line), we would use this::
+Since we read the streamlines from a file, already in the voxel space, we do
+not need to transform them into this space. Otherwise, if the streamline
+coordinates were in the world space (relative to the scanner iso-center, or
+relative to the mid-point of the AC-PC-connecting line), we would use this::
 
    inv_affine = np.linalg.inv(hardi_img.affine)
 
-the inverse transformation from world space to the voxel space as the affine for
-the following model fit.
+the inverse transformation from world space to the voxel space as the affine
+for the following model fit.
 
 The next step is to fit the model, producing a ``FiberFit`` class instance,
 that stores the data, as well as the results of the fitting procedure.
@@ -141,8 +147,8 @@ $i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
 sparse matrix, because each streamline traverses only a small percentage of the
 voxels. The  expected contributions of the streamline are calculated using a
 forward model, where each node of the streamline is modeled as a cylindrical
-fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
-[Pestilli2014]_ for more detail on the model, and variations of this model.
+fiber compartment with Gaussian diffusion, using the diffusion tensor model.
+See [Pestilli2014]_ for more detail on the model, and variations of this model.
 
 """
 
@@ -207,9 +213,9 @@ streamlines have presumably been removed (in this case, about 50% of the
 streamlines).
 
 But how well does the model do in explaining the diffusion data? We can
-quantify that: the ``FiberFit`` class instance has a `predict` method, which can
-be used to invert the model and predict back either the data that was used to
-fit the model, or other unseen data (e.g. in cross-validation, see
+quantify that: the ``FiberFit`` class instance has a `predict` method, which
+can be used to invert the model and predict back either the data that was used
+to fit the model, or other unseen data (e.g. in cross-validation, see
 :ref:`kfold_xval`).
 
 Without arguments, the ``.predict()`` method will predict the diffusion signal

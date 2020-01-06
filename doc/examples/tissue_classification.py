@@ -4,12 +4,12 @@
 Tissue Classification of a T1-weighted Structural Image
 =======================================================
 
-This example explains how to segment a T1-weighted structural image by using a 
-Bayesian formulation. The observation model (likelihood term) is defined as a 
-Gaussian distribution and a Markov Random Field (MRF) is used to model the a 
-priori probability of the context-dependent patterns of the different tissue 
-types of the brain. Expectation Maximization and Iterated Conditional 
-Modes are used to find the optimal solution. Similar algorithms have been 
+This example explains how to segment a T1-weighted structural image by using a
+Bayesian formulation. The observation model (likelihood term) is defined as a
+Gaussian distribution and a Markov Random Field (MRF) is used to model the a
+priori probability of the context-dependent patterns of the different tissue
+types of the brain. Expectation Maximization and Iterated Conditional
+Modes are used to find the optimal solution. Similar algorithms have been
 proposed by Zhang et al. [Zhang2001]_ and Avants et al. [Avants2011]_ available
 in FAST-FSL and ANTS-atropos, respectively.
 
@@ -19,16 +19,16 @@ and bias field corrected.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dipy.data import fetch_tissue_data, read_tissue_data
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
 from dipy.segment.tissue import TissueClassifierHMRF
 
 """
 First we fetch the T1 volume from the Syn dataset and determine its shape.
 """
 
-fetch_tissue_data()
-t1_img = read_tissue_data()
-t1 = t1_img.get_data()
+t1_fname, _, _ = get_fnames('tissue_data')
+t1 = load_nifti_data(t1_fname)
 print('t1.shape (%d, %d, %d)' % t1.shape)
 
 """

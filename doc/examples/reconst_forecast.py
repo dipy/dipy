@@ -26,7 +26,7 @@ fetch_cenir_multib(with_raw=False)
 
 bvals = [1000, 2000, 3000]
 img, gtab = read_cenir_multib(bvals)
-data = img.get_data()
+data = img.get_fdata()
 
 """
 Let us consider only a single slice for the FORECAST fitting
@@ -40,8 +40,9 @@ Instantiate the FORECAST Model.
 
 "sh_order" is the spherical harmonics order used for the fODF.
 
-dec_alg is the spherical deconvolution algorithm used for the FORECAST basis fitting, in this case
-we used the Constrained Spherical Deconvolution (CSD) algorithm.
+dec_alg is the spherical deconvolution algorithm used for the FORECAST basis
+fitting, in this case we used the Constrained Spherical Deconvolution (CSD)
+algorithm.
 """
 
 fm = ForecastModel(gtab, sh_order=6, dec_alg='CSD')
@@ -53,9 +54,9 @@ Fit the FORECAST to the data
 f_fit = fm.fit(data_small, mask_small)
 
 """
-Calculate the crossing invariant tensor indices [Kaden2016]_ : the parallel diffusivity,
-the perpendicular diffusivity, the fractional anisotropy and the mean
-diffusivity.
+Calculate the crossing invariant tensor indices [Kaden2016]_ : the parallel
+diffusivity, the perpendicular diffusivity, the fractional anisotropy and the
+mean diffusivity.
 """
 
 d_par = f_fit.dpar
@@ -132,8 +133,8 @@ window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
 References
 ----------
 
-.. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation Distributions
-       Using High Angular Resolution Diffusion Imaging", Magnetic
+.. [Anderson2005] Anderson A. W., "Measurement of Fiber Orientation
+       Distributions Using High Angular Resolution Diffusion Imaging", Magnetic
        Resonance in Medicine, 2005.
 
 .. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion

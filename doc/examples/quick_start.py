@@ -3,8 +3,8 @@
 Getting started with DIPY
 =========================
 
-In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
-diffusion weighted data, and two text files one with b-values and
+In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with
+the diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
 In DIPY_ we provide tools to load and process these files and we also provide
@@ -18,8 +18,8 @@ from dipy.data import fetch_sherbrooke_3shell
 fetch_sherbrooke_3shell()
 
 """
-By default these datasets will go in the ``.dipy`` folder inside your home directory.
-Here is how you can access them.
+By default these datasets will go in the ``.dipy`` folder inside your home
+directory. Here is how you can access them.
 """
 
 from os.path import expanduser, join
@@ -61,9 +61,8 @@ use a python library called nibabel_ which enables us to read and write
 neuroimaging-specific file formats.
 """
 
-import nibabel as nib
-img = nib.load(fdwi)
-data = img.get_data()
+from dipy.io.image import load_nifti
+data, affine, img = load_nifti(fdwi, return_img=True)
 
 """
 ``data`` is a 4D array where the first 3 dimensions are the i, j, k voxel
@@ -105,7 +104,8 @@ plt.savefig('data.png', bbox_inches='tight')
 .. figure:: data.png
    :align: center
 
-   Showing the middle axial slice without (left) and with (right) diffusion weighting.
+   Showing the middle axial slice without (left) and with (right) diffusion
+   weighting.
 
 The next step is to load the b-values and b-vectors from the disk using
 the function ``read_bvals_bvecs``.
@@ -124,8 +124,8 @@ from dipy.core.gradients import gradient_table
 gtab = gradient_table(bvals, bvecs)
 
 """
-Finally, you can use ``gtab`` (the GradientTable object) to show some information about the
-acquisition parameters
+Finally, you can use ``gtab`` (the GradientTable object) to show some
+information about the acquisition parameters
 """
 
 print(gtab.info)
@@ -206,7 +206,8 @@ print(S0s.shape)
 Just, for fun let's save this in a new Nifti file.
 """
 
-nib.save(nib.Nifti1Image(S0s, img.affine), 'HARDI193_S0.nii.gz')
+from dipy.io.image import save_nifti
+save_nifti('HARDI193_S0.nii.gz', S0s, affine)
 
 """
 Now, that we learned how to load dMRI datasets we can start the analysis.

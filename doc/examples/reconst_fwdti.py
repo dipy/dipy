@@ -65,7 +65,7 @@ bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
 
-data = img.get_data()
+data = img.get_fdata()
 
 affine = img.affine
 

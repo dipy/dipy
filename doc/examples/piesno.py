@@ -13,9 +13,9 @@ coils for both SENSE and GRAPPA reconstructions.
 The PIESNO method works in two steps:
 
 1) First, it finds voxels that are most likely background voxels. Intuitively,
-these voxels have very similar diffusion-weighted intensities (up to some noise)
-in the fourth dimension of the DWI dataset. White matter, gray matter or CSF
-voxels have diffusion intensities that vary quite a lot across different
+these voxels have very similar diffusion-weighted intensities (up to some
+noise) in the fourth dimension of the DWI dataset. White matter, gray matter
+or CSF voxels have diffusion intensities that vary quite a lot across different
 directions.
 
 2) From these estimated background voxels and the input number of coils $N$,
@@ -34,15 +34,14 @@ In this example, we will demonstrate the use of PIESNO with a 3-shell data-set.
 We start by importing necessary modules and functions and loading the data:
 """
 
-import nibabel as nib
 import numpy as np
 from dipy.denoise.noise_estimate import piesno
-from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti, save_nifti
 
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('sherbrooke_3shell')
+data, affine = load_nifti(dwi_fname)
 
-fetch_sherbrooke_3shell()
-img, gtab = read_sherbrooke_3shell()
-data = img.get_data()
 
 """
 Now that we have fetched a dataset, we must call PIESNO with the right number
@@ -62,6 +61,7 @@ axial = data[:, :, data.shape[2] // 2, 0].T
 axial_piesno = mask[:, :, data.shape[2] // 2].T
 
 import matplotlib.pyplot as plt
+
 fig, ax = plt.subplots(1, 2)
 ax[0].imshow(axial, cmap='gray', origin='lower')
 ax[0].set_title('Axial slice of the b=0 data')
@@ -80,11 +80,11 @@ plt.savefig('piesno.png', bbox_inches='tight')
    background voxels (right) used to estimate the noise standard deviation.
 """
 
-nib.save(nib.Nifti1Image(mask, img.affine, img.header),
-         'mask_piesno.nii.gz')
+save_nifti('mask_piesno.nii.gz', mask.astype(np.uint8), affine)
 
-print('The noise standard deviation is sigma= ', sigma)
-print('The std of the background is =', np.std(data[mask[...,None].astype(np.bool)]))
+print('The noise standard deviation is sigma = ', sigma)
+print('The std of the background is =',
+      np.std(data[mask[..., :].astype(np.bool)]))
 
 """
 

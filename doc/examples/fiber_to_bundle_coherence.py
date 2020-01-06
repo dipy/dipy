@@ -46,20 +46,26 @@ datasets in DIPY_.
 interactive = False
 
 import numpy as np
-from dipy.data import (read_stanford_labels, fetch_stanford_t1,
-                       read_stanford_t1)
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data, load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 
 # Fix seed
 np.random.seed(1)
 
 # Read data
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
-fetch_stanford_t1()
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
+
+data, affine = load_nifti(hardi_fname)
+labels = load_nifti_data(label_fname)
+t1_data = load_nifti_data(t1_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
+
+
 
 # Select a relevant part of the data (left hemisphere)
 # Coordinates given in x bounds, y bounds, z bounds

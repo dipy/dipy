@@ -606,6 +606,9 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'cb_2.npz')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == "t-design":
+        N = 45
+        return pjoin(DATA_DIR, 'tdesign' + str(N) + '.txt')
     if name == 'scil_b0':
         files, folder = fetch_scil_b0()
         files = files['datasets_multi-site_all_companies.zip'][2]
@@ -660,9 +663,9 @@ def get_fnames(name='small_64D'):
         return fraw, fbval, fbvec
     if name == 'tissue_data':
         files, folder = fetch_tissue_data()
-        t1_name = pjoin(folder, 'tissue_data', 't1_brain.nii.gz')
-        t1d_name = pjoin(folder, 'tissue_data', 't1_brain_denoised.nii.gz')
-        ap_name = pjoin(folder, 'tissue_data', 'power_map.nii.gz')
+        t1_name = pjoin(folder, 't1_brain.nii.gz')
+        t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+        ap_name = pjoin(folder, 'power_map.nii.gz')
         return t1_name, t1d_name, ap_name
     if name == 'cfin_multib':
         files, folder = fetch_cfin_multib()

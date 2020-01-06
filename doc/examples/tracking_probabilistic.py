@@ -19,10 +19,10 @@ example. We'll begin by repeating a few steps from that example, loading the
 data and fitting a Constrained Spherical Deconvolution (CSD) model.
 """
 
-# Enables/disables interactive visualization
-interactive = False
-
-from dipy.data import read_stanford_labels
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.tracking import utils
@@ -31,10 +31,17 @@ from dipy.tracking.streamline import Streamlines
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap, has_fury
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+
+# Enables/disables interactive visualization
+interactive = False
+
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)

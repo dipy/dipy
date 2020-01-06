@@ -11,10 +11,10 @@ signal as a combination of the signals from different fascicles (see also
 :ref:`sfm-reconst`).
 """
 
-# Enables/disables interactive visualization
-interactive = False
-
-from dipy.data import get_sphere, read_stanford_labels, read_stanford_t1
+from dipy.core.gradients import gradient_table
+from dipy.data import get_sphere, get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 from dipy.direction.peaks import peaks_from_model
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -29,15 +29,20 @@ from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap, has_fury
 from numpy.linalg import inv
 
+# Enables/disables interactive visualization
+interactive = False
 
 """
 To begin, we read the Stanford HARDI data set into memory:
 """
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 """
 This data set provides a label map (generated using `FreeSurfer
@@ -118,9 +123,8 @@ Next, we will create a visualization of these streamlines, relative to this
 subject's T1-weighted anatomy:
 """
 
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
-t1_aff = t1.affine
+t1_fname = get_fnames('stanford_t1')
+t1_data, t1_aff = load_nifti(t1_fname)
 color = colormap.line_colors(streamlines)
 
 """

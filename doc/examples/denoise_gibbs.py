@@ -28,13 +28,12 @@ We first apply this algorithm to T1-weighted dataset which can be fetched
 using the following code:
 """
 
-from dipy.data import fetch_tissue_data, read_tissue_data
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
 
-fetch_tissue_data()
 
-t1_img = read_tissue_data(contrast='T1 denoised')
-
-t1 = t1_img.get_data()
+t1_fname, t1_denoised_fname, ap_fname = get_fnames('tissue_data')
+t1 = load_nifti_data(t1_denoised_fname)
 
 """
 Let's plot a slice of this dataset.
@@ -156,7 +155,7 @@ bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
 
-data = img.get_data()
+data = img.get_fdata()
 
 """
 For illustration proposes, we select two slices of this dataset

@@ -79,13 +79,17 @@ spherical deconvolution is used to model the fiber orientations.
 """
 
 import numpy as np
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
+from dipy.io.image import load_nifti_data
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.sims.voxel import add_noise
 
 # Read data
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
-data = img.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+data = load_nifti_data(hardi_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 # Add Rician noise
 from dipy.segment.mask import median_otsu

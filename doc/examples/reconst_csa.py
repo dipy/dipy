@@ -10,27 +10,32 @@ First import the necessary modules:
 """
 
 import numpy as np
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, default_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
 
 """
-Download and read the data for this tutorial.
+Download and read the data for this tutorial and load the raw diffusion data
+and the affine.
 """
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+
+data, affine = load_nifti(hardi_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 """
 img contains a nibabel Nifti1Image object (data) and gtab contains a
 GradientTable object (gradient information e.g. b-values). For example to
 read the b-values it is possible to write print(gtab.bvals).
-
-Load the raw diffusion data and the affine.
 """
 
-data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
@@ -95,7 +100,8 @@ ren = window.Renderer()
 csaodfs = csamodel.fit(data_small).odf(default_sphere)
 
 """
-It is common with CSA ODFs to produce negative values, we can remove those using ``np.clip``
+It is common with CSA ODFs to produce negative values, we can remove those
+using ``np.clip``
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])

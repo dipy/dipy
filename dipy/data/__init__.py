@@ -208,13 +208,6 @@ def _gradient_from_file(filename):
     return gtab_getter
 
 
-def get_tdesign():
-    """Reads the N directions of a t-design"""
-    N = 45
-    file = pjoin(DATA_DIR, 'tdesign' + str(N) + '.txt')
-    return np.loadtxt(file)
-
-
 get_3shell_gtab = _gradient_from_file("gtab_3shell.txt")
 get_isbi2013_2shell_gtab = _gradient_from_file("gtab_isbi2013_2shell.txt")
 get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")

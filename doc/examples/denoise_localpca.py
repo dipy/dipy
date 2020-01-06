@@ -30,9 +30,12 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from time import time
+from dipy.core.gradients import gradient_table
 from dipy.denoise.localpca import localpca
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
-from dipy.data import read_isbi2013_2shell
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 
 """
 
@@ -41,10 +44,10 @@ non-diffusion (b=0) image.
 
 """
 
-img, gtab = read_isbi2013_2shell()
-
-data = img.get_data()
-affine = img.affine
+dwi_fname, dwi_bval_fname, dwi_bvec_fname = get_fnames('isbi2013_2shell')
+data, affine = load_nifti(dwi_fname)
+bvals, bvecs = read_bvals_bvecs(dwi_bval_fname, dwi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 print("Input Volume", data.shape)
 

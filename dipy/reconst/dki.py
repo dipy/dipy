@@ -1,6 +1,5 @@
 #!/usr/bin/python
 """ Classes and functions for fitting the diffusion kurtosis model """
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import scipy.optimize as opt
@@ -16,10 +15,9 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 perpendicular_directions)
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_fnames
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
-from dipy.data import get_tdesign
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -765,7 +763,7 @@ def mean_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=3,
 
     else:
         # Numerical Solution using t-design of 45 directions
-        V = get_tdesign()
+        V = np.loadtxt(get_fnames("t-design"))
         sph = dps.Sphere(xyz=V)
         KV = apparent_kurtosis_coef(dki_params, sph, min_kurtosis=min_kurtosis)
         MK = np.mean(KV, axis=-1)

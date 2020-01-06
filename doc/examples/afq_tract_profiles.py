@@ -59,8 +59,8 @@ transform = np.load("slr_transform.npy")
 In the next step, we need to make sure that all the streamlines in each bundle
 are oriented the same way. For example, for the CST, we want to make sure that
 all the bundles have their cortical termination at one end of the streamline.
-This is that when we later extract values from a volume, we won't have different
-streamlines going in opposite directions.
+This is that when we later extract values from a volume, we won't have
+different streamlines going in opposite directions.
 
 To orient all the streamlines in each bundles, we will create standard
 streamlines, by finding the centroids of the left AF and CST bundle models.
@@ -131,10 +131,10 @@ w_af_l = dsa.gaussian_weights(oriented_af_l)
 And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, img.affine,
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine,
                                 weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_af_l, img.affine,
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, fa_affine,
                                weights=w_af_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
