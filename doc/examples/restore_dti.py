@@ -28,7 +28,6 @@ We start by importing a few of the libraries we will use.
 """
 
 import numpy as np
-import nibabel as nib
 
 """
 The module ``dipy.reconst.dti`` contains the implementation of tensor fitting,

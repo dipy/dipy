@@ -34,6 +34,7 @@ a ``LineSlider2D`` widget.
 
 First we need to fetch and load some datasets.
 """
+
 from dipy.tracking.streamline import Streamlines
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 

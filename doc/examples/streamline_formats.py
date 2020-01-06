@@ -32,6 +32,7 @@ from dipy.data.fetcher import (fetch_file_formats,
 
 """
 First fetch the dataset that contains 5 tractography file of 5 file formats:
+
 - cc_m_sub.trk
 - laf_m_sub.tck
 - lpt_m_sub.fib
@@ -39,6 +40,7 @@ First fetch the dataset that contains 5 tractography file of 5 file formats:
 - rpt_m_sub.dpy
 
 And their reference anatomy, common to all 5 files:
+
 - template0.nii.gz
 """
 
@@ -54,7 +56,8 @@ load_tck will simply be restricted to one file format
 
 TRK files contain their own header (when writen properly), so they
 technically do not need a reference. (See how below)
-cc_trk = ``load_tractogram``(bundles_filename[0], 'same')
+
+``cc_trk = load_tractogram(bundles_filename[0], 'same')``
 """
 
 cc_sft = load_tractogram(bundles_filename[0], reference_anatomy)

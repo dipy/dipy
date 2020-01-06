@@ -261,6 +261,7 @@ zooms and not (2, 2, 2), which means that the offsets need to be scaled by 2.
 Thus, we scale z by the voxel size:
 
 """
+
 origin_affine[2][3] = origin_affine[2][3]/vox_size
 
 """
