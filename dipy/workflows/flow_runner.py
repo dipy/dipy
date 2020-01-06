@@ -76,8 +76,8 @@ def run_flow(flow):
     del args['mix_names']
 
     # Remove subflows related params
-    for sub_flow, params_dict in sub_flows_dicts.items():
-        for key, _ in params_dict.items():
+    for params_dict in list(sub_flows_dicts.values()):
+        for key in list(params_dict.keys()):
             if key in args.keys():
                 params_dict[key] = args.pop(key)
 

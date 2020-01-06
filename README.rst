@@ -23,8 +23,6 @@
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
   :target: https://github.com/nipy/dipy/blob/master/LICENSE
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/nipy/dipy?branch=master&svg=true
-  :target: https://ci.appveyor.com/project/nipy/dipy/branch/master
 
 DIPY [DIPYREF]_ is a python library for analysis of MR diffusion imaging.
 
