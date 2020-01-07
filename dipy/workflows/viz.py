@@ -176,7 +176,7 @@ class HorizonFlow(Workflow):
 
             if ends(".pam5"):
 
-                pam = load_peaks(fname)
+                pam = load_pam(fname)
                 pams.append(pam)
 
                 if verbose:
