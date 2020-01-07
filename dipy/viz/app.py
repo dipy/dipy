@@ -205,7 +205,7 @@ class Horizon(object):
             if self.random_colors:
                 colors = next(color_gen)
             else:
-                colors = "RGB"
+                colors = None
 
             if not self.world_coords:
                 # TODO we need to read the affine of a tractogram
