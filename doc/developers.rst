@@ -58,9 +58,17 @@ And here is the rest of the wonderful contributors:
 - **Vatsala Swaroop**, Mombai, IN
 - **Shahnawaz Ahmed**, Birla Institute of Technology and Science, Pilani, Goa, IN
 - **Nil Goyette**, Imeka, Sherbrooke, QC, CA
-- **Scott Trinkle**, University of Chicago
-- **Kevin R. Sitek**, MIT McGovern Institute for Brain Research
-- **Derek Pisner**, University of Texas at Austin
+- **Scott Trinkle**, University of Chicago, IL, USA
+- **Kevin R. Sitek**, MIT McGovern Institute for Brain Research, MA, USA
+- **Derek Pisner**, University of Texas at Austin, USA
+- **Ross Lawrence**, Johns Hopkins University, USA
+- **Eric Larson**, University of Washington, USA
+- **Jakob Wasserthal**, German Cancer Research Center, DE
+- **Bramsh Qamar Chandio**, Indiana University, IN, USA
+- **Javier Guaje**, Indiana University, IN, USA
+- **Shreyas Fadnavis**, Indiana University,  IN, USA
+- **Matt Cieslak**, University of Pennsylvania, USA
+- **Sven Dorkenwald**, Princeton University, USA
 
 
 

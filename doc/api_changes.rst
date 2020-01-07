@@ -5,15 +5,24 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-DIPY 1.1 changes
+DIPY 1.1.0 changes
 ----------------
+
+**Tractogram**
+
+``dipy.io.streamlines.StatefulTractogram``can be created by an other one
 
 **Workflows**
 
 ``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``
 
+**Others**
 
-DIPY 1.0 changes
+``get_data`` has been deprecated by Nibabel and replaced by ``get_fdata``. This modification has been
+applied to all the code base. The default datatype is now float64.
+
+
+DIPY 1.0.0 changes
 ----------------
 Some of the changes introduced in the 1.0 release will break backwards
 compatibility with previous versions. This release is compatible with Python 3.5+

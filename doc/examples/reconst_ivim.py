@@ -347,4 +347,5 @@ References:
                (2016).
 
 .. include:: ../links_names.inc
+
 """

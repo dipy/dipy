@@ -4,6 +4,26 @@
 Older Highlights
 ****************
 
+**DIPY 1.0.0** is now available. New features include:
+
+- Critical :doc:`API changes <api_changes>`
+- Large refactoring of tracking API.
+- New denoising algorithm: MP-PCA.
+- New Gibbs ringing removal.
+- New interpolation module: ``dipy.core.interpolation``.
+- New reconstruction models: MTMS-CSD, Mean Signal DKI.
+- Increased coordinate systems consistency.
+- New object to manage safely tractography data: StatefulTractogram
+- New command line interface for downloading datasets: FetchFlow
+- Horizon updated, medical visualization interface powered by QuickBundlesX.
+- Removed all deprecated functions and parameters.
+- Removed compatibility with Python 2.7.
+- Updated minimum dependencies version (Numpy, Scipy).
+- All tutorials updated to API changes and 3 new added.
+- Large documentation update.
+- Closed 289 issues and merged 98 pull requests.
+
+
 **DIPY 0.16.0** is now available. New features include:
 
 - Horizon, medical visualization interface powered by QuickBundlesX.
