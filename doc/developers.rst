@@ -64,7 +64,7 @@ And here is the rest of the wonderful contributors:
 - **Ross Lawrence**, Johns Hopkins University, USA
 - **Eric Larson**, University of Washington, USA
 - **Jakob Wasserthal**, German Cancer Research Center, DE
-- **Bramsh Chandio Qamar**, Indiana University, IN, USA
+- **Bramsh Qamar Chandio**, Indiana University, IN, USA
 - **Javier Guaje**, Indiana University, IN, USA
 - **Shreyas Fadnavis**, Indiana University,  IN, USA
 - **Matt Cieslak**, University of Pennsylvania, USA
