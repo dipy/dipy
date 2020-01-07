@@ -241,12 +241,8 @@ def test_phantom():
 
 def test_lpca_ill_conditioned():
     DWI, sigma = rfiw_phantom(gtab, snr=30)
-    assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
-
-
-def test_lpca_ill_conditioned_varying_radii():
-    DWI, sigma = rfiw_phantom(gtab, snr=30)
-    assert_raises(ValueError, localpca, DWI, sigma, patch_radius=[0, 0, 0])
+    for patch_radius in [1, [2, 2], [1, 1, 1]]:
+        assert_raises(ValueError, localpca, DWI, sigma, patch_radius=patch_radius)
 
 
 def test_lpca_sigma_wrong_shape():
