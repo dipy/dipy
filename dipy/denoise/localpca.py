@@ -140,11 +140,11 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         raise ValueError("pca_method should be either 'eig' or 'svd'")
 
     if isinstance(patch_radius, int):
-        patch_radius = np.ones(3) * patch_radius
+        patch_radius = np.ones(3, dtype=int) * patch_radius
     if len(patch_radius) != 3:
         raise ValueError("patch_radius should have length 3")
     else:
-        patch_radius = np.asarray(patch_radius)
+        patch_radius = np.asarray(patch_radius).astype(int)
     patch_size = 2 * patch_radius + 1
 
     if np.prod(patch_size) < arr.shape[-1]:
