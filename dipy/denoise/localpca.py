@@ -148,6 +148,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     if np.prod(patch_size) < arr.shape[-1]:
         e_s = "You asked for PCA denoising with a "
         e_s += "patch_radius of {0} ".format(patch_radius)
+        e_s += "with total patch size of {0}".format(np.prod(patch_size))
         e_s += "for data with {0} directions. ".format(arr.shape[-1])
         e_s += "This would result in an ill-conditioned PCA matrix. "
         e_s += "Please increase the patch_radius."
