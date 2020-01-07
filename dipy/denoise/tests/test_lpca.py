@@ -244,6 +244,11 @@ def test_lpca_ill_conditioned():
     assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
 
 
+def test_lpca_ill_conditioned_varying_radii():
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    assert_raises(ValueError, localpca, DWI, sigma, patch_radius=[0, 0, 0])
+
+
 def test_lpca_sigma_wrong_shape():
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
