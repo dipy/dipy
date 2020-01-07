@@ -25,6 +25,7 @@ b0 from the Stanford HARDI dataset:
 
 """
 
+import numpy as np
 import nibabel as nib
 import os.path as op
 
@@ -57,8 +58,8 @@ fetch_mni_template()
 img_t2_mni = read_mni_template("a", contrast="T2")
 
 new_zooms = (2., 2., 2.)
-data2, affine2 = reslice(img_t2_mni.get_fdata(), img_t2_mni.affine,
-img_t2_mni.header.get_zooms(), new_zooms)
+data2, affine2 = reslice(np.asarray(img_t2_mni.dataobj), img_t2_mni.affine,
+                         img_t2_mni.header.get_zooms(), new_zooms)
 img_t2_mni = nib.Nifti1Image(data2, affine=affine2)
 
 """
@@ -66,8 +67,6 @@ We filter the diffusion data from the Stanford HARDI dataset to find the b0
 images.
 
 """
-
-import numpy as np
 
 b0_idx_stanford = np.where(gtab.b0s_mask)[0]
 b0_data_stanford = data[..., b0_idx_stanford]
@@ -111,7 +110,7 @@ from dipy.align.imaffine import (MutualInformationMetric, AffineRegistration,
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
                                    AffineTransform3D)
 
-static = img_t2_mni.get_fdata()
+static = np.asarray(img_t2_mni.dataobj)
 static_affine = img_t2_mni.affine
 moving = mean_b0_masked_stanford
 moving_affine = hardi_img.affine
