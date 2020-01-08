@@ -285,37 +285,45 @@ def pam_to_niftis(pam, prefix_fname, reshape_dirs=False):
     prefix_fname : str
         Spherical Harmonics coefficients filename
     reshape_dirs : bool, optional
-        If True, reshape peaks for visualization
+        If True, Reshape and convert to float32 a set of peaks for
+        visualisation with mrtrix or the fibernavigator.
         (default False)
 
     """
-    # TODO: Use a loop and getattr
-    save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
-
     if reshape_dirs:
         pam_dirs = reshape_peaks_for_visualization(pam)
     else:
         pam_dirs = pam.peak_dirs.astype(np.float32)
 
-    save_nifti(fname_dirs, pam_dirs, pam.affine)
-    save_nifti(fname_values, pam.peak_values.astype(np.float32), pam.affine)
-    save_nifti(fname_indices, pam.peak_indices, pam.affine)
-    save_nifti(fname_gfa, pam.gfa, pam.affine)
+    save_nifti(prefix_fname + '_peaks_dir.nii.gz', pam_dirs, pam.affine)
+    save_nifti(prefix_fname + '_peaks_values.nii.gz',
+               pam.peak_values.astype(np.float32), pam.affine)
+    save_nifti(prefix_fname + '_peaks_indices.nii.gz', pam.peak_indices,
+               pam.affine)
+    if hasattr(pam, 'shm_coeff'):
+        save_nifti(prefix_fname + '_shm.nii.gz',
+                   pam.shm_coeff.astype(np.float32), pam.affine)
+    if hasattr(pam, 'gfa'):
+        save_nifti(prefix_fname + '_gfa.nii.gz', pam.gfa, pam.affine)
+    if hasattr(pam, 'sphere'):
+        save_nifti(prefix_fname + '_sphere.nii.gz', pam.sphere.vertices,
+                   pam.affine)
+    if hasattr(pam, 'B'):
+        save_nifti(prefix_fname + '_B.nii.gz', pam.B, pam.affine)
+    if hasattr(pam, 'qa'):
+        save_nifti(prefix_fname + '_qa.nii.gz', pam.qa, pam.affine)
+    if hasattr(pam, 'odf'):
+        save_nifti(prefix_fname + '_odf.nii.gz', pam.odf, pam.affine)
 
-    _safe_save(group, shm_coeff, 'shm_coeff')
-    _safe_save(group, pam.sphere.vertices, 'sphere_vertices')
-    _safe_save(group, pam.B, 'B')
-    _safe_save(group, np.array([pam.total_weight]), 'total_weight')
-    _safe_save(group, np.array([pam.ang_thr]), 'ang_thr')
-    _safe_save(group, pam.gfa, 'gfa')
-    _safe_save(group, pam.qa, 'qa')
-    _safe_save(group, odf, 'odf')
+    # Float and int value, maybe on int headers
+    # save_nifti(prefix_fname, pam.total_weight), pam.affine)
+    # save_nifti(prefix_fname, pam.ang_thr), pam.affine)
 
 
-def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices, pam_file,
+def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
                   shm_coeff=None, sphere=None, gfa=None, B=None,
                   qa=None, odf=None, total_weight=None, ang_thr=None,
-                  verbose=False):
+                  pam_file=None, verbose=False):
     """Save SH, directions, indices and values of peaks to pam5.
 
     Parameters
@@ -324,7 +332,6 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices, pam_file,
     peak_dirs : array, (N, 3)
     peak_values : array, (N, 3)
     peak_indices : array, (N, 3)
-    pam_file : str
     shm_coeff : array, (N, 3), optional
         Spherical harmonics coefficients
     sphere : array, (N, 3), optional
@@ -335,6 +342,7 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices, pam_file,
         SH coefficients for the ODF spherical function
     total_weight : array, (N, 3), optional
     ang_thr : array, (N, 3), optional
+    pam_file : str, optional
     verbose : bool, optional
     """
     pam = PeaksAndMetrics()
@@ -349,7 +357,9 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices, pam_file,
         if value is not None:
             setattr(pam, name, value)
 
-    save_pam(pam_file, pam, verbose=verbose)
+    if pam_file:
+        save_pam(pam_file, pam, verbose=verbose)
+    return pam
 
 
 def tensor_to_pam(eval, evect, pam):
