@@ -5,7 +5,6 @@
 Run scripts and check outputs
 """
 """
-from __future__ import division, print_function, absolute_import
 
 import glob
 import os

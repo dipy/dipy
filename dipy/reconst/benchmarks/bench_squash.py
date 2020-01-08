@@ -9,7 +9,6 @@ With Pytest, Run this benchmark with:
 
     pytest -svv -c bench.ini /path/to/bench_squash.py
 """
-from __future__ import division, print_function, absolute_import
 
 from functools import reduce
 

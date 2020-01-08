@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from dipy.testing import assert_true, assert_false

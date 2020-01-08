@@ -1,7 +1,5 @@
 """ Testing Mean Signal DKI (MSDKI) """
 
-from __future__ import division, print_function, absolute_import
-
 import numpy as np
 import random
 from numpy.testing import assert_array_almost_equal, assert_raises

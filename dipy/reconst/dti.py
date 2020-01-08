@@ -1,6 +1,5 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-from __future__ import division, print_function, absolute_import
 
 import warnings
 

@@ -1,7 +1,5 @@
 """ Testing DKI microstructure """
 
-from __future__ import division, print_function, absolute_import
-
 import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro

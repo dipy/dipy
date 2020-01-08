@@ -1,5 +1,4 @@
 """ Metrics for tracks, where tracks are arrays of points """
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from scipy.interpolate import splprep, splev
