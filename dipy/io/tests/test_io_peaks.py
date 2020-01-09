@@ -7,7 +7,8 @@ import numpy.testing as npt
 
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.data import default_sphere
-from dipy.io.peaks import load_pam, save_pam, pam_to_niftis
+from dipy.io.peaks import (load_pam, save_pam, pam_to_niftis, niftis_to_pam,
+                           peaks_to_niftis)
 
 
 def test_io_peaks():
@@ -82,21 +83,21 @@ def test_io_peaks():
         del pam.shm_coeff
         save_pam(pjoin(tmpdir, fname6), pam, verbose=True)
 
-        fname_shm = 'shm.nii.gz'
-        fname_dirs = 'dirs.nii.gz'
-        fname_values = 'values.nii.gz'
-        fname_indices = 'indices.nii.gz'
-        fname_gfa = 'gfa.nii.gz'
-
         pam.shm_coeff = np.ones((10, 10, 10, 45))
-        pam_to_niftis(pam, fname_shm, fname_dirs, fname_values,
-                      fname_indices, fname_gfa, reshape_dirs=False)
 
-        os.path.isfile(fname_shm)
-        os.path.isfile(fname_dirs)
-        os.path.isfile(fname_values)
-        os.path.isfile(fname_indices)
-        os.path.isfile(fname_gfa)
+        pam_to_niftis(pam, prefix_fname='test_local', reshape_dirs=False)
+        # old version
+        peaks_to_niftis(pam, fname_shm='shm.nii.gz', fname_dirs='dirs.nii.gz',
+                        fname_values='values.nii.gz',
+                        fname_indices='indices.nii.gz', fname_gfa='gfa.nii.gz',
+                        reshape_dirs=False)
+
+        for name in ['test_local_shm.nii.gz', 'test_local_peaks_dirs.nii.gz',
+                     'test_local_peaks_values.nii.gz', 'test_local_gfa.nii.gz',
+                     'test_local_peaks_indices.nii.gz', 'shm.nii.gz',
+                     'dirs.nii.gz', 'values.nii.gz', 'indices.nii.gz',
+                     'gfa.nii.gz']:
+            npt.assert_(os.path.isfile(name))
 
 
 def test_io_save_pam_error():
@@ -121,3 +122,20 @@ def test_io_save_pam_error():
         pam.gfa = np.zeros((10, 10, 10))
         pam.qa = np.zeros((10, 10, 10, 5))
         pam.odf = np.zeros((10, 10, 10, default_sphere.vertices.shape[0]))
+
+
+def test_io_niftis_to_pam():
+
+    pam = niftis_to_pam(affine=np.eye(4),
+                        peak_dirs=np.random.rand(10, 10, 10, 5, 3),
+                        peak_values=np.zeros((10, 10, 10, 5)),
+                        peak_indices=np.zeros((10, 10, 10, 5)),
+                        shm_coeff=np.zeros((10, 10, 10, 45)),
+                        sphere=default_sphere, gfa=np.zeros((10, 10, 10)),
+                        B=np.zeros((45, default_sphere.vertices.shape[0])),
+                        qa=np.zeros((10, 10, 10, 5)),
+                        odf=np.zeros((10, 10, 10, default_sphere.vertices.shape[0])),
+                        total_weight=0.5, ang_thr=60, pam_file='test15.pam5')
+
+    npt.assert_equal(pam.peak_dirs.shape, (10, 10, 10, 5, 3))
+    npt.assert_(os.path.isfile('test15.pam5'))

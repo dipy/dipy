@@ -283,7 +283,7 @@ def pam_to_niftis(pam, prefix_fname, reshape_dirs=False):
     pam : PeaksAndMetrics
         Object holding peak_dirs, shm_coeffs and other attributes
     prefix_fname : str
-        Spherical Harmonics coefficients filename
+        prefix that will be added to all filenames
     reshape_dirs : bool, optional
         If True, Reshape and convert to float32 a set of peaks for
         visualisation with mrtrix or the fibernavigator.
@@ -295,7 +295,7 @@ def pam_to_niftis(pam, prefix_fname, reshape_dirs=False):
     else:
         pam_dirs = pam.peak_dirs.astype(np.float32)
 
-    save_nifti(prefix_fname + '_peaks_dir.nii.gz', pam_dirs, pam.affine)
+    save_nifti(prefix_fname + '_peaks_dirs.nii.gz', pam_dirs, pam.affine)
     save_nifti(prefix_fname + '_peaks_values.nii.gz',
                pam.peak_values.astype(np.float32), pam.affine)
     save_nifti(prefix_fname + '_peaks_indices.nii.gz', pam.peak_indices,
@@ -323,7 +323,7 @@ def pam_to_niftis(pam, prefix_fname, reshape_dirs=False):
 def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
                   shm_coeff=None, sphere=None, gfa=None, B=None,
                   qa=None, odf=None, total_weight=None, ang_thr=None,
-                  pam_file=None, verbose=False):
+                  pam_file=None):
     """Save SH, directions, indices and values of peaks to pam5.
 
     Parameters
@@ -343,7 +343,6 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
     total_weight : array, (N, 3), optional
     ang_thr : array, (N, 3), optional
     pam_file : str, optional
-    verbose : bool, optional
     """
     pam = PeaksAndMetrics()
     pam.affine = affine
@@ -358,7 +357,7 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
             setattr(pam, name, value)
 
     if pam_file:
-        save_pam(pam_file, pam, verbose=verbose)
+        save_pam(pam_file, pam)
     return pam
 
 
