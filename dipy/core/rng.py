@@ -1,11 +1,13 @@
-""" Random number generation utilities """
+"""Random number generation utilities."""
 
 from math import floor
 from platform import architecture
+import numpy as np
 
 
 def WichmannHill2006():
-    """
+    """Wichmann Hill (2006) random number generator.
+
     B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
     Computational Statistics & Data Analysis, Volume 51, Issue 3, 1
     December 2006, Pages 1614-1622, ISSN 0167-9473, DOI:
@@ -20,8 +22,8 @@ def WichmannHill2006():
     >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     >>> N = 1000
     >>> a = [rng.WichmannHill2006() for i in range(N)]
-    """
 
+    """
     global ix, iy, iz, it
 
     if architecture()[0] == '64':
@@ -38,9 +40,9 @@ def WichmannHill2006():
         # If only 32 bits are available
 
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
-        iy = 47003 * (ix %  45688) - 10479 * (iy /  45688)
-        iz = 23000 * (iz %  93368) - 19423 * (iz /  93368)
-        it = 33000 * (it %  65075) -  8123 * (it /  65075)
+        iy = 47003 * (ix % 45688) - 10479 * (iy / 45688)
+        iz = 23000 * (iz % 93368) - 19423 * (iz / 93368)
+        it = 33000 * (it % 65075) - 8123 * (it / 65075)
 
         if ix < 0:
             ix = ix + 2147483579
@@ -57,8 +59,7 @@ def WichmannHill2006():
 
 
 def WichmannHill1982():
-    """
-    Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2
+    """Algorithm AS 183 Appl. Statist. (1982) vol.31, no.2.
 
     Returns a pseudo-random number rectangularly distributed
     between 0 and 1.   The cycle length is 6.95E+12 (See page 123
@@ -69,10 +70,15 @@ def WichmannHill1982():
     30000 before the first entry.
 
     Integer arithmetic up to 5212632 is required.
+
+    Examples
+    ----------
+    >>> from dipy.core import rng
+    >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
+    >>> N = 1000
+    >>> a = [rng.WichmannHill1982() for i in range(N)]
+
     """
-
-    import numpy as np
-
     global ix, iy, iz
 
     ix = (171 * ix) % 30269
@@ -99,15 +105,24 @@ def WichmannHill1982():
 
 
 def LEcuyer():
-    """
+    """Return a LEcuyer random number generator.
+
     Generate uniformly distributed random numbers using the 32-bit
     generator from figure 3 of:
+
         L'Ecuyer, P. Efficient and portable combined random number
         generators, C.A.C.M., vol. 31, 742-749 & 774-?, June 1988.
 
     The cycle length is claimed to be 2.30584E+18
-    """
 
+    Examples
+    ----------
+    >>> from dipy.core import rng
+    >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
+    >>> N = 1000
+    >>> a = [rng.LEcuyer() for i in range(N)]
+
+    """
     global s1, s2
 
     k = s1 / 53668
