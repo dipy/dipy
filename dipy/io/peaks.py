@@ -6,6 +6,7 @@ from dipy.direction.peaks import (PeaksAndMetrics,
                                   reshape_peaks_for_visualization)
 from dipy.core.sphere import Sphere
 from dipy.io.image import save_nifti
+from dipy.reconst.dti import quantize_evecs
 import h5py
 
 
@@ -324,27 +325,43 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
                   shm_coeff=None, sphere=None, gfa=None, B=None,
                   qa=None, odf=None, total_weight=None, ang_thr=None,
                   pam_file=None):
-    """Save SH, directions, indices and values of peaks to pam5.
+    """Return SH, directions, indices and values of peaks to pam5.
 
     Parameters
     ----------
     affine : array, (4, 4)
-    peak_dirs : array, (N, 3)
-    peak_values : array, (N, 3)
-    peak_indices : array, (N, 3)
-    shm_coeff : array, (N, 3), optional
+        the matrix defining the affine transform
+    peak_dirs : ndarray
+        The direction of each peak.
+    peak_values : ndarray
+        The value of the peaks.
+    peak_indices : ndarray
+        Indices (in sphere vertices) of the peaks in each voxel.
+    shm_coeff : array, optional
         Spherical harmonics coefficients
-    sphere : array, (N, 3), optional
-    gfa : array, (N, 3), optional
-    B : array, (N, 3), optional
-    qa : array, (N, 3), optional
-    odf : array, (N, 3), optional
+    sphere : `Sphere` class instance, optional
+        The Sphere providing discrete directions for evaluation.
+    gfa : ndarray, optional
+        generalized FA volume
+    B : ndarray, optional
+        Matrix that transforms spherical harmonics to spherical function
+    qa : array, optional
+        Quantitative Anisotropy in each voxel.
+    odf : ndarray, optional
         SH coefficients for the ODF spherical function
-    total_weight : array, (N, 3), optional
-    ang_thr : array, (N, 3), optional
+    total_weight : float, optional
+    ang_thr : float, optional
     pam_file : str, optional
+        Filename of the desired pam file
+
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        Object holding peak_dirs, shm_coeffs and other attributes
+
     """
     pam = PeaksAndMetrics()
+    import ipdb; ipdb.set_trace()
     pam.affine = affine
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
@@ -353,13 +370,67 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
     for name, value in [('shm_coeff', shm_coeff), ('sphere', sphere), ('B', B),
                         ('total_weight', total_weight), ('ang_thr', ang_thr),
                         ('gfa', gfa), ('qa', qa), ('odf', odf)]:
-        if value is not None:
-            setattr(pam, name, value)
+        setattr(pam, name, value)
 
     if pam_file:
         save_pam(pam_file, pam)
     return pam
 
 
-def tensor_to_pam(eval, evect, pam):
-    pass
+def tensor_to_pam(evals, evecs, affine, shm_coeff=None, sphere=None, gfa=None,
+                  B=None, qa=None, odf=None, total_weight=None, ang_thr=None,
+                  pam_file=None, npeaks=5, generate_peaks_indices=True):
+    """Convert diffusion tensor to pam5.
+
+    Parameters
+    ----------
+    evals : ndarray
+        Eigenvalues of a diffusion tensor. shape should be (...,3).
+    evecs : ndarray
+        Eigen vectors from the tensor model
+    affine : array, (4, 4)
+        the matrix defining the affine transform
+    shm_coeff : array, optional
+        Spherical harmonics coefficients
+    sphere : `Sphere` class instance, optional
+        The Sphere providing discrete directions for evaluation.
+    gfa : ndarray, optional
+        generalized FA volume
+    B : ndarray, optional
+        Matrix that transforms spherical harmonics to spherical function
+    qa : array, optional
+        Quantitative Anisotropy in each voxel.
+    odf : ndarray, optional
+        SH coefficients for the ODF spherical function
+    pam_file : str, optional
+        Filename of the desired pam file
+    npeaks : int
+        Maximum number of peaks found (default 5 peaks).
+    generate_peaks_indices : bool, optional
+    total_weight : float, optional
+    ang_thr : float, optional
+
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        Object holding peak_dirs, shm_coeffs and other attributes
+
+    """
+    shape = evals.shape[:3]
+    peaks_dirs = np.zeros((shape + (npeaks, 3)))
+    peaks_dirs[..., :3, :] = evecs
+    peaks_values = np.zeros((shape + (npeaks,)))
+    peaks_values[..., :3] = evals
+
+    if generate_peaks_indices:
+        vertices = sphere.vertices if sphere else None
+        peaks_indices = quantize_evecs(evecs, vertices)
+    else:
+        peaks_indices = np.zeros((shape + (npeaks,)), dtype='int')
+        peaks_indices.fill(-1)
+
+    return niftis_to_pam(affine=affine, peak_dirs=peaks_dirs,
+                         peak_values=peaks_values, peak_indices=peaks_indices,
+                         shm_coeff=shm_coeff, sphere=sphere, gfa=gfa, B=B,
+                         qa=qa, odf=odf, total_weight=total_weight,
+                         ang_thr=ang_thr, pam_file=pam_file)
