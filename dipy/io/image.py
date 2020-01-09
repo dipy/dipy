@@ -3,15 +3,15 @@ import nibabel as nib
 import numpy as np
 
 
-def load_nifti_data(fname):
+def load_nifti_data(fname, as_ndarray=True):
     img = nib.load(fname)
-    return np.asarray(img.dataobj)
+    return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
 
 
 def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=False):
+               return_coords=False, as_ndarray=True):
     img = nib.load(fname)
-    data = np.asarray(img.dataobj)
+    data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
     vox_size = img.header.get_zooms()[:3]
 
     ret_val = [data, img.affine]
