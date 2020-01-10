@@ -10,15 +10,15 @@ DIPY 1.1.1 changes
 
 **IO**
 
-`img.get_data()` is deprecated since Nibabel 3.0.0 so general use of `np.asanyarray(img.dataobj)`
+`img.get_data()` is deprecated since Nibabel 3.0.0. Using `np.asanyarray(img.dataobj)` instead of `img.get_data()`.
 
 **Tractogram**
 
-``dipy.io.streamlines.StatefulTractogram``can be created by an other one
+``dipy.io.streamlines.StatefulTractogram``can be created by an other one.
 
 **Workflows**
 
-``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``
+``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``.
 
 **Others**
 
