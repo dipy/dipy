@@ -3,13 +3,53 @@ import nibabel as nib
 import numpy as np
 
 
-def load_nifti_data(fname, as_ndarray=True):
+def load_nifti_data(fname, dtype=np.float64):
+    """
+    Loads only the data array from a nifti file.
+
+    Paramters
+    ---------
+    fname : str
+        Full path to the file.
+    dtype : numpy dtype object, optional
+        What dtype to read the data as. Default: np.float64.
+
+    Returns
+    -------
+    np.ndarray
+
+    See also
+    --------
+    ``load_nifti``
+    """
     img = nib.load(fname)
     return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
 
 
 def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=False, as_ndarray=True):
+               return_coords=False, dtype=np.float64):
+    """
+    Loads data and other information from a nifti file.
+
+    Parameters
+    ----------
+    fname : str
+        Full path to a nifti file.
+
+    return_img : bool, optional
+        Whether to return the nibabel nifti img object. Default: False
+
+    return_voxsize: bool, optional
+        Whether to return the nifti header zooms. Default: False
+
+    return_coords : bool, optional
+        Whether to return the nifti header aff2axcodes. Default: False
+
+    Returns
+    -------
+    A tuple, with (at the most, if all keyword args are set to True):
+    (data, img.affine, img, vox_size, nib.aff2axcodes(img.affine))
+    """
     img = nib.load(fname)
     data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
     vox_size = img.header.get_zooms()[:3]
@@ -27,6 +67,27 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
 
 
 def save_nifti(fname, data, affine, hdr=None):
+    """
+    Saves a data array into a nifti file.
+
+    Parameters
+    ----------
+    fname : str
+        The full path to the file to be saved.
+
+    data : ndarray
+        The array with the data to save.
+
+    affine : 4x4 array
+        The affine transform associated with the file.
+
+    hdr : nifti header, optional
+        May contain additional information to store in the file header.
+
+    Returns
+    -------
+    None
+    """
     result_img = nib.Nifti1Image(data, affine, header=hdr)
     result_img.to_filename(fname)
 
