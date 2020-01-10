@@ -3,33 +3,34 @@ import nibabel as nib
 import numpy as np
 
 
-def load_nifti_data(fname, dtype=np.float64):
-    """
-    Loads only the data array from a nifti file.
+def load_nifti_data(fname, as_ndarray=True):
+    """Load only the data array from a nifti file.
 
     Paramters
     ---------
     fname : str
         Full path to the file.
-    dtype : numpy dtype object, optional
-        What dtype to read the data as. Default: np.float64.
+    as_ndarray: bool, optional
+        convert nibabel ArrayProxy to a numpy.ndarray.
+        If you want to save memory and delay this casting, just turn this
+        option to False (default: True)
 
     Returns
     -------
-    np.ndarray
+    data: np.ndarray or nib.ArrayProxy
 
     See also
     --------
     ``load_nifti``
+
     """
     img = nib.load(fname)
     return np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
 
 
 def load_nifti(fname, return_img=False, return_voxsize=False,
-               return_coords=False, dtype=np.float64):
-    """
-    Loads data and other information from a nifti file.
+               return_coords=False, as_ndarray=True):
+    """Load data and other information from a nifti file.
 
     Parameters
     ----------
@@ -45,6 +46,11 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     return_coords : bool, optional
         Whether to return the nifti header aff2axcodes. Default: False
 
+    as_ndarray: bool, optional
+        convert nibabel ArrayProxy to a numpy.ndarray.
+        If you want to save memory and delay this casting, just turn this
+        option to False (default: True)
+
     Returns
     -------
     A tuple, with (at the most, if all keyword args are set to True):
@@ -53,6 +59,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     See also
     --------
     `load_nifti_data`
+
     """
     img = nib.load(fname)
     data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
@@ -71,8 +78,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
 
 
 def save_nifti(fname, data, affine, hdr=None):
-    """
-    Saves a data array into a nifti file.
+    """Save a data array into a nifti file.
 
     Parameters
     ----------
@@ -91,6 +97,7 @@ def save_nifti(fname, data, affine, hdr=None):
     Returns
     -------
     None
+
     """
     result_img = nib.Nifti1Image(data, affine, header=hdr)
     result_img.to_filename(fname)
@@ -109,6 +116,7 @@ def save_qa_metric(fname, xopt, fopt):
         image registration.
     fopt: int
         The distance between the registered images.
+
     """
     np.savetxt(fname, xopt, header="Optimal Parameter metric")
     with open(fname, 'a') as f:
