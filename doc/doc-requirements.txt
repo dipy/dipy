@@ -1,7 +1,7 @@
 cython
 numpy
 scipy
-nibabel>=2.3.1
+nibabel>=3.0.0
 h5py
 cvxpy
 pandas

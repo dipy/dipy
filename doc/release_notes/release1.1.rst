@@ -23,12 +23,15 @@ The following 11 authors contributed 392 commits.
 * Shreyas Fadnavis
 
 
-We closed a total of 130 issues, 49 pull requests and 81 regular issues;
+We closed a total of 130 issues, 52 pull requests and 81 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (49):
+Pull Requests (52):
 
+* :ghpull:`2030`: [MAINT] Release 1.1.1
+* :ghpull:`2029`: Use the array proxy instead of get_fdata()
+* :ghpull:`2023`: [Upcoming] Release 1.1.0
 * :ghpull:`2021`: Examples update
 * :ghpull:`2005`: [CI] add python3.8 matrix
 * :ghpull:`2009`: Upgrade on DKI implementations

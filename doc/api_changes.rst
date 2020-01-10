@@ -5,8 +5,12 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-DIPY 1.1.x changes
+DIPY 1.1.1 changes
 ----------------
+
+**IO**
+
+`img.get_data()` is deprecated since Nibabel 3.0.0 so general use of `np.asanyarray(img.dataobj)`
 
 **Tractogram**
 
