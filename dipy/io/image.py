@@ -49,6 +49,10 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     -------
     A tuple, with (at the most, if all keyword args are set to True):
     (data, img.affine, img, vox_size, nib.aff2axcodes(img.affine))
+
+    See also
+    --------
+    `load_nifti_data`
     """
     img = nib.load(fname)
     data = np.asanyarray(img.dataobj) if as_ndarray else img.dataobj
