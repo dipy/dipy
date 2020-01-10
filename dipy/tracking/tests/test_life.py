@@ -158,7 +158,7 @@ def test_fit_data():
     fstreamlines = dpd.get_fnames('small_25_streamlines')
     gtab = grad.gradient_table(fbval, fbvec)
     ni_data = nib.load(fdata)
-    data = ni_data.get_fdata()
+    data = np.asarray(ni_data.dataobj)
 
     tensor_streamlines = nib.streamlines.load(fstreamlines).streamlines
     sft = StatefulTractogram(tensor_streamlines, ni_data, Space.RASMM)

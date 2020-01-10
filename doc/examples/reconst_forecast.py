@@ -10,6 +10,7 @@ axially symmetric tensor and the fODF using the FORECAST model from
 First import the necessary modules:
 """
 
+import numpy as np
 import matplotlib.pyplot as plt
 from dipy.reconst.forecast import ForecastModel
 from dipy.viz import actor, window
@@ -26,7 +27,7 @@ fetch_cenir_multib(with_raw=False)
 
 bvals = [1000, 2000, 3000]
 img, gtab = read_cenir_multib(bvals)
-data = img.get_fdata()
+data = np.asarray(img.dataobj)
 
 """
 Let us consider only a single slice for the FORECAST fitting
