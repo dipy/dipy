@@ -13,7 +13,7 @@ visualization, and statistical analysis of MRI data.
 Highlights
 **********
 
-**DIPY 1.1.0** is now available. New features include:
+**DIPY 1.1.1** is now available. New features include:
 
 - New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
 - Improved DKI performance and increased utilities.
@@ -39,15 +39,7 @@ See :ref:`Older Highlights <old_highlights>`.
 Announcements
 *************
 - DIPY Workshop - Titanium Edition (March 16-20, 2020) is now open for registration:
-
-.. raw :: html
-
-  <div style="width: 80% max-width=800px">
-    <a href="https://workshop.dipy.org/" target="_blank"><img alt=" " class="align-center" src="_static/dipy-ws-header.png" style="width: 90%;max-height: 90%"></a>
-  </div>
-
-
-- :doc:`DIPY 1.1 <release_notes/release1.1>` released January 5, 2020.
+- :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
 - :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
 - :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 

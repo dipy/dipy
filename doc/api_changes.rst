@@ -5,16 +5,20 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-DIPY 1.1.x changes
+DIPY 1.1.1 changes
 ----------------
+
+**IO**
+
+`img.get_data()` is deprecated since Nibabel 3.0.0. Using `np.asanyarray(img.dataobj)` instead of `img.get_data()`.
 
 **Tractogram**
 
-``dipy.io.streamlines.StatefulTractogram``can be created by an other one
+``dipy.io.streamlines.StatefulTractogram``can be created by an other one.
 
 **Workflows**
 
-``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``
+``dipy_nlmeans`` command lines has been renamed ``dipy_denoise_nlmeans``.
 
 **Others**
 
