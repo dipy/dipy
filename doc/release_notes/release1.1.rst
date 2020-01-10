@@ -4,7 +4,7 @@
  Release notes for DIPY version 1.1
 ====================================
 
-GitHub stats for 2019/08/06 - 2020/01/06 (tag: 1.0.0)
+GitHub stats for 2019/08/06 - 2020/01/10 (tag: 1.0.0)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
