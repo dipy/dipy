@@ -155,7 +155,7 @@ bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
 
-data = img.get_fdata()
+data = np.asarray(img.dataobj)
 
 """
 For illustration proposes, we select two slices of this dataset
