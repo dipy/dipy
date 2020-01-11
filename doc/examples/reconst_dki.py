@@ -86,9 +86,11 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 
 """
-Function ``read_cfin_multib`` return img and gtab which contains respectively
-a nibabel Nifti1Image object (where the data can be extracted) and a
-GradientTable object with information about the b-values and b-vectors.
+Function ``get_fnames`` downloads and outputs the paths of the data,
+``load_nifti`` returns the data as a nibabel Nifti1Image object, and
+``read_bvals_bvecs`` loads the arrays containing the information about the
+b-values and b-vectors. These later arrays are converted to the GradientTable
+object required for Dipy_'s data reconstruction.
 
 Before fitting the data, we preform some data pre-processing. We first compute
 a brain mask to avoid unnecessary calculations on the background of the image.
