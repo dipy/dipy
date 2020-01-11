@@ -1,6 +1,7 @@
 
 from .bootstrap_direction_getter import BootDirectionGetter
 from .closest_peak_direction_getter import ClosestPeakDirectionGetter
+from .peak_direction_getter import PeakDirectionGetter
 from .probabilistic_direction_getter import ProbabilisticDirectionGetter
 from .probabilistic_direction_getter import DeterministicMaximumDirectionGetter
 from .peaks import *

@@ -69,6 +69,7 @@ for modulename, other_sources, language in (
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
         ('dipy.direction.bootstrap_direction_getter', [], 'c'),
+        ('dipy.direction.peak_direction_getter', [], 'c'),
         ('dipy.reconst.eudx_direction_getter', [], 'c'),
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
