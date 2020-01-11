@@ -283,7 +283,7 @@ def test_probabilistic_odf_weighted_tracker():
 
     # The first path is not possible if pmf_threshold > 0.67
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = ProbabilisticDirectionGetter.from_pmf(10*pmf, 90, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(10 * pmf, 90, sphere,
                                                pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -529,7 +529,7 @@ def test_maximum_deterministic_tracker():
     # if pmf_threshold is larger than 0.67. Streamlines should stop at
     # the crossing.
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = DeterministicMaximumDirectionGetter.from_pmf(10*pmf, 80, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(10 * pmf, 80, sphere,
                                                       pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -655,7 +655,7 @@ def test_closest_peak_tracker():
         raise AssertionError()
 
 
-def test_peak_direction_tracker():
+def test_eudx_direction_tracker():
     """This tests that the Peaks And Metrics Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
