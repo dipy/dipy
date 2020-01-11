@@ -604,6 +604,9 @@ def test_bootstap_peak_tracker():
         raise AssertionError()
 
 
+def test_peak_tracker()
+
+
 def test_closest_peak_tracker():
     """This tests that the Closest Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
@@ -655,7 +658,7 @@ def test_closest_peak_tracker():
         raise AssertionError()
 
 
-def test_eudx_direction_tracker():
+def test_eudx_tracker():
     """This tests that the Peaks And Metrics Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
