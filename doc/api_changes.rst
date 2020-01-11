@@ -5,6 +5,15 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.2.0 changes
+----------------
+
+**Tracking**
+
+The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
+been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
+
+
 DIPY 1.1.1 changes
 ----------------
 
