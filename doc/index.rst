@@ -4,10 +4,13 @@
 Diffusion Imaging In Python
 ###########################
 
-DIPY_ is a **free** and **open source** software project for computational neuroanatomy,
-focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a
-broad range of algorithms for denoising, registration, reconstruction, tracking, clustering,
-visualization, and statistical analysis of MRI data.
+DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+spatial normalization, signal processing, machine learning, statistical analysis
+and visualization of medical images. Additionally, it contains 
+specialized methods for computational anatomy including diffusion, 
+perfusion and structural imaging. 
+
+
 
 **********
 Highlights
