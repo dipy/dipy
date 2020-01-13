@@ -67,7 +67,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int (optional)
+    patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     pca_method : 'eig' or 'svd' (optional)
@@ -139,11 +139,18 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     else:
         raise ValueError("pca_method should be either 'eig' or 'svd'")
 
+    if isinstance(patch_radius, int):
+        patch_radius = np.ones(3, dtype=int) * patch_radius
+    if len(patch_radius) != 3:
+        raise ValueError("patch_radius should have length 3")
+    else:
+        patch_radius = np.asarray(patch_radius).astype(int)
     patch_size = 2 * patch_radius + 1
 
-    if patch_size ** 3 < arr.shape[-1]:
+    if np.prod(patch_size) < arr.shape[-1]:
         e_s = "You asked for PCA denoising with a "
         e_s += "patch_radius of {0} ".format(patch_radius)
+        e_s += "with total patch size of {0}".format(np.prod(patch_size))
         e_s += "for data with {0} directions. ".format(arr.shape[-1])
         e_s += "This would result in an ill-conditioned PCA matrix. "
         e_s += "Please increase the patch_radius."
@@ -162,7 +169,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
     dim = arr.shape[-1]
     if tau_factor is None:
-        tau_factor = 1 + np.sqrt(dim / (patch_size ** 3))
+        tau_factor = 1 + np.sqrt(dim / np.prod(patch_size))
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
@@ -172,21 +179,21 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
     # loop around and find the 3D patch for each direction at each pixel
-    for k in range(patch_radius, arr.shape[2] - patch_radius):
-        for j in range(patch_radius, arr.shape[1] - patch_radius):
-            for i in range(patch_radius, arr.shape[0] - patch_radius):
+    for k in range(patch_radius[2], arr.shape[2] - patch_radius[2]):
+        for j in range(patch_radius[1], arr.shape[1] - patch_radius[1]):
+            for i in range(patch_radius[0], arr.shape[0] - patch_radius[0]):
                 # Shorthand for indexing variables:
                 if not mask[i, j, k]:
                     continue
-                ix1 = i - patch_radius
-                ix2 = i + patch_radius + 1
-                jx1 = j - patch_radius
-                jx2 = j + patch_radius + 1
-                kx1 = k - patch_radius
-                kx2 = k + patch_radius + 1
+                ix1 = i - patch_radius[0]
+                ix2 = i + patch_radius[0] + 1
+                jx1 = j - patch_radius[1]
+                jx2 = j + patch_radius[1] + 1
+                kx1 = k - patch_radius[2]
+                kx2 = k + patch_radius[2] + 1
 
                 X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
-                                patch_size ** 3, dim)
+                                np.prod(patch_size), dim)
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
                 # Upcast the dtype for precision in the SVD
@@ -211,7 +218,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 if sigma is None:
                     # Random matrix theory
-                    this_var, ncomps = _pca_classifier(d, patch_size ** 3)
+                    this_var, ncomps = _pca_classifier(d, np.prod(patch_size))
                 else:
                     # Predefined variance
                     this_var = var[i, j, k]
@@ -225,9 +232,9 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 # This is equations 1 and 2 in Manjon 2013:
                 Xest = X.dot(W).dot(W.T) + M
-                Xest = Xest.reshape(patch_size,
-                                    patch_size,
-                                    patch_size, dim)
+                Xest = Xest.reshape(patch_size[0],
+                                    patch_size[1],
+                                    patch_size[2], dim)
                 # This is equation 3 in Manjon 2013:
                 this_theta = 1.0 / (1.0 + dim - ncomps)
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
@@ -265,7 +272,7 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int (optional)
+    patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     pca_method : 'eig' or 'svd' (optional)
@@ -326,7 +333,7 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
         outside of those voxels.
-    patch_radius : int (optional)
+    patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
     pca_method : 'eig' or 'svd' (optional)
