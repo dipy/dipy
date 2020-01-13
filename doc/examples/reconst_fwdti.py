@@ -124,7 +124,7 @@ dti_FA = dtifit.fa
 dti_MD = dtifit.md
 
 """
-Below the FA values for both free water elimnantion DTI model and standard DTI
+Below the FA values for both free water elimination DTI model and standard DTI
 model are plotted in panels A and B, while the repective MD values are ploted
 in panels D and E. For a better visualization of the effect of the free water
 correction, the differences between these two metrics are shown in panels C and
