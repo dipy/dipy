@@ -44,7 +44,7 @@ clinical decisions.
 Website
 =======
 
-Current information can always be found from the DIPY website - http://dipy.org
+Current information can always be found from the DIPY website - https://dipy.org
 
 Mailing Lists
 =============
@@ -61,9 +61,9 @@ You can find our sources and single-click downloads:
 * Documentation_ for all releases and current development tree.
 * Download as a tar/zip file the `current trunk`_.
 
-.. _main repository: http://github.com/nipy/dipy
+.. _main repository: http://github.com/dipy/dipy
 .. _Documentation: http://dipy.org
-.. _current trunk: https://github.com/nipy/dipy/archive/master.zip
+.. _current trunk: https://github.com/dipy/dipy/archive/master.zip
 
 License
 =======
@@ -90,7 +90,7 @@ MAINTAINER_EMAIL    = "neuroimaging@python.org"
 DESCRIPTION         = description
 LONG_DESCRIPTION    = long_description
 URL                 = "http://dipy.org"
-DOWNLOAD_URL        = "http://github.com/nipy/dipy/archives/master"
+DOWNLOAD_URL        = "http://github.com/dipy/dipy/archives/master"
 LICENSE             = "BSD license"
 CLASSIFIERS         = CLASSIFIERS
 AUTHOR              = "dipy developers"

@@ -21,7 +21,7 @@ if [ -z "$PROJECT" ]; then
 fi
 ORGANIZATION=$3
 if [ -z "$ORGANIZATION" ]; then
-    ORGANIZATION=nipy
+    ORGANIZATION=dipy
 fi
 upstream_repo="https://github.com/$ORGANIZATION/$PROJECT"
 cd $HTML_DIR

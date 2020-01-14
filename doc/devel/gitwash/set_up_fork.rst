@@ -13,7 +13,7 @@ Overview
 
    git clone git@github.com:your-user-name/dipy.git
    cd dipy
-   git remote add upstream git://github.com/nipy/dipy.git
+   git remote add upstream git://github.com/dipy/dipy.git
 
 In detail
 =========
@@ -46,7 +46,7 @@ Linking your repository to the upstream repo
 ::
 
    cd dipy
-   git remote add upstream git://github.com/nipy/dipy.git
+   git remote add upstream git://github.com/dipy/dipy.git
 
 ``upstream`` here is just the arbitrary name we're using to refer to the
 main `dipy`_ repository at `dipy github`_.
@@ -59,8 +59,8 @@ use it to merge into our own code.
 Just for your own satisfaction, show yourself that you now have a new
 'remote', with ``git remote -v show``, giving you something like::
 
-   upstream	git://github.com/nipy/dipy.git (fetch)
-   upstream	git://github.com/nipy/dipy.git (push)
+   upstream	git://github.com/dipy/dipy.git (fetch)
+   upstream	git://github.com/dipy/dipy.git (push)
    origin	git@github.com:your-user-name/dipy.git (fetch)
    origin	git@github.com:your-user-name/dipy.git (push)
 

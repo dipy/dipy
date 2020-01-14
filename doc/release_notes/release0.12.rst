@@ -131,7 +131,7 @@ Pull Requests (169):
 * :ghpull:`1098`: Adding custom interactor for vizualisation
 * :ghpull:`1136`: Update deprecated function.
 * :ghpull:`1113`: TST: Test for invariance of model_params to splitting of the data.
-* :ghpull:`1134`: Rebase of https://github.com/nipy/dipy/pull/993
+* :ghpull:`1134`: Rebase of https://github.com/dipy/dipy/pull/993
 * :ghpull:`1064`: Faster dti odf
 * :ghpull:`1114`: flexible grid to streamline affine generation and pathlength function
 * :ghpull:`1122`: Add the reconst_dti workflow
@@ -369,7 +369,7 @@ Issues (342):
 * :ghissue:`1098`: Adding custom interactor for vizualisation
 * :ghissue:`1136`: Update deprecated function.
 * :ghissue:`1113`: TST: Test for invariance of model_params to splitting of the data.
-* :ghissue:`1134`: Rebase of https://github.com/nipy/dipy/pull/993
+* :ghissue:`1134`: Rebase of https://github.com/dipy/dipy/pull/993
 * :ghissue:`1064`: Faster dti odf
 * :ghissue:`1114`: flexible grid to streamline affine generation and pathlength function
 * :ghissue:`1122`: Add the reconst_dti workflow
@@ -444,7 +444,7 @@ Issues (342):
 * :ghissue:`1055`: WIP: Ivim implementation
 * :ghissue:`1065`: improve OMP parallelization with scheduling
 * :ghissue:`1062`: BF - fix CSD.predict to work with nd inputs.
-* :ghissue:`1057`: Workaround for https://github.com/nipy/dipy/issues/852
+* :ghissue:`1057`: Workaround for https://github.com/dipy/dipy/issues/852
 * :ghissue:`1037`: tracking.interfaces imports SlowAdcOpdfModel, but it is not defined
 * :ghissue:`1056`: Remove tracking interfaces
 * :ghissue:`813`: Windows 64-bit error in segment.featurespeed.extract
@@ -462,7 +462,7 @@ Issues (342):
 * :ghissue:`1035`: Fix for fetcher files in Windows
 * :ghissue:`1016`: viz.fvtk has no attribute 'ren'
 * :ghissue:`1033`: Viz surfaces
-* :ghissue:`1032`: Merge pull request #1 from nipy/master
+* :ghissue:`1032`: Merge pull request #1 from dipy/master
 * :ghissue:`1029`: Errors building Cython extensions on Python 3.5
 * :ghissue:`974`: Minor change in `tools/github_stats.py`
 * :ghissue:`1002`: Use absolute import in utils and scratch

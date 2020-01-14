@@ -10,11 +10,11 @@ Dipy is a diffusion MR imaging library written in Python
 
 'Close gh-' statements refer to GitHub issues that are available at::
 
-  http://github.com/nipy/dipy/issues
+  http://github.com/dipy/dipy/issues
 
 The full VCS changelog is available here:
 
-  http://github.com/nipy/dipy/commits/master
+  http://github.com/dipy/dipy/commits/master
 
 Releases
 ~~~~~~~~

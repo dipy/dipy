@@ -2,7 +2,7 @@
    and name substitutions.  It may be included in many files,
    therefore it should only contain link targets and name
    substitutions.  Try grepping for "^\.\. _" to find plausible
-   candidates for this list.  
+   candidates for this list.
 
 .. NOTE: reST targets are
    __not_case_sensitive__, so only one target definition is needed for
@@ -24,8 +24,8 @@
 .. _`ipython mailing list`: http://mail.scipy.org/mailman/listinfo/IPython-dev
 
 .. dipy
-.. _dipy: http://nipy.org/dipy
-.. _`dipy github`: https://github.com/nipy/dipy
+.. _dipy: https://dipy.org
+.. _`dipy github`: https://github.com/dipy/dipy
 .. _`dipy mailing list`: https://mail.python.org/mailman/listinfo/neuroimaging
 
 .. git stuff

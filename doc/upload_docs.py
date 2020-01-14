@@ -18,7 +18,7 @@ def sh(cmd):
 
 # paths
 docs_repo_path = "_build/docs_repo"
-docs_repo_url = "https://github.com/nipy/dipy_web.git"
+docs_repo_url = "https://github.com/dipy/dipy_web.git"
 
 if __name__ == '__main__':
     # get current directory

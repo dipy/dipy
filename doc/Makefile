@@ -51,8 +51,8 @@ examples-tgz: rstexamples
 	../tools/pack_examples.py ../dist
 
 gitwash-update:
-	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=nipy \
-            --project-url=http://nipy.org/dipy \
+	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=dipy \
+            --project-url=https://dipy.org \
             --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
 
 html: api rstexamples html-after-examples
@@ -130,7 +130,7 @@ pdf-stamp: latex
 	touch $@
 
 upload: html
-	./upload-gh-pages.sh _build/html/ dipy nipy
+	./upload-gh-pages.sh _build/html/ dipy dipy
 
 xvfb:
 	export TEST_WITH_XVFB=true && make html

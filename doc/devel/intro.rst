@@ -24,7 +24,7 @@ want it - that way we learn from each other.
 And - welcome...
 
 If you are new to diffusion MRI and you want to learn more here is a simple `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we
-made for the general public. I hope you enjoy it and apologies for the low resolution. 
+made for the general public. I hope you enjoy it and apologies for the low resolution.
 
 
 .. include:: ../links_names.inc

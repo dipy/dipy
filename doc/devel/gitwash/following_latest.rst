@@ -18,7 +18,7 @@ Get the local copy of the code
 
 From the command line::
 
-   git clone git://github.com/nipy/dipy.git
+   git clone git://github.com/dipy/dipy.git
 
 You now have a copy of the code tree in the new ``dipy`` directory.
 

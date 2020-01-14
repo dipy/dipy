@@ -54,7 +54,7 @@ numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
 
 # ghissue config
-github_project_url = "https://github.com/nipy/dipy"
+github_project_url = "https://github.com/dipy/dipy"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
