@@ -163,7 +163,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     # checking for the correctness of bvals
     if b0_threshold < bvals.min():
         warn("b0_threshold (value: {0}) is too low, increase your \
-             b0_threshold. It should higher than the lowest b0 value \
+             b0_threshold. It should be higher than the lowest b0 value \
              ({1}).".format(b0_threshold, bvals.min()))
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
