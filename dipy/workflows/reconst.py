@@ -123,7 +123,7 @@ class ReconstMAPMRIFlow(Workflow):
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
@@ -503,7 +503,7 @@ class ReconstCSDFlow(Workflow):
             print(b0_threshold, bvals.min())
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
@@ -667,7 +667,7 @@ class ReconstCSAFlow(Workflow):
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
@@ -887,7 +887,7 @@ class ReconstDkiFlow(Workflow):
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
             warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should higher than the first b0 value "
+                 "b0_threshold. It should be higher than the first b0 value "
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
@@ -1011,7 +1011,7 @@ class ReconstIvimFlow(Workflow):
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
             warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should higher than the first b0 value "
+                 "b0_threshold. It should be higher than the first b0 value "
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
