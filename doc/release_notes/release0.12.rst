@@ -462,7 +462,7 @@ Issues (342):
 * :ghissue:`1035`: Fix for fetcher files in Windows
 * :ghissue:`1016`: viz.fvtk has no attribute 'ren'
 * :ghissue:`1033`: Viz surfaces
-* :ghissue:`1032`: Merge pull request #1 from dipy/master
+* :ghissue:`1032`: Merge pull request #1 from nipy/master
 * :ghissue:`1029`: Errors building Cython extensions on Python 3.5
 * :ghissue:`974`: Minor change in `tools/github_stats.py`
 * :ghissue:`1002`: Use absolute import in utils and scratch

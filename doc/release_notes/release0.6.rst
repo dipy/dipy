@@ -121,7 +121,7 @@ Pull Requests (100):
 * :ghpull:`24`: TST: Fixing tests in reconst module.
 * :ghpull:`27`: DOC - Add reference to white matter diffusion values.
 * :ghpull:`25`: NF - Add prolate white matter as defaults for multi-tensor signal sim.
-* :ghpull:`22`: Updating my fork with the dipy master
+* :ghpull:`22`: Updating my fork with the nipy master
 * :ghpull:`20`: RF - create OptionalImportError for traits imports
 * :ghpull:`19`: DOC: add comments and example to commit codes
 * :ghpull:`18`: DOC: update gitwash from source
@@ -245,7 +245,7 @@ Issues (125):
 * :ghissue:`24`: TST: Fixing tests in reconst module.
 * :ghissue:`27`: DOC - Add reference to white matter diffusion values.
 * :ghissue:`25`: NF - Add prolate white matter as defaults for multi-tensor signal sim.
-* :ghissue:`22`: Updating my fork with the dipy master
+* :ghissue:`22`: Updating my fork with the nipy master
 * :ghissue:`20`: RF - create OptionalImportError for traits imports
 * :ghissue:`8`: X error BadRequest with fvtk.show
 * :ghissue:`19`: DOC: add comments and example to commit codes
