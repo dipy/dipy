@@ -188,15 +188,17 @@ def test_exponential_iso():
         sphere = dpd.get_sphere()
         odf = sffit1.odf(sphere)
         pred = sffit1.predict(gtab)
-        npt.assert_equal(pred.shape, data.shape)
-        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
+        npt.assert_equal(pred.shape, data[0,0,0].shape)
+        npt.assert_equal(odf.shape,
+                         data[0,0,0].shape[:-1] + (sphere.x.shape[0],))
 
         sffit2 = sfmodel.fit(data)
         sphere = dpd.get_sphere()
         odf = sffit2.odf(sphere)
         pred = sffit2.predict(gtab)
         npt.assert_equal(pred.shape, data.shape)
-        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
+        npt.assert_equal(odf.shape,
+                         data.shape[:-1] + (sphere.x.shape[0],))
 
         mask = np.zeros(data.shape[:3])
         mask[2:5, 2:5, :] = 1
@@ -205,7 +207,7 @@ def test_exponential_iso():
         odf = sffit3.odf(sphere)
         pred = sffit3.predict(gtab)
         npt.assert_equal(pred.shape, data.shape)
-        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
+        npt.assert_equal(odf.shape, data.shape[:-1] + (sphere.x.shape[0],))
 
         SNR = 1000
         S0 = 100

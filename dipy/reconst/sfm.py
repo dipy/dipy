@@ -180,6 +180,12 @@ class ExponentialIsotropicModel(IsotropicModel):
         to_fit[~nz_idx] = -np.inf
         p = nanmean(to_fit / self.gtab.bvals[~self.gtab.b0s_mask], -1)
         params = -p
+        if mask is None:
+            params = np.reshape(params, data.shape[:-1])
+        else:
+            out_params = np.zeros(data.shape[:-1])
+            out_params[mask] = params
+            params = out_params
         return ExponentialIsotropicFit(self, params)
 
 
@@ -201,6 +207,7 @@ class ExponentialIsotropicFit(IsotropicFit):
         """
         if gtab is None:
             gtab = self.model.gtab
+
         return np.exp(-gtab.bvals[~gtab.b0s_mask] *
                       (np.zeros((self.params.shape[0],
                        np.sum(~gtab.b0s_mask))) +
