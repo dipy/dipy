@@ -163,7 +163,7 @@ class ExponentialIsotropicModel(IsotropicModel):
     Representing the isotropic signal as a fit to an exponential decay function
     with b-values
     """
-    def fit(self, data):
+    def fit(self, data, mask=None):
         """
         Parameters
         ----------
@@ -173,7 +173,7 @@ class ExponentialIsotropicModel(IsotropicModel):
         -------
         ExponentialIsotropicFit class instance.
         """
-        to_fit = _to_fit_iso(data, self.gtab)
+        to_fit = _to_fit_iso(data, self.gtab, mask=mask)
         # Fitting to the log-transformed relative data is much faster:
         nz_idx = to_fit > 0
         to_fit[nz_idx] = np.log(to_fit[nz_idx])
