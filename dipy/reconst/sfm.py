@@ -25,11 +25,9 @@ except ImportError:
     from scipy.stats import nanmean
 
 from dipy.utils.optpkg import optional_package
-import dipy.core.geometry as geo
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.sims.voxel as sims
-import dipy.reconst.dti as dti
 import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
@@ -51,13 +49,17 @@ if not has_sklearn:
 # extensible, by inheriting from IsotropicModel/IsotropicFit below:
 
 # First, a helper function to derive the fit signal for these models:
-def _to_fit_iso(data, gtab):
-    data_no_b0 = data[..., ~gtab.b0s_mask]
+def _to_fit_iso(data, gtab, mask=None):
+    if mask is None:
+        mask = np.ones(data.shape[:-1], dtype=bool)
+    # Turn it into a 2D thing:
+    data = data[mask]
+    data_no_b0 = data[:, ~gtab.b0s_mask]
     nzb0 = data_no_b0 > 0
     nzb0_idx = np.where(nzb0)
     zb0_idx = np.where(~nzb0)
     if np.sum(gtab.b0s_mask) > 0:
-        s0 = np.mean(data[..., gtab.b0s_mask], -1)
+        s0 = np.mean(data[:, gtab.b0s_mask], -1)
         to_fit = np.empty(data_no_b0.shape)
         to_fit[nzb0_idx] = data_no_b0[nzb0_idx] / s0[nzb0_idx[0]]
         to_fit[zb0_idx] = 0
@@ -84,7 +86,7 @@ class IsotropicModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-    def fit(self, data):
+    def fit(self, data, mask=None):
         """
         Fit an IsotropicModel.
 
@@ -99,8 +101,15 @@ class IsotropicModel(ReconstModel):
         -------
         IsotropicFit class instance.
         """
-        to_fit = _to_fit_iso(data, self.gtab)
-        params = np.mean(np.reshape(to_fit, (-1, to_fit.shape[-1])), -1)
+        # This returns as a 2D thing:
+        to_fit = _to_fit_iso(data, self.gtab, mask=mask)
+        params = np.mean(to_fit, -1)
+        if mask is None:
+            params = np.reshape(params, data.shape[:-1])
+        else:
+            out_params = np.zeros(data.shape[:-1])
+            out_params[mask] = params
+            params = out_params
         return IsotropicFit(self, params)
 
 
@@ -140,9 +149,13 @@ class IsotropicFit(ReconstFit):
         """
         if gtab is None:
             gtab = self.model.gtab
-        return self.params[..., np.newaxis] + np.zeros((self.params.shape[0],
+        if len(self.params.shape) == 0:
+            pred = self.params[..., np.newaxis] + np.zeros(
                                                         np.sum(~gtab.b0s_mask))
-                                                       )
+        else:
+            pred = self.params[..., np.newaxis] + np.zeros(
+                self.params.shape + (np.sum(~gtab.b0s_mask),))
+        return pred
 
 
 class ExponentialIsotropicModel(IsotropicModel):
@@ -402,7 +415,6 @@ class SparseFascicleModel(ReconstModel, Cache):
         Returns
         -------
         SparseFascicleFit object
-
         """
         if mask is None:
             # Flatten it to 2D either way:
@@ -418,11 +430,14 @@ class SparseFascicleModel(ReconstModel, Cache):
         flat_S0 = np.mean(data_in_mask[..., self.gtab.b0s_mask], -1)
         flat_S = (data_in_mask[..., ~self.gtab.b0s_mask] /
                   flat_S0[..., None])
-        isotropic = self.isotropic(self.gtab).fit(data_in_mask)
+        isotropic = self.isotropic(self.gtab).fit(data, mask)
         flat_params = np.zeros((data_in_mask.shape[0],
                                 self.design_matrix.shape[-1]))
-
         isopredict = isotropic.predict()
+        if mask is None:
+            isopredict = np.reshape(isopredict, (-1, isopredict.shape[-1]))
+        else:
+            isopredict = isopredict[mask]
         for vox, vox_data in enumerate(flat_S):
             # In voxels in which S0 is 0, we just want to keep the
             # parameters at all-zeros, and avoid nasty sklearn errors:

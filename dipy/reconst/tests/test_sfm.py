@@ -74,6 +74,48 @@ def test_predict():
     new_pred = sffit.predict(new_gtab)
     npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
 
+    # Should be possible to predict for a single direction:
+    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    new_pred = sffit.predict(new_gtab)
+
+    # Fitting and predicting with a volume of data:
+
+    fdata, fbval, fbvec = dpd.get_fnames('small_25')
+    gtab = grad.gradient_table(fbval, fbvec)
+    data = load_nifti_data(fdata)
+    sfmodel = sfm.SparseFascicleModel(gtab, response=[0.0015, 0.0003, 0.0003])
+    sffit = sfmodel.fit(data)
+    pred = sffit.predict()
+
+    # Should be possible to predict using a different gtab:
+    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_pred = sffit.predict(new_gtab)
+    npt.assert_equal(new_pred.shape, data.shape[:-1] + bvals[::2].shape, )
+
+    # Should be possible to predict for a single direction:
+    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    new_pred = sffit.predict(new_gtab)
+    npt.assert_equal(new_pred.shape, data.shape[:-1])
+
+    # Fitting and predicting with masked data:
+    mask = np.zeros(data.shape[:3])
+    mask[2:5, 2:5, :] = 1
+    sffit = sfmodel.fit(data, mask=mask)
+    pred = sffit.predict()
+    npt.assert_equal(pred.shape, data.shape)
+
+    # Should be possible to predict using a different gtab:
+    new_gtab = grad.gradient_table(bvals[::2], bvecs[::2])
+    new_pred = sffit.predict(new_gtab)
+    npt.assert_equal(new_pred.shape, data.shape[:-1] + bvals[::2].shape,)
+    npt.assert_equal(new_pred[0, 0, 0], 0)
+
+    # Should be possible to predict for a single direction:
+    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    new_pred = sffit.predict(new_gtab)
+    npt.assert_equal(new_pred.shape, data.shape[:-1])
+    npt.assert_equal(new_pred[0, 0, 0], 0)
+
 
 def test_sfm_background():
     fdata, fbvals, fbvecs = dpd.get_fnames()
