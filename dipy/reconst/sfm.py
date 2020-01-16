@@ -207,11 +207,16 @@ class ExponentialIsotropicFit(IsotropicFit):
         """
         if gtab is None:
             gtab = self.model.gtab
-
-        return np.exp(-gtab.bvals[~gtab.b0s_mask] *
+        if len(self.params.shape) == 0:
+            pred = np.exp(-gtab.bvals[~gtab.b0s_mask] *
+                      (np.zeros(np.sum(~gtab.b0s_mask)) +
+                       self.params[..., np.newaxis]))
+        else:
+            pred = np.exp(-gtab.bvals[~gtab.b0s_mask] *
                       (np.zeros((self.params.shape[0],
                        np.sum(~gtab.b0s_mask))) +
                        self.params[..., np.newaxis]))
+        return pred
 
 
 def sfm_design_matrix(gtab, sphere, response, mode='signal'):
