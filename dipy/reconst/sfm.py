@@ -53,7 +53,11 @@ def _to_fit_iso(data, gtab, mask=None):
     if mask is None:
         mask = np.ones(data.shape[:-1], dtype=bool)
     # Turn it into a 2D thing:
-    data = data[mask]
+    if len(mask.shape) > 0:
+        data = data[mask]
+    else:
+        # This handles the corner case of fitting a single voxel:
+        data = data.reshape((-1, data.shape[0]))
     data_no_b0 = data[:, ~gtab.b0s_mask]
     nzb0 = data_no_b0 > 0
     nzb0_idx = np.where(nzb0)
