@@ -79,7 +79,6 @@ def test_predict():
     new_pred = sffit.predict(new_gtab)
 
     # Fitting and predicting with a volume of data:
-
     fdata, fbval, fbvec = dpd.get_fnames('small_25')
     gtab = grad.gradient_table(fbval, fbvec)
     data = load_nifti_data(fdata)
@@ -187,8 +186,26 @@ def test_exponential_iso():
 
         sffit1 = sfmodel.fit(data[0, 0, 0])
         sphere = dpd.get_sphere()
-        sffit1.odf(sphere)
-        sffit1.predict(gtab)
+        odf = sffit1.odf(sphere)
+        pred = sffit1.predict(gtab)
+        npt.assert_equal(pred.shape, data.shape)
+        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
+
+        sffit2 = sfmodel.fit(data)
+        sphere = dpd.get_sphere()
+        odf = sffit2.odf(sphere)
+        pred = sffit2.predict(gtab)
+        npt.assert_equal(pred.shape, data.shape)
+        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
+
+        mask = np.zeros(data.shape[:3])
+        mask[2:5, 2:5, :] = 1
+        sffit3 = sfmodel.fit(data, mask=mask)
+        sphere = dpd.get_sphere()
+        odf = sffit3.odf(sphere)
+        pred = sffit3.predict(gtab)
+        npt.assert_equal(pred.shape, data.shape)
+        npt.assert_equal(odf.shape, data.shape[:-1] + sphere.x.shape[0],)
 
         SNR = 1000
         S0 = 100
@@ -200,3 +217,4 @@ def test_exponential_iso():
         sffit = sfmodel.fit(S)
         pred = sffit.predict()
         npt.assert_(xval.coeff_of_determination(pred, S) > 96)
+
