@@ -6,31 +6,31 @@ import numpy.testing as npt
 
 
 def test_wichmann_hill2006():
-    rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     n_generated = [rng.WichmannHill2006() for i in range(10000)]
     # The chi-squared test statistic as result and The p-value of the test
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
     # that it is uniformly distributed. This is what we want to check here
     npt.assert_almost_equal(pvalue, 1.0)
+    npt.assert_raises(ValueError, rng.WichmannHill2006, ix=0)
 
 
 def test_wichmann_hill1982():
-    rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     n_generated = [rng.WichmannHill1982() for i in range(10000)]
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
     # that it is uniformly distributed. This is what we want to check here
     npt.assert_almost_equal(pvalue, 1.0)
+    npt.assert_raises(ValueError, rng.WichmannHill1982, iz=0)
 
 
 def test_LEcuyer():
-    rng.s1, rng.s2 = 100001, 200002
     n_generated = [rng.LEcuyer() for i in range(10000)]
     chisq, pvalue = chisquare(n_generated)
     # P-values equal 1 show evidence of the null hypothesis which indicates
     # that it is uniformly distributed. This is what we want to check here
     npt.assert_almost_equal(pvalue, 1.0)
+    npt.assert_raises(ValueError, rng.LEcuyer, s2=0)
 
 
 if __name__ == "__main__":
