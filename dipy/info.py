@@ -82,6 +82,7 @@ NUMPY_MIN_VERSION = '1.9.0'
 SCIPY_MIN_VERSION = '1.0'
 NIBABEL_MIN_VERSION = '3.0.0'
 H5PY_MIN_VERSION = '2.4.0'
+PACKAGING_MIN_VERSION = '19.0'
 
 # Main setup parameters
 NAME                = 'dipy'
@@ -105,4 +106,5 @@ PROVIDES            = ["dipy"]
 REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "scipy (>=%s)" % SCIPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
-                       "h5py (>=%s)" % H5PY_MIN_VERSION]
+                       "h5py (>=%s)" % H5PY_MIN_VERSION,
+                       "packaging (>=%s)" % PACKAGING_MIN_VERSION]
