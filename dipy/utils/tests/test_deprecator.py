@@ -6,9 +6,9 @@ import numpy.testing as npt
 import pytest
 import fury
 from dipy.testing import clear_and_catch_warnings, assert_true
-from dipy.testing.deprecator import (cmp_pkg_version, _add_dep_doc,
-                                     _ensure_cr, deprecate_with_version,
-                                     ExpiredDeprecationError)
+from dipy.utils.deprecator import (cmp_pkg_version, _add_dep_doc,
+                                   _ensure_cr, deprecate_with_version,
+                                   ExpiredDeprecationError)
 
 
 def test_cmp_pkg_version():
