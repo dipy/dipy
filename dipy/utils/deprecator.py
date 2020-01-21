@@ -12,7 +12,7 @@ import functools
 import warnings
 import re
 from dipy import __version__
-import packaging
+from packaging.version import parse as version_cmp
 
 _LEADING_WHITE = re.compile(r'^(\s*)')
 
@@ -94,8 +94,6 @@ def cmp_pkg_version(version_str, pkg_version_str=__version__):
     -1
 
     """
-    version_cmp = packaging.version.parse
-
     if any([re.match(r'^[a-z, A-Z]', v)for v in [version_str,
                                                  pkg_version_str]]):
         msg = 'Invalid version {0} or {1}'.format(version_str, pkg_version_str)

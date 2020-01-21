@@ -1,10 +1,18 @@
+"""Module to test ``dipy.utils.deprecator`` module.
 
+Notes
+-----
+this file is copied (with minor modifications) from the Nibabel.
+https://github.com/nipy/nibabel. See COPYING file distributed along with
+the Nibabel package for the copyright and license terms.
+
+"""
 
 import sys
 import warnings
 import numpy.testing as npt
 import pytest
-import fury
+import dipy
 from dipy.testing import clear_and_catch_warnings, assert_true
 from dipy.utils.deprecator import (cmp_pkg_version, _add_dep_doc,
                                    _ensure_cr, deprecate_with_version,
@@ -13,10 +21,10 @@ from dipy.utils.deprecator import (cmp_pkg_version, _add_dep_doc,
 
 def test_cmp_pkg_version():
     # Test version comparator
-    npt.assert_equal(cmp_pkg_version(fury.__version__), 0)
+    npt.assert_equal(cmp_pkg_version(dipy.__version__), 0)
     npt.assert_equal(cmp_pkg_version('0.0'), -1)
     npt.assert_equal(cmp_pkg_version('1000.1000.1'), 1)
-    npt.assert_equal(cmp_pkg_version(fury.__version__, fury.__version__), 0)
+    npt.assert_equal(cmp_pkg_version(dipy.__version__, dipy.__version__), 0)
     for test_ver, pkg_ver, exp_out in (('1.0', '1.0', 0),
                                        ('1.0.0', '1.0', 0),
                                        ('1.0', '1.0.0', 0),
@@ -75,13 +83,13 @@ def test_deprecate_with_version():
         pass
 
     def func_doc(i):
-        "A docstring"
+        """Fake docstring."""
 
     def func_doc_long(i, j):
-        "A docstring\n\n   Some text"
+        """Fake docstring.\n\n   Some text."""
 
     class CustomError(Exception):
-        """ Custom error class for testing expired deprecation errors """
+        """Custom error class for testing expired deprecation errors."""
 
     my_mod = sys.modules[__name__]
     dec = deprecate_with_version
@@ -98,14 +106,14 @@ def test_deprecate_with_version():
         warnings.simplefilter('always')
         npt.assert_equal(func(1), None)
         npt.assert_equal(len(w), 1)
-    npt.assert_equal(func.__doc__, 'A docstring\n\nfoo\n')
+    npt.assert_equal(func.__doc__, 'Fake docstring.\n\nfoo\n')
     func = dec('foo')(func_doc_long)
     with clear_and_catch_warnings(modules=[my_mod]) as w:
         warnings.simplefilter('always')
         npt.assert_equal(func(1, 2), None)
         npt.assert_equal(len(w), 1)
     npt.assert_equal(func.__doc__,
-                     'A docstring\n   \n   foo\n   \n   Some text\n')
+                     'Fake docstring.\n   \n   foo\n   \n   Some text.\n')
 
     # Try some since and until versions
     func = dec('foo', '0.2')(func_no_doc)
@@ -114,13 +122,13 @@ def test_deprecate_with_version():
         warnings.simplefilter('always')
         npt.assert_equal(func(), None)
         npt.assert_equal(len(w), 1)
-    func = dec('foo', until='0.6')(func_no_doc)
+    func = dec('foo', until='100.6')(func_no_doc)
     with clear_and_catch_warnings(modules=[my_mod]) as w:
         warnings.simplefilter('always')
         npt.assert_equal(func(), None)
         npt.assert_equal(len(w), 1)
     npt.assert_equal(func.__doc__,
-                     'foo\n\n* Will raise {} as of version: 0.6\n'
+                     'foo\n\n* Will raise {} as of version: 100.6\n'
                      .format(ExpiredDeprecationError))
     func = dec('foo', until='0.3')(func_no_doc)
     npt.assert_raises(ExpiredDeprecationError, func)
@@ -135,10 +143,10 @@ def test_deprecate_with_version():
                      .format(ExpiredDeprecationError))
     func = dec('foo', '0.2', '0.3')(func_doc_long)
     npt.assert_equal(func.__doc__,
-                     'A docstring\n   \n   foo\n   \n'
+                     'Fake docstring.\n   \n   foo\n   \n'
                      '   * deprecated from version: 0.2\n'
                      '   * Raises {} as of version: 0.3\n   \n'
-                     '   Some text\n'
+                     '   Some text.\n'
                      .format(ExpiredDeprecationError))
     npt.assert_raises(ExpiredDeprecationError, func)
 
