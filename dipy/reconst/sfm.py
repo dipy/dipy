@@ -59,7 +59,9 @@ def _to_fit_iso(data, gtab):
     if np.sum(gtab.b0s_mask) > 0:
         s0 = np.mean(data[..., gtab.b0s_mask], -1)
         to_fit = np.empty(data_no_b0.shape)
-        to_fit[nzb0_idx] = data_no_b0[nzb0_idx] / s0[nzb0_idx[0]]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            to_fit[nzb0_idx] = data_no_b0[nzb0_idx] / s0[nzb0_idx[0]]
         to_fit[zb0_idx] = 0
     else:
         to_fit = data_no_b0
@@ -262,8 +264,10 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
        orientations: What can we gain? Neuroimage 34:144-55.
     """
     if mode == 'signal':
-        mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
-                                       gtab.bvecs[~gtab.b0s_mask])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
+                                           gtab.bvecs[~gtab.b0s_mask])
         # Preallocate:
         mat = np.empty((np.sum(~gtab.b0s_mask),
                         sphere.vertices.shape[0]))
