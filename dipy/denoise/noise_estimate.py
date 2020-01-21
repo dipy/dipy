@@ -1,4 +1,3 @@
-from __future__ import division, print_function
 
 import numpy as np
 
@@ -105,7 +104,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         q = 0.5
 
     # Initial estimation of sigma
-    initial_estimation = (np.percentile(data, q * 100) / 
+    initial_estimation = (np.percentile(data, q * 100) /
                           np.sqrt(2 * _inv_nchi_cdf(N, 1, q)))
 
     if data.ndim == 4:
@@ -114,7 +113,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], 
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
                                                           N,
                                                           alpha=alpha,
                                                           l=l,

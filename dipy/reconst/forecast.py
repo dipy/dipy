@@ -1,4 +1,3 @@
-from __future__ import division
 
 from warnings import warn
 import numpy as np
@@ -115,7 +114,7 @@ class ForecastModel(OdfModel, Cache):
         >>> from dipy.data import default_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
         >>> from dipy.sims.voxel import multi_tensor
-        >>> mevals = np.array(([0.0017, 0.0003, 0.0003], 
+        >>> mevals = np.array(([0.0017, 0.0003, 0.0003],
         ...                    [0.0017, 0.0003, 0.0003]))
         >>> angl = [(0, 0), (60, 0)]
         >>> data, sticks = multi_tensor(gtab,
@@ -192,7 +191,7 @@ class ForecastModel(OdfModel, Cache):
 
         # calculates the mean signal at each b_values
         means = find_signal_means(self.b_unique,
-                                  data_single_b0, 
+                                  data_single_b0,
                                   self.one_0_bvals,
                                   self.srm,
                                   self.lb_matrix_signal)
@@ -334,7 +333,7 @@ class ForecastFit(OdfFit):
         Parameters
         ----------
         gtab : GradientTable, optional
-            gradient directions and bvalues container class. 
+            gradient directions and bvalues container class.
         S0 : float, optional
             the signal at b-value=0
 
@@ -342,7 +341,7 @@ class ForecastFit(OdfFit):
         if gtab is None:
             gtab = self.gtab
 
-        M_diff = forecast_matrix(self.sh_order,  
+        M_diff = forecast_matrix(self.sh_order,
                                  self.d_par,
                                  self.d_perp,
                                  gtab.bvals)
@@ -416,7 +415,7 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
 
 
 def forecast_error_func(x, b_unique, E):
-    r""" Calculates the difference between the mean signal calculated using 
+    r""" Calculates the difference between the mean signal calculated using
     the parameter vector x and the average signal E using FORECAST and SMT
     """
     d_par = np.cos(x[0])**2 * 3e-03
@@ -442,7 +441,7 @@ def psi_l(l, b):
 
 
 def forecast_matrix(sh_order,  d_par, d_perp, bvals):
-    r"""Compute the FORECAST radial matrix 
+    r"""Compute the FORECAST radial matrix
     """
     n_c = int((sh_order + 1) * (sh_order + 2) / 2)
     M = np.zeros((bvals.shape[0], n_c))

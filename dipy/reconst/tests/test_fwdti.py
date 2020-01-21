@@ -1,7 +1,5 @@
 """ Testing Free Water Elimination Model """
 
-from __future__ import division, print_function, absolute_import
-
 import numpy as np
 import dipy.reconst.dti as dti
 import dipy.reconst.fwdti as fwdti

@@ -10,8 +10,6 @@ With Pytest, Run this benchmark with:
     pytest -svv -c bench.ini /path/to/bench_sphere.py
 """
 
-from __future__ import with_statement
-
 import sys
 import time
 

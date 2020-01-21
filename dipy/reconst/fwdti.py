@@ -1,6 +1,5 @@
 """ Classes and functions for fitting tensors without free water
 contamination """
-from __future__ import division, print_function, absolute_import
 
 import warnings
 

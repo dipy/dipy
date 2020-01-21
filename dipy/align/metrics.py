@@ -1,6 +1,5 @@
 """  Metrics for Symmetric Diffeomorphic Registration """
 
-from __future__ import print_function
 import abc
 import numpy as np
 import scipy as sp

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 """ Classes and functions for fitting the DKI-based microstructural model """
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from dipy.reconst.dti import (lower_triangular, from_lower_triangular,

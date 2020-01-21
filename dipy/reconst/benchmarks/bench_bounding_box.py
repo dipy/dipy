@@ -1,5 +1,3 @@
-from __future__ import division, print_function, absolute_import
-
 """ Benchmarks for bounding_box
 
 Run all benchmarks with::

@@ -46,7 +46,6 @@ And the letters A-D represent the following points in
     D = [ 2.5,  5.]
 
 """
-from __future__ import division, print_function, absolute_import
 
 from functools import wraps
 from warnings import warn
@@ -212,7 +211,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                     mapping[key] = [streamlines[i] for i in mapping[key]]
 
             return matrix, mapping
-        
+
         return matrix
     else:
         # take the first and last point of each streamline
@@ -244,7 +243,7 @@ def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
 
             # Return the mapping matrix and the mapping
             return matrix, mapping
-        
+
         return matrix
 
 
