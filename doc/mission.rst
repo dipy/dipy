@@ -13,7 +13,7 @@ The purpose of DIPY_ is to make it **easier to do better diffusion MR imaging re
     * **a good fit for the underlying ideas**
     * **a natural home for collaboration**
 
-We hope that, if we fail to do this, you will let us know and we will try and make it better. 
+We hope that, if we fail to do this, you will let us know and we will try and make it better.
 
 See also :ref:`introduction`
 

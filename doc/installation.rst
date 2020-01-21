@@ -177,7 +177,7 @@ Getting the source
 More likely you will want to get the source repository to be able to follow the
 latest changes.  In that case, you can use::
 
-    git clone https://github.com/nipy/dipy.git
+    git clone https://github.com/dipy/dipy.git
 
 For more information about this see :ref:`following-latest`.
 

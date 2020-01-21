@@ -12,7 +12,7 @@ please contact us! We respond to queries on the [Nipy mailing
 list](https://mail.python.org/mailman/listinfo/neuroimaging), and to questions
 on our [gitter channel](https://gitter.im/nipy/dipy). A good place to get an
 idea for things that currently need attention is the
-[issues](https://github.com/nipy/dipy/issues) page of our Github repository.
+[issues](https://github.com/dipy/dipy/issues) page of our Github repository.
 This page collects outstanding issues that you can help address. Join the
 conversation about the issue, by typing into the text box in the issue page.
 
@@ -26,7 +26,7 @@ of the documentation for the procedures we use in developing the code.
 ### Tests and test coverage
 
 We use [pytest](https://docs.pytest.org) to write tests of the code,
-and [Travis-CI](https://travis-ci.org/nipy/dipy) for continuous integration.
+and [Travis-CI](https://travis-ci.org/dipy/dipy) for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
 you are adding code into ``dipy/tracking/streamline.py``), add additional tests
@@ -70,5 +70,5 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to generate
 documentation. The
-[DIPY Coding Style Guideline](http://nipy.org/dipy/devel/coding_style_guideline.html)
+[DIPY Coding Style Guideline](https://dipy.org/documentation/latest/devel/coding_style_guideline/)
 contains details about documenting the contributions.

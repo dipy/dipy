@@ -58,7 +58,7 @@ def get_paged_request(url):
     return results
 
 
-def get_issues(project="nipy/dipy", state="closed", pulls=False):
+def get_issues(project="dipy/dipy", state="closed", pulls=False):
     """Get a list of the issues from the Github API."""
     which = 'pulls' if pulls else 'issues'
     url = "https://api.github.com/repos/%s/%s?state=%s&per_page=%i" \
@@ -87,7 +87,7 @@ def is_pull_request(issue):
     return 'pull_request_url' in issue
 
 
-def issues_closed_since(period=LAST_RELEASE, project="nipy/dipy", pulls=False):
+def issues_closed_since(period=LAST_RELEASE, project="dipy/dipy", pulls=False):
     """Get all issues closed since a particular point in time.
 
     Period can either be a datetime object, or a timedelta object. In the

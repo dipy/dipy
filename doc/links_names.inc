@@ -11,10 +11,10 @@
 .. _nipy: http://nipy.org
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
 .. _dipy: http://dipy.org
-.. _`dipy github`: http://github.com/nipy/dipy
+.. _`dipy github`: http://github.com/dipy/dipy
 .. _`dipy pypi`: http://pypi.python.org/pypi/dipy
 .. _nipy issues: http://github.com/nipy/nipy/issues
-.. _dipy issues: http://github.com/nipy/dipy/issues
+.. _dipy issues: http://github.com/dipy/dipy/issues
 .. _dipy paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _journal paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: http://nipy.org/nibabel

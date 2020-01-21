@@ -75,8 +75,8 @@ if "%1" == "examples-tgz" (
 
 if "%1" == "gitwash-update" (
 	%PYTHON% ../tools/gitwash_dumper.py devel dipy --repo-name=dipy ^
-	                                               --github-user=nipy ^
-	                                               --project-url=http://nipy.org/dipy ^
+	                                               --github-user=dipy ^
+	                                               --project-url=https://dipy.org ^
 	                                               --project-ml-url=https://mail.python.org/mailman/listinfo/neuroimaging
     )
 
@@ -194,7 +194,7 @@ if "%1" == "pdf" (
 
 if "%1" == "upload" (
     call :html %*
-	./upload-gh-pages.sh _build/html/ dipy nipy
+	./upload-gh-pages.sh _build/html/ dipy dipy
 	goto end
 	)
 

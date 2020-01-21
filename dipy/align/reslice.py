@@ -68,7 +68,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     True
     """
     # We are suppressing warnings emitted by scipy >= 0.18,
-    # described in https://github.com/nipy/dipy/issues/1107.
+    # described in https://github.com/dipy/dipy/issues/1107.
     # These warnings are not relevant to us, as long as our offset
     # input to scipy's affine_transform is [0, 0, 0]
     with warnings.catch_warnings():

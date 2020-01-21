@@ -4,7 +4,7 @@ message:  # Customize the comment made by the bot
     opened:  # Messages when a new PR is submitted
         header: "Hello @{name}, Thank you for submitting the Pull Request !"
                 # The keyword {name} is converted into the author's username
-        footer: "Do see the [DIPY coding Style guideline](https://github.com/nipy/dipy/blob/master/doc/devel/coding_style_guideline.rst)"
+        footer: "Do see the [DIPY coding Style guideline](https://github.com/dipy/dipy/blob/master/doc/devel/coding_style_guideline.rst)"
                 # The messages can be written as they would over GitHub
     updated:  # Messages when new commits are added to the PR
         header: "Hello @{name}, Thank you for updating !"
