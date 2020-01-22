@@ -138,7 +138,8 @@ def test_io_niftis_to_pam():
                         sphere=default_sphere, gfa=np.zeros((10, 10, 10)),
                         B=np.zeros((45, default_sphere.vertices.shape[0])),
                         qa=np.zeros((10, 10, 10, 5)),
-                        odf=np.zeros((10, 10, 10, default_sphere.vertices.shape[0])),
+                        odf=np.zeros((10, 10, 10,
+                                      default_sphere.vertices.shape[0])),
                         total_weight=0.5, ang_thr=60, pam_file='test15.pam5')
 
     npt.assert_equal(pam.peak_dirs.shape, (10, 10, 10, 5, 3))
@@ -162,9 +163,9 @@ def test_tensor_to_pam():
                             pam_file=pjoin(tmpdir, fname))
         npt.assert_(os.path.isfile(pjoin(tmpdir, fname)))
         save_pam(pjoin(tmpdir, 'test_tt_2.pam5'), pam)
-        # pam2 = load_pam('test_tt_2.pam5')
+        pam2 = load_pam(pjoin(tmpdir, 'test_tt_2.pam5'))
 
-        # npt.assert_array_equal(pam.peak_values, pam2.peak_values)
-        # npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
-        # npt.assert_array_almost_equal(pam.peak_indices, pam2.peak_indices)
+        npt.assert_array_equal(pam.peak_values, pam2.peak_values)
+        npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
+        npt.assert_array_almost_equal(pam.peak_indices, pam2.peak_indices)
         del pam

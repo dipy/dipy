@@ -101,11 +101,12 @@ def load_pam(fname, verbose=False):
     pam.peak_indices = peak_indices
     pam.shm_coeff = shm_coeff
     pam.sphere = Sphere(xyz=sphere_vertices)
-    pam.B = pamh['B'][:]
-    pam.total_weight = pamh['total_weight'][:][0]
-    pam.ang_thr = pamh['ang_thr'][:][0]
-    pam.gfa = pamh['gfa'][:]
-    pam.qa = pamh['qa'][:]
+    pam.B = pamh['B'][:] if 'B' in pamh else None
+    pam.total_weight = pamh['total_weight'][:][0] if 'total_weight' in pamh \
+        else None
+    pam.ang_thr = pamh['ang_thr'][:][0] if 'ang_thr' in pamh else None
+    pam.gfa = pamh['gfa'][:] if 'gfa' in pamh else None
+    pam.qa = pamh['qa'][:] if 'qa' in pamh else None
     pam.odf = odf
 
     f.close()
@@ -361,7 +362,6 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
 
     """
     pam = PeaksAndMetrics()
-    import ipdb; ipdb.set_trace()
     pam.affine = affine
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
@@ -370,7 +370,8 @@ def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,
     for name, value in [('shm_coeff', shm_coeff), ('sphere', sphere), ('B', B),
                         ('total_weight', total_weight), ('ang_thr', ang_thr),
                         ('gfa', gfa), ('qa', qa), ('odf', odf)]:
-        setattr(pam, name, value)
+        if value is not None:
+            setattr(pam, name, value)
 
     if pam_file:
         save_pam(pam_file, pam)
