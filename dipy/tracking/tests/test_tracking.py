@@ -765,6 +765,11 @@ def test_affine_transformations():
     bad_affine[0, 1] = 1.
     npt.assert_raises(ValueError, LocalTracking, dg, sc, seeds, bad_affine, 1.)
 
+    # TST - bad seeds
+    bad_seeds = 1000
+    npt.assert_raises(ValueError, LocalTracking, dg, sc, bad_seeds,
+                      np.eye(4), 1.)
+
     # TST - identity
     a0 = np.eye(4)
     # TST - affines with positive/negative offsets
