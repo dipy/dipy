@@ -81,8 +81,8 @@ class LocalTracking(object):
         if maxlen < 1:
             raise ValueError("maxlen must be greater than 0.")
         if not isinstance(seeds, Iterable):
-            raise ValueError("seeds should be a list of 3D points. Please"
-                             " create a (N,3) ndarray")
+            raise ValueError("seeds should be (N,3) array.")
+
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
                                                 dtype=float)
