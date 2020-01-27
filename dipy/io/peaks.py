@@ -308,8 +308,7 @@ def pam_to_niftis(pam, prefix_fname, reshape_dirs=False):
     if hasattr(pam, 'gfa'):
         save_nifti(prefix_fname + '_gfa.nii.gz', pam.gfa, pam.affine)
     if hasattr(pam, 'sphere'):
-        save_nifti(prefix_fname + '_sphere.nii.gz', pam.sphere.vertices,
-                   pam.affine)
+        np.savetxt(prefix_fname + '_sphere.txt', pam.sphere.vertices)
     if hasattr(pam, 'B'):
         save_nifti(prefix_fname + '_B.nii.gz', pam.B, pam.affine)
     if hasattr(pam, 'qa'):
