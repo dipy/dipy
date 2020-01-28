@@ -1,4 +1,5 @@
 import random
+from collections.abc import Iterable
 
 import numpy as np
 
@@ -79,6 +80,9 @@ class LocalTracking(object):
             raise ValueError("step_size must be greater than 0.")
         if maxlen < 1:
             raise ValueError("maxlen must be greater than 0.")
+        if not isinstance(seeds, Iterable):
+            raise ValueError("seeds should be (N,3) array.")
+
         self.affine = affine
         self._voxel_size = np.ascontiguousarray(self._get_voxel_size(affine),
                                                 dtype=float)
