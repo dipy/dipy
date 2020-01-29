@@ -203,7 +203,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
 
 
 class IOIterator(object):
-    """ Create output filenames that work nicely with multiple input files from
+    """Create output filenames that work nicely with multiple input files from
     multiple directories (processing multiple subjects with one command)
 
     Use information from input files, out_dir and out_fnames to generate
