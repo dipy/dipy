@@ -3,6 +3,7 @@ import itertools
 import numpy as np
 import os
 from glob import glob
+from itertools import chain
 
 from dipy.workflows.base import get_args_default
 
@@ -25,29 +26,30 @@ def slash_to_under(dir_str):
 
 def connect_output_paths(inputs, out_dir, out_files,
                          output_strategy='absolute', mix_names=True):
-    """ Generates a list of output files paths based on input files and
+    """Generate a list of output files paths based on input files and
     output strategies.
 
     Parameters
     ----------
-        inputs : array
-            List of input paths.
-        out_dir : string
-            The output directory.
-        out_files : array
-            List of output files.
-        output_strategy : string
-            Which strategy to use to generate the output paths.
-                'append': Add out_dir to the path of the input.
-                'prepend': Add the input path directory tree to out_dir.
-                'absolute': Put directly in out_dir.
-        mix_names : bool
-            Whether or not prepend a string composed of a mix of the input
-            names to the final output name.
+    inputs : array
+        List of input paths.
+    out_dir : string
+        The output directory.
+    out_files : array
+        List of output files.
+    output_strategy : string
+        Which strategy to use to generate the output paths.
+            'append': Add out_dir to the path of the input.
+            'prepend': Add the input path directory tree to out_dir.
+            'absolute': Put directly in out_dir.
+    mix_names : bool
+        Whether or not prepend a string composed of a mix of the input
+        names to the final output name.
 
     Returns
     -------
         A list of output file paths.
+
     """
     outputs = []
     if isinstance(inputs, str):
@@ -97,8 +99,7 @@ def connect_output_paths(inputs, out_dir, out_files,
 
 
 def concatenate_inputs(multi_inputs):
-    """ Concatenate list of inputs
-    """
+    """Concatenate list of inputs."""
     mixing_names = []
     for inps in zip(*multi_inputs):
         mixing_name = ''
@@ -120,23 +121,25 @@ def basename_without_extension(fname):
 
 def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
                 mix_names=False, out_keys=None):
-    """ Creates an IOIterator from the parameters.
+    """Create an IOIterator from the parameters.
 
     Parameters
     ----------
-        inputs : array
-            List of input files.
-        out_dir : string
-            Output directory.
-        fnames : array
-            File names of all outputs to be created.
-        output_strategy : string
-            Controls the behavior of the IOIterator for output paths.
-        mix_names : bool
-            Whether or not to append a mix of input names at the beginning.
+    inputs : array
+        List of input files.
+    out_dir : string
+        Output directory.
+    fnames : array
+        File names of all outputs to be created.
+    output_strategy : string
+        Controls the behavior of the IOIterator for output paths.
+    mix_names : bool
+        Whether or not to append a mix of input names at the beginning.
+
     Returns
     -------
         Properly instantiated IOIterator object.
+
     """
     io_it = IOIterator(output_strategy=output_strategy, mix_names=mix_names)
     io_it.set_inputs(*inputs)
@@ -150,21 +153,23 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
 
 
 def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
-    """ Creates an IOIterator using introspection.
+    """Create an IOIterator using introspection.
 
     Parameters
     ----------
-        frame : frameobject
-            Contains the info about the current local variables values.
-        fnc : function
-            The function to inspect
-        output_strategy : string
-            Controls the behavior of the IOIterator for output paths.
-        mix_names : bool
-            Whether or not to append a mix of input names at the beginning.
+    frame : frameobject
+        Contains the info about the current local variables values.
+    fnc : function
+        The function to inspect
+    output_strategy : string
+        Controls the behavior of the IOIterator for output paths.
+    mix_names : bool
+        Whether or not to append a mix of input names at the beginning.
+
     Returns
     -------
         Properly instantiated IOIterator object.
+
     """
     args, _, _, values = inspect.getargvalues(frame)
     args.remove('self')
@@ -182,7 +187,7 @@ def io_iterator_(frame, fnc, output_strategy='absolute', mix_names=False):
 
     # inputs
     for arv in args[:split_at]:
-            inputs.append(values[arv])
+        inputs.append(values[arv])
 
     # defaults
     out_keys = []
@@ -263,7 +268,10 @@ class IOIterator(object):
                 yield i_o
 
     def file_existence_check(self, args):
-        input_args = [fname for fname in list(args) if isinstance(fname, str)]
+        # unpack variable string
+        unpack_args = list(chain.from_iterable(args))
+        input_args = [fname for fname in list(unpack_args)
+                      if isinstance(fname, str)]
         for path in input_args:
             if len(glob(path)) == 0:
                 raise IOError('File not found: ' + path)
