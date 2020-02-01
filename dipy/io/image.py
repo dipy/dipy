@@ -6,8 +6,8 @@ import numpy as np
 def load_nifti_data(fname, as_ndarray=True):
     """Load only the data array from a nifti file.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     fname : str
         Full path to the file.
     as_ndarray: bool, optional
@@ -21,7 +21,7 @@ def load_nifti_data(fname, as_ndarray=True):
 
     See also
     --------
-    ``load_nifti``
+    load_nifti
 
     """
     img = nib.load(fname)
@@ -58,7 +58,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
 
     See also
     --------
-    `load_nifti_data`
+    load_nifti_data
 
     """
     img = nib.load(fname)
