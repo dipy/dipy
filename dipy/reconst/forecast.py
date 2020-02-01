@@ -38,6 +38,7 @@ class ForecastModel(OdfModel, Cache):
     .. [3] Zucchelli E. et al., "A generalized SMT-based framework for
            Diffusion MRI microstructural model estimation", MICCAI Workshop
            on Computational DIFFUSION MRI (CDMRI), 2017.
+
     Notes
     -----
     The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
