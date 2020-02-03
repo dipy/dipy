@@ -3,7 +3,6 @@ import itertools
 import numpy as np
 import os
 from glob import glob
-from itertools import chain
 
 from dipy.workflows.base import get_args_default
 
