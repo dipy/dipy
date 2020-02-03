@@ -268,10 +268,15 @@ class IOIterator(object):
                 yield i_o
 
     def file_existence_check(self, args):
-        # unpack variable string
-        unpack_args = list(chain.from_iterable(args))
-        input_args = [fname for fname in list(unpack_args)
-                      if isinstance(fname, str)]
+
+        input_args = []
+        for fname in args:
+            if isinstance(fname, str):
+                input_args.append(fname)
+            # unpack variable string
+            if isinstance(fname, list) and all(isinstance(s, str)
+                                               for s in fname):
+                input_args += [f for f in fname]
         for path in input_args:
             if len(glob(path)) == 0:
                 raise IOError('File not found: ' + path)
