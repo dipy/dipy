@@ -81,7 +81,7 @@ class clear_and_catch_warnings(warnings.catch_warnings):
 
     Note
     ----
-    this class is copied (with minor modifications) from the Nibabel.
+    this class is copied (with minor modifications) from Nibabel.
     https://github.com/nipy/nibabel. See COPYING file distributed along with
     the Nibabel package for the copyright and license terms.
 
