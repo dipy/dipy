@@ -11,6 +11,7 @@ from dipy.direction import (BootDirectionGetter,
                             DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
                             PeakDirectionGetter,
+                            AxtractDirectionGetter,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking.local_tracking import (LocalTracking,
@@ -683,6 +684,57 @@ def test_peak_tracker():
     sc = BinaryStoppingCriterion(mask)
 
     dg = PeakDirectionGetter.from_peaks(peaks, 90)
+
+    streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
+
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.]])]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+    print(streamlines)
+    if not allclose(streamlines[0], expected[0]):
+        raise AssertionError()
+    if not allclose(streamlines[1], expected[1]):
+        raise AssertionError()
+
+
+def test_axtract_tracker():
+    """This tests that the Axtract Direction Getter plays nice with
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    peaks_lookup = np.array([[[0., 0., 1.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 0., 0.]],
+                            [[0., 1., 0.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 1., 0.]]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    peaks = peaks_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
+
+    mask = (simple_image > 0).astype(float)
+    sc = BinaryStoppingCriterion(mask)
+
+    peak_values = np.zeros(peaks.shape[:-1])
+    dg = AxtractDirectionGetter.from_peaks(peaks, 90, peak_values)
 
     streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
 

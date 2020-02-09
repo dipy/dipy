@@ -23,3 +23,21 @@ cdef class PeakDirectionGetter(DirectionGetter):
         self,
         double* point,
         double* direction)
+
+
+cdef class AxtractDirectionGetter(PeakDirectionGetter):
+
+    cdef:
+        double[:, :, :, :] peak_values
+
+    cpdef int get_axtract_direction(
+        self,
+        double[::1] point,
+        double[::1] direction,
+        double streamline_value) except -1
+
+    cdef int get_axtract_direction_c(
+        self,
+        double* point,
+        double* direction,
+        double streamline_value)
