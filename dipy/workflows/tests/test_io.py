@@ -91,3 +91,15 @@ def test_split_flow():
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_affine, affine)
+
+
+def test_niftis_to_pam_flow():
+    pass
+
+
+def test_tensor_to_pam_flow():
+    pass
+
+
+def test_pam_to_niftis_flow():
+    pass
