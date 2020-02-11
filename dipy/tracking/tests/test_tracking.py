@@ -733,9 +733,11 @@ def test_axtract_tracker():
     mask = (simple_image > 0).astype(float)
     sc = BinaryStoppingCriterion(mask)
 
+    # Needs to be tested with various peak values
     peak_values = np.zeros(peaks.shape[:-1])
     dg = AxtractDirectionGetter.from_peaks(peaks, 90, peak_values)
 
+    # Add with AxTracking(...)
     streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
 
     expected = [np.array([[0., 1., 0.],

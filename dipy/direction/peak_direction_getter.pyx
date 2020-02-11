@@ -143,8 +143,9 @@ cdef class AxtractDirectionGetter(PeakDirectionGetter):
             p[i] = point[i]
 
         ####
-        # instead of return the peak with the closest angle, it should return
-        # the peak with the peak value the most similar to streamline_value
+        # Instead of return the peak with the closest angle, it should return
+        # the peak with the peak value the most similar to streamline_value.
+        # This function alos needs to return the corresponding peak value
         ####
         peaks, nbr = self._get_peak_directions(p)
         if nbr > 0:
