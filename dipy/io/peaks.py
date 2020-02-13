@@ -267,28 +267,44 @@ def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
         (default False)
 
     """
-    save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
-
-    if reshape_dirs:
-        pam_dirs = reshape_peaks_for_visualization(pam)
-    else:
-        pam_dirs = pam.peak_dirs.astype(np.float32)
-
-    save_nifti(fname_dirs, pam_dirs, pam.affine)
-    save_nifti(fname_values, pam.peak_values.astype(np.float32), pam.affine)
-    save_nifti(fname_indices, pam.peak_indices, pam.affine)
-    save_nifti(fname_gfa, pam.gfa, pam.affine)
+    return pam_to_niftis(pam=pam, fname_peaks_dir=fname_dirs,
+                         fname_peaks_values=fname_dirs,
+                         fname_peaks_indices=fname_indices,
+                         fname_gfa=fname_gfa, fname_shm=fname_shm,
+                         reshape_dirs=reshape_dirs)
 
 
-def pam_to_niftis(pam, prefix_fname='', reshape_dirs=False):
+def pam_to_niftis(pam, fname_peaks_dir='peaks_dirs.nii.gz',
+                  fname_peaks_values='peaks_values.nii.gz',
+                  fname_peaks_indices='peaks_indices.nii.gz',
+                  fname_shm='shm.nii.gz', fname_gfa='gfa.nii.gz',
+                  fname_sphere='sphere.txt', fname_b='B.nii.gz',
+                  fname_qa='qa.nii.gz', reshape_dirs=False):
     """Save SH, directions, indices and values of peaks to Nifti.
 
     Parameters
     ----------
     pam : PeaksAndMetrics
         Object holding peak_dirs, shm_coeffs and other attributes
-    prefix_fname : str, optional
-        prefix that will be added to all filenames
+    fname_peaks_dir : str, optional
+        peaks direction filename.
+    fname_peaks_values : str, optional
+        peaks values filename.
+    fname_peaks_indices : str, optional
+        peaks indices filename
+    fname_shm : str, optional
+        Spherical Harmonics coefficients filename.
+        It will be saved if available.
+    fname_gfa : str, optional
+        Generalized FA filename.It will be saved if available.
+    fname_sphere : str, optional
+        Sphere vertices filename. It will be saved if available.
+    fname_b : str, optional
+        B Matrix filename. Matrix that transforms spherical harmonics to
+        spherical function. It will be saved if available.
+    fname_qa : str, optional
+        Quantitative Anisotropy filename. It will be saved if available.
+
     reshape_dirs : bool, optional
         If True, Reshape and convert to float32 a set of peaks for
         visualisation with mrtrix or the fibernavigator.
@@ -300,31 +316,21 @@ def pam_to_niftis(pam, prefix_fname='', reshape_dirs=False):
     else:
         pam_dirs = pam.peak_dirs.astype(np.float32)
 
-    if prefix_fname:
-        prefix_fname += '_'
-
-    save_nifti(prefix_fname + 'peaks_dirs.nii.gz', pam_dirs, pam.affine)
-    save_nifti(prefix_fname + 'peaks_values.nii.gz',
-               pam.peak_values.astype(np.float32), pam.affine)
-    save_nifti(prefix_fname + 'peaks_indices.nii.gz', pam.peak_indices,
+    save_nifti(fname_peaks_dir, pam_dirs, pam.affine)
+    save_nifti(fname_peaks_values, pam.peak_values.astype(np.float32),
                pam.affine)
-    if hasattr(pam, 'shm_coeff'):
-        save_nifti(prefix_fname + 'shm.nii.gz',
-                   pam.shm_coeff.astype(np.float32), pam.affine)
-    if hasattr(pam, 'gfa'):
-        save_nifti(prefix_fname + 'gfa.nii.gz', pam.gfa, pam.affine)
-    if hasattr(pam, 'sphere'):
-        np.savetxt(prefix_fname + 'sphere.txt', pam.sphere.vertices)
-    if hasattr(pam, 'B'):
-        save_nifti(prefix_fname + 'B.nii.gz', pam.B, pam.affine)
-    if hasattr(pam, 'qa'):
-        save_nifti(prefix_fname + 'qa.nii.gz', pam.qa, pam.affine)
-    if hasattr(pam, 'odf'):
-        save_nifti(prefix_fname + 'odf.nii.gz', pam.odf, pam.affine)
+    save_nifti(fname_peaks_indices, pam.peak_indices, pam.affine)
 
-    # Float and int value, maybe on int headers
-    # save_nifti(prefix_fname, pam.total_weight), pam.affine)
-    # save_nifti(prefix_fname, pam.ang_thr), pam.affine)
+    if hasattr(pam, 'shm_coeff'):
+        save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
+    if hasattr(pam, 'gfa'):
+        save_nifti(fname_gfa, pam.gfa, pam.affine)
+    if hasattr(pam, 'sphere'):
+        np.savetxt(fname_sphere, pam.sphere.vertices)
+    if hasattr(pam, 'B'):
+        save_nifti(fname_b, pam.B, pam.affine)
+    if hasattr(pam, 'qa'):
+        save_nifti(fname_qa, pam.qa, pam.affine)
 
 
 def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices,

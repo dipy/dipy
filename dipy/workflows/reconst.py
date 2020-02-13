@@ -436,7 +436,7 @@ class ReconstCSDFlow(Workflow):
             out_peaks_dir='peaks_dirs.nii.gz',
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
-        """ Constrained spherical deconvolution
+        """Constrained spherical deconvolution.
 
         Parameters
         ----------
@@ -585,7 +585,10 @@ class ReconstCSDFlow(Workflow):
             logging.info('CSD computation completed.')
 
             if extract_pam_values:
-                pam_to_niftis(peaks_csd, reshape_dirs=True)
+                pam_to_niftis(peaks_csd, fname_peaks_dir=opeaks_dir,
+                              fname_shm=oshm, fname_peaks_values=opeaks_values,
+                              fname_peaks_indices=opeaks_indices,
+                              fname_gfa=ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
@@ -613,7 +616,7 @@ class ReconstCSAFlow(Workflow):
             out_peaks_values='peaks_values.nii.gz',
             out_peaks_indices='peaks_indices.nii.gz',
             out_gfa='gfa.nii.gz'):
-        """ Constant Solid Angle.
+        """Constant Solid Angle.
 
         Parameters
         ----------
@@ -710,7 +713,10 @@ class ReconstCSAFlow(Workflow):
             logging.info('Finished CSA {0}'.format(dwi))
 
             if extract_pam_values:
-                pam_to_niftis(peaks_csa, reshape_dirs=True)
+                pam_to_niftis(peaks_csa, fname_peaks_dir=opeaks_dir,
+                              fname_shm=oshm, fname_peaks_values=opeaks_values,
+                              fname_peaks_indices=opeaks_indices,
+                              fname_gfa=ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
