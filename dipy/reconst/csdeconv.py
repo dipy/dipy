@@ -802,6 +802,65 @@ def fa_inferior(FA, fa_thr):
     """
     return FA < fa_thr
 
+def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
+                           fa=None, fa_thr=0.7):
+    if roi_center is None:
+        ci, cj, ck = np.array(data.shape[:3]) // 2
+    else:
+        ci, cj, ck = roi_center
+    w = roi_radius
+
+    if fa is None:
+        roi = data[int(ci - w): int(ci + w),
+            int(cj - w): int(cj + w),
+            int(ck - w): int(ck + w)]
+        ten = TensorModel(gtab)
+        tenfit = ten.fit(roi)
+        fa = fractional_anisotropy(tenfit.evals)
+        fa[np.isnan(fa)] = 0
+    else:
+        fa = fa[int(ci - w): int(ci + w),
+            int(cj - w): int(cj + w),
+            int(ck - w): int(ck + w)]
+    mask = np.zeros(fa.shape)
+    mask[fa > fa_thr] = 1
+
+    if np.sum(mask) == 0:
+        msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
+        msg += " Try a larger roi or a lower threshold."
+        warnings.warn(msg, UserWarning)
+
+    return mask
+
+
+def response_ssst(gtab, data, mask):
+    ten = TensorModel(gtab)
+    indices = np.where(mask > 0)
+
+    if indices[0].size == 0:
+        msg = "No voxel in mask with value > 0 were found."
+        warnings.warn(msg, UserWarning)
+        return (np.nan, np.nan), np.nan
+
+    tenfit = ten.fit(data[indices])
+    lambdas = tenfit.evals[:, :2]
+    S0s = data[indices][:, np.nonzero(gtab.b0s_mask)[0]]
+
+    return _get_response(S0s, lambdas)
+
+
+def auto_response_ssst(gtab, data, mask=None, roi_center=None, roi_radius=10,
+                       fa=None, fa_thr=0.7, return_number_of_voxels=False):
+    if mask is None:
+        mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
+                                      fa, fa_thr)
+    response, ratio = response_ssst(gtab, data, mask)
+
+    if return_number_of_voxels:
+        return response, ratio, np.sum(mask)
+
+    return response, ratio
+
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
                   fa_callable=fa_superior, return_number_of_voxels=False):
