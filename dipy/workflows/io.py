@@ -7,7 +7,7 @@ import importlib
 from inspect import getmembers, isfunction
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import (pam_to_niftis, niftis_to_pam,
-                           tensor_to_pam)
+                           tensor_to_pam, load_pam)
 from dipy.workflows.workflow import Workflow
 
 
@@ -269,7 +269,8 @@ class NiftisToPamFlow(Workflow):
 
     def run(self, peaks_dir_files, peaks_values_files, peaks_indices_files,
             shm_files=None, gfa_files=None, sphere_files=None,
-            default_sphere='repulsion724', out_dir='', out_pam="peaks.pam5"):
+            default_sphere_name='repulsion724', out_dir='',
+            out_pam="peaks.pam5"):
         """Convert pam5 files to mutiple nifti files.
 
         Parameters
@@ -309,18 +310,26 @@ class NiftisToPamFlow(Workflow):
 
         msg = 'pam5 files saved in '
         msg += out_dir or 'current directory'
-        for fpeak_dirs, fpeak_values, fpeak_indices, fshm, fgfa, opam in io_it:
+
+        for fpeak_dirs, fpeak_values, fpeak_indices, opam in io_it:
             logging.info('Converting nifti files to pam5')
             peak_dirs, affine = load_nifti(fpeak_dirs)
             peak_values, _ = load_nifti(fpeak_values)
             peak_indices, _ = load_nifti(fpeak_indices)
-            shm, _ = load_nifti(fshm)
-            gfa, _ = load_nifti(fgfa)
 
-            niftis_to_pam(affine=affine, peak_dirs=peak_dirs,
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            # shm, _ = load_nifti(fshm)
+            # gfa, _ = load_nifti(fgfa)
+
+            niftis_to_pam(affine=affine, peak_dirs=peak_dirs, sphere=sphere,
                           peak_values=peak_values, peak_indices=peak_indices,
-                          pam_file=opam, gfa=gfa, shm_coeff=shm)
-            logging.info(msg)
+                          pam_file=opam)  # , gfa=gfa, shm_coeff=shm)
+            logging.info(msg.replace('pam5', opam))
 
 
 class TensorToPamFlow(Workflow):
@@ -359,14 +368,15 @@ class TensorToPamFlow(Workflow):
         """
         io_it = self.get_io_iterator()
 
-        msg = 'Nifti files saved in '
+        msg = 'pam5 files saved in '
         msg += out_dir or 'current directory'
+
         for fevals, fevecs, opam in io_it:
             logging.info('Converting tensor files to pam5...')
             evals, affine = load_nifti(fevals)
             evecs, _ = load_nifti(fevecs)
             tensor_to_pam(evals, evecs, affine, pam_file=opam)
-            logging.info(msg)
+            logging.info(msg.replace('pam5', opam))
 
 
 class PamToNiftisFlow(Workflow):
@@ -375,7 +385,11 @@ class PamToNiftisFlow(Workflow):
     def get_short_name(cls):
         return 'pam_to_niftis'
 
-    def run(self, pam_files, prefix='', out_dir=''):
+    def run(self, pam_files, out_dir='', out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz',
+            out_shm='shm.nii.gz', out_gfa='gfa.nii.gz',
+            out_sphere='sphere.txt'):
         """Convert pam5 files to mutiple nifti files.
 
         Parameters
@@ -383,17 +397,37 @@ class PamToNiftisFlow(Workflow):
         pam_files : string
             Path to the input peaks volumes. This path may contain wildcards to
             process multiple inputs at once.
-        prefix : string, optional
-            prefix to append to all saved volume names
         out_dir : string, optional
             Output directory (default input file directory)
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved
+            (default 'peaks_dirs.nii.gz')
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved
+            (default 'peaks_values.nii.gz')
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved
+            (default 'peaks_indices.nii.gz')
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved
+            (default 'shm.nii.gz')
+        out_gfa : string, optional
+            Generalized FA volume name to be saved (default 'gfa.nii.gz')
+        out_sphere : string, optional
+            Sphere vertices name to be saved (default 'sphere.txt')
 
         """
         io_it = self.get_io_iterator()
 
         msg = 'Nifti files saved in '
         msg += out_dir or 'current directory'
-        for pam in io_it:
-            logging.info('Converting %s file to niftis...', pam)
-            pam_to_niftis(pam, prefix_fname=prefix)
+        for (ipam, opeaks_dir, opeaks_values, opeaks_indices, oshm,
+             ogfa, osphere) in io_it:
+            logging.info('Converting %s file to niftis...', ipam)
+            pam = load_pam(ipam)
+            pam_to_niftis(pam, fname_peaks_dir=opeaks_dir, fname_shm=oshm,
+                          fname_peaks_values=opeaks_values,
+                          fname_peaks_indices=opeaks_indices,
+                          fname_sphere=osphere, fname_gfa=ogfa,
+                          )
             logging.info(msg)
