@@ -13,11 +13,14 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
+                              mean_diffusivity)
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
+
+from dipy.segment.mask import applymask
 
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
@@ -803,14 +806,14 @@ def fa_inferior(FA, fa_thr):
     return FA < fa_thr
 
 def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
-                           fa=None, fa_thr=0.7):
+                           fa_data=None, fa_thr=0.7):
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
     w = roi_radius
 
-    if fa is None:
+    if fa_data is None:
         roi = data[int(ci - w): int(ci + w),
             int(cj - w): int(cj + w),
             int(ck - w): int(ck + w)]
@@ -819,7 +822,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
     else:
-        fa = fa[int(ci - w): int(ci + w),
+        fa = fa_data[int(ci - w): int(ci + w),
             int(cj - w): int(cj + w),
             int(ck - w): int(ck + w)]
     mask = np.zeros(fa.shape)
@@ -850,16 +853,128 @@ def response_ssst(gtab, data, mask):
 
 
 def auto_response_ssst(gtab, data, mask=None, roi_center=None, roi_radius=10,
-                       fa=None, fa_thr=0.7, return_number_of_voxels=False):
+                       fa_data=None, fa_thr=0.7, return_number_of_voxels=False):
     if mask is None:
         mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
-                                      fa, fa_thr)
+                                      fa_data, fa_thr)
     response, ratio = response_ssst(gtab, data, mask)
 
     if return_number_of_voxels:
         return response, ratio, np.sum(mask)
 
     return response, ratio
+
+
+def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10, 
+                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                           csf_fa_thr=0.15, md_data=None,
+                           gm_md_thr=0.001, csf_md_thr=0.003):
+    if roi_center is None:
+        ci, cj, ck = np.array(data.shape[:3]) // 2
+    else:
+        ci, cj, ck = roi_center
+    w = roi_radius
+
+    if fa_data is None and md_data is None:
+        roi = data[int(ci - w): int(ci + w),
+            int(cj - w): int(cj + w),
+            int(ck - w): int(ck + w)]
+        ten = TensorModel(gtab)
+        tenfit = ten.fit(roi)
+        fa = fractional_anisotropy(tenfit.evals)
+        fa[np.isnan(fa)] = 0
+        md = mean_diffusivity(tenfit.evals)
+        md[np.isnan(md)] = 0
+    elif fa_data is not None and md_data is None:
+        print("Error") #Add a proper error message
+    elif fa_data is None and md_data is not None:
+        print("Error") #Add a proper error message
+    else:
+        fa = fa_data[int(ci - w): int(ci + w),
+            int(cj - w): int(cj + w),
+            int(ck - w): int(ck + w)]
+        md = md_data[int(ci - w): int(ci + w),
+            int(cj - w): int(cj + w),
+            int(ck - w): int(ck + w)]
+
+    mask_wm = np.zeros(fa.shape)
+    mask_wm[fa > wm_fa_thr] = 1
+
+    md_mask_gm = np.ones(md.shape)
+    md_mask_gm[(md > gm_md_thr)] = 0
+
+    fa_mask_gm = np.zeros(fa.shape)
+    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
+
+    mask_gm = md_mask_gm * fa_mask_gm
+
+    md_mask_csf = np.ones(md.shape)
+    md_mask_csf[(md > csf_md_thr)] = 0
+
+    fa_mask_csf = np.zeros(fa.shape)
+    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
+
+    mask_csf = md_mask_csf * fa_mask_csf
+
+    if np.sum(mask_wm) == 0:
+        msg = "No voxel with a FA higher than " + str(wm_fa_thr)
+        msg += " were found."
+        msg += " Try a larger roi or a lower threshold for white matter."
+        warnings.warn(msg, UserWarning)
+
+    if np.sum(mask_gm) == 0:
+        msg = "No voxel with a FA lower than " + str(gm_fa_thr) +
+        msg += " and a MD higher than " + str(gm_md_thr) + " were found."
+        msg += " Try a larger roi or a higher FA threshold"
+        msg += " or a lower MD threshold for grey matter."
+        warnings.warn(msg, UserWarning)
+
+    if np.sum(mask_csf) == 0:
+        msg = "No voxel with a FA lower than " + str(csf_fa_thr) +
+        msg += " and a MD higher than " + str(csf_md_thr) + " were found."
+        msg += " Try a larger roi or a higher FA threshold"
+        msg += " or a lower MD threshold for CSF."
+        warnings.warn(msg, UserWarning)
+
+    return mask_wm, mask_gm, mask_csf
+
+
+def response_msmt(gtab, data, mask_wm, mask_gm, mask_csf,
+                  seg_wm=None, seg_gm=None, seg_csf=None):
+    masks = [mask_wm, mask_gm, mask_csf]
+    tissues = [seg_wm, seg_gm, seg_csf]
+    tissue_response = []
+
+    # bvals, bvecs = read_bvals_bvecs(args.bvals, args.bvecs)
+
+    # if not is_normalized_bvecs(bvecs):
+    #     logging.warning('Your b-vectors do not seem normalized...')
+    #     bvecs = normalize_bvecs(bvecs)
+
+    # check_b0_threshold(args.force_b0_threshold, bvals.min())
+
+    # list_bvals = get_list_bvals(bvals, tolerance)
+
+    # b0_indices = get_bval_indices(bvals, list_bvals[0], tolerance)
+    # b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
+
+    for current_tissue, current_mask in zip(tissues, masks):
+        responses = []
+        mask = applymask(current_tissue, current_mask)
+        for bval in list_bvals[1:]:
+            indices = get_bval_indices(bvals, bval, tolerance)
+
+            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
+            bvals_sub = np.concatenate([[0], bvals[indices]])
+
+            data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
+
+            gtab = gradient_table(bvals_sub, bvecs_sub)
+            response, ratio = response_ssst(gtab, data_conc, mask)
+
+            responses.append(list(response))
+        response_mean = np.mean(responses, axis=0)
+        tissue_response.append(list(np.concatenate([response_mean[0], [response_mean[1]]])))
 
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
