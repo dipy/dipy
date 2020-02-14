@@ -339,7 +339,8 @@ class TensorToPamFlow(Workflow):
         return 'pam_to_niftis'
 
     def run(self, evals_files, evecs_files, sphere_files=None,
-            default_sphere='repulsion724', out_dir='', out_pam="peaks.pam5"):
+            default_sphere_name='repulsion724', out_dir='',
+            out_pam="peaks.pam5"):
         """Convert multiple tensor files(evals, evecs) to pam5 files.
 
         Parameters
@@ -354,7 +355,7 @@ class TensorToPamFlow(Workflow):
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used
-        default_sphere: string, optional
+        default_sphere_name: string, optional
             Specify default sphere to use for spherical harmonics
             representation. This option can be supersed by sphere_files option.
             default: repulsion724.
@@ -375,7 +376,14 @@ class TensorToPamFlow(Workflow):
             logging.info('Converting tensor files to pam5...')
             evals, affine = load_nifti(fevals)
             evecs, _ = load_nifti(fevecs)
-            tensor_to_pam(evals, evecs, affine, pam_file=opam)
+
+            if sphere_files:
+                xyz = np.loadtxt(sphere_files)
+                sphere = Sphere(xyz=xyz)
+            else:
+                sphere = get_sphere(name=default_sphere_name)
+
+            tensor_to_pam(evals, evecs, affine, sphere=sphere, pam_file=opam)
             logging.info(msg.replace('pam5', opam))
 
 

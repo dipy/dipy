@@ -4,12 +4,14 @@ from tempfile import mkstemp, TemporaryDirectory
 
 import numpy.testing as npt
 import numpy as np
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, default_sphere
 from dipy.direction.peaks import PeaksAndMetrics
-from dipy.io.image import load_nifti
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.peaks import save_pam, load_pam
 from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
+from dipy.reconst.dti import TensorModel
 from dipy.workflows.io import (IoInfoFlow, FetchFlow, SplitFlow,
                                PamToNiftisFlow, NiftisToPamFlow,
                                TensorToPamFlow)
@@ -143,7 +145,28 @@ def test_niftis_to_pam_flow():
 
 
 def test_tensor_to_pam_flow():
-    pass
+    fdata, fbval, fbvec = get_fnames('small_25')
+    gtab = gradient_table(fbval, fbvec)
+    data, affine = load_nifti(fdata)
+    dm = TensorModel(gtab)
+    df = dm.fit(data)
+    df.evals[0, 0, 0] = np.array([0, 0, 0])
+
+    with TemporaryDirectory() as out_dir:
+        f_mevals, f_mevecs = 'evals.nii.gz', 'evecs.nii.gz'
+        save_nifti(f_mevals, df.evals, affine)
+        save_nifti(f_mevecs, df.evecs, affine)
+
+        args = [f_mevals, f_mevecs]
+        flow = TensorToPamFlow()
+        flow.run(*args, out_dir=out_dir)
+        pam_file = flow.last_generated_outputs['out_pam']
+        assert_true(os.path.isfile(pam_file))
+
+        pam = load_pam(pam_file)
+        npt.assert_array_equal(pam.affine, affine)
+        npt.assert_array_almost_equal(pam.peak_dirs[..., :3, :], df.evecs)
+        npt.assert_array_almost_equal(pam.peak_values[..., :3], df.evals)
 
 
 def test_pam_to_niftis_flow():
