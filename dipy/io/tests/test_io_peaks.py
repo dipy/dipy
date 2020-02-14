@@ -40,7 +40,7 @@ def test_io_peaks():
 
         pam = generate_default_pam()
         save_pam(fname, pam)
-        pam2 = load_pam(fname, verbose=True)
+        pam2 = load_pam(fname, verbose=False)
         npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
 
         pam2.affine = None
@@ -95,24 +95,24 @@ def test_io_peaks():
 
         pam.shm_coeff = np.ones((10, 10, 10, 45))
 
-        pam_to_niftis(pam, prefix_fname='test_local', reshape_dirs=False)
+        pam_to_niftis(pam, reshape_dirs=False)
         # old version
         with warnings.catch_warnings(record=True) as cw:
-            peaks_to_niftis(pam, fname_shm='shm.nii.gz',
-                            fname_dirs='dirs.nii.gz',
-                            fname_values='values.nii.gz',
-                            fname_indices='indices.nii.gz',
-                            fname_gfa='gfa.nii.gz',
+            peaks_to_niftis(pam, fname_shm='ptn_shm.nii.gz',
+                            fname_dirs='ptn_dirs.nii.gz',
+                            fname_values='ptn_values.nii.gz',
+                            fname_indices='ptn_indices.nii.gz',
+                            fname_gfa='ptn_gfa.nii.gz',
                             reshape_dirs=False)
             npt.assert_equal(len(cw), 1)
             npt.assert_(issubclass(cw[-1].category, DeprecationWarning))
 
-        for name in ['test_local_shm.nii.gz', 'test_local_peaks_dirs.nii.gz',
-                     'test_local_peaks_values.nii.gz', 'test_local_gfa.nii.gz',
-                     'test_local_peaks_indices.nii.gz', 'shm.nii.gz',
-                     'dirs.nii.gz', 'values.nii.gz', 'indices.nii.gz',
-                     'gfa.nii.gz']:
-            npt.assert_(os.path.isfile(name))
+        for name in ['shm.nii.gz', 'peaks_dirs.nii.gz', 'peaks_values.nii.gz',
+                     'gfa.nii.gz', 'peaks_indices.nii.gz', 'shm.nii.gz',
+                     'ptn_dirs.nii.gz', 'ptn_values.nii.gz',
+                     'ptn_indices.nii.gz', 'ptn_gfa.nii.gz', 'ptn_shm.nii.gz']:
+            npt.assert_(os.path.isfile(name),
+                        '{} file does not exist'.format(name))
 
 
 def test_io_save_pam_error():

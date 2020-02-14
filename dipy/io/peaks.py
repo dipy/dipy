@@ -268,7 +268,7 @@ def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
 
     """
     return pam_to_niftis(pam=pam, fname_peaks_dir=fname_dirs,
-                         fname_peaks_values=fname_dirs,
+                         fname_peaks_values=fname_values,
                          fname_peaks_indices=fname_indices,
                          fname_gfa=fname_gfa, fname_shm=fname_shm,
                          reshape_dirs=reshape_dirs)
