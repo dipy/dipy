@@ -886,7 +886,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
         md = mean_diffusivity(tenfit.evals)
         md[np.isnan(md)] = 0
     elif fa_data is not None and md_data is None:
-        print("Error") #Add a proper error message
+        Raise ValueError(msg)
     elif fa_data is None and md_data is not None:
         print("Error") #Add a proper error message
     else:
@@ -919,16 +919,17 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
     if np.sum(mask_wm) == 0:
         msg = "No voxel with a FA higher than " + str(wm_fa_thr)
         msg += " were found."
-        msg += " Try a larger roi or a lower threshold for white matter."
+        msg += " Try a larger roi or a lower threshold for WM."
         warnings.warn(msg, UserWarning)
 
     if np.sum(mask_gm) == 0:
         msg = "No voxel with a FA lower than " + str(gm_fa_thr) +
         msg += " and a MD higher than " + str(gm_md_thr) + " were found."
         msg += " Try a larger roi or a higher FA threshold"
-        msg += " or a lower MD threshold for grey matter."
+        msg += " or a lower MD threshold for GM."
         warnings.warn(msg, UserWarning)
-
+    msg = """
+    """
     if np.sum(mask_csf) == 0:
         msg = "No voxel with a FA lower than " + str(csf_fa_thr) +
         msg += " and a MD higher than " + str(csf_md_thr) + " were found."
@@ -939,10 +940,8 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
     return mask_wm, mask_gm, mask_csf
 
 
-def response_msmt(gtab, data, mask_wm, mask_gm, mask_csf,
-                  seg_wm=None, seg_gm=None, seg_csf=None):
+def response_msmt(gtab, data, mask_wm, mask_gm, mask_csf):
     masks = [mask_wm, mask_gm, mask_csf]
-    tissues = [seg_wm, seg_gm, seg_csf]
     tissue_response = []
 
     # bvals, bvecs = read_bvals_bvecs(args.bvals, args.bvecs)
@@ -958,9 +957,8 @@ def response_msmt(gtab, data, mask_wm, mask_gm, mask_csf,
     # b0_indices = get_bval_indices(bvals, list_bvals[0], tolerance)
     # b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
 
-    for current_tissue, current_mask in zip(tissues, masks):
+    for current_mask in masks:
         responses = []
-        mask = applymask(current_tissue, current_mask)
         for bval in list_bvals[1:]:
             indices = get_bval_indices(bvals, bval, tolerance)
 
