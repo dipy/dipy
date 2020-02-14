@@ -554,8 +554,69 @@ def round_bvals(bvals, bmag=None):
     b = bvals / (10 ** bmag)  # normalize b units
     return b.round() * (10 ** bmag)
 
+def unique_bvals_tol(bvals, tol=20, rbvals=False):
+    """ Gives the unique b-values of the data, within a tolerance gap
 
-def unique_bvals(bvals, bmag=None, rbvals=False):
+    The b-values must be regrouped in clusters easily separated by a 
+    distance far greater than the tolerance gap.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    tol : int
+        The tolerated gap between the b-values to extract
+        and the actual b-values.
+
+    rbvals : bool, optional
+        If True function also returns all individual rounded b-values.
+        Default: False
+
+    Returns
+    ------
+    ubvals : ndarray
+        Array containing the unique b-values using the median value
+        for each cluster
+    """
+    b = np.sort(bvals)
+    gaps = np.diff(b)
+    indices = np.squeeze(np.argwhere(gaps > tol)) + 1
+    clusters = np.split(b, indices)
+    ubvals = np.zeros(len(clusters))
+    for i, cluster in enumerate(clusters):
+        ubvals[i] = np.median(cluster)
+    if rbvals:
+        j = 0
+        for i, index in enumerate(indices):
+            if i!=len(indices):
+                b[j:index] = ubvals[i]
+            j = index
+        b[index:] = ubvals[i+1]
+        return ubvals, b
+
+    return ubvals
+
+def get_bval_indices(bvals, bval, tol=20):
+    """
+    Get indices where the b-value is `bval`
+
+    Parameters
+    ----------
+    bvals: b-values array
+    bval: b-value to extract indices
+    tol: The tolerated gap between the b-values to extract
+               and the actual b-values.
+
+    Returns
+    ------
+    Array of indices where the b-value is `bval`
+    """
+    return np.where(np.logical_and(bvals < bval + tol,
+                                   bvals > bval - tol))[0]
+
+
+def unique_bvals_mag(bvals, bmag=None, rbvals=False):
     """ This function gives the unique rounded b-values of the data
 
     Parameters
@@ -581,8 +642,8 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
     b = round_bvals(bvals, bmag)
     if rbvals:
         return np.unique(b), b
-    else:
-        return np.unique(b)
+
+    return np.unique(b)
 
 
 def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
