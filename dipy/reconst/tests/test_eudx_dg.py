@@ -23,7 +23,6 @@ def test_EuDXDirectionGetter_deprecated_warning():
         True)
 
 
-
 def test_EuDXDirectionGetter():
 
     class SillyModel(object):
