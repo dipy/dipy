@@ -157,7 +157,7 @@ We can visualize the data using ``dipy_horizon`` ::
 
 We can use ``dipy_median_otsu`` to build a brain mask for the diffusion data::
 
-    dipy_median_otsu dwi.nii --out_dir out_work/
+    dipy_median_otsu dwi.nii --out_dir --median_radius 2 --numpass 1 --vol_idx 0 1 out_work/
 
 Visualize the mask using ``dipy_horizon``::
 
@@ -199,25 +199,33 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
 Create tracks using peaks::
 
-    dipy_track_det out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_tractogram 'out_work/tracks_from_peaks.trk'
-
+    dipy_track_det out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_tractogram tracks_from_peaks.trk
 
 We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
 
     dipy_horizon out_work/tracts_from_peaks.trk --cluster
+
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Showing tracks from the specific dataset. This dataset contains only a few slices.
+
 
 Alternatively, we can create deterministic tracks using the maximum value of a spherical harmonics cone::
 
     dipy_track_det peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
 
 
-For more information about each command line, you can got to :ref:`workflows_reference`.
+For more information about each command line, you see :ref:`workflows_reference`.
 
-These commands are not by any fetch of imagination what we propose you to use but a mere introduction to DIPY's command interfaces,
-medical imaging requires a number of steps that depend on the goal of the analysis strategy.
+These commands are not by any fetch of imagination what we propose as a complete solution to tracking
+but a mere introduction to DIPY's command interfaces, medical imaging requires a number of steps that
+depend on the goal of the analysis strategy and the questions you are looking to answer.
 
-If you are using any of these commands make sure you cite the relevant papers.
-
+If you are using any of these commands do cite the relevant papers.
 
 References
 ----------
