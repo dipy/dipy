@@ -554,7 +554,7 @@ def round_bvals(bvals, bmag=None):
     b = bvals / (10 ** bmag)  # normalize b units
     return b.round() * (10 ** bmag)
 
-def unique_bvals_tol(bvals, tol=20, rbvals=False):
+def unique_bvals_tol(bvals, tol=20):
     """ Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a 
@@ -569,10 +569,6 @@ def unique_bvals_tol(bvals, tol=20, rbvals=False):
         The tolerated gap between the b-values to extract
         and the actual b-values.
 
-    rbvals : bool, optional
-        If True function also returns all individual rounded b-values.
-        Default: False
-
     Returns
     ------
     ubvals : ndarray
@@ -585,15 +581,7 @@ def unique_bvals_tol(bvals, tol=20, rbvals=False):
     clusters = np.split(b, indices)
     ubvals = np.zeros(len(clusters))
     for i, cluster in enumerate(clusters):
-        ubvals[i] = np.median(cluster)
-    if rbvals:
-        j = 0
-        for i, index in enumerate(indices):
-            if i!=len(indices):
-                b[j:index] = ubvals[i]
-            j = index
-        b[index:] = ubvals[i+1]
-        return ubvals, b
+        ubvals[i] = cluster[np.floor(len(cluster) / 2).astype(int)]
 
     return ubvals
 
