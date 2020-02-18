@@ -575,15 +575,39 @@ def unique_bvals_tol(bvals, tol=20):
         Array containing the unique b-values using the median value
         for each cluster
     """
-    b = np.sort(bvals)
-    gaps = np.diff(b)
-    indices = np.squeeze(np.argwhere(gaps > tol)) + 1
-    clusters = np.split(b, indices)
-    ubvals = np.zeros(len(clusters))
-    for i, cluster in enumerate(clusters):
-        ubvals[i] = cluster[np.floor(len(cluster) / 2).astype(int)]
+    b = np.unique(bvals).astype(int)
+    ubvals = []
+    i = 0
+    lower_part = np.where(b <= b[i] + tol)[0]
+    upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
+                                            b > b[lower_part[-1]]))[0]
+    ubvals.append(b[lower_part[-1]])
+    if len(upper_part) != 0:
+        i = upper_part[-1] + 1
+    else:
+        i = lower_part[-1] + 1
+    while i != len(b):
+        lower_part = np.where(np.logical_and(b <= b[i] + tol,
+                                             b > b[i-1]))[0]
+        upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
+                                             b > b[lower_part[-1]]))[0]
+        ubvals.append(b[lower_part[-1]])
+        if len(upper_part) != 0:
+            i = upper_part[-1] + 1
+        else:
+            i = lower_part[-1] + 1
 
-    return ubvals
+    # Checking for overlap with get_bval_indices
+    for i in range(len(ubvals)-1):
+        indices_1 = get_bval_indices(bvals, ubvals[i], tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i+1], tol)
+        if len(np.intersect1d(indices_1, indices_2)) != 0:
+            msg = '''There is overlap in clustering of b-values.
+            The tolerance factor might be too high.'''
+            warn(msg, UserWarning)
+
+    return np.asarray(ubvals)
+
 
 def get_bval_indices(bvals, bval, tol=20):
     """
@@ -600,8 +624,8 @@ def get_bval_indices(bvals, bval, tol=20):
     ------
     Array of indices where the b-value is `bval`
     """
-    return np.where(np.logical_and(bvals < bval + tol,
-                                   bvals > bval - tol))[0]
+    return np.where(np.logical_and(bvals <= bval + tol,
+                                   bvals >= bval - tol))[0]
 
 
 def unique_bvals_mag(bvals, bmag=None, rbvals=False):
