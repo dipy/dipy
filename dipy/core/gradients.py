@@ -554,11 +554,13 @@ def round_bvals(bvals, bmag=None):
     b = bvals / (10 ** bmag)  # normalize b units
     return b.round() * (10 ** bmag)
 
+
 def unique_bvals_tol(bvals, tol=20):
     """ Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a 
-    distance far greater than the tolerance gap.
+    distance greater than the tolerance gap. If all the b-values of a 
+    cluster fit within the tolerance gap, the highest b-value is kept.
 
     Parameters
     ----------
@@ -575,7 +577,7 @@ def unique_bvals_tol(bvals, tol=20):
         Array containing the unique b-values using the median value
         for each cluster
     """
-    b = np.unique(bvals).astype(int)
+    b = np.unique(bvals)
     ubvals = []
     i = 0
     lower_part = np.where(b <= b[i] + tol)[0]
@@ -687,7 +689,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     if non_zero:
         bvals = bvals[~gtab.b0s_mask]
 
-    uniqueb = unique_bvals(bvals, bmag=bmag)
+    uniqueb = unique_bvals_mag(bvals, bmag=bmag)
     if uniqueb.shape[0] < n_bvals:
         return False
     else:
