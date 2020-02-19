@@ -1,7 +1,7 @@
 """ Classes and functions for fitting ivim model """
 
 import numpy as np
-from scipy.optimize import least_squares, differential_evolution
+from scipy.optimize import least_squares, differential_evolution, nnls
 import warnings
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -10,7 +10,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 # global variable for bounding least_squares in both models
-BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
+BOUNDS = ([0., 0., 0., 0.], [np.inf, .9, .9, .9])
 
 
 def ivim_prediction(params, gtab):
@@ -344,7 +344,11 @@ class IvimModelTRR(ReconstModel):
             return IvimFit(self, params_linear)
 
     def estimate_linear_fit(self, data, split_b, less_than=True):
-        """Estimate a linear fit by taking log of data.
+        """Estimate a linear fit by taking log of data. We make use of a non-
+        negative least squares fitting to constrain the diffusion coefficient
+        to be positive. It solves the KKT (Karush-Kuhn-Tucker) conditions for
+        the non-negative least squares problem:
+        ``argmin_x || Ax - b ||_2`` for ``x>=0``
 
         Parameters
         ----------
@@ -364,20 +368,28 @@ class IvimModelTRR(ReconstModel):
 
         D : float
             The estimated value of D.
+
+        References
+        ----------
+        Lawson C., Hanson R.J., (1987) Solving Least Squares Problems, SIAM
+
         """
         if less_than:
             bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals <=
-                                                    split_b]), 1)
+            _a = bvals_split
+            _b = -np.log(data[self.gtab.bvals <= split_b])
+            D = nnls(np.matrix(_a).T, _b)[0]
+            _, neg_log_S0 = np.polyfit(_a, _b, 1)
+
         else:
             bvals_split = self.gtab.bvals[self.gtab.bvals >= split_b]
-            D, neg_log_S0 = np.polyfit(bvals_split,
-                                       -np.log(data[self.gtab.bvals >=
-                                                    split_b]), 1)
+            _a = bvals_split
+            _b = -np.log(data[self.gtab.bvals >= split_b])
+            D = nnls(np.matrix(_a).T, _b)[0]
+            _, neg_log_S0 = np.polyfit(_a, _b, 1)
 
         S0 = np.exp(-neg_log_S0)
-        return S0, D
+        return S0, D[0]
 
     def estimate_f_D_star(self, params_f_D_star, data, S0, D):
         """Estimate f and D_star using the values of all the other parameters
