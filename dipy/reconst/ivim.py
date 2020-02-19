@@ -10,7 +10,7 @@ cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 # global variable for bounding least_squares in both models
-BOUNDS = ([0., 0., 0., 0.], [np.inf, .9, .9, .9])
+BOUNDS = ([0., 0., 0., 0.], [np.inf, .2, 1., 1.])
 
 
 def ivim_prediction(params, gtab):
@@ -376,17 +376,17 @@ class IvimModelTRR(ReconstModel):
         """
         if less_than:
             bvals_split = self.gtab.bvals[self.gtab.bvals <= split_b]
-            _a = bvals_split
-            _b = -np.log(data[self.gtab.bvals <= split_b])
-            D = nnls(np.matrix(_a).T, _b)[0]
-            _, neg_log_S0 = np.polyfit(_a, _b, 1)
+            b = -np.log(data[self.gtab.bvals <= split_b])
+
+            D = nnls(np.matrix(bvals_split).T, b)[0]
+            _, neg_log_S0 = np.polyfit(bvals_split, b, 1)
 
         else:
             bvals_split = self.gtab.bvals[self.gtab.bvals >= split_b]
-            _a = bvals_split
             _b = -np.log(data[self.gtab.bvals >= split_b])
-            D = nnls(np.matrix(_a).T, _b)[0]
-            _, neg_log_S0 = np.polyfit(_a, _b, 1)
+
+            D = nnls(np.matrix(bvals_split).T, _b)[0]
+            _, neg_log_S0 = np.polyfit(bvals_split, _b, 1)
 
         S0 = np.exp(-neg_log_S0)
         return S0, D[0]
