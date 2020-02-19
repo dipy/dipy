@@ -1,3 +1,6 @@
+from dipy.reconst.mcsd import (mask_for_response_msmt,
+                               response_from_mask_msmt,
+                               auto_response_msmt)
 from dipy.reconst.mcsd import MultiShellDeconvModel
 from dipy.reconst import mcsd
 import numpy as np
@@ -6,8 +9,11 @@ import pytest
 
 from dipy.sims.voxel import multi_shell_fiber_response, multi_tensor
 from dipy.reconst import shm
-from dipy.data import default_sphere, get_3shell_gtab
-from dipy.core.gradients import GradientTable
+from dipy.data import default_sphere, get_3shell_gtab, get_fnames
+from dipy.core.gradients import (GradientTable, gradient_table)
+
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -94,6 +100,83 @@ def test_MultiShellDeconvModel():
 
     S_pred = fit.predict()
     npt.assert_array_almost_equal(S_pred, signal, 0)
+
+
+def test_mask_for_response_msmt():
+    fdata, fbvals, fbvecs, ffa, fmd, fmask_wm, fmask_gm, fmask_csf = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+    fa = load_nifti_data(ffa)
+    md = load_nifti_data(fmd)
+    wm_mask_gt = load_nifti_data(fmask_wm)
+    gm_mask_gt = load_nifti_data(fmask_gm)
+    csf_mask_gt = load_nifti_data(fmask_csf)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                            roi_center=None, roi_radius=3, 
+                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                            csf_fa_thr=0.15, md_data=None,
+                            gm_md_thr=0.001, csf_md_thr=0.003)
+
+    # Verifies that masks are not empty:
+    npt.assert_equal(int(np.sum(wm_mask) + np.sum(gm_mask) +np.sum(csf_mask)) == 0, True)
+
+    wm_mask_fa_md, gm_mask_fa_md, csf_mask_fa_md = mask_for_response_msmt(
+                            gtab, data,
+                            roi_center=None, roi_radius=3, 
+                            fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                            csf_fa_thr=0.15, md_data=md,
+                            gm_md_thr=0.001, csf_md_thr=0.003)
+
+    npt.assert_array_almost_equal(wm_mask_fa_md, wm_mask)
+    npt.assert_array_almost_equal(gm_mask_fa_md, gm_mask)
+    npt.assert_array_almost_equal(csf_mask_fa_md, csf_mask)
+    npt.assert_array_almost_equal(wm_mask_gt, wm_mask_fa_md)
+    npt.assert_array_almost_equal(gm_mask_gt, gm_mask_fa_md)
+    npt.assert_array_almost_equal(csf_mask_gt, csf_mask_fa_md)
+
+
+def test_response_from_mask_msmt():
+    fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+    mask = load_nifti_data(fmask)
+    response_gt = np.loadtxt(fresponse).T
+
+    gtab = gradient_table(bvals, bvecs)
+
+    response = response_from_mask_msmt(gtab, data, mask)
+
+    npt.assert_array_almost_equal(response, response_gt)
+
+
+def test_auto_response_msmt():
+    fdata, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    response_auto = auto_response_msmt(gtab,
+                        data,
+                        roi_center=None,
+                        roi_radius=3,
+                        fa_data=None,
+                        fa_thr=0.7)
+
+    mask = mask_for_response_msmt(gtab, data,
+                            roi_center=None,
+                            roi_radius=3,
+                            fa_data=None,
+                            fa_thr=0.7)
+    
+    response_from_mask = response_from_mask_msmt(gtab,
+                                                                   data,
+                                                                   mask)
+    
+    npt.assert_array_equal(response_auto, response_from_mask)
 
 
 if __name__ == "__main__":

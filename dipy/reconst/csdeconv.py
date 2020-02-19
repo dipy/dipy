@@ -15,8 +15,7 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
-                              mean_diffusivity)
+from dipy.reconst.dti import (TensorModel, fractional_anisotropy)
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
@@ -773,40 +772,6 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     return fodf_sh
 
 
-def fa_superior(FA, fa_thr):
-    """ Check that the FA is greater than the FA threshold
-
-        Parameters
-        ----------
-        FA : array
-            Fractional Anisotropy
-        fa_thr : int
-            FA threshold
-
-        Returns
-        -------
-        True when the FA value is greater than the FA threshold, otherwise
-        False.
-    """
-    return FA > fa_thr
-
-
-def fa_inferior(FA, fa_thr):
-    """ Check that the FA is lower than the FA threshold
-
-        Parameters
-        ----------
-        FA : array
-            Fractional Anisotropy
-        fa_thr : int
-            FA threshold
-
-        Returns
-        -------
-        True when the FA value is lower than the FA threshold, otherwise False.
-    """
-    return FA < fa_thr
-
 def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
                            fa_data=None, fa_thr=0.7):
     if roi_center is None:
@@ -831,19 +796,19 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = '''No voxel with a FA higher than {} were found. 
-        Try a larger roi or a lower threshold.'''.format(str(fa_thr))
+        msg = """No voxel with a FA higher than {} were found. 
+        Try a larger roi or a lower threshold.""".format(str(fa_thr))
         warnings.warn(msg, UserWarning)
 
     return mask
 
 
-def response_ssst(gtab, data, mask):
+def response_from_mask_ssst(gtab, data, mask):
     ten = TensorModel(gtab)
     indices = np.where(mask > 0)
 
     if indices[0].size == 0:
-        msg = '''No voxel in mask with value > 0 were found.'''
+        msg = "No voxel in mask with value > 0 were found."
         warnings.warn(msg, UserWarning)
         return (np.nan, np.nan), np.nan
 
@@ -854,157 +819,17 @@ def response_ssst(gtab, data, mask):
     return _get_response(S0s, lambdas)
 
 
-def auto_response_ssst(gtab, data, mask=None, roi_center=None, roi_radius=10,
-                       fa_data=None, fa_thr=0.7, return_number_of_voxels=False):
-    if mask is None:
-        mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
+def auto_response_ssst(gtab, data, roi_center=None, roi_radius=10,
+                       fa_data=None, fa_thr=0.7):
+    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
                                       fa_data, fa_thr)
-    response, ratio = response_ssst(gtab, data, mask)
-
-    if return_number_of_voxels:
-        return response, ratio, np.sum(mask)
+    response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio
 
 
-def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10, 
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
-                           csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.003):
-    if roi_center is None:
-        ci, cj, ck = np.array(data.shape[:3]) // 2
-    else:
-        ci, cj, ck = roi_center
-    w = roi_radius
-
-    if fa_data is None and md_data is None:
-        roi = data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
-        ten = TensorModel(gtab)
-        tenfit = ten.fit(roi)
-        fa = fractional_anisotropy(tenfit.evals)
-        fa[np.isnan(fa)] = 0
-        md = mean_diffusivity(tenfit.evals)
-        md[np.isnan(md)] = 0
-    elif fa_data is not None and md_data is None:
-        msg = '''Missing MD data.'''
-        raise ValueError(msg)
-    elif fa_data is None and md_data is not None:
-        msg = '''Missing FA data.'''
-        raise ValueError(msg)
-    else:
-        fa = fa_data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
-        md = md_data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
-
-    mask_wm = np.zeros(fa.shape)
-    mask_wm[fa > wm_fa_thr] = 1
-
-    md_mask_gm = np.ones(md.shape)
-    md_mask_gm[(md > gm_md_thr)] = 0
-
-    fa_mask_gm = np.zeros(fa.shape)
-    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
-
-    mask_gm = md_mask_gm * fa_mask_gm
-
-    md_mask_csf = np.ones(md.shape)
-    md_mask_csf[(md > csf_md_thr)] = 0
-
-    fa_mask_csf = np.zeros(fa.shape)
-    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
-
-    mask_csf = md_mask_csf * fa_mask_csf
-
-    msg = '''No voxel with a {0} than {1} were found.
-    Try a larger roi or a {2} threshold for {3}.'''
-
-    if np.sum(mask_wm) == 0:
-        msg_fa = msg.format('FA higher', str(wm_fa_thr), 'lower FA', 'WM')
-        warnings.warn(msg, UserWarning)
-
-    if np.sum(mask_gm) == 0:
-        msg_fa = msg.format('FA lower', str(gm_fa_thr), 'higher FA', 'GM')
-        msg_md = msg.format('MD higher', str(gm_md_thr), 'lower MD', 'GM')
-        warnings.warn(msg_fa, UserWarning)
-        warnings.warn(msg_md, UserWarning)
-
-    if np.sum(mask_csf) == 0:
-        msg_fa = msg.format('FA lower', str(csf_fa_thr), 'higher FA', 'CSF')
-        msg_md = msg.format('MD higher', str(csf_md_thr), 'lower MD', 'CSF')
-        warnings.warn(msg_fa, UserWarning)
-        warnings.warn(msg_md, UserWarning)
-
-    return mask_wm, mask_gm, mask_csf
-
-
-def response_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
-    bvals = gtab.bvals
-    bvecs = gtab.bvecs
-
-    list_bvals = unique_bvals_tol(bvals, tol)
-
-    b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
-    b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
-
-    masks = [mask_wm, mask_gm, mask_csf]
-    tissue_responses = []
-    for mask in masks:
-        responses = []
-        for bval in list_bvals[1:]:
-            indices = get_bval_indices(bvals, bval, tol)
-
-            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
-            bvals_sub = np.concatenate([[0], bvals[indices]])
-
-            data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
-
-            gtab = gradient_table(bvals_sub, bvecs_sub)
-            response, _ = response_ssst(gtab, data_conc, mask)
-
-            responses.append(list(response))
-        response_mean = np.mean(responses, axis=0)
-        tissue_responses.append(list(np.concatenate([response_mean[0], [response_mean[1]]])))
-
-    return tissue_responses[0], tissue_responses[1], tissue_responses[2]
-
-
-def auto_response_msmt(gtab, data, mask_wm=None, mask_gm=None, mask_csf=None,
-                           tol=20, roi_center=None, roi_radius=10, 
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
-                           csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.003):
-    if mask_wm is None and mask_gm is None and mask_csf is None:
-        mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
-                                                            roi_center,
-                                                            roi_radius,
-                                                            fa_data, wm_fa_thr,
-                                                            gm_fa_thr, csf_fa_thr,
-                                                            md_data, gm_md_thr,
-                                                            csf_md_thr)
-        response_wm, response_gm, response_csf = response_msmt(gtab, data,
-                                                               mask_wm, mask_gm,
-                                                               mask_csf, tol)
-
-    elif mask_wm is not None and mask_gm is not None and mask_csf is not None:
-        response_wm, response_gm, response_csf = response_msmt(gtab, data,
-                                                               mask_wm, mask_gm,
-                                                               mask_csf, tol)
-    
-    else:
-        msg = '''Not all masks were given. The user needs to give either all
-        tissue masks or none.'''
-        raise ValueError(msg)
-
-    return response_wm, response_gm, response_csf
-
-
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  fa_callable=fa_superior, return_number_of_voxels=False):
+                  fa_callable, return_number_of_voxels=False):
     """ Automatic estimation of response function using FA.
 
     Parameters

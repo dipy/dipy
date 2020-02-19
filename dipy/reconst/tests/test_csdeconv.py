@@ -16,11 +16,11 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
-                                   auto_response,
-                                   fa_superior,
-                                   fa_inferior,
-                                   recursive_response,
-                                   response_from_mask)
+                                   mask_for_response_ssst,
+                                   response_from_mask_ssst,
+                                   auto_response_ssst,
+                                   response_from_mask,
+                                   recursive_response)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere import HemiSphere
 from dipy.core.sphere_stats import angular_similarity
@@ -112,85 +112,74 @@ def test_recursive_response_calibration():
     assert_almost_equal(FA, FA_gt, 1)
 
 
-def test_auto_response():
+def test_mask_for_response_ssst():
+    fdata, fbvals, fbvecs, ffa, fmask = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+    fa = load_nifti_data(ffa)
+    mask = load_nifti_data(fmask)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    mask_w_no_fa = mask_for_response_ssst(gtab, data,
+                                  roi_center=None,
+                                  roi_radius=10,
+                                  fa_data=None,
+                                  fa_thr=0.7)
+
+    # Verifies that mask is not empty:
+    assert_equal(int(np.sum(mask_w_no_fa)) == 0, True)
+
+    mask_w_fa = mask_for_response_ssst(gtab, data,
+                            roi_center=None,
+                            roi_radius=3,
+                            fa_data=fa,
+                            fa_thr=0.7)
+
+    assert_array_almost_equal(mask_w_no_fa, mask_w_fa)
+    assert_array_almost_equal(mask, mask_w_fa)
+
+
+def test_response_from_mask_ssst():
+    fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+    mask = load_nifti_data(fmask)
+    response_gt = np.loadtxt(fresponse).T
+
+    gtab = gradient_table(bvals, bvecs)
+
+    response, ratio = response_from_mask_ssst(gtab, data, mask)
+
+    assert_array_almost_equal(response, response_gt)
+
+
+def test_auto_response_ssst():
     fdata, fbvals, fbvecs = get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = load_nifti_data(fdata)
 
     gtab = gradient_table(bvals, bvecs)
-    radius = 3
 
-    def test_fa_superior(FA, fa_thr):
-        return FA > fa_thr
+    response_auto, ratio_auto = auto_response_ssst(gtab,
+                        data,
+                        roi_center=None,
+                        roi_radius=3,
+                        fa_data=None,
+                        fa_thr=0.7)
 
-    def test_fa_inferior(FA, fa_thr):
-        return FA < fa_thr
-
-    predefined_functions = [fa_superior, fa_inferior]
-    defined_functions = [test_fa_superior, test_fa_inferior]
-
-    for fa_thr in np.arange(0.1, 1, 0.1):
-        for predefined, defined in \
-          zip(predefined_functions, defined_functions):
-            response_predefined, ratio_predefined, nvoxels_predefined = \
-                auto_response(gtab,
-                              data,
-                              roi_center=None,
-                              roi_radius=radius,
-                              fa_callable=predefined,
-                              fa_thr=fa_thr,
-                              return_number_of_voxels=True)
-
-            response_defined, ratio_defined, nvoxels_defined = \
-                auto_response(gtab,
-                              data,
-                              roi_center=None,
-                              roi_radius=radius,
-                              fa_callable=defined,
-                              fa_thr=fa_thr,
-                              return_number_of_voxels=True)
-
-            assert_equal(nvoxels_predefined, nvoxels_defined)
-            assert_array_almost_equal(response_predefined[0],
-                                      response_defined[0])
-            assert_almost_equal(response_predefined[1], response_defined[1])
-            assert_almost_equal(ratio_predefined, ratio_defined)
-
-
-def test_response_from_mask():
-    fdata, fbvals, fbvecs = get_fnames('small_64D')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
-
-    gtab = gradient_table(bvals, bvecs)
-    ten = TensorModel(gtab)
-    tenfit = ten.fit(data)
-    FA = fractional_anisotropy(tenfit.evals)
-    FA[np.isnan(FA)] = 0
-    radius = 3
-
-    for fa_thr in np.arange(0, 1, 0.1):
-        response_auto, ratio_auto, nvoxels = auto_response(
-            gtab,
-            data,
-            roi_center=None,
-            roi_radius=radius,
-            fa_thr=fa_thr,
-            return_number_of_voxels=True)
-
-        ci, cj, ck = np.array(data.shape[:3]) // 2
-        mask = np.zeros(data.shape[:3])
-        mask[ci - radius: ci + radius,
-             cj - radius: cj + radius,
-             ck - radius: ck + radius] = 1
-
-        mask[FA <= fa_thr] = 0
-        response_mask, ratio_mask = response_from_mask(gtab, data, mask)
-
-        assert_equal(int(np.sum(mask)), nvoxels)
-        assert_array_almost_equal(response_mask[0], response_auto[0])
-        assert_almost_equal(response_mask[1], response_auto[1])
-        assert_almost_equal(ratio_mask, ratio_auto)
+    mask = mask_for_response_ssst(gtab, data,
+                            roi_center=None,
+                            roi_radius=3,
+                            fa_data=None,
+                            fa_thr=0.7)
+    
+    response_from_mask, ration_from_mask = response_from_mask_ssst(gtab,
+                                                                   data,
+                                                                   mask)
+    
+    assert_array_equal(response_auto, response_from_mask)
+    assert_array_equal(ratio_auto, ration_from_mask)
 
 
 def test_csdeconv():
