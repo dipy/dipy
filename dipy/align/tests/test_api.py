@@ -10,7 +10,6 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        c_of_mass, translation, rigid, affine,
                         streamline_registration, write_mapping,
                         read_mapping, dwi_to_template)
 
@@ -71,8 +70,8 @@ def test_syn_registration():
 
 def test_dwi_to_template():
     warped_b0, mapping = dwi_to_template(subset_dwi_data, gtab,
-                                          template=subset_t2_img,
-                                          radius=1)
+                                         template=subset_t2_img,
+                                         radius=1)
     npt.assert_equal(isinstance(mapping, DiffeomorphicMap), True)
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
 
