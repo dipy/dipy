@@ -22,7 +22,7 @@ jobs:
         python.version: '3.7'
       Python35-64bit + MIN_DEPS:
         python.version: '3.5'
-        DEPENDS: "cython==0.29 numpy==1.9.0 scipy==1.0 nibabel==3.0.0 h5py==2.4.0 nose"
+        DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.4.0 nose"
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0"
