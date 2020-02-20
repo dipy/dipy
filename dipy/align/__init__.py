@@ -23,7 +23,10 @@ registration that can be used to detect a failing component.
 DEBUG : print as much information as possible to isolate the cause of a bug.
 """
 
-from .api import *
+from .api import (syn_registration, dwi_to_template, write_mapping,
+                  read_mapping, resample, c_of_mass, translation, rigid,
+                  affine, affine_registration, register_series,
+                  register_dwi_series, streamline_registration)
 
 
 
