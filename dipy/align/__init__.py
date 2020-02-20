@@ -1,7 +1,6 @@
-from .api import *  # noqa
+
 import numpy as np
 floating = np.float32
-
 
 class Bunch(object):
     def __init__(self, **kwds):
@@ -24,6 +23,7 @@ registration that can be used to detect a failing component.
 DEBUG : print as much information as possible to isolate the cause of a bug.
 """
 
+from .api import *
 
 
 
