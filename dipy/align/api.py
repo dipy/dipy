@@ -503,20 +503,27 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0,
         ref_data = np.mean(trans_b0, -1)
     else:
         # There's only one b0 and we register everything to it
-        ref_data = data[..., gtab.b0s_mask]
-        b0_affine = [np.eye(1)]
+        trans_b0 = ref_data = data[..., gtab.b0s_mask]
+        b0_affines = np.eye(4)[..., np.newaxis]
 
     # Construct a series out of the DWI and the registered mean B0:
-    series = nib.Nifti1Image(np.concatenate([ref_data,
-                                             data[...,
-                                                  ~gtab.b0s_mask]], -1),
-                             affine)
+    moving_data = data[..., ~gtab.b0s_mask]
+    series_arr = np.concatenate([ref_data, moving_data], -1)
+    series = nib.Nifti1Image(series_arr, affine)
 
-    transformed_list, affine_list = register_series(series, ref=0,
-                                                    pipeline=pipeline)
-    affine_array = np.zeros((len(affine_list) + len(b0_affines), 4,4))
+    xformed, affines = register_series(series, ref=0, pipeline=pipeline)
+    # Cut out the part pertaining to that first volume:
+    affines = affines[..., 1:]
+    xformed = xformed[..., 1:]
+    affine_array = np.zeros((4, 4, data.shape[-1]))
+    affine_array[..., gtab.b0s_mask] = b0_affines
+    affine_array[..., ~gtab.b0s_mask] = affines
 
-    return nib.Nifti1Image(np.array(transformed_list), affine), affine_list
+    data_array = np.zeros(data.shape)
+    data_array[..., gtab.b0s_mask] = trans_b0
+    data_array[..., ~gtab.b0s_mask] = xformed
+
+    return nib.Nifti1Image(data_array, affine), affine_array
 
 
 def streamline_registration(moving, static, n_points=100,

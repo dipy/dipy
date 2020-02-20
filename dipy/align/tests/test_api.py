@@ -102,8 +102,8 @@ def test_register_dwi_series():
         np.savetxt(op.join(tmpdir, 'bvecs.txt'), bvecs[:10])
         gtab = dpg.gradient_table(op.join(tmpdir, 'bvals.txt'),
                                   op.join(tmpdir, 'bvecs.txt'))
-        reg_img = register_dwi_series(data, gtab, img.affine)
-        npt.assert_(isinstance(reg_img))
+        reg_img, reg_affines = register_dwi_series(data, gtab, img.affine)
+        npt.assert_(isinstance(reg_img, nib.Nifti1Image))
 
 
 def test_streamline_registration():
