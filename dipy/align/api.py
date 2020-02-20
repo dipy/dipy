@@ -5,6 +5,8 @@ streamlines
 
 
 """
+
+import collections
 import numpy as np
 import nibabel as nib
 from dipy.align.metrics import CCMetric, EMMetric, SSDMetric
@@ -347,22 +349,39 @@ def register_series(series, ref, pipeline):
     return transformed_list, affine_list
 
 
-def register_dwi(data, gtab, affine, b0_ref=0,
+def register_dwi(data, gtab, affine=None, b0_ref=0,
                  pipeline=[c_of_mass, translation, rigid, affine]):
     """
     Register a DWI data-set
 
     Parameters
     ----------
-    data : 4D array
-        Diffusion data.
+    data : 4D array or nibabel Nifti1Image class instance or str
+        Diffusion data. Either as a 4D array or as a nifti image object, or
+        as a string containing the full path to a nifti file.
 
-    gtab : a GradientTable class instance.
+    gtab : a GradientTable class instance or tuple of strings
+        If provided as a tuple of strings, these are assumed to be full paths
+        to the bvals and bvecs files (in that order)
+
+    affine : 4x4 array, optional
+        If not provided,
 
     """
+    if isinstance(data, np.ndarray) and affine is None:
+        raise ValueError("If data is provided as an array, an affine has ",
+                         "to be provided as well")
+    if isinstance(data, str):
+        data = nib.load(data)
+    if isinstance(data, nib.Nifti1Image):
+        data_arr = data.get_fdata()
+
+    if isinstance(gtab, collections.Sequence):
+        gtab = dpg.gradient_table(*gtab)
+
     if np.sum(gtab.b0s_mask) > 1:
-        # First, register the b0s into one image:
-        b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
+        # First, register the b0s into one image and average:
+        b0_img = nib.Nifti1Image(data_arr[..., gtab.b0s_mask], affine)
         trans_b0 = register_series(b0_img, ref=0, pipeline=pipeline)
         ref_data = np.mean(trans_b0, -1)
     else:
@@ -370,7 +389,7 @@ def register_dwi(data, gtab, affine, b0_ref=0,
 
     # Construct a series out of the DWI and the registered mean B0:
     series = nib.Nifti1Image(np.concatenate([ref_data,
-                                             data[...,
+                                             data_arr[...,
                                                   ~gtab.b0s_mask]], -1),
                              affine)
 

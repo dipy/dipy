@@ -12,7 +12,9 @@ import dipy.core.gradients as dpg
 from dipy.align import (syn_registration, register_series, register_dwi,
                         c_of_mass, translation, rigid, affine,
                         streamline_registration, write_mapping,
-                        read_mapping, syn_register_dwi, DiffeomorphicMap)
+                        read_mapping, syn_register_dwi)
+
+from dipy.align.imwarp import DiffeomorphicMap
 
 from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import save_trk
@@ -101,9 +103,9 @@ def test_register_dwi():
         bvecs = np.loadtxt(fbvec)
         np.savetxt(op.join(tmpdir, 'bvals.txt'), bvals[:10])
         np.savetxt(op.join(tmpdir, 'bvecs.txt'), bvecs[:10])
-        reg_file = register_dwi(op.join(tmpdir, 'data.nii.gz'),
-                                op.join(tmpdir, 'bvals.txt'),
-                                op.join(tmpdir, 'bvecs.txt'))
+        gtab = dpg.gradient_table(op.join(tmpdir, 'bvals.txt'),
+                                  op.join(tmpdir, 'bvecs.txt'))
+        reg_file = register_dwi(data, gtab, img.affine)
         npt.assert_(op.exists(reg_file))
 
 
