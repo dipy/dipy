@@ -794,7 +794,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     Returns
     -------
     mask : ndarray
-        Mask of voxels within the ROI and with FA below the FA threshold.
+        Mask of voxels within the ROI and with FA above the FA threshold.
 
     Notes
     -----
