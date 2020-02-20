@@ -774,6 +774,47 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
 
 def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
                            fa_data=None, fa_thr=0.7):
+    """ Computation of mask for ssst response function using FA.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    roi_center : tuple, (3,)
+        Center of ROI in data. If center is None, it is assumed that it is
+        the center of the volume with shape `data.shape[:3]`.
+    roi_radius : int
+        radius of cubic ROI
+    fa_data : ndarray
+        FA data, optionnal.
+    fa_thr : float
+        FA threshold
+
+    Returns
+    -------
+    mask : ndarray
+        Mask of voxels within the ROI and with FA below the FA threshold.
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. In order to do this, we look for voxels with very
+    anisotropic configurations. This function aims to accomplish that by
+    returning a mask of voxels within a ROI, that have a FA value below a
+    given threshold. For example we can use a ROI (20x20x20) at
+    the center of the volume and store the signal values for the voxels with
+    FA values higher than 0.7 (see [1]_). Of course, if we haven't 
+    precalculated FA we need to fit a Tensor model to the datasets. The 
+    option is given to the user with this function.
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
+    """
+    
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
@@ -804,6 +845,49 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
 
 
 def response_from_mask_ssst(gtab, data, mask):
+    """ Computation of ssst response function from a given mask.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask : ndarray
+        mask from where to compute the response function
+
+    Returns
+    -------
+    response : tuple, (2,)
+        (`evals`, `S0`)
+    ratio : float
+        The ratio between smallest versus largest eigenvalue of the response.
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. In order to do this, we look for voxels with very
+    anisotropic configurations. This information can be obtained by using 
+    csdeconv.mask_for_response_ssst() through a mask of selected voxels
+    (see[1]_). The present function uses such a mask to compute the ssst
+    response function.
+
+    For the response we also need to find the average S0 in the ROI. This is
+    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
+    correspond to b-values equal 0) in the dataset.
+
+    The `response` consists always of a prolate tensor created by averaging
+    the highest and second highest eigenvalues in the ROI with FA higher than
+    threshold. We also include the average S0s.
+
+    We also return the `ratio` which is used for the SDT models. 
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
+    """
+
     ten = TensorModel(gtab)
     indices = np.where(mask > 0)
 
@@ -821,16 +905,7 @@ def response_from_mask_ssst(gtab, data, mask):
 
 def auto_response_ssst(gtab, data, roi_center=None, roi_radius=10,
                        fa_data=None, fa_thr=0.7):
-    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
-                                      fa_data, fa_thr)
-    response, ratio = response_from_mask_ssst(gtab, data, mask)
-
-    return response, ratio
-
-
-def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
-                  fa_callable, return_number_of_voxels=False):
-    """ Automatic estimation of response function using FA.
+    """ Automatic estimation of ssst response function using FA.
 
     Parameters
     ----------
@@ -842,15 +917,10 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         the center of the volume with shape `data.shape[:3]`.
     roi_radius : int
         radius of cubic ROI
+    fa_data : ndarray
+        FA data, optionnal.
     fa_thr : float
         FA threshold
-    fa_callable : callable
-        A callable that defines an operation that compares FA with the fa_thr.
-        The operator should have two positional arguments
-        (e.g., `fa_operator(FA, fa_thr)`) and it should return a bool array.
-    return_number_of_voxels : bool
-        If True, returns the number of voxels used for estimating the response
-        function.
 
     Returns
     -------
@@ -858,115 +928,25 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         (`evals`, `S0`)
     ratio : float
         The ratio between smallest versus largest eigenvalue of the response.
-    number of voxels : int (optional)
-        The number of voxels used for estimating the response function.
 
     Notes
     -----
     In CSD there is an important pre-processing step: the estimation of the
     fiber response function. In order to do this we look for voxels with very
-    anisotropic configurations. For example we can use an ROI (20x20x20) at
-    the center of the volume and store the signal values for the voxels with
-    FA values higher than 0.7. Of course, if we haven't precalculated FA we
-    need to fit a Tensor model to the datasets. Which is what we do in this
-    function.
+    anisotropic configurations. We get this information from 
+    csdeconv.mask_for_response_ssst(), which returns a mask of selected voxels
+    (more details are available in the description of the function).
 
-    For the response we also need to find the average S0 in the ROI. This is
-    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
-    correspond to b-values equal 0) in the dataset.
-
-    The `response` consists always of a prolate tensor created by averaging
-    the highest and second highest eigenvalues in the ROI with FA higher than
-    threshold. We also include the average S0s.
-
-    We also return the `ratio` which is used for the SDT models. If requested,
-    the number of voxels used for estimating the response function is also
-    returned, which can be used to judge the fidelity of the response function.
-    As a rule of thumb, at least 300 voxels should be used to estimate a good
-    response function (see [1]_).
-
-    References
-    ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
+    With the mask, we compute the response function by using 
+    csdeconv.response_from_mask_ssst(), which returns the `response` and the
+    `ratio` (more details are available in the description of the function).
     """
 
-    ten = TensorModel(gtab)
-    if roi_center is None:
-        ci, cj, ck = np.array(data.shape[:3]) // 2
-    else:
-        ci, cj, ck = roi_center
-    w = roi_radius
-    roi = data[int(ci - w): int(ci + w),
-               int(cj - w): int(cj + w),
-               int(ck - w): int(ck + w)]
-    tenfit = ten.fit(roi)
-    FA = fractional_anisotropy(tenfit.evals)
-    FA[np.isnan(FA)] = 0
-    indices = np.where(fa_callable(FA, fa_thr))
-
-    if indices[0].size == 0:
-        msg = "No voxel with a FA higher than " + str(fa_thr) + " were found."
-        msg += " Try a larger roi or a lower threshold."
-        warnings.warn(msg, UserWarning)
-
-    lambdas = tenfit.evals[indices][:, :2]
-    S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
-
-    response, ratio = _get_response(S0s, lambdas)
-
-    if return_number_of_voxels:
-        return response, ratio, indices[0].size
+    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
+                                      fa_data, fa_thr)
+    response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio
-
-
-def response_from_mask(gtab, data, mask):
-    """ Estimate the response function from a given mask.
-
-    Parameters
-    ----------
-    gtab : GradientTable
-    data : ndarray
-        Diffusion data
-    mask : ndarray
-        Mask to use for the estimation of the response function. For example a
-        mask of the white matter voxels with FA values higher than 0.7
-        (see [1]_).
-
-    Returns
-    -------
-    response : tuple, (2,)
-        (`evals`, `S0`)
-    ratio : float
-        The ratio between smallest versus largest eigenvalue of the response.
-
-    Notes
-    -----
-    See csdeconv.auto_response() or csdeconv.recursive_response() if you don't
-    have a computed mask for the response function estimation.
-
-    References
-    ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
-    fiber orientation density function from diffusion-weighted MRI
-    data using spherical deconvolution
-    """
-
-    ten = TensorModel(gtab)
-    indices = np.where(mask > 0)
-
-    if indices[0].size == 0:
-        msg = "No voxel in mask with value > 0 were found."
-        warnings.warn(msg, UserWarning)
-        return (np.nan, np.nan), np.nan
-
-    tenfit = ten.fit(data[indices])
-    lambdas = tenfit.evals[:, :2]
-    S0s = data[indices][:, np.nonzero(gtab.b0s_mask)[0]]
-
-    return _get_response(S0s, lambdas)
 
 
 def _get_response(S0s, lambdas):
