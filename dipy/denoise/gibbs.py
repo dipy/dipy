@@ -194,8 +194,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     analysis of local total variation (TV). Although artefact correction is
     done based on two adjacent points for each voxel, total variation should be
     accessed in a larger range of neighbours. The number of neighbours to be
-    considered in TV calculation can be adjusted the using the parameter.
-    n_points.
+    considered in TV calculation can be adjusted using the parameter n_points.
 
     References
     ----------
