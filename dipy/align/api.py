@@ -89,7 +89,7 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
     moving, moving_affine = _input_as_img_arr_or_path(moving,
                                                       affine=moving_affine)
     if starting_affine is None:
-        starting_affine is np.eye(4)
+        starting_affine = np.eye(4)
 
     return static, static_affine, moving, moving_affine, starting_affine
 
@@ -204,7 +204,7 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
     See :func:`register_dwi_series`.
 
     """
-    data, affine = _input_as_img_arr_or_path(dwi, affine=dwi_affine)
+    dwi_data, dwi_affine = _input_as_img_arr_or_path(dwi, affine=dwi_affine)
 
     if template is None:
         template = dpd.read_mni_template()
@@ -217,8 +217,6 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
     if not isinstance(gtab, dpg.GradientTable):
         gtab = dpg.gradient_table(*gtab)
 
-    dwi_affine = dwi.affine
-    dwi_data = dwi.get_fdata()
     mean_b0 = np.mean(dwi_data[..., gtab.b0s_mask], -1)
     if reg_method == "syn":
         warped_b0, mapping = syn_registration(mean_b0, template_data,

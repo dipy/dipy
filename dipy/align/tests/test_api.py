@@ -64,8 +64,8 @@ def test_syn_registration():
 
         # Test that it is, attribute by attribute, identical:
         for k in mapping.__dict__:
-            assert (np.all(mapping.__getattribute__(k) ==
-                           file_mapping.__getattribute__(k)))
+            npt.assert_((np.all(mapping.__getattribute__(k) ==
+                           file_mapping.__getattribute__(k))))
 
 
 def test_dwi_to_template():
@@ -74,7 +74,7 @@ def test_dwi_to_template():
                                          level_iters=[5, 5, 5],
                                          sigma_diff=2.0,
                                          radius=1)
-    assert isinstance(mapping, DiffeomorphicMap)
+    npt.assert_(isinstance(mapping, DiffeomorphicMap))
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
 
     warped_b0, affine = dwi_to_template(subset_dwi_data, gtab,
@@ -83,10 +83,9 @@ def test_dwi_to_template():
                                         level_iters=[5, 5, 5],
                                         sigmas=[3, 1, 0],
                                         factors=[4, 2, 1])
-    assert isinstance(affine, np.ndarray)
-    assert affine.shape == (4,4)
+    npt.assert_(isinstance(affine, np.ndarray))
+    npt.assert_(affine.shape == (4,4))
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
-
 
 
 def test_register_series():
@@ -95,8 +94,8 @@ def test_register_series():
     gtab = dpg.gradient_table(fbval, fbvec)
     ref_idx = np.where(gtab.b0s_mask)[0][0]
     xformed, affines = register_series(img, ref_idx)
-    assert np.all(affines[..., ref_idx] == np.eye(4))
-    assert np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx])
+    npt.assert_(np.all(affines[..., ref_idx] == np.eye(4)))
+    npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
 
 
 def test_register_dwi_series():
