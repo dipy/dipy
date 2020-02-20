@@ -161,7 +161,7 @@ def syn_registration(moving, static,
 
 
 def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
-                    template_affine=None, **syn_kwargs):
+                    template_affine=None, reg_method="syn", **reg_kwargs):
     """
     Register DWI data to a template through the B0 volumes.
 
@@ -183,13 +183,20 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
         An affine transformation associated with the template. Required if data
         is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-    syn_kwargs : key-word arguments for :func:`syn_registration`
+
+    reg_method : str,
+        One of "syn" or "aff", which designates which registration method is
+        used. Either syn, which uses the :func:`syn_registration` function
+        or :func:`affine_registration` function. Default: "syn".
+    reg_kwargs : key-word arguments for :func:`syn_registration` or
+        :func:`affine_registration`
 
     Returns
     -------
-    warped_b0, mapping: an array with the b0 volume warped to the template
-    and a DiffeomorphicMap class instance that can be used to transform between
-    the two spaces.
+    warped_b0, mapping: The fist is an array with the b0 volume warped to the
+    template. If reg_method is "syn", the second is a DiffeomorphicMap class
+    instance that can be used to transform between the two spaces. Otherwise,
+    if reg_method is "aff", this is a 4x4 matrix encoding the affine transform.
 
     Notes
     -----
@@ -213,11 +220,18 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
     dwi_affine = dwi.affine
     dwi_data = dwi.get_fdata()
     mean_b0 = np.mean(dwi_data[..., gtab.b0s_mask], -1)
-    warped_b0, mapping = syn_registration(mean_b0, template_data,
-                                          moving_affine=dwi_affine,
-                                          static_affine=template_affine,
-                                          **syn_kwargs)
+    if reg_method == "syn":
+        warped_b0, mapping = syn_registration(mean_b0, template_data,
+                                              moving_affine=dwi_affine,
+                                              static_affine=template_affine,
+                                              **reg_kwargs)
+    elif reg_method == "aff":
+        warped_b0, mapping = affine_registration(mean_b0, template_data,
+                                                 moving_affine=dwi_affine,
+                                                 static_affine=template_affine,
+                                                 **reg_kwargs)
     return warped_b0, mapping
+
 
 
 def write_mapping(mapping, fname):

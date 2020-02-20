@@ -33,7 +33,9 @@ HARDI dataset
 """
 
 files, folder = fetch_stanford_hardi()
-static_data, static_affine = load_nifti(pjoin(folder, 'HARDI150.nii.gz'))
+static_data, static_affine, static_img = load_nifti(
+                                            pjoin(folder, 'HARDI150.nii.gz'),
+                                            return_img=True)
 static = np.squeeze(static_data)[..., 0]
 static_grid2world = static_affine
 
@@ -41,8 +43,10 @@ static_grid2world = static_affine
 Now the moving image
 """
 
-files, folder = fetch_syn_data()
-moving_data, moving_affine = load_nifti(pjoin(folder, 'b0.nii.gz'))
+files, folder2 = fetch_syn_data()
+moving_data, moving_affine, moving_img = load_nifti(
+                                            pjoin(folder2, 'b0.nii.gz'),
+                                            return_img=True)
 moving = moving_data
 moving_grid2world = moving_affine
 
@@ -292,7 +296,7 @@ Now, let's repeat this process with a simplified functional interface:
 """
 
 from dipy.align import (affine_registration, c_of_mass, translation, rigid,
-                        affine)
+                        affine, dwi_to_template)
 
 """
 This interface constructs a pipeline of operations as a sequence of functions
@@ -302,22 +306,22 @@ that each implement one of the transforms.
 pipeline = [c_of_mass, translation, rigid, affine]
 
 """
-And then applies the functions in the pipeline on the input
-(from left to right) with a call to an `affine_registration` function,
-which takes optional settings for things like the iterations, sigmas and
-factors (and an optional `params0` input for an initial guess of the affine).
+And then applies the functions in the pipeline on the input (from left to
+right) with a call to an `affine_registration` function, which takes optional
+settings for things like the iterations, sigmas and factors.
 """
 
 xformed_img, reg_affine = affine_registration(
     moving,
     static,
+    moving_affine=moving_affine,
+    static_affine=static_affine,
     nbins=32,
     metric='MI',
     pipeline=pipeline,
-    level_iters=[10000, 1000, 100],
-    sigmas=[5.0, 2.5, 0.0],
-    factors=[4, 2, 1],
-    params0=None)
+    level_iters=level_iters,
+    sigmas=sigmas,
+    factors=factors)
 
 regtools.overlay_slices(static, xformed_img, None, 0,
                         "Static", "Transformed", "xformed_affine_0.png")
@@ -338,6 +342,49 @@ regtools.overlay_slices(static, xformed_img, None, 2,
 
    Registration result with an affine transform, using functional interface.
 
+"""
+
+"""
+Alternatively, you can also use the `dwi_to_template` function that needs to
+also know about the gradient table of the DWI data, provided as a tuple of
+(bvals_file, bvecs_file). In this case, we are going to move the diffusion
+data to the B0 image (the opposite of the previous examples), which
+reverses what is the "moving" image and what is "static".
+
+"""
+
+xformed_dwi, reg_affine = dwi_to_template(
+    dwi=static_img,
+    gtab=(pjoin(folder, 'HARDI150.bval'),
+          pjoin(folder, 'HARDI150.bvec')),
+    template=moving_img,
+    reg_method="aff",
+    nbins=32,
+    metric='MI',
+    pipeline=pipeline,
+    level_iters=level_iters,
+    sigmas=sigmas,
+    factors=factors)
+
+regtools.overlay_slices(moving, xformed_dwi, None, 0,
+                        "Static", "Transformed", "xformed_dwi_0.png")
+regtools.overlay_slices(moving, xformed_dwi, None, 1,
+                        "Static", "Transformed", "xformed_dwi_1.png")
+regtools.overlay_slices(moving, xformed_dwi, None, 2,
+                        "Static", "Transformed", "xformed_dwi_2.png")
+
+
+
+"""
+
+.. figure:: xformed_dwi_0.png
+   :align: center
+.. figure:: xformed_dwi_1.png
+   :align: center
+.. figure:: xformed_dwi_2.png
+   :align: center
+
+   Same again, using the `dwi_to_template` functional interface.
 
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
