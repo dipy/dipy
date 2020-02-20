@@ -2,9 +2,15 @@
 =========================
 Affine Registration in 3D
 =========================
+
 This example explains how to compute an affine transformation to register two
 3D volumes by maximization of their Mutual Information [Mattes03]_. The
 optimization strategy is similar to that implemented in ANTS [Avants11]_.
+
+We will do this twice. The first part of this tutorial will walk through the
+details of the process with the object-oriented interface implemented in
+the ``dipy.align`` module. The second part will use a simplified functional
+interface.
 """
 
 from os.path import join as pjoin
@@ -205,7 +211,8 @@ regtools.overlay_slices(static, transformed, None, 2,
 .. figure:: transformed_trans_2.png
    :align: center
 
-   Registration result by translating the moving image, using Mutual Information.
+   Registration result by translating the moving image, using
+   Mutual Information.
 """
 
 """
@@ -277,6 +284,61 @@ regtools.overlay_slices(static, transformed, None, 2,
    :align: center
 
    Registration result with an affine transform, using Mutual Information.
+
+"""
+
+"""
+Now, let's repeat this process with a simplified functional interface:
+"""
+
+from dipy.align import (affine_registration, c_of_mass, translation, rigid,
+                        affine)
+
+"""
+This interface constructs a pipeline of operations as a sequence of functions
+that each implement one of the transforms.
+"""
+
+pipeline = [c_of_mass, translation, rigid, affine]
+
+"""
+And then applies the functions in the pipeline on the input
+(from left to right) with a call to an `affine_registration` function,
+which takes optional settings for things like the iterations, sigmas and
+factors (and an optional `params0` input for an initial guess of the affine).
+"""
+
+xformed_img, reg_affine = affine_registration(
+    moving,
+    static,
+    nbins=32,
+    metric='MI',
+    pipeline=pipeline,
+    level_iters=[10000, 1000, 100],
+    sigmas=[5.0, 2.5, 0.0],
+    factors=[4, 2, 1],
+    params0=None)
+
+regtools.overlay_slices(static, xformed_img, None, 0,
+                        "Static", "Transformed", "xformed_affine_0.png")
+regtools.overlay_slices(static, xformed_img, None, 1,
+                        "Static", "Transformed", "xformed_affine_1.png")
+regtools.overlay_slices(static, xformed_img, None, 2,
+                        "Static", "Transformed", "xformed_affine_2.png")
+
+
+"""
+
+.. figure:: xformed_affine_0.png
+   :align: center
+.. figure:: xformed_affine_1.png
+   :align: center
+.. figure:: xformed_affine_2.png
+   :align: center
+
+   Registration result with an affine transform, using functional interface.
+
+
 
 .. [Mattes03] Mattes, D., Haynor, D. R., Vesselle, H., Lewellen, T. K.,
               Eubank, W. (2003). PET-CT image registration in the chest using
