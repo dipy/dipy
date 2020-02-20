@@ -69,27 +69,60 @@ class GradientTable(object):
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
-        if btens == 'LTE':
-            b_tensor = np.array([[1, 0, 0],
-                                 [0, 0, 0],
-                                 [0, 0, 0]])
-        elif btens == 'PTE':
-            b_tensor = np.array([[1, 0, 0],
-                                 [0, 1, 0],
-                                 [0, 0, 0]]) / 2
-        elif btens == 'STE':
-            b_tensor = np.array([[1, 0, 0],
-                                 [0, 1, 0],
-                                 [0, 0, 1]]) / 3
-        else:
-            raise ValueError("btens should be 'LTE', 'PTE', or 'STE'")
         b_tensors = np.zeros((len(self.bvals), 3, 3))
-        for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
-            R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-            b_tensors[i] = np.matmul(np.matmul(R, b_tensor), R.T) * bval
+        if isinstance(btens, str):
+            if btens == 'LTE':
+                b_tensor = np.array([[1, 0, 0],
+                                     [0, 0, 0],
+                                     [0, 0, 0]])
+            elif btens == 'PTE':
+                b_tensor = np.array([[0, 0, 0],
+                                     [0, 1, 0],
+                                     [0, 0, 1]]) / 2
+            elif btens == 'STE':
+                b_tensor = np.array([[1, 0, 0],
+                                     [0, 1, 0],
+                                     [0, 0, 1]]) / 3
+            else:
+                raise ValueError("Invalid value for btens")
+            for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                if btens == 'STE':
+                    b_tensors[i] = b_tensor * bval
+                else:
+                    R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                                    * bval)
+        elif (isinstance(btens, np.ndarray) and (btens.shape == 
+                (gradients.shape[0],) or (btens.shape == 
+                (gradients.shape[0],1)) or (btens.shape == (1,
+                gradients.shape[0])))):
+            if (btens.shape == (1,gradients.shape[0],1)):
+                btens = btens.reshape((gradients.shape[0],1))
+            for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                if btens[i] == 'LTE':
+                    b_tensor = np.array([[1, 0, 0],
+                                         [0, 0, 0],
+                                         [0, 0, 0]])
+                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                                    * bval)
+                elif btens[i] == 'PTE':
+                    b_tensor = np.array([[0, 0, 0],
+                                         [0, 1, 0],
+                                         [0, 0, 1]]) / 2
+                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                                    * bval)
+                elif btens[i] == 'STE':
+                    b_tensor = np.array([[1, 0, 0],
+                                         [0, 1, 0],
+                                         [0, 0, 1]]) / 3
+                    b_tensors[i] = b_tensor * bval
+                else:
+                    raise ValueError("Invalid value in btens array")     
+        else:
+                raise ValueError("Invalid value for btens")
         self.btens = b_tensors
-        
-      
+
             
     @auto_attr
     def bvals(self):
@@ -150,10 +183,15 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
-    btens : str
-        A string specifying the shape of the encoding tensor shape for all
-        volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
-        planar, and spherical tensor encoding. (default 'LTE')
+    btens : can be any of two options
+        1. a string specifying the shape of the encoding tensor shape for all
+           volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to
+           linear, planar, and spherical tensor encoding. (default 'LTE')
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE' corresponding to linear, planar, and spherical tensor
+           encoding.
         
     Other Parameters
     ----------------
@@ -406,11 +444,17 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
         
-    btens : str
-        A string specifying the shape of the encoding tensor shape for all
-        volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
-        planar, and spherical tensor encoding. (default 'LTE')
+    btens : can be any of two options
 
+        1. a string specifying the shape of the encoding tensor shape for all
+           volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to
+           linear, planar, and spherical tensor encoding. (default 'LTE')
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE' corresponding to linear, planar, and spherical tensor
+           encoding.
+        
     Returns
     -------
     gradients : GradientTable

@@ -90,25 +90,58 @@ def test_GradientTable_btensor_calculation():
                           [0, 0, 1],
                           [3, 4, 0],
                           [5, 0, 12]], 'float')
+    gt = GradientTable(gradients)
     
+    # Check that the number of b tensors is correct
+    npt.assert_equal(gt.btens.shape[0], gt.bvals.shape[0])
+    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, gt.btens)):        
+        # Check that the b tensor magnitude is correct
+        npt.assert_almost_equal(np.trace(bten), bval)        
+        # Check that the b tensor orientation is correct
+        if bval != 0:
+            evals, evecs = np.linalg.eig(bten)
+            dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), gt.bvecs[i])
+            npt.assert_almost_equal(np.abs(dot_prod), 1)
+    
+    # Check btens input option 1
     for btens in ['LTE', 'PTE', 'STE']:
         gt = GradientTable(gradients, btens=btens)
-    
         # Check that the number of b tensors is correct
         npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
-    
-        for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, 
-                                                   gt.btens)):
-            
+        for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs,
+                                                   gt.btens)):        
             # Check that the b tensor magnitude is correct
-            npt.assert_almost_equal(bval, np.trace(bten))
-            
+            npt.assert_almost_equal(np.trace(bten), bval)        
             # Check that the b tensor orientation is correct
             if btens == 'LTE':
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), gt.bvecs[i])
+                    dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), 
+                                      gt.bvecs[i])
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
+
+    # Check btens input option 2
+    btens = np.array(['LTE', 'PTE', 'STE', 'PTE', 'LTE', 'PTE'])
+    gt = GradientTable(gradients, btens=btens)
+    # Check that the number of b tensors is correct
+    npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
+    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, 
+                                               gt.btens)):        
+        # Check that the b tensor magnitude is correct
+        npt.assert_almost_equal(np.trace(bten), bval)        
+        # Check that the b tensor orientation is correct
+        if btens[i] == 'LTE':
+            if bval != 0:
+                evals, evecs = np.linalg.eig(bten)
+                dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), 
+                                  gt.bvecs[i])
+                npt.assert_almost_equal(np.abs(dot_prod), 1)
+                
+    # Check invalide
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients, 
+                      btens='PPP')
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients, 
+                      btens=np.zeros((10,10)))
 
 
 def test_gradient_table_from_qvals_bvecs():
