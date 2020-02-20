@@ -6,7 +6,7 @@ from scipy.linalg import inv, polar
 
 from dipy.io import gradients as io
 from dipy.core.onetime import auto_attr
-from dipy.core.geometry import vector_norm
+from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -43,6 +43,8 @@ class GradientTable(object):
     b0_threshold : float
         Gradients with b-value less than or equal to `b0_threshold` are
         considered to not have diffusion weighting.
+    btens : (N,3,3) ndarray
+        The b-tensors of each gradient direction. 
 
     See Also
     --------
@@ -93,6 +95,7 @@ class GradientTable(object):
     def b0s_mask(self):
         return self.bvals <= self.b0_threshold
 
+
     @auto_attr
     def bvecs(self):
         # To get unit vectors we divide by bvals, where bvals is 0 we divide by
@@ -100,7 +103,18 @@ class GradientTable(object):
         denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
-
+    
+    @auto_attr
+    def btens(self):
+        linear_tensor = np.array([[1, 0, 0],
+                                  [0, 0, 0],
+                                  [0, 0, 0]])
+        b_tensors = np.zeros((len(self.bvals), 3, 3))
+        for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+            R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+            b_tensors[i] = np.matmul(np.matmul(R, linear_tensor), R.T) * bval
+        return b_tensors
+    
     @property
     def info(self):
         logger.info('B-values shape (%d,)' % self.bvals.shape)
