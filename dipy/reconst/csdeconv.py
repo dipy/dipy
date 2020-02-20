@@ -801,7 +801,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     In CSD there is an important pre-processing step: the estimation of the
     fiber response function. In order to do this, we look for voxels with very
     anisotropic configurations. This function aims to accomplish that by
-    returning a mask of voxels within a ROI, that have a FA value below a
+    returning a mask of voxels within a ROI, that have a FA value above a
     given threshold. For example we can use a ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
     FA values higher than 0.7 (see [1]_). Of course, if we haven't 
