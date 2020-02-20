@@ -71,9 +71,22 @@ def test_syn_registration():
 def test_dwi_to_template():
     warped_b0, mapping = dwi_to_template(subset_dwi_data, gtab,
                                          template=subset_t2_img,
+                                         level_iters=[5, 5, 5],
+                                         sigma_diff=2.0,
                                          radius=1)
-    npt.assert_equal(isinstance(mapping, DiffeomorphicMap), True)
+    assert isinstance(mapping, DiffeomorphicMap)
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
+
+    warped_b0, affine = dwi_to_template(subset_dwi_data, gtab,
+                                        template=subset_t2_img,
+                                        reg_method="aff",
+                                        level_iters=[5, 5, 5],
+                                        sigmas=[3, 1, 0],
+                                        factors=[4, 2, 1])
+    assert isinstance(affine, np.ndarray)
+    assert affine.shape == (4,4)
+    npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
+
 
 
 def test_register_series():
