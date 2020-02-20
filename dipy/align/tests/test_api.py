@@ -9,7 +9,7 @@ import nibabel.tmpdirs as nbtmp
 import dipy.data as dpd
 import dipy.core.gradients as dpg
 
-from dipy.align import (syn_registration, register_series, register_dwi,
+from dipy.align import (syn_registration, register_series, register_dwi_series,
                         c_of_mass, translation, rigid, affine,
                         streamline_registration, write_mapping,
                         read_mapping, syn_register_dwi)
@@ -81,16 +81,13 @@ def test_register_series():
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
     img = nib.load(fdata)
     gtab = dpg.gradient_table(fbval, fbvec)
-    ref_idx = np.where(gtab.b0s_mask)
-    transformed_list, affine_list = register_series(img,
-                                                    ref=ref_idx,
-                                                    pipeline=[c_of_mass,
-                                                              translation,
-                                                              rigid,
-                                                              affine])
+    ref_idx = np.where(gtab.b0s_mask)[0][0]
+    xformed, affines = register_series(img, ref_idx)
+    assert np.all(affines[..., ref_idx] == np.eye(4))
+    assert np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx])
 
 
-def test_register_dwi():
+def test_register_dwi_series():
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
     with nbtmp.InTemporaryDirectory() as tmpdir:
         # Use an abbreviated data-set:
@@ -105,8 +102,8 @@ def test_register_dwi():
         np.savetxt(op.join(tmpdir, 'bvecs.txt'), bvecs[:10])
         gtab = dpg.gradient_table(op.join(tmpdir, 'bvals.txt'),
                                   op.join(tmpdir, 'bvecs.txt'))
-        reg_file = register_dwi(data, gtab, img.affine)
-        npt.assert_(op.exists(reg_file))
+        reg_img = register_dwi_series(data, gtab, img.affine)
+        npt.assert_(isinstance(reg_img))
 
 
 def test_streamline_registration():
