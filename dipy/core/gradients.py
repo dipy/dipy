@@ -58,7 +58,7 @@ class GradientTable(object):
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=50):
+                 b0_threshold=50, btens='LTE'):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
@@ -69,7 +69,28 @@ class GradientTable(object):
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
-
+        if btens == 'LTE':
+            b_tensor = np.array([[1, 0, 0],
+                                 [0, 0, 0],
+                                 [0, 0, 0]])
+        elif btens == 'PTE':
+            b_tensor = np.array([[1, 0, 0],
+                                 [0, 1, 0],
+                                 [0, 0, 0]]) / 2
+        elif btens == 'STE':
+            b_tensor = np.array([[1, 0, 0],
+                                 [0, 1, 0],
+                                 [0, 0, 1]]) / 3
+        else:
+            raise ValueError("btens should be 'LTE', 'PTE', or 'STE'")
+        b_tensors = np.zeros((len(self.bvals), 3, 3))
+        for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+            R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+            b_tensors[i] = np.matmul(np.matmul(R, b_tensor), R.T) * bval
+        self.btens = b_tensors
+        
+      
+            
     @auto_attr
     def bvals(self):
         return vector_norm(self.gradients)
@@ -95,7 +116,6 @@ class GradientTable(object):
     def b0s_mask(self):
         return self.bvals <= self.b0_threshold
 
-
     @auto_attr
     def bvecs(self):
         # To get unit vectors we divide by bvals, where bvals is 0 we divide by
@@ -103,17 +123,6 @@ class GradientTable(object):
         denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
-    
-    @auto_attr
-    def btens(self):
-        linear_tensor = np.array([[1, 0, 0],
-                                  [0, 0, 0],
-                                  [0, 0, 0]])
-        b_tensors = np.zeros((len(self.bvals), 3, 3))
-        for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
-            R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-            b_tensors[i] = np.matmul(np.matmul(R, linear_tensor), R.T) * bval
-        return b_tensors
     
     @property
     def info(self):
@@ -126,7 +135,7 @@ class GradientTable(object):
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
-                                    **kwargs):
+                                    btens='LTE', **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -141,7 +150,11 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
-
+    btens : str
+        A string specifying the shape of the encoding tensor shape for all
+        volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
+        planar, and spherical tensor encoding. (default 'LTE')
+        
     Other Parameters
     ----------------
     **kwargs : dict
@@ -192,7 +205,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     bvals = bvals * bvecs_close_to_1
     gradients = bvals[:, None] * bvecs
 
-    grad_table = GradientTable(gradients, b0_threshold=b0_threshold, **kwargs)
+    grad_table = GradientTable(gradients, b0_threshold=b0_threshold,
+                               btens=btens, **kwargs)
     grad_table.bvals = bvals
     grad_table.bvecs = bvecs
     grad_table.b0s_mask = ~dwi_mask
@@ -356,7 +370,7 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
 
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=50, atol=1e-2):
+                   b0_threshold=50, atol=1e-2, btens='LTE'):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -391,6 +405,11 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
+        
+    btens : str
+        A string specifying the shape of the encoding tensor shape for all
+        volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
+        planar, and spherical tensor encoding. (default 'LTE')
 
     Returns
     -------
@@ -455,7 +474,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
                                            b0_threshold=b0_threshold,
-                                           atol=atol)
+                                           atol=atol, btens=btens)
 
 
 def reorient_bvecs(gtab, affines):
