@@ -1,11 +1,10 @@
 """
 
 Registration API: simplified API for registration of MRI data and of
-streamlines
+streamlines.
 
 
 """
-
 import collections
 import numbers
 import numpy as np
@@ -31,14 +30,68 @@ from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import load_trk
 
 
+__all__ = ["syn_registration", "dwi_to_template", "write_mapping",
+           "read_mapping", "resample", "c_of_mass", "translation", "rigid",
+           "affine", "affine_registration", "register_series",
+           "register_dwi_series", "streamline_registration"]
+
+
 syn_metric_dict = {'CC': CCMetric,
                    'EM': EMMetric,
                    'SSD': SSDMetric}
 
-__all__ = ["syn_registration", "syn_register_dwi", "write_mapping",
-           "read_mapping", "resample", "c_of_mass", "translation", "rigid",
-           "affine", "affine_registration", "register_series",
-           "register_dwi_series", "streamline_registration"]
+
+def _input_as_img_arr_or_path(data, affine=None):
+    """
+    Helper function that handles inputs that can be nifti img or arrays
+
+    Parameters
+    -----------
+    data : array or nib.Nifti1Image or str.
+        Either as a 3D/4D array or as a nifti image object, or as
+        a string containing the full path to a nifti file.
+
+    affine : 4x4 array, optional.
+        Must be provided for `data` provided as an array. If provided together
+        with Nifti1Image or str `data`, this input will over-ride the affine
+        that is stored in the `data` input. Default: use the affine stored
+        in `data`.
+
+    """
+    if isinstance(data, np.ndarray) and affine is None:
+        raise ValueError("If data is provided as an array, an affine has ",
+                         "to be provided as well")
+    if isinstance(data, str):
+        data = nib.load(data)
+    if isinstance(data, nib.Nifti1Image):
+        if affine is None:
+            affine = data.affine
+        data = data.get_fdata()
+    return data, affine
+
+
+def _handle_pipeline_inputs(moving, static, static_affine=None,
+                            moving_affine=None, starting_affine=None):
+    """
+    Helper function to prepare inputs for pipeline functions
+
+    Parameters
+    ----------
+    moving, static: Either as a 3D/4D array or as a nifti image object, or as
+        a string containing the full path to a nifti file.
+
+    static_affine, moving_affine: 4D arrays
+
+    starting_affine : in case this is needed.
+    """
+    static, static_affine = _input_as_img_arr_or_path(static,
+                                                      affine=static_affine)
+    moving, moving_affine = _input_as_img_arr_or_path(moving,
+                                                      affine=moving_affine)
+    if starting_affine is None:
+        starting_affine is np.eye(4)
+
+    return static, static_affine, moving, moving_affine, starting_affine
 
 
 def syn_registration(moving, static,
@@ -51,21 +104,21 @@ def syn_registration(moving, static,
                      sigma_diff=2.0,
                      radius=4,
                      prealign=None):
-    """Register a source image (moving) to a target image (static).
+    """Register a 2D/3D source image (moving) to a 2D/3D target image (static).
 
     Parameters
     ----------
-    moving : ndarray
-        The source image data to be registered
-    moving_affine : array, shape (4,4)
-        The affine matrix associated with the moving (source) data.
-    static : ndarray
-        The target image data for registration
-    static_affine : array, shape (4,4)
-        The affine matrix associated with the static (target) data
+    moving, static : array or nib.Nifti1Image or str.
+        Either as a 2D/3D array or as a nifti image object, or as
+        a string containing the full path to a nifti file.
+    moving_affine, static_affine : 4x4 array, optional.
+        Must be provided for `data` provided as an array. If provided together
+        with Nifti1Image or str `data`, this input will over-ride the affine
+        that is stored in the `data` input. Default: use the affine stored
+        in `data`.
     metric : string, optional
         The metric to be optimized. One of `CC`, `EM`, `SSD`,
-        Default: CCMetric.
+        Default: 'CC' => CCMetric.
     dim: int (either 2 or 3), optional
        The dimensions of the image domain. Default: 3
     level_iters : list of int, optional
@@ -86,6 +139,12 @@ def syn_registration(moving, static,
         The vector field describing the backward warping from the target to the
         source.
     """
+    static, static_affine, moving, moving_affine, _ = \
+        _handle_pipeline_inputs(moving, static,
+                                moving_affine=moving_affine,
+                                static_affine=static_affine,
+                                starting_affine=None)
+
     use_metric = syn_metric_dict[metric](dim, sigma_diff=sigma_diff,
                                          radius=radius)
 
@@ -101,32 +160,48 @@ def syn_registration(moving, static,
     return warped_moving, mapping
 
 
-def syn_register_dwi(dwi, gtab, template=None, **syn_kwargs):
+def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
+                    template_affine=None, **syn_kwargs):
     """
-    Register DWI data to a template.
+    Register DWI data to a template through the B0 volumes.
 
     Parameters
     -----------
-    dwi : nifti image or str
-        Image containing DWI data, or full path to a nifti file with DWI.
-    gtab : GradientTable or list of strings
-        The gradients associated with the DWI data, or a string with [fbcal, ]
-    template : nifti image or str, optional
-
+    dwi : 4D array, nifti image or str
+        Containing the DWI data, or full path to a nifti file with DWI.
+    gtab : GradientTable or sequence of strings
+        The gradients associated with the DWI data, or a sequence with
+        (fbval, fbvec), full paths to bvals and bvecs files.
+    dwi_affine : 4x4 array, optional
+        An affine transformation associated with the DWI. Required if data
+        is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
+    template : 3D array, nifti image or str
+        Containing the data for the template, or full path to a nifti file
+        with the template data.
+    template_affine : 4x4 array, optional
+        An affine transformation associated with the template. Required if data
+        is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
     syn_kwargs : key-word arguments for :func:`syn_registration`
 
     Returns
     -------
-    DiffeomorphicMap object
+    DiffeomorphicMap class instance.
+
+    Notes
+    -----
+    This function assumes that the DWI data is already internally registered.
+    See :func:`register_dwi_series`.
+
     """
+    data, affine = _input_as_img_arr_or_path(dwi, affine=dwi_affine)
+
     if template is None:
         template = dpd.read_mni_template()
-    if isinstance(template, str):
-        template = nib.load(template)
-
-    template_data = template.get_fdata()
-    template_affine = template.affine
-
+    template_data, template_affine = _input_as_img_arr_or_path(
+                                       template,
+                                       affine=template_affine)
     if isinstance(dwi, str):
         dwi = nib.load(dwi)
 
@@ -230,47 +305,6 @@ def resample(moving, static, moving_affine, static_affine):
 affine_metric_dict = {'MI': MutualInformationMetric}
 
 
-def _input_as_img_arr_or_path(data, affine=None):
-    """
-    Helper function that handles inputs that can be nifti img or arrays
-
-    Parameters
-    -----------
-    data : array or nib.Nifti1Image or str.
-        Diffusion data. Either as a 4D array or as a nifti image object, or as
-        a string containing the full path to a nifti file.
-
-    affine : 4x4 array, optional.
-        Must be provided for `data` provided as an array. If provided together
-        with Nifti1Image or str `data`, this input will over-ride the affine
-        that is stored in the `data` input. Default: use the affine stored
-        in `data`.
-
-    """
-    if isinstance(data, np.ndarray) and affine is None:
-        raise ValueError("If data is provided as an array, an affine has ",
-                         "to be provided as well")
-    if isinstance(data, str):
-        data = nib.load(data)
-    if isinstance(data, nib.Nifti1Image):
-        if affine is None:
-            affine = data.affine
-        data = data.get_fdata()
-    return data, affine
-
-
-def _handle_pipeline_inputs(moving, static, static_affine=None,
-                            moving_affine=None, starting_affine=None):
-    static, static_affine = _input_as_img_arr_or_path(static,
-                                                      affine=static_affine)
-    moving, moving_affine = _input_as_img_arr_or_path(moving,
-                                                      affine=moving_affine)
-    if starting_affine is None:
-        starting_affine is np.eye(4)
-
-    return static, static_affine, moving, moving_affine, starting_affine
-
-
 def c_of_mass(moving, static, static_affine=None, moving_affine=None,
               starting_affine=None, reg=None):
     """
@@ -365,10 +399,10 @@ def affine_registration(moving, static,
 
     """
     static, static_affine, moving, moving_affine, starting_affine = \
-    _handle_pipeline_inputs(moving, static,
-                            moving_affine=moving_affine,
-                            static_affine=static_affine,
-                            starting_affine=starting_affine)
+        _handle_pipeline_inputs(moving, static,
+                                moving_affine=moving_affine,
+                                static_affine=static_affine,
+                                starting_affine=starting_affine)
 
 
     # Define the Affine registration object we'll use with the chosen metric:
@@ -461,12 +495,10 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0,
     Parameters
     ----------
     data : 4D array or nibabel Nifti1Image class instance or str
-
         Diffusion data. Either as a 4D array or as a nifti image object, or as
         a string containing the full path to a nifti file.
 
     gtab : a GradientTable class instance or tuple of strings
-
         If provided as a tuple of strings, these are assumed to be full paths
         to the bvals and bvecs files (in that order).
 
