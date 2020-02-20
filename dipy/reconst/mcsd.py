@@ -345,6 +345,59 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003):
+    """ Computation of masks for msmt response function using FA and MD.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    roi_center : tuple, (3,)
+        Center of ROI in data. If center is None, it is assumed that it is
+        the center of the volume with shape `data.shape[:3]`.
+    roi_radius : int
+        radius of cubic ROI
+    fa_data : ndarray
+        FA data, optionnal.
+    wm_fa_thr : float
+        FA threshold for WM.
+    gm_fa_thr : float
+        FA threshold for GM.
+    csf_fa_thr : float
+        FA threshold for CSF.
+    md_data : ndarray
+        MD data, optionnal.
+    gm_md_thr : float
+        MD threshold for GM.
+    csf_md_thr : float
+        MD threshold for CSF.
+
+    Returns
+    -------
+    mask_wm : ndarray
+        Mask of voxels within the ROI and with FA above the FA threshold
+        for WM.
+    mask_gm : ndarray
+        Mask of voxels within the ROI and with FA below the FA threshold
+        for GM and with MD above the MD threshold for GM.
+    mask_csf : ndarray
+        Mask of voxels within the ROI and with FA below the FA threshold
+        for CSF and with MD above the MD threshold for CSF.
+
+    Notes
+    -----
+    In msmt-CSD there is an important pre-processing step: the estimation of 
+    every tissue's response function. In order to do this, we look for voxels
+    corresponding to WM, GM and CSF. This function aims to accomplish that by
+    returning a mask of voxels within a ROI and who respect some threshold
+    constraints, for each tissue. More precisely, the WM mask must have a FA 
+    value above a given threshold. The GM mask and CSF mask must have a FA 
+    below given thresholds and a MD above other thresholds. Of course, if we
+    haven't precalculated FA and MD, we need to fit a Tensor model to the 
+    datasets. The option is given to the user with this function. Note that 
+    the user has to give either the FA and MD data, or none of them.
+    """
+
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
@@ -417,6 +470,50 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
 
 
 def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
+    """ Computation of msmt response functions from given tissues masks.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask_wm : ndarray
+        mask from where to compute the WM response function.
+    mask_gm : ndarray
+        mask from where to compute the GM response function.
+    mask_csf : ndarray
+        mask from where to compute the CSF response function.
+    tol : int
+        tolerance gap for b-values clustering. (Default = 20)
+
+    Returns
+    -------
+    response_wm : tuple, (2,)
+        (`evals`, `S0`) for WM.
+    response_gm : tuple, (2,)
+        (`evals`, `S0`) for GM.
+    response_csf : tuple, (2,)
+        (`evals`, `S0`) for CSF.
+
+    Notes
+    -----
+    In msmt-CSD there is an important pre-processing step: the estimation of 
+    every tissue's response function. In order to do this, we look for voxels
+    corresponding to WM, GM and CSF. This information can be obtained by using 
+    mcsd.mask_for_response_msmt() through masks of selected voxels. The present
+    function uses such masks to compute the msmt response functions.
+
+
+!!!!!!!!!!!Changer ça pour expliquer plus le msmt!!!!!!!!!!!!!!!!!!!!! (parler de tol?)
+    For the responses we also need to find the average S0 in the ROI. This is
+    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
+    correspond to b-values equal 0) in the dataset.
+
+    The `response` consists always of a prolate tensor created by averaging
+    the highest and second highest eigenvalues in the ROI with FA higher than
+    threshold. We also include the average S0s.
+    """
+
     bvals = gtab.bvals
     bvecs = gtab.bvecs
 
@@ -432,7 +529,8 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
         for bval in list_bvals[1:]:
             indices = get_bval_indices(bvals, bval, tol)
 
-            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]], bvecs[indices]])
+            bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]],
+                                         bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
 
             data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
@@ -442,7 +540,8 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
             responses.append(list(response))
         response_mean = np.mean(responses, axis=0)
-        tissue_responses.append(list(np.concatenate([response_mean[0], [response_mean[1]]])))
+        tissue_responses.append(list(np.concatenate([response_mean[0],
+                                                    [response_mean[1]]])))
 
     return tissue_responses[0], tissue_responses[1], tissue_responses[2]
 
@@ -451,6 +550,55 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003):
+    """ Automatic estimation of msmt response functions using FA and MD.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    roi_center : tuple, (3,)
+        Center of ROI in data. If center is None, it is assumed that it is
+        the center of the volume with shape `data.shape[:3]`.
+    roi_radius : int
+        radius of cubic ROI
+    fa_data : ndarray
+        FA data, optionnal.
+    wm_fa_thr : float
+        FA threshold for WM.
+    gm_fa_thr : float
+        FA threshold for GM.
+    csf_fa_thr : float
+        FA threshold for CSF.
+    md_data : ndarray
+        MD data, optionnal.
+    gm_md_thr : float
+        MD threshold for GM.
+    csf_md_thr : float
+        MD threshold for CSF.
+
+    Returns
+    -------
+    response_wm : tuple, (2,)
+        (`evals`, `S0`) for WM.
+    response_gm : tuple, (2,)
+        (`evals`, `S0`) for GM.
+    response_csf : tuple, (2,)
+        (`evals`, `S0`) for CSF.
+
+    Notes
+    -----
+    In msmt-CSD there is an important pre-processing step: the estimation of 
+    every tissue's response function. In order to do this, we look for voxels
+    corresponding to WM, GM and CSF. We get this information from 
+    mcsd.mask_for_response_msmt(), which returns masks of selected voxels
+    (more details are available in the description of the function).
+
+    With the masks, we compute the response functions by using 
+    mcsd.response_from_mask_msmt(), which returns the `response` for each
+    tissue (more details are available in the description of the function).
+    """
+
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                         roi_center,
                                                         roi_radius,
