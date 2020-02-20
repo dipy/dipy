@@ -139,17 +139,37 @@ def test_mask_for_response_msmt():
 
 
 def test_response_from_mask_msmt():
-    fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
+    fdata, fbvals, fbvecs, fmask_wm, fmask_gm, fmask_csf, fresponse_wm, fresponse_gm, fresponse_csf = get_fnames('???')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     data = load_nifti_data(fdata)
-    mask = load_nifti_data(fmask)
-    response_gt = np.loadtxt(fresponse).T
+    mask_wm = load_nifti_data(fmask_wm)
+    mask_gm = load_nifti_data(fmask_gm)
+    mask_csf = load_nifti_data(fmask_csf)
+    response_wm_gt = np.loadtxt(fresponse_wm).T
+    response_gm_gt = np.loadtxt(fresponse_gm).T
+    response_csf_gt = np.loadtxt(fresponse_csf).T
 
     gtab = gradient_table(bvals, bvecs)
 
-    response = response_from_mask_msmt(gtab, data, mask)
+    response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20)
 
-    npt.assert_array_almost_equal(response, response_gt)
+    # Verifying that csf's response is greater than gm's
+    npt.assert_equal(np.sum(response_csf[:3]) > np.sum(response_gm[:3]), True)
+    # Verifying that csf and gm are described by spheres
+    npt.assert_almost_equal(response_csf[1], response_csf[2])
+    npt.assert_almost_equal(response_csf[0], response_csf[1])
+    npt.assert_almost_equal(response_gm[1], response_gm[2])
+    npt.assert_almost_equal(response_gm[0], response_gm[1])
+    # Verifying that wm is anisotropic in one direction
+    npt.assert_almost_equal(response_wm[1], response_wm[2])
+    npt.assert_equal(response_wm[0] > response_wm[1], True) # > by how much??
+
+    # Way to test response[3] ??? b0
+
+    # Verifying with ground truth
+    npt.assert_array_almost_equal(response_wm, response_wm_gt)
+    npt.assert_array_almost_equal(response_gm, response_gm_gt)
+    npt.assert_array_almost_equal(response_csf, response_csf_gt)
 
 
 def test_auto_response_msmt():
@@ -159,24 +179,22 @@ def test_auto_response_msmt():
 
     gtab = gradient_table(bvals, bvecs)
 
-    response_auto = auto_response_msmt(gtab,
-                        data,
-                        roi_center=None,
-                        roi_radius=3,
-                        fa_data=None,
-                        fa_thr=0.7)
+    response_auto_wm, response_auto_gm, response_auto_csf = auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
+                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
+                           csf_fa_thr=0.15, md_data=None,
+                           gm_md_thr=0.001, csf_md_thr=0.003)
 
-    mask = mask_for_response_msmt(gtab, data,
-                            roi_center=None,
-                            roi_radius=3,
-                            fa_data=None,
-                            fa_thr=0.7)
+    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
+                            roi_center=None, roi_radius=3, 
+                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                            csf_fa_thr=0.15, md_data=None,
+                            gm_md_thr=0.001, csf_md_thr=0.003)
     
-    response_from_mask = response_from_mask_msmt(gtab,
-                                                                   data,
-                                                                   mask)
+    response_from_mask_wm, response_from_mask_gm, response_from_mask_csf = response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20)
     
-    npt.assert_array_equal(response_auto, response_from_mask)
+    npt.assert_array_equal(response_auto_wm, response_from_mask_wm)
+    npt.assert_array_equal(response_auto_gm, response_from_mask_gm)
+    npt.assert_array_equal(response_auto_csf, response_from_mask_csf)
 
 
 if __name__ == "__main__":
