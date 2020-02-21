@@ -1,7 +1,7 @@
 # Check against .travis.yml file and dipy/info.py
 cython>=0.29
-numpy>=1.9.0
+numpy>=1.12.0
 scipy>=1.0
 nibabel>=3.0.0
-h5py>=2.4.0
+h5py>=2.5.0
 packaging>=19.0
