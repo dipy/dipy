@@ -94,7 +94,7 @@ def syn_registration(moving, static,
                      step_length=0.25,
                      metric='CC',
                      dim=3,
-                     level_iters=[10, 10, 5],
+                     level_iters=None,
                      sigma_diff=2.0,
                      radius=4,
                      prealign=None):
@@ -118,7 +118,7 @@ def syn_registration(moving, static,
     level_iters : list of int, optional
         the number of iterations at each level of the Gaussian Pyramid (the
         length of the list defines the number of pyramid levels to be
-        used).
+        used). Default: [10, 10, 5].
     sigma_diff, radius : float
         Parameters for initialization of the metric.
 
@@ -133,6 +133,9 @@ def syn_registration(moving, static,
         The vector field describing the backward warping from the target to the
         source.
     """
+    if level_iters is None:
+        level_iters = [10, 10, 5]
+
     static, static_affine, moving, moving_affine, _ = \
         _handle_pipeline_inputs(moving, static,
                                 moving_affine=moving_affine,
@@ -223,7 +226,6 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
                                                  static_affine=template_affine,
                                                  **reg_kwargs)
     return warped_b0, mapping
-
 
 
 def write_mapping(mapping, fname):
@@ -530,11 +532,11 @@ def affine(moving, static, static_affine=None, moving_affine=None,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
     transform = AffineTransform3D()
-    affine = reg.optimize(static, moving, transform, None,
-                          static_affine, moving_affine,
-                          starting_affine=starting_affine)
+    xform = reg.optimize(static, moving, transform, None,
+                         static_affine, moving_affine,
+                         starting_affine=starting_affine)
 
-    return affine.transform(moving), affine.affine
+    return xform.transform(moving), xform.affine
 
 
 def affine_registration(moving, static,
@@ -545,9 +547,9 @@ def affine_registration(moving, static,
                         metric='MI',
                         nbins=32,
                         sampling_proportion=None,
-                        level_iters=[10000, 1000, 100],
-                        sigmas=[3, 1, 0.0],
-                        factors=[4, 2, 1]):
+                        level_iters=None,
+                        sigmas=None,
+                        factors=None):
 
     """
     Find the affine transformation between two 3D images.
@@ -583,9 +585,11 @@ def affine_registration(moving, static,
 
     metric : str, optional.
         Currently only supports 'MI' for MutualInformationMetric.
+
     nbins : int, optional
         MutualInformationMetric key-word argument: the number of bins to be
         used for computing the intensity histograms. The default is 32.
+
     sampling_proportion : None or float in interval (0, 1], optional
         MutualInformationMetric key-word argument: There are two types of
         sampling: dense and sparse. Dense sampling uses all voxels for
@@ -602,10 +606,12 @@ def affine_registration(moving, static,
         scale, `level_iters[-1]` the finest, where n is the length of the
         sequence. By default, a 3-level scale space with iterations
         sequence equal to [10000, 1000, 100] will be used.
+
     sigmas : sequence of floats, optional
         AffineRegistration key-word argument: custom smoothing parameter to
         build the scale space (one parameter for each scale). By default,
         the sequence of sigmas will be [3, 1, 0].
+
     factors : sequence of floats, optional
         AffineRegistration key-word argument: custom scale factors to build the
         scale space (one factor for each scale). By default, the sequence of
@@ -627,6 +633,12 @@ def affine_registration(moving, static,
     """
     if pipeline is None:
         [c_of_mass, translation, rigid, affine]
+    if level_iters is None:
+        level_iters = [10000, 1000, 100]
+    if sigmas is None:
+        sigmas = [3, 1, 0.0]
+    if factors is None:
+        factors = [4, 2, 1]
 
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
@@ -634,11 +646,11 @@ def affine_registration(moving, static,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
 
-
     # Define the Affine registration object we'll use with the chosen metric:
     use_metric = affine_metric_dict[metric](
                         nbins=nbins,
                         sampling_proportion=sampling_proportion)
+
     affreg = AffineRegistration(metric=use_metric,
                                 level_iters=level_iters,
                                 sigmas=sigmas,
@@ -711,13 +723,13 @@ def register_series(series, ref, pipeline=None, series_affine=None,
             xformed[..., ii] = this_moving
             affines[..., ii] = np.eye(4)
         else:
-            transformed, affine = affine_registration(
+            transformed, reg_affine = affine_registration(
                 this_moving, ref,
                 moving_affine=series_affine,
                 static_affine=ref_affine,
                 pipeline=pipeline)
             xformed[..., ii] = transformed
-            affines[..., ii] = affine
+            affines[..., ii] = reg_affine
 
     return xformed, affines
 
