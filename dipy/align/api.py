@@ -30,12 +30,6 @@ from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import load_trk
 
 
-__all__ = ["syn_registration", "dwi_to_template", "write_mapping",
-           "read_mapping", "resample", "c_of_mass", "translation", "rigid",
-           "affine", "affine_registration", "register_series",
-           "register_dwi_series", "streamline_registration"]
-
-
 syn_metric_dict = {'CC': CCMetric,
                    'EM': EMMetric,
                    'SSD': SSDMetric}
@@ -546,7 +540,7 @@ def affine(moving, static, static_affine=None, moving_affine=None,
 def affine_registration(moving, static,
                         moving_affine=None,
                         static_affine=None,
-                        pipeline=[c_of_mass, translation, rigid, affine],
+                        pipeline=None,
                         starting_affine=None,
                         metric='MI',
                         nbins=32,
@@ -631,6 +625,9 @@ def affine_registration(moving, static,
     step (`affine`) is ommitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
     """
+    if pipeline is None:
+        [c_of_mass, translation, rigid, affine]
+
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
                                 moving_affine=moving_affine,
@@ -657,9 +654,8 @@ def affine_registration(moving, static,
     return transformed, starting_affine
 
 
-def register_series(series, ref,
-                    pipeline=[c_of_mass, translation, rigid, affine],
-                    series_affine=None, ref_affine=None):
+def register_series(series, ref, pipeline=None, series_affine=None,
+                    ref_affine=None):
     """Register a series to a reference image.
 
     Parameters
@@ -688,6 +684,9 @@ def register_series(series, ref,
     with 4x4 matrices associated with each of the volumes of the input moving
     data that was used to transform it into register with the static data.
     """
+    if pipeline is None:
+        [c_of_mass, translation, rigid, affine]
+
     series, series_affine = _input_as_img_arr_or_path(series,
                                                       affine=series_affine)
     if isinstance(ref, numbers.Number):
@@ -723,8 +722,7 @@ def register_series(series, ref,
     return xformed, affines
 
 
-def register_dwi_series(data, gtab, affine=None, b0_ref=0,
-                        pipeline=[c_of_mass, translation, rigid, affine]):
+def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
     """
     Register a DWI series to the mean of the B0 images in that series (all
     first registered to the first B0 volume)
@@ -760,6 +758,9 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0,
     transforms associated with each of the
 
     """
+    if pipeline is None:
+        [c_of_mass, translation, rigid, affine]
+
     data, affine = _input_as_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.Sequence):
         gtab = dpg.gradient_table(*gtab)
