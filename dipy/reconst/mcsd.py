@@ -503,15 +503,13 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     mcsd.mask_for_response_msmt() through masks of selected voxels. The present
     function uses such masks to compute the msmt response functions.
 
-
-!!!!!!!!!!!Changer ça pour expliquer plus le msmt!!!!!!!!!!!!!!!!!!!!! (parler de tol?)
-    For the responses we also need to find the average S0 in the ROI. This is
-    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
-    correspond to b-values equal 0) in the dataset.
-
-    The `response` consists always of a prolate tensor created by averaging
-    the highest and second highest eigenvalues in the ROI with FA higher than
-    threshold. We also include the average S0s.
+    For the responses, we base our approach on the function 
+    csdeconv.response_from_mask_ssst(), with the added layers of multishell and
+    multi-tissue (see the ssst function for more information about the
+    computation of the ssst response function). This means that for each tissue
+    we use the previously found masks and loop on them. For each mask, we loop
+    on the b-values (clustered using the tolerance gap) to get many responses
+    and then average them to get one response per tissue.
     """
 
     bvals = gtab.bvals
