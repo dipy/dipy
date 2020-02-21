@@ -632,7 +632,7 @@ def affine_registration(moving, static,
     degrees of freedom adjusted.
     """
     if pipeline is None:
-        [c_of_mass, translation, rigid, affine]
+        pipeline = [c_of_mass, translation, rigid, affine]
     if level_iters is None:
         level_iters = [10000, 1000, 100]
     if sigmas is None:
