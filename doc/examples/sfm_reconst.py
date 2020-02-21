@@ -80,16 +80,17 @@ function:
 
 """
 
-from dipy.reconst.csdeconv import auto_response
-response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+from dipy.reconst.csdeconv import auto_response_ssst
+response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
 The ``response`` return value contains two entries. The first is an array with
 the eigenvalues of the response function and the second is the average S0 for
 this response.
 
-It is a very good practice to always validate the result of ``auto_response``.
-For, this purpose we can print it and have a look at its values.
+It is a very good practice to always validate the result of 
+``auto_response_ssst``. For, this purpose we can print it and have a look
+at its values.
 """
 
 print(response)

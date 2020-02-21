@@ -14,7 +14,7 @@ from dipy.io.peaks import save_peaks, peaks_to_niftis
 from dipy.io.image import load_nifti, save_nifti, load_nifti_data
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
+                                   auto_response_ssst)
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
                               geodesic_anisotropy, mean_diffusivity,
                               axial_diffusivity, radial_diffusivity,
@@ -522,12 +522,11 @@ class ReconstCSDFlow(Workflow):
                                  .format(roi_center))
                     logging.info('Response ROI radius:\n{0}'
                                  .format(roi_radius))
-                response, ratio, nvox = auto_response(
+                response, ratio = auto_response_ssst(
                         gtab, data,
                         roi_center=roi_center,
                         roi_radius=roi_radius,
-                        fa_thr=fa_thr,
-                        return_number_of_voxels=True)
+                        fa_thr=fa_thr)
                 response = list(response)
 
             else:

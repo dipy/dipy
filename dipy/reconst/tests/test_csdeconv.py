@@ -19,7 +19,6 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    mask_for_response_ssst,
                                    response_from_mask_ssst,
                                    auto_response_ssst,
-                                   response_from_mask,
                                    recursive_response)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere import HemiSphere
@@ -174,12 +173,12 @@ def test_auto_response_ssst():
                             fa_data=None,
                             fa_thr=0.7)
     
-    response_from_mask, ration_from_mask = response_from_mask_ssst(gtab,
+    response_from_mask, ratio_from_mask = response_from_mask_ssst(gtab,
                                                                    data,
                                                                    mask)
     
     assert_array_equal(response_auto, response_from_mask)
-    assert_array_equal(ratio_auto, ration_from_mask)
+    assert_array_equal(ratio_auto, ratio_from_mask)
 
 
 def test_csdeconv():
@@ -235,29 +234,14 @@ def test_csdeconv():
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 
-    aresponse, aratio = auto_response(gtab, big_S, roi_center=(5, 5, 4),
+    aresponse, aratio = auto_response_ssst(gtab, big_S, roi_center=(5, 5, 4),
                                       roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])
 
-    auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
+    auto_response_ssst(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
-
-    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=0.5,
-                                  return_number_of_voxels=True)
-    assert_equal(nvoxels, 1000)
-    with warnings.catch_warnings(record=True) as w:
-        _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                      roi_radius=30, fa_thr=1,
-                                      return_number_of_voxels=True)
-        npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in
-                    str(w[0].message))
-
-    assert_equal(nvoxels, 0)
 
 
 def test_odfdeconv():

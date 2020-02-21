@@ -31,9 +31,9 @@ from dipy.segment.mask import median_otsu
 maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
                              numpass=1, autocrop=False, dilate=2)
 
-from dipy.reconst.csdeconv import auto_response
+from dipy.reconst.csdeconv import auto_response_ssst
 
-response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 
 data = maskdata[:, :, 33:37]
 mask = mask[:, :, 33:37]

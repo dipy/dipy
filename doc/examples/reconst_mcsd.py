@@ -40,7 +40,7 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
-from dipy.reconst.csdeconv import auto_response
+from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.sims.voxel import multi_shell_fiber_response
 from dipy.reconst.mcsd import MultiShellDeconvModel
@@ -207,17 +207,18 @@ csf_md = np.mean(MD[selected_csf])
 gm_md = np.mean(MD[selected_gm])
 
 """
-The ``auto_response`` function will calculate FA for an ROI of radius equal to
-``roi_radius`` in the center of the volume and return the response function
-estimated in that region for the voxels with FA higher than 0.7.
+The ``auto_response_ssst`` function will calculate FA for an ROI of radius
+equal to ``roi_radius`` in the center of the volume and return the response
+function estimated in that region for the voxels with FA higher than 0.7.
 """
 
-response, ratio = auto_response(gtab, denoised_arr, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, denoised_arr,
+                                     roi_radius=10, fa_thr=0.7)
 evals_d = response[0]
 
 """
-We will now use the evals obtained from the ``auto_response`` to generate the
-``multi_shell_fiber_response`` rquired by the MSMT-CSD model. Note that we
+We will now use the evals obtained from the ``auto_response_ssst`` to generate
+the ``multi_shell_fiber_response`` rquired by the MSMT-CSD model. Note that we
 mead diffusivities of ``csf`` and ``gm`` as inputs to generate th response.
 """
 
