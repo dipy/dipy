@@ -1,4 +1,5 @@
 import os.path as op
+import pytest
 
 import numpy as np
 import numpy.testing as npt
@@ -10,7 +11,7 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        streamline_registration, write_mapping,
+                        affine_registration, streamline_registration, write_mapping,
                         read_mapping, dwi_to_template)
 
 from dipy.align.imwarp import DiffeomorphicMap
@@ -65,10 +66,11 @@ def test_syn_registration():
         # Test that it is, attribute by attribute, identical:
         for k in mapping.__dict__:
             npt.assert_((np.all(mapping.__getattribute__(k) ==
-                           file_mapping.__getattribute__(k))))
+                                file_mapping.__getattribute__(k))))
 
 
 def test_dwi_to_template():
+    # Default is syn registration:
     warped_b0, mapping = dwi_to_template(subset_dwi_data, gtab,
                                          template=subset_t2_img,
                                          level_iters=[5, 5, 5],
@@ -77,15 +79,47 @@ def test_dwi_to_template():
     npt.assert_(isinstance(mapping, DiffeomorphicMap))
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
 
-    warped_b0, affine = dwi_to_template(subset_dwi_data, gtab,
-                                        template=subset_t2_img,
-                                        reg_method="aff",
-                                        level_iters=[5, 5, 5],
-                                        sigmas=[3, 1, 0],
-                                        factors=[4, 2, 1])
+    # Use affine registration (+ don't provide a template and inputs as
+    # strings):
+    fdata, fbval, fbvec = dpd.get_fnames('small_64D')
+    warped_data, affine = dwi_to_template(fdata, (fbval, fbvec),
+                                          reg_method="aff",
+                                          level_iters=[5, 5, 5],
+                                          sigmas=[3, 1, 0],
+                                          factors=[4, 2, 1])
     npt.assert_(isinstance(affine, np.ndarray))
-    npt.assert_(affine.shape == (4,4))
-    npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
+    npt.assert_(affine.shape == (4, 4))
+
+
+def test_affine_registration():
+    moving = subset_b0
+    static = subset_b0
+    moving_affine = static_affine = np.eye(4)
+    xformed, affine = affine_registration(moving, static,
+                                          moving_affine=moving_affine,
+                                          static_affine=static_affine)
+    # We don't ask for much:
+    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
+
+    with pytest.raises(ValueError):
+        # For array input, must provide affines:
+        xformed, affine = affine_registration(moving, static)
+
+    # If providing nifti image objects, don't need to provide affines:
+    moving_img = nib.Nifti1Image(moving, moving_affine)
+    static_img = nib.Nifti1Image(static, static_affine)
+    xformed, affine = affine_registration(moving_img, static_img)
+    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
+
+    # Using strings with full paths as inputs also works:
+    t1_name, b0_name = dpd.get_fnames('syn_data')
+    moving = b0_name
+    static = t1_name
+    xformed, affine = affine_registration(moving, static,
+                                          level_iters=[5, 5],
+                                          sigmas=[3, 1],
+                                          factors=[4, 2])
+    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
 
 
 def test_register_series():

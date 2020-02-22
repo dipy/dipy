@@ -205,6 +205,7 @@ def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
 
     if template is None:
         template = dpd.read_mni_template()
+
     template_data, template_affine = _input_as_img_arr_or_path(
                                        template,
                                        affine=template_affine)
