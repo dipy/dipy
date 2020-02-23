@@ -68,7 +68,7 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 ### Documentation
 
-DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to generate
+DIPY uses [Sphinx](http://www.sphinx-doc.org/en/stable/index.html) to generate
 documentation. The
 [DIPY Coding Style Guideline](https://dipy.org/documentation/latest/devel/coding_style_guideline/)
 contains details about documenting the contributions.
