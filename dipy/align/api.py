@@ -30,9 +30,12 @@ from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import load_trk
 
 
+# Global dicts for choosing metrics for registration:
 syn_metric_dict = {'CC': CCMetric,
                    'EM': EMMetric,
                    'SSD': SSDMetric}
+
+affine_metric_dict = {'MI': MutualInformationMetric}
 
 
 def _input_as_img_arr_or_path(data, affine=None):
@@ -341,10 +344,6 @@ def resample(moving, static, moving_affine=None, static_affine=None,
                            moving.shape, moving_affine)
     resampled = affine_map.transform(moving)
     return nib.Nifti1Image(resampled, static_affine)
-
-
-# Affine registration pipeline:
-affine_metric_dict = {'MI': MutualInformationMetric}
 
 
 def c_of_mass(moving, static, static_affine=None, moving_affine=None,
