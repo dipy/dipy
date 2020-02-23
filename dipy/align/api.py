@@ -157,8 +157,9 @@ def syn_registration(moving, static,
     return warped_moving, mapping
 
 
-def dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
-                    template_affine=None, reg_method="syn", **reg_kwargs):
+def register_dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
+                             template_affine=None, reg_method="syn",
+                             **reg_kwargs):
     """
     Register DWI data to a template through the B0 volumes.
 

@@ -12,7 +12,7 @@ import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
                         affine_registration, streamline_registration, write_mapping,
-                        read_mapping, dwi_to_template)
+                        read_mapping, register_dwi_to_template)
 
 from dipy.align.imwarp import DiffeomorphicMap
 
@@ -20,22 +20,26 @@ from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import StatefulTractogram, Space
 
-MNI_T2 = dpd.read_mni_template()
-hardi_img, gtab = dpd.read_stanford_hardi()
-MNI_T2_data = MNI_T2.get_fdata()
-MNI_T2_affine = MNI_T2.affine
-hardi_data = hardi_img.get_fdata()
-hardi_affine = hardi_img.affine
-b0 = hardi_data[..., gtab.b0s_mask]
-mean_b0 = np.mean(b0, -1)
 
-# We select some arbitrary chunk of data so this goes quicker:
-subset_b0 = mean_b0[40:50, 40:50, 40:50]
-subset_dwi_data = nib.Nifti1Image(hardi_data[40:50, 40:50, 40:50],
-                                  hardi_affine)
-subset_t2 = MNI_T2_data[40:60, 40:60, 40:60]
-subset_b0_img = nib.Nifti1Image(subset_b0, hardi_affine)
-subset_t2_img = nib.Nifti1Image(subset_t2, MNI_T2_affine)
+def setup_module():
+    global subset_b0, subset_dwi_data, subset_t2, subset_b0_img, \
+           subset_t2_img, gtab, hardi_affine, MNI_T2_affine
+    MNI_T2 = dpd.read_mni_template()
+    hardi_img, gtab = dpd.read_stanford_hardi()
+    MNI_T2_data = MNI_T2.get_fdata()
+    MNI_T2_affine = MNI_T2.affine
+    hardi_data = hardi_img.get_fdata()
+    hardi_affine = hardi_img.affine
+    b0 = hardi_data[..., gtab.b0s_mask]
+    mean_b0 = np.mean(b0, -1)
+
+    # We select some arbitrary chunk of data so this goes quicker:
+    subset_b0 = mean_b0[40:50, 40:50, 40:50]
+    subset_dwi_data = nib.Nifti1Image(hardi_data[40:50, 40:50, 40:50],
+                                    hardi_affine)
+    subset_t2 = MNI_T2_data[40:60, 40:60, 40:60]
+    subset_b0_img = nib.Nifti1Image(subset_b0, hardi_affine)
+    subset_t2_img = nib.Nifti1Image(subset_t2, MNI_T2_affine)
 
 
 def test_syn_registration():
@@ -69,24 +73,24 @@ def test_syn_registration():
                                 file_mapping.__getattribute__(k))))
 
 
-def test_dwi_to_template():
+def test_register_dwi_to_template():
     # Default is syn registration:
-    warped_b0, mapping = dwi_to_template(subset_dwi_data, gtab,
-                                         template=subset_t2_img,
-                                         level_iters=[5, 5, 5],
-                                         sigma_diff=2.0,
-                                         radius=1)
+    warped_b0, mapping = register_dwi_to_template(subset_dwi_data, gtab,
+                                                  template=subset_t2_img,
+                                                  level_iters=[5, 5, 5],
+                                                  sigma_diff=2.0,
+                                                  radius=1)
     npt.assert_(isinstance(mapping, DiffeomorphicMap))
     npt.assert_equal(warped_b0.shape, subset_t2_img.shape)
 
     # Use affine registration (+ don't provide a template and inputs as
     # strings):
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
-    warped_data, affine = dwi_to_template(fdata, (fbval, fbvec),
-                                          reg_method="aff",
-                                          level_iters=[5, 5, 5],
-                                          sigmas=[3, 1, 0],
-                                          factors=[4, 2, 1])
+    warped_data, affine = register_dwi_to_template(fdata, (fbval, fbvec),
+                                                   reg_method="aff",
+                                                   level_iters=[5, 5, 5],
+                                                   sigmas=[3, 1, 0],
+                                                   factors=[4, 2, 1])
     npt.assert_(isinstance(affine, np.ndarray))
     npt.assert_(affine.shape == (4, 4))
 
