@@ -11,6 +11,7 @@ from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
                               mean_diffusivity)
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.utils import _is_roi_in_volume
+from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -340,6 +341,61 @@ class QpFitter(object):
         Q_mat = np.array(-Q)
         fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh
+
+
+def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
+                               sphere=None):
+    """Fiber response function estimation for multi-shell data.
+
+    Parameters
+    ----------
+    sh_order : int
+         Maximum spherical harmonics order.
+    bvals : ndarray
+        Array containing the b-values.
+    evals : (3,) ndarray
+        Eigenvalues of the diffusion tensor.
+    csf_md : float
+        CSF tissue mean diffusivity value.
+    gm_md : float
+        GM tissue mean diffusivity value.
+    sphere : `dipy.core.Sphere` instance, optional
+        Sphere where the signal will be evaluated.
+
+    Returns
+    -------
+    MultiShellResponse
+        MultiShellResponse object.
+    """
+
+    bvals = np.array(bvals, copy=True)
+    evecs = np.zeros((3, 3))
+    z = np.array([0, 0, 1.])
+    evecs[:, 0] = z
+    evecs[:2, 1:] = np.eye(2)
+
+    n = np.arange(0, sh_order + 1, 2)
+    m = np.zeros_like(n)
+
+    if sphere is None:
+        sphere = default_sphere
+
+    big_sphere = sphere.subdivide()
+    theta, phi = big_sphere.theta, big_sphere.phi
+
+    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+    A = shm.real_sph_harm(0, 0, 0, 0)
+
+    response = np.empty([len(bvals), len(n) + 2])
+    for i, bvalue in enumerate(bvals):
+        gtab = GradientTable(big_sphere.vertices * bvalue)
+        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
+        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+
+        response[i, 0] = np.exp(-bvalue * csf_md) / A
+        response[i, 1] = np.exp(-bvalue * gm_md) / A
+
+    return MultiShellResponse(response, sh_order, bvals)
 
 
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10, 
