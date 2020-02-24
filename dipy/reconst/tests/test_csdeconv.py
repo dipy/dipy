@@ -139,6 +139,37 @@ def test_mask_for_response_ssst():
     assert_array_almost_equal(mask, mask_w_fa)
 
 
+def test_mask_for_response_ssst_nvoxels():
+    fdata, fbvals, fbvecs = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    mask = mask_for_response_ssst(gtab, data,
+                                  roi_center=None,
+                                  roi_radius=10,
+                                  fa_data=None,
+                                  fa_thr=0.7)
+
+    nvoxels = np.sum(mask)
+    assert_equal(nvoxels, 10) # To change!!
+
+    with warnings.catch_warnings(record=True) as w:
+        mask = mask_for_response_ssst(gtab, data,
+                                    roi_center=None,
+                                    roi_radius=10,
+                                    fa_data=None,
+                                    fa_thr=1)
+        npt.assert_equal(len(w), 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("No voxel with a FA higher than 1 were found" in
+                    str(w[0].message))
+
+    nvoxels = np.sum(mask)
+    assert_equal(nvoxels, 0)
+
+
 def test_response_from_mask_ssst():
     fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
