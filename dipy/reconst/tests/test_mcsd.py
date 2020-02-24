@@ -1,3 +1,5 @@
+import warnings
+
 from dipy.reconst.mcsd import (mask_for_response_msmt,
                                response_from_mask_msmt,
                                auto_response_msmt)
@@ -115,8 +117,8 @@ def test_mask_for_response_msmt():
     gtab = gradient_table(bvals, bvecs)
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                            roi_center=None, roi_radius=3, 
-                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                            roi_center=None, roi_radius=3,
+                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                             csf_fa_thr=0.15, md_data=None,
                             gm_md_thr=0.001, csf_md_thr=0.003)
 
@@ -125,8 +127,8 @@ def test_mask_for_response_msmt():
 
     wm_mask_fa_md, gm_mask_fa_md, csf_mask_fa_md = mask_for_response_msmt(
                             gtab, data,
-                            roi_center=None, roi_radius=3, 
-                            fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+                            roi_center=None, roi_radius=3,
+                            fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3,
                             csf_fa_thr=0.15, md_data=md,
                             gm_md_thr=0.001, csf_md_thr=0.003)
 
@@ -136,6 +138,53 @@ def test_mask_for_response_msmt():
     npt.assert_array_almost_equal(wm_mask_gt, wm_mask_fa_md)
     npt.assert_array_almost_equal(gm_mask_gt, gm_mask_fa_md)
     npt.assert_array_almost_equal(csf_mask_gt, csf_mask_fa_md)
+
+
+def test_mask_for_response_msmt_nvoxels():
+    fdata, fbvals, fbvecs = get_fnames('???')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    data = load_nifti_data(fdata)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                            roi_center=None, roi_radius=3,
+                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
+                            csf_fa_thr=0.15, md_data=None,
+                            gm_md_thr=0.001, csf_md_thr=0.003)
+
+    wm_nvoxels = np.sum(wm_mask)
+    gm_nvoxels = np.sum(gm_mask)
+    csf_nvoxels = np.sum(csf_mask)
+    npt.assert_equal(wm_nvoxels, 10) # To change!!
+    npt.assert_equal(gm_nvoxels, 10) # To change!!
+    npt.assert_equal(csf_nvoxels, 10) # To change!!
+
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                roi_center=None, roi_radius=3,
+                                fa_data=None, wm_fa_thr=1, gm_fa_thr=0,
+                                csf_fa_thr=0, md_data=None,
+                                gm_md_thr=1, csf_md_thr=1)
+        npt.assert_equal(len(w), 5)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("No voxel with a FA higher than 1 were found" in
+                    str(w[0].message))
+        npt.assert_("No voxel with a FA lower than 0 were found" in
+                    str(w[0].message))
+        npt.assert_("No voxel with a MD higher than 1 were found" in
+                    str(w[0].message))
+        npt.assert_("No voxel with a FA lower than 0 were found" in
+                    str(w[0].message))
+        npt.assert_("No voxel with a MD higher than 1 were found" in
+                    str(w[0].message))
+
+    wm_nvoxels = np.sum(wm_mask)
+    gm_nvoxels = np.sum(gm_mask)
+    csf_nvoxels = np.sum(csf_mask)
+    npt.assert_equal(wm_nvoxels, 0)
+    npt.assert_equal(gm_nvoxels, 0)
+    npt.assert_equal(csf_nvoxels, 0)
 
 
 def test_response_from_mask_msmt():
