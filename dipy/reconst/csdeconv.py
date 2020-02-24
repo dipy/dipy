@@ -20,6 +20,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
+from dipy.reconst.utils import _is_roi_in_volume
 
 from dipy.segment.mask import applymask
 
@@ -814,12 +815,16 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     fiber orientation density function from diffusion-weighted MRI
     data using spherical deconvolution
     """
-    
+
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
     w = roi_radius
+    
+    if not _is_roi_in_volume(data.shape, np.array([ci, cj, ck]), w):
+        msg = "ROI is outside of data volume."
+        raise ValueError(msg)
 
     if fa_data is None:
         roi = data[int(ci - w): int(ci + w),

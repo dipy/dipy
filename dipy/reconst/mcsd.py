@@ -10,6 +10,7 @@ from dipy.reconst.csdeconv import response_from_mask_ssst
 from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
                               mean_diffusivity)
 from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.utils import _is_roi_in_volume
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -403,6 +404,10 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
     else:
         ci, cj, ck = roi_center
     w = roi_radius
+
+    if not _is_roi_in_volume(data.shape, np.array([ci, cj, ck]), w):
+        msg = "ROI is outside of data volume."
+        raise ValueError(msg)
 
     if fa_data is None and md_data is None:
         roi = data[int(ci - w): int(ci + w),
