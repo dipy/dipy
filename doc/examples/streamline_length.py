@@ -88,8 +88,8 @@ n_pts = [len(streamline) for streamline in bundle]
 """
 Often, streamlines are represented with more points than what is actually
 necessary for specific applications. Also, sometimes every streamline has
-different number of points which could be of a trouble for some algorithms
-. The function ``set_number_of_points`` can be used to set the number of points
+different number of points which could be of a trouble for some algorithms.
+The function ``set_number_of_points`` can be used to set the number of points
 of a streamline at a specific number and at the same time enforce that all the
 segments of the streamline will have equal length.
 """
