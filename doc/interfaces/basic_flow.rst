@@ -4,7 +4,7 @@
 A basic DIPY command line series
 ====================================================
 
-Using a terminal, let's download a dataset. This is multi-shell dataset which was
+Using a terminal, let's download a dataset. This is multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
 provided in their paper [Hansen2016]_). First let's create a folder::
 
@@ -26,9 +26,9 @@ Move to the folder with the data::
 
 Let's rename the long filenames to something that is easier to read::
 
-    $mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval dwi.bval
-    $mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec dwi.bvec
-    $mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii dwi.nii
+    $ mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval dwi.bval
+    $ mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec dwi.bvec
+    $ mv __DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii dwi.nii
 
 We can use ``dipy_info`` to check the bval and nii files ::
 
@@ -146,7 +146,7 @@ We can use ``dipy_info`` to check the bval and nii files ::
 
 We can visualize the data using ``dipy_horizon`` ::
 
-    dipy_horizon dwi.nii
+    $ dipy_horizon dwi.nii
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic1.png?raw=true
     :width: 70 %
@@ -161,7 +161,7 @@ We can use ``dipy_median_otsu`` to build a brain mask for the diffusion data::
 
 Visualize the mask using ``dipy_horizon``::
 
-    dipy_horizon out_work/brain_mask.nii.gz
+    $ dipy_horizon out_work/brain_mask.nii.gz
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic2.png?raw=true
     :width: 70 %
@@ -173,14 +173,14 @@ Visualize the mask using ``dipy_horizon``::
 
 Perform DTI using ``dipy_fit_dti`. The input of this function is the DWI data, b-values and b-vector files and the brain mask that we calculated in the previous step::
 
-    dipy_fit_dti dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
+    $ dipy_fit_dti dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
 
 The default options of the script generate the following files ad.nii.gz, evecs.nii.gz, md.nii.gz,
 rgb.nii.gz, fa.nii.gz, mode.nii.gz, tensors.nii.gz, evals.nii.gz, ga.nii.gz and rd.nii.gz.
 
 Visualize DEC map::
 
-    dipy_horizon out_work/rgb.nii.gz
+    $ dipy_horizon out_work/rgb.nii.gz
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/cfin_basic3.png?raw=true
     :width: 70 %
@@ -191,11 +191,11 @@ Visualize DEC map::
 
 We can now move to more advanced reconstruction models. One of the fastest we can use is Constant Solid Angle (CSA) ::
 
-    dipy_fit_csa dwi.nii.gz dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
+    $ dipy_fit_csa dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
 
 Now, to move into doing some tracking we will need some seeds. We can generate seeds in the following way ::
 
-    dipy_mask out_work/fa.nii.gz 0.4 --out_dir out_work/ --out_mask seed_mask.nii.gz
+    $ dipy_mask out_work/fa.nii.gz 0.4 --out_dir out_work/ --out_mask seed_mask.nii.gz
 
 Create tracks using peaks::
 
@@ -203,7 +203,7 @@ Create tracks using peaks::
 
 We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
 
-    dipy_horizon out_work/tracts_from_peaks.trk --cluster
+    $ dipy_horizon out_work/tracts_from_peaks.trk --cluster
 
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
@@ -216,7 +216,7 @@ We can visualize the result using ``dipy_horizon``. The ``--cluster`` option all
 
 Alternatively, we can create deterministic tracks using the maximum value of a spherical harmonics cone::
 
-    dipy_track_det peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
+    $ dipy_track_det peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
 
 
 For more information about each command line, you see :ref:`workflows_reference`.
@@ -246,4 +246,3 @@ References
 .. [Hansen2016] Hansen, B, Jespersen, SN (2016). "Data for evaluation of fast
    kurtosis strategies, b-value optimization and exploration of diffusion MRI
    contrast". Scientific Data 3: 160072 doi:10.1038/sdata.2016.72
-
