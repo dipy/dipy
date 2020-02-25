@@ -389,8 +389,7 @@ def c_of_mass(moving, static, static_affine=None, moving_affine=None,
                                 starting_affine=starting_affine)
     transform = transform_centers_of_mass(static, static_affine,
                                           moving, moving_affine)
-    transformed = transform.transform(moving)
-    return transformed, transform.affine
+    return transform.affine
 
 
 def translation(moving, static, static_affine=None, moving_affine=None,
@@ -439,7 +438,7 @@ def translation(moving, static, static_affine=None, moving_affine=None,
                                static_affine, moving_affine,
                                starting_affine=starting_affine)
 
-    return translation.transform(moving), translation.affine
+    return translation.affine
 
 
 def rigid(moving, static, static_affine=None, moving_affine=None,
@@ -487,7 +486,7 @@ def rigid(moving, static, static_affine=None, moving_affine=None,
     rigid = reg.optimize(static, moving, transform, None,
                          static_affine, moving_affine,
                          starting_affine=starting_affine)
-    return rigid.transform(moving), rigid.affine
+    return rigid.affine
 
 
 def affine(moving, static, static_affine=None, moving_affine=None,
@@ -537,7 +536,7 @@ def affine(moving, static, static_affine=None, moving_affine=None,
                          static_affine, moving_affine,
                          starting_affine=starting_affine)
 
-    return xform.transform(moving), xform.affine
+    return xform.affine
 
 
 def affine_registration(moving, static,
@@ -659,12 +658,20 @@ def affine_registration(moving, static,
 
     # Go through the selected transformation:
     for func in pipeline:
-        transformed, starting_affine = func(moving, static,
-                                            static_affine=static_affine,
-                                            moving_affine=moving_affine,
-                                            starting_affine=starting_affine,
-                                            reg=affreg)
-    return transformed, starting_affine
+        starting_affine = func(moving, static,
+                               static_affine=static_affine,
+                               moving_affine=moving_affine,
+                               starting_affine=starting_affine,
+                               reg=affreg)
+
+    # After doing all that, resample once at the end:
+    affine_map = AffineMap(starting_affine,
+                           static.shape, static_affine,
+                           moving.shape, moving_affine)
+
+    resampled = affine_map.transform(moving)
+
+    return resampled, starting_affine
 
 
 def register_series(series, ref, pipeline=None, series_affine=None,
