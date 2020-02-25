@@ -10,7 +10,7 @@ from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
 
 
-def test_deprecated():
+def test_downsample_deprecated():
     with warnings.catch_warnings(record=True) as cw:
         warnings.simplefilter("always", DeprecationWarning)
         streamline = [np.array([[0, 0, 0], [1, 1, 1]])]
