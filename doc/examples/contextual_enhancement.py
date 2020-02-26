@@ -119,13 +119,13 @@ Deconvolution is used.
 # Perform CSD on the original data
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
-response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model_orig = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit_orig = csd_model_orig.fit(data_small)
 csd_shm_orig = csd_fit_orig.shm_coeff
 
 # Perform CSD on the original data + noise
-response, ratio = auto_response_ssst(gtab, data_noisy, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data_noisy, roi_radii=10, fa_thr=0.7)
 csd_model_noisy = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit_noisy = csd_model_noisy.fit(data_noisy_small)
 csd_shm_noisy = csd_fit_noisy.shm_coeff

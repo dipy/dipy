@@ -60,7 +60,7 @@ For the SFM, this requires first that we define a canonical response function
 that will be used to deconvolve the signal in every voxel
 """
 
-response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 
 """

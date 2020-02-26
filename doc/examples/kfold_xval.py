@@ -74,7 +74,7 @@ We initialize each kind of model:
 """
 
 dti_model = dti.TensorModel(gtab)
-response, ratio = csd.auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = csd.auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = csd.ConstrainedSphericalDeconvModel(gtab, response)
 
 """

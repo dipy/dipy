@@ -33,6 +33,15 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
 
 
+_, fbvals, fbvecs = get_fnames('small_64D')
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+gtab = gradient_table(bvals, bvecs)
+evals = np.array([1.7E-3, 0.4E-3, 0.4E-3])
+S0 = 4
+signal = single_tensor(gtab, S0, evals)
+data_test = [signal for i in range(9)]
+
+
 def test_recursive_response_calibration():
     """
     Test the recursive response calibration method.
@@ -122,7 +131,7 @@ def test_mask_for_response_ssst():
 
     mask_w_no_fa = mask_for_response_ssst(gtab, data,
                                   roi_center=None,
-                                  roi_radius=10,
+                                  roi_radii=10,
                                   fa_data=None,
                                   fa_thr=0.7)
 
@@ -131,7 +140,7 @@ def test_mask_for_response_ssst():
 
     mask_w_fa = mask_for_response_ssst(gtab, data,
                             roi_center=None,
-                            roi_radius=3,
+                            roi_radii=3,
                             fa_data=fa,
                             fa_thr=0.7)
 
@@ -148,7 +157,7 @@ def test_mask_for_response_ssst_nvoxels():
 
     mask = mask_for_response_ssst(gtab, data,
                                   roi_center=None,
-                                  roi_radius=10,
+                                  roi_radii=10,
                                   fa_data=None,
                                   fa_thr=0.7)
 
@@ -158,7 +167,7 @@ def test_mask_for_response_ssst_nvoxels():
     with warnings.catch_warnings(record=True) as w:
         mask = mask_for_response_ssst(gtab, data,
                                     roi_center=None,
-                                    roi_radius=10,
+                                    roi_radii=10,
                                     fa_data=None,
                                     fa_thr=1)
         npt.assert_equal(len(w), 1)
@@ -179,7 +188,7 @@ def test_response_from_mask_ssst():
 
     gtab = gradient_table(bvals, bvecs)
 
-    response, ratio = response_from_mask_ssst(gtab, data, mask)
+    response, _ = response_from_mask_ssst(gtab, data, mask)
 
     assert_array_almost_equal(response, response_gt)
 
@@ -194,13 +203,13 @@ def test_auto_response_ssst():
     response_auto, ratio_auto = auto_response_ssst(gtab,
                         data,
                         roi_center=None,
-                        roi_radius=3,
+                        roi_radii=3,
                         fa_data=None,
                         fa_thr=0.7)
 
     mask = mask_for_response_ssst(gtab, data,
                             roi_center=None,
-                            roi_radius=3,
+                            roi_radii=3,
                             fa_data=None,
                             fa_thr=0.7)
     
@@ -266,12 +275,12 @@ def test_csdeconv():
     big_S[:] = S2
 
     aresponse, aratio = auto_response_ssst(gtab, big_S, roi_center=(5, 5, 4),
-                                      roi_radius=3, fa_thr=0.5)
+                                      roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])
 
-    auto_response_ssst(gtab, big_S, roi_radius=3, fa_thr=0.5)
+    auto_response_ssst(gtab, big_S, roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
 
 

@@ -52,16 +52,16 @@ different strategies are presented.
 **Strategy 1 - response function estimates from a local brain region**
 One simple way to estimate the fiber response function is to look for regions
 of the brain where it is known that there are single coherent fiber
-populations. For example, if we use an ROI at the center of the brain, we will
+populations. For example, if we use a ROI at the center of the brain, we will
 find single fibers from the corpus callosum. The ``auto_response_ssst`` 
-function will calculate FA for an ROI of radius equal to ``roi_radius`` in 
+function will calculate FA for a cuboid ROI of radii equal to ``roi_radii`` in
 the center of the volume and return the response function estimated in that 
 region for the voxels with FA higher than 0.7.
 """
 
 from dipy.reconst.csdeconv import auto_response_ssst
 
-response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 """
 The ``response`` tuple contains two elements. The first is an array with

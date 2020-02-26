@@ -3,16 +3,16 @@ import warnings
 from dipy.reconst.mcsd import (mask_for_response_msmt,
                                response_from_mask_msmt,
                                auto_response_msmt)
-from dipy.reconst.mcsd import MultiShellDeconvModel
+from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
 from dipy.reconst import mcsd
 import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.sims.voxel import multi_shell_fiber_response, multi_tensor
+from dipy.sims.voxel import single_tensor, multi_tensor
 from dipy.reconst import shm
 from dipy.data import default_sphere, get_3shell_gtab, get_fnames
-from dipy.core.gradients import (GradientTable, gradient_table)
+from dipy.core.gradients import GradientTable, gradient_table
 
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
@@ -26,6 +26,22 @@ needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
 csf_md = 3e-3
 gm_md = .76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
+
+
+_, fbvals, fbvecs = get_fnames('small_64D')
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+gtab = gradient_table(bvals, bvecs)
+evals_wm = np.array([1.7E-3, 0.4E-3, 0.4E-3])
+evals_gm = np.array([4.0E-4, 4.0E-4, 4.0E-4])
+evals_csf = np.array([3.0E-3, 3.0E-3, 3.0E-3])
+S0 = 4
+signal_wm = single_tensor(gtab, S0, evals_wm)
+signal_gm = single_tensor(gtab, S0, evals_gm)
+signal_csf = single_tensor(gtab, S0, evals_csf)
+signals = [signal_wm, signal_gm, signal_csf]
+tissues = [0, 2, 1, 2, 1, 0, 0, 1, 2]
+data_test = [signals[tissue] for tissue in tissues]
+data_test = np.asarray(data_test).reshape((3,3,1,len(signal_wm)))
 
 
 def _expand(m, iso, coeff):
@@ -117,7 +133,7 @@ def test_mask_for_response_msmt():
     gtab = gradient_table(bvals, bvecs)
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                            roi_center=None, roi_radius=3,
+                            roi_center=None, roi_radii=3,
                             fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                             csf_fa_thr=0.15, md_data=None,
                             gm_md_thr=0.001, csf_md_thr=0.003)
@@ -127,7 +143,7 @@ def test_mask_for_response_msmt():
 
     wm_mask_fa_md, gm_mask_fa_md, csf_mask_fa_md = mask_for_response_msmt(
                             gtab, data,
-                            roi_center=None, roi_radius=3,
+                            roi_center=None, roi_radii=3,
                             fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3,
                             csf_fa_thr=0.15, md_data=md,
                             gm_md_thr=0.001, csf_md_thr=0.003)
@@ -148,7 +164,7 @@ def test_mask_for_response_msmt_nvoxels():
     gtab = gradient_table(bvals, bvecs)
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                            roi_center=None, roi_radius=3,
+                            roi_center=None, roi_radii=3,
                             fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                             csf_fa_thr=0.15, md_data=None,
                             gm_md_thr=0.001, csf_md_thr=0.003)
@@ -162,7 +178,7 @@ def test_mask_for_response_msmt_nvoxels():
 
     with warnings.catch_warnings(record=True) as w:
         wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                roi_center=None, roi_radius=3,
+                                roi_center=None, roi_radii=3,
                                 fa_data=None, wm_fa_thr=1, gm_fa_thr=0,
                                 csf_fa_thr=0, md_data=None,
                                 gm_md_thr=1, csf_md_thr=1)
@@ -228,13 +244,13 @@ def test_auto_response_msmt():
 
     gtab = gradient_table(bvals, bvecs)
 
-    response_auto_wm, response_auto_gm, response_auto_csf = auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
+    response_auto_wm, response_auto_gm, response_auto_csf = auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003)
 
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
-                            roi_center=None, roi_radius=3, 
+                            roi_center=None, roi_radii=3, 
                             fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
                             csf_fa_thr=0.15, md_data=None,
                             gm_md_thr=0.001, csf_md_thr=0.003)

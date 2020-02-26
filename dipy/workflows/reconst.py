@@ -410,7 +410,7 @@ class ReconstCSDFlow(Workflow):
         return 'csd'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radius=10,
+            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
             fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
             odf_to_sh_order=8, parallel=False, nbr_processes=None,
             out_dir='',
@@ -441,8 +441,8 @@ class ReconstCSDFlow(Workflow):
         roi_center : variable int, optional
             Center of ROI in data. If center is None, it is assumed that it is
             the center of the volume with shape `data.shape[:3]` (default None)
-        roi_radius : int, optional
-            radius of cubic ROI in voxels (default 10)
+        roi_radii : int or array-like, optional
+            radii of cuboid ROI in voxels (default 10)
         fa_thr : float, optional
             FA threshold for calculating the response function (default 0.7)
         frf : variable float, optional
@@ -520,12 +520,12 @@ class ReconstCSDFlow(Workflow):
                 if roi_center is not None:
                     logging.info('Response ROI center:\n{0}'
                                  .format(roi_center))
-                    logging.info('Response ROI radius:\n{0}'
-                                 .format(roi_radius))
+                    logging.info('Response ROI radii:\n{0}'
+                                 .format(roi_radii))
                 response, ratio = auto_response_ssst(
                         gtab, data,
                         roi_center=roi_center,
-                        roi_radius=roi_radius,
+                        roi_radii=roi_radii,
                         fa_thr=fa_thr)
                 response = list(response)
 

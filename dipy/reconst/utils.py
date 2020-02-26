@@ -50,25 +50,28 @@ def dki_design_matrix(gtab):
     return B
 
 
-def _is_roi_in_volume(data_shape, roi_center, roi_radius):
-    """ Verify if a ROI defined by a center and a radius is in a data volume.
+def _roi_in_volume(data_shape, roi_center, roi_radii):
+    """Ensures that a cuboid ROI is in a data volume.
 
     Parameters
     ----------
     data_shape : ndarray
-        the shape of the data
+        Shape of the data
     roi_center : ndarray, (3,)
         Center of ROI in data.
-    roi_radius : int
-        radius of cubic ROI
+    roi_radii : ndarray, (3,)
+        Radii of cuboid ROI
 
     Returns
     -------
-    bool : Whether the ROI is inside the volume or not.
+    roi_radii : ndarray, (3,)
+        Truncated radii of cuboid ROI. It remains unchanged if
+        the ROI was already contained inside the data volume.
     """
     for i in range(len(roi_center)):
-        inf_lim = roi_center[i] - roi_radius
-        sup_lim = roi_center[i] + roi_radius
+        inf_lim = int(roi_center[i] - roi_radii[i])
+        sup_lim = int(roi_center[i] + roi_radii[i])
         if inf_lim < 0 or sup_lim >= data_shape[i]:
-            return False
-    return True
+            roi_radii[i] = min(int(roi_center[i]),
+                                int(data_shape[i] - roi_center[i] - 1))
+    return roi_radii

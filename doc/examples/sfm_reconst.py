@@ -81,7 +81,7 @@ function:
 """
 
 from dipy.reconst.csdeconv import auto_response_ssst
-response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 """
 The ``response`` return value contains two entries. The first is an array with

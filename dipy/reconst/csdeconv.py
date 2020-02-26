@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+import numbers
 from scipy.integrate import quad
 from scipy.special import lpn, gamma
 import scipy.linalg as la
@@ -20,7 +21,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
-from dipy.reconst.utils import _is_roi_in_volume
+from dipy.reconst.utils import _roi_in_volume
 
 from dipy.segment.mask import applymask
 
@@ -773,7 +774,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
     return fodf_sh
 
 
-def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
+def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
                            fa_data=None, fa_thr=0.7):
     """ Computation of mask for ssst response function using FA.
 
@@ -781,12 +782,12 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     ----------
     gtab : GradientTable
     data : ndarray
-        diffusion data
-    roi_center : tuple, (3,)
+        diffusion data (4D)
+    roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
-    roi_radius : int
-        radius of cubic ROI
+    roi_radii : int or array-like, (3,)
+        radii of cuboid ROI
     fa_data : ndarray
         FA data, optionnal.
     fa_thr : float
@@ -816,28 +817,35 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     data using spherical deconvolution
     """
 
+    if len(data.shape) < 4:
+        msg = """Data must be 4D (3D image + directions). To use a 2D image,
+        please reshape it into a (N, N, 1, ndirs) array."""
+        raise ValueError(msg)
+
+    if isinstance(roi_radii, numbers.Number):
+        roi_radii = (roi_radii, roi_radii, roi_radii)
+
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
-    w = roi_radius
-    
-    if not _is_roi_in_volume(data.shape, np.array([ci, cj, ck]), w):
-        msg = "ROI is outside of data volume."
-        raise ValueError(msg)
+
+    roi_radii = _roi_in_volume(data.shape, np.array([ci, cj, ck]),
+                               np.asarray(roi_radii))
+    wi, wj, wk = roi_radii
 
     if fa_data is None:
-        roi = data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
+        roi = data[int(ci - wi): int(ci + wi),
+            int(cj - wj): int(cj + wj),
+            int(ck - wk): int(ck + wk)]
         ten = TensorModel(gtab)
         tenfit = ten.fit(roi)
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
     else:
-        fa = fa_data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
+        fa = fa_data[int(ci - wi): int(ci + wi),
+            int(cj - wj): int(cj + wj),
+            int(ck - wk): int(ck + wk)]
     mask = np.zeros(fa.shape)
     mask[fa > fa_thr] = 1
 
@@ -908,7 +916,7 @@ def response_from_mask_ssst(gtab, data, mask):
     return _get_response(S0s, lambdas)
 
 
-def auto_response_ssst(gtab, data, roi_center=None, roi_radius=10,
+def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10,
                        fa_data=None, fa_thr=0.7):
     """ Automatic estimation of ssst response function using FA.
 
@@ -920,8 +928,8 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     roi_center : tuple, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
-    roi_radius : int
-        radius of cubic ROI
+    roi_radii : int or array-like, (3,)
+        radii of cuboid ROI
     fa_data : ndarray
         FA data, optionnal.
     fa_thr : float
@@ -947,7 +955,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radius=10,
     `ratio` (more details are available in the description of the function).
     """
 
-    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radius,
+    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii,
                                       fa_data, fa_thr)
     response, ratio = response_from_mask_ssst(gtab, data, mask)
 

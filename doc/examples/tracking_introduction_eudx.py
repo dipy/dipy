@@ -67,7 +67,7 @@ from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
 
-response, ratio = auto_response_ssst(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csa_model = CsaOdfModel(gtab, sh_order=6)
 csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              relative_peak_threshold=.8,

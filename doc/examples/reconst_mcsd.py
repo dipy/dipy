@@ -42,8 +42,7 @@ from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.sims.voxel import multi_shell_fiber_response
-from dipy.reconst.mcsd import MultiShellDeconvModel
+from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
 from dipy.viz import window, actor
 
 from dipy.data import get_sphere, get_fnames
@@ -207,13 +206,13 @@ csf_md = np.mean(MD[selected_csf])
 gm_md = np.mean(MD[selected_gm])
 
 """
-The ``auto_response_ssst`` function will calculate FA for an ROI of radius
-equal to ``roi_radius`` in the center of the volume and return the response
+The ``auto_response_ssst`` function will calculate FA for a cuboid ROI of radii
+equal to ``roi_radii`` in the center of the volume and return the response
 function estimated in that region for the voxels with FA higher than 0.7.
 """
 
 response, ratio = auto_response_ssst(gtab, denoised_arr,
-                                     roi_radius=10, fa_thr=0.7)
+                                     roi_radii=10, fa_thr=0.7)
 evals_d = response[0]
 
 """

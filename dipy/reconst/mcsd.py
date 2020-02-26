@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+import numbers
 from dipy.core import geometry as geo
 from dipy.core.gradients import (GradientTable, gradient_table, 
                                  unique_bvals_tol, get_bval_indices)
@@ -10,7 +11,7 @@ from dipy.reconst.csdeconv import response_from_mask_ssst
 from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
                               mean_diffusivity)
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.utils import _is_roi_in_volume
+from dipy.reconst.utils import _roi_in_volume
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
@@ -398,7 +399,7 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     return MultiShellResponse(response, sh_order, bvals)
 
 
-def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10, 
+def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10, 
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003):
@@ -408,12 +409,12 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
     ----------
     gtab : GradientTable
     data : ndarray
-        diffusion data
-    roi_center : tuple, (3,)
+        diffusion data (4D)
+    roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
-    roi_radius : int
-        radius of cubic ROI
+    roi_radii : int or array-like, (3,)
+        radii of cuboid ROI
     fa_data : ndarray
         FA data, optionnal.
     wm_fa_thr : float
@@ -455,20 +456,27 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
     the user has to give either the FA and MD data, or none of them.
     """
 
+    if len(data.shape) < 4:
+        msg = """Data must be 4D (3D image + directions). To use a 2D image,
+        please reshape it into a (N, N, 1, ndirs) array."""
+        raise ValueError(msg)
+
+    if isinstance(roi_radii, numbers.Number):
+        roi_radii = (roi_radii, roi_radii, roi_radii)
+
     if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) // 2
     else:
         ci, cj, ck = roi_center
-    w = roi_radius
 
-    if not _is_roi_in_volume(data.shape, np.array([ci, cj, ck]), w):
-        msg = "ROI is outside of data volume."
-        raise ValueError(msg)
+    roi_radii = _roi_in_volume(data.shape, np.array([ci, cj, ck]),
+                               np.asarray(roi_radii))
+    wi, wj, wk = roi_radii
 
     if fa_data is None and md_data is None:
-        roi = data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
+        roi = data[int(ci - wi): int(ci + wi),
+            int(cj - wj): int(cj + wj),
+            int(ck - wk): int(ck + wk)]
         ten = TensorModel(gtab)
         tenfit = ten.fit(roi)
         fa = fractional_anisotropy(tenfit.evals)
@@ -482,12 +490,12 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radius=10,
         msg = "Missing FA data."
         raise ValueError(msg)
     else:
-        fa = fa_data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
-        md = md_data[int(ci - w): int(ci + w),
-            int(cj - w): int(cj + w),
-            int(ck - w): int(ck + w)]
+        fa = fa_data[int(ci - wi): int(ci + wi),
+            int(cj - wj): int(cj + wj),
+            int(ck - wk): int(ck + wk)]
+        md = md_data[int(ci - wi): int(ci + wi),
+            int(cj - wj): int(cj + wj),
+            int(ck - wk): int(ck + wk)]
 
     mask_wm = np.zeros(fa.shape)
     mask_wm[fa > wm_fa_thr] = 1
@@ -605,7 +613,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     return tissue_responses[0], tissue_responses[1], tissue_responses[2]
 
 
-def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
+def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003):
@@ -616,11 +624,11 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
     gtab : GradientTable
     data : ndarray
         diffusion data
-    roi_center : tuple, (3,)
+    roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
-    roi_radius : int
-        radius of cubic ROI
+    roi_radii : int or array-like, (3,)
+        radii of cuboid ROI
     fa_data : ndarray
         FA data, optionnal.
     wm_fa_thr : float
@@ -660,7 +668,7 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radius=10,
 
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                         roi_center,
-                                                        roi_radius,
+                                                        roi_radii,
                                                         fa_data, wm_fa_thr,
                                                         gm_fa_thr, csf_fa_thr,
                                                         md_data, gm_md_thr,
