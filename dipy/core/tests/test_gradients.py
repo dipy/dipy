@@ -100,13 +100,13 @@ def test_GradientTable_btensor_calculation():
 
     # Check that the number of b tensors is correct
     npt.assert_equal(gt.btens.shape[0], gt.bvals.shape[0])
-    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs, gt.btens)):
+    for i, (bval, bten) in enumerate(zip(gt.bvals, gt.btens)):
         # Check that the b tensor magnitude is correct
         npt.assert_almost_equal(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
         if bval != 0:
             evals, evecs = np.linalg.eig(bten)
-            dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), gt.bvecs[i])
+            dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), gt.bvecs[i])
             npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 1
@@ -122,8 +122,7 @@ def test_GradientTable_btensor_calculation():
             if btens == 'LTE':
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]),
-                                      gt.bvecs[i])
+                    dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 2
@@ -139,15 +138,14 @@ def test_GradientTable_btensor_calculation():
         if btens[i] == 'LTE':
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
-                dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]),
-                                  gt.bvecs[i])
+                dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
                 npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check invalid input
     npt.assert_raises(ValueError, GradientTable, gradients=gradients,
                       btens='PPP')
     npt.assert_raises(ValueError, GradientTable, gradients=gradients,
-                      btens=np.zeros((10,10)))
+                      btens=np.zeros((10, 10)))
 
 
 def test_gradient_table_from_qvals_bvecs():

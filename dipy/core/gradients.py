@@ -97,11 +97,11 @@ class GradientTable(object):
             self.btens = b_tensors
         elif (isinstance(btens, np.ndarray) and (btens.shape ==
                 (gradients.shape[0],) or (btens.shape ==
-                (gradients.shape[0],1)) or (btens.shape == (1,
+                (gradients.shape[0], 1)) or (btens.shape == (1,
                 gradients.shape[0])))):
             b_tensors = np.zeros((len(self.bvals), 3, 3))
-            if (btens.shape == (1,gradients.shape[0],1)):
-                btens = btens.reshape((gradients.shape[0],1))
+            if btens.shape == (1,gradients.shape[0], 1):
+                btens = btens.reshape((gradients.shape[0], 1))
             for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                 R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
                 if btens[i] == 'LTE':
@@ -451,7 +451,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
-        
+
     btens : can be any of two options
 
         1. a string specifying the shape of the encoding tensor shape for all
