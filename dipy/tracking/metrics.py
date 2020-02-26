@@ -1,5 +1,7 @@
 """ Metrics for tracks, where tracks are arrays of points """
 
+from dipy.utils.deprecator import deprecate_with_version
+from dipy.tracking.streamline import set_number_of_points
 import numpy as np
 from scipy.interpolate import splprep, splev
 
@@ -155,6 +157,30 @@ def midpoint(xyz):
     Ds = midlen-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
+
+
+@deprecate_with_version("dipy.tracking.metrics.downsample is deprecated, "
+                        "Please use "
+                        "dipy.tracking.streamline.set_number_of_points instead",
+                        since='1.2', until='1.4')
+def downsample(xyz, n_pols=3):
+    """ downsample for a specific number of points along the streamline
+    Uses the length of the curve. It works in a similar fashion to
+    midpoint and arbitrarypoint but it also reduces the number of segments
+    of a streamline.
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a streamlines
+    n_pol : int
+       integer representing number of points (poles) we need along the curve.
+    Returns
+    -------
+    xyz2 : array shape (M,3)
+       array representing x,y,z of M points that where extrapolated. M
+       should be equal to n_pols
+    """
+    return set_number_of_points(xyz, n_pols)
 
 
 def center_of_mass(xyz):
@@ -482,7 +508,7 @@ def intersect_sphere(xyz, center, radius):
              radius**2)
         bb4ac = b*b-4*a*c
         # print 'bb4ac',bb4ac
-        if abs(a) < np.finfo(float).eps or bb4ac < 0:  # too small segment or
+        if abs(a) < np.finfo(float).eps or bb4ac < 0:   # too small segment or
                                                         # no intersection
             continue
         if bb4ac == 0:  # one intersection point p
@@ -756,71 +782,6 @@ def _extrap(xyz, cumlen, distance):
     Ds = distance-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
-
-
-def downsample(xyz, n_pols=3):
-    """ downsample for a specific number of points along the curve/track
-
-    Uses the length of the curve. It works in a similar fashion to
-    midpoint and arbitrarypoint but it also reduces the number of segments
-    of a track.
-
-    Parameters
-    ----------
-    xyz : array-like shape (N,3)
-       array representing x,y,z of N points in a track
-    n_pol : int
-       integer representing number of points (poles) we need along the curve.
-
-    Returns
-    -------
-    xyz2 : array shape (M,3)
-       array representing x,y,z of M points that where extrapolated. M
-       should be equal to n_pols
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> # a semi-circle
-    >>> theta=np.pi*np.linspace(0,1,100)
-    >>> x=np.cos(theta)
-    >>> y=np.sin(theta)
-    >>> z=0*x
-    >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=downsample(xyz,3)
-    >>> # a cosine
-    >>> x=np.pi*np.linspace(0,1,100)
-    >>> y=np.cos(theta)
-    >>> z=0*y
-    >>> xyz=np.vstack((x,y,z)).T
-    >>> _= downsample(xyz,3)
-    >>> len(xyz2)
-    3
-    >>> xyz3=downsample(xyz,10)
-    >>> len(xyz3)
-    10
-    """
-    xyz = np.asarray(xyz)
-    n_pts = xyz.shape[0]
-    if n_pts == 0:
-        raise ValueError('xyz array cannot be empty')
-    if n_pts == 1:
-        return xyz.copy().squeeze()
-    cumlen = np.zeros(n_pts)
-    cumlen[1:] = length(xyz, along=True)
-    step = cumlen[-1]/(n_pols-1)
-    if cumlen[-1] < step:
-        raise ValueError('Given number of points n_pols is incorrect. ')
-    if n_pols <= 2:
-        raise ValueError('Given number of points n_pols needs to be'
-                         ' higher than 2. ')
-
-    ar = np.arange(0, cumlen[-1], step)
-    if np.abs(ar[-1]-cumlen[-1]) < np.finfo('f4').eps:
-        ar = ar[:-1]
-
-    xyz2 = [_extrap(xyz, cumlen, distance) for distance in ar]
-    return np.vstack((np.array(xyz2), xyz[-1]))
 
 
 def principal_components(xyz):
