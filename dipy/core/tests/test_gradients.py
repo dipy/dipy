@@ -142,9 +142,17 @@ def test_GradientTable_btensor_calculation():
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
                 npt.assert_almost_equal(np.abs(dot_prod), 1)
 
+    # Check btens input option 3
+    btens = np.array([np.eye(3, 3) for i in range(6)])
+    gt = GradientTable(gradients, btens=btens)
+    npt.assert_equal(btens, gt.btens)
+    npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
+
     # Check invalid input
     npt.assert_raises(ValueError, GradientTable, gradients=gradients,
                       btens='PPP')
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
+                      btens=np.array([np.eye(3, 3) for i in range(10)]))
     npt.assert_raises(ValueError, GradientTable, gradients=gradients,
                       btens=np.zeros((10, 10)))
 

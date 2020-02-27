@@ -126,6 +126,9 @@ class GradientTable(object):
                             "%s is an invalid value in btens array. "%btens[i]
                             + "Array element options: 'LTE', 'PTE', 'STE'.")
             self.btens = b_tensors
+        elif (isinstance(btens, np.ndarray) and btens.shape ==
+                (gradients.shape[0], 3, 3)):
+            self.btens = btens
         elif btens is not None:
             raise ValueError("%s is an invalid value for btens. "%btens
                              + "Please provide a string or an array of "
@@ -191,15 +194,25 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
-    btens : can be any of two options
-        1. a string specifying the shape of the encoding tensor shape for all
-           volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to
-           linear, planar, and spherical tensor encoding. (default 'LTE')
+    btens : can be any of three options
+        1. a string specifying the shape of the encoding tensor for all volumes
+           in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
+           planar, and spherical tensor encoding. Tensors are rotated so that
+           the linear tensor is aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
         2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
            encoding tensor shape for each volume separately. N corresponds to
            the number volumes in data. Options for elements in array: 'LTE',
            'PTE', 'STE' corresponding to linear, planar, and spherical tensor
-           encoding.
+           encoding. Tensors are rotated so that the linear tensor is aligned
+           with the corresponding gradient direction and the planar tensor's
+           normal is aligned with the corresponding gradient direction.
+           Magnitude is scaled to match the b-value.
+        3. an arry of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data No rotation of
+           scaling is performed.
 
     Other Parameters
     ----------------
@@ -452,16 +465,26 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
 
-    btens : can be any of two options
+    btens : can be any of three options
 
-        1. a string specifying the shape of the encoding tensor shape for all
-           volumes in data. Options: 'LTE', 'PTE', 'STE' corresponding to
-           linear, planar, and spherical tensor encoding. (default 'LTE')
+        1. a string specifying the shape of the encoding tensor for all volumes
+           in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
+           planar, and spherical tensor encoding. Tensors are rotated so that
+           the linear tensor is aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
         2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
            encoding tensor shape for each volume separately. N corresponds to
            the number volumes in data. Options for elements in array: 'LTE',
            'PTE', 'STE' corresponding to linear, planar, and spherical tensor
-           encoding.
+           encoding. Tensors are rotated so that the linear tensor is aligned
+           with the corresponding gradient direction and the planar tensor's
+           normal is aligned with the corresponding gradient direction.
+           Magnitude is scaled to match the b-value.
+        3. an arry of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data No rotation of
+           scaling is performed.
 
     Returns
     -------
