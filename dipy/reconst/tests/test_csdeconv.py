@@ -35,11 +35,34 @@ from dipy.io.image import load_nifti_data
 
 _, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab = gradient_table(bvals, bvecs)
-evals = np.array([1.7E-3, 0.4E-3, 0.4E-3])
-S0 = 4
-signal = single_tensor(gtab, S0, evals)
-data_test = [signal for i in range(9)]
+gtab_test = gradient_table(bvals, bvecs)
+evals_wm = np.array([1.7E-3, 0.4E-3, 0.4E-3])
+evals_gm = np.array([4.0E-4, 4.0E-4, 4.0E-4])
+evals_csf = np.array([3.0E-3, 3.0E-3, 3.0E-3])
+S0_wm = 0.8
+S0_gm = 1
+S0_csf = 4
+signal_wm = single_tensor(gtab_test, S0_wm, evals_wm)
+signal_gm = single_tensor(gtab_test, S0_gm, evals_gm)
+signal_csf = single_tensor(gtab_test, S0_csf, evals_csf)
+signals = [signal_wm, signal_gm, signal_csf]
+tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
+data_test = [signals[tissue] for tissue in tissues]
+evals = np.ndarray((9, 3))
+for i, tissue in enumerate(tissues):
+    if tissue == 0:
+        evals[i] = evals_wm
+    elif tissues == 1:
+        evals[i] = evals_gm
+    else:
+        evals[i] = evals_csf
+evals = evals.reshape((3, 3, 1, 3))
+
+tissues = np.asarray(tissues).reshape((3, 3, 1))
+data_test = np.asarray(data_test).reshape((3, 3, 1, len(signal_wm)))
+mask_test = np.where(tissues == 0, 1, 0)
+response_test = np.concatenate((evals_wm, [S0_wm]))
+fa_test = fractional_anisotropy(evals)
 
 
 def test_recursive_response_calibration():
@@ -121,15 +144,15 @@ def test_recursive_response_calibration():
 
 
 def test_mask_for_response_ssst():
-    fdata, fbvals, fbvecs, ffa, fmask = get_fnames('???')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
-    fa = load_nifti_data(ffa)
-    mask = load_nifti_data(fmask)
+    # fdata, fbvals, fbvecs, ffa, fmask = get_fnames('???')
+    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    # data = load_nifti_data(fdata)
+    # fa = load_nifti_data(ffa)
+    # mask = load_nifti_data(fmask)
 
-    gtab = gradient_table(bvals, bvecs)
+    # gtab = gradient_table(bvals, bvecs)
 
-    mask_w_no_fa = mask_for_response_ssst(gtab, data,
+    mask_w_no_fa = mask_for_response_ssst(gtab_test, data_test,
                                   roi_center=None,
                                   roi_radii=10,
                                   fa_data=None,
@@ -138,34 +161,34 @@ def test_mask_for_response_ssst():
     # Verifies that mask is not empty:
     assert_equal(int(np.sum(mask_w_no_fa)) == 0, True)
 
-    mask_w_fa = mask_for_response_ssst(gtab, data,
+    mask_w_fa = mask_for_response_ssst(gtab_test, data_test,
                             roi_center=None,
                             roi_radii=3,
-                            fa_data=fa,
+                            fa_data=fa_test,
                             fa_thr=0.7)
 
     assert_array_almost_equal(mask_w_no_fa, mask_w_fa)
-    assert_array_almost_equal(mask, mask_w_fa)
+    assert_array_almost_equal(mask_test, mask_w_fa)
 
 
 def test_mask_for_response_ssst_nvoxels():
-    fdata, fbvals, fbvecs = get_fnames('???')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
+    # fdata, fbvals, fbvecs = get_fnames('???')
+    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    # data = load_nifti_data(fdata)
 
-    gtab = gradient_table(bvals, bvecs)
+    # gtab = gradient_table(bvals, bvecs)
 
-    mask = mask_for_response_ssst(gtab, data,
+    mask = mask_for_response_ssst(gtab_test, data_test,
                                   roi_center=None,
                                   roi_radii=10,
                                   fa_data=None,
                                   fa_thr=0.7)
 
     nvoxels = np.sum(mask)
-    assert_equal(nvoxels, 10) # To change!!
+    assert_equal(nvoxels, 5)
 
     with warnings.catch_warnings(record=True) as w:
-        mask = mask_for_response_ssst(gtab, data,
+        mask = mask_for_response_ssst(gtab_test, data_test,
                                     roi_center=None,
                                     roi_radii=10,
                                     fa_data=None,
@@ -180,41 +203,41 @@ def test_mask_for_response_ssst_nvoxels():
 
 
 def test_response_from_mask_ssst():
-    fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
-    mask = load_nifti_data(fmask)
-    response_gt = np.loadtxt(fresponse).T
+    # fdata, fbvals, fbvecs, fmask, fresponse = get_fnames('???')
+    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    # data = load_nifti_data(fdata)
+    # mask = load_nifti_data(fmask)
+    # response_gt = np.loadtxt(fresponse).T
 
-    gtab = gradient_table(bvals, bvecs)
+    # gtab = gradient_table(bvals, bvecs)
 
-    response, _ = response_from_mask_ssst(gtab, data, mask)
+    response, _ = response_from_mask_ssst(gtab_test, data_test, mask_test)
 
-    assert_array_almost_equal(response, response_gt)
+    assert_array_almost_equal(response, response_test)
 
 
 def test_auto_response_ssst():
-    fdata, fbvals, fbvecs = get_fnames('small_64D')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
+    # fdata, fbvals, fbvecs = get_fnames('small_64D')
+    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    # data = load_nifti_data(fdata)
 
-    gtab = gradient_table(bvals, bvecs)
+    # gtab = gradient_table(bvals, bvecs)
 
-    response_auto, ratio_auto = auto_response_ssst(gtab,
-                        data,
+    response_auto, ratio_auto = auto_response_ssst(gtab_test,
+                        data_test,
                         roi_center=None,
                         roi_radii=3,
                         fa_data=None,
                         fa_thr=0.7)
 
-    mask = mask_for_response_ssst(gtab, data,
+    mask = mask_for_response_ssst(gtab_test, data_test,
                             roi_center=None,
                             roi_radii=3,
                             fa_data=None,
                             fa_thr=0.7)
     
-    response_from_mask, ratio_from_mask = response_from_mask_ssst(gtab,
-                                                                   data,
+    response_from_mask, ratio_from_mask = response_from_mask_ssst(gtab_test,
+                                                                   data_test,
                                                                    mask)
     
     assert_array_equal(response_auto, response_from_mask)
