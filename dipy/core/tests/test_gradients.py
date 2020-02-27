@@ -122,7 +122,8 @@ def test_GradientTable_btensor_calculation():
             if btens == 'LTE':
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:,np.argmax(evals)]), bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]),
+                                      bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 2

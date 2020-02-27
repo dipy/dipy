@@ -100,7 +100,7 @@ class GradientTable(object):
                 (gradients.shape[0], 1)) or (btens.shape == (1,
                 gradients.shape[0])))):
             b_tensors = np.zeros((len(self.bvals), 3, 3))
-            if btens.shape == (1,gradients.shape[0], 1):
+            if btens.shape == (1, gradients.shape[0]):
                 btens = btens.reshape((gradients.shape[0], 1))
             for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                 R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
@@ -164,7 +164,7 @@ class GradientTable(object):
         denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
-    
+
     @property
     def info(self):
         logger.info('B-values shape (%d,)' % self.bvals.shape)
