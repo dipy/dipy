@@ -199,7 +199,7 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
 Create tracks using peaks::
 
-    dipy_track_det out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_tractogram tracks_from_peaks.trk
+    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_tractogram tracks_from_peaks.trk
 
 We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
 
@@ -216,7 +216,7 @@ We can visualize the result using ``dipy_horizon``. The ``--cluster`` option all
 
 Alternatively, we can create deterministic tracks using the maximum value of a spherical harmonics cone::
 
-    $ dipy_track_det peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
+    $ dipy_track_local peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
 
 
 For more information about each command line, you see :ref:`workflows_reference`.
