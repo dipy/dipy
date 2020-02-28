@@ -26,7 +26,8 @@ of the documentation for the procedures we use in developing the code.
 ### Tests and test coverage
 
 We use [pytest](https://docs.pytest.org) to write tests of the code,
-and [Travis-CI](https://travis-ci.org/dipy/dipy) for continuous integration.
+and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.org/dipy/dipy)
+for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
 you are adding code into ``dipy/tracking/streamline.py``), add additional tests
@@ -68,7 +69,7 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 ### Documentation
 
-DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to generate
+DIPY uses [Sphinx](http://www.sphinx-doc.org/en/stable/index.html) to generate
 documentation. The
 [DIPY Coding Style Guideline](https://dipy.org/documentation/latest/devel/coding_style_guideline/)
 contains details about documenting the contributions.
