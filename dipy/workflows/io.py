@@ -355,7 +355,7 @@ class TensorToPamFlow(Workflow):
             Path to the input sphere vertices. This path may contain
             wildcards to process multiple inputs at once. If it is not define,
             default_sphere option will be used
-        default_sphere_name: string, optional
+        default_sphere_name : string, optional
             Specify default sphere to use for spherical harmonics
             representation. This option can be supersed by sphere_files option.
             default: repulsion724.
