@@ -7,7 +7,7 @@ Suppress Gibbs oscillations
 Magnetic Resonance (MR) images are reconstructed from the Fourier coefficients
 of acquired k-space images. Since only a finite number of Fourier coefficients
 can be acquired in practice, reconstructed MR images can be corrupted by Gibbs
-artefacts, which manifest by intensity oscillations adjacent to edges of
+artefacts, which is manifested by intensity oscillations adjacent to edges of
 different tissues types [1]_. Although this artefact affects MR images in
 general, in the context of diffusion-weighted imaging, Gibbs oscillations
 can be magnified in derived diffusion-based estimates [1]_, [2]_.
