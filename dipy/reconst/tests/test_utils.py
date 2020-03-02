@@ -31,6 +31,5 @@ def test_roi_in_volume():
     npt.assert_array_equal(roi_radii_out, np.array([2, 5, 0]))
 
 
-
 if __name__ == "__main__":
     npt.run_module_suite()
