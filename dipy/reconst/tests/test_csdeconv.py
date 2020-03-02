@@ -153,7 +153,7 @@ def test_mask_for_response_ssst():
 
     mask_w_no_fa = mask_for_response_ssst(gtab_test, data_test,
                                           roi_center=None,
-                                          roi_radii=10,
+                                          roi_radii=(1, 1, 0),
                                           fa_data=None,
                                           fa_thr=0.7)
 
@@ -162,7 +162,7 @@ def test_mask_for_response_ssst():
 
     mask_w_fa = mask_for_response_ssst(gtab_test, data_test,
                                        roi_center=None,
-                                       roi_radii=3,
+                                       roi_radii=(1, 1, 0),
                                        fa_data=fa_test,
                                        fa_thr=0.7)
 
@@ -179,7 +179,7 @@ def test_mask_for_response_ssst_nvoxels():
 
     mask = mask_for_response_ssst(gtab_test, data_test,
                                   roi_center=None,
-                                  roi_radii=10,
+                                  roi_radii=(1, 1, 0),
                                   fa_data=None,
                                   fa_thr=0.7)
 
@@ -189,7 +189,7 @@ def test_mask_for_response_ssst_nvoxels():
     with warnings.catch_warnings(record=True) as w:
         mask = mask_for_response_ssst(gtab_test, data_test,
                                       roi_center=None,
-                                      roi_radii=10,
+                                      roi_radii=(1, 1, 0),
                                       fa_data=None,
                                       fa_thr=1)
         npt.assert_equal(len(w), 1)
@@ -225,13 +225,13 @@ def test_auto_response_ssst():
     response_auto, ratio_auto = auto_response_ssst(gtab_test,
                                                    data_test,
                                                    roi_center=None,
-                                                   roi_radii=3,
+                                                   roi_radii=(1, 1, 0),
                                                    fa_data=None,
                                                    fa_thr=0.7)
 
     mask = mask_for_response_ssst(gtab_test, data_test,
                                   roi_center=None,
-                                  roi_radii=3,
+                                  roi_radii=(1, 1, 0),
                                   fa_data=None,
                                   fa_thr=0.7)
 

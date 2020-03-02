@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.testing as npt
-from dipy.reconst.utils import _roi_in_volume
+from dipy.reconst.utils import _roi_in_volume, _data_from_roi
 
 
 def test_roi_in_volume():
@@ -26,9 +26,25 @@ def test_roi_in_volume():
     npt.assert_array_equal(roi_radii_out, np.array([5, 5, 0]))
 
     roi_center = np.array([2, 5, 0])
-    roi_radii = np.array([5, 10, 0])
+    roi_radii = np.array([5, 10, 2])
     roi_radii_out = _roi_in_volume(data_shape, roi_center, roi_radii)
     npt.assert_array_equal(roi_radii_out, np.array([2, 5, 0]))
+
+
+def test_data_from_roi():
+    data = np.arange(0, 125, 1).reshape((5, 5, 5))
+    roi_center = (2, 2, 2)
+    roi_radii = (2, 2, 2)
+    data_roi = _data_from_roi(data, roi_center, roi_radii)
+    npt.assert_array_equal(data_roi, data)
+
+    roi_radii = (1, 2, 2)
+    data_roi = _data_from_roi(data, roi_center, roi_radii)
+    npt.assert_array_equal(data_roi, data[1:4])
+
+    roi_radii = (0, 2, 2)
+    data_roi = _data_from_roi(data, roi_center, roi_radii)
+    npt.assert_array_equal(data_roi, data[2])
 
 
 if __name__ == "__main__":

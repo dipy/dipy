@@ -19,7 +19,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
-from dipy.reconst.utils import _roi_in_volume
+from dipy.reconst.utils import _roi_in_volume, _data_from_roi
 
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
@@ -822,26 +822,19 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
         roi_radii = (roi_radii, roi_radii, roi_radii)
 
     if roi_center is None:
-        ci, cj, ck = np.array(data.shape[:3]) // 2
-    else:
-        ci, cj, ck = roi_center
+        roi_center = np.array(data.shape[:3]) // 2
 
-    roi_radii = _roi_in_volume(data.shape, np.array([ci, cj, ck]),
+    roi_radii = _roi_in_volume(data.shape, np.asarray(roi_center),
                                np.asarray(roi_radii))
-    wi, wj, wk = roi_radii
 
     if fa_data is None:
-        roi = data[int(ci - wi): int(ci + wi),
-                   int(cj - wj): int(cj + wj),
-                   int(ck - wk): int(ck + wk)]
+        roi = _data_from_roi(data, roi_center, roi_radii)
         ten = TensorModel(gtab)
         tenfit = ten.fit(roi)
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
     else:
-        fa = fa_data[int(ci - wi): int(ci + wi),
-                     int(cj - wj): int(cj + wj),
-                     int(ck - wk): int(ck + wk)]
+        fa = _data_from_roi(fa_data, roi_center, roi_radii)
     mask = np.zeros(fa.shape)
     mask[fa > fa_thr] = 1
 

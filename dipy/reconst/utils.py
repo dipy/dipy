@@ -68,6 +68,7 @@ def _roi_in_volume(data_shape, roi_center, roi_radii):
         Truncated radii of cuboid ROI. It remains unchanged if
         the ROI was already contained inside the data volume.
     """
+
     for i in range(len(roi_center)):
         inf_lim = int(roi_center[i] - roi_radii[i])
         sup_lim = int(roi_center[i] + roi_radii[i])
@@ -75,3 +76,41 @@ def _roi_in_volume(data_shape, roi_center, roi_radii):
             roi_radii[i] = min(int(roi_center[i]),
                                int(data_shape[i] - roi_center[i] - 1))
     return roi_radii
+
+
+def _data_from_roi(data, roi_center, roi_radii):
+    """Gets data within a cuboid ROI defined by center and radii.
+
+    Parameters
+    ----------
+    data : ndarray
+        Data to cut
+    roi_center : array-like, (3,)
+        Center of ROI in data.
+    roi_radii : array-like, (3,)
+        Radii of cuboid ROI
+
+    Returns
+    -------
+    roi : ndarray
+        Data inside the cuboid ROI.
+    """
+
+    ci, cj, ck = roi_center
+    wi, wj, wk = roi_radii
+    interval_i = slice(int(ci - wi), int(ci + wi) + 1)
+    interval_j = slice(int(cj - wj), int(cj + wj) + 1)
+    interval_k = slice(int(ck - wk), int(ck + wk) + 1)
+
+    if wi == 0:
+        interval_i = ci
+    elif wj == 0:
+        interval_j = cj
+    elif wk == 0:
+        interval_k = ck
+
+    data_roi = data[interval_i,
+                    interval_j,
+                    interval_k]
+
+    return data_roi
