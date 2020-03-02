@@ -388,7 +388,7 @@ def test_unique_bvals_tol():
 
 def test_get_bval_indices():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
-    indices_gt = np.array([0,1,2,3])
+    indices_gt = np.array([0, 1, 2, 3])
     indices = get_bval_indices(bvals, 1000)
     npt.assert_array_almost_equal(indices_gt, indices)
 

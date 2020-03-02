@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import numbers
 from dipy.core import geometry as geo
-from dipy.core.gradients import (GradientTable, gradient_table, 
+from dipy.core.gradients import (GradientTable, gradient_table,
                                  unique_bvals_tol, get_bval_indices)
 from dipy.data import default_sphere
 from dipy.reconst import shm
@@ -399,8 +399,8 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     return MultiShellResponse(response, sh_order, bvals)
 
 
-def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10, 
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3, 
+def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
+                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
                            gm_md_thr=0.001, csf_md_thr=0.003):
     """ Computation of masks for msmt response function using FA and MD.
@@ -444,15 +444,15 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     Notes
     -----
-    In msmt-CSD there is an important pre-processing step: the estimation of 
+    In msmt-CSD there is an important pre-processing step: the estimation of
     every tissue's response function. In order to do this, we look for voxels
     corresponding to WM, GM and CSF. This function aims to accomplish that by
     returning a mask of voxels within a ROI and who respect some threshold
-    constraints, for each tissue. More precisely, the WM mask must have a FA 
-    value above a given threshold. The GM mask and CSF mask must have a FA 
+    constraints, for each tissue. More precisely, the WM mask must have a FA
+    value above a given threshold. The GM mask and CSF mask must have a FA
     below given thresholds and a MD above other thresholds. Of course, if we
-    haven't precalculated FA and MD, we need to fit a Tensor model to the 
-    datasets. The option is given to the user with this function. Note that 
+    haven't precalculated FA and MD, we need to fit a Tensor model to the
+    datasets. The option is given to the user with this function. Note that
     the user has to give either the FA and MD data, or none of them.
     """
 
@@ -475,8 +475,8 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     if fa_data is None and md_data is None:
         roi = data[int(ci - wi): int(ci + wi),
-            int(cj - wj): int(cj + wj),
-            int(ck - wk): int(ck + wk)]
+                   int(cj - wj): int(cj + wj),
+                   int(ck - wk): int(ck + wk)]
         ten = TensorModel(gtab)
         tenfit = ten.fit(roi)
         fa = fractional_anisotropy(tenfit.evals)
@@ -491,11 +491,11 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         raise ValueError(msg)
     else:
         fa = fa_data[int(ci - wi): int(ci + wi),
-            int(cj - wj): int(cj + wj),
-            int(ck - wk): int(ck + wk)]
+                     int(cj - wj): int(cj + wj),
+                     int(ck - wk): int(ck + wk)]
         md = md_data[int(ci - wi): int(ci + wi),
-            int(cj - wj): int(cj + wj),
-            int(ck - wk): int(ck + wk)]
+                     int(cj - wj): int(cj + wj),
+                     int(ck - wk): int(ck + wk)]
 
     mask_wm = np.zeros(fa.shape)
     mask_wm[fa > wm_fa_thr] = 1
@@ -566,13 +566,13 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
     Notes
     -----
-    In msmt-CSD there is an important pre-processing step: the estimation of 
+    In msmt-CSD there is an important pre-processing step: the estimation of
     every tissue's response function. In order to do this, we look for voxels
-    corresponding to WM, GM and CSF. This information can be obtained by using 
+    corresponding to WM, GM and CSF. This information can be obtained by using
     mcsd.mask_for_response_msmt() through masks of selected voxels. The present
     function uses such masks to compute the msmt response functions.
 
-    For the responses, we base our approach on the function 
+    For the responses, we base our approach on the function
     csdeconv.response_from_mask_ssst(), with the added layers of multishell and
     multi-tissue (see the ssst function for more information about the
     computation of the ssst response function). This means that for each tissue
@@ -597,7 +597,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
             indices = get_bval_indices(bvals, bval, tol)
 
             bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]],
-                                         bvecs[indices]])
+                                       bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
 
             data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
@@ -614,9 +614,9 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
 
 def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                           csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.003):
+                       fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
+                       csf_fa_thr=0.15, md_data=None,
+                       gm_md_thr=0.001, csf_md_thr=0.003):
     """ Automatic estimation of msmt response functions using FA and MD.
 
     Parameters
@@ -655,13 +655,13 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
 
     Notes
     -----
-    In msmt-CSD there is an important pre-processing step: the estimation of 
+    In msmt-CSD there is an important pre-processing step: the estimation of
     every tissue's response function. In order to do this, we look for voxels
-    corresponding to WM, GM and CSF. We get this information from 
+    corresponding to WM, GM and CSF. We get this information from
     mcsd.mask_for_response_msmt(), which returns masks of selected voxels
     (more details are available in the description of the function).
 
-    With the masks, we compute the response functions by using 
+    With the masks, we compute the response functions by using
     mcsd.response_from_mask_msmt(), which returns the `response` for each
     tissue (more details are available in the description of the function).
     """

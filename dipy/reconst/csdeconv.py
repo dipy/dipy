@@ -9,8 +9,6 @@ import scipy.linalg.lapack as ll
 
 from dipy.data import small_sphere, get_sphere, default_sphere
 
-from dipy.core.gradients import (gradient_table, unique_bvals_tol,
-                                 get_bval_indices)
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
@@ -22,8 +20,6 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
 from dipy.reconst.utils import _roi_in_volume
-
-from dipy.segment.mask import applymask
 
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
@@ -806,8 +802,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     returning a mask of voxels within a ROI, that have a FA value above a
     given threshold. For example we can use a ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
-    FA values higher than 0.7 (see [1]_). Of course, if we haven't 
-    precalculated FA we need to fit a Tensor model to the datasets. The 
+    FA values higher than 0.7 (see [1]_). Of course, if we haven't
+    precalculated FA we need to fit a Tensor model to the datasets. The
     option is given to the user with this function.
 
     References
@@ -836,21 +832,21 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
 
     if fa_data is None:
         roi = data[int(ci - wi): int(ci + wi),
-            int(cj - wj): int(cj + wj),
-            int(ck - wk): int(ck + wk)]
+                   int(cj - wj): int(cj + wj),
+                   int(ck - wk): int(ck + wk)]
         ten = TensorModel(gtab)
         tenfit = ten.fit(roi)
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
     else:
         fa = fa_data[int(ci - wi): int(ci + wi),
-            int(cj - wj): int(cj + wj),
-            int(ck - wk): int(ck + wk)]
+                     int(cj - wj): int(cj + wj),
+                     int(ck - wk): int(ck + wk)]
     mask = np.zeros(fa.shape)
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
-        msg = """No voxel with a FA higher than {} were found. 
+        msg = """No voxel with a FA higher than {} were found.
         Try a larger roi or a lower threshold.""".format(str(fa_thr))
         warnings.warn(msg, UserWarning)
 
@@ -879,7 +875,7 @@ def response_from_mask_ssst(gtab, data, mask):
     -----
     In CSD there is an important pre-processing step: the estimation of the
     fiber response function. In order to do this, we look for voxels with very
-    anisotropic configurations. This information can be obtained by using 
+    anisotropic configurations. This information can be obtained by using
     csdeconv.mask_for_response_ssst() through a mask of selected voxels
     (see[1]_). The present function uses such a mask to compute the ssst
     response function.
@@ -892,7 +888,7 @@ def response_from_mask_ssst(gtab, data, mask):
     the highest and second highest eigenvalues in the ROI with FA higher than
     threshold. We also include the average S0s.
 
-    We also return the `ratio` which is used for the SDT models. 
+    We also return the `ratio` which is used for the SDT models.
 
     References
     ----------
@@ -946,17 +942,17 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     -----
     In CSD there is an important pre-processing step: the estimation of the
     fiber response function. In order to do this we look for voxels with very
-    anisotropic configurations. We get this information from 
+    anisotropic configurations. We get this information from
     csdeconv.mask_for_response_ssst(), which returns a mask of selected voxels
     (more details are available in the description of the function).
 
-    With the mask, we compute the response function by using 
+    With the mask, we compute the response function by using
     csdeconv.response_from_mask_ssst(), which returns the `response` and the
     `ratio` (more details are available in the description of the function).
     """
 
     mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii,
-                                      fa_data, fa_thr)
+                                  fa_data, fa_thr)
     response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio

@@ -27,7 +27,6 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-import dipy.reconst.dti as dti
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
@@ -135,7 +134,7 @@ def test_recursive_response_calibration():
     sf = response.on_sphere(sphere)
     S = np.concatenate(([response.S0], sf))
 
-    tenmodel = dti.TensorModel(gtab, min_signal=0.001)
+    tenmodel = TensorModel(gtab, min_signal=0.001)
 
     tenfit = tenmodel.fit(S)
     FA = fractional_anisotropy(tenfit.evals)
@@ -153,19 +152,19 @@ def test_mask_for_response_ssst():
     # gtab = gradient_table(bvals, bvecs)
 
     mask_w_no_fa = mask_for_response_ssst(gtab_test, data_test,
-                                  roi_center=None,
-                                  roi_radii=10,
-                                  fa_data=None,
-                                  fa_thr=0.7)
+                                          roi_center=None,
+                                          roi_radii=10,
+                                          fa_data=None,
+                                          fa_thr=0.7)
 
     # Verifies that mask is not empty:
     assert_equal(int(np.sum(mask_w_no_fa)) == 0, True)
 
     mask_w_fa = mask_for_response_ssst(gtab_test, data_test,
-                            roi_center=None,
-                            roi_radii=3,
-                            fa_data=fa_test,
-                            fa_thr=0.7)
+                                       roi_center=None,
+                                       roi_radii=3,
+                                       fa_data=fa_test,
+                                       fa_thr=0.7)
 
     assert_array_almost_equal(mask_w_no_fa, mask_w_fa)
     assert_array_almost_equal(mask_test, mask_w_fa)
@@ -189,10 +188,10 @@ def test_mask_for_response_ssst_nvoxels():
 
     with warnings.catch_warnings(record=True) as w:
         mask = mask_for_response_ssst(gtab_test, data_test,
-                                    roi_center=None,
-                                    roi_radii=10,
-                                    fa_data=None,
-                                    fa_thr=1)
+                                      roi_center=None,
+                                      roi_radii=10,
+                                      fa_data=None,
+                                      fa_thr=1)
         npt.assert_equal(len(w), 1)
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("No voxel with a FA higher than 1 were found" in
@@ -224,22 +223,22 @@ def test_auto_response_ssst():
     # gtab = gradient_table(bvals, bvecs)
 
     response_auto, ratio_auto = auto_response_ssst(gtab_test,
-                        data_test,
-                        roi_center=None,
-                        roi_radii=3,
-                        fa_data=None,
-                        fa_thr=0.7)
+                                                   data_test,
+                                                   roi_center=None,
+                                                   roi_radii=3,
+                                                   fa_data=None,
+                                                   fa_thr=0.7)
 
     mask = mask_for_response_ssst(gtab_test, data_test,
-                            roi_center=None,
-                            roi_radii=3,
-                            fa_data=None,
-                            fa_thr=0.7)
-    
+                                  roi_center=None,
+                                  roi_radii=3,
+                                  fa_data=None,
+                                  fa_thr=0.7)
+
     response_from_mask, ratio_from_mask = response_from_mask_ssst(gtab_test,
-                                                                   data_test,
-                                                                   mask)
-    
+                                                                  data_test,
+                                                                  mask)
+
     assert_array_equal(response_auto, response_from_mask)
     assert_array_equal(ratio_auto, ratio_from_mask)
 
@@ -298,7 +297,7 @@ def test_csdeconv():
     big_S[:] = S2
 
     aresponse, aratio = auto_response_ssst(gtab, big_S, roi_center=(5, 5, 4),
-                                      roi_radii=3, fa_thr=0.5)
+                                           roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])

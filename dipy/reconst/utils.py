@@ -73,5 +73,5 @@ def _roi_in_volume(data_shape, roi_center, roi_radii):
         sup_lim = int(roi_center[i] + roi_radii[i])
         if inf_lim < 0 or sup_lim >= data_shape[i]:
             roi_radii[i] = min(int(roi_center[i]),
-                                int(data_shape[i] - roi_center[i] - 1))
+                               int(data_shape[i] - roi_center[i] - 1))
     return roi_radii

@@ -558,8 +558,8 @@ def round_bvals(bvals, bmag=None):
 def unique_bvals_tol(bvals, tol=20):
     """ Gives the unique b-values of the data, within a tolerance gap
 
-    The b-values must be regrouped in clusters easily separated by a 
-    distance greater than the tolerance gap. If all the b-values of a 
+    The b-values must be regrouped in clusters easily separated by a
+    distance greater than the tolerance gap. If all the b-values of a
     cluster fit within the tolerance gap, the highest b-value is kept.
 
     Parameters
@@ -582,7 +582,7 @@ def unique_bvals_tol(bvals, tol=20):
     i = 0
     lower_part = np.where(b <= b[i] + tol)[0]
     upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
-                                            b > b[lower_part[-1]]))[0]
+                                         b > b[lower_part[-1]]))[0]
     ubvals.append(b[lower_part[-1]])
     if len(upper_part) != 0:
         i = upper_part[-1] + 1
