@@ -113,4 +113,11 @@ def _data_from_roi(data, roi_center, roi_radii):
                     interval_j,
                     interval_k]
 
+    if wi == 0:
+        data_roi = np.expand_dims(data_roi, 0)
+    elif wj == 0:
+        data_roi = np.expand_dims(data_roi, 1)
+    elif wk == 0:
+        data_roi = np.expand_dims(data_roi, 2)
+
     return data_roi

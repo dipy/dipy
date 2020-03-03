@@ -9,7 +9,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from dipy.sims.voxel import single_tensor, multi_tensor
+from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
 from dipy.reconst import shm
 from dipy.reconst.dti import fractional_anisotropy, mean_diffusivity
 from dipy.data import default_sphere, get_3shell_gtab, get_fnames
@@ -29,41 +29,26 @@ gm_md = .76e-3
 evals_d = np.array([.992, .254, .254]) * 1e-3
 
 
-_, fbvals, fbvecs = get_fnames('small_64D')  # Need multi-shell data!!!
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-gtab_test = gradient_table(bvals, bvecs)
-evals_wm = np.array([1.7E-3, 0.4E-3, 0.4E-3])
-evals_gm = np.array([4.0E-4, 4.0E-4, 4.0E-4])
-evals_csf = np.array([3.0E-3, 3.0E-3, 3.0E-3])
-S0_wm = 0.8
-S0_gm = 1
-S0_csf = 4
-signal_wm = single_tensor(gtab_test, S0_wm, evals_wm)
-signal_gm = single_tensor(gtab_test, S0_gm, evals_gm)
-signal_csf = single_tensor(gtab_test, S0_csf, evals_csf)
-signals = [signal_wm, signal_gm, signal_csf]
-tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
-data_test = [signals[tissue] for tissue in tissues]
-evals = np.ndarray((9, 3))
-for i, tissue in enumerate(tissues):
-    if tissue == 0:
-        evals[i] = evals_wm
-    elif tissues == 1:
-        evals[i] = evals_gm
-    else:
-        evals[i] = evals_csf
-evals = evals.reshape((3, 3, 1, 3))
-
-tissues = np.asarray(tissues).reshape((3, 3, 1))
-data_test = np.asarray(data_test).reshape((3, 3, 1, len(signal_wm)))
-mask_wm_test = np.where(tissues == 0, 1, 0)
-mask_gm_test = np.where(tissues == 1, 1, 0)
-mask_csf_test = np.where(tissues == 2, 1, 0)
-response_wm_test = np.concatenate((evals_wm, [S0_wm]))
-response_gm_test = np.concatenate((evals_gm, [S0_gm]))
-response_csf_test = np.concatenate((evals_csf, [S0_csf]))
-fa_test = fractional_anisotropy(evals)
-md_test = mean_diffusivity(evals)
+def get_test_data():
+    _, fbvals, fbvecs, _= get_fnames('cfin_multib')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+    evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
+            np.array([6.0E-4, 4.0E-4, 4.0E-4]),
+            np.array([3.0E-3, 3.0E-3, 3.0E-3])]
+    s0 = [0.8, 1, 4]
+    signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
+    tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
+    data = [add_noise(signals[tissue], None, s0[0]) for tissue in tissues]
+    data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
+    evals = [evals_list[tissue] for tissue in tissues]
+    evals = np.asarray(evals).reshape((3, 3, 1, 3))
+    tissues = np.asarray(tissues).reshape((3, 3, 1))
+    masks = [np.where(tissues == x, 1, 0) for x in range(3)]
+    responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
+    fa = fractional_anisotropy(evals)
+    md = mean_diffusivity(evals)
+    return (gtab, data, masks, responses, fa, md)
 
 
 def _expand(m, iso, coeff):
@@ -143,55 +128,41 @@ def test_MultiShellDeconvModel():
 
 
 def test_mask_for_response_msmt():
-    # fdata, fbvals, fbvecs, ffa, fmd, fmask_wm, fmask_gm, fmask_csf = \
-    # get_fnames('???')
-    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    # data = load_nifti_data(fdata)
-    # fa = load_nifti_data(ffa)
-    # md = load_nifti_data(fmd)
-    # wm_mask_gt = load_nifti_data(fmask_wm)
-    # gm_mask_gt = load_nifti_data(fmask_gm)
-    # csf_mask_gt = load_nifti_data(fmask_csf)
+    gtab, data, masks_gt, _, fa, md = get_test_data()
 
-    # gtab = gradient_table(bvals, bvecs)
-
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab_test, data_test,
-                                    roi_center=None, roi_radii=3,
+    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                    roi_center=None, roi_radii=(1, 1, 0),
                                     fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                                     csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.003)
+                                    gm_md_thr=0.001, csf_md_thr=0.0032)
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
-    npt.assert_equal(masks_sum == 0, True)
+    npt.assert_equal(masks_sum != 0, True)
 
     wm_mask_fa_md, gm_mask_fa_md, csf_mask_fa_md = mask_for_response_msmt(
-                                gtab_test, data_test,
-                                roi_center=None, roi_radii=3,
-                                fa_data=fa_test, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                csf_fa_thr=0.15, md_data=md_test,
-                                gm_md_thr=0.001, csf_md_thr=0.003)
+                                gtab, data,
+                                roi_center=None, roi_radii=(1, 1, 0),
+                                fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3,
+                                csf_fa_thr=0.15, md_data=md,
+                                gm_md_thr=0.001, csf_md_thr=0.0032)
 
     npt.assert_array_almost_equal(wm_mask_fa_md, wm_mask)
     npt.assert_array_almost_equal(gm_mask_fa_md, gm_mask)
     npt.assert_array_almost_equal(csf_mask_fa_md, csf_mask)
-    npt.assert_array_almost_equal(mask_wm_test, wm_mask_fa_md)
-    npt.assert_array_almost_equal(mask_gm_test, gm_mask_fa_md)
-    npt.assert_array_almost_equal(mask_csf_test, csf_mask_fa_md)
+    npt.assert_array_almost_equal(masks_gt[0], wm_mask_fa_md)
+    npt.assert_array_almost_equal(masks_gt[1], gm_mask_fa_md)
+    npt.assert_array_almost_equal(masks_gt[2], csf_mask_fa_md)
 
 
 def test_mask_for_response_msmt_nvoxels():
-    # fdata, fbvals, fbvecs = get_fnames('???')
-    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    # data = load_nifti_data(fdata)
+    gtab, data, _, _, _, _ = get_test_data()
 
-    # gtab = gradient_table(bvals, bvecs)
-
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab_test, data_test,
-                                    roi_center=None, roi_radii=3,
+    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                    roi_center=None, roi_radii=(1, 1, 0),
                                     fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                                     csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.003)
+                                    gm_md_thr=0.001, csf_md_thr=0.0032)
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -201,24 +172,23 @@ def test_mask_for_response_msmt_nvoxels():
     npt.assert_equal(csf_nvoxels, 2)
 
     with warnings.catch_warnings(record=True) as w:
-        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab_test,
-                                        data_test,
-                                        roi_center=None, roi_radii=3,
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                        roi_center=None, roi_radii=(1, 1, 0),
                                         fa_data=None, wm_fa_thr=1, gm_fa_thr=0,
                                         csf_fa_thr=0, md_data=None,
-                                        gm_md_thr=1, csf_md_thr=1)
+                                        gm_md_thr=0, csf_md_thr=0)
         npt.assert_equal(len(w), 5)
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("No voxel with a FA higher than 1 were found" in
                     str(w[0].message))
         npt.assert_("No voxel with a FA lower than 0 were found" in
-                    str(w[0].message))
-        npt.assert_("No voxel with a MD higher than 1 were found" in
-                    str(w[0].message))
+                    str(w[1].message))
+        npt.assert_("No voxel with a MD lower than 0 were found" in
+                    str(w[2].message))
         npt.assert_("No voxel with a FA lower than 0 were found" in
-                    str(w[0].message))
-        npt.assert_("No voxel with a MD higher than 1 were found" in
-                    str(w[0].message))
+                    str(w[3].message))
+        npt.assert_("No voxel with a MD lower than 0 were found" in
+                    str(w[4].message))
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -229,22 +199,11 @@ def test_mask_for_response_msmt_nvoxels():
 
 
 def test_response_from_mask_msmt():
-    # fdata, fbvals, fbvecs, fmask_wm, fmask_gm, fmask_csf, \
-    # fresponse_wm, fresponse_gm, fresponse_csf = get_fnames('???')
-    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    # data = load_nifti_data(fdata)
-    # mask_wm = load_nifti_data(fmask_wm)
-    # mask_gm = load_nifti_data(fmask_gm)
-    # mask_csf = load_nifti_data(fmask_csf)
-    # response_wm_gt = np.loadtxt(fresponse_wm).T
-    # response_gm_gt = np.loadtxt(fresponse_gm).T
-    # response_csf_gt = np.loadtxt(fresponse_csf).T
+    gtab, data, masks_gt, responses_gt, _, _ = get_test_data()
 
-    # gtab = gradient_table(bvals, bvecs)
-
-    response_wm, response_gm, response_csf = response_from_mask_msmt(gtab_test,
-                                                data_test, mask_wm_test,
-                                                mask_gm_test, mask_csf_test,
+    response_wm, response_gm, response_csf = response_from_mask_msmt(gtab,
+                                                data, masks_gt[0],
+                                                masks_gt[1], masks_gt[2],
                                                 tol=20)
 
     # Verifying that csf's response is greater than gm's
@@ -253,41 +212,35 @@ def test_response_from_mask_msmt():
     npt.assert_almost_equal(response_csf[1], response_csf[2])
     npt.assert_almost_equal(response_csf[0], response_csf[1])
     npt.assert_almost_equal(response_gm[1], response_gm[2])
-    npt.assert_almost_equal(response_gm[0], response_gm[1])
+    npt.assert_allclose(response_gm[0], response_gm[1], rtol=1, atol=0)
     # Verifying that wm is anisotropic in one direction
     npt.assert_almost_equal(response_wm[1], response_wm[2])
-    npt.assert_equal(response_wm[0] > response_wm[1], True)  # > by how much??
-
-    # Way to test response[3] ??? b0
+    npt.assert_equal(response_wm[0] > 2.5 * response_wm[1], True)
 
     # Verifying with ground truth
-    npt.assert_array_almost_equal(response_wm, response_wm_test)
-    npt.assert_array_almost_equal(response_gm, response_gm_test)
-    npt.assert_array_almost_equal(response_csf, response_csf_test)
+    npt.assert_array_almost_equal(response_wm, responses_gt[0])
+    npt.assert_array_almost_equal(response_gm, responses_gt[1])
+    npt.assert_array_almost_equal(response_csf, responses_gt[2])
 
 
 def test_auto_response_msmt():
-    # fdata, fbvals, fbvecs = get_fnames('small_64D')
-    # bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    # data = load_nifti_data(fdata)
-
-    # gtab = gradient_table(bvals, bvecs)
+    gtab, data, _, _, _, _ = get_test_data()
 
     response_auto_wm, response_auto_gm, response_auto_csf = \
-        auto_response_msmt(gtab_test, data_test, tol=20,
-                           roi_center=None, roi_radii=10,
+        auto_response_msmt(gtab, data, tol=20,
+                           roi_center=None, roi_radii=(1, 1, 0),
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.003)
+                           gm_md_thr=0.001, csf_md_thr=0.0032)
 
-    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab_test, data_test,
-                                    roi_center=None, roi_radii=3,
+    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
+                                    roi_center=None, roi_radii=(1, 1, 0),
                                     fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                                     csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.003)
+                                    gm_md_thr=0.001, csf_md_thr=0.0032)
 
     response_from_mask_wm, response_from_mask_gm, response_from_mask_csf = \
-        response_from_mask_msmt(gtab_test, data_test,
+        response_from_mask_msmt(gtab, data,
                                 mask_wm, mask_gm, mask_csf,
                                 tol=20)
 

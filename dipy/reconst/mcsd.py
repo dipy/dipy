@@ -495,7 +495,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_gm[(md > gm_md_thr)] = 0
 
     fa_mask_gm = np.zeros(fa.shape)
-    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
+    fa_mask_gm[(fa < gm_fa_thr) & (fa >= 0)] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
 
@@ -503,7 +503,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_csf[(md > csf_md_thr)] = 0
 
     fa_mask_csf = np.zeros(fa.shape)
-    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
+    fa_mask_csf[(fa < csf_fa_thr) & (fa >= 0)] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf
 
@@ -512,17 +512,17 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     if np.sum(mask_wm) == 0:
         msg_fa = msg.format('FA higher', str(wm_fa_thr), 'lower FA', 'WM')
-        warnings.warn(msg, UserWarning)
+        warnings.warn(msg_fa, UserWarning)
 
     if np.sum(mask_gm) == 0:
         msg_fa = msg.format('FA lower', str(gm_fa_thr), 'higher FA', 'GM')
-        msg_md = msg.format('MD higher', str(gm_md_thr), 'lower MD', 'GM')
+        msg_md = msg.format('MD lower', str(gm_md_thr), 'higher MD', 'GM')
         warnings.warn(msg_fa, UserWarning)
         warnings.warn(msg_md, UserWarning)
 
     if np.sum(mask_csf) == 0:
         msg_fa = msg.format('FA lower', str(csf_fa_thr), 'higher FA', 'CSF')
-        msg_md = msg.format('MD higher', str(csf_md_thr), 'lower MD', 'CSF')
+        msg_md = msg.format('MD lower', str(csf_md_thr), 'higher MD', 'CSF')
         warnings.warn(msg_fa, UserWarning)
         warnings.warn(msg_md, UserWarning)
 

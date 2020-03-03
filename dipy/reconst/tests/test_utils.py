@@ -44,7 +44,8 @@ def test_data_from_roi():
 
     roi_radii = (0, 2, 2)
     data_roi = _data_from_roi(data, roi_center, roi_radii)
-    npt.assert_array_equal(data_roi, data[2])
+    npt.assert_array_equal(np.squeeze(data_roi), data[2])
+    npt.assert_array_equal(data_roi.shape, (1, 5, 5))
 
 
 if __name__ == "__main__":
