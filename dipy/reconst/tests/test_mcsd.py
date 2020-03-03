@@ -16,7 +16,6 @@ from dipy.data import default_sphere, get_3shell_gtab, get_fnames
 from dipy.core.gradients import GradientTable, gradient_table
 
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -30,12 +29,12 @@ evals_d = np.array([.992, .254, .254]) * 1e-3
 
 
 def get_test_data():
-    _, fbvals, fbvecs, _= get_fnames('cfin_multib')
+    _, fbvals, fbvecs, _ = get_fnames('cfin_multib')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
-            np.array([6.0E-4, 4.0E-4, 4.0E-4]),
-            np.array([3.0E-3, 3.0E-3, 3.0E-3])]
+                  np.array([6.0E-4, 4.0E-4, 4.0E-4]),
+                  np.array([3.0E-3, 3.0E-3, 3.0E-3])]
     s0 = [0.8, 1, 4]
     signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
