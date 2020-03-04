@@ -19,7 +19,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
-from dipy.reconst.utils import _roi_in_volume, _data_from_roi
+from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
@@ -827,14 +827,15 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     roi_radii = _roi_in_volume(data.shape, np.asarray(roi_center),
                                np.asarray(roi_radii))
 
+    roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
+
     if fa_data is None:
-        roi = _data_from_roi(data, roi_center, roi_radii)
         ten = TensorModel(gtab)
-        tenfit = ten.fit(roi)
+        tenfit = ten.fit(data, mask=roi_mask)
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
     else:
-        fa = _data_from_roi(fa_data, roi_center, roi_radii)
+        fa = fa_data * roi_mask
     mask = np.zeros(fa.shape)
     mask[fa > fa_thr] = 1
 

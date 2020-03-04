@@ -11,7 +11,7 @@ from dipy.reconst.csdeconv import response_from_mask_ssst
 from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
                               mean_diffusivity)
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.utils import _roi_in_volume, _data_from_roi
+from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
@@ -470,10 +470,11 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     roi_radii = _roi_in_volume(data.shape, np.asarray(roi_center),
                                np.asarray(roi_radii))
 
+    roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
+
     if fa_data is None and md_data is None:
-        roi = _data_from_roi(data, roi_center, roi_radii)
         ten = TensorModel(gtab)
-        tenfit = ten.fit(roi)
+        tenfit = ten.fit(data, mask=roi_mask)
         fa = fractional_anisotropy(tenfit.evals)
         fa[np.isnan(fa)] = 0
         md = mean_diffusivity(tenfit.evals)
@@ -485,8 +486,8 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         msg = "Missing FA data."
         raise ValueError(msg)
     else:
-        fa = _data_from_roi(fa_data, roi_center, roi_radii)
-        md = _data_from_roi(md_data, roi_center, roi_radii)
+        fa = fa_data * roi_mask
+        md = md_data * roi_mask
 
     mask_wm = np.zeros(fa.shape)
     mask_wm[fa > wm_fa_thr] = 1

@@ -78,22 +78,22 @@ def _roi_in_volume(data_shape, roi_center, roi_radii):
     return roi_radii
 
 
-def _data_from_roi(data, roi_center, roi_radii):
-    """Gets data within a cuboid ROI defined by center and radii.
+def _mask_from_roi(data_shape, roi_center, roi_radii):
+    """Produces a mask from a cuboid ROI defined by center and radii.
 
     Parameters
     ----------
-    data : ndarray
-        Data to cut
+    data_shape : array-like, (3,)
+        Shape of the data from which the ROI is taken.
     roi_center : array-like, (3,)
         Center of ROI in data.
     roi_radii : array-like, (3,)
-        Radii of cuboid ROI
+        Radii of cuboid ROI.
 
     Returns
     -------
-    roi : ndarray
-        Data inside the cuboid ROI.
+    mask : ndarray
+        Mask of the cuboid ROI.
     """
 
     ci, cj, ck = roi_center
@@ -109,15 +109,7 @@ def _data_from_roi(data, roi_center, roi_radii):
     elif wk == 0:
         interval_k = ck
 
-    data_roi = data[interval_i,
-                    interval_j,
-                    interval_k]
+    mask = np.zeros(data_shape)
+    mask[interval_i, interval_j, interval_k] = 1
 
-    if wi == 0:
-        data_roi = np.expand_dims(data_roi, 0)
-    elif wj == 0:
-        data_roi = np.expand_dims(data_roi, 1)
-    elif wk == 0:
-        data_roi = np.expand_dims(data_roi, 2)
-
-    return data_roi
+    return mask
