@@ -344,7 +344,7 @@ class QpFitter(object):
         return fodf_sh
 
 
-def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
+def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
                                sphere=None):
     """Fiber response function estimation for multi-shell data.
 
@@ -354,12 +354,12 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
          Maximum spherical harmonics order.
     bvals : ndarray
         Array containing the b-values.
-    evals : (3,) ndarray
-        Eigenvalues of the diffusion tensor.
-    csf_md : float
-        CSF tissue mean diffusivity value.
-    gm_md : float
-        GM tissue mean diffusivity value.
+    wm_rf : (3,) ndarray
+        Response function of the WM tissue
+    gm_rf : (3,) ndarray
+        Response function of the GM tissue
+    csf_rf : (3,) ndarray
+        Response function of the CSF tissue
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
 
@@ -390,11 +390,16 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     response = np.empty([len(bvals), len(n) + 2])
     for i, bvalue in enumerate(bvals):
         gtab = GradientTable(big_sphere.vertices * bvalue)
-        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
+        # wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
+        # response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+
+        # response[i, 0] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
+        # response[i, 1] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
+        wm_response = single_tensor(gtab, 1., wm_rf[:3], evecs, snr=None)
         response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
 
-        response[i, 0] = np.exp(-bvalue * csf_md) / A
-        response[i, 1] = np.exp(-bvalue * gm_md) / A
+        response[i, 0] = np.exp(-bvalue * csf_rf[0]) / A
+        response[i, 1] = np.exp(-bvalue * gm_rf[0]) / A
 
     return MultiShellResponse(response, sh_order, bvals)
 
@@ -402,7 +407,7 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                            csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.003):
+                           gm_md_thr=0.001, csf_md_thr=0.0032):
     """ Computation of masks for msmt response function using FA and MD.
 
     Parameters
@@ -450,7 +455,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     returning a mask of voxels within a ROI and who respect some threshold
     constraints, for each tissue. More precisely, the WM mask must have a FA
     value above a given threshold. The GM mask and CSF mask must have a FA
-    below given thresholds and a MD above other thresholds. Of course, if we
+    below given thresholds and a MD below other thresholds. Of course, if we
     haven't precalculated FA and MD, we need to fit a Tensor model to the
     datasets. The option is given to the user with this function. Note that
     the user has to give either the FA and MD data, or none of them.
@@ -496,7 +501,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_gm[(md > gm_md_thr)] = 0
 
     fa_mask_gm = np.zeros(fa.shape)
-    fa_mask_gm[(fa < gm_fa_thr) & (fa >= 0)] = 1
+    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
 
@@ -504,7 +509,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_csf[(md > csf_md_thr)] = 0
 
     fa_mask_csf = np.zeros(fa.shape)
-    fa_mask_csf[(fa < csf_fa_thr) & (fa >= 0)] = 1
+    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf
 
@@ -608,7 +613,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
                        fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
                        csf_fa_thr=0.15, md_data=None,
-                       gm_md_thr=0.001, csf_md_thr=0.003):
+                       gm_md_thr=0.001, csf_md_thr=0.0032):
     """ Automatic estimation of msmt response functions using FA and MD.
 
     Parameters
