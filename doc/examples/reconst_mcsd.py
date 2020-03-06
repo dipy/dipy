@@ -64,6 +64,8 @@ data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 
+data *= 1
+
 """
 For the sake of simplicity, we only select two non-zero b-values for this
 example.
@@ -184,7 +186,7 @@ response functions, a combination of the functions
 ``mask_for_response_msmt`` and ``response_from_mask`` is needed.
 
 The ``mask_for_response_msmt`` function will return a mask of voxels within a
-cuboid ROI and who respect some threshold constraints, for each tissue. More
+cuboid ROI and that meet some threshold constraints, for each tissue. More
 precisely, the WM mask must have a FA value above a given threshold. The GM
 mask and CSF mask must have a FA below given thresholds and a MD below other
 thresholds. Of course, if we haven't precalculated FA and MD, we need to fit
@@ -207,6 +209,16 @@ the threshold method, it is possible by simply multiplying both masks together.
 mask_wm *= wm
 mask_gm *= gm
 mask_csf *= csf
+
+"""
+The masks can also be used to calculate the number of voxels for each tissue.
+"""
+
+nvoxels_wm = np.sum(mask_wm)
+nvoxels_gm = np.sum(mask_gm)
+nvoxels_csf = np.sum(mask_csf)
+
+print(nvoxels_wm)
 
 """
 Then, the ``response_from_mask`` function will return the msmt response
@@ -251,6 +263,8 @@ response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)
 
+print(response_mcsd.response)
+
 """
 Now we build the MSMT-CSD model with the ``response_mcsd`` as input. We then
 call the ``fit`` function to fit one slice of the 3D data and visualize it.
@@ -265,7 +279,12 @@ visualized as follows:
 """
 
 mcsd_odf = mcsd_fit.odf(sphere)
-fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=0.01,
+
+print("ODF")
+print(mcsd_odf.shape)
+print(mcsd_odf[40, 40, 0])
+
+fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
                                 norm=False, colormap='plasma')
 
 interactive = False
