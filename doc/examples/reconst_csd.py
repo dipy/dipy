@@ -53,15 +53,34 @@ different strategies are presented.
 One simple way to estimate the fiber response function is to look for regions
 of the brain where it is known that there are single coherent fiber
 populations. For example, if we use a ROI at the center of the brain, we will
-find single fibers from the corpus callosum. The ``auto_response_ssst`` 
+find single fibers from the corpus callosum. The ``auto_response_ssst``
 function will calculate FA for a cuboid ROI of radii equal to ``roi_radii`` in
-the center of the volume and return the response function estimated in that 
+the center of the volume and return the response function estimated in that
 region for the voxels with FA higher than 0.7.
 """
 
-from dipy.reconst.csdeconv import auto_response_ssst
+from dipy.reconst.csdeconv import (auto_response_ssst,
+                                   mask_for_response_ssst,
+                                   response_from_mask_ssst)
 
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
+
+"""
+Note that the ``auto_response_ssst`` function calls two functions that can be
+used separatly. First, the function ``mask_for_response_ssst`` creates a mask
+of voxels within the cuboid ROI and that meet the FA threshold constraint. This
+mask can be used to calculate the number of voxels that were kept, or to also
+apply an external mask (a WM mask for example). Second, the function
+``response_from_mask_ssst`` takes the mask and returns the response function
+calculated within the mask. If no changes are made to the mask between the to
+calls, the resulting responses should be identical.
+"""
+
+mask = mask_for_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
+nvoxels = np.sum(mask)
+print(nvoxels)
+
+response, ratio = response_from_mask_ssst(gtab, data, mask)
 
 """
 The ``response`` tuple contains two elements. The first is an array with
