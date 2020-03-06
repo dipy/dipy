@@ -34,6 +34,9 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         double* point,
         double* direction)
 
+cdef class BaseDirectionGetter(BasePmfDirectionGetter):
+
+    pass
 
 cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 

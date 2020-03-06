@@ -1,6 +1,8 @@
 import numpy as np
 cimport numpy as np
 
+from warnings import warn
+
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
@@ -55,6 +57,17 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
             scalar_muliplication_point(direction, -1)
             return 0
     return 1
+
+cdef class BaseDirectionGetter(BasePmfDirectionGetter):
+
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+        warn(DeprecationWarning(
+            "class 'dipy.direction.BaseDirectionGetter'"
+            " is deprecated since version 1.2.0, use class"
+            " 'dipy.direction.BasePmfDirectionGetter'"
+            " instead"))
+        BasePmfDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                        pmf_threshold, **kwargs)
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
