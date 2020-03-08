@@ -7,17 +7,13 @@ DIPY Coding Style Guideline
 The main principles behind DIPY_ development are:
 
 * **Robustness**: the results of a piece of code must be verified
-  systematically, and hence stability and robustness of the code must be
-  ensured, reducing code redundancies.
+  systematically, and hence stability and robustness of the code must be ensured, reducing code redundancies.
 * **Readability**: the code is written and read by humans, and it is read
   much more frequently than it is written.
 * **Consistency**: following these guidelines will ease reading the code,
   and will make it less error-prone.
 * **Documentation**: document the code. Documentation is essential as it is
-  one of the key points for the adoption of DIPY as the toolkit of choice in
-  diffusion by the scientific community. Documenting helps clarifying
-  certain choices, helps avoiding obscure places, and is a way to allow
-  other members *decode* it with less effort.
+  one of the key points for the adoption of DIPY as the toolkit of choice in diffusion by the scientific community. Documenting helps to clarify certain choices, helps to avoid obscure places, and is a way to allow other members *decode* it with less effort.
 * **Language**: the code must be written in English. Norms and spelling
   should be abided by.
 
@@ -33,7 +29,7 @@ is checked automatically when requesting to push to DIPY. There are
 code for PEP8 compliance, and most text editors can be configured to check the
 compliance of your code with PEP8. Beyond the aspects checked, as a
 contributor to DIPY, you should try to ensure that your code, including
-comments, conform to the above principles.
+comments, conforms to the above principles.
 
 Imports
 -------
@@ -56,7 +52,7 @@ DIPY recommends the use of the standard Python
 `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ style when writing
 `Cython <https://cython.org/>` code.
 
-Cython-specific syntax should follow these additional rules:
+The cython-specific syntax should follow these additional rules:
 
 Imports
 -------
@@ -66,7 +62,7 @@ shorthand, e.g.::
   cimport numpy as cnp
 
 Adding the `c` prefix to the import line makes it clear that the Cython/C
-symbols are being referred to as to compared to the Python symbols.
+symbols are being referred to as compared to the Python symbols.
 
 Variable declaration
 --------------------
@@ -240,25 +236,23 @@ following guidelines:
 * The classes, objects, and any other construct referenced from the code
   should be written with inverted commas, such as in *In DIPY, we use an
   object called ``GradientTable`` which holds all the acquisition specific
-  parameters, e.g. b-values, b-vectors, timings and others.*
+  parameters, e.g. b-values, b-vectors, timings, and others.*
 * Cite the relevant papers. Use the *[NameYear]* convention for
-  cross-referencing them, such as in [Garyfallidis2014]_, and put them
-  under the :ref:`references` section.
+  cross-referencing them, such as in [Garyfallidis2014]_, and put them under the :ref:`references` section.
 * Cross-reference related examples and files. Use the
   ``.. _specific_filename:`` convention to label a file at the top of it.
   Thus, other pages will be able to reference the file using the standard
   Sphinx syntax ``:ref:`specific_filename```.
 * Use an all-caps scheme for acronyms, and capitalize the first letters of
   the long names, such as in *Constrained Spherical Deconvolution (CSD)*,
-  except in those cases where the most common convention has been to use
-  lowercase, such as in *superior longitudinal fasciculus (SLF)*.
+  except in those cases where the most common convention has been to use lowercase, such as in *superior longitudinal fasciculus (SLF)*.
 * As customary in Python, use lowercase and separate words with underscores
   for filenames, labels for references, etc.
 * When including figures, use the regular font for captions (i.e. do not use
-  bold faces), unless otherwise required for a specific text part (e.g. a
+  bold faces) unless otherwise required for a specific text part (e.g. a
   DIPY object, etc.).
 * When referring to relative paths, use the backquote inline markup
-  convention, such as in ``doc/devel``. Do not add the
+  the convention, such as in ``doc/devel``. Do not add the
   greater-than/less-than signs to enclose the path.
 
 
