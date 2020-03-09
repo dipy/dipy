@@ -23,10 +23,10 @@ it's a read-write remote::
 Integrating changes
 *******************
 
-Let's say you have some changes that need to go into trunk
+Let's say you have some changes that need to go into the trunk
 (``upstream-rw/master``).
 
-The changes are in some branch that you are currently on.  For example, you are
+The changes are in some branches that you are currently on.  For example, you are
 looking at someone's changes like this::
 
     git remote add someone git://github.com/someone/dipy.git
@@ -48,13 +48,13 @@ If there are only a few commits, consider rebasing to upstream::
     git rebase upstream-rw/master
 
 Remember that, if you do a rebase, and push that, you'll have to close any
-github pull requests manually, because github will not be able to detect the
+github pull requests manually because github will not be able to detect the
 changes have already been merged.
 
 A long series of commits
 ========================
 
-If there are a longer series of related commits, consider a merge instead::
+If there are a long series of related commits, consider a merge instead::
 
     git fetch upstream-rw
     git merge --no-ff upstream-rw/master
@@ -63,9 +63,9 @@ The merge will be detected by github, and should close any related pull requests
 automatically.
 
 Note the ``--no-ff`` above.  This forces git to make a merge commit, rather than
-doing a fast-forward, so that these set of commits branch off trunk then rejoin
+doing a fast-forward so that these set of commits branch off trunk then rejoin
 the main history with a merge, rather than appearing to have been made directly
-on top of trunk.
+on top of the trunk.
 
 Check the history
 =================
@@ -76,11 +76,11 @@ the right commits::
     git log --oneline --graph
     git log -p upstream-rw/master..
 
-The first line above just shows the history in a compact way, with a text
+The first line above just compactly shows the history, with a text
 representation of the history graph. The second line shows the log of commits
 excluding those that can be reached from trunk (``upstream-rw/master``), and
 including those that can be reached from current HEAD (implied with the ``..``
-at the end). So, it shows the commits unique to this branch compared to trunk.
+at the end). So, it shows the commits unique to this branch compared to the trunk.
 The ``-p`` option shows the diff for these commits in patch form.
 
 Push to trunk
