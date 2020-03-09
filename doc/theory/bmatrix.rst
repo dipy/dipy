@@ -3,8 +3,8 @@
 ================================
 
 This is a short note to explain the nature of the ``B_matrix`` found in the
-Siemens private (CSA) fields of the DICOM headers of a diffusion weighted
-acquisition.  We trying to explain the relationship between the ``B_matrix`` and
+Siemens private (CSA) fields of the DICOM headers of a diffusion-weighted
+acquisition.  We try to explain the relationship between the ``B_matrix`` and
 the *b value* and the *gradient vector*.  The acquisition is made with a planned
 (requested) b value - say $b_{req} = 1000$, and with a requested gradient
 direction $\mathbf{g}_{req} = [g_x, g_y, g_z]$ (supposedly a unit vector).
@@ -13,15 +13,15 @@ Note that here we're using $\mathbf{q}$ in the sense of an approximation
 to a vector in $q$ space.  Other people use $\mathbf{b}$ for the same
 concept, but we've chosen $\mathbf{q}$ to make the exposition clearer.
 
-For some purposes we want the q vector $\mathbf{q}_{actual}$ which is
+For some purposes, we want the q vector $\mathbf{q}_{actual}$ which is
 equal to $b_{actual} . \mathbf{g}_{actual}$. We need to be aware that
 $b_{actual}$ and $\mathbf{g}_{actual}$ may be different from the
 $b_{req}$ and $\mathbf{g}_{req}$!  Though the Stejskal and Tanner
 formula is available for the classic PGSE sequence, a different sequence
-may be used (e.g. TRSE on Siemens Trio), and anyway the ramps up and
+may be used (e.g. TRSE on Siemens Trio), and anyway, the ramps up and
 down on the gradient field will not be rectangular. The Siemens scanner
 software calculates the effective directional diffusion weighting of the
-acquisition on the basis of the temporal profile of the applied gradient
+acquisition based on the temporal profile of the applied gradient
 vector field. These are in the form of the 6 ``B_matrix`` values
 $[b_{xx}, b_{xy}, b_{xz}, b_{yy}, b_{yz}, b_{zz}]$.
 
