@@ -25,7 +25,7 @@ from bottom to top:
 
 .. image:: images/spitfire_0.png
 
-Imagine we wanted to do a slight roll with the left-wing tilting down
+Imagine we wanted to do a slight roll with the left wing tilting down
 (rotation about $x$) like this:
 
 .. image:: images/spitfire_x.png
