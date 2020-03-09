@@ -25,7 +25,7 @@ from bottom to top:
 
 .. image:: images/spitfire_0.png
 
-Imagine we wanted to do a slight roll with the left wing tilting down
+Imagine we wanted to do a slight roll with the left-wing tilting down
 (rotation about $x$) like this:
 
 .. image:: images/spitfire_x.png
@@ -44,7 +44,7 @@ But, wait, let's go back over that again.  Look at the result of the
 rotation around the $y$ axis.  Notice that the $x$ axis, as was, is now
 aligned with the $z$ axis, as it is now.  Rotating around the $z$ axis
 will have exactly the same effect as adding an extra rotation around the
-$x$ axis at the beginning.  That means that, when there is a $y$ axis
+$x$ axis at the beginning.  That means that when there is a $y$ axis
 rotation that rotates the $x$ axis onto the $z$ axis (a rotation of
 $\pm\pi/2$ around the $y$ axis) - the $x$ and $y$ axes are "locked"
 together.
