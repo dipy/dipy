@@ -170,7 +170,7 @@ If you want to assure that your code runs in exactly the same manner as before, 
 - All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
 - UI elements are available in ``dipy.viz.ui``.
 
-``dipy.viz`` depends on the FURY package. To get more pieces of information about FURY, go to https://fury.gl
+``dipy.viz`` depends on the FURY package. To get learn about FURY, go to https://fury.gl
 
 
 DIPY 0.14 Changes
@@ -181,7 +181,7 @@ DIPY 0.14 Changes
 ``dipy.io.trackvis`` module is deprecated. Use ``dipy.io.streamline`` instead. Furthermore,
 ``load_trk`` and ``save_trk`` from ``dipy.io.streamline`` is highly recommended for managing streamlines.
 When you create streamlines, you should use ``from dipy.tracking.streamlines import Streamlines``. This new
-the object uses much less memory and it is easier to process.
+object uses much less memory and it is easier to process.
 
 **Visualization**
 
@@ -248,7 +248,7 @@ more information.
 
 **Interpolation**
 The default behavior of the function `core.sphere.interp_rbf` has changed.
-The default smoothing parameter is now set to 0.1 (previously 0). Besides,
+The default smoothing parameter is now set to 0.1 (previously 0). In addition,
 the default norm is now `angle` (was previously `euclidean_norm`). Note that
 the use of `euclidean_norm` is discouraged, and this norm will be deprecated
 in the 0.11 release cycle.
