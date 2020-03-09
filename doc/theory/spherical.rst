@@ -27,7 +27,7 @@ radial distance
    or radius.  The Euclidean length of OP.
 
 z-axis
-   The vertical of the sphere.  If we consider the sphere like a globe,
+   The vertical of the sphere.  If we consider the sphere as a globe,
    then the z-axis runs from south to north.  This is the zenith direction of the sphere. 
 
 Reference plane
@@ -102,7 +102,7 @@ Matlab has functions ``sph2cart`` and ``cart2sph``.  These use the terms
 physics and mathematics conventions.   Here ``theta`` is the azimuth angle, as
 for the mathematics convention, but ``phi`` is the angle between the reference
 plane and OP.  This implies different formulae for the conversions between
-Cartesian and spherical coordinates are easy to derive.
+Cartesian and spherical coordinates that are easy to derive.
 
 
 .. include:: ../links_names.inc
