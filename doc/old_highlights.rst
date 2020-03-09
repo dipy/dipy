@@ -69,7 +69,7 @@ Older Highlights
 - Fixed different issues with OpenMP and Windows / OSX.
 - Replacement of cvxopt by cvxpy.
 - Replacement of Pytables by h5py.
-- Updated API to support latest numpy version (1.14).
+- Updated API to support the latest numpy version (1.14).
 - New user interfaces for visualization.
 - Large documentation update.
 
@@ -85,14 +85,14 @@ Older Highlights
 - Bayesian MRF-based tissue classification.
 - New API for integrated user interfaces.
 - New hdf5 file (.pam5) for saving reconstruction results.
-- Interactive slicing of images, ODFs and peaks.
+- Interactive slicing of images, ODFs, and peaks.
 - Updated API to support latest numpy versions.
 - New system for automatically generating command line interfaces.
 - Faster computation of cross correlation for image registration.
 
 **DIPY 0.11.0** is now available. New features include:
 
-- New framework for contextual enhancement of ODFs.
+- New framework for the contextual enhancement of ODFs.
 - Compatibility with numpy (1.11).
 - Compatibility with VTK 7.0 which supports Python 3.x.
 - Faster PIESNO for noise estimation.
@@ -147,7 +147,7 @@ For more information about DIPY_, read the `DIPY paper`_  in Frontiers in Neuroi
 So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.
 
 
-In DIPY_ we care about methods which can solve complex problems efficiently and robustly. QuickBundles is one of the many state-of-the-art algorithms found in DIPY. It can be used to simplify large datasets of streamlines. See our :ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a video of QuickBundles applied on a simple dataset.
+In DIPY_ we care about methods which can solve complex problems efficiently and robustly. QuickBundles is one of the many state-of-the-art algorithms found in DIPY. It can be used to simplify large datasets of streamlines. See our :ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a video of QuickBundles applied to a simple dataset.
 
 .. raw:: html
 
