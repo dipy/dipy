@@ -16,8 +16,8 @@ Theoretical
   equations. In the case of the classical Stejskal-Tanner
   pulsed gradient spin-echo (PGSE) sequence, at the time of readout
   $b=\gamma^{2}G^{2}\delta^{2}\left(\Delta-\frac{\delta}{3}\right)$
-  where $\gamma$ is the gyromagnetic radio, $\delta$ denotes the pulse
-  width, $G$ is the gradient amplitude and $\Delta$ the centre-to-centre
+  where $\gamma$ is the gyromagnetic ratio, $\delta$ denotes the pulse
+  width, $G$ is the gradient amplitude and $\Delta$ the center-to-center
   spacing. $\gamma$ is a constant, but we can change the other
   three parameters and in that way control the b-value.
 
@@ -25,7 +25,7 @@ Theoretical
 
   Q-space is the space of one or more 3D spin displacement wave vectors
   $\mathbf{q}$. The vector $\mathbf{q}$
-  parametrises the space of diffusion gradients. It is related to the
+  parametrizes the space of diffusion gradients. It is related to the
   applied magnetic gradient $\mathbf{g}$ by the formula
   $\mathbf{q}=(2\pi)^{-1}\gamma\delta\mathbf{g}$.
   Every single vector $\mathbf{q}$ has the same orientation as the
@@ -61,7 +61,7 @@ Theoretical
 
   Image coordinates have positive integer values and represent the centres
   $(i, j, k)$ of the voxels. There is an affine transform (stored in the
-  nifti file) that takes the image coordinates and transforms them to
+  nifti file) that takes the image coordinates and transforms them into
   millimeter (mm) in real world space. World coordinates have floating point
   precision and your dataset has 3 real dimensions e.g. $(x, y, z)$.
 
@@ -94,7 +94,7 @@ Practical
 
 2. **Isn't Python slow?**
 
-  True, sometimes Python can be slow, if you are using multiple nested
+  True, sometimes Python can be slow if you are using multiple nested
   ``for`` loops, for example.
   In that case, we use Cython_, which takes execution up to C speed.
 
@@ -108,7 +108,7 @@ Practical
   
 3. **What do you use for visualization?**
 
-  For 3D visualization we use ``dipy.viz`` which depends in turn on ``FURY``::
+  For 3D visualization, we use ``dipy.viz`` which depends in turn on ``FURY``::
 
     from dipy.viz import window, actor
 
@@ -124,14 +124,14 @@ Practical
   using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_
   or any other python-to-hdf5 library e.g. h5py.
 
-  For object serialization you can use ``dipy.io.pickles`` functions
+  For object serialization, you can use ``dipy.io.pickles`` functions
   ``load_pickle``, ``save_pickle``.
 
 5. **What is dpy**?
 
-  ``dpy`` is an ``hdf5`` file format which we use in DIPY to store
+  ``dpy`` is an ``hdf5`` file format that we use in DIPY to store
   tractography and other information. This allows us to store huge
-  tractographies and load different parts of the datasets
+  tractography and load different parts of the datasets
   directly from the disk as if it were in memory.
 
 6. **Which python editor should I use?**
@@ -140,7 +140,7 @@ Practical
 
 7. **I have problems reading my dicom files using nibabel, what should I do?**
 
-  Use Chris Rorden's dcm2nii to transform them to nifti files.
+  Use Chris Rorden's dcm2nii to transform them into nifti files.
   http://www.cabiatl.com/mricro/mricron/dcm2nii.html
   Or you can make your own reader using pydicom.
   http://code.google.com/p/pydicom/
