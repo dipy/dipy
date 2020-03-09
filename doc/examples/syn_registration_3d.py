@@ -7,7 +7,7 @@ Normalization (SyN) algorithm proposed by Avants et al. [Avants09]_
 (also implemented in the ANTs software [Avants11]_)
 
 We will register two 3D volumes from the same modality using SyN with the Cross
-Correlation (CC) metric.
+-Correlation (CC) metric.
 """
 
 import numpy as np
@@ -94,7 +94,7 @@ regtools.overlay_slices(static, resampled, None, 1, 'Static', 'Moving',
 
 """
 We want to find an invertible map that transforms the moving image into the
-static image. We will use the Cross Correlation metric
+static image. We will use the Cross-Correlation metric
 """
 
 metric = CCMetric(3)
@@ -154,7 +154,7 @@ regtools.overlay_slices(warped_static, moving, None, 1, 'Warped static',
    :align: center
 
    Static image transformed under the (inverse) transformation in red on top of
-   the moving image (in green). Note that the moving image has lower
+   the moving image (in green). Note that the moving image has a lower
    resolution.
 
 References
