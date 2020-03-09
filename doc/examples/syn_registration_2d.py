@@ -167,7 +167,7 @@ static = b0_mask[:, :, 40]
 moving = b0_mask[:, :, 38]
 
 """
-After loading the data, we instantiate the Cross Correlation metric. The metric
+After loading the data, we instantiate the Cross-Correlation metric. The metric
 receives three parameters: the dimension of the input images, the standard
 deviation of the Gaussian Kernel to be used to regularize the gradient and the
 radius of the window to be used for evaluating the local normalized cross
