@@ -315,7 +315,7 @@ def plot_slices(V, slice_indices=None, fname=None):
         middle slices along each direction are displayed.
     fname : string (optional)
         the name of the file to save the figure to. If None (default), the
-        the figure is not saved to disk.
+        figure is not saved to disk.
     """
     if slice_indices is None:
         slice_indices = np.array(V.shape) // 2
