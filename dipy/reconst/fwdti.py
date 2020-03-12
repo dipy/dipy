@@ -808,3 +808,133 @@ common_fit_methods = {'WLLS': wls_iter,
                       'NLLS': nls_iter,
                       'NLS': nls_iter,
                       }
+
+# ---------------------------- single-shell code -------------------------------
+
+MAX_DIFFFUSIVITY = 5
+MIN_DIFFUSIVITY = 0.01
+
+
+class Manifold():
+    """Class to perform Laplace-Beltrami regularization on diffusion manifold"""
+
+    def __init__(self, design_matrix, model_params, attenuations, fmin, fmax,
+                 Diso=3, beta=1, mask=None, zooms=None):
+        """
+        Treats diffusion parameters as a manifold on which regularization is
+        performed using a euclidean metric tensor [1] 
+
+        Parameters
+        ----------
+        design_matrix : array (k, 6)
+            The design matrix that hold diffusion gradient information
+            Note: this design_matrix has no b0 directions and no dummmy column
+            of -1 liki dipy's design matrix
+        model_params : ndarray (x, y, z, 13)
+            All parameters estimated from the free water tensor model.
+            Parameters are ordered as follows:
+                1) Three diffusion tensor's eigenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) The volume fraction of the tissue compartment
+        attenuations : array (x, y, z, k)
+            Normalized observed attenuations
+        fmin : array (x, y, z)
+            Lower limit for the tissue fraction
+        fmax : array (x, y, z)
+            Upper limit for the tissue fraction
+        Diso : float
+            Diffusivity of free diffusing water at body temperature
+        beta : float
+            The metric ratio that controls how isotropic is the smoothing of
+            the diffusion manifold, see [2] for more details
+        mask : boolean array (x, y, z)
+            Brain mask of voxels that should be processed
+        zooms : array (3, )
+            Voxel resolution along x, y and z axes
+        
+        References
+        ----------
+        .. [1] Pasternak, O., Maier-Hein, K., Baumgartner,
+            C., Shenton, M. E., Rathi, Y., & Westin, C. F. (2014).
+            The estimation of free-water corrected diffusion tensors.
+            In Visualization and Processing of Tensors and Higher Order
+            Descriptors for Multi-Valued Data (pp. 249-270). Springer,
+            Berlin, Heidelberg.
+        .. [2] Gur, Y., & Sochen, N. (2007, October).
+            Fast invariant Riemannian DT-MRI regularization.
+            In 2007 IEEE 11th International Conference on Computer Vision
+            (pp. 1-7). IEEE.
+        """
+        # Manifold shape
+        self.shape = model_params.shape[:-1]
+
+        # Diffusion parameters
+        evals = model_params[..., 0:3]
+        evecs = model_params[..., 3:12].reshape(self.shape + (3, 3))
+        lowtri = lower_triangular(vec_val_vect(evecs, evals), b0=None)
+
+        # Scaled diffusion parameters, see ref [2]
+        self.X = np.copy(lowtri)
+        self.X[..., [1, 3, 4]] *= np.sqrt(2)
+
+        # Design matrix
+        self.design_matrix = design_matrix
+
+        # Scaled design matrix, for computing fidelity term
+        self.dH = np.copy(design_matrix)
+        self.dH[..., [1, 3, 4]] *= np.sqrt(2)
+
+        # Metric ratio
+        self.beta = beta
+
+        # Mask
+        if mask is None:
+            self.mask = np.ones(model_params.shape[:-1]).astype(bool)
+        else:
+            self.mask = mask.astype(bool)
+        
+        # Masks for derivatives,
+        # to avoid unstable derivatives at the mask boundary
+        nx, ny, nz = self.mask.shape
+        shift_fx = np.append(np.arange(1, nx), nx-1)
+        shift_fy = np.append(np.arange(1, ny), ny-1)
+        shift_fz = np.append(np.arange(1, nz), nz-1)
+        shift_bx = np.append(0, np.arange(nx-1))
+        shift_by = np.append(0, np.arange(ny-1))
+        shift_bz = np.append(0, np.arange(nz-1))
+        self.mask_forward_x = self.mask[shift_fx, ...] * self.mask
+        self.mask_forward_y = self.mask[:, shift_fy, :] * self.mask
+        self.mask_forward_z = self.mask[..., shift_fz] * self.mask
+        self.mask_backward_x = self.mask[shift_bx, ...] * self.mask
+        self.mask_backward_y = self.mask[:, shift_by, :] * self.mask
+        self.mask_backward_z = self.mask[..., shift_bz] * self.mask
+
+        # Voxel resolution
+        if zooms is None:
+            self.zooms = np.array([1., 1., 1.])
+        else:
+            self.zooms = zooms / np.min(zooms)
+
+        # flattened free water tensor components
+        self.flat_Diso = np.zeros(self.flat_lowtri.shape)
+        self.flat_Diso[..., [0, 2, 5]] = Diso
+
+        # flattened attenuations
+        self.flat_attenuations = attenuations[self.mask, :]
+
+        # flattened tissue fraction
+        self.flat_fraction = model_params[self.mask, 12][..., None]
+
+        # flattened lower and upper limits for tisue fraction
+        self.flat_fmin = fmin[self.mask][..., None]
+        self.flat_fmax = fmax[self.mask][..., None]
+
+        # Increment matrices
+        self.flat_beltrami = np.zeros(self.flat_fraction.shape[:-1] + (6, ))
+        self.flat_fidelity = np.zeros(self.flat_fraction.shape[:-1] + (6, ))
+        self.flat_df = np.zeros(self.flat_fraction.shape)
+
+        # cost
+        self.flat_cost = np.zeros(self.flat_fraction.shape)
+        self.flat_g = np.zeros(self.flat_fraction.shape)
