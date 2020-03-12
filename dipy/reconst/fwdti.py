@@ -939,6 +939,7 @@ class Manifold():
         self.flat_cost = np.zeros(self.flat_fraction.shape)
         self.flat_g = np.zeros(self.flat_fraction.shape)
 
+
     @staticmethod
     def forward_difference(array, d, axis):
         """
@@ -1011,3 +1012,10 @@ class Manifold():
             return (array - array[:, shift, ...]) / d
         elif axis == 2:
             return (array - array[..., shift, :]) / d
+
+
+    @property
+    def flat_lowtri(self):
+        out = np.copy(self.X[self.mask, :])
+        out[..., [1, 3, 4]] *= 1 / np.sqrt(2)
+        return out
