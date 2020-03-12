@@ -1106,3 +1106,52 @@ class Manifold():
 
         # Save srt(det(g))
         self.flat_g[..., 0] = g[self.mask, 0]
+
+
+    def compute_fidelity(self):
+        """
+        The fidelity term maintains the parameters close to the model that
+        explains the observed signal attenuations, i.e. moves the parameters
+        towards the minimum of the cost function [1]
+
+        References
+        ----------
+        .. [1] Pasternak, O., Maier-Hein, K., Baumgartner,
+            C., Shenton, M. E., Rathi, Y., & Westin, C. F. (2014).
+            The estimation of free-water corrected diffusion tensors.
+            In Visualization and Processing of Tensors and Higher Order
+            Descriptors for Multi-Valued Data (pp. 249-270). Springer,
+            Berlin, Heidelberg.       
+        """
+        Awater = np.exp(np.einsum('...j,ij->...i', self.flat_Diso,
+                                   self.design_matrix))
+        Atissue = np.exp(np.einsum('...j,ij->...i', self.flat_lowtri,
+                                   self.design_matrix))
+        Cwater = (1 - self.flat_fraction) * Awater
+        Ctissue = self.flat_fraction * Atissue
+        Amodel = Ctissue + Cwater
+        Adiff = Amodel - self.flat_attenuations
+        # fidelity term for diffusion components:
+        np.einsum('...i,ij->...j', -1 * Adiff * Ctissue,
+                  self.dH, out=self.flat_fidelity)
+        # fidelity term for tissue fraction:
+        np.sum(-1 * (Atissue - Awater) * Adiff, axis=-1,
+               out=self.flat_df[..., 0])
+
+
+    def compute_cost(self, alpha):
+        """
+        The cost / error function avereged by number of acquired directions
+        """
+        Awater = np.exp(np.einsum('...j,ij->...i', self.flat_Diso,
+                                   self.design_matrix))
+        Atissue = np.exp(np.einsum('...j,ij->...i', self.flat_lowtri,
+                                   self.design_matrix))
+        Cwater = (1 - self.flat_fraction) * Awater
+        Ctissue = self.flat_fraction * Atissue
+        Amodel = Ctissue + Cwater
+        k = Amodel.shape[-1]
+        self.flat_cost[..., 0] = np.sum((Amodel - self.flat_attenuations)**2,
+                                        axis=-1) / k
+        self.flat_cost *= 1/2
+        
