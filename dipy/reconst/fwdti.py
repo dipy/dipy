@@ -942,3 +942,76 @@ class Manifold():
         # cost
         self.flat_cost = np.zeros(self.flat_fraction.shape)
         self.flat_g = np.zeros(self.flat_fraction.shape)
+
+    @staticmethod
+    def forward_difference(array, d, axis):
+        """
+        Forward finite differences
+
+        Parameters
+        ----------
+        array : (x, y, z, 6) array
+            The diffusion components array in lower triangular order
+        d : float
+            Voxel resolution along the desired axis
+        axis : int
+            The dimension along which to perform the finite difference:
+            0 - derivative along x axis,
+            1 - derivative along y axis,
+            2 - derivative along z axis.
+
+        Returns
+        -------
+        darray : (x, y, z, 6) array
+            The forward difference of array along the chosen axis,
+            normalized by voxel size
+
+        References
+        ----------
+        .. https://mathworld.wolfram.com/ForwardDifference.html
+        """
+        n = array.shape[axis]
+        shift = np.append(np.arange(1, n), n-1)
+        if axis == 0:
+            return (array[shift, ...] - array) / d
+        elif axis == 1:
+            return (array[:, shift, ...] - array) / d
+        elif axis == 2:
+            return (array[..., shift, :] - array) / d
+
+
+    @staticmethod
+    def backward_difference(array, d, axis):
+        """
+        Backward finite differences
+
+        Parameters
+        ----------
+        array : (x, y, z, 6) array
+            The diffusion components array in lower triangular order
+        d : float
+            Voxel resolution along the desired axis
+        axis : int
+            The dimension along which to perform the finite difference:
+            0 - derivative along x axis,
+            1 - derivative along y axis,
+            2 - derivative along z axis.
+
+        Returns
+        -------
+        darray : (x, y, z, 6) array
+            The backward difference of array along the chosen axis,
+            normalized by voxel size
+
+        References
+        ----------
+        .. https://mathworld.wolfram.com/BackwardDifference.html
+        """
+        n = array.shape[axis]
+        shift = np.append(np.arange(1, n), n-1)
+        if axis == 0:
+            return (array - array[shift, ...]) / d
+        elif axis == 1:
+            return (array - array[:, shift, ...]) / d
+        elif axis == 2:
+            return (array - array[..., shift, :]) / d
