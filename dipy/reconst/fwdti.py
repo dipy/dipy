@@ -1023,3 +1023,90 @@ class Manifold():
         out = np.copy(self.X[self.mask, :])
         out[..., [1, 3, 4]] *= 1 / np.sqrt(2)
         return out
+
+
+    def compute_beltrami(self):
+        """
+        Laplace-Beltrami operator to regularize the diffusion
+        parameters, using an euclidean metric [1]
+
+        References
+        ----------
+        .. [1] Pasternak, O., Maier-Hein, K., Baumgartner,
+            C., Shenton, M. E., Rathi, Y., & Westin, C. F. (2014).
+            The estimation of free-water corrected diffusion tensors.
+            In Visualization and Processing of Tensors and Higher Order
+            Descriptors for Multi-Valued Data (pp. 249-270). Springer,
+            Berlin, Heidelberg.
+        .. [2] Gur, Y., & Sochen, N. (2007, October).
+            Fast invariant Riemannian DT-MRI regularization.
+            In 2007 IEEE 11th International Conference on Computer Vision
+            (pp. 1-7). IEEE.
+        """
+        # Computing derivatives
+        dx, dy, dz = self.zooms
+        X_dx = (Manifold.forward_difference(self.X, dx, 0)
+                * self.mask_forward_x[..., None])
+        X_dy = (Manifold.forward_difference(self.X, dy, 1)
+                * self.mask_forward_y[..., None])
+        X_dz = (Manifold.forward_difference(self.X, dz, 2)
+                * self.mask_forward_z[..., None])
+
+        # Computing the Manifold metric (Euclidean)  
+        g11 = np.sum(X_dx * X_dx, axis=-1) * self.beta + 1.
+        g12 = np.sum(X_dx * X_dy, axis=-1) * self.beta
+        g22 = np.sum(X_dy * X_dy, axis=-1) * self.beta + 1.
+        g13 = np.sum(X_dx * X_dz, axis=-1) * self.beta
+        g23 = np.sum(X_dy * X_dz, axis=-1) * self.beta
+        g33 = np.sum(X_dz * X_dz, axis=-1) * self.beta + 1.
+
+        # Computing inverse metric
+        gdet = (g12 * g13 * g23 * 2 + g11 * g22 * g33
+                - g22 * g13**2
+                - g33 * g12**2
+                - g11 * g23**2)
+        # # unstable values
+        unstable_g = np.logical_or(gdet <= 0, gdet >= 1000) * self.mask
+        gdet[unstable_g] = 1
+        g11[unstable_g] = 1
+        g12[unstable_g] = 0
+        g22[unstable_g] = 1
+        g13[unstable_g] = 0
+        g23[unstable_g] = 0
+        g33[unstable_g] = 1
+        # the inverse
+        ginv11 = (g22 * g33 - g23**2) / gdet
+        ginv22 = (g11 * g33 - g13**2) / gdet
+        ginv33 = (g11 * g22 - g12**2) / gdet
+        ginv12 = (g13 * g23 - g12 * g33) / gdet
+        ginv13 = (g12 * g23 - g13 * g22) / gdet
+        ginv23 = (g12 * g13 - g11 * g23) / gdet
+
+        # Computing Beltrami increments
+        # auxiliary matrices
+        g = np.sqrt(gdet)[..., None]
+        g11 = ginv11[..., None]
+        g12 = ginv12[..., None]
+        g22 = ginv22[..., None]
+        g13 = ginv13[..., None]
+        g23 = ginv23[..., None]
+        g33 = ginv33[..., None]
+        Ax = g11 * X_dx + g12 * X_dy + g13 * X_dz
+        Ay = g12 * X_dx + g22 * X_dy + g23 * X_dz
+        Az = g13 * X_dx + g23 * X_dy + g33 * X_dz
+        
+        beltrami = (Manifold.backward_difference(g * Ax, dx, 0)
+                    * self.mask_backward_x[..., None])
+        beltrami += (Manifold.backward_difference(g * Ay, dy, 1)
+                     * self.mask_backward_y[..., None])
+        beltrami += (Manifold.backward_difference(g * Az, dz, 2)
+                     * self.mask_backward_z[..., None])
+        beltrami *= 1 / g 
+        
+        self.flat_beltrami[...] = beltrami[self.mask]
+
+        # Save the unstable voxels masks
+        self.unstable_mask = unstable_g[self.mask][..., None]
+
+        # Save srt(det(g))
+        self.flat_g[..., 0] = g[self.mask, 0]
