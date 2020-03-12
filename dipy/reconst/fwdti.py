@@ -195,7 +195,7 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         model : FreeWaterTensorModel Class instance
             Class instance containing the free water tensor model for the fit
-        model_params : ndarray (x, y, z, 13) or (n, 13)
+        model_paramsmodel_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
@@ -1154,4 +1154,85 @@ class Manifold():
         self.flat_cost[..., 0] = np.sum((Amodel - self.flat_attenuations)**2,
                                         axis=-1) / k
         self.flat_cost *= 1/2
-        
+
+
+    @property
+    def update_mask(self):
+        """
+        only stable voxels should be updated
+        """
+        # Do not voxels with high free water
+        # csf_mask = self.flat_fraction <= 0.2
+        # return ~np.logical_or(self.unstable_mask, csf_mask)
+        return ~self.unstable_mask
+
+    def update(self, dt, alpha):
+        """
+        The beltrami and fidelity terms are multiplied by the learning rate
+        and used to increment de diffusion components, a separate increment
+        is used to update the tissue fraction.
+
+        Parameters
+        ----------
+        dt : float
+            Learning rate
+        alpha : int 0 or 1
+            This weight controls if the regularization (smoothing) effect
+            is turned ON/OFF
+
+        Notes
+        -----
+        As suggested in [1], at half iterations alpha should be turned to 0,
+        in order to avoid excessive regularization and divergence of the
+        gradient descent procedure.
+
+        References
+        ----------
+        .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., & Assaf, Y.
+            (2009). Free water elimination and mapping from diffusion MRI.
+            Magnetic Resonance in Medicine: An Official Journal of 
+            the International Society for Magnetic Resonance in Medicine,
+            62(3), 717-730.
+        """
+        self.compute_beltrami()
+        self.compute_fidelity()
+
+        # Only update stable voxels
+        self.flat_beltrami *= self.update_mask
+        self.flat_fidelity *= self.update_mask
+        self.flat_df *= self.update_mask
+
+        # Update parameters
+        self.X[self.mask, :] += dt * (self.flat_fidelity +
+                                      self.flat_beltrami * alpha)
+        self.flat_fraction += dt * self.flat_df
+
+        # constrain the tissue fraction to its lower and upper bounds
+        np.clip(self.flat_fraction, self.flat_fmin, self.flat_fmax,
+                out=self.flat_fraction)
+
+        # update cost
+        self.compute_cost(alpha)
+
+
+    @auto_attr
+    def parameters(self):
+        """
+        ouptuts the final parameters in a form consistent with dipy's
+        convention
+
+        Returns
+        -------
+        out : ndarray (x, y, z, 13)
+            All parameters estimated from the free water tensor model.
+            Parameters are ordered as follows:
+                1) Three diffusion tensor's eigenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) The volume fraction of the tissue compartment
+        """
+        dti_params = eig_from_lo_tri(self.flat_lowtri)
+        out = np.zeros(self.shape + (13, ))
+        out[self.mask, 0:12] = dti_params
+        out[self.mask, 12] = self.flat_fraction[..., 0]
+        return out
