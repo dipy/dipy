@@ -11,13 +11,21 @@ from dipy.reconst.base import ReconstModel
 
 from dipy.reconst.dti import (TensorFit, design_matrix, decompose_tensor,
                               _decompose_tensor_nan, from_lower_triangular,
-                              lower_triangular)
+                              lower_triangular,  eig_from_lo_tri,
+                              MIN_POSITIVE_SIGNAL, ols_fit_tensor,
+                              fractional_anisotropy, mean_diffusivity)
+
 from dipy.reconst.dki import _positive_evals
 
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 from dipy.core.gradients import check_multi_b
 from dipy.reconst.multi_voxel import multi_voxel_fit
+
+from dipy.core.onetime import auto_attr
+
+# to plot error evolution of gradient descent (for debugging)
+from matplotlib import pyplot as plt
 
 
 def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
