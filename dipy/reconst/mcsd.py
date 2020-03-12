@@ -64,8 +64,9 @@ class MultiShellResponse(object):
 
         Parameters
         ----------
+        !!!!!!!!!!!!!!!!Only keep the tuple option!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         response : tuple or AxSymShResponse object
-            A tuple with two elements. The first is the eigen-values as an (3,)
+            A tuple with two elements. The first is the eigen-values as a (3,)
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal.
@@ -91,8 +92,9 @@ def _inflate_response(response, gtab, n, delta):
     `MultiShellDeconvModel`.
     Parameters
     ----------
+    !!!!!!!!!!!!!!!!!!Not true, should be MultiShellResponse object!!!!!!!!!!!!!!!!!!!!!
     response : tuple or AxSymShResponse object
-        A tuple with two elements. The first is the eigen-values as an (3,)
+        A tuple with two elements. The first is the eigen-values as a (3,)
         ndarray and the second is the signal value for the response
         function without diffusion weighting.  This is to be able to
         generate a single fiber synthetic signal. The response function
@@ -139,6 +141,7 @@ def _basic_delta(iso, m, n, theta, phi):
 
 
 class MultiShellDeconvModel(shm.SphHarmModel):
+
     def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
@@ -158,8 +161,9 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
+        !!!!!!!!!!!!!!!!!!Not true, should be MultiShellResponse object!!!!!!!!!!!!!!!!!!!!!
         response : tuple or AxSymShResponse object
-            A tuple with two elements. The first is the eigen-values as an (3,)
+            A tuple with two elements. The first is the eigen-values as a (3,)
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal. The response function
