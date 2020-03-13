@@ -1258,6 +1258,11 @@ class BeltramiModel(ReconstModel):
         Parameters
         ----------
         gtab : GradientTable class instance of Dipy
+            IMPORTANT: the bvals used to construct gtab must be in the units of
+            milisecond/micrometer^2 (i.e. a bval of 1000 becomes 1), otherwise,
+            the finite differences used in this fit method can lead to
+            underflows/overflows
+
         init_method : str
             str must be one of the following initialization methods:
             1) 'S0' uses the unweighted image to initialze the tissue
@@ -1319,7 +1324,18 @@ class BeltramiModel(ReconstModel):
 
 
     def fit(self, data, mask=None):
+        """
+        Initializes FW-DTI parameters and calls the 'gradient_descent' fucntion
 
+        Parameters
+        ----------
+        data : array (x, y, z, k)
+            Raw data, since this fit method depends on spatial derivatives
+            to regularize the solution, it only works on multi-voxel data
+        mask : array (x, y, z)
+            Brain mask of voxels that should be processed
+        """
+        # TODO make this work with single voxel, by calling only the init method
         if mask is not None:
             if mask.shape != data.shape[:-1]:
                 raise ValueError("Mask is not the same shape as data.")
@@ -1369,41 +1385,19 @@ class BeltramiModel(ReconstModel):
         fit.initial_guess = init_params
         fit.finterval = np.stack((fmin, fmax), axis=-1)
 
-        return fitpe[:-1])
-        f0[mask], fmin[mask], fmax[mask] = self.init_method(masked_data,
-                                                            self.gtab,
-                                                            **self.init_kwargs)
-        np.clip(f0, fmin, fmax, out=f0) 
-
-        # Initializing tissue tensor
-        init_params = np.zeros(data.shape[:-1] + (13, ))
-        Diso = self.init_kwargs.get('Diso', 3)
-        min_tissue_diff = self.init_kwargs.get('min_tissue_diff', 0.001)
-        max_tissue_diff = self.init_kwargs.get('max_tissue_diff', 2.5)
-        init_params[mask, 0:12] = tensor_init(masked_data, self.gtab, f0[mask],
-                                             min_tissue_diff=min_tissue_diff,
-                                             max_tissue_diff=max_tissue_diff,
-                                             Diso=Diso)
-        init_params[mask, 12] = f0[mask]
-
-        # Voxel where tissue MD > 1.5 can lead implausible fits, in these voxel
-        # tissue fraction is set to 0 and diffusion eigvals to 0.001
-        md_tissue = np.mean(init_params[..., :3], axis=-1)
-        init_params[md_tissue >= 1.5, -1] = 0
-        init_params[md_tissue >= 1.5, :3] = 0.001
-        init_params[md_tissue >= 1.5, 3:-1] = 0
-
-        # Run gradient descent
-        atten, gtab = get_attenuations(data, self.gtab)
-        D = design_matrix(gtab)
-        beltrami_params = gradient_descent(D, init_params,
-                                           atten, fmin, fmax, mask,
-                                           **self.fit_kwargs)
-        
-        fit = BeltramiFit(self, beltrami_params)
-    
-        # Add the initialization parameters to Class instance (for debugging)
-        fit.initial_guess = init_params
-        fit.finterval = np.stack((fmin, fmax), axis=-1)
-
         return fit
+
+
+class BeltramiFit(TensorFit):
+
+    def __init__(self, model, model_params):
+        TensorFit.__init__(self, model, model_params, model_S0=None)
+    
+    @property
+    def f(self):
+        return self.model_params[..., 12]
+
+
+    def predict(self, gtab, S0=1):
+        Diso = self.model.fit_kwargs.get('Diso', 3)
+        return fwdti_prediction(self.model_params, gtab, S0=S0, Diso=Diso)
