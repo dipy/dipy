@@ -1728,7 +1728,7 @@ def tensor_init(signal, gtab, fraction, Diso=3, min_tissue_diff=0.001,
         Parameters are ordered as follows:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
-            first, second and third coordinates of the eigenvector
+               first, second and third coordinates of the eigenvector
     """
     Ak, this_gtab = get_attenuations(signal, gtab)
 
@@ -1755,3 +1755,96 @@ def tensor_init(signal, gtab, fraction, Diso=3, min_tissue_diff=0.001,
 
     return dti_params
 
+
+def gradient_descent(design_matrix, initial_guess, attenuations, fmin, fmax,
+                     mask, iterations=100, learning_rate=0.01, metric_ratio=1,
+                     reg_weight=1, Diso=3, zooms=None):
+    """
+    The main gradient descent fitting procedure for single-shell data [1, 2]
+
+    Parameters
+    ----------
+    design_matrix : array (k, 7)
+        Design matrix without the b0 directions, see function
+        get_attenuations
+    initial_guess : array (x, y, z, 13)
+        Initialized parameters for the FW-DTI model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+               first, second and third coordinates of the eigenvector
+            3) The volume fraction of the tissue compartment
+    attenuations : array (x, y, z, k)
+        Normalized attenuations without the b0 volumes, and a dummy volume of
+        1's in the first position; see get_attenuations
+    fmin : array (x, y, z)
+        Lower limit for the tissue fraction
+    fmax : array (x, y, z)
+        Upper limit for the tissue fraction
+    mask : bool array (x, y, z)
+        Brain mask of voxels that sholud be processed
+    iterations : int
+        Number of maximum allowed iterations for gradient descent
+    learning_rate : float
+    metric_ratio : float
+        The metric ratio that controls how isotropic is the smoothing of
+        the diffusion manifold, see [1, 2] for more details
+    reg_weight : float
+        Weight to the fidelity term, this starts as 1 and is turned to 0 at
+        half iterations, see update method of Manifold class
+    Diso : float
+        Diffusivity of free water at body temperature
+    zooms : array (3, )
+        voxel resolution along the axis, deafults to [1, 1, 1] if None is given
+
+    Returns
+    -------
+    parameters : array (x, y, z, 13)
+    Final parameters for the FW-DTI model.
+    Parameters are ordered as follows:
+        1) Three diffusion tensor's eigenvalues
+        2) Three lines of the eigenvector matrix each containing the
+           first, second and third coordinates of the eigenvector
+        3) The volume fraction of the tissue compartment
+
+    Referneces
+    ----------
+    .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., & Assaf, Y.
+            (2009). Free water elimination and mapping from diffusion MRI.
+            Magnetic Resonance in Medicine: An Official Journal of 
+            the International Society for Magnetic Resonance in Medicine,
+            62(3), 717-730.
+    .. [2] Pasternak, O., Maier-Hein, K., Baumgartner,
+            C., Shenton, M. E., Rathi, Y., & Westin, C. F. (2014).
+            The estimation of free-water corrected diffusion tensors.
+            In Visualization and Processing of Tensors and Higher Order
+            Descriptors for Multi-Valued Data (pp. 249-270). Springer,
+            Berlin, Heidelberg.
+    """
+    # cropping the non zero information from the data
+    Ak = attenuations[..., 1:]
+    H = design_matrix[1:, :-1]
+
+    # Initializing manifold
+    manifold = Manifold(H, initial_guess, Ak, fmin, fmax, Diso=Diso,
+                        beta=metric_ratio, mask=mask, zooms=zooms)
+
+    cost = np.zeros(iterations)
+    for i in range(iterations):
+
+        # At half iterations, turn off the regualrization term
+        if i == iterations // 2:
+            reg_weight = 0
+
+        # Update the manifold
+        manifold.update(learning_rate, reg_weight)
+        cost[i] = np.mean(manifold.flat_cost)
+
+    # UNCOMMENT to see error evolution plot
+    # plt.figure('Cost')
+    # plt.plot(cost, '.')
+    # plt.xlabel('iterations')
+    # plt.ylabel('Total Cost')
+
+    # Return the estimated parameters
+    return manifold.parameters
