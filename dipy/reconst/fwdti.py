@@ -1492,3 +1492,82 @@ def get_attenuations(signal, gtab):
 
     return (this_Ak, this_gtab)
 
+
+def fraction_init_s0(signal, gtab, Diso=3, Stissue=None, Swater=None,
+                     min_tissue_diff=0.001, max_tissue_diff=2.5):
+    """
+    Initializes the tissue fraction based on S0 image [1]
+
+    Parameters
+    ----------
+    signal : array (x, y, z, k)
+        Raw data
+    gtab : GradientTable class instance
+    Diso : float
+        Diffusivity of free water at body temperature
+    Stissue : float
+        S0 signal intensity representative of tissue, see Note
+    Swater : float
+        S0 signal intensity representative of water, see Note
+    min_tissue_diff : float
+        minimum diffusivity expected in tissue
+    max_tissue_diff : floar
+        maximum diffusivity expected in tissue
+
+    Returns
+    -------
+    f0 : array (x, y, z)
+        The initialized tissue fraction
+    fmin : array (x, y, z)
+        Lower limit for the tissue fraction
+    fmax : array (x, y, z)
+        Upper limit for the tissue fraction
+
+    Note
+    ----
+    The pair (Stissue, Swater) must be chosen from the S0 image,
+    by looking at a region of interest of WM or CSF. If no values are provided,
+    the algorithm tries to roughly estimate it from the S0 percentiles,
+    although this is not recomended.
+
+    References
+    ----------
+    .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., & Assaf, Y.
+            (2009). Free water elimination and mapping from diffusion MRI.
+            Magnetic Resonance in Medicine: An Official Journal of 
+            the International Society for Magnetic Resonance in Medicine,
+            62(3), 717-730.
+    """
+
+    S0 = np.mean(signal[..., gtab.b0s_mask], axis=-1)
+    if Stissue is None or Swater is None:
+        Stissue = np.percentile(S0, 75) 
+        Swater = np.percentile(S0, 95)
+        print('No Stissue and Swater were given, values chosen based on S0 percentiles:')
+        print('Stissue = ' + str(Stissue))
+        print('Swater = ' + str(Swater))
+
+    # Normalized attenuations
+    Ak, this_gtab = get_attenuations(signal, gtab)
+    Ak = Ak[..., 1:]
+    bvals = this_gtab.bvals[1:]  # non zero bvals
+    Awater = np.exp(-bvals * Diso)
+    Awater = np.tile(Awater, Ak.shape[:-1] + (1, ))
+
+    # Min and Max attenuations expected in tissue
+    Atissue_min = np.exp(-bvals * max_tissue_diff)
+    Atissue_max = np.exp(-bvals * min_tissue_diff)
+
+    # Initial volume fraction
+    f0 = 1 - np.log(S0 / Stissue) / np.log(Swater / Stissue)
+
+    # Min and Max volume fraction
+    fmin = np.min(Ak - Awater, axis=-1) / np.max(Atissue_max - Awater, axis=-1)
+    fmax = np.max(Ak - Awater, axis=-1) / np.min(Atissue_min - Awater, axis=-1)
+    fmin[fmin <= 0] = 0.0001
+    fmin[fmin >= 1] = 1 - 0.0001
+    fmax[fmax <= 0] = 0.0001
+    fmax[fmax >= 1] = 1 - 0.0001
+
+    return (f0, fmin, fmax)
+
