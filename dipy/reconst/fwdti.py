@@ -1571,3 +1571,66 @@ def fraction_init_s0(signal, gtab, Diso=3, Stissue=None, Swater=None,
 
     return (f0, fmin, fmax)
 
+
+def fraction_init_md(signal, gtab, Diso=3, tissue_MD=0.6):
+    """
+    Initializes the tissue fraction based on the initial MD [1, 2]
+
+    Parameters
+    ----------
+    signal : array (x, y, z, k)
+        Raw data
+    gtab : GradientTable class instance
+    Diso : float
+        Diffusivity of free water at body temperature
+    tissue_MD : float
+        The assumed prior for healthy tissue mean diffusivity
+
+    Returns
+    -------
+    f0 : array (x, y, z)
+        The initialized tissue fraction
+    fmin : array (x, y, z)
+        Lower limit for the tissue fraction
+    fmax : array (x, y, z)
+        Upper limit for the tissue fraction
+
+    References
+    ----------
+    .. [1] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Brem,
+            S., Alexander, S., Pasternak, O., ... & Verma, R.
+            (2018, September). Characterizing Peritumoral Tissue Using
+            Free Water Elimination in Clinical DTI.
+    .. [2] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Wolf, R.,
+            Brem, S., Alexander, S., ... & Verma, R. (2019). Freewater
+            EstimatoR using iNtErpolated iniTialization (FERNET): Toward
+            Accurate Estimation of Free Water in Peritumoral Region Using
+            Single-Shell Diffusion MRI Data.
+    """
+    # bvals = gtab.bvals[~gtab.b0s_mask]
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
+    mean_bval = np.max(bvals)
+    # print(mean_bval)
+
+    mbvals = bvals[np.logical_or(bvals==0, bvals==mean_bval)]
+    mbvecs = bvecs[np.logical_or(bvals==0, bvals==mean_bval), :]
+    mgtab = gradient_table(mbvals, mbvecs, b0_threshold=0)
+    msignal = signal[..., np.logical_or(bvals==0, bvals==mean_bval)]
+
+    # Conventional DTI
+    dti_params = ols_fit_tensor(design_matrix(mgtab), msignal)
+    eigvals = dti_params[..., 0:3]
+    MD = np.mean(eigvals, axis=-1)  # mean diffusivity
+
+    # Initial volume fraction
+    Awater = np.exp(-mean_bval * Diso)
+    Atissue = np.exp(-mean_bval * tissue_MD)
+    f0 = (np.exp(-mean_bval * MD) - Awater) / (Atissue - Awater)
+
+    # Min and Max volume fractions
+    fmin = np.ones(f0.shape) * 0.0001
+    fmax = np.ones(f0.shape) * (1 - 0.0001)
+
+    return (f0, fmin, fmax)
+
