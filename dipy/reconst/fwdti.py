@@ -1447,3 +1447,48 @@ class BeltramiFit(TensorFit):
     def predict(self, gtab, S0=1):
         Diso = self.model.fit_kwargs.get('Diso', 3)
         return fwdti_prediction(self.model_params, gtab, S0=S0, Diso=Diso)
+
+
+def get_attenuations(signal, gtab):
+    """
+    Pre-processing to get normalized attenuations
+
+    Parameters
+    ----------
+    signal : array (x, y, z, k)
+        Raw data
+    gtab : GradientTable class instance
+
+    Returns
+    -------
+    this_Ak : array (x, y, z, k)
+        Normalized attenuations, without the volumes acquired with b0;
+        The first volume (k = 0) consists of 1's (dummy data)
+    this_gtab : GradientTable class instance
+        GradientTable without the origianl b0 directions, only a single dummy b0
+    """
+    # Averaging S0 and getting normalized attenuations
+    b0_inds = gtab.b0s_mask
+    S0 = np.mean(signal[..., b0_inds], axis=-1)
+    Sk = signal[..., ~b0_inds]
+    Ak = Sk / S0[..., None]
+
+    # Correcting non realistic attenuations
+    bvals = gtab.bvals[~b0_inds]
+    bvecs = gtab.bvecs[~b0_inds]
+    Amin = np.exp(-bvals * MAX_DIFFFUSIVITY)
+    Amin = np.tile(Amin, Ak.shape[:-1] + (1, ))
+    Amax = np.exp(-bvals * MIN_DIFFUSIVITY)
+    Amax = np.tile(Amax, Ak.shape[:-1] + (1, ))
+    np.clip(Ak, Amin, Amax, out=Ak)
+
+    # Adding 'dummy' b0 zero data to attenuations and gtab
+    bvals = np.insert(bvals, 0 , 0)
+    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
+    this_gtab = gradient_table(bvals, bvecs) 
+    this_Ak = np.ones(Ak.shape[:-1] + (Ak.shape[-1] + 1, ))
+    this_gtab = gradient_table(bvals, bvecs, b0_threshold=0)
+    this_Ak[..., 1:] = Ak
+
+    return (this_Ak, this_gtab)
+
