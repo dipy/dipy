@@ -1703,3 +1703,59 @@ def fraction_init_hybrid(signal, gtab, Diso=3, Stissue=None, Swater=None,
     f0 = f_MD**alpha * f_S0**(1 - alpha)
 
     return (f0, fmin, fmax)
+
+
+def tensor_init(signal, gtab, fraction, Diso=3, min_tissue_diff=0.001,
+                max_tissue_diff=2.5):
+    """
+    Given an initial tissue fraction, estimates the initial tissue tensor
+
+    Parameters
+    ----------
+    signal : array (x, y, z, k)
+        Raw data
+    gtab : GradientTable class instance
+    fraction : array (x, y, z)
+        Initial guess for the tissue fraction, obtained with any of the
+        fraction_init_ functions
+    Diso : float
+        Diffusivity of free water at body temperature
+    min_tissue_diff : float
+        minimum diffusivity expected in tissue
+    max_tissue_diff : floar
+        maximum diffusivity expected in tissue
+
+    Returns
+    -------
+    dti_params : array (x, y, z, 12)
+        All parameters estimated with standard DTI.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the
+            first, second and third coordinates of the eigenvector
+    """
+    Ak, this_gtab = get_attenuations(signal, gtab)
+
+    # nonzero bvals and bvecs
+    bvals = this_gtab.bvals
+    bvecs = this_gtab.bvecs
+ 
+    # Min and Max attenuations expected in tissue
+    Atissue_min = np.exp(-bvals * max_tissue_diff)
+    Atissue_min = np.tile(Atissue_min, Ak.shape[:-1] + (1, ))
+    Atissue_max = np.exp(-bvals * min_tissue_diff)
+    Atissue_max = np.tile(Atissue_max, Ak.shape[:-1] + (1, ))
+
+    # correcting the attenuations for free water
+    f = fraction[..., None]
+    Awater = np.exp(-bvals * Diso)
+    Awater = np.tile(Awater, Ak.shape[:-1] + (1, ))
+    Atissue = (Ak - (1-f) * Awater) / f
+    # np.clip(Atissue, Atissue_min, Atissue_max, out=Atissue)
+    np.clip(Atissue, 0.0001, 0.9999, out=Atissue)
+
+    # applying standard DTI to corrected signal
+    dti_params = ols_fit_tensor(design_matrix(this_gtab), Atissue)
+
+    return dti_params
+
