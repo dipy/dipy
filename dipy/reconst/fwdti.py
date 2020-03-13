@@ -1848,3 +1848,15 @@ def gradient_descent(design_matrix, initial_guess, attenuations, fmin, fmax,
 
     # Return the estimated parameters
     return manifold.parameters
+
+
+init_methods = {'S0':fraction_init_s0,
+                's0':fraction_init_s0,
+                'b0':fraction_init_s0,
+                'md':fraction_init_md,
+                'MD':fraction_init_md,
+                'mean_diffusivity':fraction_init_md,
+                'hybrid':fraction_init_hybrid,
+                'interp':fraction_init_hybrid,
+                'log_linear':fraction_init_hybrid
+                }
