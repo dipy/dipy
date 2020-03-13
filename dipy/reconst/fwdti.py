@@ -1236,3 +1236,170 @@ class Manifold():
         out[self.mask, 0:12] = dti_params
         out[self.mask, 12] = self.flat_fraction[..., 0]
         return out
+
+
+class BeltramiModel(ReconstModel):
+    """
+    Model class that fits the FW-DTI model to single-shell data
+    """
+    def __init__(self, gtab, init_method='MD', **kwargs):
+        """
+        This procedure uses the Laplace-Beltrami operator to
+        regularize the solution and stabilize the fit with gradient descent,
+        first proposed in [1], however, here a euclidean metric is used [2].
+
+        This class is used to set the initialization type and parse keyword
+        arguments to the chosen init method and gardient descent
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance of Dipy
+        init_method : str
+            str must be one of the following initialization methods:
+            1) 'S0' uses the unweighted image to initialze the tissue
+                fraction [1]
+            2) 'MD' uses the initial MD map to initialize tissue fraction [3, 4]
+            3) 'hybrid' interpolates between 'S0' and 'MD' methods [3, 4]
+        kwargs : keyword arguments that depend on the chosen init method,
+            see 'fraction_init_s0', 'fraction_init_md' and
+            'fraction_init_hybrid' for details;
+            other keyword arguments serve as input to the
+            'gradient_descent' function
+
+        References
+        ----------
+        .. [1] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., & Assaf, Y.
+                (2009). Free water elimination and mapping from diffusion MRI.
+                Magnetic Resonance in Medicine: An Official Journal of 
+                the International Society for Magnetic Resonance in Medicine,
+                62(3), 717-730.
+        .. [2] Pasternak, O., Maier-Hein, K., Baumgartner,
+                C., Shenton, M. E., Rathi, Y., & Westin, C. F. (2014).
+                The estimation of free-water corrected diffusion tensors.
+                In Visualization and Processing of Tensors and Higher Order
+                Descriptors for Multi-Valued Data (pp. 249-270). Springer,
+                Berlin, Heidelberg.
+        .. [3] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Brem,
+                S., Alexander, S., Pasternak, O., ... & Verma, R.
+                (2018, September). Characterizing Peritumoral Tissue Using
+                Free Water Elimination in Clinical DTI.
+        .. [4] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Wolf, R.,
+                Brem, S., Alexander, S., ... & Verma, R. (2019). Freewater
+                EstimatoR using iNtErpolated iniTialization (FERNET): Toward
+                Accurate Estimation of Free Water in Peritumoral Region Using
+                Single-Shell Diffusion MRI Data.
+        """
+        ReconstModel.__init__(self, gtab)
+        if not callable(init_method):
+            try:
+                init_method = init_methods[init_method]
+            except KeyError:
+                e_s = '"' + str(init_method) + '" is not a known init '
+                e_s += 'method, the init method should either be a '
+                e_s += 'function or one of the available init methods'
+                raise ValueError(e_s)
+        self.init_method = init_method
+        self.kwargs = kwargs
+        self.design_matrix = design_matrix(self.gtab)
+        init_keys = ('Diso', 'Stissue', 'Swater', 'min_tissue_diff',
+                     'max_tissue_diff', 'tissue_MD')
+        self.init_kwargs = {k:kwargs[k] for k in init_keys if k in kwargs}
+        fit_keys = ('iterations', 'learning_rate', 'zooms', 'metric_ratio'
+                    'reg_weight', 'Diso')
+        self.fit_kwargs = {k:kwargs[k] for k in fit_keys if k in kwargs}
+
+
+    def predict(self, model_params, S0=1):
+        Diso = self.init_kwargs.get('Diso', 3)
+        return mfwdti_prediction(model_params, self.gtab, S0=S0, Diso=Diso)
+
+
+    def fit(self, data, mask=None):
+
+        if mask is not None:
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+            mask = mask.astype(bool, copy=False)
+        else:
+            mask = np.ones(data.shape[:-1]).astype(bool, copy=False)
+
+        # Initializing tissue volume fraction
+        data = np.maximum(data, MIN_POSITIVE_SIGNAL)
+        masked_data = data[mask, :]
+        f0 = np.zeros(data.shape[:-1])
+        fmin = np.zeros(data.shape[:-1])
+        fmax = np.ones(data.shape[:-1])
+        f0[mask], fmin[mask], fmax[mask] = self.init_method(masked_data,
+                                                            self.gtab,
+                                                            **self.init_kwargs)
+        np.clip(f0, fmin, fmax, out=f0) 
+
+        # Initializing tissue tensor
+        init_params = np.zeros(data.shape[:-1] + (13, ))
+        Diso = self.init_kwargs.get('Diso', 3)
+        min_tissue_diff = self.init_kwargs.get('min_tissue_diff', 0.001)
+        max_tissue_diff = self.init_kwargs.get('max_tissue_diff', 2.5)
+        init_params[mask, 0:12] = tensor_init(masked_data, self.gtab, f0[mask],
+                                             min_tissue_diff=min_tissue_diff,
+                                             max_tissue_diff=max_tissue_diff,
+                                             Diso=Diso)
+        init_params[mask, 12] = f0[mask]
+
+        # Voxel where tissue MD > 1.5 can lead implausible fits, in these voxel
+        # tissue fraction is set to 0 and diffusion eigvals to 0.001
+        md_tissue = np.mean(init_params[..., :3], axis=-1)
+        init_params[md_tissue >= 1.5, -1] = 0
+        init_params[md_tissue >= 1.5, :3] = 0.001
+        init_params[md_tissue >= 1.5, 3:-1] = 0
+
+        # Run gradient descent
+        atten, gtab = get_attenuations(data, self.gtab)
+        D = design_matrix(gtab)
+        beltrami_params = gradient_descent(D, init_params,
+                                           atten, fmin, fmax, mask,
+                                           **self.fit_kwargs)
+        
+        fit = BeltramiFit(self, beltrami_params)
+    
+        # Add the initialization parameters to Class instance (for debugging)
+        fit.initial_guess = init_params
+        fit.finterval = np.stack((fmin, fmax), axis=-1)
+
+        return fitpe[:-1])
+        f0[mask], fmin[mask], fmax[mask] = self.init_method(masked_data,
+                                                            self.gtab,
+                                                            **self.init_kwargs)
+        np.clip(f0, fmin, fmax, out=f0) 
+
+        # Initializing tissue tensor
+        init_params = np.zeros(data.shape[:-1] + (13, ))
+        Diso = self.init_kwargs.get('Diso', 3)
+        min_tissue_diff = self.init_kwargs.get('min_tissue_diff', 0.001)
+        max_tissue_diff = self.init_kwargs.get('max_tissue_diff', 2.5)
+        init_params[mask, 0:12] = tensor_init(masked_data, self.gtab, f0[mask],
+                                             min_tissue_diff=min_tissue_diff,
+                                             max_tissue_diff=max_tissue_diff,
+                                             Diso=Diso)
+        init_params[mask, 12] = f0[mask]
+
+        # Voxel where tissue MD > 1.5 can lead implausible fits, in these voxel
+        # tissue fraction is set to 0 and diffusion eigvals to 0.001
+        md_tissue = np.mean(init_params[..., :3], axis=-1)
+        init_params[md_tissue >= 1.5, -1] = 0
+        init_params[md_tissue >= 1.5, :3] = 0.001
+        init_params[md_tissue >= 1.5, 3:-1] = 0
+
+        # Run gradient descent
+        atten, gtab = get_attenuations(data, self.gtab)
+        D = design_matrix(gtab)
+        beltrami_params = gradient_descent(D, init_params,
+                                           atten, fmin, fmax, mask,
+                                           **self.fit_kwargs)
+        
+        fit = BeltramiFit(self, beltrami_params)
+    
+        # Add the initialization parameters to Class instance (for debugging)
+        fit.initial_guess = init_params
+        fit.finterval = np.stack((fmin, fmax), axis=-1)
+
+        return fit
