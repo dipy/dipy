@@ -1638,3 +1638,68 @@ def fraction_init_md(signal, gtab, Diso=3, tissue_MD=0.6):
 
     return (f0, fmin, fmax)
 
+
+def fraction_init_hybrid(signal, gtab, Diso=3, Stissue=None, Swater=None,
+                         min_tissue_diff=0.001, max_tissue_diff=2.5,
+                         tissue_MD=0.6):
+    """
+    Initializes the tissue fraction based on hybrid initialization [1, 2]
+
+    Parameters
+    ----------
+    signal : array (x, y, z, k)
+        Raw data
+    gtab : GradientTable class instance
+    Diso : float
+        Diffusivity of free water at body temperature
+    Stissue : float
+        S0 signal intensity representative of tissue, see Note
+    Swater : float
+        S0 signal intensity representative of water, see Note
+    min_tissue_diff : float
+        minimum diffusivity expected in tissue
+    max_tissue_diff : floar
+        maximum diffusivity expected in tissue
+    tissue_MD : float
+        The assumed prior for healthy tissue mean diffusivity
+
+    Returns
+    -------
+    f0 : array (x, y, z)
+        The initialized tissue fraction
+    fmin : array (x, y, z)
+        Lower limit for the tissue fraction
+    fmax : array (x, y, z)
+        Upper limit for the tissue fraction
+
+    Note
+    ----
+    This method is an interpolation between the S0 and MD based initializations;
+    see functions 'fraction_init_s0' and 'fraction_init_md'
+
+    References
+    ----------
+    .. [1] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Brem,
+            S., Alexander, S., Pasternak, O., ... & Verma, R.
+            (2018, September). Characterizing Peritumoral Tissue Using
+            Free Water Elimination in Clinical DTI.
+    .. [2] Ismail, A. A. O., Parker, D., Hernandez-Fernandez, M., Wolf, R.,
+            Brem, S., Alexander, S., ... & Verma, R. (2019). Freewater
+            EstimatoR using iNtErpolated iniTialization (FERNET): Toward
+            Accurate Estimation of Free Water in Peritumoral Region Using
+            Single-Shell Diffusion MRI Data.
+    """
+    f_S0, fmin, fmax = fraction_init_s0(signal, gtab, Diso=Diso,
+                                        Stissue=Stissue, Swater=Swater,
+                                        min_tissue_diff=min_tissue_diff,
+                                        max_tissue_diff=max_tissue_diff)
+    f_MD, _, _ = fraction_init_md(signal, gtab, Diso=Diso,
+                                  tissue_MD=tissue_MD)
+    # hybrid initialization
+    alpha = np.copy(f_S0)
+    np.clip(alpha, 0.0001, 0.9999, out=alpha)
+    np.clip(f_S0, fmin, fmax, out=f_S0)
+    np.clip(f_MD, 0.0001, 0.9999, out=f_MD)
+    f0 = f_MD**alpha * f_S0**(1 - alpha)
+
+    return (f0, fmin, fmax)
