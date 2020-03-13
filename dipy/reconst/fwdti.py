@@ -21,7 +21,7 @@ from dipy.reconst.dki import _positive_evals
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.ndindex import ndindex
 from dipy.reconst.multi_voxel import multi_voxel_fit
-
+from dipy.core.gradients import gradient_table
 from dipy.core.onetime import auto_attr
 
 # to plot error evolution of gradient descent (for debugging)
