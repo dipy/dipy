@@ -1389,13 +1389,63 @@ class BeltramiModel(ReconstModel):
 
 
 class BeltramiFit(TensorFit):
-
+    """
+    Class that holds the fit results obtained from fitting the FW-DTI model
+    to single shell data (from the BeltramiModel class)
+    """
     def __init__(self, model, model_params):
         TensorFit.__init__(self, model, model_params, model_S0=None)
-    
+        """
+        Initialize a BeltramiFit class instance.
+        Since the free water tensor model is an extension of DTI, class
+        instance is defined as subclass of the TensorFit from dti.py
+
+        Parameters
+        ----------
+        model : BeltramiModel class instance
+            Class instance containing the single-shell free water tensor model
+            for the fit
+        model_paramsmodel_params : darray (x, y, z, 13)
+            All parameters estimated from the free water tensor model.
+            Parameters are ordered as follows:
+                1) Three diffusion tensor's eigenvalues
+                2) Three lines of the eigenvector matrix each containing the
+                   first, second and third coordinates of the eigenvector
+                3) The volume fraction of the tissue compartment
+        """
     @property
     def f(self):
         return self.model_params[..., 12]
+
+
+    @property
+    def fw(self):
+        return (1 - self.model_params[..., 12])
+
+
+    @property
+    def fwmin(self):
+        return (1 - self.finterval[..., 1])
+
+
+    @property
+    def fwmax(self):
+        return (1 - self.finterval[..., 0])
+
+
+    @property
+    def fw0(self):
+        return 1 - self.initial_guess[..., 12]
+
+
+    @property
+    def fa0(self):
+        return fractional_anisotropy(self.initial_guess[..., 0:3])
+
+
+    @property
+    def md0(self):
+        return mean_diffusivity(self.initial_guess[..., 0:3])
 
 
     def predict(self, gtab, S0=1):
