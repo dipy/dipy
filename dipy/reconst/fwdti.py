@@ -192,7 +192,7 @@ class FreeWaterTensorFit(TensorFit):
         ----------
         model : FreeWaterTensorModel Class instance
             Class instance containing the free water tensor model for the fit
-        model_paramsmodel_params : ndarray (x, y, z, 13) or (n, 13)
+        model_params : ndarray (x, y, z, 13) or (n, 13)
             All parameters estimated from the free water tensor model.
             Parameters are ordered as follows:
                 1) Three diffusion tensor's eigenvalues
