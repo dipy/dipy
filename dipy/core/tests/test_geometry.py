@@ -345,6 +345,7 @@ def test_generate_unit_determinant_matrix():
 
 def test_generate_random_affine():
     affine = generate_random_affine()
+    assert_raises(AssertionError, assert_array_equal, np.linalg.det(affine), 0)
 
 
 if __name__ == '__main__':
