@@ -47,8 +47,8 @@ def _save_hdf5(fname, dt, col_name, col_size=16):
     filename_hdf5 = fname + '.h5'
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
-    store.append(fname, df, data_columns=True, complevel=9,
-                 min_itemsize={col_name: col_size})
+    store.append(fname, df, data_columns=True, complevel=9)#,
+                 #min_itemsize={col_name: col_size})
     store.close()
 
 
@@ -80,74 +80,102 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
 
     """
 
-    dt["bundle"] = []
-    dt["disk#"] = []
-    dt[pname] = []
-    dt["subject"] = []
-    dt["group"] = []
+    peaks_do = False
+    
+    if peaks_do == False:
 
-    point = 0
-    shape = peaks.peak_dirs.shape
-    for st in bundle:
-        di = st[1:] - st[0:-1]
-        dnorm = np.linalg.norm(di, axis=1)
-        di = di / dnorm[:, None]
-        count = 0
-        for ip in range(len(st)-1):
-            point += 1
-            index = st[ip].astype(int)
+        "========== gfa ========="
+        gfa = peaks.gfa
+        dti_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
 
-            if (index[0] < shape[0] and index[1] < shape[1] and
-               index[2] < shape[2]):
+        "========== qa ========="
+        qa = peaks.qa[...,0]
+        dti_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
 
-                dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
-                dval = peaks.peak_values[index[0]][index[1]][index[2]]
+    else:
 
-                res = []
-
-                for i in range(len(dire)):
-                    di2 = dire[i]
-                    # edit here
-                    if di2[0]==0.0 and di2[1]==0.0 and di2[2]==0: #sum(di2)==0.0: #if vector is all 0s
-                        #print("zero vector")
-                        result = np.inf
-                    else:
-                        result = spatial.distance.cosine(di[ip], di2)
-                    res.append(result)
-
-                d_val = dval[res.index(min(res))]
-                
-                
-                '''
-                
-                don't take distance with zero vectors, they result in 'nan'
-                and we end up taking min value of 'nan' as lowest 
-                and in the end most of our data is filled with 'nan' values
-                hence, no significant differences found in LMM
-                
-                '''
-                
-                
-                '''
-                if d_val != 0.:
-                    dt[pname].append(d_val)
-                    dt["disk#"].append(ind[point]+1)
-                    count += 1
+        if group == 'patient':
+            group_id = 1 # 1 means patient
+        else:
+            group_id = 0 # 0 means control
+            
+    
+        
+        
+        
+    
+        #dt["bundle"] = []
+        dt["streamline"] = []
+        dt["disk#"] = []
+        dt[pname] = []
+        dt["subject"] = []
+        dt["group"] = []
+    
+        point = 0
+        shape = peaks.peak_dirs.shape
+        for st_i in range(len(bundle)):
+            
+            st = bundle[st_i]
+            di = st[1:] - st[0:-1]
+            dnorm = np.linalg.norm(di, axis=1)
+            di = di / dnorm[:, None]
+            count = 0
+            for ip in range(len(st)-1):
+                point += 1
+                index = st[ip].astype(int)
+    
+                if (index[0] < shape[0] and index[1] < shape[1] and
+                   index[2] < shape[2]):
+    
+                    dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
+                    dval = peaks.peak_values[index[0]][index[1]][index[2]]
+    
+                    res = []
+    
+                    for i in range(len(dire)):
+                        di2 = dire[i]
+                        # edit here
+                        if di2[0]==0.0 and di2[1]==0.0 and di2[2]==0: #sum(di2)==0.0: #if vector is all 0s
+                            #print("zero vector")
+                            result = np.inf
+                        else:
+                            result = spatial.distance.cosine(di[ip], di2)
+                        res.append(result)
+    
+                    d_val = dval[res.index(min(res))]
+                    
+                    
                     '''
                     
-# edit here
-                dt[pname].append(d_val)
-                dt["disk#"].append(ind[point]+1)
-                count += 1
-
-        dt["bundle"].extend([bname]*count)
-        dt["subject"].extend([subject]*count)
-        dt["group"].extend([group]*count)
-
-    #devide and conquer
-    file_name = bname+"_"+pname
+                    don't take distance with zero vectors, they result in 'nan'
+                    and we end up taking min value of 'nan' as lowest 
+                    and in the end most of our data is filled with 'nan' values
+                    hence, no significant differences found in LMM
+                    
+                    '''
+                    
+                    
+                    '''
+                    if d_val != 0.:
+                        dt[pname].append(d_val)
+                        dt["disk#"].append(ind[point]+1)
+                        count += 1
+                        '''
+                        
+    # edit here
+                    dt[pname].append(d_val)
+                    dt["disk#"].append(ind[point]+1)
+                    dt["streamline"].append(st_i)
+                    count += 1
     
-    _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
+            #dt["bundle"].extend([bname]*count)
+            dt["subject"].extend([subject]*count)
+            dt["group"].extend([group_id ]*count)
+    
+        #devide and conquer
+        file_name = bname+"_"+pname
+        
+        _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
 
 
 def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
@@ -176,7 +204,13 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
             path of output directory
     """
 
-    dt["bundle"] = []
+    if group == 'patient':
+        group_id = 1 # 1 means patient
+    else:
+        group_id = 0 # 0 means control
+
+    #dt["bundle"] = []
+    dt["streamline"] = []
     dt["disk#"] = []
     dt["subject"] = []
     dt[pname] = []
@@ -186,10 +220,18 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
                              order=1)
 
     dt["disk#"].extend(ind[list(range(len(values)))]+1)
-    dt["bundle"].extend([bname]*len(values))
+    #dt["bundle"].extend([bname]*len(values))
     dt["subject"].extend([subject]*len(values))
-    dt["group"].extend([group]*len(values))
+    dt["group"].extend([group_id]*len(values))
     dt[pname].extend(values)
+    
+    
+    for st_i in range(len(bundle)):
+    
+        st = bundle[st_i]
+        dt["streamline"].extend([st_i]*len(st))
+        
+    
 
     #devide and conquer
     file_name = bname+"_"+pname
@@ -247,7 +289,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     
     #mb = glob(model_bundle_folder+"/*.trk")
     # edit here remove this later, uncomment above line
-    mb = glob(model_bundle_folder+"IFOF_L.trk")
+    mb = glob(model_bundle_folder+"/*.trk")
     print(mb)
     #edit end
     
@@ -255,22 +297,25 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     #bd = os.listdir(bundle_folder)
     #bd.sort()
     
-    bd = glob(bundle_folder+"/*IFOF_L*.trk")
+    bd = glob(bundle_folder+"/*.trk")
     bd.sort()
     print(bd)
     
     #org_bd = os.listdir(orig_bundle_folder)
-    org_bd = glob(orig_bundle_folder+"/*IFOF_L*.trk")
+    org_bd = glob(orig_bundle_folder+"/*.trk")
     org_bd.sort()
     print(org_bd)
     n = len(org_bd)
     n = len(mb)
 
     for io in range(n):
-        mbundles, _ = load_trk(mb[io]) #os.path.join(model_bundle_folder, mb[io]))
-        bundles, _ = load_trk(bd[io]) #os.path.join(bundle_folder, bd[io]))
-        orig_bundles, _ = load_trk(org_bd[io])#os.path.join(orig_bundle_folder,
+        mbundles = load_trk(mb[io], reference='same', bbox_valid_check=False) #os.path.join(model_bundle_folder, mb[io]))
+        mbundles = mbundles.streamlines
+        bundles = load_trk(bd[io], reference='same', bbox_valid_check=False) #os.path.join(bundle_folder, bd[io]))
+        bundles = bundles.streamlines
+        orig_bundles = load_trk(org_bd[io], reference='same', bbox_valid_check=False)#os.path.join(orig_bundle_folder,
                                    #org_bd[io]))
+        orig_bundles = orig_bundles.streamlines
 
 
         if len(orig_bundles) > 5 :
@@ -280,7 +325,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                                                        nb_points=no_disks)
     
             metric = AveragePointwiseEuclideanMetric()
-            qb = QuickBundles(threshold=25., metric=metric)
+            qb = QuickBundles(threshold=85., metric=metric)
             clusters = qb.cluster(mbundle_streamlines)
             centroids = Streamlines(clusters.centroids)
     
@@ -295,7 +340,9 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                               copy_data=True).query(bundles.data, k=1)
     
             #metric_files_names = os.listdir(metric_folder)
-            metric_files_names = ["csa_peaks.pam5"] #, "md.nii.gz", "csd_peaks.pam5"]
+            metric_files_names = ["csd_peaks.pam5"]
+            #["csa_peaks.pam5", "csd_peaks.pam5"] 
+            #["fa.nii.gz", "md.nii.gz", "ad.nii.gz", "rd.nii.gz"]
             _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
     
             affine_r = np.linalg.inv(affine)
@@ -308,24 +355,27 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                 fm = metric_files_names[mn][:-7]
                 bm = mb[io][14:-4]
                 print("bm = ", bm)
-                dt = dict()
-                metric_name = os.path.join(metric_folder,
-                                           metric_files_names[mn])
-    
-                print("metric = ", metric_files_names[mn])
-                if metric_files_names[mn][-7:] == '.nii.gz':
-                    metric, _ = load_nifti(metric_name)
-    
-                    dti_measures(transformed_orig_bundles, metric, dt, fm,
-                                 bm, subject, group, ind, out_dir)
-    
+                if bm[0:2]=="-C":
+                    print("it's a CC, miss!")
                 else:
-                    fm = metric_files_names[mn][:3]
-                    metric = load_peaks(metric_name)
-                    #peak_values(bundles, metric, dt, fm, bm, subject, group,
-                    #            ind, out_dir)
-                    peak_values(transformed_orig_bundles, metric, dt, fm, bm, subject, group,
-                                ind, out_dir)
+                    dt = dict()
+                    metric_name = os.path.join(metric_folder,
+                                               metric_files_names[mn])
+        
+                    print("metric = ", metric_files_names[mn])
+                    if metric_files_names[mn][-7:] == '.nii.gz':
+                        metric, _ = load_nifti(metric_name)
+        
+                        dti_measures(transformed_orig_bundles, metric, dt, fm,
+                                     bm, subject, group, ind, out_dir)
+        
+                    else:
+                        fm = metric_files_names[mn][:3]
+                        metric = load_peaks(metric_name)
+                        #peak_values(bundles, metric, dt, fm, bm, subject, group,
+                        #            ind, out_dir)
+                        peak_values(transformed_orig_bundles, metric, dt, fm, bm, subject, group,
+                                    ind, out_dir)
 
 
     print("total time taken in minutes = ", (-t + time())/60)

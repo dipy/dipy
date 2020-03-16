@@ -132,6 +132,7 @@ class Horizon(object):
     def build_scene(self):
 
         scene = window.Renderer()
+        scene.background((1,1,1))
         for (t, streamlines) in enumerate(self.tractograms):
             if self.random_colors:
                 colors = self.prng.random_sample(3)

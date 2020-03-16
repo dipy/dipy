@@ -206,11 +206,11 @@ class BundleAnalysisPopulationFlow(Workflow):
         for group in groups:
             logging.info('group = {0}'.format(group))
             all_subjects = os.listdir(os.path.join(subject_folder, group))
-
+            print(all_subjects)
             for sub in all_subjects:
-
+                print(sub)
                 pre = os.path.join(subject_folder, group, sub)
-
+                print(pre)
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "dti_measures")
@@ -224,6 +224,7 @@ class LinearMixedModelsFlow(Workflow):
         return 'lmm'
 
     def get_metric_name(self, name):
+
         count = 0
         i = len(name)-1
         while i>0:
@@ -265,53 +266,56 @@ class LinearMixedModelsFlow(Workflow):
             logging.info('Applying metric {0}'.format(file_path))
             #file_name = os.path.basename(file_path)[:-3]
             
-            if file_path[4:6] == "CC":
+            if file_path[4:6] == "-C":
                 print("======== skipping CCMid =============")
             
             else:
             
                 file_name = self.get_metric_name(file_path)
                 print(" file name = ", file_name)
+                print("file path = ", file_path)
                 df = pd.read_hdf(file_path)
-    
+                print("read the dataframe")
                 if len(df) < 100:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
     
-                all_bundles = df.bundle.unique()
+                #all_bundles = df.bundle.unique()
                 # all_pvalues = []
-                for bundle in all_bundles:
-                    sub_af = df[df['bundle'] == bundle]  # sub sample
-                    pvalues = np.zeros(no_disks)
-    
-                    # run mixed linear model for every disk
-                    for i in range(no_disks):
-    
-                        sub = sub_af[sub_af['disk#'] == (i+1)]  # disk number
-    
-                        if len(sub) > 20: # to have significant data to perform LMM
-                            criteria = file_name + " ~ group"
-                            md = smf.mixedlm(criteria, sub, groups=sub["subject"])
-    
-                            mdf = md.fit()
-    
-                            pvalues[i] = mdf.pvalues[1]
-    
-                    x = list(range(1, len(pvalues)+1))
-                    y = -1*np.log10(pvalues)
-                    
-                    
-                    plot_file = os.path.join(out_dir, bundle + file_name + "pvalues.npy")
-    
-                    np.save(plot_file, pvalues)
-                    
-                    plot_file = os.path.join(out_dir, bundle + file_name + "pvalues_log.npy")
-                    
-                    np.save(plot_file, y)
-                    
-                    
-                    #title = bundle + " on " + file_name + " Values"
-                    #plot_file = os.path.join(out_dir, bundle + "_" +
-                    #                         file_name + ".png")
-    
-                    #simple_plot(plot_file, title, x, y, "disk no",
-                     #           "-log10(pvalues)")
+                #for bundle in all_bundles:
+                #sub_af = df# df[df['bundle'] == bundle]  # sub sample
+                pvalues = np.zeros(no_disks)
+
+                # run mixed linear model for every disk
+                for i in range(no_disks):
+                    print("creating the sub dataframe")
+                    #sub = df[df['disk#'] == (i+1)]  # disk number
+                    print("created the sub dataframe")
+                    #print("size of sub =", len(sub))
+                    if len(df[df['disk#'] == (i+1)]) > 20: # to have significant data to perform LMM
+                        criteria = file_name + " ~ group"
+                        md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)], groups=df[df['disk#'] == (i+1)]["subject"])
+
+                        mdf = md.fit()
+
+                        pvalues[i] = mdf.pvalues[1]
+                    #del sub
+                #x = list(range(1, len(pvalues)+1))
+                y = -1*np.log10(pvalues)
+                
+                
+                plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues.npy")
+                #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
+                
+                np.save(plot_file, pvalues)
+                
+                plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues_log.npy")
+                #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
+                np.save(plot_file, y)
+                
+                
+                #title = bundle + " on " + file_name + " Values"
+                #plot_file = os.path.join(out_dir, bundle + "_" +
+                #                         file_name + ".png")
+
+                #simple_plot(plot_file, title, x, y, "disk no",
+                 #           "-log10(pvalues)")
