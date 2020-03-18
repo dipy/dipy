@@ -239,7 +239,21 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
 
     _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
 
+def assignment_map(target_bundle, model_bundle, no_disks):
 
+    mbundle_streamlines = set_number_of_points(model_bundle,
+                                           nb_points=no_disks)
+
+    metric = AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=85., metric=metric)
+    clusters = qb.cluster(mbundle_streamlines)
+    centroids = Streamlines(clusters.centroids)
+
+    _, indx = cKDTree(centroids.data, 1,
+                      copy_data=True).query(target_bundle.data, k=1)
+    
+    return indx
+    
 def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                     metric_folder, group, subject, no_disks=100,
                     out_dir=''):
@@ -320,7 +334,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
         if len(orig_bundles) > 5 :
 
-
+            '''
             mbundle_streamlines = set_number_of_points(mbundles,
                                                        nb_points=no_disks)
     
@@ -338,6 +352,9 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     
             _, indx = cKDTree(centroids.data, 1,
                               copy_data=True).query(bundles.data, k=1)
+    
+            '''
+            indx = assignment_map(bundles, mbundles, no_disks)
     
             #metric_files_names = os.listdir(metric_folder)
             metric_files_names = ["csd_peaks.pam5"]

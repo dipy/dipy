@@ -75,9 +75,7 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
 def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
                           select_randomly=500000):
 
-    thresholds = [clust_thr]
-
-    model_cluster_map = qbx_and_merge(bundle, thresholds,
+    model_cluster_map = qbx_and_merge(bundle, clust_thr,
                                       nb_pts=nb_pts,
                                       select_randomly=select_randomly,
                                       rng=rng)
@@ -85,9 +83,9 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
 
     return centroids
 
-def bundle_shape_similarity(bundle1, bundle2, threshold):
+def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
 
-    rng = np.random.RandomState()   
+       
     if len(bundle1) == 0 or len(bundle2) == 0:
         return 0
     
