@@ -69,20 +69,24 @@ class GradientTable(object):
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
+        if btens is not None:
+            linear_tensor = np.array([[1, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+            planar_tensor = np.array([[1, 0, 0],
+                                      [0, 1, 0],
+                                      [0, 0, 0]]) / 2
+            spherical_tensor = np.array([[1, 0, 0],
+                                         [0, 1, 0],
+                                         [0, 0, 1]]) / 3
         if isinstance(btens, str):
             b_tensors = np.zeros((len(self.bvals), 3, 3))
             if btens == 'LTE':
-                b_tensor = np.array([[1, 0, 0],
-                                     [0, 0, 0],
-                                     [0, 0, 0]])
+                b_tensor = linear_tensor
             elif btens == 'PTE':
-                b_tensor = np.array([[0, 0, 0],
-                                     [0, 1, 0],
-                                     [0, 0, 1]]) / 2
+                b_tensor = planar_tensor
             elif btens == 'STE':
-                b_tensor = np.array([[1, 0, 0],
-                                     [0, 1, 0],
-                                     [0, 0, 1]]) / 3
+                b_tensor = spherical_tensor
             else:
                 raise ValueError("%s is an invalid value for btens. "%btens
                                  + "Please provide one of the following: "
@@ -105,22 +109,13 @@ class GradientTable(object):
             for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                 R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
                 if btens[i] == 'LTE':
-                    b_tensor = np.array([[1, 0, 0],
-                                         [0, 0, 0],
-                                         [0, 0, 0]])
-                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                    b_tensors[i] = (np.matmul(np.matmul(R, linear_tensor), R.T)
                                     * bval)
                 elif btens[i] == 'PTE':
-                    b_tensor = np.array([[0, 0, 0],
-                                         [0, 1, 0],
-                                         [0, 0, 1]]) / 2
-                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                    b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor), R.T)
                                     * bval)
                 elif btens[i] == 'STE':
-                    b_tensor = np.array([[1, 0, 0],
-                                         [0, 1, 0],
-                                         [0, 0, 1]]) / 3
-                    b_tensors[i] = b_tensor * bval
+                    b_tensors[i] = spherical_tensor * bval
                 else:
                     raise ValueError(
                             "%s is an invalid value in btens array. "%btens[i]
@@ -210,8 +205,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
            with the corresponding gradient direction and the planar tensor's
            normal is aligned with the corresponding gradient direction.
            Magnitude is scaled to match the b-value.
-        3. an arry of shape (N,3,3) specifying the b-tensor of each volume
-           exactly. N corresponds to the number volumes in data No rotation of
+        3. an array of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data. No rotation of
            scaling is performed.
 
     Other Parameters
@@ -483,7 +478,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
            normal is aligned with the corresponding gradient direction.
            Magnitude is scaled to match the b-value.
         3. an arry of shape (N,3,3) specifying the b-tensor of each volume
-           exactly. N corresponds to the number volumes in data No rotation of
+           exactly. N corresponds to the number volumes in data No rotation or
            scaling is performed.
 
     Returns
