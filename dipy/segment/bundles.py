@@ -72,6 +72,42 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
 
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
+def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
+                          select_randomly=500000):
+
+    thresholds = [clust_thr]
+
+    model_cluster_map = qbx_and_merge(bundle, thresholds,
+                                      nb_pts=nb_pts,
+                                      select_randomly=select_randomly,
+                                      rng=rng)
+    centroids = model_cluster_map.centroids
+
+    return centroids
+
+def bundle_shape_similarity(bundle1, bundle2, threshold):
+
+    rng = np.random.RandomState()   
+    if len(bundle1) == 0 or len(bundle2) == 0:
+        return 0
+    
+    else:
+    
+        bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
+                                           rng=rng)
+        bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
+                                           rng=rng)
+        bundle1_centroids = Streamlines(bundle1_centroids)
+        bundle2_centroids = Streamlines(bundle2_centroids)
+
+
+
+        ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
+                               threshold)
+
+    return ba_value
+
+
 
 class RecoBundles(object):
 
@@ -430,6 +466,7 @@ class RecoBundles(object):
         bmd_value = BMD.distance(x0.tolist())
 
         return ba_value, bmd_value
+
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
                               select_randomly=500000):

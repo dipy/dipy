@@ -380,6 +380,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
     print("total time taken in minutes = ", (-t + time())/60)
 
+
 def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
                      stat=np.mean):
     """

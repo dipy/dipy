@@ -16,7 +16,7 @@ from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
 from dipy.workflows.workflow import Workflow
-
+from dipy.segment.bundles import bundle_shape_similarity
 from dipy.viz.regtools import simple_plot
 from dipy.stats.analysis import bundle_analysis
 pd, have_pd, _ = optional_package("pandas")
@@ -319,3 +319,72 @@ class LinearMixedModelsFlow(Workflow):
 
                 #simple_plot(plot_file, title, x, y, "disk no",
                  #           "-log10(pvalues)")
+
+
+class BundleShapeAnalysis(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'BS'
+    
+    def run(self, subject_folder, threshold=6,
+        out_dir=''):
+    """Workflow of bundle analytics.
+
+    Applies bundle shape similarity analysis on bundles of subjects and saves 
+    the results in a directory specified by ``out_dir``.
+
+    Parameters
+    ----------
+
+    subject_folder : string
+        Path to the input subject folder. This path may contain
+        wildcards to process multiple inputs at once.
+
+    threshold : integer, optional
+        Bundle shape similarity threshold. (Default 6)
+
+    out_dir : string, optional
+        Output directory (default input file directory)
+
+    References
+    ----------
+    .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+    E. Garyfallidis, Bundle Analytics: a computational and statistical
+    analyses framework for tractometric studies, Proceedings of:
+    International Society of Magnetic Resonance in Medicine (ISMRM),
+    Montreal, Canada, 2019.
+
+    """
+
+        all_subjects = []
+        groups = os.listdir(subject_folder)
+        
+        for group in groups:
+            subjects = os.listdir(os.path.join(subject_folder, group))
+            for sub in subjects:
+                all_subjects.append(os.path.join(subject_folder, group, sub))
+           
+        N = len(all_subjects)
+
+        bundles = os.listdir(os.path.join(all_subjects[0], "rec_bundles"))
+        for bun in bundles:
+            # bundle shape similarity matrix
+            ba_matrix = np.zeros((N, N))
+            i = 0
+            for sub in all_subjects:
+                j = 0
+                bundle1, _ = load_trk(os.path.join(sub, "rec_bundles", bun))
+                for subi in all_subjects:
+            
+                    bundle2 , _ = load_trk(os.path.join(subi, "rec_bundles",
+                                                        bun))
+                    ba_value = bundle_shape_similarity(bundle1, bundle2,
+                                                       threshold)
+        
+                    ba_matrix[i][j] = ba_value
+        
+                    j+= 1
+                i+= 1   
+            np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
+        
+            
