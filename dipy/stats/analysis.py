@@ -358,44 +358,50 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     
             '''
             indx = assignment_map(bundles, mbundles, no_disks)
-    
+            ind = np.array(indx)
             #metric_files_names = os.listdir(metric_folder)
-            metric_files_names = ["csd_peaks.pam5"]
+            metric_files_names_dti = glob(os.path.join(metric_folder,"*.nii.gz"))
+            
+            metric_files_names_csa = glob(os.path.join(metric_folder,"*.pam5"))
+            #metric_files_names = ["csd_peaks.pam5"]
             #["csa_peaks.pam5", "csd_peaks.pam5"] 
             #["fa.nii.gz", "md.nii.gz", "ad.nii.gz", "rd.nii.gz"]
-            _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
+            
+            
+            _, affine = load_nifti(metric_files_names_dti[0])
     
             affine_r = np.linalg.inv(affine)
             transformed_orig_bundles = transform_streamlines(orig_bundles,
                                                              affine_r)
     
-            for mn in range(0, len(metric_files_names)):
+            for mn in range(len(metric_files_names_dti)):
     
-                ind = np.array(indx)
-                fm = metric_files_names[mn][:-7]
+                
+                fm = metric_files_names_dti[mn][:-7]
                 bm = mb[io][14:-4]
                 print("bm = ", bm)
-                if bm[0:2]=="-C":
-                    print("it's a CC, miss!")
-                else:
-                    dt = dict()
-                    metric_name = os.path.join(metric_folder,
-                                               metric_files_names[mn])
-        
-                    print("metric = ", metric_files_names[mn])
-                    if metric_files_names[mn][-7:] == '.nii.gz':
-                        metric, _ = load_nifti(metric_name)
-        
-                        dti_measures(transformed_orig_bundles, metric, dt, fm,
-                                     bm, subject, group, ind, out_dir)
-        
-                    else:
-                        fm = metric_files_names[mn][:3]
-                        metric = load_peaks(metric_name)
-                        #peak_values(bundles, metric, dt, fm, bm, subject, group,
-                        #            ind, out_dir)
-                        peak_values(transformed_orig_bundles, metric, dt, fm, bm, subject, group,
-                                    ind, out_dir)
+
+                dt = dict()
+                metric_name = os.path.join(metric_folder,
+                                           metric_files_names_dti[mn])
+    
+                print("metric = ", metric_files_names_dti[mn])
+
+                metric, _ = load_nifti(metric_name)
+
+                dti_measures(transformed_orig_bundles, metric, dt, fm,
+                             bm, subject, group, ind, out_dir)
+
+
+            for mn in range(len(metric_files_names_csa)):
+                
+                fm = metric_files_names_csa[mn][:3]
+                metric = load_peaks(metric_name)
+                #peak_values(bundles, metric, dt, fm, bm, subject, group,
+                #            ind, out_dir)
+                peak_values(transformed_orig_bundles, metric, dt, fm, bm,
+                            subject, group, ind, out_dir)
+
 
 
     print("total time taken in minutes = ", (-t + time())/60)
