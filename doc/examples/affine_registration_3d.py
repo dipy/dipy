@@ -169,7 +169,7 @@ want, providing previous results as initialization for the next (the same logic
 as in ANTS). The reason why it is useful is that registration is a non-convex
 optimization problem (it may have more than one local optima), which means that
 it is very important to initialize as close to the solution as possible. For
-example, lets start with our (previously computed) rough transformation
+example, let's start with our (previously computed) rough transformation
 aligning the centers of mass of our images, and then refine it in three stages.
 First look for an optimal translation. The dictionary regtransforms contains
 all available transforms, we obtain one of them by providing its name and the
@@ -209,7 +209,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 """
 
 """
-Now lets refine with a rigid transform (this may even modify our previously
+Now let's refine with a rigid transform (this may even modify our previously
 found optimal translation)
 """
 
@@ -244,8 +244,8 @@ regtools.overlay_slices(static, transformed, None, 2,
 """
 
 """
-Finally, lets refine with a full affine transform (translation, rotation, scale
-and shear), it is safer to fit more degrees of freedom now, since we must be
+Finally, let's refine with a full affine transform (translation, rotation, scale
+and shear), it is safer to fit more degrees of freedom now since we must be
 very close to the optimal transform
 """
 
