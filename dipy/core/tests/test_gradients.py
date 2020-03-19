@@ -110,7 +110,7 @@ def test_GradientTable_btensor_calculation():
             npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 1
-    for btens in ['LTE', 'PTE', 'STE']:
+    for btens in ['LTE', 'PTE', 'STE', 'CTE']:
         gt = GradientTable(gradients, btens=btens)
         # Check that the number of b tensors is correct
         npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
@@ -119,15 +119,19 @@ def test_GradientTable_btensor_calculation():
             # Check that the b tensor magnitude is correct
             npt.assert_almost_equal(np.trace(bten), bval)
             # Check that the b tensor orientation is correct
-            if btens == 'LTE':
+            if btens == ('LTE' or 'CTE'):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]),
-                                      bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
+                    npt.assert_almost_equal(np.abs(dot_prod), 1)
+            elif btens == 'PTE':
+                if bval != 0:
+                    evals, evecs = np.linalg.eig(bten)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 2
-    btens = np.array(['LTE', 'PTE', 'STE', 'PTE', 'LTE', 'PTE'])
+    btens = np.array(['LTE', 'PTE', 'STE', 'CTE', 'LTE', 'PTE'])
     gt = GradientTable(gradients, btens=btens)
     # Check that the number of b tensors is correct
     npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
@@ -136,10 +140,15 @@ def test_GradientTable_btensor_calculation():
         # Check that the b tensor magnitude is correct
         npt.assert_almost_equal(np.trace(bten), bval)
         # Check that the b tensor orientation is correct
-        if btens[i] == 'LTE':
+        if btens[i] == ('LTE' or 'CTE'):
             if bval != 0:
                 evals, evecs = np.linalg.eig(bten)
                 dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
+                npt.assert_almost_equal(np.abs(dot_prod), 1)
+        elif btens[i] == 'PTE':
+            if bval != 0:
+                evals, evecs = np.linalg.eig(bten)
+                dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
                 npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 3

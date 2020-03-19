@@ -73,12 +73,15 @@ class GradientTable(object):
             linear_tensor = np.array([[1, 0, 0],
                                       [0, 0, 0],
                                       [0, 0, 0]])
-            planar_tensor = np.array([[1, 0, 0],
+            planar_tensor = np.array([[0, 0, 0],
                                       [0, 1, 0],
-                                      [0, 0, 0]]) / 2
+                                      [0, 0, 1]]) / 2
             spherical_tensor = np.array([[1, 0, 0],
                                          [0, 1, 0],
                                          [0, 0, 1]]) / 3
+            cigar_tensor = np.array([[2, 0, 0],
+                                     [0, .5, 0],
+                                     [0, 0, .5]]) / 3
             if isinstance(btens, str):
                 b_tensors = np.zeros((len(self.bvals), 3, 3))
                 if btens == 'LTE':
@@ -87,10 +90,12 @@ class GradientTable(object):
                     b_tensor = planar_tensor
                 elif btens == 'STE':
                     b_tensor = spherical_tensor
+                elif btens == 'CTE':
+                    b_tensor = cigar_tensor
                 else:
                     raise ValueError("%s is an invalid value for btens. "%btens
                                      + "Please provide one of the following: "
-                                     + "'LTE', 'PTE', 'STE.'")
+                                     + "'LTE', 'PTE', 'STE', 'CTE'.")
                 for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
                     if btens == 'STE':
                         b_tensors[i] = b_tensor * bval
@@ -116,10 +121,14 @@ class GradientTable(object):
                                         R.T) * bval)
                     elif btens[i] == 'STE':
                         b_tensors[i] = spherical_tensor * bval
+                    elif btens[i] == 'CTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
+                                        R.T) * bval)
                     else:
                         raise ValueError(
                                 "%s is an invalid value in btens. "%btens[i]
-                                + "Array element options: 'LTE', 'PTE', 'STE'.")
+                                + "Array element options: 'LTE', 'PTE', 'STE', "
+                                + "'CTE'.")
                 self.btens = b_tensors
             elif (isinstance(btens, np.ndarray) and btens.shape ==
                     (gradients.shape[0], 3, 3)):
@@ -128,7 +137,7 @@ class GradientTable(object):
                 raise ValueError("%s is an invalid value for btens. "%btens
                                  + "Please provide a string, an array of "
                                  + "strings, or an array of exact b-tensors. "
-                                 + "String options: 'LTE', 'PTE', 'STE'.")
+                                 + "String options: 'LTE', 'PTE', 'STE', 'CTE'")
 
     @auto_attr
     def bvals(self):
@@ -191,22 +200,23 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
         `atol`.
     btens : can be any of three options
         1. a string specifying the shape of the encoding tensor for all volumes
-           in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
-           planar, and spherical tensor encoding. Tensors are rotated so that
-           the linear tensor is aligned with the corresponding gradient
-           direction and the planar tensor's normal is aligned with the
-           corresponding gradient direction. Magnitude is scaled to match the
-           b-value.
-        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
-           encoding tensor shape for each volume separately. N corresponds to
-           the number volumes in data. Options for elements in array: 'LTE',
-           'PTE', 'STE' corresponding to linear, planar, and spherical tensor
-           encoding. Tensors are rotated so that the linear tensor is aligned
+           in data. Options: 'LTE', 'PTE', 'STE', 'CTE' corresponding to
+           linear, planar, spherical, and "cigar-shaped" tensor encoding.
+           Tensors are rotated so that linear and cigar tensors are aligned
            with the corresponding gradient direction and the planar tensor's
            normal is aligned with the corresponding gradient direction.
            Magnitude is scaled to match the b-value.
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding. Tensors are rotated so that linear
+           and cigar tensors are aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
         3. an array of shape (N,3,3) specifying the b-tensor of each volume
-           exactly. N corresponds to the number volumes in data. No rotation of
+           exactly. N corresponds to the number volumes in data. No rotation or
            scaling is performed.
 
     Other Parameters
@@ -463,22 +473,23 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     btens : can be any of three options
 
         1. a string specifying the shape of the encoding tensor for all volumes
-           in data. Options: 'LTE', 'PTE', 'STE' corresponding to linear,
-           planar, and spherical tensor encoding. Tensors are rotated so that
-           the linear tensor is aligned with the corresponding gradient
-           direction and the planar tensor's normal is aligned with the
-           corresponding gradient direction. Magnitude is scaled to match the
-           b-value.
-        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
-           encoding tensor shape for each volume separately. N corresponds to
-           the number volumes in data. Options for elements in array: 'LTE',
-           'PTE', 'STE' corresponding to linear, planar, and spherical tensor
-           encoding. Tensors are rotated so that the linear tensor is aligned
+           in data. Options: 'LTE', 'PTE', 'STE', 'CTE' corresponding to
+           linear, planar, spherical, and "cigar-shaped" tensor encoding.
+           Tensors are rotated so that linear and cigar tensors are aligned
            with the corresponding gradient direction and the planar tensor's
            normal is aligned with the corresponding gradient direction.
            Magnitude is scaled to match the b-value.
-        3. an arry of shape (N,3,3) specifying the b-tensor of each volume
-           exactly. N corresponds to the number volumes in data No rotation or
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding. Tensors are rotated so that linear
+           and cigar tensors are aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
+        3. an array of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data. No rotation or
            scaling is performed.
 
     Returns
