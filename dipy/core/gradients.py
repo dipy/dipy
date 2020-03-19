@@ -444,7 +444,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                                            atol=atol)
 
 
-def reorient_bvecs(gtab, affines):
+def reorient_bvecs(gtab, affines, b0_threshold=50, atol=1e-2):
     """Reorient the directions in a GradientTable.
 
     When correcting for motion, rotation of the diffusion-weighted volumes
@@ -498,7 +498,7 @@ def reorient_bvecs(gtab, affines):
 
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
-    return gradient_table(gtab.bvals, return_bvecs)
+    return gradient_table(gtab.bvals, return_bvecs, b0_threshold, atol)
 
 
 def generate_bvecs(N, iters=5000):
