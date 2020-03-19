@@ -79,56 +79,56 @@ class GradientTable(object):
             spherical_tensor = np.array([[1, 0, 0],
                                          [0, 1, 0],
                                          [0, 0, 1]]) / 3
-        if isinstance(btens, str):
-            b_tensors = np.zeros((len(self.bvals), 3, 3))
-            if btens == 'LTE':
-                b_tensor = linear_tensor
-            elif btens == 'PTE':
-                b_tensor = planar_tensor
-            elif btens == 'STE':
-                b_tensor = spherical_tensor
+            if isinstance(btens, str):
+                b_tensors = np.zeros((len(self.bvals), 3, 3))
+                if btens == 'LTE':
+                    b_tensor = linear_tensor
+                elif btens == 'PTE':
+                    b_tensor = planar_tensor
+                elif btens == 'STE':
+                    b_tensor = spherical_tensor
+                else:
+                    raise ValueError("%s is an invalid value for btens. "%btens
+                                     + "Please provide one of the following: "
+                                     + "'LTE', 'PTE', 'STE.'")
+                for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                    if btens == 'STE':
+                        b_tensors[i] = b_tensor * bval
+                    else:
+                        R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                        b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                                        * bval)
+                self.btens = b_tensors
+            elif (isinstance(btens, np.ndarray) and (btens.shape ==
+                    (gradients.shape[0],) or (btens.shape ==
+                    (gradients.shape[0], 1)) or (btens.shape == (1,
+                    gradients.shape[0])))):
+                b_tensors = np.zeros((len(self.bvals), 3, 3))
+                if btens.shape == (1, gradients.shape[0]):
+                    btens = btens.reshape((gradients.shape[0], 1))
+                for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                    R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                    if btens[i] == 'LTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, linear_tensor),
+                                        R.T) * bval)
+                    elif btens[i] == 'PTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
+                                        R.T) * bval)
+                    elif btens[i] == 'STE':
+                        b_tensors[i] = spherical_tensor * bval
+                    else:
+                        raise ValueError(
+                                "%s is an invalid value in btens. "%btens[i]
+                                + "Array element options: 'LTE', 'PTE', 'STE'.")
+                self.btens = b_tensors
+            elif (isinstance(btens, np.ndarray) and btens.shape ==
+                    (gradients.shape[0], 3, 3)):
+                self.btens = btens
             else:
                 raise ValueError("%s is an invalid value for btens. "%btens
-                                 + "Please provide one of the following: "
-                                 + "'LTE', 'PTE', 'STE.'")
-            for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
-                if btens == 'STE':
-                    b_tensors[i] = b_tensor * bval
-                else:
-                    R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-                    b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
-                                    * bval)
-            self.btens = b_tensors
-        elif (isinstance(btens, np.ndarray) and (btens.shape ==
-                (gradients.shape[0],) or (btens.shape ==
-                (gradients.shape[0], 1)) or (btens.shape == (1,
-                gradients.shape[0])))):
-            b_tensors = np.zeros((len(self.bvals), 3, 3))
-            if btens.shape == (1, gradients.shape[0]):
-                btens = btens.reshape((gradients.shape[0], 1))
-            for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
-                R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
-                if btens[i] == 'LTE':
-                    b_tensors[i] = (np.matmul(np.matmul(R, linear_tensor), R.T)
-                                    * bval)
-                elif btens[i] == 'PTE':
-                    b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor), R.T)
-                                    * bval)
-                elif btens[i] == 'STE':
-                    b_tensors[i] = spherical_tensor * bval
-                else:
-                    raise ValueError(
-                            "%s is an invalid value in btens array. "%btens[i]
-                            + "Array element options: 'LTE', 'PTE', 'STE'.")
-            self.btens = b_tensors
-        elif (isinstance(btens, np.ndarray) and btens.shape ==
-                (gradients.shape[0], 3, 3)):
-            self.btens = btens
-        elif btens is not None:
-            raise ValueError("%s is an invalid value for btens. "%btens
-                             + "Please provide a string or an array of "
-                             + "strings with the same size as the number of "
-                             + "volumes. String options: 'LTE', 'PTE', 'STE'.")
+                                 + "Please provide a string, an array of "
+                                 + "strings, or an array of exact b-tensors. "
+                                 + "String options: 'LTE', 'PTE', 'STE'.")
 
     @auto_attr
     def bvals(self):
