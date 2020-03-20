@@ -71,15 +71,15 @@ def test_default_mnist_mlp():
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
     mlp = MultipleLayerPercepton(input_shape=(28, 28),num_hidden=[128,128])
-        hist = mlp.fit(x_train, y_train, epochs=epochs)
-        mlp.evaluate(x_test, y_test, verbose=2)
-        x_test_prob = mlp.predict(x_test)
+    hist = mlp.fit(x_train, y_train, epochs=epochs)
+    mlp.evaluate(x_test, y_test, verbose=2)
+    x_test_prob = mlp.predict(x_test)
 
-        accuracy = hist.history['accuracy'][0]
-        assert_equal(mlp.accuracy > 0.9, True)
-        assert_equal(mlp.accuracy, accuracy)
-        assert_equal(mlp.loss < 0.4, True)
-        assert_equal(x_test_prob.shape, (10000, 10))
+    accuracy = hist.history['accuracy'][0]
+    assert_equal(mlp.accuracy > 0.9, True)
+    assert_equal(mlp.accuracy, accuracy)
+    assert_equal(mlp.loss < 0.4, True)
+    assert_equal(x_test_prob.shape, (10000, 10))
 
 
 
