@@ -10,7 +10,7 @@ if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
-    from dipy.nn.model import SingleLayerPerceptron
+    from dipy.nn.model import MultipleLayerPercepton
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
@@ -41,7 +41,7 @@ def test_default_mnist_sequential():
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
-def test_default_mnist_slp():
+def test_default_mnist_mlp():
 
     mnist = tf.keras.datasets.mnist
     epochs = 1
@@ -49,18 +49,40 @@ def test_default_mnist_slp():
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
-    slp = SingleLayerPerceptron(input_shape=(28, 28))
-    hist = slp.fit(x_train, y_train, epochs=epochs)
-    slp.evaluate(x_test, y_test, verbose=2)
-    x_test_prob = slp.predict(x_test)
+    mlp = MultipleLayerPercepton(input_shape=(28, 28))
+    hist = mlp.fit(x_train, y_train, epochs=epochs)
+    mlp.evaluate(x_test, y_test, verbose=2)
+    x_test_prob = mlp.predict(x_test)
 
     accuracy = hist.history['accuracy'][0]
-    assert_equal(slp.accuracy > 0.9, True)
-    assert_equal(slp.accuracy, accuracy)
-    assert_equal(slp.loss < 0.4, True)
+    assert_equal(mlp.accuracy > 0.9, True)
+    assert_equal(.accuracy, accuracy)
+    assert_equal(mlp.loss < 0.4, True)
     assert_equal(x_test_prob.shape, (10000, 10))
+
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
+def test_default_mnist_mlp_2():
+
+    mnist = tf.keras.datasets.mnist
+    pochs = 1
+
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+
+    mlp = MultipleLayerPercepton(input_shape=(28, 28),num_hidden=[128,128])
+    hist = mlp.fit(x_train, y_train, epochs=epochs)
+    mlp.evaluate(x_test, y_test, verbose=2)
+    x_test_prob = mlp.predict(x_test)
+
+    accuracy = hist.history['accuracy'][0]
+    assert_equal(mlp.accuracy > 0.9, True)
+    assert_equal(.accuracy, accuracy)
+    assert_equal(mlp.loss < 0.4, True)
+    assert_equal(x_test_prob.shape, (10000, 10))
+
 
 
 if __name__ == "__main__":
     test_default_mnist_sequential()
-    test_default_mnist_slp()
+    test_default_mnist_mlp()
+    test_default_mnist_mlp_2()
