@@ -64,7 +64,7 @@ def test_default_mnist_mlp():
 def test_default_mnist_mlp_2():
 
     mnist = tf.keras.datasets.mnist
-    pochs = 1
+    epochs = 1
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
