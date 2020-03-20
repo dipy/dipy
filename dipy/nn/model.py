@@ -78,6 +78,8 @@ class MultipleLayerPercepton(object):
                               metrics=['accuracy'])
 
 
+    def summary(self):
+        return self.model.summary()
 
 
     def fit(self, x_train, y_train, epochs=5):
