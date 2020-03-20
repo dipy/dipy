@@ -14,7 +14,7 @@ class MultipleLayerPercepton(object):
     def __init__(self,input_shape=(28,28),
                         num_hidden=[128],
                         act_hidden='relu',
-                        dropout = 0.2
+                        dropout = 0.2,
                         num_out=10,
                         act_out='softmax',
                         loss='sparse_categorical_crossentropy',
