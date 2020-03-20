@@ -9,51 +9,69 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-class SingleLayerPerceptron(object):
+class MultipleLayerPercepton(object):
 
-    def __init__(self, input_shape=(28, 28),
-                 num_hidden=128, act_hidden='relu',
-                 dropout=0.2,
-                 num_out=10, act_out='softmax',
-                 optimizer='adam',
-                 loss='sparse_categorical_crossentropy'):
-        """ Single Layer Perceptron with Dropout
+    def __init__(self,input_shape=(28,28),
+                        num_hidden=[128],
+                        act_hidden='relu',
+                        dropout = 0.2
+                        num_out=10,
+                        act_out='softmax',
+                        loss='sparse_categorical_crossentropy'):
 
-        Parameters
-        ----------
-        input_shape : tuple
-            Shape of data to be trained
-        num_hidden : int
-            Number of nodes in hidden layer
-        act_hidden : string
-            Activation function used in hidden layer
-        dropout : float
-            Dropout ratio
-        num_out : 10
-            Number of nodes in output layer
-        act_out : string
-            Activation function used in output layer
-        optimizer :  string
-            Select optimizer. Default adam.
-        loss : string
-            Select loss function for measuring accuracy.
-            Default sparse_categorical_crossentropy.
-        """
+
+            """ Multiple Layer Perceptron with Dropout
+
+            Parameters
+            ----------
+            input_shape : tuple
+                Shape of data to be trained
+            num_hidden : list
+                List of number of nodes in hidden layers
+            act_hidden : string
+                Activation function used in hidden layer
+            dropout : float
+                Dropout ratio
+            num_out : 10
+                Number of nodes in output layer
+            act_out : string
+                Activation function used in output layer
+            optimizer :  string
+                Select optimizer. Default adam.
+            loss : string
+                Select loss function for measuring accuracy.
+                Default sparse_categorical_crossentropy.
+            """
+
+
+        self.input_shape = input_shape
+        self.num_hidden = num_hidden
+        self.act_hidden = act_hidden
+        self.drouput = dropout
+        self.num_out = num_out
+        self.act_out = act_out
+        self.loss = loss
         self.accuracy = None
-        self.loss = None
+
+
+
+    def build(self):
 
         model = tf.keras.models.Sequential([
-            tf.keras.layers.Flatten(input_shape=input_shape),
-            tf.keras.layers.Dense(num_hidden, activation=act_hidden),
-            tf.keras.layers.Dropout(dropout),
-            tf.keras.layers.Dense(num_out, activation=act_out)
-            ])
+                tf.keras.layers.Flatten(input_shape=input_shape),
+                tf.keras.layers.Dense(num_hidden, activation=act_hidden),
+                tf.keras.layers.Dropout(dropout),
+                tf.keras.layers.Dense(num_out, activation=act_out)
+                ])
 
         model.compile(optimizer=optimizer,
-                      loss=loss,
-                      metrics=['accuracy'])
+                              loss=loss,
+                              metrics=['accuracy'])
 
         self.model = model
+
+        return self.model
+
 
     def fit(self, x_train, y_train, epochs=5):
         hist = self.model.fit(x_train, y_train, epochs=epochs)
