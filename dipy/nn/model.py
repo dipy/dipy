@@ -55,22 +55,26 @@ class MultipleLayerPercepton(object):
 
 
 
-    def build(self):
+        #model building
 
-        model = tf.keras.models.Sequential([
-                tf.keras.layers.Flatten(input_shape=input_shape),
-                tf.keras.layers.Dense(num_hidden, activation=act_hidden),
-                tf.keras.layers.Dropout(dropout),
-                tf.keras.layers.Dense(num_out, activation=act_out)
-                ])
+        inp = tf.keras.layers.Input(input_shape=self.input_shape)
+        x = tf.keras.layers.Flatten()(x)
 
-        model.compile(optimizer=optimizer,
+        for i in range(len(self.num_hidden)):
+            x = tf.keras.layers.Dense(self.num_hidden[i])(x)
+
+        x = tf.keras.layers.Dropout(self.dropout)(x)
+        out = tf.keras.layers.Dense(self.num_out, activation=self.act_out)(x)
+
+        self.model = tf.keras.layers.Model(inputs=inp, outputs=x )
+
+
+        #compiling the model
+        self.model.compile(optimizer=optimizer,
                               loss=loss,
                               metrics=['accuracy'])
 
-        self.model = model
 
-        return self.model
 
 
     def fit(self, x_train, y_train, epochs=5):
