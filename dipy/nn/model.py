@@ -60,7 +60,7 @@ class MultipleLayerPercepton(object):
         #model building
 
         inp = tf.keras.layers.Input(input_shape=self.input_shape)
-        x = tf.keras.layers.Flatten()(x)
+        x = tf.keras.layers.Flatten()(inp)
 
         for i in range(len(self.num_hidden)):
             x = tf.keras.layers.Dense(self.num_hidden[i])(x)
