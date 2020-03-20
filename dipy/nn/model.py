@@ -17,10 +17,11 @@ class MultipleLayerPercepton(object):
                         dropout = 0.2
                         num_out=10,
                         act_out='softmax',
-                        loss='sparse_categorical_crossentropy'):
+                        loss='sparse_categorical_crossentropy',
+                        optimizer='adam'):
 
 
-            """ Multiple Layer Perceptron with Dropout
+    """ Multiple Layer Perceptron with Dropout
 
             Parameters
             ----------
@@ -41,16 +42,17 @@ class MultipleLayerPercepton(object):
             loss : string
                 Select loss function for measuring accuracy.
                 Default sparse_categorical_crossentropy.
-            """
+    """
 
 
         self.input_shape = input_shape
         self.num_hidden = num_hidden
         self.act_hidden = act_hidden
-        self.drouput = dropout
+        self.dropout = dropout
         self.num_out = num_out
         self.act_out = act_out
         self.loss = loss
+        self.optimizer = optimizer
         self.accuracy = None
 
 
@@ -66,12 +68,13 @@ class MultipleLayerPercepton(object):
         x = tf.keras.layers.Dropout(self.dropout)(x)
         out = tf.keras.layers.Dense(self.num_out, activation=self.act_out)(x)
 
-        self.model = tf.keras.layers.Model(inputs=inp, outputs=x )
+        self.model = tf.keras.layers.Model(inputs=inp, outputs=out)
+
 
 
         #compiling the model
-        self.model.compile(optimizer=optimizer,
-                              loss=loss,
+        self.model.compile(optimizer=self.optimizer,
+                              loss=self.loss,
                               metrics=['accuracy'])
 
 
