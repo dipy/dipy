@@ -56,7 +56,7 @@ def test_default_mnist_mlp():
 
     accuracy = hist.history['accuracy'][0]
     assert_equal(mlp.accuracy > 0.9, True)
-    assert_equal(.accuracy, accuracy)
+    assert_equal(mlp.accuracy, accuracy)
     assert_equal(mlp.loss < 0.4, True)
     assert_equal(x_test_prob.shape, (10000, 10))
 
@@ -76,7 +76,7 @@ def test_default_mnist_mlp_2():
 
     accuracy = hist.history['accuracy'][0]
     assert_equal(mlp.accuracy > 0.9, True)
-    assert_equal(.accuracy, accuracy)
+    assert_equal(mlp.accuracy, accuracy)
     assert_equal(mlp.loss < 0.4, True)
     assert_equal(x_test_prob.shape, (10000, 10))
 
