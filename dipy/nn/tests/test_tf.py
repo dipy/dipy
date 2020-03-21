@@ -65,7 +65,7 @@ def test_default_mnist_slp():
 def test_default_mnist_mlp():
 
     mnist = tf.keras.datasets.mnist
-    epochs = 2
+    epochs = 1
 
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -76,7 +76,7 @@ def test_default_mnist_mlp():
     x_test_prob = mlp.predict(x_test)
 
     accuracy = hist.history['accuracy'][0]
-    assert_equal(mlp.accuracy > 0.9, True)
+    assert_equal(mlp.accuracy > 0.8, True)
     assert_equal(mlp.accuracy, accuracy)
     assert_equal(mlp.loss < 0.4, True)
     assert_equal(x_test_prob.shape, (10000, 10))
