@@ -11,10 +11,13 @@ registration
 """
 
 import numpy as np
-from dipy.data import get_fnames
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data, save_nifti_data
+from dipy.segment.mask import median_otsu
+import os.path
 from dipy.viz import regtools
 
 
@@ -145,10 +148,6 @@ def callback_CC(sdr, status):
 """
 Now we are ready to configure and run the registration. First load the data
 """
-
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data
-from dipy.segment.mask import median_otsu
 
 t1_name, b0_name = get_fnames('syn_data')
 data = load_nifti_data(b0_name)
