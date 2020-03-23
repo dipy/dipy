@@ -9,7 +9,6 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-
 class SingleLayerPerceptron(object):
 
     def __init__(self, input_shape=(28, 28),
@@ -56,15 +55,77 @@ class SingleLayerPerceptron(object):
         self.model = model
 
     def fit(self, x_train, y_train, epochs=5):
+
+        """train the model on train dataset.
+
+        The fit method will train the model for a fixed
+        number of epochs (iterations) on a dataset.
+
+        Parameters
+        ----------
+        x_train : ndarray
+            the x_train is the train dataset
+        y_train : ndarray shape=(BatchSize,)
+            the y_train is the labels of the train dataset
+        epochs : int (Default = 5)
+            the number of epochs
+
+        Returns
+        -------
+        hist : object
+            A History object. Its History.history attribute is a record of
+            training loss values and metrics values at successive epochs
+
+
+        """
+
         hist = self.model.fit(x_train, y_train, epochs=epochs)
         self.accuracy = hist.history['accuracy'][0]
         self.loss = hist.history['loss'][0]
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
+
+        """evaluate the model on test dataset.
+
+        The evaluate method will evaluate the model on a test
+        dataset.
+
+        Parameters
+        ----------
+        x_test : ndarray
+            the x_test is the test dataset
+        y_test : ndarray shape=(BatchSize,)
+            the y_test is the labels of the test dataset
+        verbose : int (Default = 2)
+            By setting verbose 0, 1 or 2 you just say how do you want to 'see' the training progress for each epoch.
+
+        Returns
+        -------
+        evaluate : List
+            return list of loss value and accuracy value on test dataset
+
+        """
         return self.model.evaluate(x_test,  y_test, verbose=verbose)
 
     def predict(self, x_test):
+
+        """predict the output from input samples.
+
+        The predict method will generates output predictions
+        for the input samples.
+
+        Parameters
+        ----------
+        x_train : ndarray
+            the x_test is the test dataset or input samples
+
+        Returns
+        -------
+        predict : ndarray shape(TestSize,OutputSize)
+            Numpy array(s) of predictions.
+
+        """
         return self.model.predict(x_test)
 
 
@@ -116,7 +177,6 @@ class MultipleLayerPercepton(object):
         self.accuracy = None
 
 
-
         #model building
 
         inp = tf.keras.layers.Input(shape=self.input_shape)
@@ -139,17 +199,94 @@ class MultipleLayerPercepton(object):
 
 
     def summary(self):
+
+        """get the summary of the model.
+
+        The summary is textual and includes information about:
+        The layers and their order in the model.
+        The output shape of each layer.
+
+        Returns
+        -------
+        summary :  NoneType
+            the summary of the model
+
+        """
         return self.model.summary()
 
 
     def fit(self, x_train, y_train, epochs=5):
+
+        """train the model on train dataset.
+
+        The fit method will train the model for a fixed
+        number of epochs (iterations) on a dataset.
+
+        Parameters
+        ----------
+        x_train : ndarray
+            the x_train is the train dataset
+        y_train : ndarray shape=(BatchSize,)
+            the y_train is the labels of the train dataset
+        epochs : int (Default = 5)
+            the number of epochs
+
+        Returns
+        -------
+        hist : object
+            A History object. Its History.history attribute is a record of
+            training loss values and metrics values at successive epochs
+
+
+        """
+
         hist = self.model.fit(x_train, y_train, epochs=epochs)
         self.accuracy = hist.history['accuracy'][0]
         self.loss = hist.history['loss'][0]
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
+
+        """evaluate the model on test dataset.
+
+        The evaluate method will evaluate the model on a test
+        dataset.
+
+        Parameters
+        ----------
+        x_test : ndarray
+            the x_test is the test dataset
+        y_test : ndarray shape=(BatchSize,)
+            the y_test is the labels of the test dataset
+        verbose : int (Default = 2)
+            By setting verbose 0, 1 or 2 you just say how do you want to 'see' the training progress for each epoch.
+
+        Returns
+        -------
+        evaluate : List
+            return list of loss value and accuracy value on test dataset
+
+        """
+
+
         return self.model.evaluate(x_test,  y_test, verbose=verbose)
 
     def predict(self, x_test):
+
+        """predict the output from input samples.
+
+        The predict method will generates output predictions
+        for the input samples.
+
+        Parameters
+        ----------
+        x_train : ndarray
+            the x_test is the test dataset or input samples
+
+        Returns
+        -------
+        predict : ndarray shape(TestSize,OutputSize)
+            Numpy array(s) of predictions.
+
+        """
         return self.model.predict(x_test)
