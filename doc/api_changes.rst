@@ -170,7 +170,7 @@ If you want to assure that your code runs in exactly the same manner as before, 
 - All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
 - UI elements are available in ``dipy.viz.ui``.
 
-``dipy.viz`` depends on the FURY package. To get learn about FURY, go to https://fury.gl
+``dipy.viz`` depends on the FURY package. To learn more about FURY, go to https://fury.gl
 
 
 DIPY 0.14 Changes
