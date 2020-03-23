@@ -4,7 +4,7 @@ matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
 
-def _tile_plot(imgs, titles,**kwargs):
+def _tile_plot(imgs, titles, **kwargs):
     """
     Helper function
     """
