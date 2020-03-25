@@ -82,13 +82,13 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
 
 
     gfa = peaks.gfa
-    dti_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
+    anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
 
     qa = peaks.qa[...,0]
-    dti_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
+    anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
 
 
-def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
+def anatomical_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
@@ -278,7 +278,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
                 metric, _ = load_nifti(metric_files_names_dti[mn])
 
-                dti_measures(transformed_orig_bundles, metric, dt, fm,
+                anatomical_measures(transformed_orig_bundles, metric, dt, fm,
                              bm, subject, group, ind, out_dir)
 
 
