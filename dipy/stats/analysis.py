@@ -257,35 +257,12 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
         if len(orig_bundles) > 5 :
 
-            '''
-            mbundle_streamlines = set_number_of_points(mbundles,
-                                                       nb_points=no_disks)
-    
-            metric = AveragePointwiseEuclideanMetric()
-            qb = QuickBundles(threshold=85., metric=metric)
-            clusters = qb.cluster(mbundle_streamlines)
-            centroids = Streamlines(clusters.centroids)
-    
-            print('Number of centroids ', len(centroids.data))
-            print('Model bundle ', mb[io])
-            print('Number of streamlines in bundle in common space ',
-                  len(bundles))
-            print('Number of streamlines in bundle in original space ',
-                  len(orig_bundles))
-    
-            _, indx = cKDTree(centroids.data, 1,
-                              copy_data=True).query(bundles.data, k=1)
-    
-            '''
             indx = assignment_map(bundles, mbundles, no_disks)
             ind = np.array(indx)
-            #metric_files_names = os.listdir(metric_folder)
+
             metric_files_names_dti = glob(os.path.join(metric_folder,"*.nii.gz"))
             
             metric_files_names_csa = glob(os.path.join(metric_folder,"*.pam5"))
-            #metric_files_names = ["csd_peaks.pam5"]
-            #["csa_peaks.pam5", "csd_peaks.pam5"] 
-            #["fa.nii.gz", "md.nii.gz", "ad.nii.gz", "rd.nii.gz"]
             
             
             _, affine = load_nifti(metric_files_names_dti[0])
@@ -301,15 +278,10 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                 
                 fm = metric_name[:-7]
                 bm = os.path.split(mb[io])[1][:-4]
-                #bm = mb[io][14:-4]
+
                 print("bm = ", bm)
 
                 dt = dict()
-                #metric_name = os.path.join(metric_folder,
-                #                           metric_files_names_dti[mn])
-                
-                
-                
     
                 print("metric = ", metric_files_names_dti[mn])
 
@@ -323,15 +295,14 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
                 ab = os.path.split(metric_files_names_csa[mn])
                 metric_name = ab[1]
                 
-                fm = metric_name[:-7]
+                fm = metric_name[:-5]
                 bm = os.path.split(mb[io])[1][:-4]
-                #bm = mb[io][14:-4]
+        
                 print("bm = ", bm)
                 print("metric = ", metric_files_names_csa[mn])
                 dt = dict()
                 metric = load_peaks(metric_files_names_csa[mn])
-                #peak_values(bundles, metric, dt, fm, bm, subject, group,
-                #            ind, out_dir)
+
                 peak_values(transformed_orig_bundles, metric, dt, fm, bm,
                             subject, group, ind, out_dir)
 
