@@ -410,16 +410,16 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
 
             for mn in range(len(metric_files_names_csa)):
-                ab = os.path.split(metric_files_names_dti[mn])
+                ab = os.path.split(metric_files_names_csa[mn])
                 metric_name = ab[1]
                 
                 fm = metric_name[:-7]
                 bm = os.path.split(mb[io])[1][:-4]
                 #bm = mb[io][14:-4]
                 print("bm = ", bm)
-                print("metric = ", metric_files_names_dti[mn])
+                print("metric = ", metric_files_names_csa[mn])
                 dt = dict()
-                metric = load_peaks(metric_files_names_dti[mn])
+                metric = load_peaks(metric_files_names_csa[mn])
                 #peak_values(bundles, metric, dt, fm, bm, subject, group,
                 #            ind, out_dir)
                 peak_values(transformed_orig_bundles, metric, dt, fm, bm,
