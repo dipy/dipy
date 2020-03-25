@@ -326,14 +326,24 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     n = len(mb)
 
     for io in range(n):
-        mbundles = load_trk(mb[io], reference='same', bbox_valid_check=False) #os.path.join(model_bundle_folder, mb[io]))
-        mbundles = mbundles.streamlines
-        bundles = load_trk(bd[io], reference='same', bbox_valid_check=False) #os.path.join(bundle_folder, bd[io]))
-        bundles = bundles.streamlines
-        orig_bundles = load_trk(org_bd[io], reference='same', bbox_valid_check=False)#os.path.join(orig_bundle_folder,
+        #mbundles = load_trk(mb[io], reference='same', bbox_valid_check=False) #os.path.join(model_bundle_folder, mb[io]))
+       # mbundles = mbundles.streamlines
+        
+        
+        mbundles, _ = load_trk(mb[io])
+        
+       # bundles = load_trk(bd[io], reference='same', bbox_valid_check=False) #os.path.join(bundle_folder, bd[io]))
+        #bundles = bundles.streamlines
+        
+        
+        bundles, _ = load_trk(bd[io])
+        
+        #orig_bundles = load_trk(org_bd[io], reference='same', bbox_valid_check=False)#os.path.join(orig_bundle_folder,
                                    #org_bd[io]))
-        orig_bundles = orig_bundles.streamlines
+        #orig_bundles = orig_bundles.streamlines
 
+
+        orig_bundles, _ = load_trk(org_bd[io])
 
         if len(orig_bundles) > 5 :
 
@@ -393,7 +403,7 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     
                 print("metric = ", metric_files_names_dti[mn])
 
-                metric, _ = load_nifti(metric_name)
+                metric, _ = load_nifti(metric_files_names_dti[mn])
 
                 dti_measures(transformed_orig_bundles, metric, dt, fm,
                              bm, subject, group, ind, out_dir)

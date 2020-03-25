@@ -213,7 +213,7 @@ class BundleAnalysisPopulationFlow(Workflow):
                 print(pre)
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
-                d = os.path.join(pre, "dti_measures")
+                d = os.path.join(pre, "anatomical_measures")
                 bundle_analysis(model_bundle_folder, b, c, d, group, sub,
                                 no_disks, out_dir)
 
