@@ -80,102 +80,12 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
 
     """
 
-    peaks_do = False
-    
-    if peaks_do == False:
 
-        "========== gfa ========="
-        gfa = peaks.gfa
-        dti_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
+    gfa = peaks.gfa
+    dti_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
 
-        "========== qa ========="
-        qa = peaks.qa[...,0]
-        dti_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
-
-    else:
-
-        if group == 'patient':
-            group_id = 1 # 1 means patient
-        else:
-            group_id = 0 # 0 means control
-            
-    
-        
-        
-        
-    
-        #dt["bundle"] = []
-        dt["streamline"] = []
-        dt["disk#"] = []
-        dt[pname] = []
-        dt["subject"] = []
-        dt["group"] = []
-    
-        point = 0
-        shape = peaks.peak_dirs.shape
-        for st_i in range(len(bundle)):
-            
-            st = bundle[st_i]
-            di = st[1:] - st[0:-1]
-            dnorm = np.linalg.norm(di, axis=1)
-            di = di / dnorm[:, None]
-            count = 0
-            for ip in range(len(st)-1):
-                point += 1
-                index = st[ip].astype(int)
-    
-                if (index[0] < shape[0] and index[1] < shape[1] and
-                   index[2] < shape[2]):
-    
-                    dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
-                    dval = peaks.peak_values[index[0]][index[1]][index[2]]
-    
-                    res = []
-    
-                    for i in range(len(dire)):
-                        di2 = dire[i]
-                        # edit here
-                        if di2[0]==0.0 and di2[1]==0.0 and di2[2]==0: #sum(di2)==0.0: #if vector is all 0s
-                            #print("zero vector")
-                            result = np.inf
-                        else:
-                            result = spatial.distance.cosine(di[ip], di2)
-                        res.append(result)
-    
-                    d_val = dval[res.index(min(res))]
-                    
-                    
-                    '''
-                    
-                    don't take distance with zero vectors, they result in 'nan'
-                    and we end up taking min value of 'nan' as lowest 
-                    and in the end most of our data is filled with 'nan' values
-                    hence, no significant differences found in LMM
-                    
-                    '''
-                    
-                    
-                    '''
-                    if d_val != 0.:
-                        dt[pname].append(d_val)
-                        dt["disk#"].append(ind[point]+1)
-                        count += 1
-                        '''
-                        
-    # edit here
-                    dt[pname].append(d_val)
-                    dt["disk#"].append(ind[point]+1)
-                    dt["streamline"].append(st_i)
-                    count += 1
-    
-            #dt["bundle"].extend([bname]*count)
-            dt["subject"].extend([subject]*count)
-            dt["group"].extend([group_id ]*count)
-    
-        #devide and conquer
-        file_name = bname+"_"+pname
-        
-        _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
+    qa = peaks.qa[...,0]
+    dti_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
 
 
 def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
