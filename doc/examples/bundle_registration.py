@@ -24,7 +24,7 @@ from dipy.tracking.streamline import set_number_of_points
 An important step before running the registration is to resample the
 streamlines so that they both have the same number of points per streamline.
 Here we will use 20 points. This step is not optional. Inputting streamlines
-with different number of points will break the theoretical advantages of using
+with a different number of points will break the theoretical advantages of using
 the SLR as explained in [Garyfallidis15]_.
 """
 
@@ -89,7 +89,7 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
    After bundle registration.
 
 As you can see the two cingulum bundles are well aligned although they contain
-many streamlines of different length and shape.
+many streamlines of different lengths and shapes.
 
 .. [Garyfallidis15] Garyfallidis et al., "Robust and efficient linear
                     registration of white-matter fascicles in the space
