@@ -8,7 +8,7 @@ DIPY_ is in active development. You can install it from our latest release, but
 you may find that the release has gotten well behind the current development -
 at least - we hope so - if we're developing fast enough!
 
-If you want to install the latest and greatest from the bleeding edge of the
+If you want install the latest and greatest from the bleeding edge of the
 development, skip to :ref:`from-source`. If you just want to install a released
 version, read on for your platform.
 
@@ -71,7 +71,7 @@ OSX
 
 #. Next, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports the reading and writing of neuroimaging data formats. Open a terminal and type::
+#. Even with Anaconda_ installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type::
 
     pip install nibabel
 
@@ -106,13 +106,13 @@ try :ref:`install-pip` instead.
 Using pip:
 ==========
 
-This method should work under Linux, Mac OS X, and Windows.
+This method should work under Linux, Mac OS X and Windows.
 
 Please install numpy_ and scipy_ using their respective binary installers if
 you haven't already.
 
 For Windows and Mac OSX you can use Anaconda_ to get numpy, scipy, cython and lots
-of other useful python modules. Anaconda_ is a big package but will install many
+of other useful python module. Anaconda_ is a big package but will install many
 tools and libraries that are useful for scientific processing.
 
 When you have numpy, scipy and cython installed then try::
@@ -155,7 +155,7 @@ If you have problems installing Anaconda_ we recommend using Canopy_ or pythonxy
 
 Memory issues
 -------------
-DIPY can process large diffusion datasets. For this reason, we recommend using a 64bit operating system that can allocate larger memory chunks than 32bit operating systems. If you don't have a 64bit computer that is okay DIPY works with 32bit too.
+DIPY can process large diffusion datasets. For this reason we recommend using a 64bit operating system which can allocate larger memory chunks than 32bit operating systems. If you don't have a 64bit computer that is okay DIPY works with 32bit too.
 
 .. _python-versions:
 
@@ -286,7 +286,7 @@ For getting this information, type this command in shell like ``cmd`` or Powersh
 
     python -c "import platform;print(platform.python_compiler())"
 
-This command should print information of this form::
+This command should print an information of this form::
 
     MSC v.1900 64 bit (AMD64)
 
@@ -334,7 +334,7 @@ and bundle registration). If you do not have an OpenMP-enabled compiler, you can
 still compile DIPY from source using the above instructions, but it might not take
 advantage of the multithreaded parts of the code. To be able to compile
 DIPY from source with OpenMP on Mac OSX, you will have to do a few more things. First
-of all, you will need to install the Homebrew_ package manager. Next, you will need
+of all, you will need to install the Homebrew_ package manager. Next you will need
 to install and configure the compiler. You have two options: using the GCC compiler
 or the CLANG compiler. This depends on your python installation:
 

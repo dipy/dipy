@@ -27,7 +27,7 @@
   :target: https://github.com/dipy/dipy/blob/master/LICENSE
 
 
-DIPY [DIPYREF]_ is a python library for the analysis of MR diffusion imaging.
+DIPY [DIPYREF]_ is a python library for analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
@@ -81,7 +81,7 @@ License
 =======
 
 DIPY is licensed under the terms of the BSD license.
-Please see the `LICENSE file <https://github.com/dipy/dipy/blob/master/LICENSE>`_.
+Please see `LICENSE file <https://github.com/dipy/dipy/blob/master/LICENSE>`_.
 
 Contributing
 ============

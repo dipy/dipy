@@ -861,6 +861,46 @@ class ResidualBootstrapWrapper(object):
         signal[self._where_dwi] = boot_signal
         return signal
 
+def just_sh_basis(sphere, sh_order=4, basis_type=None):
+    """Spherical function to spherical harmonics (SH).
+
+    Parameters
+    ----------
+    sphere : Sphere
+        The points on which the sf is defined.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+    basis_type : {None, 'tournier07', 'descoteaux07'}
+        ``None`` for the default DIPY basis,
+        ``tournier07`` for the Tournier 2007 [2]_ basis, and
+        ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
+        (``None`` defaults to ``descoteaux07``).
+
+    Returns
+    -------
+    sh_basis : ndarray
+        SH Basis based on the sphere sampling.
+
+    References
+    ----------
+    .. [1] Descoteaux, M., Angelino, E., Fitzgibbons, S. and Deriche, R.
+           Regularized, Fast, and Robust Analytical Q-ball Imaging.
+           Magn. Reson. Med. 2007;58:497-510.
+    .. [2] Tournier J.D., Calamante F. and Connelly A. Robust determination
+           of the fibre orientation distribution in diffusion MRI:
+           Non-negativity constrained super-resolved spherical deconvolution.
+           NeuroImage. 2007;35(4):1459-1472.
+
+    """
+
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+
+    return B
 
 def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     """Spherical function to spherical harmonics (SH).

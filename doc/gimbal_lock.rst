@@ -44,7 +44,7 @@ But, wait, let's go back over that again.  Look at the result of the
 rotation around the $y$ axis.  Notice that the $x$ axis, as was, is now
 aligned with the $z$ axis, as it is now.  Rotating around the $z$ axis
 will have exactly the same effect as adding an extra rotation around the
-$x$ axis at the beginning.  That means that when there is a $y$ axis
+$x$ axis at the beginning.  That means that, when there is a $y$ axis
 rotation that rotates the $x$ axis onto the $z$ axis (a rotation of
 $\pm\pi/2$ around the $y$ axis) - the $x$ and $y$ axes are "locked"
 together.
