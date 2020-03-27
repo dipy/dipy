@@ -267,7 +267,6 @@ def get_reference_info(reference):
         is_sft = True
 
     if is_nifti:
-        affine = np.eye(4).astype(np.float32)
         affine = header.get_best_affine()
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
