@@ -1,8 +1,7 @@
 import os
 
 from dipy.data import fetch_gold_standard_io
-from dipy.io.utils import (create_nifti_header,
-                           decfa, decfa_to_float,
+from dipy.io.utils import (decfa, decfa_to_float,
                            get_reference_info,
                            is_reference_info_valid)
 from nibabel import Nifti1Image
@@ -110,15 +109,6 @@ def test_reference_info_validity():
             msg='RAS should be a valid voxel order')
 
 
-def reference_info_zero_affine():
-    header = create_nifti_header(np.zeros((4, 4)), [10, 10, 10], [1, 1, 1])
-    try:
-        get_reference_info(header)
-        return True
-    except ValueError:
-        return False
-
-
 def test_reference_info_identical():
     tuple_1 = get_reference_info(filepath_dix['gs.trk'])
     tuple_2 = get_reference_info(filepath_dix['gs.nii'])
@@ -129,8 +119,3 @@ def test_reference_info_identical():
     assert_array_equal(dimensions_1, dimensions_2)
     assert_allclose(voxel_sizes_1, voxel_sizes_2)
     assert voxel_order_1 == voxel_order_2
-
-
-def test_all_zeros_affine():
-    assert_(not reference_info_zero_affine(),
-            msg='An all zeros affine should not be valid')
