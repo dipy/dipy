@@ -11,6 +11,9 @@ First import the necessary modules:
 
 from os.path import join as pjoin
 import numpy as np
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti, save_nifti
+from dipy.segment.mask import median_otsu
 
 """
 Download and read the data for this tutorial.
@@ -18,9 +21,6 @@ Download and read the data for this tutorial.
 The ``scil_b0`` dataset contains different data from different companies and
 models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 """
-
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
 
 data_fnames = get_fnames('scil_b0')
 data, affine = load_nifti(data_fnames[1])
@@ -35,8 +35,6 @@ brain. It is possible to fine tune the parameters of ``median_otsu``
 but the default parameters work well on most volumes. For this example,
 we used 2 as ``median_radius`` and 1 as ``num_pass``
 """
-
-from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 
 """
