@@ -1,3 +1,7 @@
+from time import time
+from itertools import chain
+import logging
+
 import numpy as np
 from dipy.tracking.streamline import (set_number_of_points, nbytes,
                                       select_random_set_of_streamlines,
@@ -10,8 +14,6 @@ from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      BundleMinDistanceMetric,
                                      BundleSumDistanceMatrixMetric,
                                      BundleMinDistanceAsymmetricMetric)
-from time import time
-from itertools import chain
 
 from dipy.tracking.streamline import Streamlines, length
 from nibabel.affines import apply_affine
@@ -23,6 +25,9 @@ def check_range(streamline, gt, lt):
         return True
     else:
         return False
+
+
+logger = logging.getLogger(__name__)
 
 
 def bundle_adjacency(dtracks0, dtracks1, threshold):
@@ -85,12 +90,12 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
 
 def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
 
-       
+
     if len(bundle1) == 0 or len(bundle2) == 0:
         return 0
-    
+
     else:
-    
+
         bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
                                            rng=rng)
         bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
@@ -650,13 +655,14 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
-        # edit here
-        
-        if len(pruned_indices) == 0:
-            print(' You have removed all streamlines')
+
+        idx = np.array(pruned_indices)
+        if len(idx) == 0:
+            if self.verbose:
+                logger.info(' You have removed all streamlines')
             return Streamlines([]), []
-        
-        pruned_streamlines = transf_streamlines[np.array(pruned_indices)]
+
+        pruned_streamlines = transf_streamlines[idx]
 
         initial_indices = list(chain(*neighb_indices))
         final_indices = [initial_indices[i] for i in pruned_indices]
