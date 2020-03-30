@@ -10,7 +10,7 @@ lengths or overall shape.
 A streamline in DIPY_ is represented as a numpy array of size
 :math:`(N \times 3)` where each row of the array represents a 3D point of the
 streamline. A set of streamlines is represented with a list of
-numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where 'M' is the
+numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
 number of streamlines in the set.
 """
 
