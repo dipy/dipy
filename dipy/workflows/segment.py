@@ -315,7 +315,9 @@ class LabelsBundlesFlow(Workflow):
         for sf, lb, out_bundle in io_it:
 
             logging.info(sf)
-            streamlines, header = load_trk(sf)
+            tractogram_obj = nib.streamlines.load(sf)
+            streamlines = tractogram_obj.streamlines
+
             logging.info(lb)
             location = np.load(lb)
             if len(location) < 1 :
@@ -324,7 +326,7 @@ class LabelsBundlesFlow(Workflow):
                 bundle = streamlines[location]
 
             logging.info('Saving output files ...')
-            new_tractogram = nib.streamlines.Tractogram(streamlines[location],
+            new_tractogram = nib.streamlines.Tractogram(bundle,
                                                         affine_to_rasmm=np.eye(4))
             nib.streamlines.save(new_tractogram, out_bundle,
                                  header=tractogram_obj.header)
