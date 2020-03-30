@@ -162,7 +162,6 @@ def io_tractogram(extension):
         nii_header = create_nifti_header(in_affine, in_dimensions,
                                          in_voxel_sizes)
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
-
         save_tractogram(sft, fname, bbox_valid_check=False)
 
         if extension == 'trk':
