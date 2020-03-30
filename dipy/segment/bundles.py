@@ -655,7 +655,6 @@ class RecoBundles(object):
         pruned_indices = [rtransf_cluster_map[i].indices
                           for i in np.where(mins != np.inf)[0]]
         pruned_indices = list(chain(*pruned_indices))
-
         idx = np.array(pruned_indices)
         if len(idx) == 0:
             if self.verbose:
