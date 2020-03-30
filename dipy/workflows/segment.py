@@ -3,6 +3,7 @@ from __future__ import division, print_function, absolute_import
 import logging
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
+import nibabel as nib
 import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
