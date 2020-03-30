@@ -4,7 +4,7 @@ Enhancing QuickBundles with different metrics and features
 ==========================================================
 
 QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
-distance metric and an adjacenct threshold to perform clustering. There is a
+distance metric and an adjacency threshold to perform clustering. There is a
 wide variety of metrics that could be used to cluster streamlines.
 
 The purpose of this tutorial is to show how to easily create new ``Feature``
