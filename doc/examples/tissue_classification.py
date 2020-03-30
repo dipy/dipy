@@ -7,7 +7,7 @@ Tissue Classification of a T1-weighted Structural Image
 This example explains how to segment a T1-weighted structural image by using 
 Bayesian formulation. The observation model (likelihood term) is defined as a
 Gaussian distribution and a Markov Random Field (MRF) is used to model the 
-apriori probability of context-dependent patterns of different tissue
+a priori probability of context-dependent patterns of different tissue
 types of the brain. Expectation Maximization and Iterated Conditional
 Modes are used to find the optimal solution. Similar algorithms have been
 proposed by Zhang et al. [Zhang2001]_ and Avants et al. [Avants2011]_ available
