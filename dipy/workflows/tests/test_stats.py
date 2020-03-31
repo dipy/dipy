@@ -4,14 +4,14 @@ import os
 from os.path import join
 from dipy.utils.optpkg import optional_package
 import numpy.testing as npt
-from numpy.testing import run_module_suite, assert_raises
-import nibabel as nib
+import pytest
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.io.streamline import save_trk
 import numpy as np
 from dipy.tracking.streamline import Streamlines
 from dipy.testing import assert_true
-from dipy.io.image import save_nifti
+from dipy.io.image import save_nifti, load_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisPopulationFlow
@@ -24,12 +24,10 @@ _, have_tables, _ = optional_package("tables")
 def test_stats():
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_101D')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
-        mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
+        volume, affine = load_nifti(data_path)
+        mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
         mask_path = join(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask, affine)
 
         snr_flow = SNRinCCFlow(force=True)
         args = [data_path, bval_path, bvec_path, mask_path]
@@ -68,13 +66,14 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+                    reason='Requires Pandas, StatsModels and PyTables')
 def test_bundle_analysis_population_flow():
 
     with TemporaryDirectory() as dirpath:
-
-        streams, hdr = nib.trackvis.read(get_fnames('fornix'))
-        fornix = [s[0] for s in streams]
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
 
@@ -82,7 +81,9 @@ def test_bundle_analysis_population_flow():
         sub = os.path.join(dirpath, "subjects")
 
         os.mkdir(mb)
-        save_trk(os.path.join(mb, "temp.trk"), f, affine=np.eye(4))
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
 
         os.mkdir(sub)
 
@@ -100,13 +101,14 @@ def test_bundle_analysis_population_flow():
 
             os.mkdir(os.path.join(pre, "rec_bundles"))
 
-            save_trk(os.path.join(pre, "rec_bundles", "temp.trk"), f,
-                     affine=np.eye(4))
-
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "rec_bundles", "temp.trk"),
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "org_bundles"))
 
-            save_trk(os.path.join(pre, "org_bundles", "temp.trk"), f,
-                     affine=np.eye(4))
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "org_bundles", "temp.trk"),
+                            bbox_valid_check=False)
             os.mkdir(os.path.join(pre, "measures"))
 
             fa = np.random.rand(255, 255, 255)
@@ -130,7 +132,8 @@ def test_bundle_analysis_population_flow():
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
-@npt.dec.skipif(not have_pandas or not have_statsmodels or not have_tables)
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+                    reason='Requires Pandas, StatsModels and PyTables')
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -189,9 +192,9 @@ def test_linear_mixed_models_flow():
 
         input_path = os.path.join(out_dir3, "*")
 
-        assert_raises(ValueError, lmm_flow.run, input_path, no_disks=5,
-                      out_dir=out_dir4)
+        npt.assert_raises(ValueError, lmm_flow.run, input_path, no_disks=5,
+                          out_dir=out_dir4)
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    npt.run_module_suite()

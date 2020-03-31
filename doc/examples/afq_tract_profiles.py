@@ -1,9 +1,9 @@
 """
-========================================================
-Extracting AFQ tract profiles from segmented bundles.
-========================================================
+====================================================
+Extracting AFQ tract profiles from segmented bundles
+====================================================
 
-In this example, we will we will extract the values of a statistic from a
+In this example, we will extract the values of a statistic from a
 volume, using the coordinates along the length of a bundle. These are called
 `tract profiles`
 
@@ -16,6 +16,15 @@ trajectory of the bundle at that location.
 
 """
 
+import dipy.stats.analysis as dsa
+import dipy.tracking.streamline as dts
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
+                                 ResampleFeature)
+from dipy.data.fetcher import get_two_hcp842_bundles
+import dipy.data as dpd
+from dipy.io.streamline import load_trk
+from dipy.io.image import load_nifti
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path as op
@@ -23,7 +32,7 @@ import os.path as op
 """
 
 To get started, we will grab the bundles that were extracted in the bundle
-extraction example. If the example hasn't been run yet, these files don't
+extraction example. If the example has not been run yet, these files don't
 yet exist, and we'll need to run that example:
 
 """
@@ -40,9 +49,8 @@ Either way, we can use the `dipy.io` API to read in the bundles from file.
 
 """
 
-from dipy.io.streamline import load_trk
-cst_l, hdr = load_trk("CST_L.trk")
-af_l, hdr = load_trk("AF_L.trk")
+cst_l = load_trk("CST_L.trk", "same", bbox_valid_check=False).streamlines
+af_l = load_trk("AF_L.trk", "same", bbox_valid_check=False).streamlines
 
 transform = np.load("slr_transform.npy")
 
@@ -51,8 +59,8 @@ transform = np.load("slr_transform.npy")
 In the next step, we need to make sure that all the streamlines in each bundle
 are oriented the same way. For example, for the CST, we want to make sure that
 all the bundles have their cortical termination at one end of the streamline.
-This is that when we later extract values from a volume, we won't have different
-streamlines going in opposite directions.
+This is that when we later extract values from a volume, we won't have
+different streamlines going in opposite directions.
 
 To orient all the streamlines in each bundles, we will create standard
 streamlines, by finding the centroids of the left AF and CST bundle models.
@@ -61,17 +69,13 @@ The advantage of using the model bundles is that we can use the same standard
 for different subjects, which means that we'll get roughly the same orientation
 """
 
-import dipy.data as dpd
-from dipy.data.fetcher import get_two_hcp842_bundles
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
-model_af_l, hdr = load_trk(model_af_l_file)
-model_cst_l, hdr = load_trk(model_cst_l_file)
+model_af_l = load_trk(model_af_l_file, "same",
+                      bbox_valid_check=False).streamlines
+model_cst_l = load_trk(model_cst_l_file, "same",
+                       bbox_valid_check=False).streamlines
 
-
-from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
-                                 ResampleFeature)
-from dipy.segment.clustering import QuickBundles
 
 feature = ResampleFeature(nb_points=100)
 metric = AveragePointwiseEuclideanMetric(feature)
@@ -98,33 +102,26 @@ tractogram. This is so that the orienting is done relative to the space of the
 individual, and not relative to the atlas space.
 """
 
-import dipy.tracking.streamline as dts
 
-oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l,
-                                          affine=transform)
-oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l,
-                                         affine=transform)
+oriented_cst_l = dts.orient_by_streamline(cst_l, standard_cst_l)
+oriented_af_l = dts.orient_by_streamline(af_l, standard_af_l)
 
 
 """
 Read volumetric data from an image corresponding to this subject.
 
-For the purpose of this, we've extracted only the FA within the bundles in question,
-but in real use, this is where you would add the FA map of your subject.
+For the purpose of this, we've extracted only the FA within the bundles in
+question, but in real use, this is where you would add the FA map of your
+subject.
 """
 
 files, folder = dpd.fetch_bundle_fa_hcp()
 
-import nibabel as nib
-img = nib.load(op.join(folder, "hcp_bundle_fa.nii.gz"))
-fa = img.get_fdata()
-
+fa, fa_affine = load_nifti(op.join(folder, "hcp_bundle_fa.nii.gz"))
 
 """
 Calculate weights for each bundle:
 """
-
-import dipy.stats.analysis as dsa
 
 w_cst_l = dsa.gaussian_weights(oriented_cst_l)
 w_af_l = dsa.gaussian_weights(oriented_af_l)
@@ -133,10 +130,10 @@ w_af_l = dsa.gaussian_weights(oriented_af_l)
 And then use the weights to calculate the tract profiles for each bundle
 """
 
-profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, affine=img.affine,
+profile_cst_l = dsa.afq_profile(fa, oriented_cst_l, fa_affine,
                                 weights=w_cst_l)
 
-profile_af_l = dsa.afq_profile(fa, oriented_af_l, affine=img.affine,
+profile_af_l = dsa.afq_profile(fa, oriented_af_l, fa_affine,
                                weights=w_af_l)
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -152,7 +149,7 @@ fig.savefig("tract_profiles")
 .. figure:: tract_profiles.png
    :align: center
 
-   Bundle profiles for the fractional anisotropy in left CST (left) and left
+   Bundle profiles for the fractional anisotropy in the left CST (left) and left
    AF (right).
 """
 

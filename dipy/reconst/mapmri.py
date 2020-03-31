@@ -200,22 +200,22 @@ class MapmriModel(ReconstModel, Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> from dipy.data import dsi_voxels, default_sphere
         >>> from dipy.core.gradients import gradient_table
         >>> _, gtab_ = dsi_voxels()
         >>> gtab = gradient_table(gtab_.bvals, gtab_.bvecs,
         ...                       b0_threshold=gtab_.bvals.min())
-        >>> from dipy.sims.voxel import SticksAndBall
-        >>> data, golden_directions = SticksAndBall(
-        ...                                     gtab, d=0.0015,
-        ...                                     S0=1, angles=[(0, 0), (90, 0)],
-        ...                                     fractions=[50, 50], snr=None)
+        >>> from dipy.sims.voxel import sticks_and_ball
+        >>> data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=1,
+        ...                                           angles=[(0, 0),
+        ...                                                   (90, 0)],
+        ...                                           fractions=[50, 50],
+        ...                                           snr=None)
         >>> from dipy.reconst.mapmri import MapmriModel
         >>> radial_order = 4
         >>> map_model = MapmriModel(gtab, radial_order=radial_order)
         >>> mapfit = map_model.fit(data)
-        >>> sphere = get_sphere('symmetric724')
-        >>> odf = mapfit.odf(sphere)
+        >>> odf = mapfit.odf(default_sphere)
         """
 
         if np.sum(gtab.b0s_mask) == 0:
@@ -1084,7 +1084,7 @@ def mapmri_phi_1d(n, q, mu):
     r""" One dimensional MAPMRI basis function from [1]_ Eq. (4).
 
     Parameters
-    -------
+    ----------
     n : unsigned int
         order of the basis
     q : array, shape (N,)
@@ -1581,6 +1581,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
     .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     r, theta, phi = cart2sphere(vertices[:, 0], vertices[:, 1],
                                 vertices[:, 2])
@@ -1639,6 +1640,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
     .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     sh_mat = sph_harm_ind_list(radial_order)
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
@@ -1685,6 +1687,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     ind_mat = mapmri_isotropic_index_matrix(radial_order)
     return mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(
@@ -1713,6 +1716,7 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     n_elem = ind_mat.shape[0]
     LR = np.zeros((n_elem, n_elem))
@@ -1765,6 +1769,7 @@ def mapmri_isotropic_index_matrix(radial_order):
     .. [1] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
+
     """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
@@ -1790,6 +1795,7 @@ def create_rspace(gridsize, radius_max):
     -------
     tab : array, shape (N,3)
         real space points in which calculates the pdf
+
     """
 
     radius = gridsize // 2
@@ -1818,7 +1824,8 @@ def delta(n, m):
 
 
 def map_laplace_u(n, m):
-    """ S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
+    r"""S(n, m) static matrix for Laplacian regularization [1]_ eq. (13).
+
     Parameters
     ----------
     n, m : unsigned int
@@ -1834,12 +1841,14 @@ def map_laplace_u(n, m):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi))
 
 
 def map_laplace_t(n, m):
-    """ L(m, n) static matrix for Laplacian regularization [1]_ eq. (12).
+    r"""L(m, n) static matrix for Laplacian regularization [1]_ eq. (12).
+
     Parameters
     ----------
     n, m : unsigned int
@@ -1855,6 +1864,7 @@ def map_laplace_t(n, m):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     a = np.sqrt((m - 1) * m) * delta(m - 2, n)
     b = np.sqrt((n - 1) * n) * delta(n - 2, m)
@@ -1863,7 +1873,8 @@ def map_laplace_t(n, m):
 
 
 def map_laplace_s(n, m):
-    """ R(m,n) static matrix for Laplacian regularization [1]_ eq. (11).
+    r"""R(m,n) static matrix for Laplacian regularization [1]_ eq. (11).
+
     Parameters
     ----------
     n, m : unsigned int
@@ -1879,6 +1890,7 @@ def map_laplace_s(n, m):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
 
     k = 2 * np.pi ** (7 / 2.) * (-1) ** (n)
@@ -1894,7 +1906,7 @@ def map_laplace_s(n, m):
 
 
 def mapmri_STU_reg_matrices(radial_order):
-    """ Generates the static portions of the Laplacian regularization matrix
+    """Generate the static portions of the Laplacian regularization matrix
     according to [1]_ eq. (11, 12, 13).
 
     Parameters
@@ -1912,6 +1924,7 @@ def mapmri_STU_reg_matrices(radial_order):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     S = np.zeros((radial_order + 1, radial_order + 1))
     for i in range(radial_order + 1):
@@ -1931,7 +1944,8 @@ def mapmri_STU_reg_matrices(radial_order):
 
 
 def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
-    """ Puts the Laplacian regularization matrix together [1]_ eq. (10).
+    """Put the Laplacian regularization matrix together [1]_ eq. (10).
+
     The static parts in S, T and U are multiplied and divided by the
     voxel-specific scale factors.
 
@@ -1954,6 +1968,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
     .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
+
     """
     ux, uy, uz = mu
     x, y, z = ind_mat.T
@@ -1986,6 +2001,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
 
 def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     """Generalized Cross Validation Function [1]_ eq. (15).
+
     Here weights_array is a numpy array with all values that should be
     considered in the GCV. It will run through the weights until the cost
     function starts to increase, then stop and take the last value as the
@@ -2001,6 +2017,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
         regularization matrix
     weights_array : array (N_of_weights)
         array of optional regularization weights
+
     """
     if weights_array is None:
         lrange = np.linspace(0.05, 1, 20)  # reasonably fast standard range
@@ -2025,6 +2042,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
 
 def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     """Generalized Cross Validation Function [1]_ eq. (15).
+
     Finds optimal regularization weight based on generalized cross-validation.
 
     Parameters
@@ -2047,6 +2065,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
     ----------
     .. [1]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
         NUMER MATH 31.4 (1978): 377-403.
+
     """
     MMt = np.dot(M.T, M)
     K = len(data)
@@ -2061,8 +2080,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
 
 def gcv_cost_function(weight, args):
-    """The GCV cost function that is iterated [4]
-    """
+    """The GCV cost function that is iterated [4]."""
     data, M, MMt, K, LR = args
     S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
     trS = np.trace(S)

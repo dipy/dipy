@@ -21,13 +21,13 @@ streamline bundle.
 
 
 def get_streamlines():
-    from nibabel import trackvis as tv
     from dipy.data import get_fnames
+    from dipy.io.streamline import load_tractogram
 
     fname = get_fnames('fornix')
-    streams, hdr = tv.read(fname)
-    streamlines = [i[0] for i in streams]
-    return streamlines
+    fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+
+    return fornix.streamlines
 
 """
 .. _clustering-examples-AveragePointwiseEuclideanMetric:

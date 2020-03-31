@@ -1,7 +1,6 @@
 import warnings
 import numpy as np
 import numpy.testing as npt
-from dipy.testing import assert_greater
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
@@ -9,6 +8,8 @@ from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen, BootPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
 from dipy.sims.voxel import single_tensor
+
+response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
 def test_pmf_from_sh():
@@ -44,9 +45,9 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1))
 
+
 def test_boot_pmf():
-    """This tests the local model used for the bootstrapping.
-    """
+    # This tests the local model used for the bootstrapping.
     hsph_updated = HemiSphere.from_sphere(unit_octahedron)
     vertices = hsph_updated.vertices
     bvecs = vertices
@@ -67,12 +68,14 @@ def test_boot_pmf():
     npt.assert_equal(len(hsph_updated.vertices), no_boot_pmf.shape[0])
     npt.assert_array_almost_equal(no_boot_pmf, model_pmf)
 
-    # test model sherical harminic order different than bootstrap order
+    # test model spherical harmonic order different than bootstrap order
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        csd_model = ConstrainedSphericalDeconvModel(gtab, None, sh_order=6)
-        assert_greater(len([lw for lw in w if issubclass(lw.category,
-                                                         UserWarning)]), 0)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    sh_order=6)
+        npt.assert_(len(w) == 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("Number of parameters required " in str(w[0].message))
 
     boot_pmf_gen_sh4 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
                                   sh_order=4)

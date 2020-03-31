@@ -1,7 +1,7 @@
 """
-==========================================================================
-Using the free water elimination model to remove free water contamination
-==========================================================================
+=============================================================================
+Using the free water elimination model to remove DTI free water contamination
+=============================================================================
 
 As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
 model is a simple way to characterize diffusion anisotropy. However, in regions
@@ -14,7 +14,8 @@ atrophy that occurs in several brain pathologies and ageing).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
-diffusion. The expression of the expanded DTI model is shown below:
+diffusion [Pasternak2009]_. The expression of the expanded DTI model is shown
+below:
 
 .. math::
 
@@ -28,8 +29,11 @@ no diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
 fraction of the free water component, and $D_{iso}$ is the isotropic value of
 the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
-In this example, we show how to process a diffusion weighting dataset using the
-free water elimination.
+In this example, we show how to process a diffusion weighting dataset using
+an adapted version of the free water elimination proposed by [Hoy2014]_.
+
+The full details of Dipy's free water DTI implementation was published in
+[Henriques2017]_. Please cite this work if you use this algorithm.
 
 Let's start by importing the relevant modules:
 """
@@ -53,7 +57,7 @@ fetch_cenir_multib(with_raw=False)
 """
 From the downloaded data, we read only the data acquired with b-values up to
 2000 $s/mm^2$ to decrease the influence of non-Gaussian diffusion
-effects of the tisse which are not taken into account by the free water
+effects of the tissue which are not taken into account by the free water
 elimination model [Hoy2014]_.
 """
 
@@ -61,7 +65,7 @@ bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
 
-data = img.get_data()
+data = np.asarray(img.dataobj)
 
 affine = img.affine
 
@@ -70,7 +74,8 @@ The free water DTI model can take some minutes to process the full data set.
 Thus, we remove the background of the image to avoid unnecessary calculations.
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+                             autocrop=False, dilate=1)
 
 """
 Moreover, for illustration purposes we process only an axial slice of the
@@ -119,7 +124,7 @@ dti_FA = dtifit.fa
 dti_MD = dtifit.md
 
 """
-Below the FA values for both free water elimnantion DTI model and standard DTI
+Below the FA values for both free water elimination DTI model and standard DTI
 model are plotted in panels A and B, while the repective MD values are ploted
 in panels D and E. For a better visualization of the effect of the free water
 correction, the differences between these two metrics are shown in panels C and
@@ -225,10 +230,16 @@ fig1.savefig('In_vivo_free_water_DTI_and_standard_DTI_corrected.png')
 
 References
 ----------
-
+.. [Pasternak2009] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y.,
+   2009. Free water elimination and mapping from diffusion MRI. Magn. Reson.
+   Med. 62(3): 717-30. doi: 10.1002/mrm.22055.
 .. [Hoy2014] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
    Optimization of a free water elimination two-compartmental model for
    diffusion tensor imaging. NeuroImage 103, 323-333. doi:
    10.1016/j.neuroimage.2014.09.053
+.. [Henriques2017] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+   Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free water
+   elimination two-compartment model for diffusion tensor imaging.
+   ReScience volume 3, issue 1, article number 2
 
 """

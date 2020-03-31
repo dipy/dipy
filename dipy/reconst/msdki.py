@@ -1,7 +1,6 @@
 #!/usr/bin/python
 """ Classes and functions for fitting the mean signal diffusion kurtosis
 model """
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 

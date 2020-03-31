@@ -43,6 +43,9 @@ import dipy.reconst.cross_validation as xval
 import dipy.reconst.dti as dti
 import dipy.reconst.csdeconv as csd
 import scipy.stats as stats
+from dipy.core.gradients import gradient_table
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 
 
 """
@@ -54,9 +57,12 @@ fiber populations.
 
 """
 
-dpd.fetch_stanford_hardi()
-img, gtab = dpd.read_stanford_hardi()
-data = img.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = dpd.get_fnames('stanford_hardi')
+
+data, affine = load_nifti(hardi_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
+
 
 cc_vox = data[40, 70, 38]
 cso_vox = data[30, 76, 38]
@@ -97,11 +103,16 @@ each sub-plot (blue=DTI, red=CSD).
 
 fig, ax = plt.subplots(1, 2)
 fig.set_size_inches([12, 6])
-ax[0].plot(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask], 'o', color='b')
-ax[0].plot(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask], 'o', color='r')
-ax[1].plot(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask], 'o', color='b', label='DTI')
-ax[1].plot(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask], 'o', color='r', label='CSD')
-plt.legend(loc='upper left')
+ax[0].plot(cc_vox[gtab.b0s_mask == 0], dti_cc[gtab.b0s_mask == 0], 'o',
+           color='b', label='DTI in CC')
+ax[0].plot(cc_vox[gtab.b0s_mask == 0], csd_cc[gtab.b0s_mask == 0], 'o',
+           color='r', label='CSD in CC')
+ax[1].plot(cso_vox[gtab.b0s_mask == 0], dti_cso[gtab.b0s_mask == 0], 'o',
+           color='b', label='DTI in CSO')
+ax[1].plot(cso_vox[gtab.b0s_mask == 0], csd_cso[gtab.b0s_mask == 0], 'o',
+           color='r', label='CSD in CSO')
+ax[0].legend(loc='upper left')
+ax[1].legend(loc='upper left')
 for this_ax in ax:
     this_ax.set_xlabel('Data (relative to S0)')
     this_ax.set_ylabel('Model prediction (relative to S0)')
@@ -124,10 +135,14 @@ R-squared score:
 
 """
 
-cc_dti_r2 = stats.pearsonr(cc_vox[~gtab.b0s_mask], dti_cc[~gtab.b0s_mask])[0]**2
-cc_csd_r2 = stats.pearsonr(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask])[0]**2
-cso_dti_r2 = stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**2
-cso_csd_r2 = stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
+cc_dti_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
+                           dti_cc[gtab.b0s_mask == 0])[0]**2
+cc_csd_r2 = stats.pearsonr(cc_vox[gtab.b0s_mask == 0],
+                           csd_cc[gtab.b0s_mask == 0])[0]**2
+cso_dti_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
+                            dti_cso[gtab.b0s_mask == 0])[0]**2
+cso_csd_r2 = stats.pearsonr(cso_vox[gtab.b0s_mask == 0],
+                            csd_cso[gtab.b0s_mask == 0])[0]**2
 
 print("Corpus callosum\n"
       "DTI R2 : %s\n"
@@ -165,7 +180,7 @@ References
 
 .. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
    of Statistical Learning: Data Mining, Inference and
-   Prediction. Springer-Verlag, Berlin  
+   Prediction. Springer-Verlag, Berlin
 
 .. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
    Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple

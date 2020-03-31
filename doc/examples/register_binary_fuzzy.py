@@ -1,7 +1,7 @@
 """
-=========================================================
+=======================================================
 Diffeomorphic Registration with binary and fuzzy images
-=========================================================
+=======================================================
 
 This example demonstrates registration of a binary and a fuzzy image.
 This could be seen as aligning a fuzzy (sensed) image to a binary
@@ -64,9 +64,9 @@ show_images(img_ref, img_in, 'input')
 """
 
 """
-Let's the use the general Registration function with some naive parameters,
-such as set `step_length` as 1 assuming maximal step 1 pixel and reasonable
-small number of iteration since the deformation with already aligned images
+Let's use the general Registration function with some naive parameters,
+such as set `step_length` as 1 assuming maximal step 1 pixel and a reasonably
+small number of iterations since the deformation with already aligned images
 should be minimal.
 """
 
@@ -114,7 +114,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-1.png')
 """
 
 """
-Note, we are still using multi-scale approach which makes `step_length`
+Note, we are still using a multi-scale approach which makes `step_length`
 in the upper level multiplicatively larger.
 What happens if we set `step_length` to a rather small value?
 """
@@ -140,7 +140,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'map-2.png')
 """
 
 """
-An alternative scenario is to use just a single scale level.
+An alternative scenario is to use just a single-scale level.
 Even though the warped image may look fine, the estimated deformations show
 that it is off the mark.
 """

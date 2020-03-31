@@ -1,38 +1,43 @@
+# Shared objects across Horizon's systems
+
 class GlobalHorizon(object):
-    # window level sharing
-    window_timer_cnt = 0
-    
-    # slicer level sharing
-    slicer_opacity = 1
-    slicer_colormap = 'gray'
-    slicer_colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
-    slicer_colormap_cnt = 0
-    slicer_axes = ['x', 'y', 'z']
-    
-    slicer_curr_x = None
-    slicer_curr_y = None
-    slicer_curr_z = None
-    
-    slicer_curr_actor_x = None
-    slicer_curr_actor_y = None
-    slicer_curr_actor_z = None
-    
-    slicer_orig_shape = None
-    slicer_resliced_shape = None
-    
-    slicer_vol_idx = None
-    slicer_vol = None
+    def __init__(self):
+        # window level sharing
+        self.window_timer_cnt = 0
 
-    slicer_peaks_actor_z = None
-    slicer_rgb = False
+        # slicer level sharing
+        self.slicer_opacity = 1
+        self.slicer_colormap = 'gray'
+        self.slicer_colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
+        self.slicer_colormap_cnt = 0
+        self.slicer_axes = ['x', 'y', 'z']
 
-    slicer_grid = False
-    
-    # tractogram level sharing
-    cluster_thr = 15
-    streamline_actors = []
-    centroid_actors = []
-    cluster_actors = []
-    
+        self.slicer_curr_x = None
+        self.slicer_curr_y = None
+        self.slicer_curr_z = None
 
-HORIZON = GlobalHorizon()
+        self.slicer_curr_actor_x = None
+        self.slicer_curr_actor_y = None
+        self.slicer_curr_actor_z = None
+
+        self.slicer_orig_shape = None
+        self.slicer_resliced_shape = None
+
+        self.slicer_vol_idx = None
+        self.slicer_vol = None
+
+        self.slicer_peaks_actor_z = None
+        self.slicer_rgb = False
+
+        self.slicer_grid = False
+
+        # tractogram level sharing
+        self.cluster_thr = 15
+        # self.cluster_lengths = []  # not used
+        # self.cluster_sizes = []  # not used
+        # self.cluster_thr_min_max = []  # not used
+        self.streamline_actors = []
+        self.centroid_actors = []
+        self.cluster_actors = []
+
+

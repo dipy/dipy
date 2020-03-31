@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-===============================================================================
+==============================================
 Mean signal diffusion kurtosis imaging (MSDKI)
-===============================================================================
+==============================================
 
 Several microstructural models have been proposed to increase the specificity
 of diffusion-weighted data; however, improper model assumptions are known to
@@ -48,14 +48,14 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 # For in-vivo data
-from dipy.data import fetch_cfin_multib
-from dipy.data import read_cfin_dwi
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
 
 """
-===============================================================================
 Testing MSDKI in synthetic data
-===============================================================================
+===============================
 
 We simulate representative diffusion-weighted signals using MultiTensor
 simulations (for more information on this type of simulations see
@@ -97,7 +97,8 @@ bvecs = np.vstack((np.zeros((2, 3)), directions, directions))
 gtab = gradient_table(bvals, bvecs)
 
 
-""" Simulations are looped for different intra- and extra-cellular water
+"""
+Simulations are looped for different intra- and extra-cellular water
 volume fractions and different intersection angles of the two-fiber
 populations.
 """
@@ -124,7 +125,8 @@ for f_i in range(f.size):
                                       fractions=fractions, snr=None)
         dwi[f_i, a_i, :] = signal
 
-""" Now that all synthetic signals were produced, we can go forward with
+"""
+Now that all synthetic signals were produced, we can go forward with
 MSDKI fitting. As other Dipy's reconstruction techniques, the MSDKI model has
 to be first defined for the specific GradientTable object of the synthetic
 data. For MSDKI, this is done by instantiating the MeanDiffusionKurtosisModel
@@ -158,7 +160,8 @@ dki_fit = dki_model.fit(dwi)
 MD = dki_fit.md
 MK = dki_fit.mk(0, 3)
 
-""" Now we plot the results as a function of the ground truth intersection
+"""
+Now we plot the results as a function of the ground truth intersection
 angle and for different volume fractions of intra-cellular water.
 """
 
@@ -211,9 +214,8 @@ intersection angle.
 """
 
 """
-===============================================================================
 Reconstructing diffusion data using MSDKI
-===============================================================================
+=========================================
 
 Now that the properties of MSDKI were illustrated, let's apply MSDKI to in-vivo
 diffusion-weighted data. As the example for the standard DKI
@@ -223,13 +225,11 @@ the data are provided in their paper [Hansen2016]_). The total size of the
 downloaded data is 192 MBytes, however you only need to fetch it once.
 """
 
-fetch_cfin_multib()
+fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 
-img, gtab = read_cfin_dwi()
-
-data = img.get_data()
-
-affine = img.affine
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs)
 
 """
 Before fitting the data, we preform some data pre-processing. For illustration,
@@ -240,7 +240,8 @@ For example, some state of the art denoising algorithms are available in DIPY_
 local pca :ref:`example-denoise-localpca`).
 """
 
-maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
+                             autocrop=False, dilate=1)
 
 """
 Now that we have loaded and pre-processed the data we can go forward

@@ -15,8 +15,8 @@ The main principles behind DIPY_ development are:
   and will make it less error-prone.
 * **Documentation**: document the code. Documentation is essential as it is
   one of the key points for the adoption of DIPY as the toolkit of choice in
-  diffusion by the scientific community. Documenting helps clarifying
-  certain choices, helps avoiding obscure places, and is a way to allow
+  diffusion by the scientific community. Documenting helps to clarify
+  certain choices, helps to avoid obscure places, and is a way to allow
   other members *decode* it with less effort.
 * **Language**: the code must be written in English. Norms and spelling
   should be abided by.
@@ -33,7 +33,7 @@ is checked automatically when requesting to push to DIPY. There are
 code for PEP8 compliance, and most text editors can be configured to check the
 compliance of your code with PEP8. Beyond the aspects checked, as a
 contributor to DIPY, you should try to ensure that your code, including
-comments, conform to the above principles.
+comments, conforms to the above principles.
 
 Imports
 -------
@@ -66,7 +66,7 @@ shorthand, e.g.::
   cimport numpy as cnp
 
 Adding the `c` prefix to the import line makes it clear that the Cython/C
-symbols are being referred to as to compared to the Python symbols.
+symbols are being referred to as compared to the Python symbols.
 
 Variable declaration
 --------------------
@@ -226,7 +226,7 @@ Again, both sets of files use the `reStructuredText markup language
 the files to produce the contents that are later rendered in the DIPY_
 website.
 
-The Python examples are compiled, output images produced, and corresponding
+The Python examples are compiled, output images produced and corresponding
 ``.rst`` files produced so that the comments can be appropriately displayed
 in a web page enriched with images.
 
@@ -240,7 +240,7 @@ following guidelines:
 * The classes, objects, and any other construct referenced from the code
   should be written with inverted commas, such as in *In DIPY, we use an
   object called ``GradientTable`` which holds all the acquisition specific
-  parameters, e.g. b-values, b-vectors, timings and others.*
+  parameters, e.g. b-values, b-vectors, timings, and others.*
 * Cite the relevant papers. Use the *[NameYear]* convention for
   cross-referencing them, such as in [Garyfallidis2014]_, and put them
   under the :ref:`references` section.
@@ -255,10 +255,10 @@ following guidelines:
 * As customary in Python, use lowercase and separate words with underscores
   for filenames, labels for references, etc.
 * When including figures, use the regular font for captions (i.e. do not use
-  bold faces), unless otherwise required for a specific text part (e.g. a
+  bold faces) unless otherwise required for a specific text part (e.g. a
   DIPY object, etc.).
 * When referring to relative paths, use the backquote inline markup
-  convention, such as in ``doc/devel``. Do not add the
+  the convention, such as in ``doc/devel``. Do not add the
   greater-than/less-than signs to enclose the path.
 
 

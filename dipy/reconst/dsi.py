@@ -74,14 +74,13 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         voxel in the data with the reconstruction performed using DSI.
 
         >>> import warnings
-        >>> from dipy.data import dsi_voxels, get_sphere
+        >>> from dipy.data import dsi_voxels, default_sphere
         >>> data, gtab = dsi_voxels()
-        >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> dsfit = ds.fit(data)
         >>> from dipy.reconst.odf import gfa
-        >>> np.round(gfa(dsfit.odf(sphere))[0, 0, 0], 2)
+        >>> np.round(gfa(dsfit.odf(default_sphere))[0, 0, 0], 2)
         0.11
 
         Notes

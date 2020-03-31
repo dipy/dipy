@@ -4,26 +4,36 @@
 Diffusion Imaging In Python
 ###########################
 
-DIPY_ is a **free** and **open source** software project for computational neuroanatomy,
-focusing mainly on **diffusion** *magnetic resonance imaging* (dMRI) analysis. It implements a
-broad range of algorithms for denoising, registration, reconstruction, tracking, clustering,
-visualization, and statistical analysis of MRI data.
+DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
+spatial normalization, signal processing, machine learning, statistical analysis
+and visualization of medical images. Additionally, it contains 
+specialized methods for computational anatomy including diffusion, 
+perfusion and structural imaging. 
+
+
 
 **********
 Highlights
 **********
 
-**DIPY 0.16.0** is now available. New features include:
+**DIPY 1.1.1** is now available. New features include:
 
-- Horizon, medical visualization interface powered by QuickBundlesX.
-- New Tractometry tools: Bundle Analysis / Bundle Profiles.
-- New reconstruction model: IVIM MIX (Variable Projection).
-- New command line interface: Affine and Diffeomorphic Registration.
-- New command line interface: Probabilistic, Deterministic and PFT Tracking.
-- Integration of Cython Guidelines for developers.
-- Replacement of Nose by Pytest.
-- Documentation update.
-- Closed 103 issues and merged 41 pull requests.
+- New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
+- Improved DKI performance and increased utilities.
+- Non-linear and RESTORE fits from DTI compatible now with DKI.
+- Numerical solutions for estimating axial, radial and mean kurtosis.
+- Added Kurtosis Fractional Anisotropy by Glenn et al. 2015.
+- Added Mean Kurtosis Tensor by Hansen et al. 2013.
+- Nibabel minimum version is 3.0.0.
+- Azure CI added and Appveyor CI removed.
+- New command line interfaces for LPCA, MPPCA and Gibbs Unringing.
+- New MTMS CSD tutorial added.
+- Horizon refactored and updated to support StatefulTractograms.
+- Speeded up all cython modules by using a smarter configuration setting.
+- All tutorials updated to API changes and 2 new tutorials added.
+- Large documentation update.
+- Closed 126 issues and merged 50 pull requests.
+
 
 See :ref:`Older Highlights <old_highlights>`.
 
@@ -31,16 +41,11 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
-- DIPY Workshop - Titanium Edition (March 11-15, 2019) is now open for registration:
-.. raw :: html
+- DIPY Workshop - Titanium Edition (March 16-20, 2020) is now open for registration:
+- :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
+- :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
+- :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 
-  <div style="width: 80% max-width=800px">
-    <a href="https://workshop.dipy.org/" target="_blank"><img alt=" " class="align-center" src="_static/dipy-ws-header.png" style="width: 90%;max-height: 90%"></a>
-  </div>
-- :ref:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
-- :ref:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
-- :ref:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
-- :ref:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.
 
 See some of our :ref:`Past Announcements <old_news>`
 

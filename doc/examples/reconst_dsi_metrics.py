@@ -3,7 +3,7 @@
 Calculate DSI-based scalar maps
 ===============================
 
-We show how to calculate two DSI-based scalar maps: return to origin 
+We show how to calculate two DSI-based scalar maps: return to origin
 probability (RTOP) [Descoteaux2011]_ and mean square displacement (MSD)
 [Wu2007]_, [Wu2008]_ on your dataset.
 
@@ -12,26 +12,32 @@ First import the necessary modules:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.reconst.dsi import DiffusionSpectrumModel
 
 """
-Download and read the data for this tutorial.
+Download and get the data filenames for this tutorial.
 """
 
-fetch_taiwan_ntu_dsi()
-img, gtab = read_taiwan_ntu_dsi()
+fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
 
 """
-img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
-it is possible to write print(gtab.bvals).
+img contains a nibabel Nifti1Image object (data) and gtab contains a
+GradientTable object (gradient information e.g. b-values). For example to read
+the b-values it is possible to write print(gtab.bvals).
 
 Load the raw diffusion data and the affine.
 """
 
-data = img.get_data()
-affine = img.affine
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+bvecs[1:] = (bvecs[1:] /
+                 np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
+gtab = gradient_table(bvals, bvecs)
+
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
@@ -53,7 +59,7 @@ Normalize the signal by the b0
 dataslice = dataslice / (dataslice[..., 0, None]).astype(np.float)
 
 """
-Calculate the return to origin probability on the signal 
+Calculate the return to origin probability on the signal
 that corresponds to the integral of the signal.
 """
 
@@ -61,28 +67,28 @@ print('Calculating... rtop_signal')
 rtop_signal = dsmodel.fit(dataslice).rtop_signal()
 
 """
-Now we calculate the return to origin probability on the propagator, 
-that corresponds to its central value. 
-By default the propagator is divided by its sum in order to obtain a properly normalized pdf,
-however this normalization changes the values of RTOP, therefore in order to compare it
-with the RTOP previously calculated on the signal we turn the normalized parameter to false.
+Now we calculate the return to origin probability on the propagator, that
+corresponds to its central value. By default the propagator is divided by its
+sum in order to obtain a properly normalized pdf, however this normalization
+changes the values of RTOP, therefore in order to compare it with the RTOP
+previously calculated on the signal we turn the normalized parameter to false.
 """
 
 print('Calculating... rtop_pdf')
 rtop_pdf = dsmodel.fit(dataslice).rtop_pdf(normalized=False)
 
 """
-In theory, these two measures must be equal, 
+In theory, these two measures must be equal,
 to show that we calculate the mean square error on this two measures.
 """
 
 mse = np.sum((rtop_signal - rtop_pdf) ** 2) / rtop_signal.size
 print("mse = %f" % mse)
 
-""" 
+"""
 mse = 0.000000
 
-Leaving the normalized parameter to the default changes the values of the 
+Leaving the normalized parameter to the default changes the values of the
 RTOP but not the contrast between the voxels.
 """
 
@@ -97,7 +103,7 @@ print('Calculating... msd_norm')
 msd_norm = dsmodel.fit(dataslice).msd_discrete()
 
 """
-Turning the normalized parameter to false makes it possible to calculate 
+Turning the normalized parameter to false makes it possible to calculate
 the mean square displacement on the propagator without normalization.
 """
 
@@ -129,7 +135,7 @@ plt.savefig('rtop.png')
 
    Return to origin probability.
 
-Show the MSD images and save them in msd.png. 
+Show the MSD images and save them in msd.png.
 """
 
 fig = plt.figure(figsize=(7, 3))

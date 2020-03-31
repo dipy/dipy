@@ -5,11 +5,14 @@
 
 |
 
-.. image:: https://travis-ci.org/nipy/dipy.svg?branch=master
-  :target: https://travis-ci.org/nipy/dipy
+.. image:: https://travis-ci.org/dipy/dipy.svg?branch=master
+  :target: https://travis-ci.org/dipy/dipy
 
-.. image:: https://codecov.io/gh/nipy/dipy/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/nipy/dipy
+.. image:: https://dev.azure.com/dipy/dipy/_apis/build/status/dipy.dipy?branchName=master
+  :target: https://dev.azure.com/dipy/dipy/_build
+
+.. image:: https://codecov.io/gh/dipy/dipy/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/dipy/dipy
 
 .. image:: https://img.shields.io/pypi/v/dipy.svg
   :target: https://pypi.python.org/pypi/dipy
@@ -21,12 +24,10 @@
   :target: https://anaconda.org/conda-forge/dipy
 
 .. image:: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
-  :target: https://github.com/nipy/dipy/blob/master/LICENSE
+  :target: https://github.com/dipy/dipy/blob/master/LICENSE
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/nipy/dipy?branch=master&svg=true
-  :target: https://ci.appveyor.com/project/nipy/dipy
 
-DIPY [DIPYREF]_ is a python library for analysis of MR diffusion imaging.
+DIPY [DIPYREF]_ is a python library for the analysis of MR diffusion imaging.
 
 DIPY is for research only; please do not use results from DIPY for
 clinical decisions.
@@ -56,9 +57,9 @@ You can find our sources and single-click downloads:
 * Documentation_ for all releases and current development tree.
 * Download as a tar/zip file the `current trunk`_.
 
-.. _main repository: http://github.com/nipy/dipy
+.. _main repository: http://github.com/dipy/dipy
 .. _Documentation: http://dipy.org
-.. _current trunk: http://github.com/nipy/dipy/archives/master
+.. _current trunk: http://github.com/dipy/dipy/archives/master
 
 
 Installing DIPY
@@ -73,19 +74,19 @@ or using `conda`::
     conda install -c conda-forge dipy
 
 For detailed installation instructions, including instructions for installing
-from source, please read our `installation documentation <http://nipy.org/dipy/installation.html>`_.
+from source, please read our `installation documentation <https://dipy.org/documentation/latest/installation/>`_.
 
 
 License
 =======
 
 DIPY is licensed under the terms of the BSD license.
-Please see `LICENSE file <https://github.com/nipy/dipy/blob/master/LICENSE>`_.
+Please see the `LICENSE file <https://github.com/dipy/dipy/blob/master/LICENSE>`_.
 
 Contributing
 ============
 
-We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/nipy/dipy/blob/master/CONTRIBUTING.md>`_.
+We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/dipy/dipy/blob/master/CONTRIBUTING.md>`_.
 
 Reference
 =========

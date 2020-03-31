@@ -1,7 +1,7 @@
 """
-=====================================
+====================================
 Streamline length and size reduction
-=====================================
+====================================
 
 This example shows how to calculate the lengths of a set of streamlines and
 also how to compress the streamlines without considerably reducing their
@@ -15,9 +15,10 @@ number of streamlines in the set.
 """
 
 import numpy as np
-from dipy.tracking.utils import length
-from dipy.tracking.metrics import downsample
 from dipy.tracking.distances import approx_polygon_track
+from dipy.tracking.streamline import set_number_of_points
+from dipy.tracking.utils import length
+
 
 """
 Let's first create a simple simulation of a bundle of streamlines using
@@ -87,28 +88,28 @@ n_pts = [len(streamline) for streamline in bundle]
 """
 Often, streamlines are represented with more points than what is actually
 necessary for specific applications. Also, sometimes every streamline has
-different number of points which could be of a trouble for some algorithms
-. The function ``downsample`` can be used to set the number of points of a
-streamline at a specific number and at the same time enforce that all the
+different number of points which could be of a trouble for some algorithms.
+The function ``set_number_of_points`` can be used to set the number of points
+of a streamline at a specific number and at the same time enforce that all the
 segments of the streamline will have equal length.
 """
 
-bundle_downsampled = [downsample(s, 12) for s in bundle]
+bundle_downsampled = set_number_of_points(bundle, 12)
 n_pts_ds = [len(s) for s in bundle_downsampled]
 
 """
 Alternatively, the function ``approx_polygon_track`` allows to reduce the number
 of points so that they are more points in curvy regions and less points in
-less curvy regions. In contrast with ``downsample`` it does not enforce that
-segments should be of equal size.
+less curvy regions. In contrast with ``set_number_of_points`` it does not
+enforce that segments should be of equal size.
 """
 
 bundle_downsampled2 = [approx_polygon_track(s, 0.25) for s in bundle]
 n_pts_ds2 = [len(streamline) for streamline in bundle_downsampled2]
 
 """
-Both, ``downsample`` and ``approx_polygon_track`` can be thought as methods for
-lossy compression of streamlines.
+Both, ``set_number_of_points`` and ``approx_polygon_track`` can be thought as 
+methods for lossy compression of streamlines.
 """
 
 from dipy.viz import window, actor
@@ -153,7 +154,7 @@ import matplotlib.pyplot as plt
 
 fig_hist, ax = plt.subplots(1)
 ax.hist(n_pts, color='r', histtype='step', label='initial')
-ax.hist(n_pts_ds, color='g', histtype='step', label='downsample (12)')
+ax.hist(n_pts_ds, color='g', histtype='step', label='set_number_of_points (12)')
 ax.hist(n_pts_ds2, color='b', histtype='step', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Number of points')
 ax.set_ylabel('Count')
@@ -176,7 +177,7 @@ lengths_downsampled2 = list(length(bundle_downsampled2))
 
 fig, ax = plt.subplots(1)
 ax.plot(lengths, color='r', label='initial')
-ax.plot(lengths_downsampled, color='g', label='downsample (12)')
+ax.plot(lengths_downsampled, color='g', label='set_number_of_points (12)')
 ax.plot(lengths_downsampled2, color='b', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Streamline ID')
 ax.set_ylabel('Length')

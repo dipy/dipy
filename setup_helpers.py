@@ -191,6 +191,9 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
                     ext.extra_link_args += good_link_flags
                     if def_vars:
                         ext.include_dirs.append(config_dir)
+            self.cython_directives = {
+                'language_level': '3',
+            }
             build_ext_class.build_extensions(self)
 
     return Checker

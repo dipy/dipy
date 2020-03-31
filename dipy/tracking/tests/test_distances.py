@@ -1,11 +1,12 @@
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_almost_equal)
-from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
+from dipy.tracking.streamline import set_number_of_points
+from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
 
 
 def test_LSCv2():
@@ -60,11 +61,11 @@ def test_LSCv2():
     print(t2-t1)
     print(len(C5))
 
-    from dipy.data import get_fnames
-    from nibabel import trackvis as tv
+    fname = get_fnames('fornix')
+    fornix = load_tractogram(fname, 'same',
+                             bbox_valid_check=False).streamlines
 
-    streams, hdr = tv.read(get_fnames('fornix'))
-    T3 = [tm.downsample(s[0], 6) for s in streams]
+    T3 = set_number_of_points(fornix, 6)
 
     print('lenT3', len(T3))
 

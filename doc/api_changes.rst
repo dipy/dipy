@@ -5,10 +5,40 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
-DIPY 1.0 changes
+DIPY 1.1.1 changes
 ----------------
-Some of the changes introduced in the 1.0 release will break backwards
-compatibility with previous versions.
+
+**IO**
+
+`img.get_data()` is deprecated since Nibabel 3.0.0. Using `np.asanyarray(img.dataobj)` instead of `img.get_data()`.
+
+**Tractogram**
+
+``dipy.io.streamlines.StatefulTractogram``can be created by another one.
+
+**Workflows**
+
+``dipy_nlmeans`` command lines have been renamed ``dipy_denoise_nlmeans``.
+
+**Others**
+
+``get_data`` has been deprecated by Nibabel and replaced by ``get_fdata``. This modification has been
+applied to all the codebase. The default datatype is now float64.
+
+
+DIPY 1.0.0 changes
+----------------
+Some of the changes introduced in the 1.0 release will break backward
+compatibility with previous versions. This release is compatible with Python 3.5+
+
+**Reconstruction**
+
+The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
+`tournier07` and `descoteaux07` after the deprecation cycle started in the
+0.15 release.
+
+We changed ``dipy.data.default_sphere`` from symmetric724 to repulsion724 which is
+more evenly distributed.
 
 **Segmentation**
 
@@ -16,18 +46,104 @@ The API of ``dipy.segment.mask.median_otsu`` has changed in the following ways:
 if you are providing a 4D volume, `vol_idx` is now a required argument.
 The order of parameters has also changed.
 
+**Tractogram loading and saving**
+
+The API of ``dipy.io.streamlines.load_tractogram`` and
+``dipy.io.streamlines.save_tractogram`` has changed in the following ways:
+When loading trk, tck, vtk, fib, or dpy) a reference nifti file is needed to
+guarantee proper spatial transformation handling.
+
+**Spatial transformation handling**
+
+Functions from ``dipy.tracking.streamlines`` were modified to enforce the
+affine parameter and uniform docstrings. ``deform_streamlines``
+``select_by_rois``, ``orient_by_rois``, ``_extract_vals``
+and ``values_from_volume``.
+
+Functions from ``dipy.tracking.utils`` were modified to enforce the
+affine parameter and uniform docstring. ``density_map``
+``connectivity_matrix``, ``seeds_from_mask``, ``random_seeds_from_mask``,
+``target``, ``target_line_based``, ``near_roi``, ``length`` and
+``path_length`` were all modified.
+
+The function ``affine_for_trackvis``, ``move_streamlines``,
+``flexi_tvis_affine`` and ``get_flexi_tvis_affine`` were deleted.
+
+Functions from ``dipy.tracking.life`` were modified to enforce the
+affine parameter and uniform docstring. ``voxel2streamline``,
+``setup`` and ``fit`` from class ``FiberModel`` were all modified.
+
+``afq_profile`` from ``dipy.stats.analysis`` was modified similarly.
+
+**Simulations**
+
+- ``dipy.sims.voxel.SingleTensor`` has been replaced by ``dipy.sims.voxel.single_tensor``
+- ``dipy.sims.voxel.MultiTensor`` has been replaced by ``dipy.sims.voxel.multi_tensor``
+- ``dipy.sims.voxel.SticksAndBall`` has been replaced by ``dipy.sims.voxel.sticks_and_ball``
+
+**Interpolation**
+
+All interpolation functions have been moved to a new module name `dipy.core.interpolation`
+
+**Tracking**
+
+The `voxel_size` parameter has been removed from the following function:
+
+- ``dipy.tracking.utils.connectivity_matrix``
+- ``dipy.tracking.utils.density_map``
+- ``dipy.tracking.utils.stremline_mapping``
+- ``dipy.tracking._util._mapping_to_voxel``
+
+The ``dipy.reconst.peak_direction_getter.PeaksAndMetricsDirectionGetter`` has
+been renamed ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
+
+The `LocalTracking` and `ParticleFilteringTracking` functions were moved from
+``dipy.tracking.local.localtracking`` to ``dipy.tracking.local_tracking``.
+They now need to be imported from ``dipy.tracking.local_tracking``.
+
+- functions argument `tissue_classifier` were renamed `stopping_criterion`
+
+The `TissueClassifier` were renamed `StoppingCriterion` and moved from
+``dipy.tracking.local.tissue_classifier`` to ``dipy.tracking.stopping_criterion``.
+They now need to be imported from ``dipy.tracking.stopping_criterion``.
+
+- `TissueClassifier` -> `StoppingCriterion`
+- `BinaryTissueClassifier` -> `BinaryStoppingCriterion`
+- `ThresholdTissueClassifier` -> `ThresholdStoppingCriterion`
+- `ConstrainedTissueClassifier` -> `AnatomicalStoppingCriterion`
+- `ActTissueClassifier` -> `ActStoppingCriterion`
+- `CmcTissueClassifier` -> `CmcStoppingCriterion`
+
+The ``dipy.tracking.local.tissue_classifier.TissueClass`` was renamed
+``dipy.tracking.stopping_criterion.StreamlineStatus``.
+
+The `EuDX` tracking function has been removed. EuDX tractography can be
+performed using ``dipy.tracking.local_tracking`` using
+``dipy.reconst.peak_direction_getter.EuDXDirectionGetter``.
+
+**Streamlines**
+
+``dipy.io.trackvis`` has been removed. Use ``dipy.io.streamline`` instead.
+
+**Other**
+
+- ``dipy.external`` package has been removed.
+- ``dipy.fixes`` package has been removed.
+- ``dipy.segment.quickbundes`` module has been removed.
+- ``dipy.reconst.peaks`` module has been removed.
+- Compatibility with Python 2.7 has been removed.
 
 DIPY 0.16 Changes
 -----------------
 
 **Stats**
 
-Welcome to the new module ``dipy.viz.stats``. This module will be used to integrate various analysis.
+Welcome to the new module ``dipy.viz.stats``. This module will be used to integrate various analyses.
 
 **Tracking**
 
-- New option to adjust number of threads for SLR in Recobundles
-- The tracking algoritm excludes the stop point inside the mask during tracking process.
+- New option to adjust the number of threads for SLR in Recobundles
+- The tracking algorithm excludes the stop point inside the mask during the tracking process.
 
 **Notes**
 
@@ -39,7 +155,7 @@ DIPY 0.15 Changes
 
 **IO**
 
-``load_tck`` and ``save_tck`` from ``dipy.io.streamline`` has been added. They are highly recommended for managing streamlines.
+``load_tck`` and ``save_tck`` from ``dipy.io.streamline``have been added. They are highly recommended for managing streamlines.
 
 **Gradient Table**
 
@@ -54,7 +170,7 @@ If you want to assure that your code runs in exactly the same manner as before, 
 - All available actors are in ``dipy.viz.actor`` instead of ``dipy.fvtk.actor``.
 - UI elements are available in ``dipy.viz.ui``.
 
-``dipy.viz`` depends on FURY package. To get more informations about FURY, go to https://fury.gl
+``dipy.viz`` depends on the FURY package. To learn more about FURY, go to https://fury.gl
 
 
 DIPY 0.14 Changes
@@ -106,7 +222,7 @@ the probability mass function (pmf) when selecting the tracking direction.
 
 **DKI**
 
-Default of DKI model fitting was changed from "OLS" to "WLS".
+The default of DKI model fitting was changed from "OLS" to "WLS".
 
 The default max_kurtosis of the functions axial_kurtosis, mean_kurtosis,
 radial_kurotis was changed from 3 to 10.
@@ -127,7 +243,7 @@ DIPY 0.10 Changes
 ** New visualization module**
 
 ``fvtk.slicer`` input parameters have changed. Now the slicer function is
-more powerfull and supports RGB images too. See tutorial ``viz_slice.py`` for
+more powerful and supports RGB images too. See tutorial ``viz_slice.py`` for
 more information.
 
 **Interpolation**
@@ -152,7 +268,7 @@ DIPY 0.9 Changes
 
 **GQI integration length**
 
-Calculation of integration length in GQI2 now matches the calculation in the
+The calculation of integration length in GQI2 now matches the calculation in the
 'standard' method. Using values of 1-1.3 for either is recommended (see
 docs and references therein).
 
@@ -163,7 +279,7 @@ DIPY 0.8 Changes
 **Peaks**
 
 The module ``peaks`` is now available from ``dipy.direction`` and it can still
-be accessed from ``dipy.reconst`` but it will be completelly removed in version
+be accessed from ``dipy.reconst`` but it will be completely removed in version
 0.10.
 
 **Resample**

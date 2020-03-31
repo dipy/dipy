@@ -2,163 +2,18 @@ from copy import deepcopy
 from warnings import warn
 import types
 
-from distutils.version import LooseVersion
 from scipy.spatial.distance import cdist
 
 import numpy as np
-import nibabel as nib
 from nibabel.affines import apply_affine
-from dipy.tracking.streamlinespeed import set_number_of_points
-from dipy.tracking.streamlinespeed import length
+from nibabel.streamlines import ArraySequence as Streamlines
+from dipy.tracking.streamlinespeed import (compress_streamlines, length,
+                                           set_number_of_points)
 from dipy.tracking.distances import bundles_distances_mdf
-from dipy.tracking.streamlinespeed import compress_streamlines
 import dipy.tracking.utils as ut
-from dipy.tracking.utils import streamline_near_roi
 from dipy.core.geometry import dist_to_corner
-import dipy.align.vector_fields as vfu
-
-if LooseVersion(nib.__version__) >= '2.3':
-    from nibabel.streamlines import ArraySequence as Streamlines
-else:
-    # This patch fix a streamline bug on windows machine.
-    # For more information, look at https://github.com/nipy/nibabel/pull/597
-    # This patch can be removed when nibabel minimal version is updated to 2.3
-    # Currently, nibabel 2.3 does not exist.
-    from nibabel.streamlines import ArraySequence
-    from functools import reduce
-    from operator import mul
-
-    MEGABYTE = 1024 * 1024
-
-    class _BuildCache(object):
-        def __init__(self, arr_seq, common_shape, dtype):
-            self.offsets = list(arr_seq._offsets)
-            self.lengths = list(arr_seq._lengths)
-            self.next_offset = arr_seq._get_next_offset()
-            self.bytes_per_buf = arr_seq._buffer_size * MEGABYTE
-            # Use the passed dtype only if null data array
-            if arr_seq._data.size == 0:
-                self.dtype = dtype
-            else:
-                arr_seq._data.dtype
-            if (arr_seq.common_shape != () and
-                    common_shape != arr_seq.common_shape):
-                raise ValueError(
-                    "All dimensions, except the first one, must match exactly")
-            self.common_shape = common_shape
-            n_in_row = reduce(mul, common_shape, 1)
-            bytes_per_row = n_in_row * dtype.itemsize
-            self.rows_per_buf = max(1, self.bytes_per_buf // bytes_per_row)
-
-        def update_seq(self, arr_seq):
-            arr_seq._offsets = np.array(self.offsets)
-            arr_seq._lengths = np.array(self.lengths)
-
-    class Streamlines(ArraySequence):
-        def __init__(self, *args, **kwargs):
-            super(Streamlines, self).__init__(*args, **kwargs)
-
-        def append(self, element, cache_build=False):
-            """
-            Appends `element` to this array sequence.
-
-            Append can be a lot faster if it knows that it is appending several
-            elements instead of a single element.  In that case it can cache
-            the parameters it uses between append operations, in a "build
-            cache". To tell append to do this, use ``cache_build=True``.  If
-            you use ``cache_build=True``, you need to finalize the append
-            operations with :meth:`finalize_append`.
-
-            Parameters
-            ----------
-            element : ndarray Element to append. The shape must match already
-                inserted elements shape except for the first dimension.
-                cache_build : {False, True} Whether to save the build cache
-                from this append routine.  If True, append can assume it is the
-                only player updating `self`, and the caller must finalize
-                `self` after all append operations, with
-                ``self.finalize_append()``. Returns
-            -------
-            None Notes
-            -----
-            If you need to add multiple elements you should consider
-            `ArraySequence.extend`.
-            """
-            element = np.asarray(element)
-            if element.size == 0:
-                return
-            el_shape = element.shape
-            n_items, common_shape = el_shape[0], el_shape[1:]
-            build_cache = self._build_cache
-            in_cached_build = build_cache is not None
-            if not in_cached_build:  # One shot append, not part of sequence
-                build_cache = _BuildCache(self, common_shape, element.dtype)
-            next_offset = build_cache.next_offset
-            req_rows = next_offset + n_items
-            if self._data.shape[0] < req_rows:
-                self._resize_data_to(req_rows, build_cache)
-            self._data[next_offset:req_rows] = element
-            build_cache.offsets.append(next_offset)
-            build_cache.lengths.append(n_items)
-            build_cache.next_offset = req_rows
-            if in_cached_build:
-                return
-            if cache_build:
-                self._build_cache = build_cache
-            else:
-                build_cache.update_seq(self)
-
-        def finalize_append(self):
-            """ Finalize process of appending several elements to `self`
-            :meth:`append` can be a lot faster if it knows that it is appending
-            several elements instead of a single element.  To tell the append
-            method this is the case, use ``cache_build=True``.  This method
-            finalizes the series of append operations after a call to
-            :meth:`append` with ``cache_build=True``.
-            """
-            if self._build_cache is None:
-                return
-            self._build_cache.update_seq(self)
-            self._build_cache = None
-            self.shrink_data()
-
-        def extend(self, elements):
-            """ Appends all `elements` to this array sequence.
-            Parameters
-            ----------
-            elements : iterable of ndarrays or :class:`ArraySequence` instance
-
-                If iterable of ndarrays, each ndarray will be concatenated
-                along the first dimension then appended to the data of this
-                ArraySequence.
-                If :class:`ArraySequence` object, its data are simply appended
-                to the data of this ArraySequence.
-
-            Returns
-            -------
-            None Notes
-            -----
-            The shape of the elements to be added must match the one of the
-            data of this :class:`ArraySequence` except for the first dimension.
-            """
-            # If possible try pre-allocating memory.
-            try:
-                iter_len = len(elements)
-            except TypeError:
-                pass
-            else:  # We do know the iterable length
-                if iter_len == 0:
-                    return
-                e0 = np.asarray(elements[0])
-                n_elements = np.sum([len(e) for e in elements])
-                self._build_cache = _BuildCache(self, e0.shape[1:], e0.dtype)
-                self._resize_data_to(self._get_next_offset() + n_elements,
-                                     self._build_cache)
-
-            for e in elements:
-                self.append(e, cache_build=True)
-
-            self.finalize_append()
+from dipy.core.interpolation import (interpolate_vector_3d,
+                                     interpolate_scalar_3d)
 
 
 def unlist_streamlines(streamlines):
@@ -267,7 +122,8 @@ def deform_streamlines(streamlines,
 
     stream_in_curr_grid = transform_streamlines(streamlines,
                                                 stream_to_current_grid)
-    displacements = values_from_volume(deform_field, stream_in_curr_grid)
+    displacements = values_from_volume(deform_field, stream_in_curr_grid,
+                                       np.eye(4))
     stream_in_world = transform_streamlines(stream_in_curr_grid,
                                             current_grid_to_world)
     new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
@@ -341,7 +197,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
     return [streamlines[i] for i in index]
 
 
-def select_by_rois(streamlines, rois, include, mode=None, affine=None,
+def select_by_rois(streamlines, affine, rois, include, mode=None,
                    tol=None):
     """Select streamlines based on logical relations with several regions of
     interest (ROIs). For example, select streamlines that pass near ROI1,
@@ -351,6 +207,9 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     ----------
     streamlines : list
         A list of candidate streamlines for selection
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     rois : list or ndarray
         A list of 3D arrays, each with shape (x, y, z) corresponding to the
         shape of the brain volume, or a 4D array with shape (n_rois, x, y,
@@ -371,9 +230,6 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
         "either_end" : either of the end-points is within tol from ROI
 
         "both_end" : both end points are within tol from ROI.
-
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
     tol : float
         Distance (in the units of the streamlines, usually mm). If any
         coordinate in the streamline is within this distance from the center
@@ -409,7 +265,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     >>> mask2 = np.zeros_like(mask1)
     >>> mask1[0, 0, 0] = True
     >>> mask2[1, 0, 0] = True
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            tol=1)
     >>> list(selection) # The result is a generator
@@ -417,14 +273,14 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
            [ 1.9,  0. ,  0. ]]), array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, False],
     ...                            tol=0.87)
     >>> list(selection)
     [array([[ 0.,  0.,  0.],
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            mode="both_end",
     ...                            tol=1.0)
@@ -432,7 +288,7 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     [array([[ 0. ,  0. ,  0.9],
            [ 1.9,  0. ,  0. ]])]
     >>> mask2[0, 2, 2] = True
-    >>> selection = select_by_rois(streamlines, [mask1, mask2],
+    >>> selection = select_by_rois(streamlines, np.eye(4), [mask1, mask2],
     ...                            [True, True],
     ...                            mode="both_end",
     ...                            tol=1.0)
@@ -442,8 +298,6 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
            [ 0.,  1.,  1.],
            [ 0.,  2.,  2.]])]
     """
-    if affine is None:
-        affine = np.eye(4)
     # This calculates the maximal distance to a corner of the voxel:
     dtc = dist_to_corner(affine)
     if tol is None:
@@ -462,10 +316,10 @@ def select_by_rois(streamlines, rois, include, mode=None, affine=None,
     if mode is None:
         mode = "any"
     for sl in streamlines:
-        include = streamline_near_roi(sl, x_include_roi_coords, tol=tol,
-                                      mode=mode)
-        exclude = streamline_near_roi(sl, x_exclude_roi_coords, tol=tol,
-                                      mode=mode)
+        include = ut.streamline_near_roi(sl, x_include_roi_coords, tol=tol,
+                                         mode=mode)
+        exclude = ut.streamline_near_roi(sl, x_exclude_roi_coords, tol=tol,
+                                         mode=mode)
         if include & ~exclude:
             yield sl
 
@@ -499,7 +353,7 @@ def cluster_confidence(streamlines, max_mdf=5, subsample=12, power=1,
         The power to which the MDF distance for each streamline
         will be raised to determine how much it contributes to
         the cci. High values of power make the contribution value
-        degrade much faster. Example: a streamline with 5mm MDF
+        degrade much faster. E.g., a streamline with 5mm MDF
         similarity contributes 1/5 to the cci if power is 1, but
         only contributes 1/5^2 = 1/25 if power is 2.
     override: bool, False by default
@@ -587,8 +441,8 @@ def _orient_by_roi_list(out, roi1, roi2):
     return out
 
 
-def orient_by_rois(streamlines, roi1, roi2, in_place=False,
-                   as_generator=False, affine=None):
+def orient_by_rois(streamlines, affine, roi1, roi2, in_place=False,
+                   as_generator=False):
     """Orient a set of streamlines according to a pair of ROIs
 
     Parameters
@@ -596,6 +450,9 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     streamlines : list or generator
         List or generator of 2d arrays of 3d coordinates. Each array contains
         the xyz coordinates of a single streamline.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     roi1, roi2 : ndarray
         Binary masks designating the location of the regions of interest, or
         coordinate arrays (n-by-3 array with ROI coordinate in each row).
@@ -606,8 +463,6 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
         Default: False.
     as_generator : bool
         Whether to return a generator as output. Default: False
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
 
     Returns
     -------
@@ -627,7 +482,7 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     >>> roi2 = np.zeros_like(roi1)
     >>> roi1[0, 0, 0] = True
     >>> roi2[1, 0, 0] = True
-    >>> orient_by_rois(streamlines, roi1, roi2)
+    >>> orient_by_rois(streamlines, np.eye(4), roi1, roi2)
     [array([[ 0.,  0.,  0.],
            [ 1.,  0.,  0.],
            [ 2.,  0.,  0.]]), array([[ 0.,  0.,  0.],
@@ -641,9 +496,8 @@ def orient_by_rois(streamlines, roi1, roi2, in_place=False,
     if len(roi2.shape) == 3:
         roi2 = np.asarray(np.where(roi2.astype(bool))).T
 
-    if affine is not None:
-        roi1 = apply_affine(affine, roi1)
-        roi2 = apply_affine(affine, roi2)
+    roi1 = apply_affine(affine, roi1)
+    roi2 = apply_affine(affine, roi2)
 
     if as_generator:
         if in_place:
@@ -689,7 +543,7 @@ def _orient_by_sl_list(out, std_array, fgarray):
 
 
 def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
-                         as_generator=False, affine=None):
+                         as_generator=False):
     """
     Orient a bundle of streamlines to a standard streamline.
 
@@ -709,8 +563,6 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
         Default: False.
     as_generator : bool
         Whether to return a generator as output. Default: False
-    affine : ndarray
-        Affine transformation from voxels to streamlines. Default: identity.
 
     Returns
     -------
@@ -720,7 +572,7 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
     """
     # Start by resampling, so that distance calculation is easy:
     fgarray = set_number_of_points(streamlines,  n_points)
-    std_array =  set_number_of_points([standard],  n_points)
+    std_array = set_number_of_points([standard],  n_points)
 
     if as_generator:
         if in_place:
@@ -742,7 +594,7 @@ def orient_by_streamline(streamlines, standard, n_points=12, in_place=False,
     return _orient_by_sl_list(out, std_array, fgarray)
 
 
-def _extract_vals(data, streamlines, affine=None, threedvec=False):
+def _extract_vals(data, streamlines, affine, threedvec=False):
     """
     Helper function for use with `values_from_volume`.
 
@@ -758,18 +610,18 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         If list, len(n_streamlines) with (n_nodes, 3) array in
         each element of the list.
 
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     threedvec : bool
         Whether the last dimension has length 3. This is a special case in
-        which we can use :func:`vfu.interpolate_vector_3d` for the
-        interploation of 4D volumes without looping over the elements of the
-        last dimension.
+        which we can use :func:`dipy.core.interpolate.interpolate_vector_3d`
+        for the interploation of 4D volumes without looping over the elements
+        of the last dimension.
 
-    Return
-    ------
+    Returns
+    ---------
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline
     """
@@ -777,17 +629,15 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     if (isinstance(streamlines, list) or
             isinstance(streamlines, types.GeneratorType) or
             isinstance(streamlines, Streamlines)):
-        if affine is not None:
-            streamlines = ut.move_streamlines(streamlines,
-                                              np.linalg.inv(affine))
-
+        streamlines = transform_streamlines(streamlines,
+                                            np.linalg.inv(affine))
         vals = []
         for sl in streamlines:
             if threedvec:
-                vals.append(list(vfu.interpolate_vector_3d(
+                vals.append(list(interpolate_vector_3d(
                     data, sl.astype(np.float))[0]))
             else:
-                vals.append(list(vfu.interpolate_scalar_3d(
+                vals.append(list(interpolate_scalar_3d(
                     data, sl.astype(np.float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
@@ -795,16 +645,15 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
         sl_cat = streamlines.reshape(sl_shape[0] *
                                      sl_shape[1], 3).astype(np.float)
 
-        if affine is not None:
-            inv_affine = np.linalg.inv(affine)
-            sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
-                      inv_affine[:3, 3])
+        inv_affine = np.linalg.inv(affine)
+        sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
+                  inv_affine[:3, 3])
 
         # So that we can index in one operation:
         if threedvec:
-            vals = np.array(vfu.interpolate_vector_3d(data, sl_cat)[0])
+            vals = np.array(interpolate_vector_3d(data, sl_cat)[0])
         else:
-            vals = np.array(vfu.interpolate_scalar_3d(data, sl_cat)[0])
+            vals = np.array(interpolate_scalar_3d(data, sl_cat)[0])
         vals = np.reshape(vals, (sl_shape[0], sl_shape[1], -1))
         if vals.shape[-1] == 1:
             vals = np.reshape(vals, vals.shape[:-1])
@@ -816,7 +665,7 @@ def _extract_vals(data, streamlines, affine=None, threedvec=False):
     return vals
 
 
-def values_from_volume(data, streamlines, affine=None):
+def values_from_volume(data, streamlines, affine):
     """Extract values of a scalar/vector along each streamline from a volume.
 
     Parameters
@@ -831,14 +680,12 @@ def values_from_volume(data, streamlines, affine=None):
         If list, len(n_streamlines) with (n_nodes, 3) array in
         each element of the list.
 
-    affine : ndarray, shape (4, 4)
-        Affine transformation from voxels (image coordinates) to streamlines.
-        Default: identity. For example, if no affine is provided and the first
-        coordinate of the first streamline is ``[1, 0, 0]``, data[1, 0, 0]
-        would be returned as the value for that streamline coordinate
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
 
-    Return
-    ------
+    Returns
+    ---------
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline.
 
@@ -853,14 +700,12 @@ def values_from_volume(data, streamlines, affine=None):
     data = np.asarray(data)
     if len(data.shape) == 4:
         if data.shape[-1] == 3:
-            return _extract_vals(data, streamlines, affine=affine,
-                                 threedvec=True)
+            return _extract_vals(data, streamlines, affine, threedvec=True)
         if isinstance(streamlines, types.GeneratorType):
             streamlines = Streamlines(streamlines)
         vals = []
         for ii in range(data.shape[-1]):
-            vals.append(_extract_vals(data[..., ii], streamlines,
-                                      affine=affine))
+            vals.append(_extract_vals(data[..., ii], streamlines, affine))
 
         if isinstance(vals[-1], np.ndarray):
             return np.swapaxes(np.array(vals), 2, 1).T
@@ -874,7 +719,7 @@ def values_from_volume(data, streamlines, affine=None):
             return new_vals
 
     elif len(data.shape) == 3:
-        return _extract_vals(data, streamlines, affine=affine)
+        return _extract_vals(data, streamlines, affine)
     else:
         raise ValueError("Data needs to have 3 or 4 dimensions")
 

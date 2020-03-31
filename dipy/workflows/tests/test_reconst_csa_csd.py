@@ -4,9 +4,9 @@ import numpy as np
 from os.path import join as pjoin
 import numpy.testing as npt
 
-import nibabel as nib
 from dipy.io.peaks import load_peaks
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, save_nifti, load_nifti_data
 from dipy.core.gradients import generate_bvecs
 from nibabel.tmpdirs import TemporaryDirectory
 
@@ -27,12 +27,10 @@ def test_reconst_csd():
 def reconst_flow_core(flow):
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_64D')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0])
-        mask_img = nib.Nifti1Image(mask.astype(np.uint8), vol_img.affine)
         mask_path = pjoin(out_dir, 'tmp_mask.nii.gz')
-        nib.save(mask_img, mask_path)
+        save_nifti(mask_path, mask.astype(np.uint8), affine)
 
         reconst_flow = flow()
         for sh_order in [4, 6, 8]:
@@ -50,29 +48,29 @@ def reconst_flow_core(flow):
                                  out_dir=out_dir, extract_pam_values=True)
 
             gfa_path = reconst_flow.last_generated_outputs['out_gfa']
-            gfa_data = nib.load(gfa_path).get_data()
+            gfa_data = load_nifti_data(gfa_path)
             npt.assert_equal(gfa_data.shape, volume.shape[:-1])
 
             peaks_dir_path =\
                 reconst_flow.last_generated_outputs['out_peaks_dir']
-            peaks_dir_data = nib.load(peaks_dir_path).get_data()
+            peaks_dir_data = load_nifti_data(peaks_dir_path)
             npt.assert_equal(peaks_dir_data.shape[-1], 15)
             npt.assert_equal(peaks_dir_data.shape[:-1], volume.shape[:-1])
 
             peaks_idx_path = \
                 reconst_flow.last_generated_outputs['out_peaks_indices']
-            peaks_idx_data = nib.load(peaks_idx_path).get_data()
+            peaks_idx_data = load_nifti_data(peaks_idx_path)
             npt.assert_equal(peaks_idx_data.shape[-1], 5)
             npt.assert_equal(peaks_idx_data.shape[:-1], volume.shape[:-1])
 
             peaks_vals_path = \
                 reconst_flow.last_generated_outputs['out_peaks_values']
-            peaks_vals_data = nib.load(peaks_vals_path).get_data()
+            peaks_vals_data = load_nifti_data(peaks_vals_path)
             npt.assert_equal(peaks_vals_data.shape[-1], 5)
             npt.assert_equal(peaks_vals_data.shape[:-1], volume.shape[:-1])
 
             shm_path = reconst_flow.last_generated_outputs['out_shm']
-            shm_data = nib.load(shm_path).get_data()
+            shm_data = load_nifti_data(shm_path)
             # Test that the number of coefficients is what you would expect
             # given the order of the sh basis:
             npt.assert_equal(shm_data.shape[-1],
@@ -96,10 +94,6 @@ def reconst_flow_core(flow):
             np.savetxt(tmp_bval_path, bvals)
             np.savetxt(tmp_bvec_path, bvecs.T)
             reconst_flow._force_overwrite = True
-            with npt.assert_raises(BaseException):
-                npt.assert_warns(UserWarning, reconst_flow.run, data_path,
-                                 tmp_bval_path, tmp_bvec_path, mask_path,
-                                 out_dir=out_dir, extract_pam_values=True)
 
             if flow.get_short_name() == 'csd':
 
@@ -120,6 +114,11 @@ def reconst_flow_core(flow):
                 reconst_flow2.run(data_path, bval_path, bvec_path, mask_path,
                                   out_dir=out_dir, frf=None,
                                   roi_center=[10, 10, 10])
+            else:
+                with npt.assert_raises(BaseException):
+                    npt.assert_warns(UserWarning, reconst_flow.run, data_path,
+                                     tmp_bval_path, tmp_bvec_path, mask_path,
+                                     out_dir=out_dir, extract_pam_values=True)
 
             # test parallel implementation
             reconst_flow = flow()
@@ -132,6 +131,7 @@ def reconst_flow_core(flow):
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir,
                              parallel=True, nbr_processes=2)
+
 
 if __name__ == '__main__':
     test_reconst_csa()

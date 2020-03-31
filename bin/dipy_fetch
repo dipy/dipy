@@ -1,0 +1,7 @@
+#!python
+
+from dipy.workflows.flow_runner import run_flow
+from dipy.workflows.io import FetchFlow
+
+if __name__ == "__main__":
+    run_flow(FetchFlow())

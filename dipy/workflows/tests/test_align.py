@@ -11,8 +11,9 @@ from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform
 from dipy.align.transforms import regtransforms
 from dipy.data import get_fnames
-from dipy.io.image import save_nifti
-from dipy.io.streamline import save_trk
+from dipy.io.image import save_nifti, load_nifti_data
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
@@ -23,15 +24,13 @@ def test_reslice():
 
     with TemporaryDirectory() as out_dir:
         data_path, _, _ = get_fnames('small_25')
-        vol_img = nib.load(data_path)
-        volume = vol_img.get_data()
+        volume = load_nifti_data(data_path)
 
         reslice_flow = ResliceFlow()
         reslice_flow.run(data_path, [1.5, 1.5, 1.5], out_dir=out_dir)
 
         out_path = reslice_flow.last_generated_outputs['out_resliced']
-        out_img = nib.load(out_path)
-        resliced = out_img.get_data()
+        resliced = load_nifti_data(out_path)
 
         npt.assert_equal(resliced.shape[0] > volume.shape[0], True)
         npt.assert_equal(resliced.shape[1] > volume.shape[1], True)
@@ -43,20 +42,22 @@ def test_slr_flow():
     with TemporaryDirectory() as out_dir:
         data_path = get_fnames('fornix')
 
-        streams, hdr = nib.trackvis.read(data_path)
-        fornix = [s[0] for s in streams]
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
 
         f = Streamlines(fornix)
         f1 = f.copy()
 
         f1_path = pjoin(out_dir, "f1.trk")
-        save_trk(f1_path, Streamlines(f1), affine=np.eye(4))
+        sft = StatefulTractogram(f1, data_path, Space.RASMM)
+        save_tractogram(sft, f1_path, bbox_valid_check=False)
 
         f2 = f1.copy()
         f2._data += np.array([50, 0, 0])
 
         f2_path = pjoin(out_dir, "f2.trk")
-        save_trk(f2_path, Streamlines(f2), affine=np.eye(4))
+        sft = StatefulTractogram(f2, data_path, Space.RASMM)
+        save_tractogram(sft, f2_path, bbox_valid_check=False)
 
         slr_flow = SlrWithQbxFlow(force=True)
         slr_flow.run(f1_path, f2_path)
@@ -302,6 +303,7 @@ def test_syn_registration_flow():
         npt.assert_equal(os.path.isfile(warped_path), True)
         warped_map_path = syn_flow.last_generated_outputs['out_field']
         npt.assert_equal(os.path.isfile(warped_map_path), True)
+
 
 if __name__ == "__main__":
     npt.run_module_suite()

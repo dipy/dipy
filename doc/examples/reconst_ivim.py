@@ -1,7 +1,7 @@
 """
-============================================================
+============================
 Intravoxel incoherent motion
-============================================================
+============================
 The intravoxel incoherent motion (IVIM) model describes diffusion
 and perfusion in the signal acquired with a diffusion MRI sequence
 that contains multiple low b-values. The IVIM model can be understood
@@ -36,7 +36,10 @@ coefficients. First, we import all relevant modules:
 import matplotlib.pyplot as plt
 import numpy as np
 from dipy.reconst.ivim import IvimModel
-from dipy.data.fetcher import read_ivim
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data
 
 """
 We get an IVIM dataset using DIPY_'s data fetcher ``read_ivim``.
@@ -48,15 +51,17 @@ of b-values. In order to use this model the data should contain signals
 measured at 0 bvalue.
 """
 
-img, gtab = read_ivim()
+fraw, fbval, fbvec = get_fnames('ivim')
 
 """
-The variable ``img`` contains a nibabel NIfTI image object (with the data)
-and gtab contains a GradientTable object (information about the gradients e.g.
-b-values and b-vectors). We get the data from img using ``read_data``.
+The gtab contains a GradientTable object (information about the gradients e.g.
+b-values and b-vectors). We get the data from the file using
+``load_nifti_data``.
 """
 
-data = img.get_data()
+data = load_nifti_data(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+gtab = gradient_table(bvals, bvecs, b0_threshold=0)
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
@@ -107,16 +112,16 @@ plt.close()
 Now that we have prepared the datasets we can go forward with
 the ivim fit. We provide two methods of fitting the parameters of the IVIM
 multi-exponential model explained above. We first fit the model with a simple
-fitting approach by passing the option `fit_method='LM'`. This method uses
+fitting approach by passing the option `fit_method='trr'`. This method uses
 a two-stage approach: first, a linear fit used to get quick initial guesses
 for the parameters $\mathbf{S_{0}}$ and $\mathbf{D}$ by considering b-values
-greater than ``split_b_D`` (default: 400))and assuming a mono-exponential signal.
-This is based on the assumption that at high b-values the signal can be
-approximated as a mono exponential decay and by taking the logarithm of the signal
-values a linear fit can be obtained. Another linear fit for ``S0`` (bvals <
-``split_b_S0`` (default: 200)) follows and ``f`` is estimated using $1 -
-S0_{prime}/S0$. Then a non-linear least-squares fitting is performed to fit
-``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
+greater than ``split_b_D`` (default: 400))and assuming a mono-exponential
+signal. This is based on the assumption that at high b-values the signal can be
+approximated as a mono exponential decay and by taking the logarithm of the
+signal values a linear fit can be obtained. Another linear fit for ``S0``
+(bvals < ``split_b_S0`` (default: 200)) follows and ``f`` is estimated using
+$1 - S0_{prime}/S0$. Then a non-linear least-squares fitting is performed to
+fit ``D_star`` and ``f``. If the ``two_stage`` flag is set to ``True`` while
 initializing the model, a final non-linear least squares fitting is performed
 for all the parameters. All initializations for the model such as ``split_b_D``
 are passed while creating the ``IvimModel``. If you are using Scipy 0.17, you
@@ -127,7 +132,7 @@ For brevity, we focus on a small section of the slice as selected aboove,
 to fit the IVIM model. First, we instantiate the IvimModel object.
 """
 
-ivimmodel = IvimModel(gtab, fit_method='LM')
+ivimmodel = IvimModel(gtab, fit_method='trr')
 
 """
 To fit the model, call the `fit` method and pass the data for fitting.
@@ -185,7 +190,7 @@ def plot_map(raw_data, variable, limits, filename):
     fig.savefig(filename)
 
 """
-Let us get the various plots with `fit_method = 'LM'` so that we can visualize
+Let us get the various plots with `fit_method = 'trr'` so that we can visualize
 them in one page
 """
 
@@ -207,8 +212,8 @@ least-squares fitting on all the parameters. The results of the first and
 second optimizers are utilized as the initial values for the last step of the
 algorithm.
 
-As opposed to the `'LM'` fitting method, this approach does not need to set any
-thresholds on the bvals to differentiate between the perfusion
+As opposed to the `'trr'` fitting method, this approach does not need to set
+any thresholds on the bvals to differentiate between the perfusion
 (pseudo-diffusion) and diffusion portions and fits the parameters
 simultaneously. Making use of the three step optimization mentioned above
 increases the convergence basin for fitting the multi-exponential functions of
@@ -220,7 +225,7 @@ ivimmodel_vp = IvimModel(gtab, fit_method='VarPro')
 ivimfit_vp = ivimmodel_vp.fit(data_slice)
 
 """
-Just like the `'LM'` fit method, `'VarPro'` creates a IvimFit object which
+Just like the `'trr'` fit method, `'VarPro'` creates a IvimFit object which
 contains the parameters of the model obtained after fitting. These are
 accessible through the `model_params` attribute of the IvimFit object.
 The parameters are arranged as a 4D array, corresponding to the spatial
@@ -234,7 +239,7 @@ estimated_params = ivimfit_vp.model_params[i, j, :]
 print(estimated_params)
 
 """
-To compare the fit using `fit_method='VarPro'` and `fit_method='LM'`, we can
+To compare the fit using `fit_method='VarPro'` and `fit_method='trr'`, we can
 plot one voxel's signal and the model fit using both methods.
 
 We will use the `predict` method of the IvimFit objects, to get the predicted
@@ -246,13 +251,13 @@ fig, ax = plt.subplots(1)
 ax.scatter(gtab.bvals, data_slice[i, j, :],
            color="green", label="Measured signal")
 
-ivim_lm_predict = ivimfit.predict(gtab)[i, j, :]
+ivim_trr_predict = ivimfit.predict(gtab)[i, j, :]
 
-ax.plot(gtab.bvals, ivim_lm_predict, label="LM prediction")
+ax.plot(gtab.bvals, ivim_trr_predict, label="trr prediction")
 
 S0_est, f_est, D_star_est, D_est = ivimfit.model_params[i, j, :]
 
-text_fit = """LM param estimates: \n S0={:06.3f} f={:06.4f}\n
+text_fit = """trr param estimates: \n S0={:06.3f} f={:06.4f}\n
             D*={:06.5f} D={:06.5f}""".format(S0_est, f_est, D_star_est, D_est)
 
 ax.text(0.65, 0.80, text_fit, horizontalalignment='center',
@@ -342,4 +347,5 @@ References:
                (2016).
 
 .. include:: ../links_names.inc
+
 """

@@ -1,5 +1,4 @@
 # init for io routines
-from __future__ import division, print_function, absolute_import
 
 from .gradients import read_bvals_bvecs
 from .dpy import Dpy

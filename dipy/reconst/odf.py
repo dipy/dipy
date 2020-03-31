@@ -1,4 +1,4 @@
-from __future__ import division, print_function, absolute_import
+
 from dipy.reconst.base import ReconstModel, ReconstFit
 import numpy as np
 

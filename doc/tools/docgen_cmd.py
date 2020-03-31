@@ -117,7 +117,7 @@ if __name__ == '__main__':
                       f.lower().startswith("dipy_")]
 
     workflow_desc = {}
-    # We get all workflows class obj in a dictionnary
+    # We get all workflows class obj in a dictionary
     for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
         module_name = inspect.getmodulename(path_file)
         if module_name is None:
@@ -161,6 +161,7 @@ if __name__ == '__main__':
     # generate index.rst
     print("Generating index.rst")
     with open(pjoin(outdir, "index.rst"), "w") as index:
+        index.write(".. _workflows_reference:\n\n")
         index.write("Command Line Utilities Reference\n")
         index.write("================================\n\n")
         index.write(".. toctree::\n\n")

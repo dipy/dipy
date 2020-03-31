@@ -7,8 +7,8 @@ QuickBundles [Garyfallidis12]_ is a flexible algorithm that requires only a
 distance metric and an adjacency threshold to perform clustering. There is a
 wide variety of metrics that could be used to cluster streamlines.
 
-The purpose of this tutorial is to show how to easily create new ``Feature`` and
-new ``Metric`` classes that can be used by QuickBundles.
+The purpose of this tutorial is to show how to easily create new ``Feature``
+and new ``Metric`` classes that can be used by QuickBundles.
 
 .. _clustering-framework:
 
@@ -102,13 +102,16 @@ We start by loading the fornix streamlines.
 """
 
 import numpy as np
-from nibabel import trackvis as tv
 from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
+from dipy.tracking.streamline import Streamlines
 from dipy.viz import window, actor
 
 fname = get_fnames('fornix')
-streams, hdr = tv.read(fname)
-streamlines = [i[0] for i in streams]
+fornix = load_tractogram(fname, 'same',
+                         bbox_valid_check=False).streamlines
+
+streamlines = Streamlines(fornix)
 
 """
 Perform QuickBundles clustering using the metric
@@ -209,13 +212,14 @@ We start by loading the fornix streamlines.
 """
 
 import numpy as np
-from nibabel import trackvis as tv
 from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
+from dipy.tracking.streamline import Streamlines
 from dipy.viz import window, actor
 
 fname = get_fnames('fornix')
-streams, hdr = tv.read(fname)
-streamlines = [i[0] for i in streams]
+fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
+streamlines = fornix.streamlines
 
 """
 Perform QuickBundles clustering using our metric ``CosineMetric``.

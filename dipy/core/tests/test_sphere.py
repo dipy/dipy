@@ -1,25 +1,22 @@
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import numpy.testing as nt
+import pytest
 import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
-                              faces_from_sphere_vertices, HemiSphere,
-                              disperse_charges, _get_forces,
-                              unit_octahedron, unit_icosahedron,
-                              hemi_icosahedron)
-from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
+                              faces_from_sphere_vertices, disperse_charges,
+                              disperse_charges_alt, _get_forces,
+                              _get_forces_alt, unit_octahedron,
+                              unit_icosahedron, hemi_icosahedron)
+from dipy.core.geometry import cart2sphere, vector_norm
+from dipy.core.sphere_stats import random_uniform_on_sphere
+from dipy.utils.optpkg import optional_package
 
-from numpy.testing.decorators import skipif
-
-try:
+delaunay, have_delaunay, _ = optional_package('scipy.spatial.Delaunay')
+if have_delaunay:
     from scipy.spatial import Delaunay
-except ImportError:
-    needs_delaunay = skipif(True, "Need scipy.spatial.Delaunay")
-else:
-    needs_delaunay = skipif(False)
+
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
@@ -111,7 +108,8 @@ def test_unique_sets():
     nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
@@ -127,7 +125,8 @@ def test_sphere_attrs():
     nt.assert_array_almost_equal(s.z, verts[:, 2])
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_edges_faces():
     s = Sphere(xyz=verts)
     faces = oct_faces
@@ -145,7 +144,8 @@ def test_edges_faces():
                     array_to_set([[0, 1]]))
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_sphere_subdivide():
     sphere1 = unit_octahedron.subdivide(4)
     sphere2 = Sphere(xyz=sphere1.vertices)
@@ -177,7 +177,8 @@ def test_hemisphere_find_closest():
                         ii)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_subdivide():
 
     def flip(vertices):
@@ -228,7 +229,8 @@ def test_hemisphere_constructor():
     nt.assert_array_almost_equal(s0.phi, phiU)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_mirror():
     verts = [[0, 0, 1],
              [0, 1, 0],
@@ -257,17 +259,18 @@ def test_mirror():
         nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
 
 
-@needs_delaunay
+@pytest.mark.skipif(not have_delaunay,
+                    reason="Requires SCIPY.SPATIAL.DELAUNAY")
 def test_hemisphere_faces():
 
     t = (1 + np.sqrt(5)) / 2
     vertices = np.array(
-        [[ -t, -1,  0],
-         [ -t,  1,  0],
-         [  1,  0,  t],
-         [ -1,  0,  t],
-         [  0,  t,  1],
-         [  0, -t,  1],
+        [[-t, -1, 0],
+         [-t, 1, 0],
+         [1, 0, t],
+         [-1, 0, t],
+         [0, t, 1],
+         [0, -t, 1],
          ])
     vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
@@ -359,29 +362,26 @@ def test_disperse_charges():
     nt.assert_array_almost_equal(norms, 1)
 
 
-def test_interp_rbf():
-    def data_func(s, a, b):
-        return a * np.cos(s.theta) + b * np.sin(s.phi)
+def test_disperse_charges_alt():
+    # Create a random set of points
+    num_points = 3
+    init_pointset = random_uniform_on_sphere(n=num_points, coords='xyz')
 
-    from dipy.core.sphere import Sphere, interp_rbf
-    import numpy as np
-    s0 = create_unit_sphere(3)
-    s1 = create_unit_sphere(4)
-    for a, b in zip([1, 2, 0.5], [1, 0.5, 2]):
-        data = data_func(s0, a, b)
-        expected = data_func(s1, a, b)
-        interp_data_a = interp_rbf(data, s0, s1, norm="angle")
-        nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
+    # Compute the associated electrostatic potential
+    init_pointset = init_pointset.reshape(init_pointset.shape[0] * 3)
+    init_charges_potential = _get_forces_alt(init_pointset)
 
-    # Test that using the euclidean norm raises a warning
-    # (following
-    # https://docs.python.org/2/library/warnings.html#testing-warnings)
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        interp_rbf(data, s0, s1, norm="euclidean_norm")
-        nt.assert_(len(w) == 1)
-        nt.assert_(issubclass(w[-1].category, DeprecationWarning))
-        nt.assert_("deprecated" in str(w[-1].message))
+    # Disperse charges
+    init_pointset = init_pointset.reshape(3, 3)
+    dispersed_pointset = disperse_charges_alt(init_pointset, 10)
+
+    # Compute the associated electrostatic potential
+    dispersed_pointset = dispersed_pointset.reshape(init_pointset.shape[0] * 3)
+    dispersed_charges_potential = _get_forces_alt(dispersed_pointset)
+
+    # Verify that the potential of the optimal configuration is smaller than
+    # that of the original configuration
+    nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
 
 
 if __name__ == "__main__":

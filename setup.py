@@ -26,8 +26,8 @@ if 'force_setuptools' not in globals():
 if force_setuptools:
     import setuptools
 
-# Import distutils _after_ potential setuptools import above, and after removing
-# MANIFEST
+# Import distutils _after_ potential setuptools import above, and after
+# removing MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
 
@@ -50,14 +50,12 @@ if using_setuptools:
     # filenames to .c filenames, and we probably don't have the .c files.
     sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
     # Set setuptools extra arguments
-    # We need nosetests for numpy.testing<=1.15
     extra_setuptools_args = dict(
-        tests_require=['pytest', 'nose'],
-        test_suite='nose.collector',
+        tests_require=['pytest'],
         zip_safe=False,
         extras_require=dict(
             doc=['Sphinx>=1.0'],
-            test=['pytest', 'nose>=0.10.1']))
+            test=['pytest']))
 
 # Define extensions
 EXTS = []
@@ -66,6 +64,7 @@ EXTS = []
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
 for modulename, other_sources, language in (
+        ('dipy.core.interpolation', [], 'c'),
         ('dipy.direction.pmf', [], 'c'),
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
@@ -76,10 +75,9 @@ for modulename, other_sources, language in (
         ('dipy.reconst.quick_squash', [], 'c'),
         ('dipy.tracking.distances', [], 'c'),
         ('dipy.tracking.streamlinespeed', [], 'c'),
-        ('dipy.tracking.local.localtrack', [], 'c'),
-        ('dipy.tracking.local.direction_getter', [], 'c'),
-        ('dipy.tracking.local.tissue_classifier', [], 'c'),
-        ('dipy.tracking.local.interpolation', [], 'c'),
+        ('dipy.tracking.localtrack', [], 'c'),
+        ('dipy.tracking.direction_getter', [], 'c'),
+        ('dipy.tracking.stopping_criterion', [], 'c'),
         ('dipy.tracking.vox2track', [], 'c'),
         ('dipy.tracking.propspeed', [], 'c'),
         ('dipy.tracking.fbcmeasures', [], 'c'),
@@ -108,11 +106,11 @@ for modulename, other_sources, language in (
                           language=language,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
-# Do our own build and install time dependency checking. setup.py gets called in
-# many different ways, and may be called just to collect information (egg_info).
-# We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec We may
-# make tripwire versions of build_ext, build_py, install
+# Do our own build and install time dependency checking. setup.py gets called
+# in many different ways, and may be called just to collect information
+# (egg_info). We need to set up tripwires to raise errors when actually doing
+# things, like building, rather than unconditionally in the setup.py import or
+# exec We may make tripwire versions of build_ext, build_py, install
 need_cython = True
 pybuilder = get_comrec_build('dipy')
 # Cython is a dependency for building extensions, iff we don't have stamped
@@ -192,8 +190,6 @@ def main(**extra_args):
                     'dipy.direction',
                     'dipy.direction.tests',
                     'dipy.tracking',
-                    'dipy.tracking.local',
-                    'dipy.tracking.local.tests',
                     'dipy.tracking.tests',
                     'dipy.tracking.benchmarks',
                     'dipy.reconst',
@@ -207,12 +203,9 @@ def main(**extra_args):
                     'dipy.testing.tests',
                     'dipy.boots',
                     'dipy.data',
-                    'dipy.utils',
                     'dipy.data.tests',
+                    'dipy.utils',
                     'dipy.utils.tests',
-                    'dipy.fixes',
-                    'dipy.external',
-                    'dipy.external.tests',
                     'dipy.segment',
                     'dipy.segment.benchmarks',
                     'dipy.segment.tests',
@@ -223,18 +216,21 @@ def main(**extra_args):
                     'dipy.denoise',
                     'dipy.denoise.tests',
                     'dipy.workflows',
-                    'dipy.workflows.tests'],
+                    'dipy.workflows.tests',
+                    'dipy.nn',
+                    'dipy.nn.tests'],
 
           ext_modules=EXTS,
+          python_requires=">= 3.5",
           # The package_data spec has no effect for me (on python 2.6) -- even
-          # changing to data_files doesn't get this stuff included in the source
-          # distribution -- not sure if it has something to do with the magic
-          # above, but distutils is surely the worst piece of code in all of
-          # python -- duplicating things into MANIFEST.in but this is admittedly
-          # only a workaround to get things started -- not a solution
-          package_data={'dipy':
-                            [pjoin('data', 'files', '*')
-                             ]},
+          # changing to data_files doesn't get this stuff included in the
+          # source distribution -- not sure if it has something to do with the
+          # magic above, but distutils is surely the worst piece of code in
+          # all of python -- duplicating things into MANIFEST.in but this is
+          # admittedly only a workaround to get things started -- not a
+          # solution
+          package_data={'dipy': [pjoin('data', 'files', '*')],
+                        },
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc', 'examples', '*.py')))],
           scripts=glob(pjoin('bin', 'dipy_*')),

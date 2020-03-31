@@ -1,7 +1,4 @@
-from __future__ import division, print_function
-
 import numpy as np
-import nibabel as nib
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
                            assert_array_almost_equal)
@@ -10,6 +7,7 @@ from dipy.denoise.noise_estimate import _piesno_3D
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 import dipy.data as dpd
 import dipy.core.gradients as dpg
+from dipy.io.image import load_nifti_data
 
 
 def test_inv_nchi():
@@ -30,7 +28,7 @@ def test_inv_nchi():
 def test_piesno():
     # Values taken from hispeed.OptimalPIESNO with the test data
     # in the package computed in matlab
-    test_piesno_data = nib.load(dpd.get_fnames("test_piesno")).get_data()
+    test_piesno_data = load_nifti_data(dpd.get_fnames("test_piesno"))
     sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10,
                    return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)

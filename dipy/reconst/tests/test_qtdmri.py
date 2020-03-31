@@ -1,17 +1,20 @@
 import numpy as np
-from dipy.data import get_gtab_taiwan_dsi
+import scipy.integrate as integrate
+
 from numpy.testing import (assert_,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
                            assert_raises,
                            run_module_suite)
-from dipy.reconst import qtdmri, mapmri
-from dipy.sims.voxel import MultiTensor
-from dipy.data import get_sphere
-from dipy.sims.voxel import add_noise
-import scipy.integrate as integrate
+import pytest
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
+from dipy.data import get_gtab_taiwan_dsi, get_sphere
+from dipy.reconst import qtdmri, mapmri
+from dipy.sims.voxel import multi_tensor, add_noise
+
+needs_cvxpy = pytest.mark.skipif(not qtdmri.have_cvxpy,
+                                 reason="REQUIRES CVXPY")
 
 
 def generate_gtab4D(number_of_tau_shells=4, delta=0.01):
@@ -35,8 +38,8 @@ def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=1.0, angles=angl,
-                            fractions=[50, 50], snr=None)
+    S, _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl,
+                        fractions=[50, 50], snr=None)
     return S
 
 
@@ -158,7 +161,7 @@ def test_normalization_time():
 
 
 def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
-    # generate qt-scheme and arbitary synthetic crossing data.
+    # generate qt-scheme and arbitrary synthetic crossing data.
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S = generate_signal_crossing(gtab_4d, l1, l2, l3)
@@ -189,7 +192,7 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
     assert_array_almost_equal(pdf_aniso / pdf_aniso.max(),
                               pdf_iso / pdf_aniso.max())
 
-    # same norm of the laplacian
+    # same norm of the Laplacian
     norm_laplacian_aniso = qtdmri_fit_cart.norm_of_laplacian_signal()
     norm_laplacian_iso = qtdmri_fit_sphere.norm_of_laplacian_signal()
     assert_almost_equal(norm_laplacian_aniso / norm_laplacian_aniso,
@@ -343,7 +346,7 @@ def test_calling_spherical_laplacian_with_precomputed_matrices(
                               laplacian_matrix_regular)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     gtab_4d = generate_gtab4D()
     tau = gtab_4d.tau
@@ -402,7 +405,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     assert_almost_equal(float(E_q0_first_tau), 1.)
     assert_almost_equal(float(E_q0_last_tau), 1.)
 
-    # test if maginal ODF integral in sh is equal to one
+    # test if marginal ODF integral in sh is equal to one
     # Integral of Y00 spherical harmonic is 1 / (2 * np.sqrt(np.pi))
     # division with this results in normalization
     odf_sh = qtdmri_fit_lap.odf_sh(s=0, tau=tau.max())
@@ -410,7 +413,7 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
     assert_almost_equal(odf_integral, 1.)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -434,7 +437,7 @@ def test_laplacian_reduces_laplacian_norm(radial_order=4, time_order=2):
     assert_(laplacian_norm_no_reg > laplacian_norm_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
                                                     time_order=2):
     gtab_4d = generate_gtab4D()
@@ -460,7 +463,7 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
     assert_(laplacian_norm_no_reg > laplacian_norm_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -478,7 +481,7 @@ def test_laplacian_GCV_higher_weight_with_noise(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.lopt > qtdmri_fit_no_noise.lopt)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -505,7 +508,7 @@ def test_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_(sparsity_density_no_reg > sparsity_density_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -534,7 +537,7 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
     assert_(sparsity_density_no_reg > sparsity_density_reg)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_l1_CV(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -548,7 +551,7 @@ def test_l1_CV(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.alpha >= 0)
 
 
-@np.testing.dec.skipif(not qtdmri.have_cvxpy)
+@needs_cvxpy
 def test_elastic_GCV_CV(radial_order=4, time_order=2):
     gtab_4d = generate_gtab4D()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -564,7 +567,7 @@ def test_elastic_GCV_CV(radial_order=4, time_order=2):
     assert_(qtdmri_fit_noise.alpha >= 0)
 
 
-@np.testing.dec.skipif(not qtdmri.have_plt)
+@pytest.mark.skipif(not qtdmri.have_plt, reason="Requires Matplotlib")
 def test_visualise_gradient_table_G_Delta_rainbow():
     gtab_4d = generate_gtab4D()
     qtdmri.visualise_gradient_table_G_Delta_rainbow(gtab_4d)

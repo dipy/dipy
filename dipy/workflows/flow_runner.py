@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 #  Disabling the FutureWarning from h5py below.
 #  This disables the FutureWarning warning for all the workflows.
@@ -12,7 +11,7 @@ from dipy.workflows.base import IntrospectiveArgumentParser
 
 
 def get_level(lvl):
-    """ Transforms the loggin level passed on the commandline into a proper
+    """ Transforms the logging level passed on the commandline into a proper
     logging level name.
     """
     try:
@@ -47,7 +46,7 @@ def run_flow(flow):
                         help='Prepend mixed input names to output names.')
 
     # Add logging parameters common to all workflows
-    msg = 'Log messsages display level. Accepted options include CRITICAL,'
+    msg = 'Log messages display level. Accepted options include CRITICAL,'
     msg += ' ERROR, WARNING, INFO, DEBUG and NOTSET (default INFO).'
     parser.add_argument('--log_level', action='store', dest='log_level',
                         metavar='string', required=False, default='INFO',
@@ -76,8 +75,8 @@ def run_flow(flow):
     del args['mix_names']
 
     # Remove subflows related params
-    for sub_flow, params_dict in sub_flows_dicts.items():
-        for key, _ in params_dict.items():
+    for params_dict in list(sub_flows_dicts.values()):
+        for key in list(params_dict.keys()):
             if key in args.keys():
                 params_dict[key] = args.pop(key)
 

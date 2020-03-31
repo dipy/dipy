@@ -1,4 +1,3 @@
-from __future__ import division
 
 from warnings import warn
 import numpy as np
@@ -8,7 +7,7 @@ from dipy.reconst.csdeconv import csdeconv
 from dipy.reconst.shm import real_sph_harm
 from scipy.special import gamma, hyp1f1
 from dipy.core.geometry import cart2sphere
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.optimize import leastsq
 from dipy.utils.optpkg import optional_package
@@ -39,6 +38,7 @@ class ForecastModel(OdfModel, Cache):
     .. [3] Zucchelli E. et al., "A generalized SMT-based framework for
            Diffusion MRI microstructural model estimation", MICCAI Workshop
            on Computational DIFFUSION MRI (CDMRI), 2017.
+
     Notes
     -----
     The implementation of FORECAST may require CVXPY (http://www.cvxpy.org/).
@@ -112,25 +112,24 @@ class ForecastModel(OdfModel, Cache):
         with respect to the FORECAST and compute the fODF, parallel and
         perpendicular diffusivity.
 
-        >>> from dipy.data import get_sphere, get_3shell_gtab
+        >>> from dipy.data import default_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
-        >>> from dipy.sims.voxel import MultiTensor
-        >>> mevals = np.array(([0.0017, 0.0003, 0.0003], 
+        >>> from dipy.sims.voxel import multi_tensor
+        >>> mevals = np.array(([0.0017, 0.0003, 0.0003],
         ...                    [0.0017, 0.0003, 0.0003]))
         >>> angl = [(0, 0), (60, 0)]
-        >>> data, sticks = MultiTensor(gtab,
-        ...                            mevals,
-        ...                            S0=100.0,
-        ...                            angles=angl,
-        ...                            fractions=[50, 50],
-        ...                            snr=None)
+        >>> data, sticks = multi_tensor(gtab,
+        ...                             mevals,
+        ...                             S0=100.0,
+        ...                             angles=angl,
+        ...                             fractions=[50, 50],
+        ...                             snr=None)
         >>> from dipy.reconst.forecast import ForecastModel
         >>> fm = ForecastModel(gtab, sh_order=6)
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
-        >>> sphere = get_sphere('symmetric724')
-        >>> fodf = f_fit.odf(sphere)
+        >>> fodf = f_fit.odf(default_sphere)
         """
         OdfModel.__init__(self, gtab)
 
@@ -146,7 +145,7 @@ class ForecastModel(OdfModel, Cache):
             raise ValueError(msg)
 
         if sphere is None:
-            sphere = get_sphere('repulsion724')
+            sphere = default_sphere
             self.vertices = sphere.vertices[
                 0:int(sphere.vertices.shape[0]/2), :]
 
@@ -193,7 +192,7 @@ class ForecastModel(OdfModel, Cache):
 
         # calculates the mean signal at each b_values
         means = find_signal_means(self.b_unique,
-                                  data_single_b0, 
+                                  data_single_b0,
                                   self.one_0_bvals,
                                   self.srm,
                                   self.lb_matrix_signal)
@@ -335,7 +334,7 @@ class ForecastFit(OdfFit):
         Parameters
         ----------
         gtab : GradientTable, optional
-            gradient directions and bvalues container class. 
+            gradient directions and bvalues container class.
         S0 : float, optional
             the signal at b-value=0
 
@@ -343,7 +342,7 @@ class ForecastFit(OdfFit):
         if gtab is None:
             gtab = self.gtab
 
-        M_diff = forecast_matrix(self.sh_order,  
+        M_diff = forecast_matrix(self.sh_order,
                                  self.d_par,
                                  self.d_perp,
                                  gtab.bvals)
@@ -417,7 +416,7 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
 
 
 def forecast_error_func(x, b_unique, E):
-    r""" Calculates the difference between the mean signal calculated using 
+    r""" Calculates the difference between the mean signal calculated using
     the parameter vector x and the average signal E using FORECAST and SMT
     """
     d_par = np.cos(x[0])**2 * 3e-03
@@ -443,7 +442,7 @@ def psi_l(l, b):
 
 
 def forecast_matrix(sh_order,  d_par, d_perp, bvals):
-    r"""Compute the FORECAST radial matrix 
+    r"""Compute the FORECAST radial matrix
     """
     n_c = int((sh_order + 1) * (sh_order + 2) / 2)
     M = np.zeros((bvals.shape[0], n_c))

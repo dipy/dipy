@@ -1,12 +1,8 @@
-from __future__ import division, print_function, absolute_import
+import logging
 from warnings import warn
 
 import numpy as np
-try:
-    from scipy.linalg import polar
-except ImportError:   # Some elderly scipy doesn't have polar
-    from dipy.fixes.scipy import polar
-from scipy.linalg import inv
+from scipy.linalg import inv, polar
 
 from dipy.io import gradients as io
 from dipy.core.onetime import auto_attr
@@ -14,6 +10,8 @@ from dipy.core.geometry import vector_norm
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
+
+logger = logging.getLogger(__name__)
 
 
 class GradientTable(object):
@@ -105,12 +103,12 @@ class GradientTable(object):
 
     @property
     def info(self):
-        print('B-values shape (%d,)' % self.bvals.shape)
-        print('         min %f ' % self.bvals.min())
-        print('         max %f ' % self.bvals.max())
-        print('B-vectors shape (%d, %d)' % self.bvecs.shape)
-        print('         min %f ' % self.bvecs.min())
-        print('         max %f ' % self.bvecs.max())
+        logger.info('B-values shape (%d,)' % self.bvals.shape)
+        logger.info('         min %f ' % self.bvals.min())
+        logger.info('         max %f ' % self.bvals.max())
+        logger.info('B-vectors shape (%d, %d)' % self.bvecs.shape)
+        logger.info('         min %f ' % self.bvecs.min())
+        logger.info('         max %f ' % self.bvecs.max())
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
@@ -165,7 +163,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     # checking for the correctness of bvals
     if b0_threshold < bvals.min():
         warn("b0_threshold (value: {0}) is too low, increase your \
-             b0_threshold. It should higher than the first b0 value \
+             b0_threshold. It should be higher than the lowest b0 value \
              ({1}).".format(b0_threshold, bvals.min()))
 
     bvecs = np.where(np.isnan(bvecs), 0, bvecs)
@@ -446,7 +444,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                                            atol=atol)
 
 
-def reorient_bvecs(gtab, affines):
+def reorient_bvecs(gtab, affines, atol=1e-2):
     """Reorient the directions in a GradientTable.
 
     When correcting for motion, rotation of the diffusion-weighted volumes
@@ -465,6 +463,7 @@ def reorient_bvecs(gtab, affines):
         In both cases, the transformations encode the rotation that was applied
         to the image corresponding to one of the non-zero gradient directions
         (ordered according to their order in `gtab.bvecs[~gtab.b0s_mask]`)
+    atol: see gradient_table()
 
     Returns
     -------
@@ -500,7 +499,9 @@ def reorient_bvecs(gtab, affines):
 
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
-    return gradient_table(gtab.bvals, return_bvecs)
+    return gradient_table(gtab.bvals, return_bvecs, big_delta=gtab.big_delta, 
+                          small_delta=gtab.small_delta,
+                          b0_threshold=gtab.b0_threshold, atol=atol)
 
 
 def generate_bvecs(N, iters=5000):

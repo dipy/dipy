@@ -4,40 +4,39 @@ from math import factorial
 
 from scipy.special import gamma
 import scipy.integrate as integrate
+import warnings
 import numpy as np
 from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
-                           assert_equal,
+                           assert_equal, assert_,
                            run_module_suite,
                            assert_raises)
-
-from dipy.data import get_gtab_taiwan_dsi
+import pytest
+from dipy.core.sphere_stats import angular_similarity
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.data import get_gtab_taiwan_dsi, default_sphere
+from dipy.direction.peaks import peak_directions
 from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
-from dipy.sims.voxel import (MultiTensor,
-                             multi_tensor_pdf,
-                             single_tensor,
-                             cylinders_and_ball_soderman)
-from dipy.data import get_sphere
-from dipy.sims.voxel import add_noise
-from dipy.core.sphere_stats import angular_similarity
-from dipy.direction.peaks import peak_directions
 from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.shm import sh_to_sf
+from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
+                             single_tensor, cylinders_and_ball_soderman)
+
 
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
     return f
 
+
 def generate_signal_crossing(gtab, lambda1, lambda2, lambda3, angle2=60):
     mevals = np.array(([lambda1, lambda2, lambda3],
                        [lambda1, lambda2, lambda3]))
     angl = [(0, 0), (angle2, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
-                            fractions=[50, 50], snr=None)
+    S, sticks = multi_tensor(gtab, mevals, S0=100.0, angles=angl,
+                             fractions=[50, 50], snr=None)
     return S, sticks
 
 
@@ -246,7 +245,6 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 2)
 
 
-
 def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     D = 0.7e-3
@@ -287,7 +285,11 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     # test if computation time is shorter (except on Windows):
     if not platform.system() == "Windows":
         assert_equal(time_scale_stat_reg_stat < time_scale_adapt_reg_stat,
-                    True)
+                     True,
+                     "mapf_scale_stat_reg_stat ({0}s) slower than "
+                     "mapf_scale_adapt_reg_stat ({1}s). It should be the"
+                     " opposite.".format(time_scale_stat_reg_stat,
+                                         time_scale_adapt_reg_stat))
 
     # check if the fitted signal is the same
     assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
@@ -317,7 +319,7 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3)
-    sphere = get_sphere('symmetric724')
+    sphere = default_sphere
     # test MAPMRI fitting
 
     mapm = MapmriModel(gtab, radial_order=radial_order,
@@ -414,9 +416,19 @@ def test_mapmri_metrics_anisotropic(radial_order=6):
     assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
     assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
     assert_almost_equal(mapfit.rtop(), rtop_gt, 5)
-    assert_almost_equal(mapfit.ng(), 0., 5)
-    assert_almost_equal(mapfit.ng_parallel(), 0., 5)
-    assert_almost_equal(mapfit.ng_perpendicular(), 0., 5)
+    with warnings.catch_warnings(record=True) as w:
+        ng = mapfit.ng()
+        ng_parallel = mapfit.ng_parallel()
+        ng_perpendicular = mapfit.ng_perpendicular()
+        assert_equal(len(w), 3)
+        for l_w in w:
+            assert_(issubclass(l_w.category, UserWarning))
+            assert_("model bval_threshold must be lower than 2000".lower()
+                    in str(l_w.message).lower())
+
+    assert_almost_equal(ng, 0., 5)
+    assert_almost_equal(ng_parallel, 0., 5)
+    assert_almost_equal(ng_perpendicular, 0., 5)
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
@@ -620,7 +632,7 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
     assert_almost_equal(radius_estimated, radius_gt, 4)
 
 
-@np.testing.dec.skipif(not mapmri.have_cvxpy)
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
 def test_positivity_constraint(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -773,8 +785,8 @@ def test_laplacian_regularization(radial_order=6):
 def test_mapmri_odf(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
 
-    # load symmetric 724 sphere
-    sphere = get_sphere('symmetric724')
+    # load repulsion 724 sphere
+    sphere = default_sphere
 
     # load icosahedron sphere
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
@@ -783,7 +795,7 @@ def test_mapmri_odf(radial_order=6):
     mapmod = MapmriModel(gtab, radial_order=radial_order,
                          laplacian_regularization=True,
                          laplacian_weighting=0.01)
-    # symmetric724
+    # repulsion724
     sphere2 = create_unit_sphere(5)
     mapfit = mapmod.fit(data)
     odf = mapfit.odf(sphere)

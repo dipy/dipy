@@ -1,16 +1,32 @@
 import numpy as np
-import scipy as sp
 import scipy.special as sps
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
-from dipy.denoise.localpca import localpca
+from dipy.denoise.localpca import (localpca, mppca, genpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
-from dipy.core.sphere import disperse_charges, HemiSphere
-from dipy.sims.voxel import multi_tensor
+
+
+def setup_module():
+    global gtab
+
+    # generate a gradient table for phantom data
+    directions8 = generate_bvecs(8)
+    directions30 = generate_bvecs(30)
+    directions60 = generate_bvecs(60)
+    # Create full dataset parameters
+    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
+    # 1000 and 60 directions for b-value 2000)
+    bvals = np.hstack((np.zeros(6),
+                       300 * np.ones(8),
+                       1000 * np.ones(30),
+                       2000 * np.ones(60)))
+    bvecs = np.vstack((np.zeros((6, 3)),
+                       directions8, directions30, directions60))
+    gtab = gradient_table(bvals, bvecs)
 
 
 def rfiw_phantom(gtab, snr=None):
@@ -27,13 +43,13 @@ def rfiw_phantom(gtab, snr=None):
     slice_ind[3, 4:7, :] = 8
     slice_ind[3, 7, :] = 9
 
-    # Define tisse diffusion parameters
+    # Define tissue diffusion parameters
     # Restricted diffusion
     ADr = 0.99e-3
     RDr = 0.0
     # Hindered diffusion
     ADh = 2.26e-3
-    RDh = 0.87
+    RDh = 0.87e-3
     # S0 value for tissue
     S1 = 50
     # Fraction between Restricted and Hindered diffusion
@@ -54,7 +70,7 @@ def rfiw_phantom(gtab, snr=None):
     # tissue volume fractions have to be adjusted to the measured f values when
     # constant S0 are assumed constant. Doing this correction, simulations will
     # be analogous to simulates that S0 are different for each media. (For more
-    # datails on this contact the phantom designer)
+    # details on this contact the phantom designer)
     f1 = f * S1 / S0
 
     mevals = np.array([[ADr, RDr, RDr], [ADh, RDh, RDh],
@@ -76,24 +92,6 @@ def rfiw_phantom(gtab, snr=None):
         n2 = np.random.normal(0, sigma, size=DWI.shape)
         return [np.sqrt((DWI / np.sqrt(2) + n1)**2 +
                         (DWI / np.sqrt(2) + n2)**2), sigma]
-
-
-def gen_gtab():
-    # generate a gradient table for phantom data
-    directions8 = generate_bvecs(8)
-    directions30 = generate_bvecs(30)
-    directions60 = generate_bvecs(60)
-    # Create full dataset parameters
-    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
-    # 1000 and 60 directions for b-value 2000)
-    bvals = np.hstack((np.zeros(6),
-                       300 * np.ones(8),
-                       1000 * np.ones(30),
-                       2000 * np.ones(60)))
-    bvecs = np.vstack((np.zeros((6, 3)),
-                       directions8, directions30, directions60))
-    gtab = gradient_table(bvals, bvecs)
-    return gtab
 
 
 def test_lpca_static():
@@ -186,10 +184,9 @@ def test_lpca_wrong():
 
 
 def test_phantom():
-    gtab = gen_gtab()
     DWI_clean = rfiw_phantom(gtab, snr=None)
     DWI, sigma = rfiw_phantom(gtab, snr=30)
-    # To test without rician correction
+    # To test without Rician correction
     temp = (DWI_clean / sigma)**2
     DWI_clean_wrc = (sigma * np.sqrt(np.pi / 2) * np.exp(-0.5 * temp) *
                      ((1 + 0.5 * temp) * sps.iv(0, 0.25 * temp) + 0.5 * temp *
@@ -243,17 +240,98 @@ def test_phantom():
 
 
 def test_lpca_ill_conditioned():
-    gtab = gen_gtab()
     DWI, sigma = rfiw_phantom(gtab, snr=30)
-    assert_raises(ValueError, localpca, DWI, sigma, patch_radius=1)
+    for patch_radius in [1, [1, 1, 1]]:
+        assert_raises(ValueError, localpca, DWI, sigma,
+                      patch_radius=patch_radius)
+
+
+def test_lpca_radius_wrong_shape():
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    for patch_radius in [[2, 2], [2, 2, 2, 2]]:
+        assert_raises(ValueError, localpca, DWI, sigma,
+                      patch_radius=patch_radius)
 
 
 def test_lpca_sigma_wrong_shape():
-    gtab = gen_gtab()
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     # If sigma is 3D but shape is not like DWI.shape[:-1], an error is raised:
     sigma = np.zeros((DWI.shape[0], DWI.shape[1] + 1, DWI.shape[2]))
     assert_raises(ValueError, localpca, DWI, sigma)
+
+
+def test_pca_classifier():
+    # Produce small phantom with well aligned single voxels and ground truth
+    # snr = 50, i.e signal std = 0.02 (Gaussian noise)
+    std_gt = 0.02
+    S0 = 1.0
+    ndir = gtab.bvals.size
+    signal_test = np.zeros((5, 5, 5, ndir))
+    mevals = np.array([[0.99e-3, 0.0, 0.0], [2.26e-3, 0.87e-3, 0.87e-3]])
+    sig, direction = multi_tensor(gtab, mevals, S0=S0,
+                                  angles=[(0, 0, 1), (0, 0, 1)],
+                                  fractions=(50, 50), snr=None)
+    signal_test[..., :] = sig
+    noise = std_gt*np.random.standard_normal((5, 5, 5, ndir))
+    dwi_test = signal_test + noise
+
+    # Compute eigenvalues
+    X = dwi_test.reshape(125, ndir)
+    M = np.mean(X, axis=0)
+    X = X - M
+    [L, W] = np.linalg.eigh(np.dot(X.T, X)/125)
+
+    # Find number of noise related eigenvalues
+    var, c = _pca_classifier(L, 125)
+    std = np.sqrt(var)
+
+    # Expected number of signal components is 0 because phantom only has one
+    # voxel type and that information is campured by the mean of X.
+    # Therefore, expected noise components should be equal to size of L.
+    # To allow some margin of error let's assess if c is higher than
+    # L.size - 3.
+    assert_(c > L.size-3)
+
+    # Let's check if noise std estimate as an error less than 5%
+    std_error = abs(std - std_gt)/std_gt * 100
+    assert_(std_error < 5)
+
+
+def test_mppca_in_phantom():
+    DWIgt = rfiw_phantom(gtab, snr=None)
+    std_gt = 0.02
+    noise = std_gt*np.random.standard_normal(DWIgt.shape)
+    DWInoise = DWIgt + noise
+    DWIden = mppca(DWInoise, patch_radius=2)
+
+    # Test if denoised data is closer to ground truth than noisy data
+    rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
+    rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
+    assert_(rmse_den < rmse_noisy)
+
+
+def test_mppca_returned_sigma():
+    DWIgt = rfiw_phantom(gtab, snr=None)
+    std_gt = 0.02
+    noise = std_gt*np.random.standard_normal(DWIgt.shape)
+    DWInoise = DWIgt + noise
+
+    # Case that sigma is estimated using mpPCA
+    DWIden0, sigma = mppca(DWInoise, patch_radius=2, return_sigma=True)
+    msigma = np.mean(sigma)
+    std_error = abs(msigma - std_gt)/std_gt * 100
+    assert_(std_error < 5)
+
+    # Case that sigma is inputed (sigma outputed should be the same as the one
+    # inputed)
+    DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
+                             patch_radius=2, return_sigma=True)
+    assert_array_almost_equal(rsigma, sigma)
+
+    # DWIden1 should be very similar to DWIden0
+    rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
+    rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
+    assert_(rmse_den < rmse_ref)
 
 
 if __name__ == '__main__':

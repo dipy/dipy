@@ -1,7 +1,4 @@
-"""Extract reference documentation from the NumPy source tree.
-
-"""
-from __future__ import division, absolute_import, print_function
+"""Extract reference documentation from the NumPy source tree."""
 
 import inspect
 import textwrap

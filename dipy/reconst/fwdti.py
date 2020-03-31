@@ -1,6 +1,5 @@
 """ Classes and functions for fitting tensors without free water
 contamination """
-from __future__ import division, print_function, absolute_import
 
 import warnings
 
@@ -58,10 +57,10 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
 
     References
     ----------
-    .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-           Optimization of a free water elimination two-compartmental model
-           for diffusion tensor imaging. NeuroImage 103, 323-333.
-           doi: 10.1016/j.neuroimage.2014.09.053
+    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+           water elimination two-compartment model for diffusion tensor
+           imaging. ReScience volume 3, issue 1, article number 2
     """
     evals = params[..., :3]
     evecs = params[..., 3:-1].reshape(params.shape[:-1] + (3, 3))
@@ -108,10 +107,10 @@ class FreeWaterTensorModel(ReconstModel):
 
         References
         ----------
-        .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-               Optimization of a free water elimination two-compartmental model
-               for diffusion tensor imaging. NeuroImage 103, 323-333.
-               doi: 10.1016/j.neuroimage.2014.09.053
+        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+               water elimination two-compartment model for diffusion tensor
+               imaging. ReScience volume 3, issue 1, article number 2
         """
         ReconstModel.__init__(self, gtab)
 
@@ -192,6 +191,13 @@ class FreeWaterTensorFit(TensorFit):
                 2) Three lines of the eigenvector matrix each containing the
                    first, second and third coordinates of the eigenvector
                 3) The volume fraction of the free water compartment
+
+        References
+        ----------
+        .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+               Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+               water elimination two-compartment model for diffusion tensor
+               imaging. ReScience volume 3, issue 1, article number 2
         """
         TensorFit.__init__(self, model, model_params)
 
@@ -237,7 +243,7 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         Non diffusion weighted signal (i.e. signal for b-value=0).
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
      mdreg : float, optimal
         DTI's mean diffusivity regularization threshold. If standard DTI
@@ -295,7 +301,7 @@ def wls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
             SA = SI - FS*S0*SFW.T
             # SA < 0 means that the signal components from the free water
             # component is larger than the total fiber. This cases are present
-            # for inapropriate large volume fractions (given the current S0
+            # for inappropriate large volume fractions (given the current S0
             # value estimated). To overcome this issue negative SA are replaced
             # by data's min positive signal.
             SA[SA <= 0] = min_signal
@@ -336,7 +342,7 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6,
         dimension should contain the data. It makes no copies of data.
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     mask : array, optional
         A boolean array used to mark the coordinates in the data that should
@@ -358,7 +364,7 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6,
     Returns
     -------
     fw_params : ndarray (x, y, z, 13)
-        Matrix containing in the last dimention the free water model parameters
+        Matrix containing in the last dimension the free water model parameters
         in the following order:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
@@ -367,10 +373,10 @@ def wls_fit_tensor(gtab, data, Diso=3e-3, mask=None, min_signal=1.0e-6,
 
     References
     ----------
-    .. [1] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
-           Optimization of a free water elimination two-compartmental model
-           for diffusion tensor imaging. NeuroImage 103, 323-333.
-           doi: 10.1016/j.neuroimage.2014.09.053
+    .. [1] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
+           Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
+           water elimination two-compartment model for diffusion tensor
+           imaging. ReScience volume 3, issue 1, article number 2
     """
     fw_params = np.zeros(data.shape[:-1] + (13,))
     W = design_matrix(gtab)
@@ -417,10 +423,10 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         The voxel signal in all gradient directions
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     weighting : str (optional).
-         Whether to use the Geman McClure weighting criterion (see [1]_
+         Whether to use the Geman-McClure weighting criterion (see [1]_
          for details)
     sigma : float or float array (optional)
         If 'sigma' weighting is used, we will weight the error function
@@ -430,7 +436,7 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         provided). If 'gmm', the Geman-Mclure M-estimator is used for
         weighting.
     cholesky : bool, optional
-        If true, the diffusion tensor elements were decomposed using cholesky
+        If true, the diffusion tensor elements were decomposed using Cholesky
         decomposition. See fwdti.nls_fit_tensor
         Default: False
     f_transform : bool, optional
@@ -471,7 +477,7 @@ def _nls_err_func(tensor_elements, design_matrix, data, Diso=3e-3,
         w = 1/(sigma**2)
 
     elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
+        # We use the Geman-McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
@@ -503,7 +509,7 @@ def _nls_jacobian_func(tensor_elements, design_matrix, data, Diso=3e-3,
         The design matrix
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     f_transform : bool, optional
         If true, the water volume fraction was converted to
@@ -548,7 +554,7 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         Non diffusion weighted signal (i.e. signal for b-value=0).
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     mdreg : float, optimal
         DTI's mean diffusivity regularization threshold. If standard DTI
@@ -561,7 +567,7 @@ def nls_iter(design_matrix, sig, S0, Diso=3e-3, mdreg=2.7e-3,
         The minimum signal value. Needs to be a strictly positive
         number.
     cholesky : bool, optional
-        If true it uses cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to insure that diffusion tensor
         is positive define.
         Default: False
     f_transform : bool, optional
@@ -661,7 +667,7 @@ def nls_fit_tensor(gtab, data, mask=None, Diso=3e-3, mdreg=2.7e-3,
         be analyzed that has the shape data.shape[:-1]
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please ajust this value if you are assuming different
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
         units of diffusion.
     mdreg : float, optimal
         DTI's mean diffusivity regularization threshold. If standard DTI
@@ -679,7 +685,7 @@ def nls_fit_tensor(gtab, data, mask=None, Diso=3e-3, mdreg=2.7e-3,
         0 and 1.
         Default: True
     cholesky : bool, optional
-        If true it uses cholesky decomposition to insure that diffusion tensor
+        If true it uses Cholesky decomposition to insure that diffusion tensor
         is positive define.
         Default: False
     jac : bool
@@ -697,7 +703,7 @@ def nls_fit_tensor(gtab, data, mask=None, Diso=3e-3, mdreg=2.7e-3,
     Returns
     -------
     fw_params : ndarray (x, y, z, 13)
-        Matrix containing in the dimention the free water model parameters in
+        Matrix containing in the dimension the free water model parameters in
         the following order:
             1) Three diffusion tensor's eigenvalues
             2) Three lines of the eigenvector matrix each containing the
@@ -731,7 +737,7 @@ def nls_fit_tensor(gtab, data, mask=None, Diso=3e-3, mdreg=2.7e-3,
 
 
 def lower_triangular_to_cholesky(tensor_elements):
-    """ Perfoms Cholesky decomposition of the diffusion tensor
+    """ Performs Cholesky decomposition of the diffusion tensor
 
     Parameters
     ----------

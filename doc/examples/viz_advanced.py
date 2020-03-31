@@ -35,6 +35,7 @@ a ``LineSlider2D`` widget.
 First we need to fetch and load some datasets.
 """
 
+from dipy.tracking.streamline import Streamlines
 from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 
 fetch_bundles_2_subjects()
@@ -52,7 +53,10 @@ We will use 3 bundles, FA and the affine transformation that brings the voxel
 coordinates to world coordinates (RAS 1mm).
 """
 
-streamlines = res['af.left'] + res['cst.right'] + res['cc_1']
+streamlines = Streamlines(res['af.left'])
+streamlines.extend(res['cst.right'])
+streamlines.extend(res['cc_1'])
+
 data = res['fa']
 shape = data.shape
 affine = res['affine']
@@ -196,6 +200,7 @@ line_slider_z.on_change = change_slice_z
 line_slider_x.on_change = change_slice_x
 line_slider_y.on_change = change_slice_y
 opacity_slider.on_change = change_opacity
+
 """
 We'll also create text labels to identify the sliders.
 """

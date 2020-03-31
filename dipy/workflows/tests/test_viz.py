@@ -1,17 +1,20 @@
 import os
-import numpy as np
-import numpy.testing as npt
+
+from dipy.io.image import save_nifti
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
+from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
-from dipy.testing.decorators import xvfb_it, use_xvfb
+from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.io.image import save_nifti
-from dipy.io.streamline import save_tractogram
+import numpy as np
+import numpy.testing as npt
+import pytest
 
+fury, has_fury, setup_module = optional_package('fury')
 
-fury, have_fury, setup_module = optional_package('fury')
-
-if have_fury:
+if has_fury:
     from dipy.workflows.viz import HorizonFlow
     from dipy.viz.app import horizon
 
@@ -19,8 +22,7 @@ if have_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@npt.dec.skipif(skip_it or not have_fury)
-@xvfb_it
+@pytest.mark.skipif(skip_it or not has_fury, reason='Requires FURY')
 def test_horizon_flow():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -41,27 +43,32 @@ def test_horizon_flow():
                         [3, 0.2, 0],
                         [4, 0.2, 0]], dtype='f8')
 
-    print(s1.shape)
-    print(s2.shape)
-    print(s3.shape)
+    affine = np.array([[1., 0., 0., -98.],
+                       [0., 1., 0., -134.],
+                       [0., 0., 1., -72.],
+                       [0., 0., 0., 1.]])
+
+    data = 255 * np.random.rand(197, 233, 189)
+    vox_size = (1., 1., 1.)
 
     streamlines = Streamlines()
     streamlines.append(s1)
     streamlines.append(s2)
     streamlines.append(s3)
 
-    tractograms = [streamlines]
+    header = create_nifti_header(affine, data.shape, vox_size)
+    sft = StatefulTractogram(streamlines, header, Space.RASMM)
+
+    tractograms = [sft]
     images = None
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
             random_colors=False, length_lt=np.inf, length_gt=0,
             clusters_lt=np.inf, clusters_gt=0,
-            world_coords=False, interactive=False)
-#
-    affine = np.diag([2., 1, 1, 1]).astype('f8')
-#
-    data = 255 * np.random.rand(150, 150, 150)
-#
+            world_coords=True, interactive=False)
+
+    data = 255 * np.random.rand(197, 233, 189)
+
     images = [(data, affine)]
 
     horizon(tractograms, images=images, cluster=True, cluster_thr=5,
@@ -75,7 +82,10 @@ def test_horizon_flow():
         ftrk = os.path.join(out_dir, 'test.trk')
 
         save_nifti(fimg, data, affine)
-        save_tractogram(ftrk, streamlines, affine)
+        dimensions = data.shape
+        nii_header = create_nifti_header(affine, dimensions, vox_size)
+        sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
+        save_tractogram(sft, ftrk, bbox_valid_check=False)
 
         input_files = [ftrk, fimg]
 

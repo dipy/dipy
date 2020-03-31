@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import nibabel as nib
 from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
 
@@ -13,6 +12,7 @@ from numpy.testing import (assert_equal,
                            assert_raises,
                            run_module_suite)
 from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
 
 
 def test_mask():
@@ -85,8 +85,7 @@ def test_bounding_box():
 
 def test_median_otsu():
     fname = get_fnames('S0_10')
-    img = nib.load(fname)
-    data = img.get_data()
+    data = load_nifti_data(fname)
     data = np.squeeze(data.astype('f8'))
     dummy_mask = data > data.mean()
     data_masked, mask = median_otsu(data, median_radius=3, numpass=2,

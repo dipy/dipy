@@ -1,11 +1,12 @@
 """  Classes and functions for Symmetric Diffeomorphic Registration """
 
-from __future__ import print_function
+import logging
 import abc
+
 import numpy as np
 import numpy.linalg as npl
-import scipy as sp
 import nibabel as nib
+
 from dipy.align import vector_fields as vfu
 from dipy.align import floating
 from dipy.align import VerbosityLevels
@@ -34,9 +35,9 @@ SCALE_START: optimization at a new scale space resolution starts
 SCALE_END: optimization at the current scale space resolution ends
 ITER_START: a new iteration starts
 ITER_END: the current iteration ends
-
 """
 
+logger = logging.getLogger(__name__)
 
 def mult_aff(A, B):
     r"""Returns the matrix product A.dot(B) considering None as the identity
@@ -1058,30 +1059,32 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         # Build the scale space of the input images
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Applying zero mask: ' + str(self.mask0))
+            logger.info('Applying zero mask: ' + str(self.mask0))
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            print('Creating scale space from the moving image. Levels: %d. '
-                  'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
+            logger.info('Creating scale space from the moving image.' +
+                        ' Levels: %d. Sigma factor: %f.' %
+                        (self.levels, self.ss_sigma_factor))
 
         self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
                                     moving_spacing, self.ss_sigma_factor,
                                     self.mask0)
 
         if self.verbosity >= VerbosityLevels.STATUS:
-            print('Creating scale space from the static image. Levels: %d. '
-                  'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
+            logger.info('Creating scale space from the static image.' +
+                        ' Levels: %d. Sigma factor: %f.' %
+                        (self.levels, self.ss_sigma_factor))
 
         self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                     static_spacing, self.ss_sigma_factor,
                                     self.mask0)
 
         if self.verbosity >= VerbosityLevels.DEBUG:
-            print('Moving scale space:')
+            logger.info('Moving scale space:')
             for level in range(self.levels):
                 self.moving_ss.print_level(level)
 
-            print('Static scale space:')
+            logger.info('Static scale space:')
             for level in range(self.levels):
                 self.static_ss.print_level(level)
 
@@ -1249,8 +1252,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             ch = '-' if np.isnan(der) else der
-            print('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' %
-                  (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch))
+            logger.info('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' %
+                        (n_iter, fw_energy, bw_energy,
+                         fw_energy + bw_energy, ch))
 
         self.energy_list.append(fw_energy + bw_energy)
 
@@ -1388,7 +1392,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.OPT_START)
         for level in range(self.levels - 1, -1, -1):
             if self.verbosity >= VerbosityLevels.STATUS:
-                print('Optimizing level %d' % level)
+                logger.info('Optimizing level %d' % level)
 
             self.current_level = level
 
@@ -1423,14 +1427,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         residual, stats = self.static_to_ref.compute_inversion_error()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Static-Reference Residual error: %0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
+            logger.info('Static-Reference Residual error: %0.6f (%0.6f)'
+                        % (stats[1], stats[2]))
 
         residual, stats = self.moving_to_ref.compute_inversion_error()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Moving-Reference Residual error :%0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
+            logger.info('Moving-Reference Residual error :%0.6f (%0.6f)'
+                        % (stats[1], stats[2]))
 
         # Compose the two partial transformations
         self.static_to_ref = self.moving_to_ref.warp_endomorphism(
@@ -1439,7 +1443,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         # Report mean and std for the composed deformation field
         residual, stats = self.static_to_ref.compute_inversion_error()
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Final residual error: %0.6f (%0.6f)' % (stats[1], stats[2]))
+            logger.info('Final residual error: %0.6f (%0.6f)' % (stats[1],
+                        stats[2]))
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
@@ -1481,7 +1486,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
-            print("Pre-align:", prealign)
+            if prealign is not None:
+                logger.info("Pre-align: " + str(prealign))
 
         self._init_optimizer(static.astype(floating), moving.astype(floating),
                              static_grid2world, moving_grid2world, prealign)

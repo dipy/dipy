@@ -1,16 +1,18 @@
 """
-==========================================
+=========================
 Affine Registration in 3D
-==========================================
+=========================
 This example explains how to compute an affine transformation to register two
 3D volumes by maximization of their Mutual Information [Mattes03]_. The
 optimization strategy is similar to that implemented in ANTS [Avants11]_.
 """
 
+from os.path import join as pjoin
 import numpy as np
 from dipy.viz import regtools
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-from dipy.data.fetcher import fetch_syn_data, read_syn_data
+from dipy.data import fetch_stanford_hardi
+from dipy.data.fetcher import fetch_syn_data
+from dipy.io.image import load_nifti
 from dipy.align.imaffine import (transform_centers_of_mass,
                                  AffineMap,
                                  MutualInformationMetric,
@@ -24,19 +26,19 @@ Let's fetch two b0 volumes, the static image will be the b0 from the Stanford
 HARDI dataset
 """
 
-fetch_stanford_hardi()
-nib_stanford, gtab_stanford = read_stanford_hardi()
-static = np.squeeze(nib_stanford.get_data())[..., 0]
-static_grid2world = nib_stanford.affine
+files, folder = fetch_stanford_hardi()
+static_data, static_affine = load_nifti(pjoin(folder, 'HARDI150.nii.gz'))
+static = np.squeeze(static_data)[..., 0]
+static_grid2world = static_affine
 
 """
 Now the moving image
 """
 
-fetch_syn_data()
-nib_syn_t1, nib_syn_b0 = read_syn_data()
-moving = np.array(nib_syn_b0.get_data())
-moving_grid2world = nib_syn_b0.affine
+files, folder = fetch_syn_data()
+moving_data, moving_affine = load_nifti(pjoin(folder, 'b0.nii.gz'))
+moving = moving_data
+moving_grid2world = moving_affine
 
 """
 We can see that the images are far from aligned by drawing one on top of
@@ -167,7 +169,7 @@ want, providing previous results as initialization for the next (the same logic
 as in ANTS). The reason why it is useful is that registration is a non-convex
 optimization problem (it may have more than one local optima), which means that
 it is very important to initialize as close to the solution as possible. For
-example, lets start with our (previously computed) rough transformation
+example, let's start with our (previously computed) rough transformation
 aligning the centers of mass of our images, and then refine it in three stages.
 First look for an optimal translation. The dictionary regtransforms contains
 all available transforms, we obtain one of them by providing its name and the
@@ -207,7 +209,7 @@ regtools.overlay_slices(static, transformed, None, 2,
 """
 
 """
-Now lets refine with a rigid transform (this may even modify our previously
+Now let's refine with a rigid transform (this may even modify our previously
 found optimal translation)
 """
 
@@ -242,8 +244,8 @@ regtools.overlay_slices(static, transformed, None, 2,
 """
 
 """
-Finally, lets refine with a full affine transform (translation, rotation, scale
-and shear), it is safer to fit more degrees of freedom now, since we must be
+Finally, let's refine with a full affine transform (translation, rotation, scale
+and shear), it is safer to fit more degrees of freedom now since we must be
 very close to the optimal transform
 """
 
@@ -281,7 +283,7 @@ regtools.overlay_slices(static, transformed, None, 2,
               free-form deformations. IEEE Transactions on Medical Imaging,
               22(1), 120-8.
 .. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced
-              Normalization Tools ( ANTS ), 1-35.
+              Normalization Tools (ANTS), 1-35.
 
 .. include:: ../links_names.inc
 

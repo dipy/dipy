@@ -1,20 +1,20 @@
 #!/usr/bin/env python
-from __future__ import division
 
 import logging
-import numpy as np
-
-from nibabel.streamlines import save, Tractogram
 
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter,
                             ClosestPeakDirectionGetter)
 from dipy.io.image import load_nifti
 from dipy.io.peaks import load_peaks
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 from dipy.tracking import utils
-from dipy.tracking.local import (ThresholdTissueClassifier, LocalTracking,
-                                 CmcTissueClassifier,
-                                 ParticleFilteringTracking)
+from dipy.tracking.local_tracking import (LocalTracking,
+                                          ParticleFilteringTracking)
+from dipy.tracking.stopping_criterion import (BinaryStoppingCriterion,
+                                              CmcStoppingCriterion,
+                                              ThresholdStoppingCriterion)
 from dipy.workflows.workflow import Workflow
 
 
@@ -29,9 +29,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
 
         Parameters
         ----------
-        strategy_name: str
+        strategy_name : str
             String representing direction getter name.
-        pam: instance of PeaksAndMetrics
+        pam : instance of PeaksAndMetrics
             An object with ``gfa``, ``peak_directions``, ``peak_values``,
             ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes.
         pmf_threshold : float
@@ -77,31 +77,46 @@ class LocalFiberTrackingPAMFlow(Workflow):
         logging.info('{0} direction getter strategy selected'.format(msg))
         return dg
 
-    def _core_run(self, stopping_path, stopping_thr, seeding_path,
-                  seed_density, step_size, direction_getter, out_tract):
+    def _core_run(self, stopping_path, use_binary_mask, stopping_thr,
+                  seeding_path, seed_density, step_size, direction_getter,
+                  out_tract, save_seeds):
 
         stop, affine = load_nifti(stopping_path)
-        classifier = ThresholdTissueClassifier(stop, stopping_thr)
-        logging.info('classifier done')
+        if use_binary_mask:
+            stopping_criterion = BinaryStoppingCriterion(stop > stopping_thr)
+        else:
+            stopping_criterion = ThresholdStoppingCriterion(stop, stopping_thr)
+        logging.info('stopping criterion done')
         seed_mask, _ = load_nifti(seeding_path)
         seeds = \
             utils.seeds_from_mask(
-                seed_mask,
-                density=[seed_density, seed_density, seed_density],
-                affine=affine)
+                seed_mask, affine,
+                density=[seed_density, seed_density, seed_density])
         logging.info('seeds done')
 
-        streamlines_generator = LocalTracking(direction_getter, classifier,
-                                              seeds, affine,
-                                              step_size=step_size)
+        tracking_result = LocalTracking(direction_getter,
+                                        stopping_criterion,
+                                        seeds,
+                                        affine,
+                                        step_size=step_size,
+                                        save_seeds=save_seeds)
+
         logging.info('LocalTracking initiated')
 
-        tractogram = Tractogram(streamlines_generator,
-                                affine_to_rasmm=np.eye(4))
-        save(tractogram, out_tract)
+        if save_seeds:
+            streamlines, seeds = zip(*tracking_result)
+            seeds = {'seeds': seeds}
+        else:
+            streamlines = list(tracking_result)
+            seeds = {}
+
+        sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+                                 data_per_streamline=seeds)
+        save_tractogram(sft, out_tract, bbox_valid_check=False)
         logging.info('Saved {0}'.format(out_tract))
 
     def run(self, pam_files, stopping_files, seeding_files,
+            use_binary_mask=False,
             stopping_thr=0.2,
             seed_density=1,
             step_size=0.5,
@@ -109,7 +124,8 @@ class LocalFiberTrackingPAMFlow(Workflow):
             pmf_threshold=0.1,
             max_angle=30.,
             out_dir='',
-            out_tractogram='tractogram.trk'):
+            out_tractogram='tractogram.trk',
+            save_seeds=False):
         """Workflow for Local Fiber Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -120,12 +136,16 @@ class LocalFiberTrackingPAMFlow(Workflow):
            Path to the peaks and metrics files. This path may contain
             wildcards to use multiple masks at once.
         stopping_files : string
-            Path to images (e.g. FA) used for stopping criteria for tracking.
+            Path to images (e.g. FA) used for stopping criterion for tracking.
         seeding_files : string
             A binary image showing where we need to seed for tracking.
+        use_binary_mask : bool, optional
+            If True, uses a binary stopping criterion. If the provided
+            `stopping_files` are not binary, `stopping_thr` will be used to
+            binarize the images.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-            tracking has to stop (default 0.25).
+            tracking has to stop (default 0.2).
         seed_density : int, optional
             Number of seeds per dimension inside voxel (default 1).
              For example, seed_density of 2 means 8 regularly distributed
@@ -134,7 +154,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
         step_size : float, optional
             Step size used for tracking (default 0.5mm).
         tracking_method : string, optional
-            Select direction getter strategy:
+            Select direction getter strategy :
              - "eudx" (Uses the peaks saved in the pam_files)
              - "deterministic" or "det" for a deterministic tracking
                (Uses the sh saved in the pam_files, default)
@@ -151,6 +171,10 @@ class LocalFiberTrackingPAMFlow(Workflow):
            Output directory (default input file directory).
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk').
+        save_seeds : bool, optional
+            If true, save the seeds associated to their streamline
+            in the 'data_per_streamline' Tractogram dictionary using
+            'seeds' as the key.
 
         References
         ----------
@@ -170,8 +194,9 @@ class LocalFiberTrackingPAMFlow(Workflow):
                                             pmf_threshold=pmf_threshold,
                                             max_angle=max_angle)
 
-            self._core_run(stopping_path, stopping_thr, seeding_path,
-                           seed_density, step_size, dg, out_tract)
+            self._core_run(stopping_path, use_binary_mask, stopping_thr,
+                           seeding_path, seed_density, step_size, dg,
+                           out_tract, save_seeds)
 
 
 class PFTrackingPAMFlow(Workflow):
@@ -188,7 +213,8 @@ class PFTrackingPAMFlow(Workflow):
             pft_front=1,
             pft_count=15,
             out_dir='',
-            out_tractogram='tractogram.trk'):
+            out_tractogram='tractogram.trk',
+            save_seeds=False):
         """Workflow for Particle Filtering Tracking.
 
         This workflow use a saved peaks and metrics (PAM) file as input.
@@ -221,7 +247,7 @@ class PFTrackingPAMFlow(Workflow):
             default 20).
         pft_back : float, optional
             Distance in mm to back track before starting the particle filtering
-            tractography (defaul 2mm). The total particle filtering
+            tractography (default 2mm). The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
         pft_front : float, optional
@@ -235,6 +261,10 @@ class PFTrackingPAMFlow(Workflow):
            Output directory (default input file directory)
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk')
+        save_seeds : bool, optional
+            If true, save the seeds associated to their streamline
+            in the 'data_per_streamline' Tractogram dictionary using
+            'seeds' as the key
 
         References
         ----------
@@ -257,15 +287,13 @@ class PFTrackingPAMFlow(Workflow):
             gm, _ = load_nifti(gm_path)
             csf, _ = load_nifti(csf_path)
             avs = sum(voxel_size) / len(voxel_size)  # average_voxel_size
-            classifier = CmcTissueClassifier.from_pve(wm, gm, csf,
-                                                      step_size=step_size,
-                                                      average_voxel_size=avs)
-            logging.info('classifier done')
+            stopping_criterion = CmcStoppingCriterion.from_pve(
+                wm, gm, csf, step_size=step_size, average_voxel_size=avs)
+            logging.info('stopping criterion done')
             seed_mask, _ = load_nifti(seeding_path)
-            seeds = utils.seeds_from_mask(seed_mask,
+            seeds = utils.seeds_from_mask(seed_mask, affine,
                                           density=[seed_density, seed_density,
-                                                   seed_density],
-                                          affine=affine)
+                                                   seed_density])
             logging.info('seeds done')
             dg = ProbabilisticDirectionGetter
 
@@ -274,20 +302,27 @@ class PFTrackingPAMFlow(Workflow):
                                                sphere=pam.sphere,
                                                pmf_threshold=pmf_threshold)
 
-            streamlines_generator = ParticleFilteringTracking(
+            tracking_result = ParticleFilteringTracking(
                 direction_getter,
-                classifier,
+                stopping_criterion,
                 seeds, affine,
                 step_size=step_size,
                 pft_back_tracking_dist=pft_back,
                 pft_front_tracking_dist=pft_front,
                 pft_max_trial=20,
-                particle_count=pft_count)
+                particle_count=pft_count,
+                save_seeds=save_seeds)
 
             logging.info('ParticleFilteringTracking initiated')
 
-            tractogram = Tractogram(streamlines_generator,
-                                    affine_to_rasmm=np.eye(4))
-            save(tractogram, out_tract)
+            if save_seeds:
+                streamlines, seeds = zip(*tracking_result)
+                seeds = {'seeds': seeds}
+            else:
+                streamlines = list(tracking_result)
+                seeds = {}
 
+            sft = StatefulTractogram(streamlines, seeding_path, Space.RASMM,
+                                     data_per_streamline=seeds)
+            save_tractogram(sft, out_tract, bbox_valid_check=False)
             logging.info('Saved {0}'.format(out_tract))

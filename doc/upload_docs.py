@@ -15,9 +15,10 @@ def sh(cmd):
     print("--------------------------------------------------")
     return check_call(cmd, shell=True)
 
+
 # paths
 docs_repo_path = "_build/docs_repo"
-docs_repo_url = "git@github.com:nipy/dipy_web.git"
+docs_repo_url = "https://github.com/dipy/dipy_web.git"
 
 if __name__ == '__main__':
     # get current directory

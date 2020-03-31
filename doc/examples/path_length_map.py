@@ -1,7 +1,7 @@
 """
-==================================
+=========================
 Calculate Path Length Map
-==================================
+=========================
 
 We show how to calculate a Path Length Map for Anisotropic Radiation Therapy
 Contours given a set of streamlines and a region of interest (ROI).
@@ -15,32 +15,37 @@ on a tractography model of the local white matter anatomy, as described in
 NOTE: The background value is set to -1 by default
 """
 
-from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, default_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 from dipy.reconst.shm import CsaOdfModel
-from dipy.data import default_sphere
 from dipy.direction import peaks_from_model
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 from dipy.tracking.utils import path_length
-import nibabel as nib
 import numpy as np
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import AxesGrid
 
 """
 First, we need to generate some streamlines and visualize. For a more complete
-description of these steps, please refer to the :ref:`example_probabilistic_fiber_tracking`
-and the Visualization of ROI Surface Rendered with Streamlines Tutorials.
-
+description of these steps, please refer to the
+:ref:`example_probabilistic_fiber_tracking` and the Visualization of ROI
+Surface Rendered with Streamlines Tutorials.
 """
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -50,7 +55,7 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              min_separation_angle=45,
                              mask=white_matter)
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 """
 We will use an anatomically-based corpus callosum ROI as our seed mask to
@@ -62,10 +67,10 @@ lesion mask, or electrode mask).
 
 # Make a corpus callosum seed mask for tracking
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Make a streamline bundle model of the corpus callosum ROI connectivity
-streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
+streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
                             step_size=2)
 streamlines = Streamlines(streamlines)
 
@@ -118,17 +123,15 @@ Path Length Map base ROI to restrict the analysis to the CST)
 path_length_map_base_roi = seed_mask
 
 # calculate the WMPL
-
-wmpl = path_length(streamlines, path_length_map_base_roi, affine)
+wmpl = path_length(streamlines, affine, path_length_map_base_roi)
 
 # save the WMPL as a nifti
-path_length_img = nib.Nifti1Image(wmpl.astype(np.float32), affine)
-nib.save(path_length_img, 'example_cc_path_length_map.nii.gz')
+save_nifti('example_cc_path_length_map.nii.gz', wmpl.astype(np.float32),
+           affine)
 
 # get the T1 to show anatomical context of the WMPL
-fetch_stanford_t1()
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+t1_fname = get_fnames('stanford_t1')
+t1_data = load_nifti_data(t1_fname)
 
 
 fig = mpl.pyplot.figure()

@@ -1,10 +1,11 @@
 import numpy as np
 
+
 def dki_design_matrix(gtab):
-    r""" Constructs B design matrix for DKI
+    r"""Construct B design matrix for DKI.
 
     Parameters
-    ---------
+    ----------
     gtab : GradientTable
         Measurement directions.
 
@@ -17,6 +18,7 @@ def dki_design_matrix(gtab):
                    Bxyyy, Byyyz, Bxzzz, Byzzz, Bxxyy,
                    Bxxzz, Byyzz, Bxxyz, Bxyyz, Bxyzz,
                    BlogS0)
+
     """
     b = gtab.bvals
     bvec = gtab.bvecs
@@ -43,6 +45,6 @@ def dki_design_matrix(gtab):
     B[:, 18] = 2 * b * b * bvec[:, 0]**2 * bvec[:, 1] * bvec[:, 2]
     B[:, 19] = 2 * b * b * bvec[:, 1]**2 * bvec[:, 0] * bvec[:, 2]
     B[:, 20] = 2 * b * b * bvec[:, 2]**2 * bvec[:, 0] * bvec[:, 1]
-    B[:, 21] = np.ones(len(b))
+    B[:, 21] = -np.ones(len(b))
 
     return B

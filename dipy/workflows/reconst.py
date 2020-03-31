@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 import logging
 import numpy as np
@@ -9,10 +8,11 @@ from warnings import warn
 import nibabel as nib
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti, save_nifti, load_nifti_data
+from dipy.io.utils import nifti1_symmat
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.dti import (TensorModel, color_fa, fractional_anisotropy,
@@ -43,14 +43,14 @@ class ReconstMAPMRIFlow(Workflow):
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
             out_parng='parng.nii.gz'):
-        """ Workflow for fitting the MAPMRI model (with optional Laplacian
+        """Workflow for fitting the MAPMRI model (with optional Laplacian
         regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
         non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
         format in input files provided by `data_files` and saves the nifti
         files to an output directory specified by `out_dir`.
 
         In order for the MAPMRI workflow to work in the way
-        intended either the laplacian or positivity or both must
+        intended either the Laplacian or positivity or both must
         be set to True.
 
         Parameters
@@ -86,7 +86,7 @@ class ReconstMAPMRIFlow(Workflow):
             ng, perng, parng
             (default: [] (all))
         laplacian_weighting : float, optional
-            Weighting value used in fitting the MAPMRI model in the laplacian
+            Weighting value used in fitting the MAPMRI model in the Laplacian
             and both model types. (default: 0.05)
         radial_order : unsigned int, optional
             Even value used to set the order of the basis
@@ -96,7 +96,7 @@ class ReconstMAPMRIFlow(Workflow):
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
-            Name of the norm of laplacian signal to be saved
+            Name of the norm of Laplacian signal to be saved
         out_msd : string, optional
             Name of the msd to be saved
         out_qiv : string, optional
@@ -122,7 +122,7 @@ class ReconstMAPMRIFlow(Workflow):
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals=bvals, bvecs=bvecs,
                                   small_delta=small_delta,
@@ -171,6 +171,12 @@ class ReconstMAPMRIFlow(Workflow):
                             positivity_constraint=False,
                             bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
+
+            # for name, fname, func in [('rtop', out_rtop, mapfit_aniso.rtop),
+            #                           ]:
+            #     if name in save_metrics:
+            #         r = func()
+            #         save_nifti(fname, r.astype(np.float32), affine)
 
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()
@@ -222,7 +228,7 @@ class ReconstDtiFlow(Workflow):
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz'):
+            out_evec='evecs.nii.gz', out_eval='evals.nii.gz', nifti_tensor=True):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
@@ -242,7 +248,7 @@ class ReconstDtiFlow(Workflow):
             multiple bvectors files at once.
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
-            multiple masks at once. (default: No mask used)
+            multiple masks at once.
         b0_threshold : float, optional
             Threshold used to find b=0 directions (default 0.0)
         bvecs_tol : float, optional
@@ -255,7 +261,14 @@ class ReconstDtiFlow(Workflow):
         out_dir : string, optional
             Output directory (default input file directory)
         out_tensor : string, optional
-            Name of the tensors volume to be saved (default 'tensors.nii.gz')
+            Name of the tensors volume to be saved (default 'tensors.nii.gz').
+            Per default, this will be saved following the nifti standard:
+            with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
+            last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
+            `nifti_tensor` is False, this will be saved in an alternate format
+            that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with Dxx, Dxy, Dxz, Dyy,
+            Dyz, Dzz on the last dimension.
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved
             (default 'fa.nii.gz')
@@ -280,6 +293,12 @@ class ReconstDtiFlow(Workflow):
             (default 'evecs.nii.gz')
         out_eval : string, optional
             Name of the eigenvalues to be saved (default 'evals.nii.gz')
+        nifti_tensor : bool, optional
+            Whether the tensor is saved in the standard Nifti format or in an
+            alternate format
+            that is used by other software (e.g., FSL): a
+            4-dimensional volume (shape (i, j, k, 6)) with
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension. Default: True
 
         References
         ----------
@@ -308,7 +327,7 @@ class ReconstDtiFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_data().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                                b0_threshold, bvecs_tol)
@@ -323,11 +342,16 @@ class ReconstDtiFlow(Workflow):
 
             if 'tensor' in save_metrics:
                 tensor_vals = lower_triangular(tenfit.quadratic_form)
-                correct_order = [0, 1, 3, 2, 4, 5]
-                tensor_vals_reordered = tensor_vals[..., correct_order]
 
-                save_nifti(otensor, tensor_vals_reordered.astype(np.float32),
-                           affine)
+                if nifti_tensor:
+                    ten_img = nifti1_symmat(tensor_vals, affine=affine)
+                else:
+                    alt_order = [0, 1, 3, 2, 4, 5]
+                    ten_img = nib.Nifti1Image(
+                            tensor_vals[..., alt_order].astype(np.float32),
+                            affine)
+
+                nib.save(ten_img, otensor)
 
             if 'fa' in save_metrics:
                 save_nifti(ofa, FA.astype(np.float32), affine)
@@ -430,7 +454,7 @@ class ReconstCSDFlow(Workflow):
         frf : variable float, optional
             Fiber response function can be for example inputed as 15 4 4
             (from the command line) or [15, 4, 4] from a Python script to be
-            converted to float and mutiplied by 10**-4 . If None
+            converted to float and multiplied by 10**-4 . If None
             the fiber response function will be computed automatically
             (default: None).
         extract_pam_values : bool, optional
@@ -451,7 +475,7 @@ class ReconstCSDFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -463,7 +487,7 @@ class ReconstCSDFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
 
         References
@@ -484,11 +508,11 @@ class ReconstCSDFlow(Workflow):
             print(b0_threshold, bvals.min())
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
-            mask_vol = nib.load(maskfile).get_data().astype(np.bool)
+            mask_vol = load_nifti_data(maskfile).astype(np.bool)
 
             n_params = ((sh_order + 1) * (sh_order + 2)) / 2
             if data.shape[-1] < n_params:
@@ -529,7 +553,7 @@ class ReconstCSDFlow(Workflow):
             logging.info('Ratio for smallest to largest eigen value is {0}'
                          .format(ratio))
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('CSD computation started.')
             csd_model = ConstrainedSphericalDeconvModel(gtab, response,
@@ -618,7 +642,7 @@ class ReconstCSAFlow(Workflow):
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
-            Name of the shperical harmonics volume to be saved
+            Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
@@ -630,7 +654,7 @@ class ReconstCSAFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalise fa volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
 
         References
         ----------
@@ -648,13 +672,13 @@ class ReconstCSAFlow(Workflow):
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should higher than the first b0 value "
+                     "b0_threshold. It should be higher than the first b0 value "
                      "({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs,
                                   b0_threshold=b0_threshold, atol=bvecs_tol)
-            mask_vol = nib.load(maskfile).get_data().astype(np.bool)
+            mask_vol = load_nifti_data(maskfile).astype(np.bool)
 
-            peaks_sphere = get_sphere('repulsion724')
+            peaks_sphere = default_sphere
 
             logging.info('Starting CSA computations {0}'.format(dwi))
 
@@ -790,7 +814,7 @@ class ReconstDkiFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_data().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                               b0_threshold)
@@ -868,7 +892,7 @@ class ReconstDkiFlow(Workflow):
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
             warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should higher than the first b0 value "
+                 "b0_threshold. It should be higher than the first b0 value "
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
@@ -960,7 +984,7 @@ class ReconstIvimFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             if mask is not None:
-                mask = nib.load(mask).get_data().astype(np.bool)
+                mask = load_nifti_data(mask).astype(np.bool)
 
             ivimfit, _ = self.get_fitted_ivim(data, mask, bval, bvec,
                                               b0_threshold)
@@ -992,7 +1016,7 @@ class ReconstIvimFlow(Workflow):
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
             warn("b0_threshold (value: {0}) is too low, increase your "
-                 "b0_threshold. It should higher than the first b0 value "
+                 "b0_threshold. It should be higher than the first b0 value "
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)

@@ -14,27 +14,31 @@ First import the necessary modules:
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
-from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.data import dsi_voxels
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere, dsi_voxels
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.reconst.shore import ShoreModel
 
 """
-Download and read the data for this tutorial.
+Download and get the data filenames for this tutorial.
 """
 
-fetch_taiwan_ntu_dsi()
-img, gtab = read_taiwan_ntu_dsi()
+fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
 
 """
-img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example, to read the b-values
-it is possible to write print(gtab.bvals).
+img contains a nibabel Nifti1Image object (data) and gtab contains a
+GradientTable object (gradient information e.g. b-values). For example, to
+read the b-values it is possible to write print(gtab.bvals).
 
 Load the raw diffusion data and the affine.
 """
 
-data = img.get_data()
-affine = img.affine
+data, affine = load_nifti(fraw)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+bvecs[1:] = (bvecs[1:] /
+             np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
+gtab = gradient_table(bvals, bvecs)
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """

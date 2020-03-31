@@ -12,13 +12,13 @@ please contact us! We respond to queries on the [Nipy mailing
 list](https://mail.python.org/mailman/listinfo/neuroimaging), and to questions
 on our [gitter channel](https://gitter.im/nipy/dipy). A good place to get an
 idea for things that currently need attention is the
-[issues](https://github.com/nipy/dipy/issues) page of our Github repository.
+[issues](https://github.com/dipy/dipy/issues) page of our Github repository.
 This page collects outstanding issues that you can help address. Join the
 conversation about the issue, by typing into the text box in the issue page.
 
 ## The development process
 
-Please refer to the [development section](http://dipy.org/devel/index.html)
+Please refer to the [development section](https://dipy.org/documentation/latest/devel/)
 of the documentation for the procedures we use in developing the code.
 
 ## When writing code, please pay attention to the following:
@@ -26,7 +26,8 @@ of the documentation for the procedures we use in developing the code.
 ### Tests and test coverage
 
 We use [pytest](https://docs.pytest.org) to write tests of the code,
-and [Travis-CI](https://travis-ci.org/nipy/dipy) for continuous integration.
+and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.org/dipy/dipy)
+for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
 you are adding code into ``dipy/tracking/streamline.py``), add additional tests
@@ -46,14 +47,19 @@ coverage in each module: the percentage of coverage and also the lines of code
 that are not run in the tests. You can also see the test coverage in the Travis
 run corresponding to the PR (in the log for the machine with ``COVERAGE=1``).
 
+If your contributions are to a single module, you can see test and
+coverage results for only that module without running all of the DIPY
+tests. For example, if you are adding code to ``dipy/core/geometry.py``,
+you can use:
+
+    coverage run --source=dipy.core.geometry -m pytest -s --doctest-modules --verbose dipy/core/tests/test_geometry.py
+
+You can then use ``coverage report`` to view the results, or use
+``coverage html`` and open htmlcov/index.html in your browser for a
+nicely formatted interactive coverage report.
+
 Contributions to tests that extend test coverage in older modules that are not
 fully covered are very welcome!
-
-### Supporting both Python 2 and 3
-
-Most of the functionality in DIPY works on both Python 3 and Python 2. Please
-follow the instructions [here](http://dipy.org/devel/python3.html) to
-write code that works on both versions.
 
 ### Code style
 
@@ -63,7 +69,7 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 ### Documentation
 
-DIPY uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ to generate
+DIPY uses [Sphinx](http://www.sphinx-doc.org/en/stable/index.html) to generate
 documentation. The
-[DIPY Coding Style Guideline](http://nipy.org/dipy/devel/coding_style_guideline.html)
+[DIPY Coding Style Guideline](https://dipy.org/documentation/latest/devel/coding_style_guideline/)
 contains details about documenting the contributions.

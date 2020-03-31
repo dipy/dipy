@@ -1,7 +1,7 @@
 """
-==================================
+======================================================
 Visualization of ROI Surface Rendered with Streamlines
-==================================
+======================================================
 
 Here is a simple tutorial following the probabilistic CSA Tracking Example in
 which we generate a dataset of streamlines from a corpus callosum ROI, and
@@ -9,13 +9,15 @@ then display them with the seed ROI rendered in 3D with 50% transparency.
 
 """
 
-from dipy.data import read_stanford_labels
+from dipy.core.gradients import gradient_table
 from dipy.reconst.shm import CsaOdfModel
-from dipy.data import default_sphere
+from dipy.data import default_sphere, get_fnames
 from dipy.direction import peaks_from_model
-from dipy.tracking.local import ThresholdTissueClassifier
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import actor, window, colormap as cmap
 
@@ -25,10 +27,13 @@ description of these steps, please refer to the CSA Probabilistic Tracking
 Tutorial.
 """
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 white_matter = (labels == 1) | (labels == 2)
 
@@ -38,13 +43,13 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              min_separation_angle=45,
                              mask=white_matter)
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 seed_mask = labels == 2
-seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1], affine=affine)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=[1, 1, 1])
 
 # Initialization of LocalTracking. The computation happens in the next step.
-streamlines = LocalTracking(csa_peaks, classifier, seeds, affine,
+streamlines = LocalTracking(csa_peaks, stopping_criterion, seeds, affine,
                             step_size=2)
 
 # Compute streamlines and store as a list.

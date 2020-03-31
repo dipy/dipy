@@ -6,7 +6,7 @@ Fiber to bundle coherence measures
 
 This demo presents the fiber to bundle coherence (FBC) quantitative
 measure of the alignment of each fiber with the surrounding fiber bundles
-[Meesters2016]_. These measures are useful in “cleaning” the results of
+[Meesters2016]_. These measures are useful in 'cleaning' the results of
 tractography algorithms, since low FBCs indicate which fibers are isolated and
 poorly aligned with their neighbors, as shown in the figure below.
 
@@ -42,21 +42,30 @@ The FBC measures are evaluated on the Stanford HARDI dataset
 datasets in DIPY_.
 """
 
+# Enables/disables interactive visualization
+interactive = False
+
 import numpy as np
-from dipy.data import (read_stanford_labels, fetch_stanford_t1,
-                       read_stanford_t1)
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data, load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 
 # Fix seed
 np.random.seed(1)
 
 # Read data
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
-affine = hardi_img.affine
-fetch_stanford_t1()
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
+
+data, affine = load_nifti(hardi_fname)
+labels = load_nifti_data(label_fname)
+t1_data = load_nifti_data(t1_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
+
+
 
 # Select a relevant part of the data (left hemisphere)
 # Coordinates given in x bounds, y bounds, z bounds
@@ -68,8 +77,8 @@ selectionmask[xa:xb, ya:yb, za:zb] = True
 
 """
 The data is first fitted to Constant Solid Angle (CDA) ODF Model. CSA is a
-good choice to estimate general fractional anisotropy (GFA), which the tissue
-classifier can use to restrict fiber tracking to those areas where the ODF
+good choice to estimate general fractional anisotropy (GFA), which the stopping
+criterion can use to restrict fiber tracking to those areas where the ODF
 shows significant restricted diffusion, thus creating a region-of-interest in
 which the computations are done.
 """
@@ -85,10 +94,10 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              min_separation_angle=45,
                              mask=selectionmask)
 
-# Tissue classifier
-from dipy.tracking.local import ThresholdTissueClassifier
+# Stopping Criterion
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 
-classifier = ThresholdTissueClassifier(csa_peaks.gfa, 0.25)
+stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, 0.25)
 
 """
 In order to perform probabilistic fiber tracking we first fit the data to the
@@ -130,17 +139,18 @@ from dipy.tracking import utils
 mask = np.zeros(data.shape[:-1], 'bool')
 rad = 3
 mask[26-rad:26+rad, 29-rad:29+rad, 31-rad:31+rad] = True
-seeds = utils.seeds_from_mask(mask, density=[4, 4, 4], affine=affine)
+seeds = utils.seeds_from_mask(mask, affine, density=[4, 4, 4])
 
 """
 Local Tracking is used for probabilistic tractography which takes the
-direction getter along with the classifier and seeds as input.
+direction getter along with the stopping criterion and seeds as input.
 """
 
 # Perform tracking using Local Tracking
-from dipy.tracking.local import LocalTracking
+from dipy.tracking.local_tracking import LocalTracking
 
-streamlines_generator = LocalTracking(prob_dg, classifier, seeds, affine, step_size=.5)
+streamlines_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
+                                      affine, step_size=.5)
 
 # Compute streamlines.
 from dipy.tracking.streamline import Streamlines
@@ -158,8 +168,7 @@ rad = 5
 mask_lgn[35-rad:35+rad, 42-rad:42+rad, 28-rad:28+rad] = True
 
 # Select all the fibers that enter the LGN and discard all others
-filtered_fibers2 = utils.near_roi(streamlines, mask_lgn, tol=1.8,
-                                  affine=affine)
+filtered_fibers2 = utils.near_roi(streamlines, affine, mask_lgn, tol=1.8)
 
 sfil = []
 for i in range(len(streamlines)):
@@ -171,7 +180,7 @@ streamlines = Streamlines(sfil)
 Inspired by [Rodrigues2010]_, a lookup-table is created, containing rotated
 versions of the fiber propagation kernel :math:`P_t` [DuitsAndFranken2011]_
 rotated over a discrete set of orientations. See the
-`Contextual enhancement example <http://nipy.org/dipy/examples_built/contextual_enhancement.html>`_
+`Contextual enhancement example <https://dipy.org/documentation/latest/examples_built/contextual_enhancement/#example-contextual-enhancement>`_
 for more details regarding the kernel. In order to ensure rotationally
 invariant processing, the discrete orientations are required to be equally
 distributed over a sphere. By default, a sphere with 100 directions is used
@@ -222,9 +231,6 @@ after the cleaning procedure via RFBC thresholding (see
 # Visualize the results
 from dipy.viz import window, actor
 
-# Enables/disables interactive visualization
-interactive = False
-
 # Create renderer
 ren = window.Renderer()
 
@@ -243,7 +249,9 @@ vol_actor2.display(x=35)
 ren.add(vol_actor2)
 
 # Show original fibers
-ren.set_camera(position=(-264, 285, 155), focal_point=(0, -14, 9), view_up=(0, 0, 1))
+ren.set_camera(position=(-264, 285, 155),
+               focal_point=(0, -14, 9),
+               view_up=(0, 0, 1))
 window.record(ren, n_frames=1, out_path='OR_before.png', size=(900, 900))
 if interactive:
     window.show(ren)

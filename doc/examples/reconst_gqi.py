@@ -11,16 +11,18 @@ First import the necessary modules:
 """
 
 import numpy as np
-from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.direction import peaks_from_model
 
 """
-Download and read the data for this tutorial.
+Download and get the data filenames for this tutorial.
 """
 
-fetch_taiwan_ntu_dsi()
-img, gtab = read_taiwan_ntu_dsi()
+fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
 
 """
 img contains a nibabel Nifti1Image object (data) and gtab contains a
@@ -32,24 +34,18 @@ read the b-values it is possible to write::
 Load the raw diffusion data and the affine.
 """
 
-data = img.get_data()
+data, affine, voxel_size = load_nifti(fraw, return_voxsize=True)
+bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+bvecs[1:] = (bvecs[1:] /
+                 np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
+gtab = gradient_table(bvals, bvecs)
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
 data.shape ``(96, 96, 60, 203)``
 
 This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
-"""
 
-affine = img.affine
-
-"""
-Read the voxel size from the image header.
-"""
-
-voxel_size = img.header.get_zooms()[:3]
-
-"""
 Instantiate the model and apply it to the data.
 """
 
@@ -71,7 +67,7 @@ gqfit = gqmodel.fit(dataslice, mask=mask)
 Load an ODF reconstruction sphere
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 """
 Calculate the ODFs with this specific sphere
@@ -127,8 +123,8 @@ gqpeaks = peaks_from_model(model=gqmodel,
                            normalize_peaks=True)
 
 """
-This ODF will be of course identical to the ODF calculated above as long as the same
-data and mask are used.
+This ODF will be of course identical to the ODF calculated above as long as
+the same data and mask are used.
 """
 
 np.sum(gqpeaks.odf != ODF) == 0

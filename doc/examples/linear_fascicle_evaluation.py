@@ -1,7 +1,7 @@
 """
-=================================================
+=================================
 Linear fascicle evaluation (LiFE)
-=================================================
+=================================
 
 Evaluating the results of tractography algorithms is one of the biggest
 challenges for diffusion MRI. One proposal for evaluation of tractography
@@ -20,30 +20,40 @@ created in that example:
 
 """
 
+from mpl_toolkits.axes_grid1 import AxesGrid
+import matplotlib
+import matplotlib.pyplot as plt
+import dipy.tracking.life as life
+from dipy.viz import window, actor, colormap as cmap
 import numpy as np
 import os.path as op
-import nibabel as nib
 from dipy.io.streamline import load_trk
 import dipy.core.optimize as opt
 if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
 else:
     # We'll need to know where the corpus callosum is from these variables:
-    from dipy.data import (read_stanford_labels,
-                           fetch_stanford_t1,
-                           read_stanford_t1)
-    hardi_img, gtab, labels_img = read_stanford_labels()
-    labels = labels_img.get_data()
-    cc_slice = labels == 2
-    fetch_stanford_t1()
-    t1 = read_stanford_t1()
-    t1_data = t1.get_data()
-    data = hardi_img.get_data()
-# Read the candidates from file in voxel space:
+    from dipy.core.gradients import gradient_table
+    from dipy.data import get_fnames
+    from dipy.io.gradients import read_bvals_bvecs
+    from dipy.io.image import load_nifti_data, load_nifti
 
-candidate_sl, hdr = load_trk('lr-superiorfrontal.trk')
-# candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
-#                                                  points_space='voxel')[0]]
+    hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+    label_fname = get_fnames('stanford_labels')
+    t1_fname = get_fnames('stanford_t1')
+
+    data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+    labels = load_nifti_data(label_fname)
+    t1_data = load_nifti_data(t1_fname)
+    bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+    gtab = gradient_table(bvals, bvecs)
+
+    cc_slice = labels == 2
+
+# Read the candidates from file in voxel space:
+candidate_sl_sft = load_trk('lr-superiorfrontal.trk', 'same')
+candidate_sl_sft.to_vox()
+candidate_sl = candidate_sl_sft.streamlines
 
 """
 
@@ -60,7 +70,6 @@ the anatomical structure of this brain:
 
 """
 
-from dipy.viz import window, actor, colormap as cmap
 
 # Enables/disables interactive visualization
 interactive = False
@@ -105,20 +114,19 @@ which contains the classes and functions that implement the model:
 
 """
 
-import dipy.tracking.life as life
 fiber_model = life.FiberModel(gtab)
 
 """
 
-Since we read the streamlines from a file, already in the voxel space, we do not
-need to transform them into this space. Otherwise, if the streamline coordinates
-were in the world space (relative to the scanner iso-center, or relative to the
-mid-point of the AC-PC-connecting line), we would use this::
+Since we read the streamlines from a file, already in the voxel space, we do
+not need to transform them into this space. Otherwise, if the streamline
+coordinates were in the world space (relative to the scanner iso-center, or
+relative to the mid-point of the AC-PC-connecting line), we would use this::
 
    inv_affine = np.linalg.inv(hardi_img.affine)
 
-the inverse transformation from world space to the voxel space as the affine for
-the following model fit.
+the inverse transformation from world space to the voxel space as the affine
+for the following model fit.
 
 The next step is to fit the model, producing a ``FiberFit`` class instance,
 that stores the data, as well as the results of the fitting procedure.
@@ -139,8 +147,8 @@ $i^{th}$ streamline (arbitrarily ordered) to each of the voxels. $X$ is a
 sparse matrix, because each streamline traverses only a small percentage of the
 voxels. The  expected contributions of the streamline are calculated using a
 forward model, where each node of the streamline is modeled as a cylindrical
-fiber compartment with Gaussian diffusion, using the diffusion tensor model. See
-[Pestilli2014]_ for more detail on the model, and variations of this model.
+fiber compartment with Gaussian diffusion, using the diffusion tensor model.
+See [Pestilli2014]_ for more detail on the model, and variations of this model.
 
 """
 
@@ -155,8 +163,6 @@ streamlines, and these streamlines will have $\beta_i$ that are 0.
 
 """
 
-import matplotlib.pyplot as plt
-import matplotlib
 fig, ax = plt.subplots(1)
 ax.hist(fiber_fit.beta, bins=100, histtype='step')
 ax.set_xlabel('Fiber weights')
@@ -207,9 +213,9 @@ streamlines have presumably been removed (in this case, about 50% of the
 streamlines).
 
 But how well does the model do in explaining the diffusion data? We can
-quantify that: the ``FiberFit`` class instance has a `predict` method, which can
-be used to invert the model and predict back either the data that was used to
-fit the model, or other unseen data (e.g. in cross-validation, see
+quantify that: the ``FiberFit`` class instance has a `predict` method, which
+can be used to invert the model and predict back either the data that was used
+to fit the model, or other unseen data (e.g. in cross-validation, see
 :ref:`kfold_xval`).
 
 Without arguments, the ``.predict()`` method will predict the diffusion signal
@@ -256,7 +262,7 @@ to add back the mean and then multiply by S0 in every voxel:
 
 mean_pred[..., gtab.b0s_mask] = S0[:, None]
 mean_pred[..., ~gtab.b0s_mask] =\
-        (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
+    (pred_weighted + fiber_fit.mean_signal[:, None]) * S0[:, None]
 mean_error = mean_pred - fiber_fit.data
 mean_rmse = np.sqrt(np.mean(mean_error ** 2, -1))
 
@@ -314,7 +320,6 @@ vol_improve[fiber_fit.vox_coords[:, 0],
             fiber_fit.vox_coords[:, 1],
             fiber_fit.vox_coords[:, 2]] = mean_rmse - model_rmse
 sl_idx = 49
-from mpl_toolkits.axes_grid1 import AxesGrid
 fig = plt.figure()
 fig.subplots_adjust(left=0.05, right=0.95)
 ax = AxesGrid(fig, 111,
@@ -332,7 +337,8 @@ ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[1].matshow(np.rot90(vol_mean[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
-im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
+im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]),
+                   cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
 for lax in ax:
     lax.set_xticks([])

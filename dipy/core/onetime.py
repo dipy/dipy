@@ -53,11 +53,10 @@ Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 
 [2] Python data model, http://docs.python.org/reference/datamodel.html
 """
-from __future__ import division, print_function, absolute_import
 
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Classes and Functions
-#-----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
 
 class ResetMixin(object):
@@ -202,13 +201,6 @@ def auto_attr(func):
     99
     >>> 'a' in x.__dict__
     True
+
     """
     return OneTimeProperty(func)
-
-
-#-----------------------------------------------------------------------------
-# Deprecated API
-#-----------------------------------------------------------------------------
-
-# For backwards compatibility
-setattr_on_read = auto_attr

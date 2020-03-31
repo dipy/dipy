@@ -1,7 +1,8 @@
-from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import warnings
+
+from scipy import optimize
 
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr
@@ -97,8 +98,8 @@ def unique_sets(sets, return_inverse=False):
         to reconstruct `sets` (the original ordering of each set may not be
         preserved).
 
-    Return
-    ------
+    Returns
+    ---------
     unique_sets : array
         Unique sets.
     inverse : array (N,)
@@ -268,8 +269,8 @@ class Sphere(object):
         xyz : array-like, 3 elements
             A unit vector
 
-        Return
-        ------
+        Returns
+        --------
         idx : int
             The index into the Sphere.vertices array that gives the closest
             vertex (in angle).
@@ -380,8 +381,8 @@ class HemiSphere(Sphere):
         xyz : array-like, 3 elements
             A unit vector
 
-        Return
-        ------
+        Returns
+        ---------
         idx : int
             The index into the Sphere.vertices array that gives the closest
             vertex (in angle).
@@ -463,8 +464,8 @@ def disperse_charges(hemi, iters, const=.2):
         The electrostatic potential at each iteration. This can be useful to
         check if the repulsion converged to a minimum.
 
-    Note:
-    -----
+    Notes
+    ------
     This function is meant to be used with diffusion imaging so antipodal
     symmetry is assumed. Therefor each charge must not only be unique, but if
     there is a charge at +x, there cannot be a charge at -x. These are treated
@@ -496,78 +497,182 @@ def disperse_charges(hemi, iters, const=.2):
     return HemiSphere(xyz=charges), potential
 
 
-def interp_rbf(data, sphere_origin, sphere_target,
-               function='multiquadric', epsilon=None, smooth=0.1,
-               norm="angle"):
-    """Interpolate data on the sphere, using radial basis functions.
+def _equality_constraints(vects):
+    """Spherical equality constraint. Returns 0 if vects lies on the unit
+    sphere. Note that a flattened array is returned because `scipy.optimize`
+    expects a 1-D array.
 
     Parameters
     ----------
-    data : (N,) ndarray
-        Function values on the unit sphere.
-    sphere_origin : Sphere
-        Positions of data values.
-    sphere_target : Sphere
-        M target positions for which to interpolate.
+    vects : array-like shape (N * 3)
+        Points on the sphere.
+    Returns
+    -------
+    array-like (N,)
+        Difference between squared vector norms and 1.
 
-    function : {'multiquadric', 'inverse', 'gaussian'}
-        Radial basis function.
-    epsilon : float
-        Radial basis function spread parameter. Defaults to approximate average
-        distance between nodes.
-    a good start
-    smooth : float
-        values greater than zero increase the smoothness of the
-        approximation with 0 as pure interpolation. Default: 0.1
-    norm : str
-        A string indicating the function that returns the
-        "distance" between two points.
-        'angle' - The angle between two vectors
-        'euclidean_norm' - The Euclidean distance
+    """
+
+    N = vects.shape[0] // 3
+    vects = vects.reshape((N, 3))
+    return (vects ** 2).sum(1) - 1.0
+
+def _grad_equality_constraints(vects):
+    """Return normals to the surface constraint (which corresponds to
+    the gradient of the implicit function).
+
+    Parameters
+    ----------
+    vects : array-like (N * 3)
+        Points on the sphere.
+    Returns
+    -------
+    array-like (N, N * 3)
+        grad[i, j] contains :math:`\partial f_i / \partial x_j`.
+
+    """
+
+    N = vects.shape[0] // 3
+    vects = vects.reshape((N, 3))
+    vects = (vects.T / np.sqrt((vects ** 2).sum(1))).T
+    grad = np.zeros((N, N * 3))
+    for i in range(3):
+        grad[:, i * N:(i + 1) * N] = np.diag(vects[:, i])
+    return grad
+
+
+def _get_forces_alt(vects, alpha=2.0, **kwargs):
+    """Electrostatic-repulsion objective function. The alpha parameter
+    controls the power repulsion (energy varies as $1 / r^\alpha$) [1]_. For
+    $\alpha = 1.0$, this corresponds to electrostatic interaction energy.
+    The weights ensure equal importance of each shell to the objective
+    function [2]_ [3]_.
+
+    Parameters
+    ----------
+    vects : array-like (N * 3,)
+        Points on the sphere.
+    alpha : float
+        Controls the power of the repulsion. Default is 1.0.
+    weights : array-like (N, N)
+        Weight values to the electrostatic energy.
 
     Returns
     -------
-    v : (M,) ndarray
-        Interpolated values.
+    energy : float
+        Sum of all interactions between any two vectors.
 
-    See Also
-    --------
-    scipy.interpolate.Rbf
+    References
+    ----------
+    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
+           estimation of diffusion anisotropy." Magnetic Resonance Imaging
+           2000 Jul; 18(6): 671-679.
+    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
+           acquisition orders of diffusion‐weighted MRI measurements." Journal
+           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
+    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
+           multishell sampling schemes with uniform coverage in diffusion
+           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
 
     """
-    from scipy.interpolate import Rbf
 
-    def angle(x1, x2):
-        xx = np.arccos(np.clip((x1 * x2).sum(axis=0), -1, 1))
-        return np.nan_to_num(xx)
+    nb_points = vects.shape[0] // 3
+    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    charges = vects.reshape((nb_points, 3))
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        potential = 1 / r_mag ** alpha
 
-    def euclidean_norm(x1, x2):
-        return np.sqrt(((x1 - x2)**2).sum(axis=0))
+    d = np.arange(len(charges))
+    potential[d, d] = 0
+    potential = potential[:nb_points] + potential[nb_points:]
+    potential = weights * potential.sum(-1)
+    potential = potential.sum()
+    return potential
 
-    if norm == "angle":
-        norm = angle
-    elif norm == "euclidean_norm":
-        w_s = "The Eucldian norm used for interpolation is inaccurate "
-        w_s += "and will be deprecated in future versions. Please consider "
-        w_s += "using the 'angle' norm instead"
-        warnings.warn(w_s, DeprecationWarning)
-        norm = euclidean_norm
 
-    # Workaround for bug in older versions of SciPy that don't allow
-    # specification of epsilon None:
-    if epsilon is not None:
-        kwargs = {'function': function,
-                  'epsilon': epsilon,
-                  'smooth': smooth,
-                  'norm': norm}
-    else:
-        kwargs = {'function': function,
-                  'smooth': smooth,
-                  'norm': norm}
+def _get_grad_forces_alt(vects, alpha=2.0, **kwargs):
+    """1st-order derivative of electrostatic-like repulsion energy [1]_.
+    The weights ensure equal importance of each shell to the objective
+    function [2]_ [3]_.
 
-    rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
-               **kwargs)
-    return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
+    Parameters
+    ----------
+    vects : array-like (N * 3,)
+        Points on the sphere.
+    alpha : float
+        Controls the power of the repulsion. Default is 1.0.
+    weights : array-like (N, N)
+        Weight values to the electrostatic energy.
+
+    Returns
+    -------
+    grad : array-like (N * 3,)
+        Gradient of the objective function.
+
+    References
+    ----------
+    .. [1] Papadakis, N. G., et al. "Minimal gradient encoding for robust
+           estimation of diffusion anisotropy." Magnetic Resonance Imaging
+           2000 Jul; 18(6): 671-679.
+    .. [2] Cook, P. A., Symms, M. Boulby, P. A., Alexander, D. C. "Optimal
+           acquisition orders of diffusion‐weighted MRI measurements." Journal
+           of Magnetic Resonance Imaging 2007 Apr; 25(5): 1051-1058.
+    .. [3] Caruyer, E., Lenglet, C., Sapiro, G. and Deriche, R. "Design of
+           multishell sampling schemes with uniform coverage in diffusion
+           MRI." Magnetic Resonance in Medicine 2013 Jun; 69(6): 1534-1540.
+
+    """
+
+    nb_points = vects.shape[0] // 3
+    weights = kwargs.get('weights', np.ones((nb_points, nb_points)))
+    charges = vects.reshape((nb_points, 3))
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        forces = -2 * alpha * r / r_mag ** (alpha + 2.)
+
+    d = np.arange(len(charges))
+    forces[d, d] = 0
+    forces = forces[:nb_points] + forces[nb_points:]
+    forces = forces * weights.reshape((nb_points, nb_points, 1))
+    forces = forces.sum(0)
+    return forces.reshape((nb_points * 3))
+
+
+def disperse_charges_alt(init_pointset, iters, tol=1.0e-3):
+    """Reimplementation of disperse_charges making use of
+    `scipy.optimize.fmin_slsqp`.
+
+    Parameters
+    ----------
+    init_pointset : (N, 3) ndarray
+        Points on a unit sphere.
+    iters : int
+        Number of iterations to run.
+    tol : float
+        Tolerance for the optimization.
+
+    Returns
+    -------
+    array-like (N, 3)
+        Distributed points on a unit sphere.
+
+    """
+
+    K = init_pointset.shape[0]
+    vects = optimize.fmin_slsqp(_get_forces_alt, init_pointset.reshape(K * 3),
+                                f_eqcons=_equality_constraints,
+                                fprime=_get_grad_forces_alt, iter=iters,
+                                acc=tol, args=(), iprint=0)
+    return vects.reshape((K, 3))
 
 
 def euler_characteristic_check(sphere, chi=2):

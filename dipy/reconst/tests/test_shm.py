@@ -11,10 +11,10 @@ from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
+from dipy.core.interpolation import NearestNeighborInterpolator
 from dipy.sims.voxel import single_tensor
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
-from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
@@ -373,29 +373,9 @@ def test_sf_to_sh():
     odf2 = sh_to_sf(odf_sh, sphere, 8, "tournier07")
     assert_array_almost_equal(odf, odf2, 2)
 
-    # Test the basis naming deprecation
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always", DeprecationWarning)
-        odf_sh_mrtrix = sf_to_sh(odf, sphere, 8, "mrtrix")
-        odf2_mrtrix = sh_to_sf(odf_sh_mrtrix, sphere, 8, "mrtrix")
-        assert_array_almost_equal(odf, odf2_mrtrix, 2)
-        assert len(w) != 0
-        assert issubclass(w[-1].category, DeprecationWarning)
-        warnings.simplefilter("default", DeprecationWarning)
-
     odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux07")
     odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux07")
     assert_array_almost_equal(odf, odf2, 2)
-
-    # Test the basis naming deprecation
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always", DeprecationWarning)
-        odf_sh_fibernav = sf_to_sh(odf, sphere, 8, "fibernav")
-        odf2_fibernav = sh_to_sf(odf_sh_fibernav, sphere, 8, "fibernav")
-        assert_array_almost_equal(odf, odf2_fibernav, 2)
-        assert len(w) != 0
-        assert issubclass(w[-1].category, DeprecationWarning)
-        warnings.simplefilter("default", DeprecationWarning)
 
     # 2D case
     odf2d = np.vstack((odf2, odf))

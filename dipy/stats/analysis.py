@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 import os
 import numpy as np
@@ -10,7 +9,7 @@ from scipy.spatial.distance import mahalanobis
 
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
-from dipy.io.streamline import load_trk
+from dipy.io.streamline import load_tractogram
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.io.peaks import load_peaks
@@ -79,7 +78,6 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
             path of output directory
 
     """
-
 
     gfa = peaks.gfa
     anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
@@ -227,24 +225,10 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     n = len(mb)
 
     for io in range(n):
-        #mbundles = load_trk(mb[io], reference='same', bbox_valid_check=False) #os.path.join(model_bundle_folder, mb[io]))
-       # mbundles = mbundles.streamlines
-        
-        
-        mbundles, _ = load_trk(mb[io])
-        
-       # bundles = load_trk(bd[io], reference='same', bbox_valid_check=False) #os.path.join(bundle_folder, bd[io]))
-        #bundles = bundles.streamlines
-        
-        
-        bundles, _ = load_trk(bd[io])
-        
-        #orig_bundles = load_trk(org_bd[io], reference='same', bbox_valid_check=False)#os.path.join(orig_bundle_folder,
-                                   #org_bd[io]))
-        #orig_bundles = orig_bundles.streamlines
 
-
-        orig_bundles, _ = load_trk(org_bd[io])
+        mbundles = load_tractogram(mb[io], reference='same', bbox_valid_check=False).streamlines
+        bundles = load_tractogram(bd[io], reference='same', bbox_valid_check=False).streamlines
+        orig_bundles = load_tractogram(org_bd[io], reference='same', bbox_valid_check=False).streamlines
 
         if len(orig_bundles) > 5 :
 
@@ -341,9 +325,10 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         # This should come back as a 3D covariance matrix with the spatial
         # variance covariance of this node across the different streamlines
         # This is a 3-by-3 array:
-        node_coords = bundle.data[node::n_points]
+        node_coords = bundle._data[node::n_points]
         c = np.cov(node_coords.T, ddof=0)
-        # Reorganize as an upper diagonal matrix for expected Mahalnobis input:
+        # Reorganize as an upper diagonal matrix for expected Mahalanobis
+        # input:
         c = np.array([[c[0, 0], c[0, 1], c[0, 2]],
                       [0, c[1, 1], c[1, 2]],
                       [0, 0, c[2, 2]]])
@@ -354,7 +339,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         for fn in range(len(bundle)):
             # In the special case where all the streamlines have the exact same
             # coordinate in this node, the covariance matrix is all zeros, so
-            # we can't calculate the Mahalnobis distance, we will instead give
+            # we can't calculate the Mahalanobis distance, we will instead give
             # each streamline an identical weight, equal to the number of
             # streamlines:
             if np.allclose(c, 0):
@@ -372,7 +357,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     return w / np.sum(w, 0)
 
 
-def afq_profile(data, bundle, affine=None, n_points=100,
+def afq_profile(data, bundle, affine, n_points=100,
                 orient_by=None, weights=None, **weights_kwarg):
     """
     Calculates a summarized profile of data for a bundle or tract
@@ -389,23 +374,18 @@ def afq_profile(data, bundle, affine=None, n_points=100,
         The collection of streamlines (possibly already resampled into an array
          for each to have the same length) with which we are resampling. See
          Note below about orienting the streamlines.
-
-    affine: 4-by-4 array, optional.
-        A transformation associated with the streamlines in the bundle.
-        Default: identity.
-
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
+        The voxel_to_rasmm matrix, typically from a NIFTI file.
     n_points: int, optional
         The number of points to sample along the bundle. Default: 100.
-
     orient_by: streamline, optional.
         A streamline to use as a standard to orient all of the streamlines in
         the bundle according to.
-
     weights : 1D array or 2D array or callable (optional)
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
-
     weights_kwarg : key-word arguments
         Additional key-word arguments to pass to the weight-calculating
         function. Only to be used if weights is a callable.
@@ -415,8 +395,8 @@ def afq_profile(data, bundle, affine=None, n_points=100,
     ndarray : a 1D array with the profile of `data` along the length of
         `bundle`
 
-    Note
-    ----
+    Notes
+    -----
     Before providing a bundle as input to this function, you will need to make
     sure that the streamlines in the bundle are all oriented in the same
     orientation relative to the bundle (use :func:`orient_by_streamline`).
@@ -427,9 +407,12 @@ def afq_profile(data, bundle, affine=None, n_points=100,
        Nathaniel J. Myall, Brian A. Wandell, and Heidi M. Feldman. 2012.
        "Tract Profiles of White Matter Properties: Automating Fiber-Tract
        Quantification" PloS One 7 (11): e49790.
+
     """
     if orient_by is not None:
-        bundle = orient_by_streamline(bundle, orient_by, affine=affine)
+        bundle = orient_by_streamline(bundle, orient_by)
+    if affine is None:
+        affine = np.eye(4)
     if len(bundle) == 0:
         raise ValueError("The bundle contains no streamlines")
 
@@ -437,7 +420,7 @@ def afq_profile(data, bundle, affine=None, n_points=100,
     fgarray = set_number_of_points(bundle, n_points)
 
     # Extract the values
-    values = np.array(values_from_volume(data, fgarray, affine=affine))
+    values = np.array(values_from_volume(data, fgarray, affine))
 
     if weights is None:
         weights = np.ones(values.shape) / values.shape[0]

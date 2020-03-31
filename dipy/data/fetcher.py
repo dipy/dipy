@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, print_function, absolute_import
 import os
 import sys
 import contextlib
+import logging
 
 from os.path import join as pjoin
 from hashlib import md5
@@ -16,11 +16,9 @@ import zipfile
 from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 
-if sys.version_info[0] < 3:
-    from urllib2 import urlopen
-else:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 
 # Set a user-writeable file-system location to put files:
 if 'DIPY_HOME' in os.environ:
@@ -38,10 +36,10 @@ class FetcherError(Exception):
 
 
 def _log(msg):
-    """Helper function to keep track of things.
-    For now, just prints the message
+    """Helper function used as short hand for logging.
     """
-    print(msg)
+    logger = logging.getLogger(__name__)
+    logger.info(msg)
 
 
 def update_progressbar(progress, total_length):
@@ -50,16 +48,8 @@ def update_progressbar(progress, total_length):
     Takes a number between 0 and 1 to indicate progress from 0 to 100%.
 
     """
-    # Try to set the bar_length according to the console size
-    try:
-        with os.popen('tput cols', 'r') as f:
-            columns = f.read()
-            bar_length = int(columns) - 46
-            if(not (bar_length > 1)):
-                bar_length = 20
-    except Exception:
-        # Default value if determination of console size fails
-        bar_length = 20
+    # TODO: To improve bar management, https://gist.github.com/jtriley/1108174
+    bar_length = 40
     block = int(round(bar_length * progress))
     size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
     text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
@@ -103,8 +93,8 @@ def check_md5(filename, stored_md5=None):
     Computes the md5 of filename and check if it matches with the supplied
     string md5
 
-    Input
-    -----
+    Parameters
+    -----------
     filename : string
         Path to a file.
     md5 : string
@@ -228,7 +218,7 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
         fetch_data(files, folder, data_size)
 
         if msg is not None:
-            print(msg)
+            _log(msg)
         if unzip:
             for f in local_fnames:
                 split_ext = os.path.splitext(f)
@@ -419,6 +409,20 @@ fetch_cfin_multib = _make_fetcher(
          " More details about the data are available in their paper: " +
          " https://www.nature.com/articles/sdata201672"))
 
+fetch_file_formats = _make_fetcher(
+    "bundle_file_formats_example",
+    pjoin(dipy_home, 'bundle_file_formats_example'),
+    'https://zenodo.org/record/3352379/files/',
+    ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+     'raf_m_sub.vtk', 'rpt_m_sub.dpy', 'template0.nii.gz'],
+    ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+     'raf_m_sub.vtk', 'rpt_m_sub.dpy', 'template0.nii.gz'],
+    ['78ed7bead3e129fb4b4edd6da1d7e2d2', '20009796ccd43dc8d2d5403b25dff717',
+     '8afa8419e2efe04ede75cce1f53c77d8', '9edcbea30c7a83b467c3cdae6ce963c8',
+     '42bff2538a650a7ff1e57bfd9ed90ad6', '99c37a2134026d2c4bbb7add5088ddc6'],
+    doc="Download 5 bundles in various file formats and their reference",
+    data_size="25MB")
+
 fetch_bundle_atlas_hcp842 = _make_fetcher(
     "fetch_bundle_atlas_hcp842",
     pjoin(dipy_home, 'bundle_atlas_hcp842'),
@@ -450,7 +454,7 @@ fetch_bundle_fa_hcp = _make_fetcher(
     ['hcp_bundle_fa.nii.gz'],
     ['2d5c0036b0575597378ddf39191028ea'],
     doc=("Download map of FA within two bundles in one" +
-        "of the hcp dataset subjects"),
+         "of the hcp dataset subjects"),
     data_size="230kb")
 
 
@@ -484,6 +488,201 @@ fetch_qtdMRI_test_retest_2subjects = _make_fetcher(
      '5540c0c9bd635c29fc88dd599cbbf5e6'],
     doc="Downloads test-retest qt-dMRI acquisitions of two C57Bl6 mice.",
     data_size="298.2MB")
+
+
+fetch_gold_standard_io = _make_fetcher(
+    "fetch_gold_standard_io",
+    pjoin(dipy_home, 'gold_standard_io'),
+    'https://zenodo.org/record/2651349/files/',
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.txt', 'streamlines_data.txt'],
+    ['gs.trk', 'gs.tck', 'gs.fib', 'gs.dpy', 'gs.nii', 'gs_3mm.nii',
+     'gs_rasmm_space.txt', 'gs_voxmm_space.txt', 'gs_vox_space.txt',
+     'points_data.json', 'streamlines_data.json'],
+    ['3acf565779f4d5107f96b2ef90578d64',
+     '151a30cf356c002060d720bf9d577245',
+     'e9818e07bef5bd605dea0877df14a2b0',
+     '248606297e400d1a9b1786845aad8de3',
+     'a2d4d8f62d1de0ab9927782c7d51cb27',
+     '217b3ae0712a02b2463b8eedfe9a0a68',
+     'ca193a5508d3313d542231aaf262960f',
+     '3284de59dfd9ca3130e6e01258ed9022',
+     'a2a89c387f45adab733652a92f6602d5',
+     '4bcca0c6195871fc05e93cdfabec22b4',
+     '578f29052ac03a6d8a98580eb7c70d97'],
+    doc="Downloads the gold standard for streamlines io testing.",
+    data_size="47.KB")
+
+
+def get_fnames(name='small_64D'):
+    """Provide full paths to example or test datasets.
+
+    Parameters
+    ----------
+    name : str
+        the filename/s of which dataset to return, one of:
+        'small_64D' small region of interest nifti,bvecs,bvals 64 directions
+        'small_101D' small region of interest nifti,bvecs,bvals 101 directions
+        'aniso_vox' volume with anisotropic voxel size as Nifti
+        'fornix' 300 tracks in Trackvis format (from Pittsburgh
+            Brain Competition)
+        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
+            of 101 directions tested on Siemens 3T Trio
+        'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+        'test_piesno' slice of N=8, K=14 diffusion data
+        'reg_c' small 2D image used for validating registration
+        'reg_o' small 2D image used for validation registration
+        'cb_2' two vectorized cingulum bundles
+
+    Returns
+    -------
+    fnames : tuple
+        filenames for dataset
+
+    Examples
+    ----------
+    >>> import numpy as np
+    >>> from dipy.io.image import load_nifti
+    >>> from dipy.data import get_fnames
+    >>> fimg, fbvals, fbvecs = get_fnames('small_101D')
+    >>> bvals=np.loadtxt(fbvals)
+    >>> bvecs=np.loadtxt(fbvecs).T
+    >>> data, affine = load_nifti(fimg)
+    >>> data.shape == (6, 10, 10, 102)
+    True
+    >>> bvals.shape == (102,)
+    True
+    >>> bvecs.shape == (102, 3)
+    True
+
+    """
+    DATA_DIR = pjoin(os.path.dirname(__file__), 'files')
+    if name == 'small_64D':
+        fbvals = pjoin(DATA_DIR, 'small_64D.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
+        fimg = pjoin(DATA_DIR, 'small_64D.nii')
+        return fimg, fbvals, fbvecs
+    if name == '55dir_grad.bvec':
+        return pjoin(DATA_DIR, '55dir_grad.bvec')
+    if name == 'small_101D':
+        fbvals = pjoin(DATA_DIR, 'small_101D.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_101D.bvec')
+        fimg = pjoin(DATA_DIR, 'small_101D.nii.gz')
+        return fimg, fbvals, fbvecs
+    if name == 'aniso_vox':
+        return pjoin(DATA_DIR, 'aniso_vox.nii.gz')
+    if name == 'ascm_test':
+        return pjoin(DATA_DIR, 'ascm_out_test.nii.gz')
+    if name == 'fornix':
+        return pjoin(DATA_DIR, 'tracks300.trk')
+    if name == 'gqi_vectors':
+        return pjoin(DATA_DIR, 'ScannerVectors_GQI101.txt')
+    if name == 'dsi515btable':
+        return pjoin(DATA_DIR, 'dsi515_b_table.txt')
+    if name == 'dsi4169btable':
+        return pjoin(DATA_DIR, 'dsi4169_b_table.txt')
+    if name == 'grad514':
+        return pjoin(DATA_DIR, 'grad_514.txt')
+    if name == "small_25":
+        fbvals = pjoin(DATA_DIR, 'small_25.bval')
+        fbvecs = pjoin(DATA_DIR, 'small_25.bvec')
+        fimg = pjoin(DATA_DIR, 'small_25.nii.gz')
+        return fimg, fbvals, fbvecs
+    if name == 'small_25_streamlines':
+        fstreamlines = pjoin(DATA_DIR, 'EuDX_small_25.trk')
+        return fstreamlines
+    if name == "S0_10":
+        fimg = pjoin(DATA_DIR, 'S0_10slices.nii.gz')
+        return fimg
+    if name == "test_piesno":
+        fimg = pjoin(DATA_DIR, 'test_piesno.nii.gz')
+        return fimg
+    if name == "reg_c":
+        return pjoin(DATA_DIR, 'C.npy')
+    if name == "reg_o":
+        return pjoin(DATA_DIR, 'circle.npy')
+    if name == 'cb_2':
+        return pjoin(DATA_DIR, 'cb_2.npz')
+    if name == "t1_coronal_slice":
+        return pjoin(DATA_DIR, 't1_coronal_slice.npy')
+    if name == "t-design":
+        N = 45
+        return pjoin(DATA_DIR, 'tdesign' + str(N) + '.txt')
+    if name == 'scil_b0':
+        files, folder = fetch_scil_b0()
+        files = files['datasets_multi-site_all_companies.zip'][2]
+        files = [pjoin(folder, f) for f in files]
+        return [f for f in files if os.path.isfile(f)]
+    if name == 'stanford_hardi':
+        files, folder = fetch_stanford_hardi()
+        fraw = pjoin(folder, 'HARDI150.nii.gz')
+        fbval = pjoin(folder, 'HARDI150.bval')
+        fbvec = pjoin(folder, 'HARDI150.bvec')
+        return fraw, fbval, fbvec
+    if name == 'taiwan_ntu_dsi':
+        files, folder = fetch_taiwan_ntu_dsi()
+        fraw = pjoin(folder, 'DSI203.nii.gz')
+        fbval = pjoin(folder, 'DSI203.bval')
+        fbvec = pjoin(folder, 'DSI203.bvec')
+        return fraw, fbval, fbvec
+    if name == 'sherbrooke_3shell':
+        files, folder = fetch_sherbrooke_3shell()
+        fraw = pjoin(folder, 'HARDI193.nii.gz')
+        fbval = pjoin(folder, 'HARDI193.bval')
+        fbvec = pjoin(folder, 'HARDI193.bvec')
+        return fraw, fbval, fbvec
+    if name == 'isbi2013_2shell':
+        files, folder = fetch_isbi2013_2shell()
+        fraw = pjoin(folder, 'phantom64.nii.gz')
+        fbval = pjoin(folder, 'phantom64.bval')
+        fbvec = pjoin(folder, 'phantom64.bvec')
+        return fraw, fbval, fbvec
+    if name == 'stanford_labels':
+        files, folder = fetch_stanford_labels()
+        return pjoin(folder, "aparc-reduced.nii.gz")
+    if name == 'syn_data':
+        files, folder = fetch_syn_data()
+        t1_name = pjoin(folder, 't1.nii.gz')
+        b0_name = pjoin(folder, 'b0.nii.gz')
+        return t1_name, b0_name
+    if name == 'stanford_t1':
+        files, folder = fetch_stanford_t1()
+        return pjoin(folder, 't1.nii.gz')
+    if name == 'stanford_pve_maps':
+        files, folder = fetch_stanford_pve_maps()
+        f_pve_csf = pjoin(folder, 'pve_csf.nii.gz')
+        f_pve_gm = pjoin(folder, 'pve_gm.nii.gz')
+        f_pve_wm = pjoin(folder, 'pve_wm.nii.gz')
+        return f_pve_csf, f_pve_gm, f_pve_wm
+    if name == 'ivim':
+        files, folder = fetch_ivim()
+        fraw = pjoin(folder, 'ivim.nii.gz')
+        fbval = pjoin(folder, 'ivim.bval')
+        fbvec = pjoin(folder, 'ivim.bvec')
+        return fraw, fbval, fbvec
+    if name == 'tissue_data':
+        files, folder = fetch_tissue_data()
+        t1_name = pjoin(folder, 't1_brain.nii.gz')
+        t1d_name = pjoin(folder, 't1_brain_denoised.nii.gz')
+        ap_name = pjoin(folder, 'power_map.nii.gz')
+        return t1_name, t1d_name, ap_name
+    if name == 'cfin_multib':
+        files, folder = fetch_cfin_multib()
+        t1_name = pjoin(folder, 'T1.nii')
+        fraw = pjoin(folder, '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
+        fbval = pjoin(folder,
+                      '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
+        fbvec = pjoin(folder,
+                      '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
+        return fraw, fbval, fbvec, t1_name
+    if name == 'target_tractrogram_hcp':
+        files, folder = fetch_target_tractogram_hcp()
+        return pjoin(folder, 'target_tractogram_hcp', 'hcp_tractogram',
+                     'streamlines.trk')
+    if name == 'bundle_atlas_hcp842':
+        files, folder = fetch_bundle_atlas_hcp842()
+        return get_bundle_atlas_hcp842()
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -531,7 +730,7 @@ def read_qtdMRI_test_retest_2subjects():
     ]
     for data_name in data_names:
         data_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', data_name)
-        data.append(nib.load(data_loc).get_data())
+        data.append(load_nifti_data(data_loc))
 
     cc_masks = []
     mask_names = [
@@ -540,7 +739,7 @@ def read_qtdMRI_test_retest_2subjects():
     ]
     for mask_name in mask_names:
         mask_loc = pjoin(dipy_home, 'qtdMRI_test_retest_2subjects', mask_name)
-        cc_masks.append(nib.load(mask_loc).get_data())
+        cc_masks.append(load_nifti_data(mask_loc))
 
     gtabs = []
     gtab_txt_names = [
@@ -564,41 +763,33 @@ def read_qtdMRI_test_retest_2subjects():
 
 
 def read_scil_b0():
-    """ Load GE 3T b0 image form the scil b0 dataset.
+    """Load GE 3T b0 image form the scil b0 dataset.
 
     Returns
     -------
     img : obj,
         Nifti1Image
-    """
-    file = pjoin(dipy_home,
-                 'datasets_multi-site_all_companies',
-                 '3T',
-                 'GE',
-                 'b0.nii.gz')
 
-    return nib.load(file)
+    """
+    fnames = get_fnames('scil_b0')
+    return nib.load(fnames[0])
 
 
 def read_siemens_scil_b0():
-    """ Load Siemens 1.5T b0 image form the scil b0 dataset.
+    """Load Siemens 1.5T b0 image from the scil b0 dataset.
 
     Returns
     -------
     img : obj,
         Nifti1Image
-    """
-    file = pjoin(dipy_home,
-                 'datasets_multi-site_all_companies',
-                 '1.5T',
-                 'Siemens',
-                 'b0.nii.gz')
 
-    return nib.load(file)
+    """
+    fnames = get_fnames('scil_b0')
+    return nib.load(fnames[1])
 
 
 def read_isbi2013_2shell():
-    """ Load ISBI 2013 2-shell synthetic dataset
+    """Load ISBI 2013 2-shell synthetic dataset.
 
     Returns
     -------
@@ -606,11 +797,9 @@ def read_isbi2013_2shell():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_isbi2013_2shell()
-    fraw = pjoin(folder, 'phantom64.nii.gz')
-    fbval = pjoin(folder, 'phantom64.bval')
-    fbvec = pjoin(folder, 'phantom64.bvec')
+    fraw, fbval, fbvec = get_fnames('isbi2013_2shell')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
@@ -618,7 +807,7 @@ def read_isbi2013_2shell():
 
 
 def read_sherbrooke_3shell():
-    """ Load Sherbrooke 3-shell HARDI dataset
+    """Load Sherbrooke 3-shell HARDI dataset.
 
     Returns
     -------
@@ -626,11 +815,9 @@ def read_sherbrooke_3shell():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_sherbrooke_3shell()
-    fraw = pjoin(folder, 'HARDI193.nii.gz')
-    fbval = pjoin(folder, 'HARDI193.bval')
-    fbvec = pjoin(folder, 'HARDI193.bvec')
+    fraw, fbval, fbvec = get_fnames('sherbrooke_3shell')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
@@ -638,19 +825,17 @@ def read_sherbrooke_3shell():
 
 
 def read_stanford_labels():
-    """Read stanford hardi data and label map"""
+    """Read stanford hardi data and label map."""
     # First get the hardi data
-    fetch_stanford_hardi()
     hard_img, gtab = read_stanford_hardi()
     # Fetch and load
-    files, folder = fetch_stanford_labels()
-    labels_file = pjoin(folder, "aparc-reduced.nii.gz")
+    labels_file = get_fnames('stanford_labels')
     labels_img = nib.load(labels_file)
     return hard_img, gtab, labels_img
 
 
 def read_stanford_hardi():
-    """ Load Stanford HARDI dataset
+    """Load Stanford HARDI dataset.
 
     Returns
     -------
@@ -658,11 +843,9 @@ def read_stanford_hardi():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_stanford_hardi()
-    fraw = pjoin(folder, 'HARDI150.nii.gz')
-    fbval = pjoin(folder, 'HARDI150.bval')
-    fbvec = pjoin(folder, 'HARDI150.bvec')
+    fraw, fbval, fbvec = get_fnames('stanford_hardi')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
@@ -670,17 +853,13 @@ def read_stanford_hardi():
 
 
 def read_stanford_t1():
-    files, folder = fetch_stanford_t1()
-    f_t1 = pjoin(folder, 't1.nii.gz')
+    f_t1 = get_fnames('stanford_t1')
     img = nib.load(f_t1)
     return img
 
 
 def read_stanford_pve_maps():
-    files, folder = fetch_stanford_pve_maps()
-    f_pve_csf = pjoin(folder, 'pve_csf.nii.gz')
-    f_pve_gm = pjoin(folder, 'pve_gm.nii.gz')
-    f_pve_wm = pjoin(folder, 'pve_wm.nii.gz')
+    f_pve_csf, f_pve_gm, f_pve_wm = get_fnames('stanford_pve_maps')
     img_pve_csf = nib.load(f_pve_csf)
     img_pve_gm = nib.load(f_pve_gm)
     img_pve_wm = nib.load(f_pve_wm)
@@ -688,7 +867,7 @@ def read_stanford_pve_maps():
 
 
 def read_taiwan_ntu_dsi():
-    """ Load Taiwan NTU dataset
+    """Load Taiwan NTU dataset.
 
     Returns
     -------
@@ -696,11 +875,9 @@ def read_taiwan_ntu_dsi():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_taiwan_ntu_dsi()
-    fraw = pjoin(folder, 'DSI203.nii.gz')
-    fbval = pjoin(folder, 'DSI203.bval')
-    fbvec = pjoin(folder, 'DSI203.bvec')
+    fraw, fbval, fbvec = get_fnames('taiwan_ntu_dsi')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     bvecs[1:] = (bvecs[1:] /
                  np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None])
@@ -710,7 +887,7 @@ def read_taiwan_ntu_dsi():
 
 
 def read_syn_data():
-    """ Load t1 and b0 volumes from the same session
+    """Load t1 and b0 volumes from the same session.
 
     Returns
     -------
@@ -718,10 +895,9 @@ def read_syn_data():
         Nifti1Image
     b0 : obj,
         Nifti1Image
+
     """
-    files, folder = fetch_syn_data()
-    t1_name = pjoin(folder, 't1.nii.gz')
-    b0_name = pjoin(folder, 'b0.nii.gz')
+    t1_name, b0_name = get_fnames('syn_data')
     t1 = nib.load(t1_name)
     b0 = nib.load(b0_name)
     return t1, b0
@@ -746,19 +922,21 @@ def fetch_tissue_data():
                   'power_map.nii.gz']
 
     if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
+        _log('Creating new directory %s' % folder)
         os.makedirs(folder)
         msg = 'Downloading 3 Nifti1 images (9.3MB)...'
-        print(msg)
+        _log(msg)
 
         for i in range(len(md5_list)):
             _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
             check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
-        print('Done.')
-        print('Files copied in folder %s' % folder)
+        _log('Done.')
+        _log('Files copied in folder %s' % folder)
     else:
         _already_there_msg(folder)
+
+    return fname_list, folder
 
 
 def read_tissue_data(contrast='T1'):
@@ -903,8 +1081,7 @@ fetch_mni_template.__doc__ += mni_notes
 
 
 def fetch_cenir_multib(with_raw=False):
-    """
-    Fetch 'HCP-like' data, collected at multiple b-values
+    """Fetch 'HCP-like' data, collected at multiple b-values.
 
     Parameters
     ----------
@@ -960,8 +1137,7 @@ def fetch_cenir_multib(with_raw=False):
 
 
 def read_cenir_multib(bvals=None):
-    """
-    Read CENIR multi b-value data
+    """Read CENIR multi b-value data.
 
     Parameters
     ----------
@@ -998,7 +1174,7 @@ def read_cenir_multib(bvals=None):
     bval_list = []
     bvec_list = []
     for bval in bvals:
-        data.append(nib.load(file_dict[bval]['DWI']).get_data())
+        data.append(load_nifti_data(file_dict[bval]['DWI']))
         bval_list.extend(np.loadtxt(file_dict[bval]['bvals']))
         bvec_list.append(np.loadtxt(file_dict[bval]['bvecs']))
 
@@ -1033,7 +1209,7 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     metrics : list
         Either ['fa'] or ['t1'] or ['fa', 't1']
     bundles : list
-        Example ['af.left', 'cst.right', 'cc_1']. See all the available bundles
+        E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
 
@@ -1061,37 +1237,36 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
 
     dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
 
-    from nibabel import trackvis as tv
+    from dipy.io.streamline import load_tractogram
+    from dipy.tracking.streamline import Streamlines
 
     res = {}
 
     if 't1' in metrics:
-        img = nib.load(pjoin(dname, subj_id, 't1_warped.nii.gz'))
-        data = img.get_data()
-        affine = img.affine
+        data, affine = load_nifti(pjoin(dname, subj_id, 't1_warped.nii.gz'))
         res['t1'] = data
 
     if 'fa' in metrics:
-        img_fa = nib.load(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
-        fa = img_fa.get_data()
-        affine = img_fa.affine
+        fa, affine = load_nifti(pjoin(dname, subj_id, 'fa_1x1x1.nii.gz'))
         res['fa'] = fa
 
     res['affine'] = affine
 
     for bun in bundles:
 
-        streams, hdr = tv.read(pjoin(dname, subj_id,
-                                     'bundles', 'bundles_' + bun + '.trk'),
-                               points_space="rasmm")
-        streamlines = [s[0] for s in streams]
+        streams = load_tractogram(pjoin(dname, subj_id,
+                                        'bundles', 'bundles_' + bun + '.trk'),
+                                  'same',
+                                  bbox_valid_check=False).streamlines
+
+        streamlines = Streamlines(streams)
         res[bun] = streamlines
 
     return res
 
 
 def read_ivim():
-    """ Load IVIM dataset
+    """Load IVIM dataset.
 
     Returns
     -------
@@ -1099,11 +1274,9 @@ def read_ivim():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_ivim()
-    fraw = pjoin(folder, 'ivim.nii.gz')
-    fbval = pjoin(folder, 'ivim.bval')
-    fbvec = pjoin(folder, 'ivim.bvec')
+    fraw, fbval, fbvec = get_fnames('ivim')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs, b0_threshold=0)
     img = nib.load(fraw)
@@ -1111,7 +1284,7 @@ def read_ivim():
 
 
 def read_cfin_dwi():
-    """Load CFIN multi b-value DWI data
+    """Load CFIN multi b-value DWI data.
 
     Returns
     -------
@@ -1119,14 +1292,9 @@ def read_cfin_dwi():
         Nifti1Image
     gtab : obj,
         GradientTable
+
     """
-    files, folder = fetch_cfin_multib()
-    fraw = pjoin(folder,
-                 '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii')
-    fbval = pjoin(folder,
-                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bval')
-    fbvec = pjoin(folder,
-                  '__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.bvec')
+    fraw, fbval, fbvec, _ = get_fnames('cfin_multib')
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
@@ -1140,10 +1308,31 @@ def read_cfin_t1():
     -------
     img : obj,
         Nifti1Image
+
     """
-    files, folder = fetch_cfin_multib()
-    img = nib.load(pjoin(folder, 'T1.nii'))
+    _, _, _, fraw = get_fnames('cfin_multib')
+    img = nib.load(fraw)
     return img  # , gtab
+
+
+def get_file_formats():
+    """
+
+    Returns
+    -------
+    bundles_list : all bundles (list)
+    ref_anat : reference
+    """
+    ref_anat = pjoin(dipy_home,
+                     'bundle_file_formats_example', 'template0.nii.gz')
+    bundles_list = []
+    for filename in ['cc_m_sub.trk', 'laf_m_sub.tck', 'lpt_m_sub.fib',
+                     'raf_m_sub.vtk', 'rpt_m_sub.dpy']:
+        bundles_list.append(pjoin(dipy_home,
+                                  'bundle_file_formats_example',
+                                  filename))
+
+    return bundles_list, ref_anat
 
 
 def get_bundle_atlas_hcp842():

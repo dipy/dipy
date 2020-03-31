@@ -1,12 +1,7 @@
-"""
+"""Testing cross-validation analysis."""
 
-Testing cross-validation analysis
-
-"""
-from __future__ import division, print_function, absolute_import
 import numpy as np
 import numpy.testing as npt
-import nibabel as nib
 import dipy.reconst.cross_validation as xval
 import dipy.data as dpd
 import dipy.reconst.dti as dti
@@ -14,6 +9,7 @@ import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
 import dipy.reconst.base as base
+from dipy.io.image import load_nifti_data
 
 
 # We'll set these globally:
@@ -21,10 +17,6 @@ fdata, fbval, fbvec = dpd.get_fnames('small_64D')
 
 
 def test_coeff_of_determination():
-    """
-    Test the calculation of the coefficient of determination
-    """
-
     model = np.random.randn(10, 10, 10, 150)
     data = np.copy(model)
     # If the model predicts the data perfectly, the COD is all 100s:
@@ -33,10 +25,7 @@ def test_coeff_of_determination():
 
 
 def test_dti_xval():
-    """
-    Test k-fold cross-validation
-    """
-    data = nib.load(fdata).get_data()
+    data = load_nifti_data(fdata)
     gtab = gt.gradient_table(fbval, fbvec)
     dm = dti.TensorModel(gtab, 'LS')
     # The data has 102 directions, so will not divide neatly into 10 bits
@@ -69,7 +58,7 @@ def test_dti_xval():
 
 def test_csd_xval():
     # First, let's see that it works with some data:
-    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
+    data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)
     S0 = np.mean(data[..., gtab.b0s_mask])
     response = ([0.0015, 0.0003, 0.0001], S0)
@@ -109,10 +98,8 @@ def test_csd_xval():
 
 
 def test_no_predict():
-    """
-    Test that if you try to do this with a model that doesn't have a `predict`
-    method, you get something reasonable.
-    """
+    # Test that if you try to do this with a model that doesn't have a `predict`
+    # method, you get something reasonable.
     class NoPredictModel(base.ReconstModel):
         def __init__(self, gtab):
             base.ReconstModel.__init__(self, gtab)
@@ -126,6 +113,6 @@ def test_no_predict():
 
     gtab = gt.gradient_table(fbval, fbvec)
     my_model = NoPredictModel(gtab)
-    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Whatever
+    data = load_nifti_data(fdata)[1:3, 1:3, 1:3]  # Whatever
 
     npt.assert_raises(ValueError,  xval.kfold_xval, my_model, data, 2)

@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 import inspect
 import logging
@@ -89,7 +88,7 @@ class Workflow(object):
         """Execute the workflow.
 
         Since this is an abstract class, raise exception if this code is
-        reached (not impletemented in child class or literally called on this
+        reached (not implemented in child class or literally called on this
         class)
         """
         raise Exception('Error: {} does not have a run method.'.

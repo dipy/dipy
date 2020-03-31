@@ -18,21 +18,30 @@ EuDX along with the CsaOdfModel to make some streamlines. Let's import the
 modules and download the data we'll be using.
 """
 
-from dipy.tracking.eudx import EuDX
-from dipy.reconst import shm
+import numpy as np
+from scipy.ndimage.morphology import binary_dilation
+
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti_data, load_nifti, save_nifti
 from dipy.direction import peaks
+from dipy.reconst import shm
 from dipy.tracking import utils
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 
-from dipy.data import read_stanford_labels, fetch_stanford_t1, read_stanford_t1
 
-hardi_img, gtab, labels_img = read_stanford_labels()
-data = hardi_img.get_data()
-labels = labels_img.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
 
-fetch_stanford_t1()
-t1 = read_stanford_t1()
-t1_data = t1.get_data()
+data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
+labels = load_nifti_data(label_fname)
+t1_data = load_nifti_data(t1_fname)
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
 
 """
 We've loaded an image called ``labels_img`` which is a map of tissue types such
@@ -40,10 +49,11 @@ that every integer value in the array ``labels`` represents an anatomical
 structure or tissue type [#]_. For this example, the image was created so that
 white matter voxels have values of either 1 or 2. We'll use
 ``peaks_from_model`` to apply the ``CsaOdfModel`` to each white matter voxel
-and estimate fiber orientations which we can use for tracking.
+and estimate fiber orientations which we can use for tracking. We will also
+dilate this mask by 1 voxel to ensure streamlines reach the grey matter.
 """
 
-white_matter = (labels == 1) | (labels == 2)
+white_matter = binary_dilation((labels == 1) | (labels == 2))
 csamodel = shm.CsaOdfModel(gtab, 6)
 csapeaks = peaks.peaks_from_model(model=csamodel,
                                   data=data,
@@ -54,19 +64,18 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 
 """
 Now we can use EuDX to track all of the white matter. To keep things reasonably
-fast we use ``density=2`` which will result in 8 seeds per voxel. We'll set
-``a_low`` (the parameter which determines the threshold of FA/QA under which
-tracking stops) to be very low because we've already applied a white matter
-mask.
+fast we use ``density=1`` which will result in 1 seeds per voxel. The stopping
+criterion, determining when the tracking stops, is set to stop when the
+tracking exit the white matter.
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=2)
-streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
-                            odf_vertices=peaks.default_sphere.vertices,
-                            a_low=.05, step_sz=.5, seeds=seeds)
-affine = streamline_generator.affine
+affine = np.eye(4)
+seeds = utils.seeds_from_mask(white_matter, affine, density=1)
+stopping_criterion = BinaryStoppingCriterion(white_matter)
 
-streamlines = Streamlines(streamline_generator, buffer_size=512)
+streamline_generator = LocalTracking(csapeaks, stopping_criterion, seeds,
+                                     affine=affine, step_size=0.5)
+streamlines = Streamlines(streamline_generator)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
@@ -83,10 +92,10 @@ with the ROI and those that don't.
 """
 
 cc_slice = labels == 2
-cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
+cc_streamlines = utils.target(streamlines, affine, cc_slice)
 cc_streamlines = Streamlines(cc_streamlines)
 
-other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
+other_streamlines = utils.target(streamlines, affine, cc_slice,
                                  include=False)
 other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
@@ -156,7 +165,8 @@ by their endpoints. Notice that this function only considers the endpoints of
 each streamline.
 """
 
-M, grouping = utils.connectivity_matrix(cc_streamlines, labels, affine=affine,
+M, grouping = utils.connectivity_matrix(cc_streamlines, affine,
+                                        labels.astype(np.uint8),
                                         return_mapping=True,
                                         mapping_as_streamlines=True)
 M[:3, :] = 0
@@ -178,6 +188,7 @@ scale to make small values in the matrix easier to see.
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 plt.imshow(np.log1p(M), interpolation='nearest')
 plt.savefig("connectivity.png")
 
@@ -211,7 +222,7 @@ left and right superior frontal gyrus.
 
 lr_superiorfrontal_track = grouping[11, 54]
 shape = labels.shape
-dm = utils.density_map(lr_superiorfrontal_track, shape, affine=affine)
+dm = utils.density_map(lr_superiorfrontal_track, affine, shape)
 
 """
 Let's save this density map and the streamlines so that they can be
@@ -219,59 +230,20 @@ visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
 
-To do that, we will use tools available in `nibabel <http://nipy.org/nibabel>`_)
 """
 
-import nibabel as nib
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
 # Save density map
-dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.affine)
-dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
-
-# Move streamlines to "trackvis space"
-voxel_size = labels_img.header.get_zooms()
-trackvis_point_space = utils.affine_for_trackvis(voxel_size)
-# lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
-#                                   trackvis_point_space, input_space=affine)
+save_nifti("lr-superiorfrontal-dm.nii.gz", dm.astype("int16"), affine)
 
 lr_sf_trk = Streamlines(lr_superiorfrontal_track)
 
 # Save streamlines
-save_trk("lr-superiorfrontal.trk", lr_sf_trk, shape=shape, vox_size=voxel_size, affine=affine)
+sft = StatefulTractogram(lr_sf_trk, hardi_img, Space.VOX)
+save_trk(sft, "lr-superiorfrontal.trk")
 
-"""
-Let's take a moment here to consider the representation of streamlines used in
-DIPY. Streamlines are a path though the 3D space of an image represented by a
-set of points. For these points to have a meaningful interpretation, these
-points must be given in a known coordinate system. The ``affine`` attribute of
-the ``streamline_generator`` object specifies the coordinate system of the
-points with respect to the voxel indices of the input data.
-``trackvis_point_space`` specifies the trackvis coordinate system with respect
-to the same indices. The ``move_streamlines`` function returns a new set of
-streamlines from an existing set of streamlines in the target space. The
-target space and the input space must be specified as affine transformations
-with respect to the same reference [#]_. If no input space is given, the input
-space will be the same as the current representation of the streamlines, in
-other words the input space is assumed to be ``np.eye(4)``, the 4-by-4 identity
-matrix.
-
-All of the functions above that allow streamlines to interact with volumes take
-an affine argument. This argument allows these functions to work with
-streamlines regardless of their coordinate system. For example even though we
-moved our streamlines to "trackvis space", we can still compute the density map
-as long as we specify the right coordinate system.
-"""
-
-dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=np.eye(4))
-assert np.all(dm == dm_trackvis)
-
-"""
-This means that streamlines can interact with any image volume, for example a
-high resolution structural image, as long as one can register that image to
-the diffusion images and calculate the coordinate system with respect to that
-image.
-"""
 """
 .. rubric:: Footnotes
 
@@ -284,6 +256,6 @@ image.
        `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
        that can represent scaling, rotation, sheer, translation and reflection.
-       Affine transformations are often represented using a 4x4 matrix where the
-       last row of the matrix is ``[0, 0, 0, 1]``.
+       Affine transformations are often represented using a 4x4 matrix where
+       the last row of the matrix is ``[0, 0, 0, 1]``.
 """

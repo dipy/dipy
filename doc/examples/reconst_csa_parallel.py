@@ -10,18 +10,24 @@ Import modules, fetch and read data, and compute the mask.
 """
 
 import time
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames, get_sphere
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
 
-data = img.get_data()
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
-maskdata, mask = median_otsu(data, 3, 1, True,
-                             vol_idx=range(10, 50), dilate=2)
+data, affine = load_nifti(hardi_fname)
+
+bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
+gtab = gradient_table(bvals, bvecs)
+
+maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
+                             numpass=1, autocrop=True, dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
@@ -38,7 +44,7 @@ sphere as input. The sphere is an object that represents the spherical discrete
 grid where the ODF values will be evaluated.
 """
 
-sphere = get_sphere('symmetric724')
+sphere = get_sphere('repulsion724')
 
 start_time = time.time()
 

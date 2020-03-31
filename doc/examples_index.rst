@@ -18,7 +18,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
-- :ref:`example_tracking_quick_start`
+- :ref:`example_tracking_introduction_eudx`
 
 -------------
 Preprocessing
@@ -39,12 +39,13 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-
 Denoising
 ~~~~~~~~~
 
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
+- :ref:`example_denoise_mppca`
+- :ref:`example_denoise_gibbs`
 
 Reslice
 ~~~~~~~
@@ -59,9 +60,10 @@ Constrained Spherical Deconvolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_csd`
+- :ref:`example_reconst_mcsd`
 
 Fiber Orientation Estimated using Continuous Axially Symmetric Tensors
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_forecast`
 
@@ -82,18 +84,25 @@ Studying diffusion time-dependence using qt-dMRI
 - :ref:`example_reconst_qtdmri`
 
 Diffusion Tensor Imaging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_dti`
 - :ref:`example_restore_dti`
+
+Free-water Diffusion Tensor Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_reconst_fwdti`
 
-
 Diffusion Kurtosis Imaging
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_reconst_dki`
 - :ref:`example_reconst_msdki`
 
+White Matter Tract Integrity Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- :ref:`example_reconst_dki_micro`
 
 Q-Ball Constant Solid Angle
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,12 +128,12 @@ DSI with Deconvolution
 - :ref:`example_reconst_dsid`
 
 Sparse Fascicle Model
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_sfm_reconst`
 
 Intravoxel incoherent motion (IVIM)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_ivim`
 
@@ -134,9 +143,9 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
-------------------------------------------------
+----------------------
 Contextual enhancement
-------------------------------------------------
+----------------------
 
 - :ref:`example_contextual_enhancement`
 - :ref:`example_fiber_to_bundle_coherence`
@@ -145,17 +154,17 @@ Contextual enhancement
 Fiber tracking
 --------------
 
-- :ref:`example_introduction_to_basic_tracking`
-- :ref:`example_probabilistic_fiber_tracking`
-- :ref:`example_deterministic_fiber_tracking`
+- :ref:`example_tracking_introduction_eudx`
+- :ref:`example_tracking_deterministic`
+- :ref:`example_tracking_probabilistic`
 - :ref:`example_tracking_bootstrap_peaks`
-- :ref:`example_tracking_tissue_classifier`
-- :ref:`example_particle_filtering_fiber_tracking`
-- :ref:`example_sfm_tracking`
+- :ref:`example_tracking_stopping_criterion`
+- :ref:`example_tracking_pft`
+- :ref:`example_tracking_sfm`
 
--------------------------------------
+-------------------------
 Fiber tracking evaluation
--------------------------------------
+-------------------------
 
 - :ref:`example_linear_fascicle_evaluation`
 
@@ -169,20 +178,23 @@ Streamline analysis and connectivity
 - :ref:`example_path_length_map`
 - :ref:`example_afq_tract_profiles`
 
-------------------
+------------
 Registration
-------------------
+------------
 
 Image-based Registration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_affine_registration_3d`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 - :ref:`example_register_binary_fuzzy`
 
 Streamline-based Registration
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - :ref:`example_bundle_registration`
+- :ref:`example_streamline_registration`
 
 ------------
 Segmentation
@@ -207,7 +219,7 @@ Tissue Classification
 - :ref:`example_tissue_classification`
 
 Bundle Extraction
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_extraction`
 
@@ -232,20 +244,18 @@ File Formats
 
 - :ref:`example_streamline_formats`
 
--------------------
+-------------
 Visualization
--------------------
+-------------
 
 - :ref:`example_viz_advanced`
 - :ref:`example_viz_slice`
 - :ref:`example_viz_bundles`
-- :ref:`example_viz_surfaces`
 - :ref:`example_viz_roi_contour`
-- :ref:`example_viz_ui`
-- :ref:`example_viz_timers`
 
----------------
+---------
 Workflows
----------------
+---------
+
 - :ref:`example_workflow_creation`
 - :ref:`example_combined_workflow_creation`

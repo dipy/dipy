@@ -18,17 +18,18 @@ import subprocess
 from optparse import OptionParser
 from getpass import getuser
 
-#USER_README = 'docs/README.rst'
-#DEV_README = SRC_DIR + 'README.rst'
+# USER_README = 'docs/README.rst'
+# DEV_README = SRC_DIR + 'README.rst'
 
 BUILD_DIR = 'build'
 DIST_DIR = 'dist'
 DIST_DMG_DIR = 'dist-dmg'
 
+
 def remove_dirs(sudo):
-    print 'Removing old build and distribution directories...'
-    print """The distribution is built as root, so the files have the correct
-    permissions when installed by the user.  Chown them to user for removal."""
+    print('Removing old build and distribution directories...')
+    print("""The distribution is built as root, so the files have the correct
+    permissions when installed by the user.  Chown them to user for removal.""")
     if os.path.exists(BUILD_DIR):
         cmd = 'chown -R %s %s' % (getuser(), BUILD_DIR)
         if sudo:
@@ -44,7 +45,7 @@ def remove_dirs(sudo):
 
 
 def build_dist(readme, python_exe, sudo):
-    print 'Building distribution... (using sudo)'
+    print('Building distribution... (using sudo)')
     cmd = '%s setup_egg.py bdist_mpkg --readme=%s' % (
         python_exe, readme)
     if sudo:
@@ -53,7 +54,7 @@ def build_dist(readme, python_exe, sudo):
 
 
 def build_dmg(sudo):
-    print 'Building disk image...'
+    print('Building disk image...')
     # Since we removed the dist directory at the start of the script,
     # our pkg should be the only file there.
     pkg = os.listdir(DIST_DIR)[0]
@@ -75,31 +76,35 @@ def build_dmg(sudo):
         cmd = 'sudo ' + cmd
     shellcmd(cmd)
 
+
 def copy_readme():
     """Copy a user README with info regarding the website, instead of
     the developer README which tells one how to build the source.
     """
-    print 'Copy user README.rst for installer.'
+    print('Copy user README.rst for installer.')
     shutil.copy(USER_README, DEV_README)
+
 
 def revert_readme():
     """Revert the developer README."""
-    print 'Reverting README.rst...'
+    print('Reverting README.rst...')
     cmd = 'svn revert %s' % DEV_README
     shellcmd(cmd)
+
 
 def shellcmd(cmd, verbose=True):
     """Call a shell command."""
     if verbose:
-        print cmd
+        print(cmd)
     try:
         subprocess.check_call(cmd, shell=True)
-    except subprocess.CalledProcessError, err:
+    except subprocess.CalledProcessError as err:
         msg = """
         Error while executing a shell command.
         %s
         """ % str(err)
         raise Exception(msg)
+
 
 def build():
     parser = OptionParser()
@@ -126,8 +131,8 @@ def build():
                            'with setup.py, or pass in this '
                            'directory on command line')
     # update end-user documentation
-    #copy_readme()
-    #shellcmd("svn stat %s"%DEV_README)
+    # copy_readme()
+    # shellcmd("svn stat %s"%DEV_README)
 
     # change to source directory
     cwd = os.getcwd()
@@ -141,7 +146,7 @@ def build():
     # change back to original directory
     os.chdir(cwd)
     # restore developer documentation
-    #revert_readme()
+    # revert_readme()
 
 if __name__ == '__main__':
     build()

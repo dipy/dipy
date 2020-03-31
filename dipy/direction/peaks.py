@@ -1,4 +1,3 @@
-from __future__ import division, print_function, absolute_import
 
 from multiprocessing import cpu_count, Pool
 from itertools import repeat
@@ -17,7 +16,7 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.reconst.peak_direction_getter import PeaksAndMetricsDirectionGetter
+from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -89,7 +88,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 
 def peak_directions(odf, sphere, relative_peak_threshold=.5,
-                    min_separation_angle=25, minmax_norm=True):
+                    min_separation_angle=25):
     """Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
@@ -206,7 +205,7 @@ def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
     return this_pam
 
 
-class PeaksAndMetrics(PeaksAndMetricsDirectionGetter):
+class PeaksAndMetrics(EuDXDirectionGetter):
     def __reduce__(self): return _pam_from_attrs, (self.__class__,
                                                    self.sphere,
                                                    self.peak_indices,
@@ -469,7 +468,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         # It is mandatory to provide B and invB to the parallel function.
         # Otherwise, a call to np.linalg.pinv is made in a subprocess and
         # makes it timeout on some system.
-        # see https://github.com/nipy/dipy/issues/253 for details
+        # see https://github.com/dipy/dipy/issues/253 for details
         return _peaks_from_model_parallel(model,
                                           data, sphere,
                                           relative_peak_threshold,
@@ -565,12 +564,12 @@ def reshape_peaks_for_visualization(peaks):
     Reshape and convert to float32 a set of peaks for visualisation with mrtrix
     or the fibernavigator.
 
-    Parameters:
+    Parameters
     -----------
     peaks: nd array (..., N, 3) or PeaksAndMetrics object
         The peaks to be reshaped and converted to float32.
 
-    Returns:
+    Returns
     --------
     peaks : nd array (..., 3*N)
     """

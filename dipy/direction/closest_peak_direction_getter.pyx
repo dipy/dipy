@@ -4,7 +4,7 @@ cimport numpy as np
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
-from dipy.tracking.local.direction_getter cimport DirectionGetter
+from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 

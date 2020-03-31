@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
 
 import numpy as np
 from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
+from dipy.core.gradients import GradientTable
+from dipy.data import default_sphere
+from dipy.reconst.mcsd import MultiShellResponse
 from dipy.reconst.utils import dki_design_matrix
+from dipy.reconst import shm
 from scipy.special import jn
 
 # Diffusion coefficients for white matter tracts, in mm^2/s
@@ -645,7 +648,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
 
     # define vector of DKI parameters
     MD = (dt[0] + dt[2] + dt[5]) / 3
-    X = np.concatenate((dt, kt*MD*MD, np.array([np.log(S0)])), axis=0)
+    X = np.concatenate((dt, kt*MD*MD, np.array([-np.log(S0)])), axis=0)
 
     # Compute signals based on the DKI model
     S = np.exp(dot(A, X))
@@ -752,9 +755,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
 
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
-    >>> from dipy.data import get_sphere
-    >>> sphere = get_sphere('symmetric724')
-    >>> vertices, faces = sphere.vertices, sphere.faces
+    >>> from dipy.data import default_sphere
+    >>> vertices, faces = default_sphere.vertices, default_sphere.faces
     >>> mevals = np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> angles = [(0, 0), (90, 0)]
     >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
@@ -998,8 +1000,56 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     return msd
 
 
-# Use standard naming convention, but keep old names
-# for backward compatibility
-SticksAndBall = sticks_and_ball
-SingleTensor = single_tensor
-MultiTensor = multi_tensor
+def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
+                               sphere=None):
+    """Fiber response function estimation for multi-shell data.
+
+    Parameters
+    ----------
+    sh_order : int
+         Maximum spherical harmonics order.
+    bvals : ndarray
+        Array containing the b-values.
+    evals : (3,) ndarray
+        Eigenvalues of the diffusion tensor.
+    csf_md : float
+        CSF tissue mean diffusivity value.
+    gm_md : float
+        GM tissue mean diffusivity value.
+    sphere : `dipy.core.Sphere` instance, optional
+        Sphere where the signal will be evaluated.
+
+    Returns
+    -------
+    MultiShellResponse
+        MultiShellResponse object.
+    """
+
+    bvals = np.array(bvals, copy=True)
+    evecs = np.zeros((3, 3))
+    z = np.array([0, 0, 1.])
+    evecs[:, 0] = z
+    evecs[:2, 1:] = np.eye(2)
+
+    n = np.arange(0, sh_order + 1, 2)
+    m = np.zeros_like(n)
+
+    if sphere is None:
+        sphere = default_sphere
+
+    big_sphere = sphere.subdivide()
+    theta, phi = big_sphere.theta, big_sphere.phi
+
+    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+    A = shm.real_sph_harm(0, 0, 0, 0)
+
+    response = np.empty([len(bvals), len(n) + 2])
+    for i, bvalue in enumerate(bvals):
+        gtab = GradientTable(big_sphere.vertices * bvalue)
+        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
+        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+
+        response[i, 0] = np.exp(-bvalue * csf_md) / A
+        response[i, 1] = np.exp(-bvalue * gm_md) / A
+
+    return MultiShellResponse(response, sh_order, bvals)

@@ -1,11 +1,15 @@
-from __future__ import division, print_function, absolute_import
 
 import logging
 import shutil
 
+from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.localpca import localpca, mppca
+from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
 
 
@@ -14,9 +18,9 @@ class NLMeansFlow(Workflow):
     def get_short_name(cls):
         return 'nlmeans'
 
-    def run(self, input_files, sigma=0, out_dir='',
-            out_denoised='dwi_nlmeans.nii.gz'):
-        """ Workflow wrapping the nlmeans denoising method.
+    def run(self, input_files, sigma=0, patch_radius=1, block_radius=5,
+            rician=True, out_dir='', out_denoised='dwi_nlmeans.nii.gz'):
+        """Workflow wrapping the nlmeans denoising method.
 
         It applies nlmeans denoise on each file found by 'globing'
         ``input_files`` and saves the results in a directory specified by
@@ -30,10 +34,25 @@ class NLMeansFlow(Workflow):
         sigma : float, optional
             Sigma parameter to pass to the nlmeans algorithm
             (default: auto estimation).
+        patch_radius : int, optional
+            patch size is ``2 x patch_radius + 1``. Default is 1.
+        block_radius : int, optional
+            block size is ``2 x block_radius + 1``. Default is 5.
+        rician : bool, optional
+            If True the noise is estimated as Rician, otherwise Gaussian noise
+            is assumed.
         out_dir : string, optional
             Output directory (default input file directory)
         out_denoised : string, optional
-            Name of the resuting denoised volume (default: dwi_nlmeans.nii.gz)
+            Name of the resulting denoised volume (default: dwi_nlmeans.nii.gz)
+
+        References
+        ----------
+        .. [Descoteaux08] Descoteaux, Maxime and Wiest-Daesslé, Nicolas and
+        Prima, Sylvain and Barillot, Christian and Deriche, Rachid.
+        Impact of Rician Adapted Non-Local Means Filtering on
+        HARDI, MICCAI 2008
+
         """
         io_it = self.get_io_iterator()
         for fpath, odenoised in io_it:
@@ -41,7 +60,7 @@ class NLMeansFlow(Workflow):
                 shutil.copy(fpath, odenoised)
                 logging.warning('Denoising skipped for now.')
             else:
-                logging.info('Denoising {0}'.format(fpath))
+                logging.info('Denoising %s', fpath)
                 data, affine, image = load_nifti(fpath, return_img=True)
 
                 if sigma == 0:
@@ -49,7 +68,217 @@ class NLMeansFlow(Workflow):
                     sigma = estimate_sigma(data)
                     logging.debug('Found sigma {0}'.format(sigma))
 
-                denoised_data = nlmeans(data, sigma)
+                denoised_data = nlmeans(data, sigma=sigma,
+                                        patch_radius=patch_radius,
+                                        block_radius=block_radius,
+                                        rician=rician)
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
-                logging.info('Denoised volume saved as {0}'.format(odenoised))
+                logging.info('Denoised volume saved as %s', odenoised)
+
+
+class LPCAFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'lpca'
+
+    def run(self, input_files, bvalues_files, bvectors_files, sigma=0,
+            b0_threshold=50, bvecs_tol=0.01, patch_radius=2, pca_method='eig',
+            tau_factor=2.3, out_dir='', out_denoised='dwi_lpca.nii.gz'):
+        r"""Workflow wrapping LPCA denoising method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        sigma : float, optional
+            Standard deviation of the noise estimated from the data.
+            Default 0: it means sigma value estimation with the Manjon2013
+            algorithm [3]_.
+        b0_threshold : float, optional
+            Threshold used to find b=0 directions (default 0.0)
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+            b-vectors are unit vectors (default 0.01)
+        patch_radius : int, optional
+            The radius of the local patch to be taken around each voxel (in
+            voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+        pca_method : string, optional
+            Use either eigenvalue decomposition ('eig') or singular value
+            decomposition ('svd') for principal component analysis. The default
+            method is 'eig' which is faster. However, occasionally 'svd' might
+            be more accurate.
+        tau_factor : float, optional
+            Thresholding of PCA eigenvalues is done by nulling out eigenvalues
+            that are smaller than:
+
+            .. math ::
+
+                    \tau = (\tau_{factor} \sigma)^2
+
+            \tau_{factor} can be change to adjust the relationship between the
+            noise standard deviation and the threshold \tau. If \tau_{factor}
+            is set to None, it will be automatically calculated using the
+            Marcenko-Pastur distribution [2]_.
+            Default: 2.3 (according to [1]_)
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_denoised : string, optional
+            Name of the resulting denoised volume (default: dwi_lpca.nii.gz)
+
+        References
+        ----------
+        .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+        Fieremans E, 2016. Denoising of Diffusion MRI using random
+        matrix theory. Neuroimage 142:394-406.
+        doi: 10.1016/j.neuroimage.2016.08.016
+
+        .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+        mapping using random matrix theory. Magnetic Resonance in
+        Medicine.
+        doi: 10.1002/mrm.26059.
+
+        .. [3] Manjon JV, Coupe P, Concha L, Buades A, Collins DL (2013)
+        Diffusion Weighted Image Denoising Using Overcomplete Local
+        PCA. PLoS ONE 8(9): e73021.
+        https://doi.org/10.1371/journal.pone.0073021
+
+        """
+        io_it = self.get_io_iterator()
+        for dwi, bval, bvec, odenoised in io_it:
+            logging.info('Denoising %s', dwi)
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            if not sigma:
+                logging.info('Estimating sigma')
+                bvals, bvecs = read_bvals_bvecs(bval, bvec)
+                gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                                      atol=bvecs_tol)
+                sigma = pca_noise_estimate(data, gtab, correct_bias=True,
+                                           smooth=3)
+                logging.debug('Found sigma %s', sigma)
+
+            denoised_data = localpca(data, sigma=sigma,
+                                     patch_radius=patch_radius,
+                                     pca_method=pca_method,
+                                     tau_factor=tau_factor)
+            save_nifti(odenoised, denoised_data, affine, image.header)
+
+            logging.info('Denoised volume saved as %s', odenoised)
+
+
+class MPPCAFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'mppca'
+
+    def run(self, input_files, patch_radius=2, pca_method='eig',
+            return_sigma=False, out_dir='', out_denoised='dwi_mppca.nii.gz',
+            out_sigma='dwi_sigma.nii.gz'):
+        r"""Workflow wrapping Marcenko-Pastur PCA denoising method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        patch_radius : int, optional
+            The radius of the local patch to be taken around each voxel (in
+            voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+        pca_method : string, optional
+            Use either eigenvalue decomposition ('eig') or singular value
+            decomposition ('svd') for principal component analysis. The default
+            method is 'eig' which is faster. However, occasionally 'svd' might
+            be more accurate.
+        return_sigma : bool, optional
+            If true, a noise standard deviation estimate based on the
+            Marcenko-Pastur distribution is returned [2]_.
+            Default: False.
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_denoised : string, optional
+            Name of the resulting denoised volume (default: dwi_mppca.nii.gz)
+        out_sigma : string, optional
+            Name of the resulting sigma volume (default: dwi_sigma.nii.gz)
+
+        References
+        ----------
+        .. [1] Veraart J, Novikov DS, Christiaens D, Ades-aron B, Sijbers,
+        Fieremans E, 2016. Denoising of Diffusion MRI using random matrix
+        theory. Neuroimage 142:394-406.
+        doi: 10.1016/j.neuroimage.2016.08.016
+
+        .. [2] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+        mapping using random matrix theory. Magnetic Resonance in Medicine.
+        doi: 10.1002/mrm.26059.
+
+        """
+        io_it = self.get_io_iterator()
+        for dwi, odenoised, osigma in io_it:
+            logging.info('Denoising %s', dwi)
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            denoised_data, sigma = mppca(data, patch_radius=patch_radius,
+                                         pca_method=pca_method,
+                                         return_sigma=True)
+
+            save_nifti(odenoised, denoised_data, affine, image.header)
+            logging.info('Denoised volume saved as %s', odenoised)
+            if return_sigma:
+                save_nifti(osigma, sigma, affine, image.header)
+                logging.info('Sigma volume saved as %s', osigma)
+
+
+class GibbsRingingFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'gibbs_ringing'
+
+    def run(self, input_files, slice_axis=2, n_points=3, out_dir='',
+            out_unring='dwi_unrig.nii.gz'):
+        r"""Workflow for applying Gibbs Ringing method.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        slice_axis : int, optional
+            Data axis corresponding to the number of acquired slices.
+            Default is set to the third axis(2). Could be (0, 1, or 2).
+        n_points : int, optional
+            Number of neighbour points to access local TV (see note).
+            Default is set to 3.
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_unrig : string, optional
+            Name of the resulting denoised volume (default: dwi_unrig.nii.gz)
+
+        References
+        ----------
+        .. [1] Neto Henriques, R., 2018. Advanced Methods for Diffusion MRI
+        Data Analysis and their Application to the Healthy Ageing Brain
+        (Doctoral thesis). https://doi.org/10.17863/CAM.29356
+
+        .. [2] Kellner E, Dhital B, Kiselev VG, Reisert M. Gibbs-ringing
+        artifact removal based on local subvoxel-shifts. Magn Reson Med. 2016
+        doi: 10.1002/mrm.26054.
+
+        """
+        io_it = self.get_io_iterator()
+        for dwi, ounring in io_it:
+            logging.info('Unringing %s', dwi)
+            data, affine, image = load_nifti(dwi, return_img=True)
+
+            unring_data = gibbs_removal(data, slice_axis=slice_axis,
+                                        n_points=n_points)
+
+            save_nifti(ounring, unring_data, affine, image.header)
+            logging.info('Denoised volume saved as %s', ounring)
