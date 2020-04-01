@@ -267,10 +267,7 @@ def get_reference_info(reference):
         is_sft = True
 
     if is_nifti:
-        affine = np.eye(4).astype(np.float32)
-        affine[0, 0:4] = header['srow_x']
-        affine[1, 0:4] = header['srow_y']
-        affine[2, 0:4] = header['srow_z']
+        affine = header.get_best_affine()
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
 
@@ -358,9 +355,7 @@ def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
 def create_nifti_header(affine, dimensions, voxel_sizes):
     """ Write a standard nifti header from spatial attribute """
     new_header = nib.Nifti1Header()
-    new_header['srow_x'] = affine[0, 0:4]
-    new_header['srow_y'] = affine[1, 0:4]
-    new_header['srow_z'] = affine[2, 0:4]
+    new_header.set_sform(affine)
     new_header['dim'][1:4] = dimensions
     new_header['pixdim'][1:4] = voxel_sizes
 

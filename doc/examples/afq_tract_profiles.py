@@ -3,7 +3,7 @@
 Extracting AFQ tract profiles from segmented bundles
 ====================================================
 
-In this example, we will we will extract the values of a statistic from a
+In this example, we will extract the values of a statistic from a
 volume, using the coordinates along the length of a bundle. These are called
 `tract profiles`
 
@@ -32,7 +32,7 @@ import os.path as op
 """
 
 To get started, we will grab the bundles that were extracted in the bundle
-extraction example. If the example hasn't been run yet, these files don't
+extraction example. If the example has not been run yet, these files don't
 yet exist, and we'll need to run that example:
 
 """
@@ -123,7 +123,6 @@ fa, fa_affine = load_nifti(op.join(folder, "hcp_bundle_fa.nii.gz"))
 Calculate weights for each bundle:
 """
 
-
 w_cst_l = dsa.gaussian_weights(oriented_cst_l)
 w_af_l = dsa.gaussian_weights(oriented_af_l)
 
@@ -150,7 +149,7 @@ fig.savefig("tract_profiles")
 .. figure:: tract_profiles.png
    :align: center
 
-   Bundle profiles for the fractional anisotropy in left CST (left) and left
+   Bundle profiles for the fractional anisotropy in the left CST (left) and left
    AF (right).
 """
 
