@@ -165,15 +165,12 @@ def test_linear_mixed_models_flow():
         assert_true(os.path.exists(os.path.join(out_dir2, 'temp_fa.png')))
 
         # test error
-        d2 = {'bundle': ["temp"]*10,
-              'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*1,
+        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*1,
               'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
                      0.34]*1,
               'subject': ["10001", "10001", "10001", "10001", "10001",
                           "20002", "20002", "20002", "20002", "20002"]*1,
-              'group': ["control", "control", "control", "control", "control",
-                        "patient", "patient", "patient", "patient",
-                        "patient"]*1}
+              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*1}
 
         df = pd.DataFrame(data=d2)
 
