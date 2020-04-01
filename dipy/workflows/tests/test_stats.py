@@ -127,7 +127,7 @@ def test_bundle_analysis_population_flow():
 
         dft = pd.read_hdf(os.path.join(out_dir, 'fa.h5'))
 
-        #assert_true(dft.bundle.unique() == "temp")
+        # assert_true(dft.bundle.unique() == "temp")
 
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
@@ -141,13 +141,12 @@ def test_linear_mixed_models_flow():
         out_dir = os.path.join(dirpath, "output")
         os.mkdir(out_dir)
 
-        d = {'bundle': ["temp"]*100,
-             'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*10,
+        d = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*10,
              'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
                     0.34]*10,
              'subject': ["10001", "10001", "10001", "10001", "10001",
                          "20002", "20002", "20002", "20002", "20002"]*10,
-             'group': ["control", "control", "control", "control", "control",
+             'group': ["0", "0", "0", "control", "control",
                        "patient", "patient", "patient", "patient",
                        "patient"]*10}
 
