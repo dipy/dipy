@@ -232,7 +232,7 @@ class LinearMixedModelsFlow(Workflow):
                     count = i
             else:
                 if name[i] == '_':
-                
+
                     return name[i+1:count]
             i = i-1
         return " "
@@ -264,12 +264,13 @@ class LinearMixedModelsFlow(Workflow):
 
             logging.info('Applying metric {0}'.format(file_path))
             #file_name = os.path.basename(file_path)[:-3]
-            
+
+            # I have to remove this later
             if file_path[4:6] == "-C":
                 print("======== skipping CCMid =============")
-            
+
             else:
-            
+
                 file_name = self.get_metric_name(file_path)
                 print(" file name = ", file_name)
                 print("file path = ", file_path)
@@ -277,19 +278,12 @@ class LinearMixedModelsFlow(Workflow):
                 print("read the dataframe")
                 if len(df) < 100:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
-    
-                #all_bundles = df.bundle.unique()
-                # all_pvalues = []
-                #for bundle in all_bundles:
-                #sub_af = df# df[df['bundle'] == bundle]  # sub sample
+
                 pvalues = np.zeros(no_disks)
 
                 # run mixed linear model for every disk
                 for i in range(no_disks):
-                    print("creating the sub dataframe")
-                    #sub = df[df['disk#'] == (i+1)]  # disk number
-                    print("created the sub dataframe")
-                    #print("size of sub =", len(sub))
+
                     if len(df[df['disk#'] == (i+1)]) > 20: # to have significant data to perform LMM
                         criteria = file_name + " ~ group"
                         md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)], groups=df[df['disk#'] == (i+1)]["subject"])
@@ -300,18 +294,18 @@ class LinearMixedModelsFlow(Workflow):
                     #del sub
                 #x = list(range(1, len(pvalues)+1))
                 y = -1*np.log10(pvalues)
-                
-                
+
+
                 plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues.npy")
                 #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
-                
+
                 np.save(plot_file, pvalues)
-                
+
                 plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues_log.npy")
                 #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
                 np.save(plot_file, y)
-                
-                
+
+
                 #title = bundle + " on " + file_name + " Values"
                 #plot_file = os.path.join(out_dir, bundle + "_" +
                 #                         file_name + ".png")
@@ -324,27 +318,27 @@ class BundleShapeAnalysis(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'BS'
-    
+
     def run(self, subject_folder, threshold=6,
         out_dir=''):
         """Workflow of bundle analytics.
-    
-        Applies bundle shape similarity analysis on bundles of subjects and saves 
+
+        Applies bundle shape similarity analysis on bundles of subjects and saves
         the results in a directory specified by ``out_dir``.
-    
+
         Parameters
         ----------
-    
+
         subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
-    
+
         threshold : integer, optional
             Bundle shape similarity threshold. (Default 6)
-    
+
         out_dir : string, optional
             Output directory (default input file directory)
-    
+
         References
         ----------
         .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
@@ -352,19 +346,19 @@ class BundleShapeAnalysis(Workflow):
         analyses framework for tractometric studies, Proceedings of:
         International Society of Magnetic Resonance in Medicine (ISMRM),
         Montreal, Canada, 2019.
-    
+
         """
         rng = np.random.RandomState()
         all_subjects = []
         groups = os.listdir(subject_folder)
-        
+
         for group in groups:
             subjects = os.listdir(os.path.join(subject_folder, group))
             for sub in subjects:
                 all_subjects.append(os.path.join(subject_folder, group, sub))
-           
+
         N = len(all_subjects)
-        
+
         bundles = os.listdir(os.path.join(all_subjects[0], "rec_bundles"))
         for bun in bundles:
             # bundle shape similarity matrix
@@ -381,11 +375,11 @@ class BundleShapeAnalysis(Workflow):
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2,
                                                        threshold, rng)
-        
+
                     ba_matrix[i][j] = ba_value
-        
+
                     j+= 1
-                i+= 1   
+                i+= 1
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
-        
-            
+
+
