@@ -146,9 +146,7 @@ def test_linear_mixed_models_flow():
                     0.34]*10,
              'subject': ["10001", "10001", "10001", "10001", "10001",
                          "20002", "20002", "20002", "20002", "20002"]*10,
-             'group': ["0", "0", "0", "control", "control",
-                       "patient", "patient", "patient", "patient",
-                       "patient"]*10}
+             'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*10}
 
         df = pd.DataFrame(data=d)
         store = pd.HDFStore(os.path.join(out_dir, 'fa.h5'))
