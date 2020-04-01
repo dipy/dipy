@@ -109,11 +109,11 @@ def test_bundle_analysis_population_flow():
             sft = StatefulTractogram(f, data_path, Space.RASMM)
             save_tractogram(sft, os.path.join(pre, "org_bundles", "temp.trk"),
                             bbox_valid_check=False)
-            os.mkdir(os.path.join(pre, "measures"))
+            os.mkdir(os.path.join(pre, "anatomical_measures"))
 
             fa = np.random.rand(255, 255, 255)
 
-            save_nifti(os.path.join(pre, "measures", "fa.nii.gz"),
+            save_nifti(os.path.join(pre, "anatomical_measures", "fa.nii.gz"),
                        fa, affine=np.eye(4))
 
         out_dir = os.path.join(dirpath, "output")
