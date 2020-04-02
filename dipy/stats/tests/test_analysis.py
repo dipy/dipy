@@ -52,7 +52,7 @@ def test_ba():
         save_tractogram(sft, os.path.join(ob, "temp.trk"),
                         bbox_valid_check=False)
 
-        dt = os.path.join(dirpath, "dti_measures")
+        dt = os.path.join(dirpath, "anatomical_measures")
         os.mkdir(dt)
 
         fa = np.random.rand(255, 255, 255)
