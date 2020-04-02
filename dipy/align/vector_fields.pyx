@@ -14,6 +14,10 @@ from dipy.core.interpolation cimport (_interpolate_scalar_2d,
                                       _interpolate_scalar_nn_2d,
                                       _interpolate_scalar_nn_3d)
 
+from cython.parallel import prange
+from libc.stdlib cimport abort, malloc, free
+cimport safe_openmp as openmp
+from safe_openmp cimport have_openmp
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double)
@@ -231,13 +235,91 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     return np.asarray(comp), np.asarray(stats)
 
 
+cdef void _compose_vector_fields_3d_fun(floating[:, :, :, :] d1,
+                                        floating[:, :, :, :] d2,
+                                        double[:, :] premult_index,
+                                        double[:, :] premult_disp,
+                                        double t, floating[:, :, :, :] comp,
+                                        cnp.npy_intp k, int *cnt_ptr,
+                                        double *maxNorm_ptr,
+                                        double *meanNorm_ptr,
+                                        double *stdNorm_ptr) nogil:
+    cdef:
+        cnp.npy_intp nr1 = d1.shape[1]
+        cnp.npy_intp nc1 = d1.shape[2]
+        int inside
+        double nn
+        cnp.npy_intp i, j
+        double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
+
+    cnt_ptr[k] = 0
+    maxNorm_ptr[k] = 0
+    meanNorm_ptr[k] = 0
+    stdNorm_ptr[k] = 0
+
+    for i in range(nr1):
+        for j in range(nc1):
+
+            # This is the only place we access d1[k, i, j]
+            dkk = d1[k, i, j, 0]
+            dii = d1[k, i, j, 1]
+            djj = d1[k, i, j, 2]
+
+            if premult_disp is None:
+                dk = dkk
+                di = dii
+                dj = djj
+            else:
+                dk = _apply_affine_3d_x0(dkk, dii, djj, 0, premult_disp)
+                di = _apply_affine_3d_x1(dkk, dii, djj, 0, premult_disp)
+                dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
+
+            if premult_index is None:
+                dkkk = k
+                diii = i
+                djjj = j
+            else:
+                dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
+                diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
+                djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
+
+            dkkk += dk
+            diii += di
+            djjj += dj
+
+            # If d1 and comp are the same array, this will correctly update
+            # d1[k,i,j], which will never be accessed again
+            # If d2 and comp are the same array, then (dkkk, diii, djjj)
+            # may be in the neighborhood of a previously updated vector
+            # from d2, which may be problematic
+            inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
+                                                      &comp[k, i, j, 0])
+
+            if inside == 1:
+                comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
+                comp[k, i, j, 1] = t * comp[k, i, j, 1] + dii
+                comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
+                nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
+                      comp[k, i, j, 2]**2)
+                meanNorm_ptr[k] += nn
+                stdNorm_ptr[k] += nn * nn
+                cnt_ptr[k] += 1
+                if(maxNorm_ptr[k] < nn):
+                    maxNorm_ptr[k] = nn
+            else:
+                comp[k, i, j, 0] = 0
+                comp[k, i, j, 1] = 0
+                comp[k, i, j, 2] = 0
+
+
 cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     floating[:, :, :, :] d2,
                                     double[:, :] premult_index,
                                     double[:, :] premult_disp,
                                     double t,
                                     floating[:, :, :, :] comp,
-                                    double[:] stats) nogil:
+                                    double[:] stats,
+                                    int num_threads=0) nogil:
     r"""Computes the composition of two 3D displacement fields
 
     Computes the composition of the two 3-D displacements d1 and d2. The
@@ -278,6 +360,9 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     stats : array, shape (3,)
         on output, this array will contain three statistics of the vector norms
         of the composition (maximum, mean, standard_deviation)
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -299,77 +384,60 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     intended operation (see comment below).
     """
     cdef:
-        cnp.npy_intp ns1 = d1.shape[0]
-        cnp.npy_intp nr1 = d1.shape[1]
-        cnp.npy_intp nc1 = d1.shape[2]
-        cnp.npy_intp ns2 = d2.shape[0]
-        cnp.npy_intp nr2 = d2.shape[1]
-        cnp.npy_intp nc2 = d2.shape[2]
-        int inside, cnt = 0
-        double maxNorm = 0
-        double meanNorm = 0
-        double stdNorm = 0
-        double nn
-        cnp.npy_intp i, j, k
-        double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
+        cnp.npy_intp ns1 = d1.shape[0], k
+        int cnt = 0, *cnt_ptr
+        double maxNorm = 0, *maxNorm_ptr
+        double meanNorm = 0, *meanNorm_ptr
+        double stdNorm = 0, *stdNorm_ptr
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads != 0:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
+
+    cnt_ptr = <cnp.npy_intp *>malloc(sizeof(cnp.npy_intp) * ns1)
+    if cnt_ptr == NULL:
+        abort()
+    maxNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if maxNorm_ptr == NULL:
+        abort()
+    meanNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if meanNorm_ptr == NULL:
+        abort()
+    stdNorm_ptr = <double *>malloc(sizeof(double) * ns1)
+    if stdNorm_ptr == NULL:
+        abort()
+
+    for k in prange(ns1):
+        _compose_vector_fields_3d_fun(d1, d2, premult_index, premult_disp,
+                                      t, comp, k, cnt_ptr, maxNorm_ptr,
+                                      meanNorm_ptr, stdNorm_ptr)
+
     for k in range(ns1):
-        for i in range(nr1):
-            for j in range(nc1):
+        cnt += cnt_ptr[k]
+        meanNorm += meanNorm_ptr[k]
+        stdNorm += stdNorm_ptr[k]
+        if maxNorm < maxNorm_ptr[k]:
+            maxNorm = maxNorm_ptr[k]
 
-                # This is the only place we access d1[k, i, j]
-                dkk = d1[k, i, j, 0]
-                dii = d1[k, i, j, 1]
-                djj = d1[k, i, j, 2]
+    free(cnt_ptr)
+    free(maxNorm_ptr)
+    free(meanNorm_ptr)
+    free(stdNorm_ptr)
 
-                if premult_disp is None:
-                    dk = dkk
-                    di = dii
-                    dj = djj
-                else:
-                    dk = _apply_affine_3d_x0(dkk, dii, djj, 0, premult_disp)
-                    di = _apply_affine_3d_x1(dkk, dii, djj, 0, premult_disp)
-                    dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
-
-                if premult_index is None:
-                    dkkk = k
-                    diii = i
-                    djjj = j
-                else:
-                    dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
-                    diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
-                    djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
-
-                dkkk += dk
-                diii += di
-                djjj += dj
-
-                # If d1 and comp are the same array, this will correctly update
-                # d1[k,i,j], which will never be accessed again
-                # If d2 and comp are the same array, then (dkkk, diii, djjj)
-                # may be in the neighborhood of a previously updated vector
-                # from d2, which may be problematic
-                inside = _interpolate_vector_3d[floating](d2, dkkk, diii, djjj,
-                                                          &comp[k, i, j, 0])
-
-                if inside == 1:
-                    comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
-                    comp[k, i, j, 1] = t * comp[k, i, j, 1] + dii
-                    comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
-                    nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
-                          comp[k, i, j, 2]**2)
-                    meanNorm += nn
-                    stdNorm += nn * nn
-                    cnt += 1
-                    if(maxNorm < nn):
-                        maxNorm = nn
-                else:
-                    comp[k, i, j, 0] = 0
-                    comp[k, i, j, 1] = 0
-                    comp[k, i, j, 2] = 0
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
     stats[2] = sqrt(stdNorm / cnt - meanNorm * meanNorm)
+
+    if have_openmp and num_threads != 0:
+        openmp.omp_set_num_threads(all_cores)
 
 
 def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
@@ -553,7 +621,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        double[:, :] d_world2grid,
                                        double[:] spacing,
                                        int max_iter, double tol,
-                                       floating[:, :, :, :] start=None):
+                                       floating[:, :, :, :] start=None,
+                                       num_threads=None):
     r"""Computes the inverse of a 3D displacement fields
 
     Computes the inverse of the given 3-D displacement field d using the
@@ -581,6 +650,9 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         an approximation to the inverse displacement field (if no approximation
         is available, None can be provided and the start displacement field
         will be zero)
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -605,6 +677,10 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         double epsilon = 0.5
         double error = 1 + tol
         double ss = spacing[0], sr = spacing[1], sc = spacing[2]
+        int threads_to_use = 0
+
+    if num_threads is not None:
+        threads_to_use = num_threads
 
     ftype = np.asarray(d).dtype
     cdef:
@@ -629,7 +705,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
             else:
                 epsilon = 0.5
             _compose_vector_fields_3d[floating](p, d, None, d_world2grid,
-                                                1.0, q, substats)
+                                                1.0, q, substats, threads_to_use)
             difmag = 0
             error = 0
             for k in range(ns):
@@ -1178,11 +1254,71 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     return np.asarray(down)
 
 
+cdef void _warp_3d_fun(floating[:, :, :] volume, floating[:, :, :, :] d1,
+                       double[:, :] affine_idx_in,
+                       double[:, :] affine_idx_out,
+                       double[:, :] affine_disp, cnp.npy_intp k,
+                       cnp.npy_intp nrows, cnp.npy_intp ncols,
+                       floating[:, :, :] warped) nogil:
+    cdef:
+        cnp.npy_intp i, j
+        int inside
+        double dkk, dii, djj, dk, di, dj
+        floating tmp[3]
+
+    for i in range(nrows):
+        for j in range(ncols):
+            if affine_idx_in is None:
+                dkk = d1[k, i, j, 0]
+                dii = d1[k, i, j, 1]
+                djj = d1[k, i, j, 2]
+            else:
+                dk = _apply_affine_3d_x0(
+                    k, i, j, 1, affine_idx_in)
+                di = _apply_affine_3d_x1(
+                    k, i, j, 1, affine_idx_in)
+                dj = _apply_affine_3d_x2(
+                    k, i, j, 1, affine_idx_in)
+                inside = _interpolate_vector_3d[floating](d1, dk, di,
+                                                          dj, &tmp[0])
+                dkk = tmp[0]
+                dii = tmp[1]
+                djj = tmp[2]
+
+            if affine_disp is not None:
+                dk = _apply_affine_3d_x0(
+                    dkk, dii, djj, 0, affine_disp)
+                di = _apply_affine_3d_x1(
+                    dkk, dii, djj, 0, affine_disp)
+                dj = _apply_affine_3d_x2(
+                    dkk, dii, djj, 0, affine_disp)
+            else:
+                dk = dkk
+                di = dii
+                dj = djj
+
+            if affine_idx_out is not None:
+                dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                               affine_idx_out)
+                dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                                               affine_idx_out)
+                djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                               affine_idx_out)
+            else:
+                dkk = dk + k
+                dii = di + i
+                djj = dj + j
+
+            inside = _interpolate_scalar_3d[floating](volume, dkk,
+                                                      dii, djj,
+                                                      &warped[k,i,j])
+
+
 def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
             double[:, :] affine_idx_in=None,
             double[:, :] affine_idx_out=None,
             double[:, :] affine_disp=None,
-            int[:] out_shape=None):
+            int[:] out_shape=None, num_threads=None):
     r"""Warps a 3D volume using trilinear interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -1208,6 +1344,9 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix C in eq. (1) above
     out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -1233,12 +1372,18 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp nslices = volume.shape[0]
         cnp.npy_intp nrows = volume.shape[1]
         cnp.npy_intp ncols = volume.shape[2]
-        cnp.npy_intp nsVol = volume.shape[0]
-        cnp.npy_intp nrVol = volume.shape[1]
-        cnp.npy_intp ncVol = volume.shape[2]
-        cnp.npy_intp i, j, k
-        int inside
-        double dkk, dii, djj, dk, di, dj
+        cnp.npy_intp k
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     if not is_valid_affine(affine_idx_in, 3):
         raise ValueError("Invalid inner index multiplication matrix")
@@ -1258,57 +1403,15 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
-
         for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if affine_idx_in is None:
-                        dkk = d1[k, i, j, 0]
-                        dii = d1[k, i, j, 1]
-                        djj = d1[k, i, j, 2]
-                    else:
-                        dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
-                        di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
-                        dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
-                        inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, &tmp[0])
-                        dkk = tmp[0]
-                        dii = tmp[1]
-                        djj = tmp[2]
+            _warp_3d_fun(volume, d1, affine_idx_in, affine_idx_out,
+                         affine_disp, k, nrows, ncols, warped)
 
-                    if affine_disp is not None:
-                        dk = _apply_affine_3d_x0(
-                            dkk, dii, djj, 0, affine_disp)
-                        di = _apply_affine_3d_x1(
-                            dkk, dii, djj, 0, affine_disp)
-                        dj = _apply_affine_3d_x2(
-                            dkk, dii, djj, 0, affine_disp)
-                    else:
-                        dk = dkk
-                        di = dii
-                        dj = djj
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
-                    if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
-                                                       affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
-                                                       affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
-                                                       affine_idx_out)
-                    else:
-                        dkk = dk + k
-                        dii = di + i
-                        djj = dj + j
-
-                    inside = _interpolate_scalar_3d[floating](volume, dkk,
-                                                              dii, djj,
-                                                              &warped[k,i,j])
     return np.asarray(warped)
 
 
@@ -1378,11 +1481,70 @@ def transform_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
     return np.asarray(out)
 
 
+cdef void _warp_3d_nn_fun(number[:, :, :] volume, floating[:, :, :, :] d1,
+                          double[:, :] affine_idx_in,
+                          double[:, :] affine_idx_out,
+                          double[:, :] affine_disp, cnp.npy_intp k,
+                          cnp.npy_intp nrows, cnp.npy_intp ncols,
+                          number[:, :, :] warped) nogil:
+    cdef:
+        cnp.npy_intp i, j
+        int inside
+        double dkk, dii, djj, dk, di, dj
+        floating tmp[3]
+
+    for i in range(nrows):
+        for j in range(ncols):
+            if affine_idx_in is None:
+                dkk = d1[k, i, j, 0]
+                dii = d1[k, i, j, 1]
+                djj = d1[k, i, j, 2]
+            else:
+                dk = _apply_affine_3d_x0(
+                    k, i, j, 1, affine_idx_in)
+                di = _apply_affine_3d_x1(
+                    k, i, j, 1, affine_idx_in)
+                dj = _apply_affine_3d_x2(
+                    k, i, j, 1, affine_idx_in)
+                inside = _interpolate_vector_3d[floating](d1, dk, di,
+                                                          dj, &tmp[0])
+                dkk = tmp[0]
+                dii = tmp[1]
+                djj = tmp[2]
+
+            if affine_disp is not None:
+                dk = _apply_affine_3d_x0(
+                    dkk, dii, djj, 0, affine_disp)
+                di = _apply_affine_3d_x1(
+                    dkk, dii, djj, 0, affine_disp)
+                dj = _apply_affine_3d_x2(
+                    dkk, dii, djj, 0, affine_disp)
+            else:
+                dk = dkk
+                di = dii
+                dj = djj
+
+            if affine_idx_out is not None:
+                dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                               affine_idx_out)
+                dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                                               affine_idx_out)
+                djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                               affine_idx_out)
+            else:
+                dkk = dk + k
+                dii = di + i
+                djj = dj + j
+
+            inside = _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
+                                               &warped[k,i,j])
+
+
 def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                double[:, :] affine_idx_in=None,
                double[:, :] affine_idx_out=None,
                double[:, :] affine_disp=None,
-               int[:] out_shape=None):
+               int[:] out_shape=None, num_threads=None):
     r"""Warps a 3D volume using using nearest-neighbor interpolation
 
     Deforms the input volume under the given transformation. The warped volume
@@ -1408,6 +1570,9 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the matrix C in eq. (1) above
     out_shape : array, shape (3,)
         the number of slices, rows and columns of the sampling grid
+    num_threads : int
+        Number of threads. If None (default) then all available threads
+        will be used.
 
     Returns
     -------
@@ -1433,12 +1598,18 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         cnp.npy_intp nslices = volume.shape[0]
         cnp.npy_intp nrows = volume.shape[1]
         cnp.npy_intp ncols = volume.shape[2]
-        cnp.npy_intp nsVol = volume.shape[0]
-        cnp.npy_intp nrVol = volume.shape[1]
-        cnp.npy_intp ncVol = volume.shape[2]
-        cnp.npy_intp i, j, k
-        int inside
-        double dkk, dii, djj, dk, di, dj
+        cnp.npy_intp k
+        int all_cores = openmp.omp_get_num_procs()
+        int threads_to_use = -1
+
+    if num_threads is not None:
+        threads_to_use = num_threads
+    else:
+        threads_to_use = all_cores
+
+    if have_openmp:
+        openmp.omp_set_dynamic(0)
+        openmp.omp_set_num_threads(threads_to_use)
 
     if not is_valid_affine(affine_idx_in, 3):
         raise ValueError("Invalid inner index multiplication matrix")
@@ -1458,56 +1629,15 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef number[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols),
                                            dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
+        for k in prange(nslices):
+            _warp_3d_nn_fun(volume, d1, affine_idx_in, affine_idx_out,
+                            affine_disp, k, nrows, ncols, warped)
 
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if affine_idx_in is None:
-                        dkk = d1[k, i, j, 0]
-                        dii = d1[k, i, j, 1]
-                        djj = d1[k, i, j, 2]
-                    else:
-                        dk = _apply_affine_3d_x0(
-                            k, i, j, 1, affine_idx_in)
-                        di = _apply_affine_3d_x1(
-                            k, i, j, 1, affine_idx_in)
-                        dj = _apply_affine_3d_x2(
-                            k, i, j, 1, affine_idx_in)
-                        inside = _interpolate_vector_3d[floating](d1, dk, di,
-                                                                  dj, &tmp[0])
-                        dkk = tmp[0]
-                        dii = tmp[1]
-                        djj = tmp[2]
+    if have_openmp and num_threads is not None:
+        openmp.omp_set_num_threads(all_cores)
 
-                    if affine_disp is not None:
-                        dk = _apply_affine_3d_x0(
-                            dkk, dii, djj, 0, affine_disp)
-                        di = _apply_affine_3d_x1(
-                            dkk, dii, djj, 0, affine_disp)
-                        dj = _apply_affine_3d_x2(
-                            dkk, dii, djj, 0, affine_disp)
-                    else:
-                        dk = dkk
-                        di = dii
-                        dj = djj
-
-                    if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
-                                                       affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
-                                                       affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
-                                                       affine_idx_out)
-                    else:
-                        dkk = dk + k
-                        dii = di + i
-                        djj = dj + j
-
-                    inside = _interpolate_scalar_nn_3d[number](volume, dkk, dii, djj,
-                                                       &warped[k,i,j])
     return np.asarray(warped)
 
 

@@ -108,7 +108,7 @@ class DiffeomorphicMap(object):
                  domain_grid2world=None,
                  codomain_shape=None,
                  codomain_grid2world=None,
-                 prealign=None):
+                 prealign=None, num_threads=None):
         r""" DiffeomorphicMap
 
         Implements a diffeomorphic transformation on the physical space. The
@@ -148,6 +148,9 @@ class DiffeomorphicMap(object):
         prealign : array, shape (dim+1, dim+1)
             the linear transformation to be applied to align input images to
             the reference space before warping under the deformation field.
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
 
         """
 
@@ -197,6 +200,7 @@ class DiffeomorphicMap(object):
         self.is_inverse = False
         self.forward = None
         self.backward = None
+        self.num_threads = num_threads
 
     def interpret_matrix(self, obj):
         """ Try to interpret `obj` as a matrix
@@ -382,8 +386,13 @@ class DiffeomorphicMap(object):
 
         warp_f = self._get_warping_function(interpolation)
 
-        warped = warp_f(image, self.forward, affine_idx_in, affine_idx_out,
-                        affine_disp, out_shape)
+        if self.dim == 2:
+            warped = warp_f(image, self.forward, affine_idx_in, affine_idx_out,
+                            affine_disp, out_shape)
+        else:
+            warped = warp_f(image, self.forward, affine_idx_in, affine_idx_out,
+                            affine_disp, out_shape, self.num_threads)
+
         return warped
 
     def _warp_backward(self, image, interpolation='linear',
@@ -493,8 +502,12 @@ class DiffeomorphicMap(object):
 
         warp_f = self._get_warping_function(interpolation)
 
-        warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
-                        affine_disp, out_shape)
+        if self.dim == 2:
+            warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
+                            affine_disp, out_shape)
+        else:
+            warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
+                            affine_disp, out_shape, self.num_threads)
 
         return warped
 
@@ -890,6 +903,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  opt_tol=1e-5,
                  inv_iter=20,
                  inv_tol=1e-3,
+                 num_threads=None,
                  callback=None):
         r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
 
@@ -920,6 +934,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         inv_tol : float
             the displacement field inversion algorithm will stop iterating
             when the inversion error falls below this threshold
+        num_threads : int
+            Number of threads. If None (default) then all available threads
+            will be used.
         callback : function(SymmetricDiffeomorphicRegistration)
             a function receiving a SymmetricDiffeomorphicRegistration object
             to be called after each iteration (this optimizer will call this
@@ -948,6 +965,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.static_direction = None
         self.moving_direction = None
         self.mask0 = metric.mask0
+        self.num_threads = num_threads
 
     def update(self, current_displacement, new_displacement,
                disp_world2grid, time_scaling):
@@ -1111,7 +1129,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                               domain_grid2world,
                                               codomain_shape,
                                               codomain_grid2world,
-                                              None)
+                                              None, self.num_threads)
         self.static_to_ref.allocate()
 
         # The backward model transforms points from the moving image
@@ -1133,7 +1151,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                               domain_grid2world,
                                               codomain_shape,
                                               codomain_grid2world,
-                                              prealign_inv)
+                                              prealign_inv,
+                                              self.num_threads)
         self.moving_to_ref.allocate()
 
     def _end_optimizer(self):
@@ -1304,36 +1323,72 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
 
         # Invert the forward model's forward field
-        self.static_to_ref.backward = np.array(
-            self.invert_vector_field(self.static_to_ref.forward,
-                                     current_disp_world2grid,
-                                     current_disp_spacing,
-                                     self.inv_iter, self.inv_tol,
-                                     self.static_to_ref.backward))
+        if self.dim == 2:
+            self.static_to_ref.backward = np.array(
+                self.invert_vector_field(self.static_to_ref.forward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.static_to_ref.backward))
 
-        # Invert the backward model's forward field
-        self.moving_to_ref.backward = np.array(
-            self.invert_vector_field(self.moving_to_ref.forward,
-                                     current_disp_world2grid,
-                                     current_disp_spacing,
-                                     self.inv_iter, self.inv_tol,
-                                     self.moving_to_ref.backward))
+            # Invert the backward model's forward field
+            self.moving_to_ref.backward = np.array(
+                self.invert_vector_field(self.moving_to_ref.forward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.moving_to_ref.backward))
 
-        # Invert the forward model's backward field
-        self.static_to_ref.forward = np.array(
-            self.invert_vector_field(self.static_to_ref.backward,
-                                     current_disp_world2grid,
-                                     current_disp_spacing,
-                                     self.inv_iter, self.inv_tol,
-                                     self.static_to_ref.forward))
+            # Invert the forward model's backward field
+            self.static_to_ref.forward = np.array(
+                self.invert_vector_field(self.static_to_ref.backward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.static_to_ref.forward))
 
-        # Invert the backward model's backward field
-        self.moving_to_ref.forward = np.array(
-            self.invert_vector_field(self.moving_to_ref.backward,
-                                     current_disp_world2grid,
-                                     current_disp_spacing,
-                                     self.inv_iter, self.inv_tol,
-                                     self.moving_to_ref.forward))
+            # Invert the backward model's backward field
+            self.moving_to_ref.forward = np.array(
+                self.invert_vector_field(self.moving_to_ref.backward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.moving_to_ref.forward))
+        else:
+            self.static_to_ref.backward = np.array(
+                self.invert_vector_field(self.static_to_ref.forward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.static_to_ref.backward,
+                                         self.num_threads))
+
+            # Invert the backward model's forward field
+            self.moving_to_ref.backward = np.array(
+                self.invert_vector_field(self.moving_to_ref.forward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.moving_to_ref.backward,
+                                         self.num_threads))
+
+            # Invert the forward model's backward field
+            self.static_to_ref.forward = np.array(
+                self.invert_vector_field(self.static_to_ref.backward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.static_to_ref.forward,
+                                         self.num_threads))
+
+            # Invert the backward model's backward field
+            self.moving_to_ref.forward = np.array(
+                self.invert_vector_field(self.moving_to_ref.backward,
+                                         current_disp_world2grid,
+                                         current_disp_spacing,
+                                         self.inv_iter, self.inv_tol,
+                                         self.moving_to_ref.forward,
+                                         self.num_threads))
 
     def _approximate_derivative_direct(self, x, y):
         r"""Derivative of the degree-2 polynomial fit of the given x, y pairs
