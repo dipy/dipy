@@ -162,15 +162,15 @@ def test_linear_mixed_models_flow():
 
         lmm_flow.run(input_path, no_disks=5, out_dir=out_dir2)
 
-        assert_true(os.path.exists(os.path.join(out_dir2, 'temp_fa.png')))
+        assert_true(os.path.exists(os.path.join(out_dir2, 'temp__pvalues.npy')))
 
         # test error
-        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*1,
+        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*50,
               'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
-                     0.34]*1,
+                     0.34]*50,
               'subject': ["10001", "10001", "10001", "10001", "10001",
-                          "20002", "20002", "20002", "20002", "20002"]*1,
-              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*1}
+                          "20002", "20002", "20002", "20002", "20002"]*50,
+              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*50}
 
         df = pd.DataFrame(data=d2)
 

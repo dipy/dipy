@@ -263,47 +263,40 @@ class LinearMixedModelsFlow(Workflow):
         for file_path in io_it:
 
             logging.info('Applying metric {0}'.format(file_path))
-            #file_name = os.path.basename(file_path)[:-3]
 
-            # I have to remove this later
-            if file_path[4:6] == "-C":
-                print("======== skipping CCMid =============")
+            file_name = self.get_metric_name(file_path)
+            print(" file name = ", file_name)
+            print("file path = ", file_path)
+            df = pd.read_hdf(file_path)
+            print("read the dataframe")
+            if len(df) < 100:
+                raise ValueError("Dataset for Linear Mixed Model is too small")
 
-            else:
+            pvalues = np.zeros(no_disks)
 
-                file_name = self.get_metric_name(file_path)
-                print(" file name = ", file_name)
-                print("file path = ", file_path)
-                df = pd.read_hdf(file_path)
-                print("read the dataframe")
-                if len(df) < 100:
-                    raise ValueError("Dataset for Linear Mixed Model is too small")
+            # run mixed linear model for every disk
+            for i in range(no_disks):
 
-                pvalues = np.zeros(no_disks)
+                if len(df[df['disk#'] == (i+1)]) > 5: # to have significant data to perform LMM
+                    criteria = file_name + " ~ group"
+                    md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)], groups=df[df['disk#'] == (i+1)]["subject"])
 
-                # run mixed linear model for every disk
-                for i in range(no_disks):
+                    mdf = md.fit()
 
-                    if len(df[df['disk#'] == (i+1)]) > 20: # to have significant data to perform LMM
-                        criteria = file_name + " ~ group"
-                        md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)], groups=df[df['disk#'] == (i+1)]["subject"])
-
-                        mdf = md.fit()
-
-                        pvalues[i] = mdf.pvalues[1]
-                    #del sub
-                #x = list(range(1, len(pvalues)+1))
-                y = -1*np.log10(pvalues)
+                    pvalues[i] = mdf.pvalues[1]
+                #del sub
+            #x = list(range(1, len(pvalues)+1))
+            y = -1*np.log10(pvalues)
 
 
-                plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues.npy")
-                #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
+            plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues.npy")
+            #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
 
-                np.save(plot_file, pvalues)
+            np.save(plot_file, pvalues)
 
-                plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues_log.npy")
-                #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
-                np.save(plot_file, y)
+            plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues_log.npy")
+            #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
+            np.save(plot_file, y)
 
 
                 #title = bundle + " on " + file_name + " Values"
