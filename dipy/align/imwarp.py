@@ -130,7 +130,7 @@ class DiffeomorphicMap(object):
             grid and space
         domain_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the default
-            discretizatio of this map's domain
+            discretization of this map's domain
         domain_grid2world : array, shape (dim+1, dim+1)
             the default voxel-to-space transformation between this map's
             discretization and physical space
@@ -298,7 +298,7 @@ class DiffeomorphicMap(object):
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
         out_shape : array, shape (dim,)
-            the number of slices, rows and columns of the desired warped image
+            the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
@@ -566,7 +566,7 @@ class DiffeomorphicMap(object):
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
         out_shape : array, shape (dim,)
-            the number of slices, rows and columns of the desired warped image
+            the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
