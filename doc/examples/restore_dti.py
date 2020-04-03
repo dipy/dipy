@@ -230,7 +230,7 @@ This demonstrates that RESTORE can recover a distribution of FA that more
 closely resembles the baseline distribution of the noiseless signal, and
 demonstrates the utility of the method to data with intermittent
 noise. Importantly, this method assumes that the tensor is a good
-representation of diffusion signal in data. If you have reason to
+representation of the diffusion signal in the data. If you have reason to
 believe this is not the case (for example, you have data with very high b
 values and you are particularly interested in locations in the brain in which
 fibers cross), you might want to use a different method to fit your data.
