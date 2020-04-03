@@ -110,31 +110,31 @@ As for the next step, we generate the anisotropic powermap introduced by
 [DellAcqua2014]_. To do so, we make use of the Q-ball Model as follows:
 """
 
-qball_model = shm.QballModel(gtab, 8)
+# qball_model = shm.QballModel(gtab, 8)
 
-"""
-We generate the peaks from the ``qball_model`` as follows:
-"""
+# """
+# We generate the peaks from the ``qball_model`` as follows:
+# """
 
-peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
-                            relative_peak_threshold=.5,
-                            min_separation_angle=25,
-                            sphere=sphere, mask=mask)
+# peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
+#                             relative_peak_threshold=.5,
+#                             min_separation_angle=25,
+#                             sphere=sphere, mask=mask)
 
-ap = shm.anisotropic_power(peaks.shm_coeff)
+# ap = shm.anisotropic_power(peaks.shm_coeff)
 
-plt.matshow(np.rot90(ap[:, :, 10]), cmap=plt.cm.bone)
-plt.savefig("anisotropic_power_map.png")
-plt.close()
+# plt.matshow(np.rot90(ap[:, :, 10]), cmap=plt.cm.bone)
+# plt.savefig("anisotropic_power_map.png")
+# plt.close()
 
-"""
-.. figure:: anisotropic_power_map.png
-   :align: center
+# """
+# .. figure:: anisotropic_power_map.png
+#    :align: center
 
-   Anisotropic Power Map (Axial Slice)
-"""
+#    Anisotropic Power Map (Axial Slice)
+# """
 
-print(ap.shape)
+# print(ap.shape)
 
 """
 The above figure is a visualization of the axial slice of the Anisotropic
@@ -165,17 +165,17 @@ We then call the ``TissueClassifierHMRF`` with the parameters specified as
 above:
 """
 
-hmrf = TissueClassifierHMRF()
-initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
+# hmrf = TissueClassifierHMRF()
+# initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
 
 
-"""
-Then, we get the tissues segmentation from the final_segmentation.
-"""
+# """
+# Then, we get the tissues segmentation from the final_segmentation.
+# """
 
-csf = np.where(final_segmentation == 1, 1, 0)
-gm = np.where(final_segmentation == 2, 1, 0)
-wm = np.where(final_segmentation == 3, 1, 0)
+# csf = np.where(final_segmentation == 1, 1, 0)
+# gm = np.where(final_segmentation == 2, 1, 0)
+# wm = np.where(final_segmentation == 3, 1, 0)
 
 
 """
@@ -206,9 +206,9 @@ If one wants to use the previously computed tissue segmentation in addition to
 the threshold method, it is possible by simply multiplying both masks together.
 """
 
-mask_wm *= wm
-mask_gm *= gm
-mask_csf *= csf
+# mask_wm *= wm
+# mask_gm *= gm
+# mask_csf *= csf
 
 """
 The masks can also be used to calculate the number of voxels for each tissue.
@@ -272,6 +272,15 @@ call the ``fit`` function to fit one slice of the 3D data and visualize it.
 
 mcsd_model = MultiShellDeconvModel(gtab, response_mcsd)
 mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
+
+vf = mcsd_fit.volume_fractions
+
+S0 = [response_csf[3], response_gm[3], response_wm[3]]
+
+mcsd_pred = mcsd_model.predict(mcsd_fit.shm_all_coeff, vf=mcsd_fit.volume_fractions, response_scaling=S0)
+mcsd_err = np.sum((denoised_arr[:, :, 10:11, 1:] - mcsd_pred[:, :, :, 1:])**2)
+print("Prediction error")
+print(mcsd_err)
 
 """
 From the fit obtained in the previous step, we generate the ODFs which can be

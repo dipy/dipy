@@ -213,11 +213,12 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self._X = X
         self.sphere = reg_sphere
         self.response = response
+        self.gtab = gtab
         self.B_dwi = B
         self.m = m
         self.n = n
 
-    def predict(self, params, gtab=None, S0=None):
+    def predict(self, params, vf, gtab=None, response_scaling=[1, 1, 1], S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -231,9 +232,9 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             model's gradient table by default.
         S0 : ndarray or float
             The non diffusion-weighted signal value.
-            Default : None
         """
-        if gtab is None:
+        if gtab is None or gtab is self.gtab:
+            gtab = self.gtab
             X = self._X
         else:
             iso = self.response.iso
@@ -241,7 +242,27 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             multiplier_matrix = _inflate_response(self.response, gtab, n,
                                                   self.delta)
             X = B * multiplier_matrix
-        return np.dot(params, X.T)
+
+        # Normalize vf
+        sums = np.sum(vf, axis=3)
+        sums_4d = np.expand_dims(sums, 3)
+        sums_4d = np.repeat(sums_4d, 3, axis=3)
+        vf[sums > 0, :] /= sums_4d[sums > 0, :]
+
+        S0_full = np.ndarray(params.shape[0:3])
+        S0_full[...] = (vf[..., 0] * response_scaling[0] + vf[..., 1] * response_scaling[1]
+                        + vf[..., 2] * response_scaling[2])
+        scaling = np.where(S0_full > 1, 1, 0)
+        scaling = np.expand_dims(scaling, 3)
+        scaling = np.repeat(scaling, 67, axis=3) # to change!!! not always 67, in fact will become 66
+
+        pre_pred_sig = scaling * np.dot(params, X.T)
+
+        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+        pred_sig[..., :] = pre_pred_sig
+        pred_sig[..., 0] = S0_full 
+
+        return pred_sig
 
     @multi_voxel_fit
     def fit(self, data):
@@ -273,6 +294,10 @@ class MSDeconvFit(shm.SphHarmFit):
     @property
     def shm_coeff(self):
         return self._shm_coef[..., self.model.response.iso:]
+
+    @property
+    def shm_all_coeff(self):
+        return self._shm_coef
 
     @property
     def volume_fractions(self):
@@ -400,7 +425,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         response[i, 1] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
         response[i, 0] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
         # wm_response = single_tensor(gtab, 1., wm_rf[:3], evecs, snr=None)
-        # response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+        # response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         # response[i, 0] = np.exp(-bvalue * csf_rf[0]) / A
         # response[i, 1] = np.exp(-bvalue * gm_rf[0]) / A
