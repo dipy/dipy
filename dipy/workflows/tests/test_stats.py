@@ -16,9 +16,11 @@ from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisPopulationFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
+from dipy.workflows.stats import BundleShapeAnalysis
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
+matplt, have_matplotlib, _ = optional_package("matplotlib")
 
 
 def test_stats():
@@ -66,7 +68,8 @@ def test_stats():
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
 
 
-@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
+                    or not have_matplotlib,
                     reason='Requires Pandas, StatsModels and PyTables')
 def test_bundle_analysis_population_flow():
 
@@ -132,7 +135,8 @@ def test_bundle_analysis_population_flow():
         assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
 
 
-@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables,
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
+                    or not have_matplotlib,
                     reason='Requires Pandas, StatsModels and PyTables')
 def test_linear_mixed_models_flow():
 
@@ -162,15 +166,15 @@ def test_linear_mixed_models_flow():
 
         lmm_flow.run(input_path, no_disks=5, out_dir=out_dir2)
 
-        assert_true(os.path.exists(os.path.join(out_dir2, 'temp_pvalues.npy')))
+        assert_true(os.path.exists(os.path.join(out_dir2, 'temp_fa_pvalues.npy')))
 
         # test error
-        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*50,
+        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*5,
               'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
-                     0.34]*50,
+                     0.34]*5,
               'subject': ["10001", "10001", "10001", "10001", "10001",
-                          "20002", "20002", "20002", "20002", "20002"]*50,
-              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*50}
+                          "20002", "20002", "20002", "20002", "20002"]*5,
+              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*5}
 
         df = pd.DataFrame(data=d2)
 
@@ -184,10 +188,76 @@ def test_linear_mixed_models_flow():
         out_dir4 = os.path.join(dirpath, "output4")
         os.mkdir(out_dir4)
 
-        input_path = os.path.join(out_dir3, "*")
+        input_path = os.path.join(out_dir3, "f*")
+        # OS error raised if path is wrong or file does not exist
+        npt.assert_raises(OSError, lmm_flow.run, input_path, no_disks=5,
+                          out_dir=out_dir4)
 
+        input_path = os.path.join(out_dir3, "*")
+        # value error raised if length of data frame is less than 100
         npt.assert_raises(ValueError, lmm_flow.run, input_path, no_disks=5,
                           out_dir=out_dir4)
+
+
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
+                    or not have_matplotlib,
+                    reason='Requires Pandas, StatsModels and PyTables')
+def test_bundle_shape_analysis_flow():
+
+    with TemporaryDirectory() as dirpath:
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
+
+        f = Streamlines(fornix)
+
+        mb = os.path.join(dirpath, "model_bundles")
+        sub = os.path.join(dirpath, "subjects")
+
+        os.mkdir(mb)
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
+
+        os.mkdir(sub)
+
+        os.mkdir(os.path.join(sub, "patient"))
+
+        os.mkdir(os.path.join(sub, "control"))
+
+        p = os.path.join(sub, "patient", "10001")
+        os.mkdir(p)
+
+        c = os.path.join(sub, "control", "20002")
+        os.mkdir(c)
+
+        for pre in [p, c]:
+
+            os.mkdir(os.path.join(pre, "rec_bundles"))
+
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "rec_bundles", "temp.trk"),
+                            bbox_valid_check=False)
+            os.mkdir(os.path.join(pre, "org_bundles"))
+
+            sft = StatefulTractogram(f, data_path, Space.RASMM)
+            save_tractogram(sft, os.path.join(pre, "org_bundles", "temp.trk"),
+                            bbox_valid_check=False)
+            os.mkdir(os.path.join(pre, "anatomical_measures"))
+
+            fa = np.random.rand(255, 255, 255)
+
+            save_nifti(os.path.join(pre, "anatomical_measures", "fa.nii.gz"),
+                       fa, affine=np.eye(4))
+
+        out_dir = os.path.join(dirpath, "output")
+        os.mkdir(out_dir)
+
+        sm_flow = BundleShapeAnalysis()
+
+        sm_flow.run(sub, out_dir=out_dir)
+
+        assert_true(os.path.exists(os.path.join(out_dir, "temp.npy")))
 
 
 if __name__ == '__main__':

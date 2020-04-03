@@ -10,11 +10,13 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
-import matplotlib.pyplot as plt
-from matplotlib import cm as cm
+# import matplotlib.pyplot as plt
+# from matplotlib import cm as cm
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
-from dipy.io.streamline import load_trk, save_trk
+# from dipy.io.streamline import load_trk, save_trk
 from dipy.workflows.workflow import Workflow
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.viz.regtools import simple_plot
@@ -22,6 +24,7 @@ from dipy.stats.analysis import bundle_analysis
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels")
 tables, have_tables, _ = optional_package("tables")
+matplt, have_matplotlib, _ = optional_package("matplotlib")
 
 if have_pd:
     import pandas as pd
@@ -223,8 +226,9 @@ class LinearMixedModelsFlow(Workflow):
     def get_short_name(cls):
         return 'lmm'
 
-    def get_metric_name(self, name):
-
+    def get_metric_name(self, path):
+        head_tail = os.path.split(path)
+        name = head_tail[1]
         count = 0
         i = len(name)-1
         while i>0:
@@ -234,7 +238,7 @@ class LinearMixedModelsFlow(Workflow):
             else:
                 if name[i] == '_':
 
-                    return name[i+1:count]
+                    return name[i+1:count], name[:count]
             i = i-1
         return " "
 
@@ -265,7 +269,7 @@ class LinearMixedModelsFlow(Workflow):
 
             logging.info('Applying metric {0}'.format(file_path))
 
-            file_name = self.get_metric_name(file_path)
+            file_name, save_name = self.get_metric_name(file_path)
             print(" file name = ", file_name)
             print("file path = ", file_path)
             df = pd.read_hdf(file_path)
@@ -280,7 +284,8 @@ class LinearMixedModelsFlow(Workflow):
 
                 if len(df[df['disk#'] == (i+1)]) > 5: # to have significant data to perform LMM
                     criteria = file_name + " ~ group"
-                    md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)], groups=df[df['disk#'] == (i+1)]["subject"])
+                    md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)],
+                                     groups=df[df['disk#'] == (i+1)]["subject"])
 
                     mdf = md.fit()
 
@@ -290,12 +295,12 @@ class LinearMixedModelsFlow(Workflow):
             y = -1*np.log10(pvalues)
 
 
-            plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues.npy")
+            plot_file = os.path.join(out_dir, save_name + "_pvalues.npy")
             #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
 
             np.save(plot_file, pvalues)
 
-            plot_file = os.path.join(out_dir, file_path[10:-3] + "_pvalues_log.npy")
+            plot_file = os.path.join(out_dir, save_name + "_pvalues_log.npy")
             #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
             np.save(plot_file, y)
 
@@ -365,11 +370,24 @@ class BundleShapeAnalysis(Workflow):
             print(bun)
             for sub in all_subjects:
                 j = 0
-                bundle1, _ = load_trk(os.path.join(sub, "rec_bundles", bun))
+                #bundle1, _ = load_trk(os.path.join(sub, "rec_bundles", bun))
+
+
+                bundle1 = load_tractogram(os.path.join(sub, "rec_bundles", bun),
+                                          reference='same',
+                                          bbox_valid_check=False).streamlines
+
+
+
                 for subi in all_subjects:
                     print(subi)
-                    bundle2 , _ = load_trk(os.path.join(subi, "rec_bundles",
-                                                        bun))
+                    #bundle2 , _ = load_trk(os.path.join(subi, "rec_bundles",
+                    #                                    bun))
+
+                    bundle2 = load_tractogram(os.path.join(subi, "rec_bundles",
+                                                           bun),
+                                          reference='same',
+                                          bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2,
                                                        threshold, rng)
@@ -380,11 +398,11 @@ class BundleShapeAnalysis(Workflow):
                 i+= 1
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
-            cmap = cm.get_cmap('Blues')
-            plt.title(bun[:-4])
-            plt.imshow(ba_matrix, cmap = cmap);
-            plt.colorbar()
-            plt.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
-            plt.clf()
+            cmap = matplt.cm.get_cmap('Blues')
+            matplt.pyplot.title(bun[:-4])
+            matplt.pyplot.imshow(ba_matrix, cmap = cmap);
+            matplt.pyplot.colorbar()
+            matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
+            matplt.pyplot.clf()
 
 
