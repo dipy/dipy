@@ -65,7 +65,7 @@ nclass = 3
 
 """
 Then, the smoothness factor of the segmentation. Good performance is achieved
-with values between 0 and 0.5. Here we are considering it as 0.1
+with values between 0 and 0.5. 
 """
 
 beta = 0.1
