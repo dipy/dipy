@@ -10,7 +10,8 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
-
+import matplotlib.pyplot as plt
+from matplotlib import cm as cm
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 from dipy.io.streamline import load_trk, save_trk
@@ -307,6 +308,10 @@ class LinearMixedModelsFlow(Workflow):
                  #           "-log10(pvalues)")
 
 
+
+
+
+
 class BundleShapeAnalysis(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -374,5 +379,12 @@ class BundleShapeAnalysis(Workflow):
                     j+= 1
                 i+= 1
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
+
+            cmap = cm.get_cmap('Blues')
+            plt.title(bun[:-4])
+            plt.imshow(ba_matrix, cmap = cmap);
+            plt.colorbar()
+            plt.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
+            plt.clf()
 
 

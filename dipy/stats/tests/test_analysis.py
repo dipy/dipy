@@ -66,7 +66,7 @@ def test_ba():
         bundle_analysis(mb, rb, ob, dt, group="patient", subject="10001",
                         no_disks=100, out_dir=out_dir)
 
-        assert_true(os.path.exists(os.path.join(out_dir, 'fa.h5')))
+        assert_true(os.path.exists(os.path.join(out_dir, 'temp_fa.h5')))
 
 
 def test_gaussian_weights():
