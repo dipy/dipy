@@ -162,7 +162,7 @@ def test_linear_mixed_models_flow():
 
         lmm_flow.run(input_path, no_disks=5, out_dir=out_dir2)
 
-        assert_true(os.path.exists(os.path.join(out_dir2, 'temp__pvalues.npy')))
+        assert_true(os.path.exists(os.path.join(out_dir2, 'temp_pvalues.npy')))
 
         # test error
         d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*50,
