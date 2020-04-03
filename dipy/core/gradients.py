@@ -6,7 +6,7 @@ from scipy.linalg import inv, polar
 
 from dipy.io import gradients as io
 from dipy.core.onetime import auto_attr
-from dipy.core.geometry import vector_norm
+from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -43,6 +43,8 @@ class GradientTable(object):
     b0_threshold : float
         Gradients with b-value less than or equal to `b0_threshold` are
         considered to not have diffusion weighting.
+    btens : (N,3,3) ndarray
+        The b-tensor of each gradient direction.
 
     See Also
     --------
@@ -56,7 +58,7 @@ class GradientTable(object):
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=50):
+                 b0_threshold=50, btens=None):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
@@ -67,6 +69,75 @@ class GradientTable(object):
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
+        if btens is not None:
+            linear_tensor = np.array([[1, 0, 0],
+                                      [0, 0, 0],
+                                      [0, 0, 0]])
+            planar_tensor = np.array([[0, 0, 0],
+                                      [0, 1, 0],
+                                      [0, 0, 1]]) / 2
+            spherical_tensor = np.array([[1, 0, 0],
+                                         [0, 1, 0],
+                                         [0, 0, 1]]) / 3
+            cigar_tensor = np.array([[2, 0, 0],
+                                     [0, .5, 0],
+                                     [0, 0, .5]]) / 3
+            if isinstance(btens, str):
+                b_tensors = np.zeros((len(self.bvals), 3, 3))
+                if btens == 'LTE':
+                    b_tensor = linear_tensor
+                elif btens == 'PTE':
+                    b_tensor = planar_tensor
+                elif btens == 'STE':
+                    b_tensor = spherical_tensor
+                elif btens == 'CTE':
+                    b_tensor = cigar_tensor
+                else:
+                    raise ValueError("%s is an invalid value for btens. "%btens
+                                     + "Please provide one of the following: "
+                                     + "'LTE', 'PTE', 'STE', 'CTE'.")
+                for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                    if btens == 'STE':
+                        b_tensors[i] = b_tensor * bval
+                    else:
+                        R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                        b_tensors[i] = (np.matmul(np.matmul(R, b_tensor), R.T)
+                                        * bval)
+                self.btens = b_tensors
+            elif (isinstance(btens, np.ndarray) and (btens.shape ==
+                    (gradients.shape[0],) or (btens.shape ==
+                    (gradients.shape[0], 1)) or (btens.shape == (1,
+                    gradients.shape[0])))):
+                b_tensors = np.zeros((len(self.bvals), 3, 3))
+                if btens.shape == (1, gradients.shape[0]):
+                    btens = btens.reshape((gradients.shape[0], 1))
+                for i, (bvec, bval) in enumerate(zip(self.bvecs, self.bvals)):
+                    R = vec2vec_rotmat(np.array([1, 0, 0]), bvec)
+                    if btens[i] == 'LTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, linear_tensor),
+                                        R.T) * bval)
+                    elif btens[i] == 'PTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
+                                        R.T) * bval)
+                    elif btens[i] == 'STE':
+                        b_tensors[i] = spherical_tensor * bval
+                    elif btens[i] == 'CTE':
+                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
+                                        R.T) * bval)
+                    else:
+                        raise ValueError(
+                                "%s is an invalid value in btens. "%btens[i]
+                                + "Array element options: 'LTE', 'PTE', 'STE', "
+                                + "'CTE'.")
+                self.btens = b_tensors
+            elif (isinstance(btens, np.ndarray) and btens.shape ==
+                    (gradients.shape[0], 3, 3)):
+                self.btens = btens
+            else:
+                raise ValueError("%s is an invalid value for btens. "%btens
+                                 + "Please provide a string, an array of "
+                                 + "strings, or an array of exact b-tensors. "
+                                 + "String options: 'LTE', 'PTE', 'STE', 'CTE'")
 
     @auto_attr
     def bvals(self):
@@ -112,7 +183,7 @@ class GradientTable(object):
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
-                                    **kwargs):
+                                    btens=None, **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -127,6 +198,26 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
+    btens : can be any of three options
+        1. a string specifying the shape of the encoding tensor for all volumes
+           in data. Options: 'LTE', 'PTE', 'STE', 'CTE' corresponding to
+           linear, planar, spherical, and "cigar-shaped" tensor encoding.
+           Tensors are rotated so that linear and cigar tensors are aligned
+           with the corresponding gradient direction and the planar tensor's
+           normal is aligned with the corresponding gradient direction.
+           Magnitude is scaled to match the b-value.
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding. Tensors are rotated so that linear
+           and cigar tensors are aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
+        3. an array of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data. No rotation or
+           scaling is performed.
 
     Other Parameters
     ----------------
@@ -178,7 +269,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     bvals = bvals * bvecs_close_to_1
     gradients = bvals[:, None] * bvecs
 
-    grad_table = GradientTable(gradients, b0_threshold=b0_threshold, **kwargs)
+    grad_table = GradientTable(gradients, b0_threshold=b0_threshold,
+                               btens=btens, **kwargs)
     grad_table.bvals = bvals
     grad_table.bvecs = bvecs
     grad_table.b0s_mask = ~dwi_mask
@@ -342,7 +434,7 @@ def gradient_table_from_gradient_strength_bvecs(gradient_strength, bvecs,
 
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=50, atol=1e-2):
+                   b0_threshold=50, atol=1e-2, btens=None):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -377,6 +469,28 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
+
+    btens : can be any of three options
+
+        1. a string specifying the shape of the encoding tensor for all volumes
+           in data. Options: 'LTE', 'PTE', 'STE', 'CTE' corresponding to
+           linear, planar, spherical, and "cigar-shaped" tensor encoding.
+           Tensors are rotated so that linear and cigar tensors are aligned
+           with the corresponding gradient direction and the planar tensor's
+           normal is aligned with the corresponding gradient direction.
+           Magnitude is scaled to match the b-value.
+        2. an array of strings of shape (N,), (N, 1), or (1, N) specifying
+           encoding tensor shape for each volume separately. N corresponds to
+           the number volumes in data. Options for elements in array: 'LTE',
+           'PTE', 'STE', 'CTE' corresponding to linear, planar, spherical, and
+           "cigar-shaped" tensor encoding. Tensors are rotated so that linear
+           and cigar tensors are aligned with the corresponding gradient
+           direction and the planar tensor's normal is aligned with the
+           corresponding gradient direction. Magnitude is scaled to match the
+           b-value.
+        3. an array of shape (N,3,3) specifying the b-tensor of each volume
+           exactly. N corresponds to the number volumes in data. No rotation or
+           scaling is performed.
 
     Returns
     -------
@@ -441,7 +555,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
                                            b0_threshold=b0_threshold,
-                                           atol=atol)
+                                           atol=atol, btens=btens)
 
 
 def reorient_bvecs(gtab, affines, atol=1e-2):

@@ -81,6 +81,91 @@ def test_GradientTable():
         assert len(w) == 1
 
 
+def test_GradientTable_btensor_calculation():
+
+    # Generate a gradient table without specifying b-tensors
+    gradients = np.array([[0, 0, 0],
+                          [1, 0, 0],
+                          [0, 1, 0],
+                          [0, 0, 1],
+                          [3, 4, 0],
+                          [5, 0, 12]], 'float')
+
+    # Check that no btens are created unless specified
+    gt = GradientTable(gradients)
+    npt.assert_equal(hasattr(gt, 'btens'), False)
+
+    # Check that btens are correctly created if specified
+    gt = GradientTable(gradients, btens='LTE')
+
+    # Check that the number of b tensors is correct
+    npt.assert_equal(gt.btens.shape[0], gt.bvals.shape[0])
+    for i, (bval, bten) in enumerate(zip(gt.bvals, gt.btens)):
+        # Check that the b tensor magnitude is correct
+        npt.assert_almost_equal(np.trace(bten), bval)
+        # Check that the b tensor orientation is correct
+        if bval != 0:
+            evals, evecs = np.linalg.eig(bten)
+            dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), gt.bvecs[i])
+            npt.assert_almost_equal(np.abs(dot_prod), 1)
+
+    # Check btens input option 1
+    for btens in ['LTE', 'PTE', 'STE', 'CTE']:
+        gt = GradientTable(gradients, btens=btens)
+        # Check that the number of b tensors is correct
+        npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
+        for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs,
+                                                   gt.btens)):
+            # Check that the b tensor magnitude is correct
+            npt.assert_almost_equal(np.trace(bten), bval)
+            # Check that the b tensor orientation is correct
+            if btens == ('LTE' or 'CTE'):
+                if bval != 0:
+                    evals, evecs = np.linalg.eig(bten)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
+                    npt.assert_almost_equal(np.abs(dot_prod), 1)
+            elif btens == 'PTE':
+                if bval != 0:
+                    evals, evecs = np.linalg.eig(bten)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
+                    npt.assert_almost_equal(np.abs(dot_prod), 1)
+
+    # Check btens input option 2
+    btens = np.array(['LTE', 'PTE', 'STE', 'CTE', 'LTE', 'PTE'])
+    gt = GradientTable(gradients, btens=btens)
+    # Check that the number of b tensors is correct
+    npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
+    for i, (bval, bvec, bten) in enumerate(zip(gt.bvals, gt.bvecs,
+                                               gt.btens)):
+        # Check that the b tensor magnitude is correct
+        npt.assert_almost_equal(np.trace(bten), bval)
+        # Check that the b tensor orientation is correct
+        if btens[i] == ('LTE' or 'CTE'):
+            if bval != 0:
+                evals, evecs = np.linalg.eig(bten)
+                dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
+                npt.assert_almost_equal(np.abs(dot_prod), 1)
+        elif btens[i] == 'PTE':
+            if bval != 0:
+                evals, evecs = np.linalg.eig(bten)
+                dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
+                npt.assert_almost_equal(np.abs(dot_prod), 1)
+
+    # Check btens input option 3
+    btens = np.array([np.eye(3, 3) for i in range(6)])
+    gt = GradientTable(gradients, btens=btens)
+    npt.assert_equal(btens, gt.btens)
+    npt.assert_equal(gt.bvals.shape[0], gt.btens.shape[0])
+
+    # Check invalid input
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
+                      btens='PPP')
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
+                      btens=np.array([np.eye(3, 3) for i in range(10)]))
+    npt.assert_raises(ValueError, GradientTable, gradients=gradients,
+                      btens=np.zeros((10, 10)))
+
+
 def test_gradient_table_from_qvals_bvecs():
     qvals = 30. * np.ones(7)
     big_delta = .03  # pulse separation of 30ms
