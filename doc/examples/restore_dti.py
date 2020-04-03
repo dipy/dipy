@@ -5,7 +5,7 @@ Using the RESTORE algorithm for robust tensor fitting
 
 The diffusion tensor model takes into account certain kinds of noise (thermal),
 but not other kinds, such as "physiological" noise. For example, if a subject
-moves during the acquisition of one of the diffusion-weighted samples, this
+moves during acquisition of one of the diffusion-weighted samples, this
 might have a substantial effect on the parameters of the tensor fit calculated
 in all voxels in the brain for that subject. One of the pernicious consequences
 of this is that it can lead to wrong interpretation of group differences. For
@@ -58,6 +58,8 @@ visualizations:
 
 from dipy.viz import window, actor
 import matplotlib.pyplot as plt
+
+import dipy.denoise.noise_estimate as ne
 
 # Enables/disables interactive visualization
 interactive = False
@@ -173,8 +175,6 @@ estimate what would be a reasonable amount of noise to expect in the
 measurement. To do that, we use the ``dipy.denoise.noise_estimate`` module:
 
 """
-
-import dipy.denoise.noise_estimate as ne
 sigma = ne.estimate_sigma(data)
 
 """
