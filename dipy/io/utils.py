@@ -386,3 +386,35 @@ def save_buan_profiles_hdf5(fname, dt):
     store = pd.HDFStore(filename_hdf5, complevel=9)
     store.append(fname, df, data_columns=True, complevel=9)
     store.close()
+
+
+def read_img_arr_or_path(data, affine=None):
+    """
+    Helper function that handles inputs that can be paths, nifti img or arrays
+
+    Parameters
+    -----------
+    data : array or nib.Nifti1Image or str.
+        Either as a 3D/4D array or as a nifti image object, or as
+        a string containing the full path to a nifti file.
+
+    affine : 4x4 array, optional.
+        Must be provided for `data` provided as an array. If provided together
+        with Nifti1Image or str `data`, this input will over-ride the affine
+        that is stored in the `data` input. Default: use the affine stored
+        in `data`.
+
+    Returns
+    -------
+    data, affine : ndarray and 4x4 array
+    """
+    if isinstance(data, np.ndarray) and affine is None:
+        raise ValueError("If data is provided as an array, an affine has ",
+                         "to be provided as well")
+    if isinstance(data, str):
+        data = nib.load(data)
+    if isinstance(data, nib.Nifti1Image):
+        if affine is None:
+            affine = data.affine
+        data = data.get_fdata()
+    return data, affine

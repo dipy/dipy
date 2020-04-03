@@ -28,6 +28,7 @@ from dipy.align.streamlinear import StreamlineLinearRegistration
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import load_trk
+from dipy.io.utils import read_img_arr_or_path
 
 
 # Global dicts for choosing metrics for registration:
@@ -36,35 +37,6 @@ syn_metric_dict = {'CC': CCMetric,
                    'SSD': SSDMetric}
 
 affine_metric_dict = {'MI': MutualInformationMetric}
-
-
-def _input_as_img_arr_or_path(data, affine=None):
-    """
-    Helper function that handles inputs that can be nifti img or arrays
-
-    Parameters
-    -----------
-    data : array or nib.Nifti1Image or str.
-        Either as a 3D/4D array or as a nifti image object, or as
-        a string containing the full path to a nifti file.
-
-    affine : 4x4 array, optional.
-        Must be provided for `data` provided as an array. If provided together
-        with Nifti1Image or str `data`, this input will over-ride the affine
-        that is stored in the `data` input. Default: use the affine stored
-        in `data`.
-
-    """
-    if isinstance(data, np.ndarray) and affine is None:
-        raise ValueError("If data is provided as an array, an affine has ",
-                         "to be provided as well")
-    if isinstance(data, str):
-        data = nib.load(data)
-    if isinstance(data, nib.Nifti1Image):
-        if affine is None:
-            affine = data.affine
-        data = data.get_fdata()
-    return data, affine
 
 
 def _handle_pipeline_inputs(moving, static, static_affine=None,
@@ -81,9 +53,9 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
 
     starting_affine : in case this is needed.
     """
-    static, static_affine = _input_as_img_arr_or_path(static,
+    static, static_affine = read_img_arr_or_path(static,
                                                       affine=static_affine)
-    moving, moving_affine = _input_as_img_arr_or_path(moving,
+    moving, moving_affine = read_img_arr_or_path(moving,
                                                       affine=moving_affine)
     if starting_affine is None:
         starting_affine = np.eye(4)
@@ -205,12 +177,12 @@ def register_dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
     See :func:`register_dwi_series`.
 
     """
-    dwi_data, dwi_affine = _input_as_img_arr_or_path(dwi, affine=dwi_affine)
+    dwi_data, dwi_affine = read_img_arr_or_path(dwi, affine=dwi_affine)
 
     if template is None:
         template = dpd.read_mni_template()
 
-    template_data, template_affine = _input_as_img_arr_or_path(
+    template_data, template_affine = read_img_arr_or_path(
                                        template,
                                        affine=template_affine)
     if isinstance(dwi, str):
@@ -707,7 +679,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     if pipeline is None:
         [c_of_mass, translation, rigid, affine]
 
-    series, series_affine = _input_as_img_arr_or_path(series,
+    series, series_affine = read_img_arr_or_path(series,
                                                       affine=series_affine)
     if isinstance(ref, numbers.Number):
         ref_as_idx = ref
@@ -717,7 +689,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
         ref_affine = series_affine
     else:
         ref_as_idx = False
-        ref, ref_affine = _input_as_img_arr_or_path(ref, affine=ref_affine)
+        ref, ref_affine = read_img_arr_or_path(ref, affine=ref_affine)
         if len(ref.shape) != 3:
             raise ValueError("The reference image should be a single volume",
                              " or the index of one or more volumes")
@@ -781,7 +753,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
     if pipeline is None:
         [c_of_mass, translation, rigid, affine]
 
-    data, affine = _input_as_img_arr_or_path(data, affine=affine)
+    data, affine = read_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.Sequence):
         gtab = dpg.gradient_table(*gtab)
 

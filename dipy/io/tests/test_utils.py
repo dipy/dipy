@@ -134,3 +134,7 @@ def test_reference_info_identical():
 def test_all_zeros_affine():
     assert_(not reference_info_zero_affine(),
             msg='An all zeros affine should not be valid')
+
+
+def test_read_img_arr_or_path():
+    raise NotImplementedError
