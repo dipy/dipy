@@ -85,7 +85,8 @@ class Horizon(object):
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
-                 out_png='tmp.png', recorded_events=None, return_showm=False):
+                 out_png='tmp.png', recorded_events=None, return_showm=False,
+                 bg_color=(0, 0, 0)):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -132,6 +133,9 @@ class Horizon(object):
             Return ShowManager object. Used only at Python level. Can be used
             for extending Horizon's cababilities externally and for testing
             purposes.
+        bg_color : ndarray or list or tuple
+            Define the background color of the scene.
+            Default is black (0, 0, 0)
 
         References
         ----------
@@ -163,11 +167,13 @@ class Horizon(object):
         self.recorded_events = recorded_events
         self.show_m = None
         self.return_showm = return_showm
+        self.bg_color = bg_color
 
     def build_scene(self):
 
         self.mem = GlobalHorizon()
         scene = window.Scene()
+        scene.background(self.bg_color)
         self.add_cluster_actors(scene, self.tractograms,
                                 self.cluster_thr,
                                 enable_callbacks=False)
@@ -747,8 +753,8 @@ class Horizon(object):
 
 def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
-            random_colors=False, length_gt=0, length_lt=1000,
-            clusters_gt=0, clusters_lt=10000,
+            random_colors=False, bg_color=(0, 0, 0), length_gt=0,
+            length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png',
             recorded_events=None, return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
@@ -759,44 +765,46 @@ def horizon(tractograms=None, images=None, pams=None,
     tractograms : sequence of StatefulTractograms
             StatefulTractograms are used for making sure that the coordinate
             systems are correct
-        images : sequence of tuples
-            Each tuple contains data and affine
-        pams : sequence of PeakAndMetrics
-            Contains peak directions and spherical harmonic coefficients
-        cluster : bool
-            Enable QuickBundlesX clustering
-        cluster_thr : float
-            Distance threshold used for clustering. Default value 15.0 for
-            small animal data you may need to use something smaller such
-            as 2.0. The threshold is in mm. For this parameter to be active
-            ``cluster`` should be enabled.
-        random_colors : bool
-            Given multiple tractograms have been included then each tractogram
-            will be shown with different color
-        length_gt : float
-            Clusters with average length greater than ``length_gt`` amount
-            in mm will be shown.
-        length_lt : float
-            Clusters with average length less than ``length_lt`` amount in mm
-            will be shown.
-        clusters_gt : int
-            Clusters with size greater than ``clusters_gt`` will be shown.
-        clusters_lt : int
-            Clusters with size less than ``clusters_lt`` will be shown.
-        world_coords : bool
-            Show data in their world coordinates (not native voxel coordinates)
-            Default True.
-        interactive : bool
-            Allow user interaction. If False then Horizon goes on stealth mode
-            and just saves pictures.
-        out_png : string
-            Filename of saved picture.
-        recorded_events : string
-            File path to replay recorded events
-        return_showm : bool
-            Return ShowManager object. Used only at Python level. Can be used
-            for extending Horizon's cababilities externally and for testing
-            purposes.
+    images : sequence of tuples
+        Each tuple contains data and affine
+    pams : sequence of PeakAndMetrics
+        Contains peak directions and spherical harmonic coefficients
+    cluster : bool
+        Enable QuickBundlesX clustering
+    cluster_thr : float
+        Distance threshold used for clustering. Default value 15.0 for
+        small animal data you may need to use something smaller such
+        as 2.0. The threshold is in mm. For this parameter to be active
+        ``cluster`` should be enabled.
+    random_colors : bool
+        Given multiple tractograms have been included then each tractogram
+        will be shown with different color
+    bg_color : ndarray or list or tuple
+        Define the background color of the scene. Default is black (0, 0, 0)
+    length_gt : float
+        Clusters with average length greater than ``length_gt`` amount
+        in mm will be shown.
+    length_lt : float
+        Clusters with average length less than ``length_lt`` amount in mm
+        will be shown.
+    clusters_gt : int
+        Clusters with size greater than ``clusters_gt`` will be shown.
+    clusters_lt : int
+        Clusters with size less than ``clusters_lt`` will be shown.
+    world_coords : bool
+        Show data in their world coordinates (not native voxel coordinates)
+        Default True.
+    interactive : bool
+        Allow user interaction. If False then Horizon goes on stealth mode
+        and just saves pictures.
+    out_png : string
+        Filename of saved picture.
+    recorded_events : string
+        File path to replay recorded events
+    return_showm : bool
+        Return ShowManager object. Used only at Python level. Can be used
+        for extending Horizon's cababilities externally and for testing
+        purposes.
 
     References
     ----------
@@ -810,7 +818,7 @@ def horizon(tractograms=None, images=None, pams=None,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
-                 out_png, recorded_events, return_showm)
+                 out_png, recorded_events, return_showm, bg_color=bg_color)
 
     scene = hz.build_scene()
 

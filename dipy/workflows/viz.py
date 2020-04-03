@@ -17,8 +17,8 @@ class HorizonFlow(Workflow):
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
-            stealth=False, emergency_header='icbm_2009a', out_dir='',
-            out_stealth_png='tmp.png'):
+            stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
+            out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -54,6 +54,9 @@ class HorizonFlow(Workflow):
         emergency_header : str
             If no anatomy reference is provided an emergency header is
             provided. Current options 'icbm_2009a' and 'icbm_2009c'.
+        bg_color : variable float
+            Define the background color of the scene. Value should be
+            between [0-1]. Default is black (0, 0, 0)
         out_dir : string
             Output directory. Default current directory.
         out_stealth_png : string
@@ -142,9 +145,15 @@ class HorizonFlow(Workflow):
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
+        if len(bg_color) == 1:
+            bg_color *= 3
+        elif len(bg_color) != 3:
+            raise ValueError('You need 3 values to set up backgound color. '
+                             'e.g --bg_color 0.5 0.5 0.5')
+
         horizon(tractograms=tractograms, images=images, pams=pams,
                 cluster=cluster, cluster_thr=cluster_thr,
-                random_colors=random_colors,
+                random_colors=random_colors, bg_color=bg_color,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
