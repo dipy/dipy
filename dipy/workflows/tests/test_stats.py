@@ -123,9 +123,9 @@ def test_bundle_analysis_population_flow():
 
         ba_flow.run(mb, sub, out_dir=out_dir)
 
-        assert_true(os.path.exists(os.path.join(out_dir, 'fa.h5')))
+        assert_true(os.path.exists(os.path.join(out_dir, 'temp_fa.h5')))
 
-        dft = pd.read_hdf(os.path.join(out_dir, 'fa.h5'))
+        dft = pd.read_hdf(os.path.join(out_dir, 'temp_fa.h5'))
 
         # assert_true(dft.bundle.unique() == "temp")
 
@@ -149,7 +149,7 @@ def test_linear_mixed_models_flow():
              'group': [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]*10}
 
         df = pd.DataFrame(data=d)
-        store = pd.HDFStore(os.path.join(out_dir, 'fa.h5'))
+        store = pd.HDFStore(os.path.join(out_dir, 'temp_fa.h5'))
         store.append('fa', df, data_columns=True)
         store.close()
 
@@ -177,7 +177,7 @@ def test_linear_mixed_models_flow():
         out_dir3 = os.path.join(dirpath, "output3")
         os.mkdir(out_dir3)
 
-        store = pd.HDFStore(os.path.join(out_dir3, 'fa.h5'))
+        store = pd.HDFStore(os.path.join(out_dir3, 'temp_fa.h5'))
         store.append('fa', df, data_columns=True)
         store.close()
 
