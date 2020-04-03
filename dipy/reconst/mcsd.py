@@ -218,7 +218,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.m = m
         self.n = n
 
-    def predict(self, params, vf, gtab=None, response_scaling=[1, 1, 1], S0=1.):
+    def predict_new(self, params, vf, gtab=None, response_scaling=[1, 1, 1], S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -263,6 +263,32 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         pred_sig[..., 0] = S0_full 
 
         return pred_sig
+
+    def predict(self, params, gtab=None, S0=None):
+        """Compute a signal prediction given spherical harmonic coefficients
+        for the provided GradientTable class instance.
+
+        Parameters
+        ----------
+        params : ndarray
+            The spherical harmonic representation of the FOD from which to make
+            the signal prediction.
+        gtab : GradientTable
+            The gradients for which the signal will be predicted. Use the
+            model's gradient table by default.
+        S0 : ndarray or float
+            The non diffusion-weighted signal value.
+            Default : None
+        """
+        if gtab is None:
+            X = self._X
+        else:
+            iso = self.response.iso
+            B, m, n = multi_tissue_basis(gtab, self.sh_order, iso)
+            multiplier_matrix = _inflate_response(self.response, gtab, n,
+                                                  self.delta)
+            X = B * multiplier_matrix
+        return np.dot(params, X.T)
 
     @multi_voxel_fit
     def fit(self, data):
