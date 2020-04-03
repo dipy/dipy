@@ -33,7 +33,7 @@ t1 = load_nifti_data(t1_fname)
 print('t1.shape (%d, %d, %d)' % t1.shape)
 
 """
-We have fetched T1 volume. Now we will look at the axial and coronal
+We have fetched the T1 volume. Now we will look at the axial and coronal
 slices of the image.
 """
 
