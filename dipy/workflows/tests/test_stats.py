@@ -14,7 +14,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.data import get_fnames
 from dipy.workflows.stats import SNRinCCFlow
-from dipy.workflows.stats import BundleAnalysisPopulationFlow
+from dipy.workflows.stats import BundleAnalysisTractometryFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
 from dipy.workflows.stats import BundleShapeAnalysis
 pd, have_pandas, _ = optional_package("pandas")
@@ -71,7 +71,7 @@ def test_stats():
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
                     reason='Requires Pandas, StatsModels and PyTables')
-def test_bundle_analysis_population_flow():
+def test_bundle_analysis_tractometry_flow():
 
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
@@ -122,7 +122,7 @@ def test_bundle_analysis_population_flow():
         out_dir = os.path.join(dirpath, "output")
         os.mkdir(out_dir)
 
-        ba_flow = BundleAnalysisPopulationFlow()
+        ba_flow = BundleAnalysisTractometryFlow()
 
         ba_flow.run(mb, sub, out_dir=out_dir)
 
@@ -145,7 +145,7 @@ def test_linear_mixed_models_flow():
         out_dir = os.path.join(dirpath, "output")
         os.mkdir(out_dir)
 
-        d = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*10,
+        d = {'disk': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*10,
              'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
                     0.34]*10,
              'subject': ["10001", "10001", "10001", "10001", "10001",
@@ -166,10 +166,13 @@ def test_linear_mixed_models_flow():
 
         lmm_flow.run(input_path, no_disks=5, out_dir=out_dir2)
 
-        assert_true(os.path.exists(os.path.join(out_dir2, 'temp_fa_pvalues.npy')))
+        assert_true(os.path.exists(os.path.join(out_dir2,
+                                                'temp_fa_pvalues.npy')))
+        assert_true(os.path.exists(os.path.join(out_dir2,
+                                                'temp_fa.png')))
 
         # test error
-        d2 = {'disk#': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*5,
+        d2 = {'disk': [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]*5,
               'fa': [0.21, 0.234, 0.44, 0.44, 0.5, 0.23, 0.55, 0.34, 0.76,
                      0.34]*5,
               'subject': ["10001", "10001", "10001", "10001", "10001",

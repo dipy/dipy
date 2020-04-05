@@ -8,7 +8,8 @@ from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.stats.analysis import bundle_analysis, gaussian_weights, afq_profile
+from dipy.stats.analysis import (buan_bundle_profiles, gaussian_weights,
+                                 afq_profile)
 from dipy.testing import assert_true
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
@@ -21,7 +22,7 @@ _, have_tables, _ = optional_package("tables")
 
 @pytest.mark.skipif(not have_pd or not have_smf or not have_tables,
                     reason='Requires Pandas, StatsModels and PyTables')
-def test_ba():
+def test_buan_bundle_profiles():
 
     with TemporaryDirectory() as dirpath:
         data_path = get_fnames('fornix')
@@ -63,8 +64,8 @@ def test_ba():
         out_dir = os.path.join(dirpath, "output")
         os.mkdir(out_dir)
 
-        bundle_analysis(mb, rb, ob, dt, group="patient", subject="10001",
-                        no_disks=100, out_dir=out_dir)
+        buan_bundle_profiles(mb, rb, ob, dt, group="patient", subject="10001",
+                             no_disks=100, out_dir=out_dir)
 
         assert_true(os.path.exists(os.path.join(out_dir, 'temp_fa.h5')))
 

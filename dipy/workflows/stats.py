@@ -8,7 +8,6 @@ from dipy.utils.optpkg import optional_package
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
-from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
 # import matplotlib.pyplot as plt
 # from matplotlib import cm as cm
@@ -20,7 +19,7 @@ from dipy.segment.mask import bounding_box
 from dipy.workflows.workflow import Workflow
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.viz.regtools import simple_plot
-from dipy.stats.analysis import bundle_analysis
+from dipy.stats.analysis import buan_bundle_profiles
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels")
 tables, have_tables, _ = optional_package("tables")
@@ -34,6 +33,9 @@ if have_smf:
 
 if have_tables:
     import tables
+
+if have_matplotlib:
+    import matplotlib as matplt
 
 
 class SNRinCCFlow(Workflow):
@@ -165,7 +167,7 @@ class SNRinCCFlow(Workflow):
                 json.dump(data, myfile)
 
 
-class BundleAnalysisPopulationFlow(Workflow):
+class BundleAnalysisTractometryFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'ba'
@@ -217,8 +219,8 @@ class BundleAnalysisPopulationFlow(Workflow):
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
-                bundle_analysis(model_bundle_folder, b, c, d, group, sub,
-                                no_disks, out_dir)
+                buan_bundle_profiles(model_bundle_folder, b, c, d, group, sub,
+                                     no_disks, out_dir)
 
 
 class LinearMixedModelsFlow(Workflow):
@@ -227,20 +229,74 @@ class LinearMixedModelsFlow(Workflow):
         return 'lmm'
 
     def get_metric_name(self, path):
+        """ Splits the path string and returns name of anatomical measure
+        (eg: fa), bundle name eg(AF_L) and bundle name with metric name
+        (eg: AF_L_fa)
+
+        Parameters
+        ----------
+        path : string
+            Path to the input metric files. This path may
+            contain wildcards to process multiple inputs at once.
+        """
+
         head_tail = os.path.split(path)
         name = head_tail[1]
         count = 0
         i = len(name)-1
-        while i>0:
-            if count ==0 :
+        while i > 0:
+            if count == 0:
                 if name[i] == '.':
                     count = i
             else:
                 if name[i] == '_':
 
-                    return name[i+1:count], name[:count]
+                    return name[i+1:count], name[:i], name[:count]
             i = i-1
         return " "
+
+    def save_lmm_plot(self, plot_file, title, bundle_name, x, y):
+        """ Saves LMM plot with segment/disk number on x-axis and
+        -log10(pvalues) on y-axis in out_dir folder.
+
+        Parameters
+        ----------
+        plot_file : string
+            Path to the plot file. This path may
+            contain wildcards to process multiple inputs at once.
+        title : string
+            Title for the plot
+        bundle_name : string
+        x : list
+            list containing segment/disk number for x-axis
+        y : list
+            list containing -log10(pvalues) per segment/disk number for y-axis
+
+        """
+
+        n = len(x)
+        dotted = np.ones(n)
+        dotted[:] = 1.3
+        c1 = np.random.rand(1, 3)
+
+        y_pos = np.arange(n)
+
+        matplt.pyplot.plot(y_pos, dotted, color='black', marker='o',
+                           linestyle='dashed', linewidth=0.4, markersize=0.5)
+
+        matplt.pyplot.plot(y_pos, dotted+.7, color='black', marker='o',
+                           linestyle='dashed', linewidth=0.2, markersize=0.2)
+
+        axes = matplt.pyplot.gca()
+        axes.set_ylim([0, 5])
+
+        matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
+                          label=bundle_name)
+        matplt.pyplot.title(title)
+        matplt.pyplot.xlabel("Segment Number")
+        matplt.pyplot.ylabel("-log10(Pvalues)")
+        matplt.pyplot.legend(loc=2)
+        matplt.pyplot.savefig(plot_file)
 
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
@@ -269,7 +325,7 @@ class LinearMixedModelsFlow(Workflow):
 
             logging.info('Applying metric {0}'.format(file_path))
 
-            file_name, save_name = self.get_metric_name(file_path)
+            file_name, bundle_name, save_name = self.get_metric_name(file_path)
             print(" file name = ", file_name)
             print("file path = ", file_path)
             df = pd.read_hdf(file_path)
@@ -281,40 +337,27 @@ class LinearMixedModelsFlow(Workflow):
 
             # run mixed linear model for every disk
             for i in range(no_disks):
-
-                if len(df[df['disk#'] == (i+1)]) > 5: # to have significant data to perform LMM
+                # check if data has significant data to perform LMM
+                if len(df[df['disk'] == (i+1)]) > 5:
                     criteria = file_name + " ~ group"
-                    md = smf.mixedlm(criteria, df[df['disk#'] == (i+1)],
-                                     groups=df[df['disk#'] == (i+1)]["subject"])
+                    md = smf.mixedlm(criteria, df[df['disk'] == (i+1)],
+                                     groups=df[df['disk'] == (i+1)]["subject"])
 
                     mdf = md.fit()
 
                     pvalues[i] = mdf.pvalues[1]
-                #del sub
-            #x = list(range(1, len(pvalues)+1))
+
+            x = list(range(1, len(pvalues)+1))
             y = -1*np.log10(pvalues)
 
+            save_file = os.path.join(out_dir, save_name + "_pvalues.npy")
+            np.save(save_file, pvalues)
 
-            plot_file = os.path.join(out_dir, save_name + "_pvalues.npy")
-            #plot_file = os.path.join(out_dir, file_name + "_pvalues.npy")
+            save_file = os.path.join(out_dir, save_name + "_pvalues_log.npy")
+            np.save(save_file, y)
 
-            np.save(plot_file, pvalues)
-
-            plot_file = os.path.join(out_dir, save_name + "_pvalues_log.npy")
-            #plot_file = os.path.join(out_dir, file_name + "_pvalues_log.npy")
-            np.save(plot_file, y)
-
-
-                #title = bundle + " on " + file_name + " Values"
-                #plot_file = os.path.join(out_dir, bundle + "_" +
-                #                         file_name + ".png")
-
-                #simple_plot(plot_file, title, x, y, "disk no",
-                 #           "-log10(pvalues)")
-
-
-
-
+            save_file = os.path.join(out_dir, save_name + ".png")
+            self.save_lmm_plot(save_file, file_name, bundle_name, x, y)
 
 
 class BundleShapeAnalysis(Workflow):
@@ -322,12 +365,11 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, threshold=6,
-        out_dir=''):
+    def run(self, subject_folder, threshold=6, out_dir=''):
         """Workflow of bundle analytics.
 
-        Applies bundle shape similarity analysis on bundles of subjects and saves
-        the results in a directory specified by ``out_dir``.
+        Applies bundle shape similarity analysis on bundles of subjects and
+        saves the results in a directory specified by ``out_dir``.
 
         Parameters
         ----------
@@ -370,39 +412,31 @@ class BundleShapeAnalysis(Workflow):
             print(bun)
             for sub in all_subjects:
                 j = 0
-                #bundle1, _ = load_trk(os.path.join(sub, "rec_bundles", bun))
-
 
                 bundle1 = load_tractogram(os.path.join(sub, "rec_bundles", bun),
                                           reference='same',
                                           bbox_valid_check=False).streamlines
 
-
-
                 for subi in all_subjects:
                     print(subi)
-                    #bundle2 , _ = load_trk(os.path.join(subi, "rec_bundles",
-                    #                                    bun))
 
                     bundle2 = load_tractogram(os.path.join(subi, "rec_bundles",
                                                            bun),
-                                          reference='same',
-                                          bbox_valid_check=False).streamlines
+                                             reference='same',
+                                             bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2,
                                                        threshold, rng)
 
                     ba_matrix[i][j] = ba_value
 
-                    j+= 1
-                i+= 1
+                    j += 1
+                i += 1
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
             matplt.pyplot.title(bun[:-4])
-            matplt.pyplot.imshow(ba_matrix, cmap = cmap);
+            matplt.pyplot.imshow(ba_matrix, cmap=cmap)
             matplt.pyplot.colorbar()
             matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
             matplt.pyplot.clf()
-
-

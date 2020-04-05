@@ -32,10 +32,16 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     """ Find bundle adjacency between two given tracks/bundles
 
     Parameters
-        ----------
-        dtracks0 : Streamlines
-        dtracks1 : Streamlines
-        threshold: float
+    ----------
+    dtracks0 : Streamlines
+    dtracks1 : Streamlines
+    threshold: float
+
+    Returns
+    -------
+    res : Float
+        Bundle adjacency score between two tracts
+
     References
     ----------
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
@@ -68,6 +74,20 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
 
 
 def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
+    """ Calculates bundle adjacency score between two given bundles
+
+    Parameters
+    ----------
+    recognized_bundle : Streamlines
+    expert_bundle : Streamlines
+    threshold: float (default 2)
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
 
     recognized_bundle = set_number_of_points(recognized_bundle, 20)
 
@@ -75,8 +95,30 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
 
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
-def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
-                          select_randomly=500000):
+
+def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
+    """ Clusters bundles
+
+    Parameters
+    ----------
+    bundle : Streamlines
+    clust_thr : float
+    rng : RandomState
+    nb_pts: integer (default 20)
+    select_randomly: integer (default 500000)
+        Randomly select streamlines from the input bundle
+
+    Returns
+    -------
+    centroids : Streamlines
+        clustered centroids of the input bundle
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+   """
 
     model_cluster_map = qbx_and_merge(bundle, clust_thr,
                                       nb_pts=nb_pts,
@@ -86,8 +128,29 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20,
 
     return centroids
 
-def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
 
+def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
+    """ Calculates bundle shape similarity between two given bundles using
+    bundle adjacency (BA) metric
+
+    Parameters
+    ----------
+    bundle1 : Streamlines
+    bundle2 : Streamlines
+    threshold : float
+    rng : RandomState
+
+    Returns
+    -------
+    ba_value : Float
+        Bundle similarity score between two tracts
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
 
     if len(bundle1) == 0 or len(bundle2) == 0:
         return 0
@@ -100,8 +163,6 @@ def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
                                            rng=rng)
         bundle1_centroids = Streamlines(bundle1_centroids)
         bundle2_centroids = Streamlines(bundle2_centroids)
-
-
 
         ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
                                threshold)
@@ -466,7 +527,6 @@ class RecoBundles(object):
         bmd_value = BMD.distance(x0.tolist())
 
         return ba_value, bmd_value
-
 
     def _cluster_model_bundle(self, model_bundle, model_clust_thr, nb_pts=20,
                               select_randomly=500000):

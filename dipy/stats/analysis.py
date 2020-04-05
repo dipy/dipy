@@ -2,7 +2,6 @@
 import os
 import numpy as np
 from time import time
-from scipy import spatial
 from scipy.spatial import cKDTree
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.spatial.distance import mahalanobis
@@ -46,15 +45,15 @@ def _save_hdf5(fname, dt, col_name, col_size=16):
     filename_hdf5 = fname + '.h5'
 
     store = pd.HDFStore(filename_hdf5, complevel=9)
-    store.append(fname, df, data_columns=True, complevel=9)#,
-                 #min_itemsize={col_name: col_size})
+    store.append(fname, df, data_columns=True, complevel=9)
     store.close()
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
-    """ Peak_values function finds the peak direction and peak value of a point
-        on a streamline used while tracking (generating the tractogram) and
-        save it in hd5 file.
+    """ Peak_values function finds the generalized fractional anisotropy (gfa)
+        and quantitative anisotropy (qa) values from peaks object (eg: csa) for
+        every point on a streamline used while tracking and saves it in hd5
+        file.
 
         Parameters
         ----------
@@ -80,13 +79,16 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
     """
 
     gfa = peaks.gfa
-    anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group, ind, dir)
+    anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group,
+                        ind, dir)
 
     qa = peaks.qa[...,0]
-    anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group, ind, dir)
+    anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group,
+                        ind, dir)
 
 
-def anatomical_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
+def anatomical_measures(bundle, metric, dt, pname, bname, subject, group,
+                        ind, dir):
     """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
@@ -113,13 +115,12 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group, ind, d
     """
 
     if group == 'patient':
-        group_id = 1 # 1 means patient
+        group_id = 1  # 1 means patient
     else:
-        group_id = 0 # 0 means control
+        group_id = 0  # 0 means control
 
-    #dt["bundle"] = []
     dt["streamline"] = []
-    dt["disk#"] = []
+    dt["disk"] = []
     dt["subject"] = []
     dt[pname] = []
     dt["group"] = []
@@ -127,30 +128,44 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group, ind, d
     values = map_coordinates(metric, bundle._data.T,
                              order=1)
 
-    dt["disk#"].extend(ind[list(range(len(values)))]+1)
-    #dt["bundle"].extend([bname]*len(values))
+    dt["disk"].extend(ind[list(range(len(values)))]+1)
     dt["subject"].extend([subject]*len(values))
     dt["group"].extend([group_id]*len(values))
     dt[pname].extend(values)
-    
-    
+
     for st_i in range(len(bundle)):
-    
+
         st = bundle[st_i]
         dt["streamline"].extend([st_i]*len(st))
-        
-    
 
-    #devide and conquer
     file_name = bname+"_"+pname
-
 
     _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
 
+
 def assignment_map(target_bundle, model_bundle, no_disks):
+    """
+    Calculates assignment maps of the traget bundle with reference to
+    model bundle centroids.
+
+    Parameters
+    ----------
+    target_bundle : streamlines
+    model_bundle : streamlines
+    no_disks : integer, optional
+        Number of disks used for dividing bundle into disks. (Default 100)
+
+    References
+    ----------
+    .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+    E. Garyfallidis, Bundle Analytics: a computational and statistical
+    analyses framework for tractometric studies, Proceedings of:
+    International Society of Magnetic Resonance in Medicine (ISMRM),
+    Montreal, Canada, 2019.
+    """
 
     mbundle_streamlines = set_number_of_points(model_bundle,
-                                           nb_points=no_disks)
+                                               nb_points=no_disks)
 
     metric = AveragePointwiseEuclideanMetric()
     qb = QuickBundles(threshold=85., metric=metric)
@@ -159,12 +174,13 @@ def assignment_map(target_bundle, model_bundle, no_disks):
 
     _, indx = cKDTree(centroids.data, 1,
                       copy_data=True).query(target_bundle.data, k=1)
-    
+
     return indx
-    
-def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
-                    metric_folder, group, subject, no_disks=100,
-                    out_dir=''):
+
+
+def buan_bundle_profiles(model_bundle_folder, bundle_folder,
+                         orig_bundle_folder, metric_folder, group, subject,
+                         no_disks=100, out_dir=''):
     """
     Applies statistical analysis on bundles and saves the results
     in a directory specified by ``out_dir``.
@@ -202,23 +218,20 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
     """
 
-
     t = time()
 
     dt = dict()
 
-    mb = glob(os.path.join(model_bundle_folder,"*.trk"))
+    mb = glob(os.path.join(model_bundle_folder, "*.trk"))
     print(mb)
 
-    
     mb.sort()
-  
-    bd = glob(os.path.join(bundle_folder,"*.trk"))
-    
-    
+
+    bd = glob(os.path.join(bundle_folder, "*.trk"))
+
     bd.sort()
     print(bd)
-    org_bd = glob(os.path.join(orig_bundle_folder,"*.trk"))
+    org_bd = glob(os.path.join(orig_bundle_folder, "*.trk"))
     org_bd.sort()
     print(org_bd)
     n = len(org_bd)
@@ -226,53 +239,56 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
     for io in range(n):
 
-        mbundles = load_tractogram(mb[io], reference='same', bbox_valid_check=False).streamlines
-        bundles = load_tractogram(bd[io], reference='same', bbox_valid_check=False).streamlines
-        orig_bundles = load_tractogram(org_bd[io], reference='same', bbox_valid_check=False).streamlines
+        mbundles = load_tractogram(mb[io], reference='same',
+                                   bbox_valid_check=False).streamlines
+        bundles = load_tractogram(bd[io], reference='same',
+                                  bbox_valid_check=False).streamlines
+        orig_bundles = load_tractogram(org_bd[io], reference='same',
+                                       bbox_valid_check=False).streamlines
 
-        if len(orig_bundles) > 5 :
+        if len(orig_bundles) > 5:
 
             indx = assignment_map(bundles, mbundles, no_disks)
             ind = np.array(indx)
 
-            metric_files_names_dti = glob(os.path.join(metric_folder,"*.nii.gz"))
-            
-            metric_files_names_csa = glob(os.path.join(metric_folder,"*.pam5"))
-            
-            
+            metric_files_names_dti = glob(os.path.join(metric_folder,
+                                                       "*.nii.gz"))
+
+            metric_files_names_csa = glob(os.path.join(metric_folder,
+                                                       "*.pam5"))
+
             _, affine = load_nifti(metric_files_names_dti[0])
-    
+
             affine_r = np.linalg.inv(affine)
             transformed_orig_bundles = transform_streamlines(orig_bundles,
                                                              affine_r)
-    
+
             for mn in range(len(metric_files_names_dti)):
-    
+
                 ab = os.path.split(metric_files_names_dti[mn])
                 metric_name = ab[1]
-                
+
                 fm = metric_name[:-7]
                 bm = os.path.split(mb[io])[1][:-4]
 
                 print("bm = ", bm)
 
                 dt = dict()
-    
+
                 print("metric = ", metric_files_names_dti[mn])
 
                 metric, _ = load_nifti(metric_files_names_dti[mn])
 
                 anatomical_measures(transformed_orig_bundles, metric, dt, fm,
-                             bm, subject, group, ind, out_dir)
-
+                                    bm, subject, group, ind, out_dir)
 
             for mn in range(len(metric_files_names_csa)):
                 ab = os.path.split(metric_files_names_csa[mn])
                 metric_name = ab[1]
-                
+
                 fm = metric_name[:-5]
                 bm = os.path.split(mb[io])[1][:-4]
-        
+
                 print("bm = ", bm)
                 print("metric = ", metric_files_names_csa[mn])
                 dt = dict()
@@ -280,8 +296,6 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
 
                 peak_values(transformed_orig_bundles, metric, dt, fm, bm,
                             subject, group, ind, out_dir)
-
-
 
     print("total time taken in minutes = ", (-t + time())/60)
 
