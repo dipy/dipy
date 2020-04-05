@@ -300,6 +300,7 @@ class LinearMixedModelsFlow(Workflow):
         matplt.pyplot.ylabel("-log10(Pvalues)")
         matplt.pyplot.legend(loc=2)
         matplt.pyplot.savefig(plot_file)
+        matplt.pyplot.clf()
 
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
