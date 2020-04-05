@@ -245,15 +245,18 @@ class LinearMixedModelsFlow(Workflow):
         count = 0
         i = len(name)-1
         while i > 0:
-            if count == 0:
-                if name[i] == '.':
-                    count = i
-            else:
-                if name[i] == '_':
-
-                    return name[i+1:count], name[:i], name[:count]
+            if name[i] == '.':
+                count = i
+                break
             i = i-1
-        return " "
+
+        for j in range(len(name)):
+            if name[j] == '_':
+                if name[j+1] != 'L' and name[j+1] != 'R':
+
+                    return name[j+1:count], name[:j], name[:count]
+
+        return " ", " ", " "
 
     def save_lmm_plot(self, plot_file, title, bundle_name, x, y):
         """ Saves LMM plot with segment/disk number on x-axis and
@@ -297,6 +300,7 @@ class LinearMixedModelsFlow(Workflow):
         matplt.pyplot.ylabel("-log10(Pvalues)")
         matplt.pyplot.legend(loc=2)
         matplt.pyplot.savefig(plot_file)
+        matplt.pyplot.clf()
 
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
