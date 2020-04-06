@@ -28,7 +28,7 @@ jobs:
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0"
       Python37-64bit + OPTIONAL_DEPS + COVERAGE:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
         COVERAGE: "1"
       Python37-64bit + VIZ + COVERAGE:
         TEST_WITH_XVFB: "1"
@@ -36,7 +36,7 @@ jobs:
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        EXTRA_DEPENDS: "scikit_learn vtk fury scipy==1.1 pandas statsmodels==0.9.0 tables xvfbwrapper"
+        EXTRA_DEPENDS: "scikit_learn vtk fury scipy pandas statsmodels tables xvfbwrapper"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
@@ -55,7 +55,7 @@ jobs:
         DEPENDS: ""
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels==0.9.0 pytables scipy==1.1"
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
@@ -71,14 +71,14 @@ jobs:
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
       Python37-64bit:
         python.version: '3.7'
       Python38-64bit:
         python.version: '3.8'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels==0.9.0 pytables scipy==1.1"
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
@@ -100,7 +100,7 @@ jobs:
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit_learn pandas statsmodels==0.9.0 tables scipy==1.1"
+        EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
       # Python38-64bit:
       #   python.version: '3.8'
       Python37-64bit:
@@ -111,7 +111,7 @@ jobs:
       #   python.version: '3.5'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels==0.9.0 pytables scipy==1.1"
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
