@@ -408,6 +408,13 @@ class StatefulTractogram(object):
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
         dimensions or below zero
+
+        Parameters
+        ----------
+        epsilon : float (optional)
+            Epsilon value for the bounding box verification.
+            Default is 1e-6.
+
         Returns
         -------
         output : tuple
