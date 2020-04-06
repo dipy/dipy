@@ -403,7 +403,7 @@ class StatefulTractogram(object):
 
         return is_valid
 
-    def remove_invalid_streamlines(self):
+    def remove_invalid_streamlines(self, epsilon=1e-6):
         """ Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
@@ -422,7 +422,6 @@ class StatefulTractogram(object):
         self.to_vox()
         self.to_corner()
 
-        epsilon = 1e-6
         min_condition = np.min(self._tractogram.streamlines._data,
                                axis=1) < epsilon
         max_condition = np.any(self._tractogram.streamlines._data >
