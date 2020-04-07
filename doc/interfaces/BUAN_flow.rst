@@ -6,6 +6,11 @@
 
 This document walks through the steps for reproducing Bundle Analytics results
 on Parkinson's Progression Markers Initiative (PPMI) data derivatives.
+Bundle Analytics is a framework for comparing bundle profiles and shapes of
+different groups. In this example, we will be comparing healthy controls and
+patients with parkinson's disease. We will be using PPMI data derivatives generated
+using DIPY.
+
 
 First we need to download streamline atlas of 30 bundles in MNI space from::
 
