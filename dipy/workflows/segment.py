@@ -91,7 +91,7 @@ class RecoBundlesFlow(Workflow):
         return 'recobundles'
 
     def run(self, streamline_files, model_bundle_files,
-            greater_than=30, less_than=1000000,
+            greater_than=50, less_than=1000000,
             no_slr=False, clust_thr=15.,
             reduction_thr=15.,
             reduction_distance='mdf',

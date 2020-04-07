@@ -37,7 +37,7 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
         White matter tract from one subject
     dtracks1 : Streamlines
         White matter tract from another subject
-    threshold: float
+    threshold : float
         Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
@@ -91,7 +91,7 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=2.):
         from inout tractogram
     nb_pts : integer (default 20)
         Discretizing streamlines to have nb_pts number of points
-    threshold: float (default 2)
+    threshold : float (default 2)
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
