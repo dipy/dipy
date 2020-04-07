@@ -88,7 +88,7 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=5.):
         Extracted bundle from the whole brain tractogram (eg: AF_L)
     expert_bundle : Streamlines
         Model bundle used as reference while extracting similar type bundle
-        from inout tractogram
+        from input tractogram
     nb_pts : integer (default 20)
         Discretizing streamlines to have nb_pts number of points
     threshold : float (default 5)
