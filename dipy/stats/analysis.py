@@ -9,6 +9,7 @@ from scipy.spatial.distance import mahalanobis
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
 from dipy.io.streamline import load_tractogram
+from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 from dipy.io.peaks import load_peaks
@@ -23,30 +24,6 @@ _, have_tables, _ = optional_package("tables")
 
 if have_pd:
     import pandas as pd
-
-
-def _save_hdf5(fname, dt, col_name, col_size=16):
-    """ Saves the given input dataframe to .h5 file
-
-    Parameters
-    ----------
-    fname : string
-        file name for saving the hdf5 file
-    dt : Pandas DataFrame
-        DataFrame to be saved as .h5 file
-    col_name : string
-        column name to have specific column size
-    col_size : integer
-        min column size (default=16)
-
-    """
-
-    df = pd.DataFrame(dt)
-    filename_hdf5 = fname + '.h5'
-
-    store = pd.HDFStore(filename_hdf5, complevel=9)
-    store.append(fname, df, data_columns=True, complevel=9)
-    store.close()
 
 
 def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
@@ -140,7 +117,8 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group,
 
     file_name = bname+"_"+pname
 
-    _save_hdf5(os.path.join(dir, file_name), dt, col_name="bundle")
+    save_buan_profiles_hdf5(os.path.join(dir, file_name), dt,
+                            col_name="bundle")
 
 
 def assignment_map(target_bundle, model_bundle, no_disks):

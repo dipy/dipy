@@ -2,12 +2,17 @@
 import logging
 import numbers
 import os
-
+from dipy.utils.optpkg import optional_package
 import dipy
 import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
 import numpy as np
+pd, have_pd, _ = optional_package("pandas")
+_, have_tables, _ = optional_package("tables")
+
+if have_pd:
+    import pandas as pd
 
 
 def nifti1_symmat(image_data, *args, **kwargs):
@@ -360,3 +365,27 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     new_header['pixdim'][1:4] = voxel_sizes
 
     return new_header
+
+
+def save_buan_profiles_hdf5(fname, dt, col_name, col_size=16):
+    """ Saves the given input dataframe to .h5 file
+
+    Parameters
+    ----------
+    fname : string
+        file name for saving the hdf5 file
+    dt : Pandas DataFrame
+        DataFrame to be saved as .h5 file
+    col_name : string
+        column name to have specific column size
+    col_size : integer
+        min column size (default=16)
+
+    """
+
+    df = pd.DataFrame(dt)
+    filename_hdf5 = fname + '.h5'
+
+    store = pd.HDFStore(filename_hdf5, complevel=9)
+    store.append(fname, df, data_columns=True, complevel=9)
+    store.close()
