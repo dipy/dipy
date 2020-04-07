@@ -1,17 +1,20 @@
 .. _BUAN_flow:
 
-=========================================================================
-Get Started with a BUndle ANalytics (BUAN) DIPY Workflow command lines
-=========================================================================
+=====================================================================================
+   Tutorial for BUndle ANalytics (BUAN) framework using DIPY Workflow command lines
+=====================================================================================
 
-This documents walks through the steps for reproducing Bundle Analytics results
+This document walks through the steps for reproducing Bundle Analytics results
 on Parkinson's Progression Markers Initiative (PPMI) data derivatives.
 
-First we need to download streamline atlas of 30 bundles in MNI space from
-[https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652]
+First we need to download streamline atlas of 30 bundles in MNI space from::
+
+    https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652
 
 Next, we need to download DIPY Processed Parkinson's Progression Markers
-Initiative (PPMI) Data Derivatives from here [insert link here]
+Initiative (PPMI) Data Derivatives from here::
+
+    insert link here
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
@@ -31,7 +34,7 @@ Run following workflow::
     dipy_buan_profiles bundles/ subjects/ --out_dir "bundle_profiles"
 
 
-For running Linear mixed models (LMM) on generated .h5 files from the previous
+For running Linear Mixed Models (LMM) on generated .h5 files from the previous
 step:
 
 Create an out_dir folder (eg: lmm_plots) ::
@@ -54,3 +57,16 @@ run following workflow::
 
 
 For more information about each command line, you can got to :ref:`workflows_reference`.
+
+If you are using any of these commands do cite the relevant papers.
+
+.. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+    E. Garyfallidis, Bundle Analytics: a computational and statistical
+    analyses framework for tractometric studies, Proceedings of:
+    International Society of Magnetic Resonance in Medicine (ISMRM),
+    Montreal, Canada, 2019.
+
+.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
+    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
+    "DIPY, a library for the analysis of diffusion MRI data".
+    Frontiers in Neuroinformatics, 1-18, 2014.
