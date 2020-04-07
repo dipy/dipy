@@ -37,7 +37,7 @@ def _save_hdf5(fname, dt, col_name, col_size=16):
     col_name : string
         column name to have specific column size
     col_size : integer
-        min column size (default=5)
+        min column size (default=16)
 
     """
 
@@ -145,13 +145,15 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group,
 
 def assignment_map(target_bundle, model_bundle, no_disks):
     """
-    Calculates assignment maps of the traget bundle with reference to
+    Calculates assignment maps of the target bundle with reference to
     model bundle centroids.
 
     Parameters
     ----------
     target_bundle : streamlines
+        target bundle extracted from subject data in common space
     model_bundle : streamlines
+        atlas bundle used as reference
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks. (Default 100)
 
@@ -200,7 +202,7 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
         Path to the input dti metric or/and peak files. It will be used as
         metric for statistical analysis of bundles.
     group : string
-        what group subject belongs to e.g. control or patient
+        what group subject belongs to either control or patient
     subject : string
         subject id e.g. 10001
     no_disks : integer, optional

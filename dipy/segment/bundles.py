@@ -34,8 +34,14 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     Parameters
     ----------
     dtracks0 : Streamlines
+        White matter tract from one subject
     dtracks1 : Streamlines
+        White matter tract from another subject
     threshold: float
+        Threshold controls
+        how much strictness user wants while calculating bundle adjacency
+        between two bundles. Smaller threshold means bundles should be strictly
+        adjacent to get higher BA score.
 
     Returns
     -------
@@ -73,14 +79,27 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     return res
 
 
-def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
+def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=2.):
     """ Calculates bundle adjacency score between two given bundles
 
     Parameters
     ----------
     recognized_bundle : Streamlines
+        Extracted bundle from the whole brain tractogram (eg: AF_L)
     expert_bundle : Streamlines
+        Model bundle used as reference while extracting similar type bundle
+        from inout tractogram
+    nb_pts : integer (default 20)
+        Discretizing streamlines to have nb_pts number of points
     threshold: float (default 2)
+        Threshold used for in computing bundle adjacency. Threshold controls
+        how much strictness user wants while calculating bundle adjacency
+        between two bundles. Smaller threshold means bundles should be strictly
+        adjacent to get higher BA score.
+
+    Returns
+    -------
+        Bundle adjacency score between two tracts
 
     References
     ----------
@@ -89,9 +108,9 @@ def ba_analysis(recognized_bundle, expert_bundle, threshold=2.):
                         vol 6, no 175, 2012.
     """
 
-    recognized_bundle = set_number_of_points(recognized_bundle, 20)
+    recognized_bundle = set_number_of_points(recognized_bundle, nb_pts)
 
-    expert_bundle = set_number_of_points(expert_bundle, 20)
+    expert_bundle = set_number_of_points(expert_bundle, nb_pts)
 
     return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
 
@@ -102,9 +121,12 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     Parameters
     ----------
     bundle : Streamlines
+        White matter tract
     clust_thr : float
+        clustering threshold used in quickbundles
     rng : RandomState
     nb_pts: integer (default 20)
+        Discretizing streamlines to have nb_points number of points
     select_randomly: integer (default 500000)
         Randomly select streamlines from the input bundle
 
@@ -136,8 +158,14 @@ def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
     Parameters
     ----------
     bundle1 : Streamlines
+        White matter tract from one subject (eg: AF_L)
     bundle2 : Streamlines
+        White matter tract from another subject (eg: AF_L)
     threshold : float
+        Threshold used for in computing bundle adjacency. Threshold controls
+        how much strictness user wants while calculating shape similarity
+        between two bundles. Smaller threshold means bundles should be strictly
+        similar to get higher shape similarity score.
     rng : RandomState
 
     Returns
@@ -172,7 +200,7 @@ def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
 
 class RecoBundles(object):
 
-    def __init__(self, streamlines,  greater_than=30, less_than=1000000,
+    def __init__(self, streamlines,  greater_than=50, less_than=1000000,
                  cluster_map=None, clust_thr=15, nb_pts=20,
                  rng=None, verbose=False):
         """ Recognition of bundles
