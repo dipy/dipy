@@ -254,7 +254,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                         + vf[..., 2] * response_scaling[2])
         scaling = np.where(S0_full > 1, 1, 0)
         scaling = np.expand_dims(scaling, 3)
-        scaling = np.repeat(scaling, 67, axis=3) # to change!!! not always 67, in fact will become 66
+        scaling = np.repeat(scaling, len(gtab.bvals), axis=3)
 
         pre_pred_sig = scaling * np.dot(params, X.T)
 
@@ -328,7 +328,15 @@ class MSDeconvFit(shm.SphHarmFit):
     @property
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
-        return self._shm_coef[..., :tissue_classes] / SH_CONST
+        vf = self._shm_coef[..., :tissue_classes] / SH_CONST
+        if len(vf.shape) == 1:
+            vf = vf.reshape((1, 1, 1, vf.shape[0]))
+        sums = np.sum(vf, axis=3)
+        sums_4d = np.expand_dims(sums, 3)
+        sums_4d = np.repeat(sums_4d, 3, axis=3)
+        vf[sums > 0, :] /= sums_4d[sums > 0, :]
+        vf = np.squeeze(vf)
+        return vf
 
 
 def solve_qp(P, Q, G, H):
@@ -501,7 +509,7 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     for i, bvalue in enumerate(bvals):
         gtab = GradientTable(big_sphere.vertices * bvalue)
         wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
-        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+        response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
         response[i, 0] = np.exp(-bvalue * csf_md) / A
         response[i, 1] = np.exp(-bvalue * gm_md) / A
