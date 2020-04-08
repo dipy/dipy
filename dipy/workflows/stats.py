@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import os
 import json
+import warnings
 from scipy.ndimage.morphology import binary_dilation
 from dipy.utils.optpkg import optional_package
 from dipy.io import read_bvals_bvecs
@@ -332,20 +333,15 @@ class LinearMixedModelsFlow(Workflow):
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
             print(" file name = ", file_name)
             print("file path = ", file_path)
-            '''
-            df = pd.read_hdf(file_path)
-            print("read the dataframe")
-            if len(df) < 100:
-                raise ValueError("Dataset for Linear Mixed Model is too small")
-'''
-            pvalues = np.zeros(no_disks)
 
+            pvalues = np.zeros(no_disks)
+            warnings.filterwarnings("ignore")
             # run mixed linear model for every disk
             for i in range(no_disks):
                 disk_count = i+1
                 df = pd.read_hdf(file_path, where='disk=disk_count')
 
-                print("read the dataframe")
+                print("read the dataframe for disk number ", disk_count)
                 # check if data has significant data to perform LMM
                 if len(df) < 10:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
