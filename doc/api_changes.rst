@@ -10,11 +10,11 @@ DIPY 1.1.1 changes
 
 **IO**
 
-`img.get_data()` is deprecated since Nibabel 3.0.0. Using `np.asanyarray(img.dataobj)` instead of `img.get_data()`.
+``img.get_data()`` is deprecated since Nibabel 3.0.0. Using ``np.asanyarray(img.dataobj)`` instead of ``img.get_data()``.
 
 **Tractogram**
 
-``dipy.io.streamlines.StatefulTractogram``can be created by another one.
+``dipy.io.streamlines.StatefulTractogram`` can be created by another one.
 
 **Workflows**
 
@@ -33,8 +33,8 @@ compatibility with previous versions. This release is compatible with Python 3.5
 
 **Reconstruction**
 
-The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
-`tournier07` and `descoteaux07` after the deprecation cycle started in the
+The spherical harmonics bases ``mrtrix`` and ``fibernav`` have been renamed to
+``tournier07`` and ``descoteaux07`` after the deprecation cycle started in the
 0.15 release.
 
 We changed ``dipy.data.default_sphere`` from symmetric724 to repulsion724 which is
@@ -240,7 +240,7 @@ Use the module ``nibabel.streamlines`` for saving trk files and not
 DIPY 0.10 Changes
 -----------------
 
-** New visualization module**
+**New visualization module**
 
 ``fvtk.slicer`` input parameters have changed. Now the slicer function is
 more powerful and supports RGB images too. See tutorial ``viz_slice.py`` for
