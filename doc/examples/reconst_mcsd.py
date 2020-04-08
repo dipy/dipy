@@ -263,6 +263,8 @@ response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)
 
+# !!!!!! Dire qu'on peut vouloir faire notre propre fiber response, donc qu'il faut simplement créer un objet MultiShellResponse
+
 print(response_mcsd.response)
 
 """
