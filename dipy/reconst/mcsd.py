@@ -62,16 +62,19 @@ class MultiShellResponse(object):
         """ Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
+        The method `multi_shell_fiber_response` allows to create a multi-shell
+        fiber response with the right format, for a three compartments model.
+        It can be refered to in order to understand the inputs of this class.
+
         Parameters
         ----------
-        !!!!!!!!!!!!!!!!Only keep the tuple option!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        S0 : ??????????????????????????????????????????
-        response : tuple or AxSymShResponse object
-            A tuple with two elements. The first is the eigen-values as a (3,)
-            ndarray and the second is the signal value for the response
-            function without diffusion weighting.  This is to be able to
-            generate a single fiber synthetic signal.
+        S0 : array (3,)
+            Signal with no diffusion weighting for each tissue compartments.
+        response : ndarray
+            Multi-shell fiber response. The ordering of the responses should
+            follow the same logic as S0.
         sh_order : int
+            Maximal spherical harmonics order.
         shells : int
             Number of shells in the data
         """
@@ -94,13 +97,7 @@ def _inflate_response(response, gtab, n, delta):
     `MultiShellDeconvModel`.
     Parameters
     ----------
-    !!!!!!!!!!!!!!!!!!Not true, should be MultiShellResponse object!!!!!!!!!!!!!!!!!!!!!
-    response : tuple or AxSymShResponse object
-        A tuple with two elements. The first is the eigen-values as a (3,)
-        ndarray and the second is the signal value for the response
-        function without diffusion weighting.  This is to be able to
-        generate a single fiber synthetic signal. The response function
-        will be used as deconvolution kernel ([1]_)
+    response : MultiShellResponse object
     gtab : GradientTable
     n : int ``>= 0``
         The degree of the harmonic.
@@ -164,13 +161,16 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         Parameters
         ----------
         gtab : GradientTable
-        !!!!!!!!!!!!!!!!!!Not true, should be MultiShellResponse object!!!!!!!!!!!!!!!!!!!!!
-        response : tuple or AxSymShResponse object
-            A tuple with two elements. The first is the eigen-values as a (3,)
-            ndarray and the second is the signal value for the response
-            function without diffusion weighting.  This is to be able to
-            generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_)
+        response : ndarray or MultiShellResponse object
+            Pre-computed multi-shell fiber response function in the form of a 
+            MultiShellResponse object, or simple response function as a ndarray.
+            The later must be of shape (3, 4), because it will be converted into
+            a MultiShellResponse object via the `multi_shell_fiber_response`
+            method. Each column (3,) has two elements. The first is the
+            eigen-values as a (3,) ndarray and the second is the signal value 
+            for the response function without diffusion weighting (S0).
+            Note that in order to use more than three compartments, one must
+            create a MultiShellResponse object on the side.
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
@@ -200,6 +200,10 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         super(MultiShellDeconvModel, self).__init__(gtab)
 
         if not isinstance(response, MultiShellResponse):
+            if response.shape != (3, 4):
+                msg = """Response must be of shape (3, 4) or be a 
+                MultiShellResponse object."""
+                raise ValueError(msg)
             response = multi_shell_fiber_response_new(sh_order,
                                                       bvals=gtab.bvals,
                                                       wm_rf=response[0],
@@ -396,11 +400,11 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
          Maximum spherical harmonics order.
     bvals : ndarray
         Array containing the b-values.
-    wm_rf : (3,) ndarray
+    wm_rf : (4,) ndarray
         Response function of the WM tissue
-    gm_rf : (3,) ndarray
+    gm_rf : (4,) ndarray
         Response function of the GM tissue
-    csf_rf : (3,) ndarray
+    csf_rf : (4,) ndarray
         Response function of the CSF tissue
     sphere : `dipy.core.Sphere` instance, optional
         Sphere where the signal will be evaluated.
