@@ -204,11 +204,11 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                 msg = """Response must be of shape (3, 4) or be a 
                 MultiShellResponse object."""
                 raise ValueError(msg)
-            response = multi_shell_fiber_response_new(sh_order,
-                                                      bvals=gtab.bvals,
-                                                      wm_rf=response[0],
-                                                      gm_rf=response[1],
-                                                      csf_rf=response[2])
+            response = multi_shell_fiber_response(sh_order,
+                                                  bvals=gtab.bvals,
+                                                  wm_rf=response[0],
+                                                  gm_rf=response[1],
+                                                  csf_rf=response[2])
 
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
 
