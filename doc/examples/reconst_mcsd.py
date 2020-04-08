@@ -279,7 +279,7 @@ vf = mcsd_fit.volume_fractions
 
 S0 = [response_csf[3], response_gm[3], response_wm[3]]
 
-mcsd_pred = mcsd_model.predict_new(mcsd_fit.shm_all_coeff, vf=mcsd_fit.volume_fractions, response_scaling=S0)
+mcsd_pred = mcsd_model.predict(mcsd_fit.shm_all_coeff, vf=mcsd_fit.volume_fractions, response_scaling=S0)
 mcsd_err = np.sum((denoised_arr[:, :, 10:11, 1:] - mcsd_pred[:, :, :, 1:])**2)
 print("Prediction error")
 print(mcsd_err)
