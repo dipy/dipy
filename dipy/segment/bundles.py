@@ -79,7 +79,7 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     return res
 
 
-def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=2.):
+def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=5.):
     """ Calculates bundle adjacency score between two given bundles
 
     Parameters
@@ -91,7 +91,7 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=2.):
         from inout tractogram
     nb_pts : integer (default 20)
         Discretizing streamlines to have nb_pts number of points
-    threshold : float (default 2)
+    threshold : float (default 5)
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
@@ -151,7 +151,7 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     return centroids
 
 
-def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
+def bundle_shape_similarity(bundle1, bundle2, threshold=5, rng):
     """ Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
 
@@ -161,7 +161,7 @@ def bundle_shape_similarity(bundle1, bundle2, threshold, rng):
         White matter tract from one subject (eg: AF_L)
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
-    threshold : float
+    threshold : float (default 5)
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating shape similarity
         between two bundles. Smaller threshold means bundles should be strictly

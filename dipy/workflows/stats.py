@@ -291,7 +291,7 @@ class LinearMixedModelsFlow(Workflow):
                            linestyle='dashed', linewidth=0.2, markersize=0.2)
 
         axes = matplt.pyplot.gca()
-        axes.set_ylim([0, 5])
+        axes.set_ylim([0, 6])
 
         matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
                           label=bundle_name)
@@ -382,7 +382,7 @@ class BundleShapeAnalysis(Workflow):
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
 
-        threshold : integer, optional
+        threshold : float (default 6)
             Bundle shape similarity threshold. (Default 6)
 
         out_dir : string, optional
@@ -436,6 +436,7 @@ class BundleShapeAnalysis(Workflow):
 
                     j += 1
                 i += 1
+            print("BA score =", ba_matrix)
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
