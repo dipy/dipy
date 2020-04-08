@@ -58,13 +58,14 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
 
 class MultiShellResponse(object):
 
-    def __init__(self, response, sh_order, shells):
+    def __init__(self, S0, response, sh_order, shells):
         """ Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
         Parameters
         ----------
         !!!!!!!!!!!!!!!!Only keep the tuple option!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        S0 : ??????????????????????????????????????????
         response : tuple or AxSymShResponse object
             A tuple with two elements. The first is the eigen-values as a (3,)
             ndarray and the second is the signal value for the response
@@ -74,6 +75,7 @@ class MultiShellResponse(object):
         shells : int
             Number of shells in the data
         """
+        self.S0 = S0
         self.response = response
         self.sh_order = sh_order
         self.n = np.arange(0, sh_order + 1, 2)
@@ -142,7 +144,8 @@ def _basic_delta(iso, m, n, theta, phi):
 
 class MultiShellDeconvModel(shm.SphHarmModel):
 
-    def __init__(self, gtab, response, reg_sphere=default_sphere, iso=2):
+    def __init__(self, gtab, response, reg_sphere=default_sphere,
+                 sh_order=8, iso=2):
         r"""
         Multi-Shell Multi-Tissue Constrained Spherical Deconvolution
         (MSMT-CSD) [1]_. This method extends the CSD model proposed in [2]_ by
@@ -171,6 +174,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
+        sh_order : int (optional)
+            maximal spherical harmonics order. Default: 8
         iso: int (optional)
             Number of tissue compartments for running the MSMT-CSD. Minimum
             number of compartments required is 2.
@@ -192,8 +197,15 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
             raise ValueError(msg)
 
-        sh_order = response.sh_order
         super(MultiShellDeconvModel, self).__init__(gtab)
+
+        if not isinstance(response, MultiShellResponse):
+            response = multi_shell_fiber_response_new(sh_order,
+                                                      bvals=gtab.bvals,
+                                                      wm_rf=response[0],
+                                                      gm_rf=response[1],
+                                                      csf_rf=response[2])
+
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
 
         delta = _basic_delta(response.iso, response.m, response.n, 0., 0.)
@@ -212,13 +224,14 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.sh_order = sh_order
         self._X = X
         self.sphere = reg_sphere
-        self.response = response
         self.gtab = gtab
         self.B_dwi = B
-        self.m = m
-        self.n = n
+        self.response = response
+        self.m = response.m
+        self.n = response.n
 
-    def predict_new(self, params, vf, gtab=None, response_scaling=[1, 1, 1], S0=1.):
+
+    def predict(self, params, gtab=None, S0=None):
         """Compute a signal prediction given spherical harmonic coefficients
         for the provided GradientTable class instance.
 
@@ -243,52 +256,23 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                                                   self.delta)
             X = B * multiplier_matrix
 
-        # Normalize vf
-        sums = np.sum(vf, axis=3)
-        sums_4d = np.expand_dims(sums, 3)
-        sums_4d = np.repeat(sums_4d, 3, axis=3)
-        vf[sums > 0, :] /= sums_4d[sums > 0, :]
+        scaling = 1.
+        if S0 and S0 != 1.:     # The S0=1. case comes from fit.predict().
+            raise NotImplementedError
+            # This case is not implemented yet because it would require to have
+            # access to volume fractions (vf) from the fit. The following code
+            # gives an idea of how to use this with S0 and vf. It could also be 
+            # calculated externally and used as scaling = S0.
+            # response_scaling = np.ndarray(params.shape[0:3])
+            # response_scaling[...] = (vf[..., 0] * self.response.S0[0]
+            #                          + vf[..., 1] * self.response.S0[1]
+            #                          + vf[..., 2] * self.response.S0[2])
+            # scaling = np.where(response_scaling > 1, S0 / response_scaling, 0)
+            # scaling = np.expand_dims(scaling, 3)
+            # scaling = np.repeat(scaling, len(gtab.bvals), axis=3)
 
-        S0_full = np.ndarray(params.shape[0:3])
-        S0_full[...] = (vf[..., 0] * response_scaling[0] + vf[..., 1] * response_scaling[1]
-                        + vf[..., 2] * response_scaling[2])
-        scaling = np.where(S0_full > 1, 1, 0)
-        scaling = np.expand_dims(scaling, 3)
-        scaling = np.repeat(scaling, len(gtab.bvals), axis=3)
-
-        pre_pred_sig = scaling * np.dot(params, X.T)
-
-        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-        pred_sig[..., :] = pre_pred_sig
-        pred_sig[..., 0] = S0_full 
-
+        pred_sig = scaling * np.dot(params, X.T)
         return pred_sig
-
-    def predict(self, params, gtab=None, S0=None):
-        """Compute a signal prediction given spherical harmonic coefficients
-        for the provided GradientTable class instance.
-
-        Parameters
-        ----------
-        params : ndarray
-            The spherical harmonic representation of the FOD from which to make
-            the signal prediction.
-        gtab : GradientTable
-            The gradients for which the signal will be predicted. Use the
-            model's gradient table by default.
-        S0 : ndarray or float
-            The non diffusion-weighted signal value.
-            Default : None
-        """
-        if gtab is None:
-            X = self._X
-        else:
-            iso = self.response.iso
-            B, m, n = multi_tissue_basis(gtab, self.sh_order, iso)
-            multiplier_matrix = _inflate_response(self.response, gtab, n,
-                                                  self.delta)
-            X = B * multiplier_matrix
-        return np.dot(params, X.T)
 
     @multi_voxel_fit
     def fit(self, data):
@@ -321,21 +305,16 @@ class MSDeconvFit(shm.SphHarmFit):
     def shm_coeff(self):
         return self._shm_coef[..., self.model.response.iso:]
 
-    @property
-    def shm_all_coeff(self):
-        return self._shm_coef
+    # @property
+    # def all_shm_coeff(self):
+    #     return self._shm_coef
 
     @property
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
         vf = self._shm_coef[..., :tissue_classes] / SH_CONST
-        if len(vf.shape) == 1:
-            vf = vf.reshape((1, 1, 1, vf.shape[0]))
-        sums = np.sum(vf, axis=3)
-        sums_4d = np.expand_dims(sums, 3)
-        sums_4d = np.repeat(sums_4d, 3, axis=3)
-        vf[sums > 0, :] /= sums_4d[sums > 0, :]
-        vf = np.squeeze(vf)
+        sums = np.sum(vf)
+        vf[sums > 0, :] /= sums[sums > 0]
         return vf
 
 
@@ -407,7 +386,7 @@ class QpFitter(object):
         return fodf_sh
 
 
-def multi_shell_fiber_response_new(sh_order, bvals, wm_rf, gm_rf, csf_rf,
+def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
                                sphere=None):
     """Fiber response function estimation for multi-shell data.
 
@@ -459,62 +438,9 @@ def multi_shell_fiber_response_new(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         response[i, 1] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
         response[i, 0] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
 
-    return MultiShellResponse(response, sh_order, bvals)
+    S0 = [csf_rf[3], gm_rf[3], wm_rf[3]]
 
-
-def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
-                               sphere=None):
-    """Fiber response function estimation for multi-shell data.
-
-    Parameters
-    ----------
-    sh_order : int
-         Maximum spherical harmonics order.
-    bvals : ndarray
-        Array containing the b-values.
-    evals : (3,) ndarray
-        Eigenvalues of the diffusion tensor.
-    csf_md : float
-        CSF tissue mean diffusivity value.
-    gm_md : float
-        GM tissue mean diffusivity value.
-    sphere : `dipy.core.Sphere` instance, optional
-        Sphere where the signal will be evaluated.
-
-    Returns
-    -------
-    MultiShellResponse
-        MultiShellResponse object.
-    """
-
-    bvals = np.array(bvals, copy=True)
-    evecs = np.zeros((3, 3))
-    z = np.array([0, 0, 1.])
-    evecs[:, 0] = z
-    evecs[:2, 1:] = np.eye(2)
-
-    n = np.arange(0, sh_order + 1, 2)
-    m = np.zeros_like(n)
-
-    if sphere is None:
-        sphere = default_sphere
-
-    big_sphere = sphere.subdivide()
-    theta, phi = big_sphere.theta, big_sphere.phi
-
-    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
-    A = shm.real_sph_harm(0, 0, 0, 0)
-
-    response = np.empty([len(bvals), len(n) + 2])
-    for i, bvalue in enumerate(bvals):
-        gtab = GradientTable(big_sphere.vertices * bvalue)
-        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
-        response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
-
-        response[i, 0] = np.exp(-bvalue * csf_md) / A
-        response[i, 1] = np.exp(-bvalue * gm_md) / A
-
-    return MultiShellResponse(response, sh_order, bvals)
+    return MultiShellResponse(S0, response, sh_order, bvals)
 
 
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
