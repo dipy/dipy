@@ -332,24 +332,31 @@ class LinearMixedModelsFlow(Workflow):
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
             print(" file name = ", file_name)
             print("file path = ", file_path)
+            '''
             df = pd.read_hdf(file_path)
             print("read the dataframe")
             if len(df) < 100:
                 raise ValueError("Dataset for Linear Mixed Model is too small")
-
+'''
             pvalues = np.zeros(no_disks)
 
             # run mixed linear model for every disk
             for i in range(no_disks):
+                disk_count = i+1
+                df = pd.read_hdf(file_path, where='disk=disk_count')
+
+                print("read the dataframe")
                 # check if data has significant data to perform LMM
-                if len(df[df['disk'] == (i+1)]) > 5:
-                    criteria = file_name + " ~ group"
-                    md = smf.mixedlm(criteria, df[df['disk'] == (i+1)],
-                                     groups=df[df['disk'] == (i+1)]["subject"])
+                if len(df) < 10:
+                    raise ValueError("Dataset for Linear Mixed Model is too small")
 
-                    mdf = md.fit()
+                criteria = file_name + " ~ group"
+                md = smf.mixedlm(criteria, df,
+                                 groups=df["subject"])
 
-                    pvalues[i] = mdf.pvalues[1]
+                mdf = md.fit()
+
+                pvalues[i] = mdf.pvalues[1]
 
             x = list(range(1, len(pvalues)+1))
             y = -1*np.log10(pvalues)
@@ -429,8 +436,8 @@ class BundleShapeAnalysis(Workflow):
                                              reference='same',
                                              bbox_valid_check=False).streamlines
 
-                    ba_value = bundle_shape_similarity(bundle1, bundle2,
-                                                       threshold, rng)
+                    ba_value = bundle_shape_similarity(bundle1, bundle2, rng,
+                                                       threshold)
 
                     ba_matrix[i][j] = ba_value
 
