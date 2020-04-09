@@ -222,7 +222,7 @@ print(nvoxels_wm)
 
 """
 Then, the ``response_from_mask`` function will return the msmt response
-functions using precalculated tissue masks. 
+functions using precalculated tissue masks.
 """
 
 response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data,
@@ -253,9 +253,14 @@ print(auto_response_wm)
 print(auto_response_gm)
 print(auto_response_csf)
 
+
 """
-We will now use the response functions obtained previously to generate
-the ``multi_shell_fiber_response`` required by the MSMT-CSD model.
+At this point, there are two options on how to use those response functions. We
+want to create a MultiShellDeconvModel, which takes a response function as
+input. This response function can either be directly in the current format, or
+it can be a MultiShellResponse format, as produced by the
+``multi_shell_fiber_response`` method. This function assumes a 3 compartments
+model (wm, gm, csf).
 """
 
 response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
@@ -263,9 +268,23 @@ response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)
 
-# !!!!!! Dire qu'on peut vouloir faire notre propre fiber response, donc qu'il faut simplement créer un objet MultiShellResponse
+"""
+As mentionned, we can also build the model directly and it will call
+``multi_shell_fiber_response`` internally. Important note here, the function
+``unique_bvals_tol`` is used to keep only unique bvalues from the gtab given to
+the model, as input for ``multi_shell_fiber_response``. This may introduce
+differences between the calculted response of each method, depending on the
+bvalues given to ``multi_shell_fiber_response`` externally.
+"""
 
-print(response_mcsd.response)
+response = np.array([response_wm, response_gm, response_csf])
+rapid_model = MultiShellDeconvModel(gtab, response, sh_order=8)
+
+"""
+Note that this technique only works for a 3 compartments model (wm, gm, csf). If
+one wants more compartments, a custom MultiShellResponse object must be used. It
+can be inspired by the ``multi_shell_fiber_response`` method.
+"""
 
 """
 Now we build the MSMT-CSD model with the ``response_mcsd`` as input. We then
@@ -275,14 +294,21 @@ call the ``fit`` function to fit one slice of the 3D data and visualize it.
 mcsd_model = MultiShellDeconvModel(gtab, response_mcsd)
 mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
 
+"""
+The volume fractions of tissues for each voxel are also accessible, as well as
+the sh coefficients for all tissues.
+"""
+
 vf = mcsd_fit.volume_fractions
+sh_coeff = mcsd_fit.all_shm_coeff
 
-S0 = [response_csf[3], response_gm[3], response_wm[3]]
+"""
+The model allows to predict a signal from sh coefficients. There are two ways of
+doing this.
+"""
 
-mcsd_pred = mcsd_model.predict(mcsd_fit.shm_all_coeff, vf=mcsd_fit.volume_fractions, response_scaling=S0)
-mcsd_err = np.sum((denoised_arr[:, :, 10:11, 1:] - mcsd_pred[:, :, :, 1:])**2)
-print("Prediction error")
-print(mcsd_err)
+mcsd_pred = mcsd_fit.predict()
+mcsd_pred = mcsd_model.predict(mcsd_fit.all_shm_coeff)
 
 """
 From the fit obtained in the previous step, we generate the ODFs which can be
