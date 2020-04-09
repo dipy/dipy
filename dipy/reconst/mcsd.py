@@ -162,15 +162,17 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         ----------
         gtab : GradientTable
         response : ndarray or MultiShellResponse object
-            Pre-computed multi-shell fiber response function in the form of a 
+            Pre-computed multi-shell fiber response function in the form of a
             MultiShellResponse object, or simple response function as a ndarray.
             The later must be of shape (3, 4), because it will be converted into
             a MultiShellResponse object via the `multi_shell_fiber_response`
-            method. Each column (3,) has two elements. The first is the
-            eigen-values as a (3,) ndarray and the second is the signal value 
-            for the response function without diffusion weighting (S0).
-            Note that in order to use more than three compartments, one must
-            create a MultiShellResponse object on the side.
+            method (important note: the function `unique_bvals_tol` is used here
+            to select unique bvalues from gtab as input). Each column (3,) has
+            two elements. The first is the eigen-values as a (3,) ndarray and
+            the second is the signal value for the response function without
+            diffusion weighting (S0). Note that in order to use more than three
+            compartments, one must create a MultiShellResponse object on the
+            side.
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
@@ -201,11 +203,16 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 
         if not isinstance(response, MultiShellResponse):
             if response.shape != (3, 4):
-                msg = """Response must be of shape (3, 4) or be a 
+                msg = """Response must be of shape (3, 4) or be a
                 MultiShellResponse object."""
                 raise ValueError(msg)
+            if iso > 2:
+                msg = """Too many compartments for this kind of response
+                input. It must be two tissue compartments."""
+                raise ValueError(msg)
+            bvals = unique_bvals_tol(gtab.bvals, tol=20)
             response = multi_shell_fiber_response(sh_order,
-                                                  bvals=gtab.bvals,
+                                                  bvals=bvals,
                                                   wm_rf=response[0],
                                                   gm_rf=response[1],
                                                   csf_rf=response[2])
@@ -233,7 +240,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.m = m
         self.n = n
         self.response = response
-
 
     def predict(self, params, gtab=None, S0=None):
         """Compute a signal prediction given spherical harmonic coefficients
@@ -265,7 +271,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             raise NotImplementedError
             # This case is not implemented yet because it would require to have
             # access to volume fractions (vf) from the fit. The following code
-            # gives an idea of how to use this with S0 and vf. It could also be 
+            # gives an idea of how to use this with S0 and vf. It could also be
             # calculated externally and used as scaling = S0.
             # response_scaling = np.ndarray(params.shape[0:3])
             # response_scaling[...] = (vf[..., 0] * self.response.S0[0]
@@ -309,9 +315,9 @@ class MSDeconvFit(shm.SphHarmFit):
     def shm_coeff(self):
         return self._shm_coef[..., self.model.response.iso:]
 
-    # @property
-    # def all_shm_coeff(self):
-    #     return self._shm_coef
+    @property
+    def all_shm_coeff(self):
+        return self._shm_coef
 
     @property
     def volume_fractions(self):

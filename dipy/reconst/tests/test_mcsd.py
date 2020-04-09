@@ -37,7 +37,7 @@ def get_test_data():
                   np.array([3.0E-3, 3.0E-3, 3.0E-3])]
     s0 = [0.8, 1, 4]
     signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
-    tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2] # wm=0, gm=1, csf=2
+    tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], None, s0[0]) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
     evals = [evals_list[tissue] for tissue in tissues]
@@ -102,6 +102,27 @@ def test_compartments():
 
 
 @pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+def test_MultiShellDeconvModel_response():
+    gtab = get_3shell_gtab()
+
+    sh_order = 8
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          wm_response,
+                                          gm_response,
+                                          csf_response)
+    model_1 = MultiShellDeconvModel(gtab, response)
+    responses = np.array([wm_response, gm_response, csf_response])
+    model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
+    response_1 = model_1.response.response
+    response_2 = model_2.response.response
+    npt.assert_array_almost_equal(response_1, response_2, 0)
+
+    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((4, 4)))
+    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((3, 4)),
+                      iso=3)
+
+
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_MultiShellDeconvModel():
     gtab = get_3shell_gtab()
 
@@ -125,8 +146,12 @@ def test_MultiShellDeconvModel():
 
     npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
 
-    S_pred = fit.predict()
-    npt.assert_array_almost_equal(S_pred, signal, 0)
+    # Testing both ways to predict
+    S_pred_fit = fit.predict()
+    S_pred_model = model.predict(fit.all_shm_coeff)
+
+    npt.assert_array_almost_equal(S_pred_fit, S_pred_model, 0)
+    npt.assert_array_almost_equal(S_pred_fit, signal, 0)
 
 
 def test_mask_for_response_msmt():
