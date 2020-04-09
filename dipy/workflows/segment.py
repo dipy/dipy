@@ -7,7 +7,8 @@ import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
-
+from dipy.io.stateful_tractogram import StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -205,7 +206,7 @@ class RecoBundlesFlow(Workflow):
 
         t = time()
         logging.info(streamline_files)
-        input_obj = nib.streamlines.load(streamline_files)
+        input_obj = load_tractogram(streamline_files)
         streamlines = input_obj.streamlines
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
@@ -216,7 +217,7 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = nib.streamlines.load(mb).streamlines
+            model_bundle = load_tractogram(mb).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -271,9 +272,9 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle adjacency Metric {0}".format(ba))
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
-            new_tractogram = nib.streamlines.Tractogram(recognized_bundle,
+            new_tractogram = StatefulTractogram(recognized_bundle,
                                                         affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, out_rec,
+            save_tractogram(new_tractogram, out_rec,
                                  header=input_obj.header)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
@@ -316,14 +317,14 @@ class LabelsBundlesFlow(Workflow):
         for sf, lb, out_bundle in io_it:
 
             logging.info(sf)
-            tractogram_obj = nib.streamlines.load(sf)
+            tractogram_obj = load_tractogram(sf)
             streamlines = tractogram_obj.streamlines
 
             logging.info(lb)
             location = np.load(lb)
             logging.info('Saving output files ...')
-            new_tractogram = nib.streamlines.Tractogram(streamlines[location],
+            new_tractogram = StatefulTractogram(streamlines[location],
                                                         affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, out_bundle,
+            save_tractogram(new_tractogram, out_bundle,
                                  header=tractogram_obj.header)
             logging.info(out_bundle)
