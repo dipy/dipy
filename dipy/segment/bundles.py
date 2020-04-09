@@ -183,17 +183,15 @@ def bundle_shape_similarity(bundle1, bundle2, rng, threshold=5):
     if len(bundle1) == 0 or len(bundle2) == 0:
         return 0
 
-    else:
+    bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
+                                       rng=rng)
+    bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
+                                       rng=rng)
+    bundle1_centroids = Streamlines(bundle1_centroids)
+    bundle2_centroids = Streamlines(bundle2_centroids)
 
-        bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
-                                           rng=rng)
-        bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
-                                           rng=rng)
-        bundle1_centroids = Streamlines(bundle1_centroids)
-        bundle2_centroids = Streamlines(bundle2_centroids)
-
-        ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
-                               threshold)
+    ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
+                           threshold)
 
     return ba_value
 

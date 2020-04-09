@@ -9,7 +9,6 @@ from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
 import numpy as np
 pd, have_pd, _ = optional_package("pandas")
-_, have_tables, _ = optional_package("tables")
 
 if have_pd:
     import pandas as pd
@@ -367,7 +366,7 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     return new_header
 
 
-def save_buan_profiles_hdf5(fname, dt, col_name, col_size=16):
+def save_buan_profiles_hdf5(fname, dt):
     """ Saves the given input dataframe to .h5 file
 
     Parameters
@@ -376,10 +375,6 @@ def save_buan_profiles_hdf5(fname, dt, col_name, col_size=16):
         file name for saving the hdf5 file
     dt : Pandas DataFrame
         DataFrame to be saved as .h5 file
-    col_name : string
-        column name to have specific column size
-    col_size : integer
-        min column size (default=16)
 
     """
 

@@ -403,9 +403,12 @@ class BundleShapeAnalysis(Workflow):
         rng = np.random.RandomState()
         all_subjects = []
         groups = os.listdir(subject_folder)
+        groups.sort()
 
         for group in groups:
             subjects = os.listdir(os.path.join(subject_folder, group))
+            print("first ", len(subjects), " subjects in matrix belong to ",
+                  group, "group")
             for sub in subjects:
                 all_subjects.append(os.path.join(subject_folder, group, sub))
 

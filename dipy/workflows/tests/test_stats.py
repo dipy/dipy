@@ -70,7 +70,7 @@ def test_stats():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels and PyTables')
+                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
 def test_bundle_analysis_tractometry_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -137,7 +137,7 @@ def test_bundle_analysis_tractometry_flow():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels and PyTables')
+                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -204,7 +204,7 @@ def test_linear_mixed_models_flow():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels and PyTables')
+                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
 def test_bundle_shape_analysis_flow():
 
     with TemporaryDirectory() as dirpath:

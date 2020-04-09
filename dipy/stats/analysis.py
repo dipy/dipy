@@ -117,8 +117,7 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group,
 
     file_name = bname+"_"+pname
 
-    save_buan_profiles_hdf5(os.path.join(dir, file_name), dt,
-                            col_name="bundle")
+    save_buan_profiles_hdf5(os.path.join(dir, file_name), dt)
 
 
 def assignment_map(target_bundle, model_bundle, no_disks):
