@@ -253,7 +253,7 @@ class LinearMixedModelsFlow(Workflow):
 
         for j in range(len(name)):
             if name[j] == '_':
-                if name[j+1] != 'L' and name[j+1] != 'R':
+                if name[j+1] != 'L' and name[j+1] != 'R' and name[j+1] != 'F':
 
                     return name[j+1:count], name[:j], name[:count]
 
@@ -280,7 +280,7 @@ class LinearMixedModelsFlow(Workflow):
 
         n = len(x)
         dotted = np.ones(n)
-        dotted[:] = 1.3
+        dotted[:] = 2
         c1 = np.random.rand(1, 3)
 
         y_pos = np.arange(n)
@@ -288,7 +288,7 @@ class LinearMixedModelsFlow(Workflow):
         matplt.pyplot.plot(y_pos, dotted, color='black', marker='o',
                            linestyle='dashed', linewidth=0.4, markersize=0.5)
 
-        matplt.pyplot.plot(y_pos, dotted+.7, color='black', marker='o',
+        matplt.pyplot.plot(y_pos, dotted+1, color='black', marker='o',
                            linestyle='dashed', linewidth=0.2, markersize=0.2)
 
         axes = matplt.pyplot.gca()
