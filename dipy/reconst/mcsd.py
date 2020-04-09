@@ -230,9 +230,9 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         self.sphere = reg_sphere
         self.gtab = gtab
         self.B_dwi = B
+        self.m = m
+        self.n = n
         self.response = response
-        self.m = response.m
-        self.n = response.n
 
 
     def predict(self, params, gtab=None, S0=None):
@@ -544,7 +544,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_gm[(md > gm_md_thr)] = 0
 
     fa_mask_gm = np.zeros(fa.shape)
-    fa_mask_gm[(fa < gm_fa_thr) & (fa > 0)] = 1
+    fa_mask_gm[(fa < gm_fa_thr) & (fa >= 0)] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
 
@@ -552,7 +552,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md_mask_csf[(md > csf_md_thr)] = 0
 
     fa_mask_csf = np.zeros(fa.shape)
-    fa_mask_csf[(fa < csf_fa_thr) & (fa > 0)] = 1
+    fa_mask_csf[(fa < csf_fa_thr) & (fa >= 0)] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf
 
