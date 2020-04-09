@@ -447,6 +447,12 @@ def remove_invalid_streamlines(resize):
     return len(sft)
 
 
+def remove_invalid_streamlines_epsilon(epsilon):
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft.remove_invalid_streamlines(epsilon=epsilon)
+    return len(sft)
+
+
 def random_point_color():
     np.random.seed(0)
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
@@ -624,6 +630,14 @@ def test_invalid_streamlines():
             msg='A shifted gold standard should have 8 invalid streamlines')
     assert_(remove_invalid_streamlines(False) == 13,
             msg='A unshifted gold standard should have 0 invalid streamlines')
+
+
+def test_invalid_streamlines_epsilon():
+    assert_(remove_invalid_streamlines_epsilon(1e-6) == 13,
+            msg='A small epsilon should not remove any streamlines')
+    assert_(remove_invalid_streamlines_epsilon(1.0) == 5,
+            msg='Too big of an epsilon (1mm) should remove the 8 streamlines '
+                '(8 corners)')
 
 
 def test_trk_coloring():
