@@ -76,7 +76,6 @@ class SingleLayerPerceptron(object):
             A History object. Its History.history attribute is a record of
             training loss values and metrics values at successive epochs
 
-
         """
 
         hist = self.model.fit(x_train, y_train, epochs=epochs)
@@ -128,19 +127,16 @@ class SingleLayerPerceptron(object):
         """
         return self.model.predict(x_test)
 
-
-
 class MultipleLayerPercepton(object):
 
     def __init__(self, input_shape=(28,28),
-                        num_hidden=[128],
-                        act_hidden='relu',
-                        dropout=0.2,
-                        num_out=10,
-                        act_out='softmax',
-                        loss='sparse_categorical_crossentropy',
-                        optimizer='adam'):
-
+                 num_hidden=[128],
+                 act_hidden='relu',
+                 dropout=0.2,
+                 num_out=10,
+                 act_out='softmax',
+                 loss='sparse_categorical_crossentropy',
+                 optimizer='adam'):
 
         """Multiple Layer Perceptron with Dropout
 
@@ -165,7 +161,6 @@ class MultipleLayerPercepton(object):
                 Default sparse_categorical_crossentropy.
         """
 
-
         self.input_shape = input_shape
         self.num_hidden = num_hidden
         self.act_hidden = act_hidden
@@ -175,7 +170,6 @@ class MultipleLayerPercepton(object):
         self.loss = loss
         self.optimizer = optimizer
         self.accuracy = None
-
 
         #model building
 
@@ -190,13 +184,10 @@ class MultipleLayerPercepton(object):
 
         self.model = tf.keras.models.Model(inputs=inp, outputs=out)
 
-
-
         #compiling the model
         self.model.compile(optimizer=self.optimizer,
                               loss=self.loss,
                               metrics=['accuracy'])
-
 
     def summary(self):
 
@@ -213,7 +204,6 @@ class MultipleLayerPercepton(object):
 
         """
         return self.model.summary()
-
 
     def fit(self, x_train, y_train, epochs=5):
 
@@ -267,7 +257,6 @@ class MultipleLayerPercepton(object):
             return list of loss value and accuracy value on test dataset
 
         """
-
 
         return self.model.evaluate(x_test,  y_test, verbose=verbose)
 
