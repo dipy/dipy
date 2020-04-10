@@ -17,7 +17,7 @@ class SingleLayerPerceptron(object):
                  num_out=10, act_out='softmax',
                  optimizer='adam',
                  loss='sparse_categorical_crossentropy'):
-        """ Single Layer Perceptron with Dropout
+        """Single Layer Perceptron with Dropout
         Parameters
         ----------
         input_shape : tuple
@@ -56,7 +56,7 @@ class SingleLayerPerceptron(object):
 
     def fit(self, x_train, y_train, epochs=5):
 
-        """train the model on train dataset.
+        """Train the model on train dataset.
 
         The fit method will train the model for a fixed
         number of epochs (iterations) on a dataset.
@@ -86,7 +86,7 @@ class SingleLayerPerceptron(object):
 
     def evaluate(self, x_test, y_test, verbose=2):
 
-        """evaluate the model on test dataset.
+        """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
         dataset.
@@ -110,7 +110,7 @@ class SingleLayerPerceptron(object):
 
     def predict(self, x_test):
 
-        """predict the output from input samples.
+        """Predict the output from input samples.
 
         The predict method will generates output predictions
         for the input samples.
@@ -142,7 +142,7 @@ class MultipleLayerPercepton(object):
                         optimizer='adam'):
 
 
-        """ Multiple Layer Perceptron with Dropout
+        """Multiple Layer Perceptron with Dropout
 
             Parameters
             ----------
@@ -200,7 +200,7 @@ class MultipleLayerPercepton(object):
 
     def summary(self):
 
-        """get the summary of the model.
+        """Get the summary of the model.
 
         The summary is textual and includes information about:
         The layers and their order in the model.
@@ -217,7 +217,7 @@ class MultipleLayerPercepton(object):
 
     def fit(self, x_train, y_train, epochs=5):
 
-        """train the model on train dataset.
+        """Train the model on train dataset.
 
         The fit method will train the model for a fixed
         number of epochs (iterations) on a dataset.
@@ -247,7 +247,7 @@ class MultipleLayerPercepton(object):
 
     def evaluate(self, x_test, y_test, verbose=2):
 
-        """evaluate the model on test dataset.
+        """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
         dataset.
@@ -273,7 +273,7 @@ class MultipleLayerPercepton(object):
 
     def predict(self, x_test):
 
-        """predict the output from input samples.
+        """Predict the output from input samples.
 
         The predict method will generates output predictions
         for the input samples.
