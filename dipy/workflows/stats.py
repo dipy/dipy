@@ -336,9 +336,10 @@ class BundleAnalysisTractometryFlow(Workflow):
         groups = os.listdir(subject_folder)
 
         for group in groups:
-            logging.info('group = {0}'.format(group))
-            all_subjects = os.listdir(os.path.join(subject_folder, group))
-            logging.info(all_subjects)
+            if os.path.isdir(os.path.join(subject_folder, group)):
+                logging.info('group = {0}'.format(group))
+                all_subjects = os.listdir(os.path.join(subject_folder, group))
+                logging.info(all_subjects)
             if group.lower() == 'patient':
                 group_id = 1  # 1 means patient
             elif group.lower() == 'control':
@@ -418,21 +419,27 @@ class LinearMixedModelsFlow(Workflow):
 
         y_pos = np.arange(n)
 
-        matplt.pyplot.plot(y_pos, dotted, color='black', marker='o',
-                           linestyle='dashed', linewidth=0.4, markersize=0.5)
+        l1, = matplt.pyplot.plot(y_pos, dotted, color='red', marker='.',
+                                 linestyle='solid', linewidth=0.6,
+                                 markersize=0.7, label="p-value < 0.01")
 
-        matplt.pyplot.plot(y_pos, dotted+1, color='black', marker='o',
-                           linestyle='dashed', linewidth=0.2, markersize=0.2)
+        l2, = matplt.pyplot.plot(y_pos, dotted+1, color='black', marker='.',
+                                 linestyle='solid', linewidth=0.4,
+                                 markersize=0.4, label="p-value < 0.001")
+
+        first_legend = matplt.pyplot.legend(handles=[l1, l2],
+                                            loc='upper right')
 
         axes = matplt.pyplot.gca()
+        axes.add_artist(first_legend)
         axes.set_ylim([0, 6])
 
-        matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
-                          label=bundle_name)
-        matplt.pyplot.title(title)
+        l3 = matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
+                               label=bundle_name)
+        matplt.pyplot.legend(handles=[l3], loc='upper left')
+        matplt.pyplot.title(title.upper())
         matplt.pyplot.xlabel("Segment Number")
         matplt.pyplot.ylabel("-log10(Pvalues)")
-        matplt.pyplot.legend(loc=2)
         matplt.pyplot.savefig(plot_file)
         matplt.pyplot.clf()
 
@@ -536,15 +543,24 @@ class BundleShapeAnalysis(Workflow):
         """
         rng = np.random.RandomState()
         all_subjects = []
-        groups = os.listdir(subject_folder)
-        groups.sort()
+        if os.path.isdir(subject_folder):
+            groups = os.listdir(subject_folder)
+            groups.sort()
+        else:
+            raise ValueError("Not a directory")
 
         for group in groups:
-            subjects = os.listdir(os.path.join(subject_folder, group))
-            logging.info("first " + str(len(subjects)) +
-                         " subjects in matrix belong to " + group + "group")
-            for sub in subjects:
-                all_subjects.append(os.path.join(subject_folder, group, sub))
+
+            if os.path.isdir(os.path.join(subject_folder, group)):
+                subjects = os.listdir(os.path.join(subject_folder, group))
+                logging.info("first " + str(len(subjects)) +
+                             " subjects in matrix belong to " + group +
+                             " group")
+
+                for sub in subjects:
+                    dpath = os.path.join(subject_folder, group, sub)
+                    if os.path.isdir(dpath):
+                        all_subjects.append(dpath)
 
         N = len(all_subjects)
 
