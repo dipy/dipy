@@ -334,11 +334,12 @@ class BundleAnalysisTractometryFlow(Workflow):
             raise ValueError("Invalid path to subjects")
 
         groups = os.listdir(subject_folder)
-
+        groups.sort()
         for group in groups:
             if os.path.isdir(os.path.join(subject_folder, group)):
                 logging.info('group = {0}'.format(group))
                 all_subjects = os.listdir(os.path.join(subject_folder, group))
+                all_subjects.sort()
                 logging.info(all_subjects)
             if group.lower() == 'patient':
                 group_id = 1  # 1 means patient
@@ -553,6 +554,7 @@ class BundleShapeAnalysis(Workflow):
 
             if os.path.isdir(os.path.join(subject_folder, group)):
                 subjects = os.listdir(os.path.join(subject_folder, group))
+                subjects.sort()
                 logging.info("first " + str(len(subjects)) +
                              " subjects in matrix belong to " + group +
                              " group")
@@ -592,7 +594,7 @@ class BundleShapeAnalysis(Workflow):
 
                     j += 1
                 i += 1
-            logging.info("BA score matrix")
+            logging.info("saving BA score matrix")
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
