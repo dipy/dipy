@@ -17,6 +17,7 @@ from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisTractometryFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
 from dipy.workflows.stats import BundleShapeAnalysis
+from dipy.workflows.stats import buan_bundle_profiles
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
@@ -66,6 +67,57 @@ def test_stats():
         assert_true(os.path.exists(os.path.join(out_dir, 'mask_noise.nii.gz')))
         assert_true(os.stat(os.path.join(
             out_dir, 'mask_noise.nii.gz')).st_size != 0)
+
+
+@pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
+                    or not have_matplotlib,
+                    reason='Requires Pandas, StatsModels and PyTables')
+def test_buan_bundle_profiles():
+
+    with TemporaryDirectory() as dirpath:
+        data_path = get_fnames('fornix')
+        fornix = load_tractogram(data_path, 'same',
+                                 bbox_valid_check=False).streamlines
+
+        f = Streamlines(fornix)
+
+        mb = os.path.join(dirpath, "model_bundles")
+
+        os.mkdir(mb)
+
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(mb, "temp.trk"),
+                        bbox_valid_check=False)
+
+        rb = os.path.join(dirpath, "rec_bundles")
+        os.mkdir(rb)
+
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(rb, "temp.trk"),
+                        bbox_valid_check=False)
+
+        ob = os.path.join(dirpath, "org_bundles")
+        os.mkdir(ob)
+
+        sft = StatefulTractogram(f, data_path, Space.RASMM)
+        save_tractogram(sft, os.path.join(ob, "temp.trk"),
+                        bbox_valid_check=False)
+
+        dt = os.path.join(dirpath, "anatomical_measures")
+        os.mkdir(dt)
+
+        fa = np.random.rand(255, 255, 255)
+
+        save_nifti(os.path.join(dt, "fa.nii.gz"),
+                   fa, affine=np.eye(4))
+
+        out_dir = os.path.join(dirpath, "output")
+        os.mkdir(out_dir)
+
+        buan_bundle_profiles(mb, rb, ob, dt, group_id=1, subject="10001",
+                             no_disks=100, out_dir=out_dir)
+
+        assert_true(os.path.exists(os.path.join(out_dir, 'temp_fa.h5')))
 
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables

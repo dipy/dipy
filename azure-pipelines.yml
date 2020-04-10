@@ -55,7 +55,7 @@ jobs:
         DEPENDS: ""
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2.3"
+        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
         INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'

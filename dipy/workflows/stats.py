@@ -4,23 +4,27 @@ import numpy as np
 import os
 import json
 import warnings
+from time import time
 from scipy.ndimage.morphology import binary_dilation
 from dipy.utils.optpkg import optional_package
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import TensorModel
-# import matplotlib.pyplot as plt
-# from matplotlib import cm as cm
+from dipy.io.peaks import load_peaks
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 # from dipy.io.streamline import load_trk, save_trk
+from dipy.tracking.streamline import transform_streamlines
+from glob import glob
 from dipy.workflows.workflow import Workflow
 from dipy.segment.bundles import bundle_shape_similarity
-from dipy.viz.regtools import simple_plot
-from dipy.stats.analysis import buan_bundle_profiles
+from dipy.stats.analysis import assignment_map
+from dipy.stats.analysis import anatomical_measures
+from dipy.stats.analysis import peak_values
+
 pd, have_pd, _ = optional_package("pandas")
 smf, have_smf, _ = optional_package("statsmodels")
 tables, have_tables, _ = optional_package("tables")
@@ -31,9 +35,6 @@ if have_pd:
 
 if have_smf:
     import statsmodels.formula.api as smf
-
-if have_tables:
-    import tables
 
 if have_matplotlib:
     import matplotlib as matplt
@@ -168,6 +169,128 @@ class SNRinCCFlow(Workflow):
                 json.dump(data, myfile)
 
 
+def buan_bundle_profiles(model_bundle_folder, bundle_folder,
+                         orig_bundle_folder, metric_folder, group_id, subject,
+                         no_disks=100, out_dir=''):
+    """
+    Applies statistical analysis on bundles and saves the results
+    in a directory specified by ``out_dir``.
+
+    Parameters
+    ----------
+    model_bundle_folder : string
+        Path to the input model bundle files. This path may contain
+        wildcards to process multiple inputs at once.
+    bundle_folder : string
+        Path to the input bundle files in common space. This path may
+        contain wildcards to process multiple inputs at once.
+    orig_folder : string
+        Path to the input bundle files in native space. This path may
+        contain wildcards to process multiple inputs at once.
+    metric_folder : string
+        Path to the input dti metric or/and peak files. It will be used as
+        metric for statistical analysis of bundles.
+    group_id : integer
+        what group subject belongs to either 0 for control or 1 for patient
+    subject : string
+        subject id e.g. 10001
+    no_disks : integer, optional
+        Number of disks used for dividing bundle into disks. (Default 100)
+    out_dir : string, optional
+        Output directory (default input file directory)
+
+    References
+    ----------
+    .. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+    E. Garyfallidis, Bundle Analytics: a computational and statistical
+    analyses framework for tractometric studies, Proceedings of:
+    International Society of Magnetic Resonance in Medicine (ISMRM),
+    Montreal, Canada, 2019.
+
+    """
+
+    t = time()
+
+    dt = dict()
+
+    mb = glob(os.path.join(model_bundle_folder, "*.trk"))
+    print(mb)
+
+    mb.sort()
+
+    bd = glob(os.path.join(bundle_folder, "*.trk"))
+
+    bd.sort()
+    print(bd)
+    org_bd = glob(os.path.join(orig_bundle_folder, "*.trk"))
+    org_bd.sort()
+    print(org_bd)
+    n = len(org_bd)
+    n = len(mb)
+
+    for io in range(n):
+
+        mbundles = load_tractogram(mb[io], reference='same',
+                                   bbox_valid_check=False).streamlines
+        bundles = load_tractogram(bd[io], reference='same',
+                                  bbox_valid_check=False).streamlines
+        orig_bundles = load_tractogram(org_bd[io], reference='same',
+                                       bbox_valid_check=False).streamlines
+
+        if len(orig_bundles) > 5:
+
+            indx = assignment_map(bundles, mbundles, no_disks)
+            ind = np.array(indx)
+
+            metric_files_names_dti = glob(os.path.join(metric_folder,
+                                                       "*.nii.gz"))
+
+            metric_files_names_csa = glob(os.path.join(metric_folder,
+                                                       "*.pam5"))
+
+            _, affine = load_nifti(metric_files_names_dti[0])
+
+            affine_r = np.linalg.inv(affine)
+            transformed_orig_bundles = transform_streamlines(orig_bundles,
+                                                             affine_r)
+
+            for mn in range(len(metric_files_names_dti)):
+
+                ab = os.path.split(metric_files_names_dti[mn])
+                metric_name = ab[1]
+
+                fm = metric_name[:-7]
+                bm = os.path.split(mb[io])[1][:-4]
+
+                logging.info("bm = " + bm)
+
+                dt = dict()
+
+                logging.info("metric = " + metric_files_names_dti[mn])
+
+                metric, _ = load_nifti(metric_files_names_dti[mn])
+
+                anatomical_measures(transformed_orig_bundles, metric, dt, fm,
+                                    bm, subject, group_id, ind, out_dir)
+
+            for mn in range(len(metric_files_names_csa)):
+                ab = os.path.split(metric_files_names_csa[mn])
+                metric_name = ab[1]
+
+                fm = metric_name[:-5]
+                bm = os.path.split(mb[io])[1][:-4]
+
+                logging.info("bm = " + bm)
+                logging.info("metric = " + metric_files_names_csa[mn])
+                dt = dict()
+                metric = load_peaks(metric_files_names_csa[mn])
+
+                peak_values(transformed_orig_bundles, metric, dt, fm, bm,
+                            subject, group_id, ind, out_dir)
+
+    print("total time taken in minutes = ", (-t + time())/60)
+
+
 class BundleAnalysisTractometryFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -207,21 +330,31 @@ class BundleAnalysisTractometryFlow(Workflow):
 
         """
 
+        if os.path.isdir(subject_folder) is False:
+            raise ValueError("Invalid path to subjects")
+
         groups = os.listdir(subject_folder)
 
         for group in groups:
             logging.info('group = {0}'.format(group))
             all_subjects = os.listdir(os.path.join(subject_folder, group))
-            print(all_subjects)
+            logging.info(all_subjects)
+            if group.lower() == 'patient':
+                group_id = 1  # 1 means patient
+            elif group.lower() == 'control':
+                group_id = 0  # 0 means control
+            else:
+                raise ValueError("Invalid group. Neither patient nor control")
+
             for sub in all_subjects:
-                print(sub)
+                logging.info(sub)
                 pre = os.path.join(subject_folder, group, sub)
-                print(pre)
+                logging.info(pre)
                 b = os.path.join(pre, "rec_bundles")
                 c = os.path.join(pre, "org_bundles")
                 d = os.path.join(pre, "anatomical_measures")
-                buan_bundle_profiles(model_bundle_folder, b, c, d, group, sub,
-                                     no_disks, out_dir)
+                buan_bundle_profiles(model_bundle_folder, b, c, d, group_id,
+                                     sub, no_disks, out_dir)
 
 
 class LinearMixedModelsFlow(Workflow):
@@ -331,8 +464,8 @@ class LinearMixedModelsFlow(Workflow):
             logging.info('Applying metric {0}'.format(file_path))
 
             file_name, bundle_name, save_name = self.get_metric_name(file_path)
-            print(" file name = ", file_name)
-            print("file path = ", file_path)
+            logging.info(" file name = " + file_name)
+            logging.info("file path = " + file_path)
 
             pvalues = np.zeros(no_disks)
             warnings.filterwarnings("ignore")
@@ -341,7 +474,8 @@ class LinearMixedModelsFlow(Workflow):
                 disk_count = i+1
                 df = pd.read_hdf(file_path, where='disk=disk_count')
 
-                print("read the dataframe for disk number ", disk_count)
+                logging.info("read the dataframe for disk number " +
+                             str(disk_count))
                 # check if data has significant data to perform LMM
                 if len(df) < 10:
                     raise ValueError("Dataset for Linear Mixed Model is too small")
@@ -385,8 +519,8 @@ class BundleShapeAnalysis(Workflow):
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
 
-        threshold : float (default 6)
-            Bundle shape similarity threshold. (Default 6)
+        threshold : float (default 6), optional
+            Bundle shape similarity threshold.
 
         out_dir : string, optional
             Output directory (default input file directory)
@@ -407,8 +541,8 @@ class BundleShapeAnalysis(Workflow):
 
         for group in groups:
             subjects = os.listdir(os.path.join(subject_folder, group))
-            print("first ", len(subjects), " subjects in matrix belong to ",
-                  group, "group")
+            logging.info("first " + str(len(subjects)) +
+                         " subjects in matrix belong to " + group + "group")
             for sub in subjects:
                 all_subjects.append(os.path.join(subject_folder, group, sub))
 
@@ -419,21 +553,21 @@ class BundleShapeAnalysis(Workflow):
             # bundle shape similarity matrix
             ba_matrix = np.zeros((N, N))
             i = 0
-            print(bun)
+            logging.info(bun)
             for sub in all_subjects:
                 j = 0
 
-                bundle1 = load_tractogram(os.path.join(sub, "rec_bundles", bun),
-                                          reference='same',
+                bundle1 = load_tractogram(os.path.join(sub, "rec_bundles",
+                                                       bun), reference='same',
                                           bbox_valid_check=False).streamlines
 
                 for subi in all_subjects:
-                    print(subi)
+                    logging.info(subi)
 
                     bundle2 = load_tractogram(os.path.join(subi, "rec_bundles",
                                                            bun),
-                                             reference='same',
-                                             bbox_valid_check=False).streamlines
+                                              reference='same',
+                                              bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2, rng,
                                                        threshold)
@@ -442,7 +576,7 @@ class BundleShapeAnalysis(Workflow):
 
                     j += 1
                 i += 1
-            print("BA score =", ba_matrix)
+            logging.info("BA score matrix")
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
