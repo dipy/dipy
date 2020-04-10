@@ -54,6 +54,22 @@ class SingleLayerPerceptron(object):
 
         self.model = model
 
+    def summary(self):
+
+        """Get the summary of the model.
+
+        The summary is textual and includes information about:
+        The layers and their order in the model.
+        The output shape of each layer.
+
+        Returns
+        -------
+        summary :  NoneType
+            the summary of the model
+
+        """
+        return self.model.summary()
+
     def fit(self, x_train, y_train, epochs=5):
 
         """Train the model on train dataset.
