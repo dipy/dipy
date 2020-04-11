@@ -25,6 +25,9 @@ For generating bundle profile data (saved as .h5 files):
 You must have downloaded bundles folder of 30 atlas bundles and subjects folder
 with PPMI data derivatives.
 
+NOTE: Make sure all output folders are empty and do not get overridden.
+Following workflows require specific input directory structure.
+
 Create an out_dir folder (eg: bundle_profiles)::
 
     mkdir bundle_profiles
@@ -37,7 +40,7 @@ Run following workflow::
 For running Linear Mixed Models (LMM) on generated .h5 files from the previous
 step:
 
-Create an out_dir folder (eg: lmm_plots) ::
+Create an out_dir folder (eg: lmm_plots)::
 
     mkdir lmm_plots
 
