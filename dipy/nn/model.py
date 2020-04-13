@@ -109,7 +109,8 @@ class SingleLayerPerceptron(object):
         y_test : ndarray shape=(BatchSize,)
             the y_test is the labels of the test dataset
         verbose : int (Default = 2)
-            By setting verbose 0, 1 or 2 you just say how do you want to 'see' the training progress for each epoch.
+            By setting verbose 0, 1 or 2 you just say how do you want to
+            'see' the training progress for each epoch.
 
         Returns
         -------
