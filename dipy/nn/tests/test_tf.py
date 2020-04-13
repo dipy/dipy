@@ -63,7 +63,6 @@ def test_default_mnist_slp():
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_mnist_mlp():
-
     mnist = tf.keras.datasets.mnist
     epochs = 1
 
