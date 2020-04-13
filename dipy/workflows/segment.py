@@ -7,7 +7,7 @@ import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
-
+from dipy.tracking.streamline import Streamlines
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -321,9 +321,13 @@ class LabelsBundlesFlow(Workflow):
 
             logging.info(lb)
             location = np.load(lb)
+            if len(location) < 1 :
+                bundle = Streamlines([])
+            else:
+                bundle = streamlines[location]
+
             logging.info('Saving output files ...')
-            new_tractogram = nib.streamlines.Tractogram(streamlines[location],
-                                                        affine_to_rasmm=np.eye(4))
+            new_tractogram = nib.streamlines.Tractogram(bundle, affine_to_rasmm=np.eye(4))
             nib.streamlines.save(new_tractogram, out_bundle,
                                  header=tractogram_obj.header)
             logging.info(out_bundle)

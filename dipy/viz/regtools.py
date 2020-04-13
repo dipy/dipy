@@ -39,6 +39,8 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     """
 
     plt.plot(x, y)
+    axes = plt.gca()
+    axes.set_ylim([0, 4])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)

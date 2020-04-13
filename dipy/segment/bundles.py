@@ -32,10 +32,22 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     """ Find bundle adjacency between two given tracks/bundles
 
     Parameters
-        ----------
-        dtracks0 : Streamlines
-        dtracks1 : Streamlines
-        threshold: float
+    ----------
+    dtracks0 : Streamlines
+        White matter tract from one subject
+    dtracks1 : Streamlines
+        White matter tract from another subject
+    threshold : float
+        Threshold controls
+        how much strictness user wants while calculating bundle adjacency
+        between two bundles. Smaller threshold means bundles should be strictly
+        adjacent to get higher BA score.
+
+    Returns
+    -------
+    res : Float
+        Bundle adjacency score between two tracts
+
     References
     ----------
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
@@ -65,6 +77,123 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     B = len(pair21) / np.float(len(dtracks1))
     res = 0.5 * (A + B)
     return res
+
+
+def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=5.):
+    """ Calculates bundle adjacency score between two given bundles
+
+    Parameters
+    ----------
+    recognized_bundle : Streamlines
+        Extracted bundle from the whole brain tractogram (eg: AF_L)
+    expert_bundle : Streamlines
+        Model bundle used as reference while extracting similar type bundle
+        from inout tractogram
+    nb_pts : integer (default 20)
+        Discretizing streamlines to have nb_pts number of points
+    threshold : float (default 5)
+        Threshold used for in computing bundle adjacency. Threshold controls
+        how much strictness user wants while calculating bundle adjacency
+        between two bundles. Smaller threshold means bundles should be strictly
+        adjacent to get higher BA score.
+
+    Returns
+    -------
+        Bundle adjacency score between two tracts
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+
+    recognized_bundle = set_number_of_points(recognized_bundle, nb_pts)
+
+    expert_bundle = set_number_of_points(expert_bundle, nb_pts)
+
+    return bundle_adjacency(recognized_bundle, expert_bundle, threshold)
+
+
+def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
+    """ Clusters bundles
+
+    Parameters
+    ----------
+    bundle : Streamlines
+        White matter tract
+    clust_thr : float
+        clustering threshold used in quickbundles
+    rng : RandomState
+    nb_pts: integer (default 20)
+        Discretizing streamlines to have nb_points number of points
+    select_randomly: integer (default 500000)
+        Randomly select streamlines from the input bundle
+
+    Returns
+    -------
+    centroids : Streamlines
+        clustered centroids of the input bundle
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+   """
+
+    model_cluster_map = qbx_and_merge(bundle, clust_thr,
+                                      nb_pts=nb_pts,
+                                      select_randomly=select_randomly,
+                                      rng=rng)
+    centroids = model_cluster_map.centroids
+
+    return centroids
+
+
+def bundle_shape_similarity(bundle1, bundle2, rng, threshold=5):
+    """ Calculates bundle shape similarity between two given bundles using
+    bundle adjacency (BA) metric
+
+    Parameters
+    ----------
+    bundle1 : Streamlines
+        White matter tract from one subject (eg: AF_L)
+    bundle2 : Streamlines
+        White matter tract from another subject (eg: AF_L)
+    rng : RandomState
+    threshold : float (default 5)
+        Threshold used for in computing bundle adjacency. Threshold controls
+        how much strictness user wants while calculating shape similarity
+        between two bundles. Smaller threshold means bundles should be strictly
+        similar to get higher shape similarity score.
+
+    Returns
+    -------
+    ba_value : Float
+        Bundle similarity score between two tracts
+
+    References
+    ----------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
+    """
+
+    if len(bundle1) == 0 or len(bundle2) == 0:
+        return 0
+
+    bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
+                                       rng=rng)
+    bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
+                                       rng=rng)
+    bundle1_centroids = Streamlines(bundle1_centroids)
+    bundle2_centroids = Streamlines(bundle2_centroids)
+
+    ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
+                           threshold)
+
+    return ba_value
 
 
 class RecoBundles(object):
