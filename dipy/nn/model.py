@@ -55,7 +55,6 @@ class SingleLayerPerceptron(object):
         self.model = model
 
     def summary(self):
-
         """Get the summary of the model.
 
         The summary is textual and includes information about:
@@ -71,7 +70,6 @@ class SingleLayerPerceptron(object):
         return self.model.summary()
 
     def fit(self, x_train, y_train, epochs=5):
-
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed
@@ -91,7 +89,6 @@ class SingleLayerPerceptron(object):
         hist : object
             A History object. Its History.history attribute is a record of
             training loss values and metrics values at successive epochs
-
         """
 
         hist = self.model.fit(x_train, y_train, epochs=epochs)
@@ -100,7 +97,6 @@ class SingleLayerPerceptron(object):
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
-
         """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
@@ -119,12 +115,10 @@ class SingleLayerPerceptron(object):
         -------
         evaluate : List
             return list of loss value and accuracy value on test dataset
-
         """
         return self.model.evaluate(x_test,  y_test, verbose=verbose)
 
     def predict(self, x_test):
-
         """Predict the output from input samples.
 
         The predict method will generates output predictions
@@ -139,7 +133,6 @@ class SingleLayerPerceptron(object):
         -------
         predict : ndarray shape(TestSize,OutputSize)
             Numpy array(s) of predictions.
-
         """
         return self.model.predict(x_test)
 
@@ -153,7 +146,6 @@ class MultipleLayerPercepton(object):
                  act_out='softmax',
                  loss='sparse_categorical_crossentropy',
                  optimizer='adam'):
-
         """Multiple Layer Perceptron with Dropout
 
             Parameters
@@ -206,7 +198,6 @@ class MultipleLayerPercepton(object):
                               metrics=['accuracy'])
 
     def summary(self):
-
         """Get the summary of the model.
 
         The summary is textual and includes information about:
@@ -217,12 +208,10 @@ class MultipleLayerPercepton(object):
         -------
         summary :  NoneType
             the summary of the model
-
         """
         return self.model.summary()
 
     def fit(self, x_train, y_train, epochs=5):
-
         """Train the model on train dataset.
 
         The fit method will train the model for a fixed
@@ -242,17 +231,13 @@ class MultipleLayerPercepton(object):
         hist : object
             A History object. Its History.history attribute is a record of
             training loss values and metrics values at successive epochs
-
-
         """
-
         hist = self.model.fit(x_train, y_train, epochs=epochs)
         self.accuracy = hist.history['accuracy'][0]
         self.loss = hist.history['loss'][0]
         return hist
 
     def evaluate(self, x_test, y_test, verbose=2):
-
         """Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
@@ -265,19 +250,18 @@ class MultipleLayerPercepton(object):
         y_test : ndarray shape=(BatchSize,)
             the y_test is the labels of the test dataset
         verbose : int (Default = 2)
-            By setting verbose 0, 1 or 2 you just say how do you want to 'see' the training progress for each epoch.
+            By setting verbose 0, 1 or 2 you just say how do you want to
+            'see' the training progress for each epoch.
 
         Returns
         -------
         evaluate : List
             return list of loss value and accuracy value on test dataset
-
         """
 
         return self.model.evaluate(x_test,  y_test, verbose=verbose)
 
     def predict(self, x_test):
-
         """Predict the output from input samples.
 
         The predict method will generates output predictions
@@ -292,6 +276,6 @@ class MultipleLayerPercepton(object):
         -------
         predict : ndarray shape(TestSize,OutputSize)
             Numpy array(s) of predictions.
-
         """
+
         return self.model.predict(x_test)
