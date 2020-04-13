@@ -86,7 +86,7 @@ class Horizon(object):
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
                  out_png='tmp.png', recorded_events=None, return_showm=False,
-                 bg_color=(0, 0, 0)):
+                 bg_color=(0, 0, 0), order_transparent=True):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -136,6 +136,10 @@ class Horizon(object):
         bg_color : ndarray or list or tuple
             Define the background color of the scene.
             Default is black (0, 0, 0)
+        order_transparent : bool
+            Default True. Use depth peeling to sort transparent objects.
+            If True also enables anti-aliasing.
+
 
         References
         ----------
@@ -168,6 +172,7 @@ class Horizon(object):
         self.show_m = None
         self.return_showm = return_showm
         self.bg_color = bg_color
+        self.order_transparent = order_transparent
 
     def build_scene(self):
 
@@ -315,10 +320,11 @@ class Horizon(object):
     def build_show(self, scene):
 
         title = 'Horizon ' + horizon_version
-        self.show_m = window.ShowManager(scene, title=title,
-                                         size=(1200, 900),
-                                         order_transparent=True,
-                                         reset_camera=False)
+        self.show_m = window.ShowManager(
+            scene, title=title,
+            size=(1200, 900),
+            order_transparent=self.order_transparent,
+            reset_camera=False)
         self.show_m.initialize()
 
         if self.cluster and self.tractograms:
@@ -753,8 +759,8 @@ class Horizon(object):
 
 def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
-            random_colors=False, bg_color=(0, 0, 0), length_gt=0,
-            length_lt=1000, clusters_gt=0, clusters_lt=10000,
+            random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
+            length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, out_png='tmp.png',
             recorded_events=None, return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
@@ -781,6 +787,9 @@ def horizon(tractograms=None, images=None, pams=None,
         will be shown with different color
     bg_color : ndarray or list or tuple
         Define the background color of the scene. Default is black (0, 0, 0)
+    order_transparent : bool
+        Default True. Use depth peeling to sort transparent objects.
+        If True also enables anti-aliasing.
     length_gt : float
         Clusters with average length greater than ``length_gt`` amount
         in mm will be shown.
@@ -818,7 +827,8 @@ def horizon(tractograms=None, images=None, pams=None,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
-                 out_png, recorded_events, return_showm, bg_color=bg_color)
+                 out_png, recorded_events, return_showm, bg_color=bg_color,
+                 order_transparent=order_transparent)
 
     scene = hz.build_scene()
 
