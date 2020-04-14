@@ -10,8 +10,10 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_gradient_strength_bvecs,
                                  WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
-                                 check_multi_b, round_bvals, unique_bvals)
+                                 check_multi_b, round_bvals, unique_bvals,
+                                 btensor_to_bdelta)
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.core.geometry import vec2vec_rotmat
 
 
 def test_btable_prepare():
@@ -500,6 +502,109 @@ def test_check_multi_b():
     bvecs = generate_bvecs(bvals.shape[-1])
     gtab = gradient_table(bvals, bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
+
+
+def test_btensor_to_bdelta():
+    """
+    Checks if b_deltas and bvals are as expected for 4 b-tensor shapes
+    (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
+
+    The number of times the btensor_to_bdelta() function is called by this
+    testing function is 4+(n_rotations*(n_scales+1))
+
+    """
+    n_rotations = 30
+    n_scales = 3
+
+    expected_bvals = np.array([1, 1, 1, 1])
+    expected_b_deltas = np.array([1, -0.5, 0, 0.5])
+
+    # Baseline tensors to test
+    linear_tensor = np.array([[1, 0, 0],
+                              [0, 0, 0],
+                              [0, 0, 0]])
+    planar_tensor = np.array([[0, 0, 0],
+                              [0, 1, 0],
+                              [0, 0, 1]]) / 2
+    spherical_tensor = np.array([[1, 0, 0],
+                                 [0, 1, 0],
+                                 [0, 0, 1]]) / 3
+    cigar_tensor = np.array([[2, 0, 0],
+                             [0, .5, 0],
+                             [0, 0, .5]]) / 3
+
+    base_tensors = [linear_tensor, planar_tensor, spherical_tensor, cigar_tensor]
+    n_base_tensors = len(base_tensors)
+
+    def print_calc_vs_exp(bdeltas, expected_b_deltas, bvals, expected_bvals):
+        """temporary helper function: print calculated vs expected
+
+        """
+        print(f"bdeltas (calc) = {bdeltas}")
+        print(f"bdeltas (exp)  = {expected_b_deltas}")
+        print(f"bvals (calc) = {bvals}")
+        print(f"bvals (exp)  = {expected_bvals}")
+
+    # ---------------------------------
+    # Test function on baseline tensors
+    # ---------------------------------
+
+    # Pre-allocate
+    bvals = np.empty(n_base_tensors)
+    bdeltas = np.empty(n_base_tensors)
+
+    # Loop through each tensor type and check results
+    for i, tensor in enumerate(base_tensors):
+        i_bdelta, i_bval = btensor_to_bdelta(tensor)
+
+        bdeltas[i] = i_bdelta
+        bvals[i] = i_bval
+
+    npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+    npt.assert_array_almost_equal(bvals, expected_bvals)
+
+    # -----------------------------------------------------
+    # Test function after rotating+scaling baseline tensors
+    # -----------------------------------------------------
+
+    scales = np.concatenate((np.array([1]), np.random.random(n_scales)))
+
+    for scale in scales:
+
+        ebs = expected_bvals*scale
+
+        print(f"##############################")
+        print(f"        Scale = {scale}       ")
+        print(f"##############################")
+
+        # Generate `n_rotations` random 3-element vectors of norm 1
+        v = np.random.random((n_rotations, 3))-0.5
+        u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
+
+        for rot_idx in range(n_rotations):
+
+            # Get rotation matrix for current iteration
+            u_i = u[rot_idx, :]
+            R_i = vec2vec_rotmat(np.array([1, 0, 0]), u_i)
+
+            # Pre-allocate
+            bvals = np.empty(n_base_tensors)
+            bdeltas = np.empty(n_base_tensors)
+
+            # Rotate each of the baseline test tensors and check results
+            for i, tensor in enumerate(base_tensors):
+
+                tensor_rot_i = np.matmul(np.matmul(R_i, tensor), R_i.T)
+                i_bdelta, i_bval = btensor_to_bdelta(tensor_rot_i*scale)
+
+                bdeltas[i] = i_bdelta
+                bvals[i] = i_bval
+
+            print(f"---------- Rot #{rot_idx} ----------")
+            print_calc_vs_exp(bdeltas, expected_b_deltas, bvals, ebs)
+
+            npt.assert_array_almost_equal(bvals, ebs)
+            npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
 
 
 if __name__ == "__main__":
