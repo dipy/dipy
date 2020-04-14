@@ -101,7 +101,7 @@ class BuildTemplateFlow(Workflow):
 		print('COST of registration: CCMetric = ', metric.get_energy())
 
 		# temporary middle image
-		# middle = np.add(moving_transformed_, static_transformed_)/np.array([2])
+		middle = np.add(moving_transformed_, static_data)/np.array([2])
 
 		return moving_transformed_, static_grid2world, metric.get_energy()
 
