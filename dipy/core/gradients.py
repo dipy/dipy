@@ -766,15 +766,10 @@ def btensor_to_bdelta(btens):
 
     Examples
     --------
-    >>> a = np.array([ 0.033333,  0.016667, -0.016667])
-    >>> b = np.array([ 0.016667,  0.033333,  0.016667])
-    >>> c = np.array([-0.016667,  0.016667,  0.033333])
-    >>> btens = np.vstack((a,b,c))
-    >>> bdelta, bval = btensor_params(btens)
-    >>> print(bdelta)
-    >>> print(bval)
-    [-0.500015]
-    [0.099999]
+    >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+    >>> bdelta, bval = btensor_to_bdelta(lte)
+    >>> print(f"bdelta={bdelta[0]}; bval={bval[0]}")
+    bdelta=1.0; bval=1.0
 
     """
     def _btensor_to_bdelta_2d(btens_2d):
