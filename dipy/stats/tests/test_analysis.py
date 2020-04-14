@@ -8,7 +8,7 @@ from dipy.data import get_fnames
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.stats.analysis import bundle_analysis, gaussian_weights, afq_profile
+from dipy.stats.analysis import (gaussian_weights, afq_profile)
 from dipy.testing import assert_true
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
@@ -17,56 +17,6 @@ from nibabel.tmpdirs import TemporaryDirectory
 _, have_pd, _ = optional_package("pandas")
 _, have_smf, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
-
-
-@pytest.mark.skipif(not have_pd or not have_smf or not have_tables,
-                    reason='Requires Pandas, StatsModels and PyTables')
-def test_ba():
-
-    with TemporaryDirectory() as dirpath:
-        data_path = get_fnames('fornix')
-        fornix = load_tractogram(data_path, 'same',
-                                 bbox_valid_check=False).streamlines
-
-        f = Streamlines(fornix)
-
-        mb = os.path.join(dirpath, "model_bundles")
-
-        os.mkdir(mb)
-
-        sft = StatefulTractogram(f, data_path, Space.RASMM)
-        save_tractogram(sft, os.path.join(mb, "temp.trk"),
-                        bbox_valid_check=False)
-
-        rb = os.path.join(dirpath, "rec_bundles")
-        os.mkdir(rb)
-
-        sft = StatefulTractogram(f, data_path, Space.RASMM)
-        save_tractogram(sft, os.path.join(rb, "temp.trk"),
-                        bbox_valid_check=False)
-
-        ob = os.path.join(dirpath, "org_bundles")
-        os.mkdir(ob)
-
-        sft = StatefulTractogram(f, data_path, Space.RASMM)
-        save_tractogram(sft, os.path.join(ob, "temp.trk"),
-                        bbox_valid_check=False)
-
-        dt = os.path.join(dirpath, "dti_measures")
-        os.mkdir(dt)
-
-        fa = np.random.rand(255, 255, 255)
-
-        save_nifti(os.path.join(dt, "fa.nii.gz"),
-                   fa, affine=np.eye(4))
-
-        out_dir = os.path.join(dirpath, "output")
-        os.mkdir(out_dir)
-
-        bundle_analysis(mb, rb, ob, dt, group="patient", subject="10001",
-                        no_disks=100, out_dir=out_dir)
-
-        assert_true(os.path.exists(os.path.join(out_dir, 'fa.h5')))
 
 
 def test_gaussian_weights():

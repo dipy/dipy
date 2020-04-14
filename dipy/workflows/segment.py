@@ -10,6 +10,7 @@ from dipy.segment.bundles import RecoBundles
 from dipy.io.stateful_tractogram import StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 
+
 class MedianOtsuFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -320,6 +321,11 @@ class LabelsBundlesFlow(Workflow):
 
             logging.info(lb)
             location = np.load(lb)
+            if len(location) < 1 :
+                bundle = Streamlines([])
+            else:
+                bundle = streamlines[location]
+
             logging.info('Saving output files ...')
             new_tractogram = StatefulTractogram(streamlines[location],
                                                         affine_to_rasmm=np.eye(4))

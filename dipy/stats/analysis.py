@@ -1,17 +1,14 @@
 
 import os
 import numpy as np
-from scipy import spatial
 from scipy.spatial import cKDTree
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.spatial.distance import mahalanobis
 
 from dipy.utils.optpkg import optional_package
-from dipy.io.image import load_nifti
-from dipy.io.streamline import load_tractogram
+from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
-from dipy.io.peaks import load_peaks
 from dipy.tracking.streamline import (set_number_of_points,
                                       values_from_volume,
                                       orient_by_streamline,
@@ -21,39 +18,12 @@ from dipy.tracking.streamline import (set_number_of_points,
 pd, have_pd, _ = optional_package("pandas")
 _, have_tables, _ = optional_package("tables")
 
-if have_pd:
-    import pandas as pd
 
-
-def _save_hdf5(fname, dt, col_name, col_size=5):
-    """ Saves the given input dataframe to .h5 file
-
-    Parameters
-    ----------
-    fname : string
-        file name for saving the hdf5 file
-    dt : Pandas DataFrame
-        DataFrame to be saved as .h5 file
-    col_name : string
-        column name to have specific column size
-    col_size : integer
-        max column size (default=5)
-
-    """
-
-    df = pd.DataFrame(dt)
-    filename_hdf5 = fname + '.h5'
-
-    store = pd.HDFStore(filename_hdf5)
-    store.append(fname, df, data_columns=True,
-                 min_itemsize={col_name: col_size})
-    store.close()
-
-
-def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
-    """ Peak_values function finds the peak direction and peak value of a point
-        on a streamline used while tracking (generating the tractogram) and
-        save it in hd5 file.
+def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir):
+    """ Peak_values function finds the generalized fractional anisotropy (gfa)
+        and quantitative anisotropy (qa) values from peaks object (eg: csa) for
+        every point on a streamline used while tracking and saves it in hd5
+        file.
 
         Parameters
         ----------
@@ -69,8 +39,8 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
             Name of bundle being analyzed.
         subject : string
             subject number as a string (e.g. 10001)
-        group : string
-            which group subject belongs to (e.g. patient or control)
+        group_id : integer
+            which group subject belongs to 1 patient and 0 for control
         ind : integer list
             ind tells which disk number a point belong.
         dir : string
@@ -78,50 +48,17 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group, ind, dir):
 
     """
 
-    dt["bundle"] = []
-    dt["disk#"] = []
-    dt[pname] = []
-    dt["subject"] = []
-    dt["group"] = []
+    gfa = peaks.gfa
+    anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group_id,
+                        ind, dir)
 
-    point = 0
-    shape = peaks.peak_dirs.shape
-    for st in bundle:
-        di = st[1:] - st[0:-1]
-        dnorm = np.linalg.norm(di, axis=1)
-        di = di / dnorm[:, None]
-        count = 0
-        for ip in range(len(st)-1):
-            point += 1
-            index = st[ip].astype(int)
-
-            if (index[0] < shape[0] and index[1] < shape[1] and
-                    index[2] < shape[2]):
-
-                dire = peaks.peak_dirs[index[0]][index[1]][index[2]]
-                dval = peaks.peak_values[index[0]][index[1]][index[2]]
-
-                res = []
-
-                for i in range(len(dire)):
-                    di2 = dire[i]
-                    result = spatial.distance.cosine(di[ip], di2)
-                    res.append(result)
-
-                d_val = dval[res.index(min(res))]
-                if d_val != 0.:
-                    dt[pname].append(d_val)
-                    dt["disk#"].append(ind[point]+1)
-                    count += 1
-
-        dt["bundle"].extend([bname]*count)
-        dt["subject"].extend([subject]*count)
-        dt["group"].extend([group]*count)
-
-    _save_hdf5(os.path.join(dir, pname), dt, col_name="bundle")
+    qa = peaks.qa[...,0]
+    anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group_id,
+                        ind, dir)
 
 
-def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
+def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
+                        ind, dir):
     """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
@@ -139,16 +76,16 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
             Name of bundle being analyzed.
         subject : string
             subject number as a string (e.g. 10001)
-        group : string
-            which group subject belongs to (e.g. patient or control)
+        group_id : integer
+            which group subject belongs to 1 for patient and 0 control
         ind : integer list
             ind tells which disk number a point belong.
         dir : string
             path of output directory
     """
 
-    dt["bundle"] = []
-    dt["disk#"] = []
+    dt["streamline"] = []
+    dt["disk"] = []
     dt["subject"] = []
     dt[pname] = []
     dt["group"] = []
@@ -156,44 +93,34 @@ def dti_measures(bundle, metric, dt, pname, bname, subject, group, ind, dir):
     values = map_coordinates(metric, bundle._data.T,
                              order=1)
 
-    dt["disk#"].extend(ind[list(range(len(values)))]+1)
-    dt["bundle"].extend([bname]*len(values))
+    dt["disk"].extend(ind[list(range(len(values)))]+1)
     dt["subject"].extend([subject]*len(values))
-    dt["group"].extend([group]*len(values))
+    dt["group"].extend([group_id]*len(values))
     dt[pname].extend(values)
 
-    _save_hdf5(os.path.join(dir, pname), dt, col_name="bundle")
+    for st_i in range(len(bundle)):
+
+        st = bundle[st_i]
+        dt["streamline"].extend([st_i]*len(st))
+
+    file_name = bname + "_" + pname
+
+    save_buan_profiles_hdf5(os.path.join(dir, file_name), dt)
 
 
-def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
-                    metric_folder, group, subject, no_disks=100,
-                    out_dir=''):
+def assignment_map(target_bundle, model_bundle, no_disks):
     """
-    Applies statistical analysis on bundles and saves the results
-    in a directory specified by ``out_dir``.
+    Calculates assignment maps of the target bundle with reference to
+    model bundle centroids.
 
     Parameters
     ----------
-    model_bundle_folder : string
-        Path to the input model bundle files. This path may contain
-        wildcards to process multiple inputs at once.
-    bundle_folder : string
-        Path to the input bundle files in common space. This path may
-        contain wildcards to process multiple inputs at once.
-    orig_folder : string
-        Path to the input bundle files in native space. This path may
-        contain wildcards to process multiple inputs at once.
-    metric_folder : string
-        Path to the input dti metric or/and peak files. It will be used as
-        metric for statistical analysis of bundles.
-    group : string
-        what group subject belongs to e.g. control or patient
-    subject : string
-        subject id e.g. 10001
+    target_bundle : streamlines
+        target bundle extracted from subject data in common space
+    model_bundle : streamlines
+        atlas bundle used as reference
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks. (Default 100)
-    out_dir : string, optional
-        Output directory (default input file directory)
 
     References
     ----------
@@ -202,75 +129,20 @@ def bundle_analysis(model_bundle_folder, bundle_folder, orig_bundle_folder,
     analyses framework for tractometric studies, Proceedings of:
     International Society of Magnetic Resonance in Medicine (ISMRM),
     Montreal, Canada, 2019.
-
     """
 
-    dt = dict()
+    mbundle_streamlines = set_number_of_points(model_bundle,
+                                               nb_points=no_disks)
 
-    mb = os.listdir(model_bundle_folder)
-    mb.sort()
-    bd = os.listdir(bundle_folder)
-    bd.sort()
-    org_bd = os.listdir(orig_bundle_folder)
-    org_bd.sort()
-    n = len(org_bd)
+    metric = AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=85., metric=metric)
+    clusters = qb.cluster(mbundle_streamlines)
+    centroids = Streamlines(clusters.centroids)
 
-    for io in range(n):
-        mbundles = load_tractogram(os.path.join(model_bundle_folder, mb[io]),
-                                   'same',
-                                   bbox_valid_check=False).streamlines
-        bundles = load_tractogram(os.path.join(bundle_folder, bd[io]),
-                                  'same',
-                                  bbox_valid_check=False).streamlines
-        orig_bundles = load_tractogram(os.path.join(orig_bundle_folder,
-                                                    org_bd[io]), 'same',
-                                       bbox_valid_check=False).streamlines
+    _, indx = cKDTree(centroids.data, 1,
+                      copy_data=True).query(target_bundle.data, k=1)
 
-        mbundle_streamlines = set_number_of_points(mbundles,
-                                                   nb_points=no_disks)
-
-        metric = AveragePointwiseEuclideanMetric()
-        qb = QuickBundles(threshold=25., metric=metric)
-        clusters = qb.cluster(mbundle_streamlines)
-        centroids = Streamlines(clusters.centroids)
-
-        print('Number of centroids ', len(centroids._data))
-        print('Model bundle ', mb[io])
-        print('Number of streamlines in bundle in common space ',
-              len(bundles))
-        print('Number of streamlines in bundle in original space ',
-              len(orig_bundles))
-
-        _, indx = cKDTree(centroids._data, 1,
-                          copy_data=True).query(bundles._data, k=1)
-
-        metric_files_names = os.listdir(metric_folder)
-        _, affine = load_nifti(os.path.join(metric_folder, "fa.nii.gz"))
-
-        affine_r = np.linalg.inv(affine)
-        transformed_orig_bundles = transform_streamlines(orig_bundles,
-                                                         affine_r)
-
-        for mn in range(0, len(metric_files_names)):
-
-            ind = np.array(indx)
-            fm = metric_files_names[mn][:2]
-            bm = mb[io][:-4]
-            dt = dict()
-            metric_name = os.path.join(metric_folder,
-                                       metric_files_names[mn])
-
-            if metric_files_names[mn][2:] == '.nii.gz':
-                metric, _ = load_nifti(metric_name)
-
-                dti_measures(transformed_orig_bundles, metric, dt, fm,
-                             bm, subject, group, ind, out_dir)
-
-            else:
-                fm = metric_files_names[mn][:3]
-                metric = load_peaks(metric_name)
-                peak_values(bundles, metric, dt, fm, bm, subject, group,
-                            ind, out_dir)
+    return indx
 
 
 def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
