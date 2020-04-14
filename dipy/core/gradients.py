@@ -122,7 +122,7 @@ class GradientTable(object):
                     elif btens[i] == 'STE':
                         b_tensors[i] = spherical_tensor * bval
                     elif btens[i] == 'CTE':
-                        b_tensors[i] = (np.matmul(np.matmul(R, planar_tensor),
+                        b_tensors[i] = (np.matmul(np.matmul(R, cigar_tensor),
                                         R.T) * bval)
                     else:
                         raise ValueError(
