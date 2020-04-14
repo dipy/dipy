@@ -45,10 +45,10 @@ def test_transform_centers_of_mass_3d():
     np.random.seed(1246592)
     shape = (64, 64, 64)
     rm = 8
-    sp = vf.create_sphere(shape[0] // 2, shape[1] // 2, shape[2] // 2, rm)
+    sph = vf.create_sphere(shape[0] // 2, shape[1] // 2, shape[2] // 2, rm)
     moving = np.zeros(shape)
     # The center of mass will be (16, 16, 16), in image coordinates
-    moving[:shape[0] // 2, :shape[1] // 2, :shape[2] // 2] = sp[...]
+    moving[:shape[0] // 2, :shape[1] // 2, :shape[2] // 2] = sph[...]
 
     rs = 16
     # The center of mass will be (32, 32, 32), in image coordinates
