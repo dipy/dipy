@@ -530,7 +530,8 @@ def test_btensor_to_bdelta():
                              [0, .5, 0],
                              [0, 0, .5]]) / 3
 
-    base_tensors = [linear_tensor, planar_tensor, spherical_tensor, cigar_tensor]
+    base_tensors = [linear_tensor, planar_tensor,
+                    spherical_tensor, cigar_tensor]
     n_base_tensors = len(base_tensors)
 
     # ---------------------------------
@@ -610,7 +611,7 @@ def test_btensor_to_bdelta():
     npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((3, 3, 3, 3)))
 
     # Input shape must be (3, 3) OR (N, 3, 3)
-    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((4,4)))
+    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((4, 4)))
     npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((2, 2, 2)))
 
 
