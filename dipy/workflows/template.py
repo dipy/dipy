@@ -15,7 +15,7 @@ class BuildTemplateFlow(Workflow):
 	def get_short_name(cls):
 		return 'template'
 
-	def create_list_of_files(path_to_directory):
+	def create_list_of_files(self, path_to_directory):
 	
 		# return a list of FA files
 		files_list = []
@@ -25,7 +25,10 @@ class BuildTemplateFlow(Workflow):
 
 		return files_list
 
-	def prepare_data(list_of_files):
+	def prepare_data(self, list_of_files):
+
+		# randomize
+		random.shuffle(list_of_files)
 
 		# creates a dict: structure is 'file_name': {'im' : im, 'affine' : affine}
 		dict_fa = {}
@@ -36,7 +39,7 @@ class BuildTemplateFlow(Workflow):
 
 		return dict_fa
 
-	def affine_registration_pair(first_im, first_affine, second_im, second_affine):
+	def affine_registration_pair(self, first_im, first_affine, second_im, second_affine):
 
 		static_data = first_im
 		static_grid2world = first_affine    
@@ -49,7 +52,7 @@ class BuildTemplateFlow(Workflow):
 		sigmas = [3.0, 1.0, 0.0]
 		factors = [4, 2, 1]
 
-		affreg = AffineRegistration(metric = metric, level_iters = level_iters, sigmas = sigmas, actors = factors)
+		affreg = AffineRegistration(metric = metric, level_iters = level_iters, sigmas = sigmas, factors = factors)
 
 		transform = AffineTransform3D()
 
@@ -70,11 +73,11 @@ class BuildTemplateFlow(Workflow):
 		static_transformed_ = affine.transform_inverse(static_data)
 
 		# temporary middle image
-		middle = (np.add(moving_transformed_, static_transformed_))/np.array([2])
+		# middle = (np.add(moving_transformed_, static_transformed_))/np.array([2])
 
-		return middle, static_grid2world, cost
+		return moving_transformed_, static_grid2world, cost
 
-	def diffeomorphic_registration_pair(first_im, first_affine, second_im, second_affine):
+	def diffeomorphic_registration_pair(self, first_im, first_affine, second_im, second_affine):
 		
 		static_data = first_im
 		static_grid2world = first_affine    
@@ -98,11 +101,11 @@ class BuildTemplateFlow(Workflow):
 		print('COST of registration: CCMetric = ', metric.get_energy())
 
 		# temporary middle image
-		middle = np.add(moving_transformed_, static_transformed_)/np.array([2])
+		# middle = np.add(moving_transformed_, static_transformed_)/np.array([2])
 
 		return moving_transformed_, static_grid2world, metric.get_energy()
 
-	def iterative_registration(dictionary, algorithm = 'diffeomorphic', output_file = 'template.nii.gz'):
+	def iterative_registration(self, dictionary, algorithm = 'diffeomorphic', output_file = 'template.nii.gz'):
 
 		print('LEN dictionary keys : =====', len(list(dictionary.keys())))
 
@@ -141,9 +144,9 @@ class BuildTemplateFlow(Workflow):
 					# Register
 
 					if algorithm == 'affine':
-						temp_im, temp_affine, cost = affine_registration_pair(first_im, first_affine, second_im, second_affine)                    
+						temp_im, temp_affine, cost = self.affine_registration_pair(first_im, first_affine, second_im, second_affine)                    
 					elif algorithm == 'diffeomorphic':
-						temp_im, temp_affine, cost = diffeomorphic_registration_pair(first_im, first_affine, second_im, second_affine)
+						temp_im, temp_affine, cost = self.diffeomorphic_registration_pair(first_im, first_affine, second_im, second_affine)
 
 					# Confirmation
 					print('Done registering: ', keys[i], '++++and++++', keys[i+1])
@@ -154,44 +157,43 @@ class BuildTemplateFlow(Workflow):
 				else:
 					temp[keys[i]] = {'im' : dictionary[keys[i]]['im'], 'affine' : dictionary[keys[i]]['affine']}
 
-			return iterative_registration(temp, algorithm, output_file)
+			return self.iterative_registration(temp, algorithm, output_file)
 
-	def register_to_standard_template(template = 'ICBM152', to_register = None, output_file = None):
+	def register_to_standard_template(self, template = 'ICBM152', to_register = None, output_file = None):
 
 		if output_file:
-			assert (type(output_file) == str)
 			assert (output_file.endswith('.nii') or output_file.endswith('.nii.gz'))
 		else:
-			output_file = 'registered_to_' + template + 'nii.gz'
+			output_file = 'registered_to_' + template + '.nii.gz'
 
 		# ICBM 2009A
 		if template == 'ICBM152':
-			if not os.path.exists('./standard_template/ICBM152_t1.nii.gz'):
+			if not os.path.exists('ICBM152_t1.nii'):
 				# download template
 				print('\nDownloading template')
-				wget.download('https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/mni_icbm152_t1_tal_nlin_asym_09a.nii?sequence=4&isAllowed=y', './standard_template/ICBM152_t1.nii.gz')
+				wget.download('https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/mni_icbm152_t1_tal_nlin_asym_09a.nii?sequence=4&isAllowed=y', 'ICBM152_t1.nii')
 				print('\nDownloaded template')
 			# diffeomorphic registration
-			first_im, first_aff = load_nifti('./standard_template/ICBM152_t1.nii.gz', return_img = False)
+			first_im, first_aff = load_nifti('ICBM152_t1.nii', return_img = False)
 			second_im, second_aff = load_nifti(to_register, return_img = False)
 			# register
-			im, aff, cost = diffeomorphic_registration_pair(first_im, first_aff, second_im, second_aff)
+			im, aff, cost = self.diffeomorphic_registration_pair(first_im, first_aff, second_im, second_aff)
 			print('\nCost of Registering to ICBM 152: CCMetric', cost)
 			save_nifti(fname = output_file, data = im, affine = aff)
 			print('\nDONE: Output stored at ', output_file)
 
 		# IITv5.0
 		elif template == 'IITv5.0':
-			if not os.path.exists('./standard_template/IITv5.0_mean_DTI_FA.nii.gz'):
+			if not os.path.exists('IITv5.0_mean_DTI_FA.nii.gz'):
 				# download template
 				print('\nDownloading template')
-				wget.download('https://www.nitrc.org/frs/download.php/11271/IITmean_FA.nii.gz', './standard_template/IITv5.0_mean_DTI_FA.nii.gz')
+				wget.download('https://www.nitrc.org/frs/download.php/11271/IITmean_FA.nii.gz', 'IITv5.0_mean_DTI_FA.nii.gz')
 				print('\nDownloaded template')
 			# diffeomorphic registration
-			first_im, first_aff = load_nifti('./standard_template/IITv5.0_mean_DTI_FA.nii.gz', return_img = False)
+			first_im, first_aff = load_nifti('IITv5.0_mean_DTI_FA.nii.gz', return_img = False)
 			second_im, second_aff = load_nifti(to_register, return_img = False)
 			# register
-			im, aff, cost = diffeomorphic_registration_pair(first_im, first_aff, second_im, second_aff)
+			im, aff, cost = self.diffeomorphic_registration_pair(first_im, first_aff, second_im, second_aff)
 			print('\nCost of Registering to IITv5.0: CCMetric', cost)
 			save_nifti(fname = output_file, data = im, affine = aff)
 			print('\nDONE: Output stored at ', output_file)
@@ -228,9 +230,9 @@ class BuildTemplateFlow(Workflow):
 			By default it will be 'registered_to_ICBM152.nii.gz' or 'registered_to_IITv5.0.nii.gz'
 
 		"""
-		files_list = create_list_of_files(path_to_directory)
-		files_dict = prepare_data(files_list)
-		created_template = iterative_registration(dictionary = files_dict, algorithm = use_algorithm, output_file = save_template)
+		files_list = self.create_list_of_files(path_to_directory)
+		files_dict = self.prepare_data(files_list)
+		created_template = self.iterative_registration(dictionary = files_dict, algorithm = use_algorithm, output_file = save_template)
 
 		if register_standard:
-			register_to_standard_template(template = register_standard, to_register = created_template, output_file = save_standard)
+			self.register_to_standard_template(template = register_standard, to_register = created_template, output_file = save_standard)
