@@ -563,6 +563,8 @@ def test_btensor_to_bdelta():
     npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
     npt.assert_array_almost_equal(bvals, expected_bvals)
 
+    a = 1
+
     # -----------------------------------------------------
     # Test function after rotating+scaling baseline tensors
     # -----------------------------------------------------
@@ -605,6 +607,20 @@ def test_btensor_to_bdelta():
 
             npt.assert_array_almost_equal(bvals, ebs)
             npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+
+    # Input can't be string
+    npt.assert_raises(ValueError, btensor_to_bdelta, 'LTE')
+
+    # Input can't be list of strings
+    npt.assert_raises(ValueError, btensor_to_bdelta, ['LTE', 'LTE'])
+
+    # Input can't be 1D nor 4D
+    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((3,)))
+    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((3, 3, 3, 3)))
+
+    # Input shape must be (3, 3) OR (N, 3, 3)
+    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((4,4)))
+    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((2, 2, 2)))
 
 
 if __name__ == "__main__":
