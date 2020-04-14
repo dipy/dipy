@@ -736,3 +736,102 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
         return False
     else:
         return True
+
+def btensor_to_bdelta(btens):
+    r"""Compute anisotropy of b-tensor(s)
+
+    Parameters
+    ----------
+    btens : (3, 3) OR (N, 3, 3) numpy.ndarray
+        input b-tensor, or b-tensors, where N = number of b-tensors
+
+    Returns
+    -------
+    bdelta: numpy.ndarray
+        normalized tensor anisotropy(s)
+    bval: numpy.ndarray
+        b-value(s)
+
+    Notes
+    -----
+    Tip: use this to get bdeltas from the GradientTable btens attribute
+    Implementation following [1].
+
+    References
+    ----------
+    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
+    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
+    Chemistry, Cambridge, UK, 2016.
+
+    Examples
+    --------
+    >>> a = np.array([ 0.033333,  0.016667, -0.016667])
+    >>> b = np.array([ 0.016667,  0.033333,  0.016667])
+    >>> c = np.array([-0.016667,  0.016667,  0.033333])
+    >>> btens = np.vstack((a,b,c))
+    >>> bdelta, bval = btensor_params(btens)
+    >>> print(bdelta)
+    >>> print(bval)
+    [-0.500015]
+    [0.099999]
+
+    """
+    def _btensor_to_bdelta_2d(btens_2d):
+        """Compute anisotropy of a single b-tensor
+
+        Auxiliary inner function where actual calculation of `bdelta` takes
+        place. The main function `btensor_to_bdelta` then wraps around this to
+        enable support of input (N, 3, 3) arrays, where N = number of b-tensors
+
+        """
+        evals = np.real(np.linalg.eig(btens_2d)[0])
+        bval = np.sum(evals)
+
+        if bval < np.spacing(100):
+            bdelta = 0
+            bval = 0
+            return bdelta, bval
+
+        lambda_iso = (1/3)*bval
+
+        diff_lambdas = np.abs(evals - lambda_iso)
+        evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
+
+        lambda_zz = evals_zzxxyy[0]
+        lambda_xx = evals_zzxxyy[2]
+        lambda_yy = evals_zzxxyy[1]
+
+        bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
+
+        tol = np.spacing(1)
+        if np.abs(bval) < tol:
+            bval = 0
+
+        if np.abs(bdelta) < tol:
+            bdelta = 0
+
+        return bdelta, bval
+
+    if not isinstance(btens, np.ndarray):
+        raise ValueError(f"`btens` must be a numpy array with 2 or 3 dimensions")
+
+    if np.ndim(btens) == 2:
+        btens = btens.reshape((1, 3, 3))
+
+    if np.ndim(btens) != 3:
+        raise ValueError(f"`btens` must be a numpy array with 2 or 3 dimensions")
+
+    n_btens = btens.shape[0]
+    bdelta = np.empty(n_btens)
+    bval = np.empty(n_btens)
+
+    for i in range(btens.shape[0]):
+        i_btens = btens[i, :, :]
+        i_bdelta, i_bval = _btensor_to_bdelta_2d(i_btens)
+        bdelta[i] = i_bdelta
+        bval[i] = i_bval
+
+    bdelta = bdelta.round(decimals=6)
+
+    return bdelta, bval
