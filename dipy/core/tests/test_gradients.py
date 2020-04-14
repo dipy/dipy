@@ -516,8 +516,8 @@ def test_btensor_to_bdelta():
     n_rotations = 30
     n_scales = 3
 
-    expected_bvals = np.array([1, 1, 1, 1])
     expected_b_deltas = np.array([1, -0.5, 0, 0.5])
+    expected_bvals = np.array([1, 1, 1, 1])
 
     # Baseline tensors to test
     linear_tensor = np.array([[1, 0, 0],
@@ -550,8 +550,8 @@ def test_btensor_to_bdelta():
     # ---------------------------------
 
     # Pre-allocate
-    bvals = np.empty(n_base_tensors)
     bdeltas = np.empty(n_base_tensors)
+    bvals = np.empty(n_base_tensors)
 
     # Loop through each tensor type and check results
     for i, tensor in enumerate(base_tensors):
@@ -563,7 +563,17 @@ def test_btensor_to_bdelta():
     npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
     npt.assert_array_almost_equal(bvals, expected_bvals)
 
-    a = 1
+    # Test function on a 3D input
+    base_tensors_array = np.empty((4, 3, 3))
+    base_tensors_array[0, :, :] = linear_tensor
+    base_tensors_array[1, :, :] = planar_tensor
+    base_tensors_array[2, :, :] = spherical_tensor
+    base_tensors_array[3, :, :] = cigar_tensor
+
+    bdeltas, bvals = btensor_to_bdelta(base_tensors_array)
+
+    npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+    npt.assert_array_almost_equal(bvals, expected_bvals)
 
     # -----------------------------------------------------
     # Test function after rotating+scaling baseline tensors
@@ -590,8 +600,8 @@ def test_btensor_to_bdelta():
             R_i = vec2vec_rotmat(np.array([1, 0, 0]), u_i)
 
             # Pre-allocate
-            bvals = np.empty(n_base_tensors)
             bdeltas = np.empty(n_base_tensors)
+            bvals = np.empty(n_base_tensors)
 
             # Rotate each of the baseline test tensors and check results
             for i, tensor in enumerate(base_tensors):
@@ -605,8 +615,8 @@ def test_btensor_to_bdelta():
             print(f"---------- Rot #{rot_idx} ----------")
             print_calc_vs_exp(bdeltas, expected_b_deltas, bvals, ebs)
 
-            npt.assert_array_almost_equal(bvals, ebs)
             npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+            npt.assert_array_almost_equal(bvals, ebs)
 
     # Input can't be string
     npt.assert_raises(ValueError, btensor_to_bdelta, 'LTE')
