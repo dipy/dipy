@@ -509,9 +509,6 @@ def test_btensor_to_bdelta():
     Checks if b_deltas and bvals are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
 
-    The number of times the btensor_to_bdelta() function is called by this
-    testing function is 4+(n_rotations*(n_scales+1))
-
     """
     n_rotations = 30
     n_scales = 3
@@ -535,15 +532,6 @@ def test_btensor_to_bdelta():
 
     base_tensors = [linear_tensor, planar_tensor, spherical_tensor, cigar_tensor]
     n_base_tensors = len(base_tensors)
-
-    def print_calc_vs_exp(bdeltas, expected_b_deltas, bvals, expected_bvals):
-        """temporary helper function: print calculated vs expected
-
-        """
-        print(f"bdeltas (calc) = {bdeltas}")
-        print(f"bdeltas (exp)  = {expected_b_deltas}")
-        print(f"bvals (calc) = {bvals}")
-        print(f"bvals (exp)  = {expected_bvals}")
 
     # ---------------------------------
     # Test function on baseline tensors
@@ -585,10 +573,6 @@ def test_btensor_to_bdelta():
 
         ebs = expected_bvals*scale
 
-        print(f"##############################")
-        print(f"        Scale = {scale}       ")
-        print(f"##############################")
-
         # Generate `n_rotations` random 3-element vectors of norm 1
         v = np.random.random((n_rotations, 3))-0.5
         u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
@@ -611,9 +595,6 @@ def test_btensor_to_bdelta():
 
                 bdeltas[i] = i_bdelta
                 bvals[i] = i_bval
-
-            print(f"---------- Rot #{rot_idx} ----------")
-            print_calc_vs_exp(bdeltas, expected_b_deltas, bvals, ebs)
 
             npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
             npt.assert_array_almost_equal(bvals, ebs)
