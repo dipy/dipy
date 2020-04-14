@@ -39,7 +39,7 @@ Create an out_dir folder (eg: bundle_profiles)::
 
 Run following workflow::
 
-    dipy_buan_profiles bundles/ subjects/ --out_dir "bundle_profiles"
+    dipy_buan_profiles bundles/ subjects_small/ --out_dir "bundle_profiles"
 
 
 For running Linear Mixed Models (LMM) on generated .h5 files from the previous
