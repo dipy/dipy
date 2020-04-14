@@ -217,7 +217,8 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = load_tractogram(mb,'same',bbox_valid_check = False).streamlines
+            model_bundle = load_tractogram(mb, 'same', 
+            	bbox_valid_check=False).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -272,8 +273,9 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle adjacency Metric {0}".format(ba))
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
-            new_tractogram = StatefulTractogram(recognized_bundle, reference = out_recognized_transf)
-            save_tractogram(new_tractogram, out_rec, bbox_valid_check = False)
+            new_tractogram = StatefulTractogram(recognized_bundle, 
+            	reference=out_recognized_transf)
+            save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
