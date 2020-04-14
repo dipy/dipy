@@ -613,7 +613,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
 
     return_bvecs = np.zeros(gtab.bvecs.shape)
     return_bvecs[~gtab.b0s_mask] = new_bvecs
-    return gradient_table(gtab.bvals, return_bvecs, big_delta=gtab.big_delta, 
+    return gradient_table(gtab.bvals, return_bvecs, big_delta=gtab.big_delta,
                           small_delta=gtab.small_delta,
                           b0_threshold=gtab.b0_threshold, atol=atol)
 
@@ -813,19 +813,34 @@ def btensor_to_bdelta(btens):
 
         return bdelta, bval
 
+    # Bad input checks
+    value_error_msg = (f"`btens` must be a 2D or 3D numpy array, respectively"
+                       f" with (3, 3) or (N, 3, 3) shape, where N corresponds"
+                       f" to the number of b-tensors")
     if not isinstance(btens, np.ndarray):
-        raise ValueError(f"`btens` must be a numpy array with 2 or 3 dimensions")
+        raise ValueError(value_error_msg)
 
-    if np.ndim(btens) == 2:
+    nd = np.ndim(btens)
+    if nd == 2:
+        btens_shape = btens.shape
+    elif nd == 3:
+        btens_shape = btens.shape[1:]
+    else:
+        raise ValueError(value_error_msg)
+
+    if not btens_shape == (3, 3):
+        raise ValueError(value_error_msg)
+
+    # Reshape so that loop below works when only one input b-tensor is provided
+    if nd == 2:
         btens = btens.reshape((1, 3, 3))
 
-    if np.ndim(btens) != 3:
-        raise ValueError(f"`btens` must be a numpy array with 2 or 3 dimensions")
-
+    # Pre-allocate
     n_btens = btens.shape[0]
     bdelta = np.empty(n_btens)
     bval = np.empty(n_btens)
 
+    # Loop over b-tensor(s)
     for i in range(btens.shape[0]):
         i_btens = btens[i, :, :]
         i_bdelta, i_bval = _btensor_to_bdelta_2d(i_btens)
