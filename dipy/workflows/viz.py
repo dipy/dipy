@@ -18,7 +18,8 @@ class HorizonFlow(Workflow):
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
-            order_transparent=True, out_dir='', out_stealth_png='tmp.png'):
+            disable_order_transparency=False, out_dir='',
+            out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -58,8 +59,8 @@ class HorizonFlow(Workflow):
             Define the background color of the scene. Colors can be defined
             with 1 or 3 values and should be between [0-1].
             Default is black (e.g --bg_color 0 0 0 or --bg_color 0).
-        order_transparent : bool, optional
-            Default True. Use depth peeling to sort transparent objects.
+        disable_order_transparency : bool, optional
+            Default False. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
         out_dir : str, optional
             Output directory. Default current directory.
@@ -155,6 +156,7 @@ class HorizonFlow(Workflow):
             raise ValueError('You need 3 values to set up backgound color. '
                              'e.g --bg_color 0.5 0.5 0.5')
 
+        order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
                 cluster=cluster, cluster_thr=cluster_thr,
                 random_colors=random_colors, bg_color=bg_color,
