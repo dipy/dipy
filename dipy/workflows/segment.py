@@ -275,7 +275,7 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
             new_tractogram = StatefulTractogram(recognized_bundle, 
-            	Space.RASMM)
+                out_recognized_transf, Space.RASMM)
             save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
