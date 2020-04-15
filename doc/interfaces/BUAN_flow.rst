@@ -24,7 +24,8 @@ from the link below
      `<https://doi.org/10.35092/yhjc.12098397>`_
 
 NOTE: If you prefer to run experiments on complete dataset please see the
-Reproducing results on larger dataset section for more information.
+Reproducing results on larger dataset section at the end of the pagefor more
+information.
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
@@ -38,7 +39,11 @@ You must have downloaded bundles folder of 30 atlas bundles and subjects folder
 with PPMI data derivatives.
 
 NOTE: Make sure all output folders are empty and do not get overridden.
-Following workflows require specific input directory structure.
+
+Following workflows require specific input directory structure but don't worry
+as downloaded data is already in the required format. We will be using ``bundles``
+folder you downloaded from streamline atlas link and ``subjects_small`` folder
+downloaded from test data link.
 
 Create an ``out_dir`` folder (eg: bundle_profiles)::
 
@@ -87,7 +92,8 @@ only want to test the workflows use the test sample data.
 All steps will be the same as mentioned above except this time the data donwloaded
 will have different folder name ``subjects`` instead of ``subjects_small``.
 
-For more information about each command line, you can got to :ref:`workflows_reference`.
+For more information about each command line, you can got to
+`<https://github.com/dipy/dipy/blob/master/dipy/workflows/stats.py>`_
 
 If you are using any of these commands do cite the relevant papers.
 
