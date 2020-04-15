@@ -547,6 +547,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     mask_wm = np.zeros(fa.shape)
     mask_wm[fa > wm_fa_thr] = 1
+    mask_wm *= roi_mask
 
     md_mask_gm = np.ones(md.shape)
     md_mask_gm[(md > gm_md_thr)] = 0
@@ -555,6 +556,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     fa_mask_gm[(fa < gm_fa_thr) & (fa >= 0)] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
+    mask_gm *= roi_mask
 
     md_mask_csf = np.ones(md.shape)
     md_mask_csf[(md > csf_md_thr)] = 0
@@ -563,6 +565,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     fa_mask_csf[(fa < csf_fa_thr) & (fa >= 0)] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf
+    mask_csf *= roi_mask
 
     msg = """No voxel with a {0} than {1} were found.
     Try a larger roi or a {2} threshold for {3}."""
