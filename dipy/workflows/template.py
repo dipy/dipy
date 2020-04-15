@@ -1,11 +1,13 @@
 import os
+from os.path import expanduser, join
 import wget
 import random
 import numpy as np
+from dipy.data import fetch_mni_template
 from dipy.io.image import load_nifti, save_nifti, save_qa_metric
-from dipy.align.imaffine import AffineMap, MutualInformationMetric, AffineRegistration
+from dipy.align.imaffine import transform_centers_of_mass, AffineMap, MutualInformationMetric, AffineRegistration
 from dipy.align.imwarp import DiffeomorphicMap, DiffeomorphicRegistration, SymmetricDiffeomorphicRegistration
-from dipy.align.transforms import AffineTransform3D
+from dipy.align.transforms import TranslationTransform3D,RigidTransform3D, AffineTransform3D
 from dipy.align.metrics import CCMetric
 from dipy.workflows.workflow import Workflow
 
@@ -21,7 +23,7 @@ class BuildTemplateFlow(Workflow):
 		files_list = []
 
 		for (dir_path, dir_names, files) in os.walk(path_to_directory):
-			files_list += [os.path.join(dir_path, file) for file in files if file.endswith('fa.nii.gz')]
+			files_list += [join(dir_path, file) for file in files if file.endswith('fa.nii.gz')]
 
 		return files_list
 
@@ -46,6 +48,9 @@ class BuildTemplateFlow(Workflow):
 		moving_data = second_im
 		moving_grid2world = second_affine
 
+		# Initial alignment by tranforming centers of mass
+		c_of_mass = transform_centers_of_mass(static_data, static_grid2world, moving_data, moving_grid2world)
+
 		nbins = 32
 		metric = MutualInformationMetric(nbins, None)
 		level_iters = [10000, 1000, 100]
@@ -54,14 +59,27 @@ class BuildTemplateFlow(Workflow):
 
 		affreg = AffineRegistration(metric = metric, level_iters = level_iters, sigmas = sigmas, factors = factors)
 
-		transform = AffineTransform3D()
-
-		# initial parameters
+		# Aligning by Translation transforms
+		transform = TranslationTransform3D()
 		params0 = None
-		starting_affine = None
+		starting_affine = c_of_mass.affine
+
+		translation = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = False)
+
+		# Aligning by Rigid Transform
+		transform = RigidTransform3D()
+		params0 = None
+		starting_affine = translation.affine
+
+		rigid = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = False)
+
+		# Aligning by Full Affine Transform
+		transform = AffineTransform3D()
+		params0 = None
+		starting_affine = rigid.affine
 
 		# optimize
-		affine, opti_params, cost = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine, ret_metric=True)
+		affine, opti_params, cost = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = True)
 
 		# Registration cost
 		print('\nCOST: MutualInformation = ', cost)
@@ -70,10 +88,10 @@ class BuildTemplateFlow(Workflow):
 		moving_transformed_ = affine.transform(moving_data)
 
 		# inverse_transform
-		static_transformed_ = affine.transform_inverse(static_data)
+		# static_transformed_ = affine.transform_inverse(static_data)
 
 		# temporary middle image
-		# middle = (np.add(moving_transformed_, static_transformed_))/np.array([2])
+		# middle = (np.add(moving_transformed_, static_data))/np.array([2])
 
 		return moving_transformed_, static_grid2world, cost
 
@@ -84,24 +102,59 @@ class BuildTemplateFlow(Workflow):
 		moving_data = second_im
 		moving_grid2world = second_affine
 
+		# Initial alignment by tranforming centers of mass
+		c_of_mass = transform_centers_of_mass(static_data, static_grid2world, moving_data, moving_grid2world)
+
+		nbins = 32
+		metric = MutualInformationMetric(nbins, None)
+		level_iters = [10000, 1000, 100]
+		sigmas = [3.0, 1.0, 0.0]
+		factors = [4, 2, 1]
+
+		affreg = AffineRegistration(metric = metric, level_iters = level_iters, sigmas = sigmas, factors = factors)
+
+		# Aligning by Translation transforms
+		transform = TranslationTransform3D()
+		params0 = None
+		starting_affine = c_of_mass.affine
+
+		translation = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = False)
+
+		# Aligning by Rigid Transform
+		transform = RigidTransform3D()
+		params0 = None
+		starting_affine = translation.affine
+
+		rigid = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = False)
+
+		# Aligning by Full Affine Transform
+		transform = AffineTransform3D()
+		params0 = None
+		starting_affine = rigid.affine
+
+		full = affreg.optimize(static_data, moving_data, transform, params0, static_grid2world, moving_grid2world, starting_affine = starting_affine, ret_metric = False)
+
+		# Aligning using Non rigid transformation (Symmetric Diff.)
+		pre_align = full.affine
+
 		metric = CCMetric(3)
 
-		level_iters = [10, 10, 5]
+		level_iters = [100, 100, 50]
 		sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 
-		mapping = sdr.optimize(static_data, moving_data, static_grid2world, moving_grid2world, prealign = None)
+		mapping = sdr.optimize(static_data, moving_data, static_grid2world, moving_grid2world, prealign = pre_align)
 
 		# transform moving
 		moving_transformed_ = mapping.transform(moving_data)
 
 		# inverse_transform
-		static_transformed_ = mapping.transform_inverse(static_data)
+		# static_transformed_ = mapping.transform_inverse(static_data)
 
 		# if return cost is True
 		print('COST of registration: CCMetric = ', metric.get_energy())
 
 		# temporary middle image
-		middle = np.add(moving_transformed_, static_data)/np.array([2])
+		# middle = np.add(moving_transformed_, static_data)/np.array([2])
 
 		return moving_transformed_, static_grid2world, metric.get_energy()
 
@@ -168,13 +221,16 @@ class BuildTemplateFlow(Workflow):
 
 		# ICBM 2009A
 		if template == 'ICBM152':
-			if not os.path.exists('ICBM152_t1.nii'):
-				# download template
-				print('\nDownloading template')
-				wget.download('https://digital.lib.washington.edu/researchworks/bitstream/handle/1773/33312/mni_icbm152_t1_tal_nlin_asym_09a.nii?sequence=4&isAllowed=y', 'ICBM152_t1.nii')
-				print('\nDownloaded template')
+
+			# download template
+			fetch_mni_template()
+			from os.path import expanduser, join
+			home = expanduser('~')
+			dname = join(home, '.dipy', 'mni_template')
+			template_file = join(dname, 'mni_icbm152_t1_tal_nlin_asym_09a.nii')
+
 			# diffeomorphic registration
-			first_im, first_aff = load_nifti('ICBM152_t1.nii', return_img = False)
+			first_im, first_aff = load_nifti(template_file, return_img = False)
 			second_im, second_aff = load_nifti(to_register, return_img = False)
 			# register
 			im, aff, cost = self.diffeomorphic_registration_pair(first_im, first_aff, second_im, second_aff)
