@@ -139,7 +139,7 @@ class GradientTable(object):
                                  + "strings, or an array of exact b-tensors. "
                                  + "String options: 'LTE', 'PTE', 'STE', 'CTE'")
         else:
-            self.btens = btens
+            self.btens = None
 
     @auto_attr
     def bvals(self):
