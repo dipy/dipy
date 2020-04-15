@@ -1,18 +1,19 @@
 .. _BUAN_flow:
 
-================================================================================
-Tutorial for BUndle ANalytics (BUAN) framework using DIPY Workflow command lines
-================================================================================
+=================================
+BUndle ANalytics (BUAN) framework
+=================================
 
 This tutorial walks through the steps for reproducing Bundle Analytics results
-on Parkinson's Progression Markers Initiative (PPMI) data derivatives.
+on Parkinson's Progression Markers Initiative (PPMI)[1]_ data derivatives.
 Bundle Analytics is a framework for comparing bundle profiles and shapes of
 different groups. In this example, we will be comparing healthy controls and
 patients with parkinson's disease. We will be using PPMI data derivatives generated
-using DIPY.
+using DIPY[2]_.
 
 
-First we need to download streamline atlas of 30 bundles in MNI space from::
+First we need to download streamline atlas[3]_ with 30 white matter bundles
+in MNI space from::
 
     https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652
 
@@ -21,6 +22,9 @@ Progression Markers Initiative (PPMI) Data Derivatives. It can be downloaded
 from the link below::
 
      https://doi.org/10.35092/yhjc.12098397
+
+NOTE: If you prefer to run experiments on complete dataset please see the end of
+tutorial for more information.
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
@@ -68,18 +72,47 @@ run following workflow::
 
     dipy_buan_shapes subjects/ --out_dir "sm_plots"
 
+-------------------------------------
+Reproducing results on larger dataset
+-------------------------------------
+
+Complete dataset DIPY Processed Parkinson's Progression Markers Initiative (PPMI)
+Data Derivatives. It can be downloaded from the link below::
+
+     insert link when gets publishes
+
+Please note this is a large data file and might take some time to run. If you
+only want to test the workflows use the test sample data.
+
+All steps will be the same as mentioned above except this time the data donwloaded
+will have different folder name ``subjects`` instead of ``subjects_small``.
 
 For more information about each command line, you can got to :ref:`workflows_reference`.
 
 If you are using any of these commands do cite the relevant papers.
 
-.. [Chandio19] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
+.. [1] Marek, Kenneth and Jennings, Danna and Lasch, Shirley and Siderowf,
+    Andrew and Tanner, Caroline and Simuni, Tanya and Coffey, Chris and Kieburtz,
+    Karl and Flagg, Emily and Chowdhury, Sohini and others.
+    The parkinson progression marker initiative (PPMI).
+    Progress in neurobiology, 2011.
+
+.. [2] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
+    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
+    "DIPY, a library for the analysis of diffusion MRI data".
+    Frontiers in Neuroinformatics, 1-18, 2014.
+
+.. [3] Yeh F.C., Panesar S., Fernandes D., Meola A., Yoshino M.,
+    Fernandez-Miranda J.C., Vettel J.M., Verstynen T.
+    Population-averaged atlas of the macroscale human structural
+    connectome and its network topology.
+    Neuroimage, 2018.
+
+.. [4] Chandio, B.Q., S. Koudoro, D. Reagan, J. Harezlak,
     E. Garyfallidis, Bundle Analytics: a computational and statistical
     analyses framework for tractometric studies, Proceedings of:
     International Society of Magnetic Resonance in Medicine (ISMRM),
     Montreal, Canada, 2019.
 
-.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
-    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
-    "DIPY, a library for the analysis of diffusion MRI data".
-    Frontiers in Neuroinformatics, 1-18, 2014.
+
+
