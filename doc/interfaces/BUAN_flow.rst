@@ -16,16 +16,18 @@ First we need to download streamline atlas of 30 bundles in MNI space from::
 
     https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652
 
-For this tutorial
-Next, we need to download DIPY Processed Parkinson's Progression Markers
-Initiative (PPMI) Data Derivatives from here::
+For this tutorial we will be using a test sample of DIPY Processed Parkinson's
+Progression Markers Initiative (PPMI) Data Derivatives. It can be downloaded
+from the link below::
 
      https://doi.org/10.35092/yhjc.12098397
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
 
-We first start with group comparison of bundle profiles.
+-------------------------------------------------------------------
+      We first start with group comparison of bundle profiles
+-------------------------------------------------------------------
 
 For generating bundle profile data (saved as .h5 files):
 You must have downloaded bundles folder of 30 atlas bundles and subjects folder
@@ -38,7 +40,7 @@ Create an out_dir folder (eg: bundle_profiles)::
 
     mkdir bundle_profiles
 
-Run following workflow::
+Run thee following workflow::
 
     dipy_buan_profiles bundles/ subjects_small/ --out_dir "bundle_profiles"
 
@@ -50,11 +52,13 @@ Create an out_dir folder (eg: lmm_plots)::
 
     mkdir lmm_plots
 
-and run following workflow::
+and run the following workflow::
 
     dipy_buan_lmm "bundle_profiles/*" --out_dir "lmm_plots"
 
-For calculating shape similarity of same type of bundles across the population:
+-------------------------------------------------------------------------------
+  Calculating shape similarity of same type of bundles across the population
+-------------------------------------------------------------------------------
 
 Create an out_dir folder (eg: sm_plots)::
 
