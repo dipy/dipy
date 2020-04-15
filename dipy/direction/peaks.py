@@ -16,7 +16,7 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
+from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,

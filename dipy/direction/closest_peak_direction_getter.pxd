@@ -7,7 +7,7 @@ from dipy.tracking.direction_getter cimport DirectionGetter
 cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity)
 
-cdef class BaseDirectionGetter(DirectionGetter):
+cdef class BasePmfDirectionGetter(DirectionGetter):
 
     cdef:
         object sphere
@@ -35,7 +35,7 @@ cdef class BaseDirectionGetter(DirectionGetter):
         double* direction)
 
 
-cdef class PmfGenDirectionGetter(BaseDirectionGetter):
+cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     pass
 

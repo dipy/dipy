@@ -10,6 +10,8 @@ from dipy.direction import (BootDirectionGetter,
                             ClosestPeakDirectionGetter,
                             DeterministicMaximumDirectionGetter,
                             PeaksAndMetrics,
+                            PeakDirectionGetter,
+                            AxtractDirectionGetter,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.tracking.local_tracking import (LocalTracking,
@@ -218,7 +220,7 @@ def test_save_seeds():
 
 
 def test_probabilistic_odf_weighted_tracker():
-    """This tests that the Probabalistic Direction Getter plays nice
+    """This tests that the Probabalistic Direction Getter plays nice with
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -283,7 +285,7 @@ def test_probabilistic_odf_weighted_tracker():
 
     # The first path is not possible if pmf_threshold > 0.67
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = ProbabilisticDirectionGetter.from_pmf(10*pmf, 90, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(10 * pmf, 90, sphere,
                                                pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -466,7 +468,7 @@ def test_particle_filtering_tractography():
 
 def test_maximum_deterministic_tracker():
     """This tests that the Maximum Deterministic Direction Getter plays nice
-    LocalTracking and produces reasonable streamlines in a simple example.
+    with LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)
 
@@ -529,7 +531,7 @@ def test_maximum_deterministic_tracker():
     # if pmf_threshold is larger than 0.67. Streamlines should stop at
     # the crossing.
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = DeterministicMaximumDirectionGetter.from_pmf(10*pmf, 80, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(10 * pmf, 80, sphere,
                                                       pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -538,7 +540,7 @@ def test_maximum_deterministic_tracker():
 
 
 def test_bootstap_peak_tracker():
-    """This tests that the Bootstrat Peak Direction Getter plays nice
+    """This tests that the Bootstrat Peak Direction Getter plays nice with
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = get_sphere('repulsion100')
@@ -605,7 +607,7 @@ def test_bootstap_peak_tracker():
 
 
 def test_closest_peak_tracker():
-    """This tests that the Closest Peak Direction Getter plays nice
+    """This tests that the Closest Peak Direction Getter plays nice with
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -655,8 +657,111 @@ def test_closest_peak_tracker():
         raise AssertionError()
 
 
-def test_peak_direction_tracker():
-    """This tests that the Peaks And Metrics Direction Getter plays nice
+def test_peak_tracker():
+    """This tests that the Peak Direction Getter plays nice with
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    peaks_lookup = np.array([[[0., 0., 1.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 0., 0.]],
+                            [[0., 1., 0.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 1., 0.]]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    peaks = peaks_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
+
+    mask = (simple_image > 0).astype(float)
+    sc = BinaryStoppingCriterion(mask)
+
+    dg = PeakDirectionGetter.from_peaks(peaks, 90)
+
+    streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
+
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.]])]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+    print(streamlines)
+    if not allclose(streamlines[0], expected[0]):
+        raise AssertionError()
+    if not allclose(streamlines[1], expected[1]):
+        raise AssertionError()
+
+
+def test_axtract_tracker():
+    """This tests that the Axtract Direction Getter plays nice with
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    peaks_lookup = np.array([[[0., 0., 1.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 0., 0.]],
+                            [[0., 1., 0.], [0., 0., 0.]],
+                            [[1., 0., 0.], [0., 1., 0.]]])
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [2, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             ])
+
+    simple_image = simple_image[..., None]
+    peaks = peaks_lookup[simple_image]
+
+    seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
+
+    mask = (simple_image > 0).astype(float)
+    sc = BinaryStoppingCriterion(mask)
+
+    # Needs to be tested with various peak values
+    peak_values = np.zeros(peaks.shape[:-1])
+    dg = AxtractDirectionGetter.from_peaks(peaks, 90, peak_values)
+
+    # Add with AxTracking(...)
+    streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
+
+    expected = [np.array([[0., 1., 0.],
+                          [1., 1., 0.],
+                          [2., 1., 0.],
+                          [3., 1., 0.],
+                          [4., 1., 0.]]),
+                np.array([[2., 0., 0.],
+                          [2., 1., 0.],
+                          [2., 2., 0.],
+                          [2., 3., 0.],
+                          [2., 4., 0.]])]
+
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+    print(streamlines)
+    if not allclose(streamlines[0], expected[0]):
+        raise AssertionError()
+    if not allclose(streamlines[1], expected[1]):
+        raise AssertionError()
+
+
+def test_eudx_tracker():
+    """This tests that the Peaks And Metrics Direction Getter plays nice with
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)

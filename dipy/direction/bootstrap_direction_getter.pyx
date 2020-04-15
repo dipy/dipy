@@ -3,11 +3,11 @@ import numpy as np
 
 from dipy.data import default_sphere
 from dipy.direction.closest_peak_direction_getter cimport (closest_peak,
-                                                           BaseDirectionGetter)
+                                                           BasePmfDirectionGetter)
 from dipy.direction.pmf import BootPmfGen
 
 
-cdef class BootDirectionGetter(BaseDirectionGetter):
+cdef class BootDirectionGetter(BasePmfDirectionGetter):
 
     cdef:
         int max_attempts
@@ -17,7 +17,7 @@ cdef class BootDirectionGetter(BaseDirectionGetter):
         if max_attempts < 1:
              raise ValueError("max_attempts must be greater than 0.")
         self.max_attempts = max_attempts
-        BaseDirectionGetter.__init__(self, pmfgen, maxangle, sphere, **kwargs)
+        BasePmfDirectionGetter.__init__(self, pmfgen, maxangle, sphere, **kwargs)
 
     @classmethod
     def from_data(klass, data, model, max_angle, sphere=default_sphere,
