@@ -106,8 +106,8 @@ class StatefulTractogram(object):
                             'will copy only the space_attributes, not '
                             'the state. The variables space and origin '
                             'must be specified separately.')
-            logging.warning('To copy the state from another StatefulTractogram'
-                            'you may want to use the function from_sft'
+            logging.warning('To copy the state from another StatefulTractogram '
+                            'you may want to use the function from_sft '
                             '(static function of the StatefulTractogram)')
 
         if isinstance(reference, tuple) and len(reference) == 4:
@@ -403,11 +403,18 @@ class StatefulTractogram(object):
 
         return is_valid
 
-    def remove_invalid_streamlines(self):
+    def remove_invalid_streamlines(self, epsilon=1e-6):
         """ Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
         dimensions or below zero
+
+        Parameters
+        ----------
+        epsilon : float (optional)
+            Epsilon value for the bounding box verification.
+            Default is 1e-6.
+
         Returns
         -------
         output : tuple
@@ -423,9 +430,9 @@ class StatefulTractogram(object):
         self.to_corner()
 
         min_condition = np.min(self._tractogram.streamlines._data,
-                               axis=1) < 0.0
+                               axis=1) < epsilon
         max_condition = np.any(self._tractogram.streamlines._data >
-                               self._dimensions, axis=1)
+                               self._dimensions-epsilon, axis=1)
         ic_offsets_indices = np.where(np.logical_or(min_condition,
                                                     max_condition))[0]
 
