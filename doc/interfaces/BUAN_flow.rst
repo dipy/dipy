@@ -1,8 +1,8 @@
 .. _BUAN_flow:
 
-=====================================================================================
-   Tutorial for BUndle ANalytics (BUAN) framework using DIPY Workflow command lines
-=====================================================================================
+================================================================================
+Tutorial for BUndle ANalytics (BUAN) framework using DIPY Workflow command lines
+================================================================================
 
 This tutorial walks through the steps for reproducing Bundle Analytics results
 on Parkinson's Progression Markers Initiative (PPMI) data derivatives.
@@ -25,9 +25,9 @@ from the link below::
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
 
--------------------------------------------------------------------
-      We first start with group comparison of bundle profiles
--------------------------------------------------------------------
+-------------------------------------------------------
+We first start with group comparison of bundle profiles
+-------------------------------------------------------
 
 For generating bundle profile data (saved as .h5 files):
 You must have downloaded bundles folder of 30 atlas bundles and subjects folder
@@ -36,37 +36,37 @@ with PPMI data derivatives.
 NOTE: Make sure all output folders are empty and do not get overridden.
 Following workflows require specific input directory structure.
 
-Create an out_dir folder (eg: bundle_profiles)::
+Create an ``out_dir`` folder (eg: bundle_profiles)::
 
-    mkdir bundle_profiles
+    $ mkdir bundle_profiles
 
 Run thee following workflow::
 
-    dipy_buan_profiles bundles/ subjects_small/ --out_dir "bundle_profiles"
+    $ dipy_buan_profiles bundles/ subjects_small/ --out_dir "bundle_profiles"
 
 
 For running Linear Mixed Models (LMM) on generated .h5 files from the previous
 step:
 
-Create an out_dir folder (eg: lmm_plots)::
+Create an ``out_dir`` folder (eg: lmm_plots)::
 
-    mkdir lmm_plots
+    $ mkdir lmm_plots
 
 and run the following workflow::
 
-    dipy_buan_lmm "bundle_profiles/*" --out_dir "lmm_plots"
+    $ dipy_buan_lmm "bundle_profiles/*" --out_dir "lmm_plots"
 
--------------------------------------------------------------------------------
-  Calculating shape similarity of same type of bundles across the population
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------
+Calculating shape similarity of same type of bundles across the population
+--------------------------------------------------------------------------
 
-Create an out_dir folder (eg: sm_plots)::
+Create an ``out_dir`` folder (eg: sm_plots)::
 
-    mkdir sm_plots
+    $ mkdir sm_plots
 
 run following workflow::
 
-    dipy_buan_shapes subjects/ --out_dir "sm_plots"
+    $ dipy_buan_shapes subjects/ --out_dir "sm_plots"
 
 
 For more information about each command line, you can got to :ref:`workflows_reference`.
