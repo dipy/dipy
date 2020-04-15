@@ -4,7 +4,7 @@
    Tutorial for BUndle ANalytics (BUAN) framework using DIPY Workflow command lines
 =====================================================================================
 
-This document walks through the steps for reproducing Bundle Analytics results
+This tutorial walks through the steps for reproducing Bundle Analytics results
 on Parkinson's Progression Markers Initiative (PPMI) data derivatives.
 Bundle Analytics is a framework for comparing bundle profiles and shapes of
 different groups. In this example, we will be comparing healthy controls and
@@ -16,10 +16,11 @@ First we need to download streamline atlas of 30 bundles in MNI space from::
 
     https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652
 
+For this tutorial
 Next, we need to download DIPY Processed Parkinson's Progression Markers
 Initiative (PPMI) Data Derivatives from here::
 
-    insert link here
+     https://doi.org/10.35092/yhjc.12098397
 
 There are two parts of Bundle Analytics group comparison framework,
 bundle profile analysis and bundle shape similarity.
