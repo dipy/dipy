@@ -207,7 +207,7 @@ class RecoBundlesFlow(Workflow):
 
         t = time()
         logging.info(streamline_files)
-        input_obj = load_tractogram(streamline_files, 'same')
+        input_obj = load_tractogram(streamline_files, 'same', bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
