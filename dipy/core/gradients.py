@@ -769,7 +769,7 @@ def btensor_to_bdelta(btens):
     --------
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
     >>> bdelta, bval = btensor_to_bdelta(lte)
-    >>> print(f"bdelta={bdelta[0]}; bval={bval[0]}")
+    >>> print("bdelta={}; bval={}".format(bdelta[0], bval[0]))
     bdelta=1.0; bval=1.0
 
     """
@@ -810,9 +810,9 @@ def btensor_to_bdelta(btens):
         return bdelta, bval
 
     # Bad input checks
-    value_error_msg = (f"`btens` must be a 2D or 3D numpy array, respectively"
-                       f" with (3, 3) or (N, 3, 3) shape, where N corresponds"
-                       f" to the number of b-tensors")
+    value_error_msg = "`btens` must be a 2D or 3D numpy array, respectively" \
+                      " with (3, 3) or (N, 3, 3) shape, where N corresponds" \
+                      " to the number of b-tensors"
     if not isinstance(btens, np.ndarray):
         raise ValueError(value_error_msg)
 
