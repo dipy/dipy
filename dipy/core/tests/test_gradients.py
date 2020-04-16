@@ -506,14 +506,17 @@ def test_check_multi_b():
 
 def test_btensor_to_bdelta():
     """
-    Checks if b_deltas and bvals are as expected for 4 b-tensor shapes
+    Checks if bdeltas and bvals are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
+
+    This function intrinsically tests the function `_btensor_to_bdelta_2d` as
+    `_btensor_to_bdelta_2d` is only meant to be called by `btensor_to_bdelta`
 
     """
     n_rotations = 30
     n_scales = 3
 
-    expected_b_deltas = np.array([1, -0.5, 0, 0.5])
+    expected_bdeltas = np.array([1, -0.5, 0, 0.5])
     expected_bvals = np.array([1, 1, 1, 1])
 
     # Baseline tensors to test
@@ -549,7 +552,7 @@ def test_btensor_to_bdelta():
         bdeltas[i] = i_bdelta
         bvals[i] = i_bval
 
-    npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
     npt.assert_array_almost_equal(bvals, expected_bvals)
 
     # Test function on a 3D input
@@ -561,7 +564,7 @@ def test_btensor_to_bdelta():
 
     bdeltas, bvals = btensor_to_bdelta(base_tensors_array)
 
-    npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
     npt.assert_array_almost_equal(bvals, expected_bvals)
 
     # -----------------------------------------------------
@@ -597,7 +600,7 @@ def test_btensor_to_bdelta():
                 bdeltas[i] = i_bdelta
                 bvals[i] = i_bval
 
-            npt.assert_array_almost_equal(bdeltas, expected_b_deltas)
+            npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
             npt.assert_array_almost_equal(bvals, ebs)
 
     # Input can't be string
