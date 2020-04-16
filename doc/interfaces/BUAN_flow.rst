@@ -107,7 +107,7 @@ Reproducing results on larger dataset:
 --------------------------------------
 
 Complete dataset DIPY Processed Parkinson's Progression Markers Initiative (PPMI)
-Data Derivatives. It can be downloaded from the link below::
+Data Derivatives. It can be downloaded from the link below
 
      `<https://doi.org/10.35092/yhjc.12033390>`_
 
