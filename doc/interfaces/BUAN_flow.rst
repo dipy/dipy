@@ -65,6 +65,16 @@ and run the following workflow::
 
     dipy_buan_lmm "bundle_profiles/*" --out_dir "lmm_plots"
 
+This workflow will generate 30 bundles group comparison plots per anatomical measures.
+Plots will look like the following example:
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_fa.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Result plot for left arcuate fasciculus (AF_L) on FA measure
+
 --------------------------------------------------------------------------
 Calculating shape similarity of same type of bundles across the population
 --------------------------------------------------------------------------
@@ -76,6 +86,17 @@ Create an ``out_dir`` folder (eg: sm_plots)::
 run following workflow::
 
     dipy_buan_shapes subjects/ --out_dir "sm_plots"
+
+This workflow will generate 30 bundles shape similarity plots.
+Plots will look like the following example:
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_ML_L__recognized.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Result plot for left medial lemniscus (ML_L) for 10 subjects.
+    First 5 subjects belong to the healthy control group and last 5 subjects belong to patient group
 
 --------------------------------------
 Reproducing results on larger dataset:
