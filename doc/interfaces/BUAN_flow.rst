@@ -25,7 +25,7 @@ from the link below
 
 .. note::
 
-    If you prefer to run experiments on the complete dataset to reproduce the paper[1]_
+    If you prefer to run experiments on the complete dataset to reproduce the paper [1]_
     please see the "Reproducing results on larger dataset" section at end of
     the page for more information.
 
@@ -106,8 +106,8 @@ Plots will look like the following example:
 Reproducing results on larger dataset:
 --------------------------------------
 
-Complete dataset DIPY Processed Parkinson's Progression Markers Initiative (PPMI)
-Data Derivatives. It can be downloaded from the link below
+Complete dataset of DIPY Processed Parkinson's Progression Markers Initiative (PPMI)
+Data Derivatives can be downloaded from the link below:
 
      `<https://doi.org/10.35092/yhjc.12033390>`_
 
