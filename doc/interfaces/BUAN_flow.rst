@@ -25,16 +25,16 @@ from the link below
 
 .. note::
 
-    If you prefer to run experiments on complete dataset please see the
-    "Reproducing results on larger dataset" section at the end of the page for more
-    information.
+    If you prefer to run experiments on the complete dataset to reproduce the paper[1]_
+    please see the "Reproducing results on larger dataset" section at end of
+    the page for more information.
 
 There are two parts of Bundle Analytics group comparison framework,
-bundle profile analysis and bundle shape similarity.
+bundle profile analysis and bundle shape similarity analysis.
 
--------------------------------------------------------
-We first start with group comparison of bundle profiles
--------------------------------------------------------
+-----------------------------------
+Group Comparison of Bundle Profiles
+-----------------------------------
 
 For generating bundle profile data (saved as .h5 files):
 You must have downloaded bundles folder of 30 atlas bundles and subjects folder
@@ -79,9 +79,9 @@ Plots will look like the following example:
 
     Result plot for left arcuate fasciculus (AF_L) on FA measure
 
---------------------------------------------------------------------------
-Calculating shape similarity of same type of bundles across the population
---------------------------------------------------------------------------
+-----------------------------------------------------------
+Shape similarity of specific bundles across the populations
+-----------------------------------------------------------
 
 Create an ``out_dir`` folder (eg: sm_plots)::
 
