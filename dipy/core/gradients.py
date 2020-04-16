@@ -737,6 +737,66 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
+def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
+    """Compute anisotropy of a single b-tensor
+
+    Auxiliary function where calculation of `bdelta` from a (3,3) b-tensor takes
+    place. The main function `btensor_to_bdelta` then wraps around this to
+    enable support of input (N, 3, 3) arrays, where N = number of b-tensors
+
+    Parameters
+    ----------
+    btens_2d : (3, 3) numpy.ndarray
+        input b-tensor
+    ztol : float
+        bvals or bdeltas smaller than this value are considered to be 0.
+
+    Returns
+    -------
+    bdelta: float
+        normalized tensor anisotropy
+    bval: float
+        b-value
+
+    Notes
+    -----
+    Implementation following [1].
+
+    References
+    ----------
+    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
+    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
+    Chemistry, Cambridge, UK, 2016.
+
+    """
+    evals = np.real(np.linalg.eig(btens_2d)[0])
+    bval = np.sum(evals)
+
+    bval_is_zero = bval < ztol
+
+    if bval_is_zero:
+        bdelta = 0
+        bval = 0
+    else:
+        lambda_iso = (1/3)*bval
+
+        diff_lambdas = np.abs(evals - lambda_iso)
+        evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
+
+        lambda_zz = evals_zzxxyy[0]
+        lambda_xx = evals_zzxxyy[2]
+        lambda_yy = evals_zzxxyy[1]
+
+        bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
+
+        if np.abs(bval) < ztol:
+            bval = 0
+
+        if np.abs(bdelta) < ztol:
+            bdelta = 0
+
+    return float(bdelta), float(bval)
 
 def btensor_to_bdelta(btens):
     r"""Compute anisotropy of b-tensor(s)
@@ -755,15 +815,8 @@ def btensor_to_bdelta(btens):
 
     Notes
     -----
-    Tip: use this to get bdeltas from the GradientTable btens attribute
-    Implementation following [1].
-
-    References
-    ----------
-    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
-    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
-    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
-    Chemistry, Cambridge, UK, 2016.
+    This function can be used to get bdeltas from the GradientTable btens
+    attribute.
 
     Examples
     --------
@@ -773,42 +826,6 @@ def btensor_to_bdelta(btens):
     bdelta=1.0; bval=1.0
 
     """
-    def _btensor_to_bdelta_2d(btens_2d):
-        """Compute anisotropy of a single b-tensor
-
-        Auxiliary inner function where actual calculation of `bdelta` takes
-        place. The main function `btensor_to_bdelta` then wraps around this to
-        enable support of input (N, 3, 3) arrays, where N = number of b-tensors
-
-        """
-        evals = np.real(np.linalg.eig(btens_2d)[0])
-        bval = np.sum(evals)
-
-        if bval < np.spacing(100):
-            bdelta = 0
-            bval = 0
-            return bdelta, bval
-
-        lambda_iso = (1/3)*bval
-
-        diff_lambdas = np.abs(evals - lambda_iso)
-        evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
-
-        lambda_zz = evals_zzxxyy[0]
-        lambda_xx = evals_zzxxyy[2]
-        lambda_yy = evals_zzxxyy[1]
-
-        bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
-
-        tol = np.spacing(1)
-        if np.abs(bval) < tol:
-            bval = 0
-
-        if np.abs(bdelta) < tol:
-            bdelta = 0
-
-        return bdelta, bval
-
     # Bad input checks
     value_error_msg = "`btens` must be a 2D or 3D numpy array, respectively" \
                       " with (3, 3) or (N, 3, 3) shape, where N corresponds" \
