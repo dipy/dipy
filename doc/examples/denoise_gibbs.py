@@ -17,6 +17,17 @@ This algorithm is based on an adapted version of a sub-voxel Gibbs suppression
 procedure [3]_. Full details of the implemented algorithm can be found in
 chapter 3 of [4]_  (please cite [3]_, [4]_ if you are using this code).
 
+First import the necessary modules:
+"""
+
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
+from dipy.segment.mask import median_otsu
+import dipy.reconst.msdki as msdki
+import matplotlib.pyplot as plt
+import numpy as np
+
+"""
 The algorithm to suppress Gibbs oscillations can be imported from the denoise
 module of dipy:
 """
@@ -24,13 +35,16 @@ module of dipy:
 from dipy.denoise.gibbs import gibbs_removal
 
 """
+We fetch the multi-shell diffusion-weighted dataset which was kindly
+supplied by Romain Valabrègue, CENIR, ICM, Paris [5]_.
+"""
+
+from dipy.data import read_cenir_multib
+
+"""
 We first apply this algorithm to T1-weighted dataset which can be fetched
 using the following code:
 """
-
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data
-
 
 t1_fname, t1_denoised_fname, ap_fname = get_fnames('tissue_data')
 t1 = load_nifti_data(t1_denoised_fname)
@@ -38,9 +52,6 @@ t1 = load_nifti_data(t1_denoised_fname)
 """
 Let's plot a slice of this dataset.
 """
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 axial_slice = 88
 t1_slice = t1[..., axial_slice]
@@ -149,8 +160,6 @@ images. We fetch the multi-shell diffusion-weighted dataset which was kindly
 supplied by Romain Valabrègue, CENIR, ICM, Paris [5]_.
 """
 
-from dipy.data import read_cenir_multib
-
 bvals = [200, 400, 1000, 2000]
 
 img, gtab = read_cenir_multib(bvals)
@@ -213,14 +222,12 @@ compute a brain mask.
 """
 
 # Create a brain mask
-from dipy.segment.mask import median_otsu
 
 maskdata, mask = median_otsu(data_slices, vol_idx=range(10, 50),
                              median_radius=3, numpass=1, autocrop=False,
                              dilate=1)
 
 # Define mean signal diffusion kurtosis model
-import dipy.reconst.msdki as msdki
 
 dki_model = msdki.MeanDiffusionKurtosisModel(gtab)
 
