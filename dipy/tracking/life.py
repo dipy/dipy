@@ -363,7 +363,7 @@ class FiberModel(ReconstModel):
                                      unique_idx=vox_coords)
         # How many fibers in each voxel (this will determine how many
         # components are in the matrix):
-        n_unique_f = len(np.hstack(v2f.values()))
+        n_unique_f = len(np.hstack(list(v2f.values())))
         # Preallocate these, which will be used to generate the sparse
         # matrix:
         f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
