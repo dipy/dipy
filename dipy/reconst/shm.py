@@ -1046,9 +1046,9 @@ def calculate_max_order(n_coeffs):
     else:
         # Otherwise, the input didn't make sense:
         raise ValueError("The input to ``calculate_max_order`` was ",
-                            "%s, but that is not a valid number" % n_coeffs,
-                            "of coefficients for a spherical harmonics ",
-                            "basis set.")
+                         "%s, but that is not a valid number" % n_coeffs,
+                         "of coefficients for a spherical harmonics ",
+                         "basis set.")
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
