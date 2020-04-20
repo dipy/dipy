@@ -241,18 +241,20 @@ class StatefulTractogram(object):
                                         other.streamlines.get_data())
         dpp_equal = True
         for key in self.data_per_point:
-            dpp_equal = dpp_equal and np.allclose(self.data_per_point[key].get_data(),
-                                                  other.data_per_point[key].get_data())
+            dpp_equal = dpp_equal and np.allclose(
+                self.data_per_point[key].get_data(),
+
+                other.data_per_point[key].get_data())
         dps_equal = True
         for key in self.data_per_streamline:
-            dps_equal = dps_equal and np.allclose(self.data_per_streamline[key],
-                                                  other.data_per_streamline[key])
-
+            dps_equal = dps_equal and np.allclose(
+                self.data_per_streamline[key],
+                other.data_per_streamline[key])
 
         return streamlines_equal and dpp_equal and dps_equal
 
     def __ne__(self, other):
-        """ Robust StatefulTractogram equality test (NOT)git c """
+        """ Robust StatefulTractogram equality test (NOT) """
         return not self == other
 
     def __add__(self, other_sft):
@@ -265,14 +267,14 @@ class StatefulTractogram(object):
                              'data_per_point and data_per_streamline keys are '
                              'the same.')
 
+        streamlines = deepcopy(self.streamlines)
+        streamlines.extend(other_sft.streamlines)
+
         data_per_point = deepcopy(self.data_per_point)
         data_per_point.extend(other_sft.data_per_point)
 
         data_per_streamline = deepcopy(self.data_per_streamline)
         data_per_streamline.extend(other_sft.data_per_streamline)
-
-        streamlines = deepcopy(self.streamlines)
-        streamlines.extend(other_sft.streamlines)
 
         return self.from_sft(streamlines, self,
                              data_per_point=data_per_point,
