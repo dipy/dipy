@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 
 from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
@@ -541,6 +542,208 @@ def out_of_grid(value):
         return True
 
 
+def data_per_point_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.data_per_point = {}
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def data_per_streamline_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.data_per_streamline = {}
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def space_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.to_vox()
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def origin_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.to_corner()
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def space_attributes_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_switch = StatefulTractogram(sft.streamlines,
+                                    filepath_dix['gs_3mm.nii'],
+                                    Space.RASMM)
+
+    try:
+        _ = sft + sft_switch
+        return True
+    except ValueError:
+        return False
+
+
+def test_equality():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+
+    assert_(sft_1 == sft_2,
+            msg='Identical sft should be equal (==)')
+
+
+def test_basic_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline_sft = sft[0]
+
+    npt.assert_allclose(first_streamline_sft.streamlines[0][0],
+                        [11.149319, 21.579943, 37.600685],
+                        err_msg='streamlines were not sliced correctly')
+    rgb = np.array([first_streamline_sft.data_per_point['color_x'][0][0],
+                    first_streamline_sft.data_per_point['color_y'][0][0],
+                    first_streamline_sft.data_per_point['color_z'][0][0]])
+    npt.assert_allclose(np.squeeze(rgb), [220., 20., 60.],
+                        err_msg='data_per_point were not sliced correctly')
+    rand_coord = first_streamline_sft.data_per_streamline['random_coord']
+    npt.assert_allclose(np.squeeze(rand_coord), [7., 1., 5.],
+                        err_msg='data_per_streamline were not sliced correctly')
+
+
+def test_space_side_effect_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline = deepcopy(sft.streamlines[0])
+
+    first_streamline_sft = sft[0]
+    sft.to_vox()
+    npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+    # Testing it both ways
+    sft.to_rasmm()
+    first_streamline_sft.to_vox()
+    npt.assert_allclose(sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+
+
+def test_origin_side_effect_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline = deepcopy(sft.streamlines[0])
+
+    first_streamline_sft = sft[0]
+    sft.to_corner()
+    npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+    # Testing it both ways
+    sft.to_center()
+    first_streamline_sft.to_corner()
+    npt.assert_allclose(sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+
+
+def test_advanced_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    last_streamline_sft = sft[::-1][0]
+
+    npt.assert_allclose(last_streamline_sft.streamlines[0][0],
+                        [14.389803, 27.857153, 39.3602],
+                        err_msg='streamlines were not sliced correctly')
+    rgb = np.array([last_streamline_sft.data_per_point['color_x'][0][0],
+                    last_streamline_sft.data_per_point['color_y'][0][0],
+                    last_streamline_sft.data_per_point['color_z'][0][0]])
+    npt.assert_allclose(np.squeeze(rgb), [0., 255., 0.],
+                        err_msg='data_per_point were not sliced correctly')
+    rand_coord = last_streamline_sft.data_per_streamline['random_coord']
+    npt.assert_allclose(np.squeeze(rand_coord), [7., 9., 8.],
+                        err_msg='data_per_streamline were not sliced correctly')
+
+
+def test_basic_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    assert_(concatenate_sft == sft,
+            msg='sft were not added correctly')
+
+
+def test_space_side_effect_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    sft.to_vox()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+    # Testing it both ways
+    sft.to_rasmm()
+    concatenate_sft.to_vox()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+
+def test_origin_side_effect_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    sft.to_corner()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+    # Testing it both ways
+    sft.to_center()
+    concatenate_sft.to_corner()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+
+def test_addition_consistency():
+    assert_(not space_attributes_consistency_addition(),
+            msg='Adding sft with different space attributes should fail')
+    assert_(not data_per_point_consistency_addition(),
+            msg='Adding sft with different data_per_point keys should fail')
+    assert_(not data_per_streamline_consistency_addition(),
+            msg='Adding sft with different data_per_streamline keys should fail')
+    assert_(not space_consistency_addition(),
+            msg='Adding sft with different Space should fail')
+    assert_(not origin_consistency_addition(),
+            msg='Adding sft with different Origin should fail')
+
+
 def test_iterative_transformation():
     iterative_to_vox_transformation()
     iterative_to_voxmm_transformation()
@@ -664,6 +867,7 @@ def test_create_from_sft():
             and sft_1.data_per_streamline == sft_2.data_per_streamline):
         raise AssertionError()
 
+    # Side effect testing
     sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
     if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()

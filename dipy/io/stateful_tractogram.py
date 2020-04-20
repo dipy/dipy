@@ -11,7 +11,9 @@ from nibabel.streamlines.tractogram import (Tractogram,
 import numpy as np
 
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import get_reference_info, is_reference_info_valid
+from dipy.io.utils import (get_reference_info,
+                           is_reference_info_valid,
+                           is_header_compatible)
 
 
 logger = logging.getLogger('StatefulTractogram')
@@ -102,13 +104,13 @@ class StatefulTractogram(object):
                                       data_per_streamline=data_per_streamline)
 
         if isinstance(reference, type(self)):
-            logging.warning('Using a StatefulTractogram as reference, this '
-                            'will copy only the space_attributes, not '
-                            'the state. The variables space and origin '
-                            'must be specified separately.')
-            logging.warning('To copy the state from another StatefulTractogram '
-                            'you may want to use the function from_sft '
-                            '(static function of the StatefulTractogram)')
+            logger.warning('Using a StatefulTractogram as reference, this '
+                           'will copy only the space_attributes, not '
+                           'the state. The variables space and origin '
+                           'must be specified separately.')
+            logger.warning('To copy the state from another StatefulTractogram '
+                           'you may want to use the function from_sft '
+                           '(static function of the StatefulTractogram)')
 
         if isinstance(reference, tuple) and len(reference) == 4:
             if is_reference_info_valid(*reference):
@@ -137,6 +139,33 @@ class StatefulTractogram(object):
                              'e.g Origin.NIFTI')
         self._origin = origin
         logger.debug(self)
+
+    @staticmethod
+    def is_compatible_sft(sft_1, sft_2):
+        """ Compatibility verication of two StatefulTractogram to ensure space,
+        origin, data_per_point and data_per_streamline consistency """
+
+        are_sft_compatible = True
+        if not is_header_compatible(sft_1, sft_2):
+            logger.warning('Inconsistent spatial attributes between both sft.')
+            are_sft_compatible = False
+
+        if sft_1.space != sft_2.space:
+            logger.warning('Inconsistent space between both sft.')
+            are_sft_compatible = False
+        if sft_1.origin != sft_2.origin:
+            logger.warning('Inconsistent origin between both sft.')
+            are_sft_compatible = False
+
+        if sft_1.get_data_per_point_keys() != sft_2.get_data_per_point_keys():
+            logger.warning('Inconsistent data_per_point between both sft.')
+            are_sft_compatible = False
+        if sft_1.get_data_per_streamline_keys() != sft_2.get_data_per_streamline_keys():
+            logger.warning(
+                'Inconsistent data_per_streamline between both sft.')
+            are_sft_compatible = False
+
+        return are_sft_compatible
 
     @staticmethod
     def from_sft(streamlines, sft,
@@ -203,35 +232,46 @@ class StatefulTractogram(object):
                              data_per_point=self.data_per_point[key],
                              data_per_streamline=self.data_per_streamline[key])
 
+    def __eq__(self, other):
+        """ Robust StatefulTractogram equality test """
+        if not self.is_compatible_sft(self, other):
+            return False
+
+        streamlines_equal = np.allclose(self.streamlines.get_data(),
+                                        other.streamlines.get_data())
+        dpp_equal = True
+        for key in self.data_per_point:
+            dpp_equal = dpp_equal and np.allclose(self.data_per_point[key].get_data(),
+                                                  other.data_per_point[key].get_data())
+        dps_equal = True
+        for key in self.data_per_streamline:
+            dps_equal = dps_equal and np.allclose(self.data_per_streamline[key],
+                                                  other.data_per_streamline[key])
+
+        if streamlines_equal:
+            logger.warning
+
+        return streamlines_equal and dpp_equal and dps_equal
+
+    def __ne__(self, other):
+        """ Robust StatefulTractogram equality test (NOT) """
+        return not self == other
+
     def __add__(self, other_sft):
-        """ Addition of two StatefulTractogram in a way that is consistent
-        with space, origin, data_per_point and data_per_streamline. """
-        if self.space != other_sft.space:
-            raise ValueError('Inconsistent space between both sft.\n'
-                             'Switch space of one or both sft before addition.')
-
-        if self.origin != other_sft.origin:
-            raise ValueError('Inconsistent origin between both sft.\n'
-                             'Switch origin of one or both sft before addition.')
-
-        if self.get_data_per_point_keys() != other_sft.get_data_per_point_keys():
-            raise ValueError('Inconsistent data_per_point between both sft.\n'
-                             'Either delete it from one or generate it for the '
-                             'other.')
-        if self.get_data_per_streamline_keys() != other_sft.get_data_per_streamline_keys():
-            raise ValueError('Inconsistent data_per_streamline between both '
-                             'sft.\nEither delete it from one or generate it '
-                             'for the other.')
+        """ Addition of two sft with attributes consistency checks """
+        if not self.is_compatible_sft(self, other_sft):
+            logger.debug(self)
+            logger.debug(other_sft)
+            raise ValueError('Inconsistent StatefulTractogram.\n'
+                             'Make sure Space, Origin are the same and that '
+                             'data_per_point and data_per_streamline keys are '
+                             'the same.')
 
         data_per_point = deepcopy(self.data_per_point)
-        for key in other_sft.data_per_point:
-            data_per_point._extend_entry(key,
-                                         other_sft.data_per_point[key])
+        data_per_point.extend(other_sft.data_per_point)
 
         data_per_streamline = deepcopy(self.data_per_streamline)
-        for key in other_sft.data_per_streamline:
-            data_per_streamline._extend_entry(key,
-                                              other_sft.data_per_streamline[key])
+        data_per_streamline.extend(other_sft.data_per_streamline)
 
         streamlines = deepcopy(self.streamlines)
         streamlines.extend(other_sft.streamlines)
