@@ -93,9 +93,9 @@ def test_GradientTable_btensor_calculation():
                           [3, 4, 0],
                           [5, 0, 12]], 'float')
 
-    # Check that no btens are created unless specified
+    # Check that when btens attribute not specified it takes the value of None
     gt = GradientTable(gradients)
-    npt.assert_equal(hasattr(gt, 'btens'), False)
+    npt.assert_equal(gt.btens, None)
 
     # Check that btens are correctly created if specified
     gt = GradientTable(gradients, btens='LTE')
