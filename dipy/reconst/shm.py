@@ -25,8 +25,6 @@ where data is Y.T and sh_coef is x.T.
 """
 
 import numpy as np
-from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
-from numpy.linalg import pinv, svd
 from numpy.random import randint
 
 from dipy.reconst.odf import OdfModel, OdfFit
@@ -377,7 +375,7 @@ def sph_harm_ind_list(sh_order):
 
     ncoef = int((sh_order + 2) * (sh_order + 1) // 2)
     offset = 0
-    m_list = empty(ncoef, 'int')
+    m_list = np.empty(ncoef, 'int')
     for ii in n_range:
         m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
         offset = offset + 2 * ii + 1
@@ -419,8 +417,8 @@ def smooth_pinv(B, L):
     product.
 
     """
-    L = diag(L)
-    inv = pinv(concatenate((B, L)))
+    L = np.diag(L)
+    inv = np.linalg.pinv(np.concatenate((B, L)))
     return inv[:, :len(B)]
 
 
@@ -436,7 +434,7 @@ def lazy_index(index):
         index = index.nonzero()[0]
     if len(index) == 1:
         return slice(index[0], index[0] + 1)
-    step = unique(diff(index))
+    step = np.unique(np.diff(index))
     if len(step) != 1 or step[0] == 0:
         return index
     else:
@@ -613,7 +611,7 @@ class SphHarmFit(OdfFit):
 
         """
         B = self.model.sampling_matrix(sphere)
-        return dot(self.shm_coeff, B.T)
+        return np.dot(self.shm_coeff, B.T)
 
     @auto_attr
     def gfa(self):
@@ -673,7 +671,7 @@ class CsaOdfModel(QballBaseModel):
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
         loglog_data = np.log(-np.log(data))
-        sh_coef = dot(loglog_data, self._fit_matrix.T)
+        sh_coef = np.dot(loglog_data, self._fit_matrix.T)
         sh_coef[..., 0] = self._n0_const
         return sh_coef
 
@@ -692,7 +690,7 @@ class OpdtModel(QballBaseModel):
            imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
         delta_b = F * L * invB
@@ -708,7 +706,8 @@ class OpdtModel(QballBaseModel):
 def _slowadc_formula(data, delta_b, delta_q):
     """formula used in SlowAdcOpdfModel"""
     logd = -np.log(data)
-    return dot(logd * (1.5 - logd) * data, delta_q.T) - dot(data, delta_b.T)
+    return (np.dot(logd * (1.5 - logd) * data, delta_q.T)
+            - np.dot(data, delta_b.T))
 
 
 class QballModel(QballBaseModel):
@@ -721,13 +720,13 @@ class QballModel(QballBaseModel):
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         F = F[:, None]
         self._fit_matrix = F * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
-        return dot(data[..., self._where_dwi], self._fit_matrix.T)
+        return np.dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
 def normalize_data(data, where_b0, min_signal=1e-5, out=None):
@@ -750,8 +749,8 @@ def hat(B):
     """Returns the hat matrix for the design matrix B
     """
 
-    U, S, V = svd(B, False)
-    H = dot(U, U.T)
+    U, S, V = np.linalg.svd(B, False)
+    H = np.dot(U, U.T)
     return H
 
 
@@ -765,9 +764,9 @@ def lcr_matrix(H):
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
         raise ValueError('H should be a square matrix')
 
-    leverages = sqrt(1 - H.diagonal())
+    leverages = np.sqrt(1 - H.diagonal(), where=H.diagonal() <= 1)
     leverages = leverages[:, None]
-    R = (eye(len(H)) - H) / leverages
+    R = (np.eye(len(H)) - H) / leverages
     return R - R.mean(0)
 
 
@@ -797,7 +796,7 @@ def bootstrap_data_array(data, H, R, permute=None):
     assert R.shape == H.shape
     assert len(permute) == R.shape[-1]
     R = R[permute]
-    data = dot(data, (H + R).T)
+    data = np.dot(data, (H + R).T)
     return data
 
 
@@ -808,8 +807,8 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     """
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
-    r = dot(data, R.T)
-    boot_data = dot(data, H.T)
+    r = np.dot(data, R.T)
+    boot_data = np.dot(data, H.T)
     boot_data += r[permute]
     return boot_data
 
@@ -906,7 +905,7 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
 
     L = -n * (n + 1)
-    invB = smooth_pinv(B, sqrt(smooth) * L)
+    invB = smooth_pinv(B, np.sqrt(smooth) * L)
     sh = np.dot(sf, invB.T)
 
     return sh
