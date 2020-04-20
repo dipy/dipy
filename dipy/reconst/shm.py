@@ -1,4 +1,4 @@
-""" Tools for using spherical harmonic models to fit diffusion data
+"""Tools for using spherical harmonic models to fit diffusion data.
 
 References
 ----------
@@ -25,22 +25,14 @@ where data is Y.T and sh_coef is x.T.
 """
 
 import numpy as np
+import scipy.special as sps
+
 from numpy.random import randint
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
-
-from distutils.version import LooseVersion
-import scipy
-from scipy.special import lpn, lpmv, gammaln
-
-if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
-    SCIPY_15_PLUS = True
-    import scipy.special as sps
-else:
-    SCIPY_15_PLUS = False
 
 
 def _copydoc(obj):
@@ -155,19 +147,8 @@ def gen_dirac(m, n, theta, phi):
     return real_sph_harm(m, n, theta, phi)
 
 
-def spherical_harmonics(m, n, theta, phi):
-    x = np.cos(phi)
-    val = lpmv(m, n, x).astype(complex)
-    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
-    val = val * np.exp(1j * m * theta)
-    return val
-
-if SCIPY_15_PLUS:
-    def spherical_harmonics(m, n, theta, phi):
-        return sps.sph_harm(m, n, theta, phi, dtype=complex)
-
-spherical_harmonics.__doc__ = r""" Compute spherical harmonics
+def spherical_harmonics(m, n, theta, phi, use_scipy=True):
+    """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -182,6 +163,8 @@ spherical_harmonics.__doc__ = r""" Compute spherical harmonics
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
         The polar (colatitudinal) coordinate.
+    use_scipy : bool
+        if True, use scipy implementation. default(True)
 
     Returns
     -------
@@ -193,7 +176,17 @@ spherical_harmonics.__doc__ = r""" Compute spherical harmonics
     This is a faster implementation of scipy.special.sph_harm for
     scipy version < 0.15.0. For scipy 0.15 and onwards, we use the scipy
     implementation of the function
+
     """
+    if use_scipy:
+        return sps.sph_harm(m, n, theta, phi, dtype=complex)
+
+    x = np.cos(phi)
+    val = sps.lpmv(m, n, x).astype(complex)
+    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (sps.gammaln(n - m + 1) - sps.gammaln(n + m + 1)))
+    val = val * np.exp(1j * m * theta)
+    return val
 
 
 def real_sph_harm(m, n, theta, phi):
@@ -537,7 +530,7 @@ class QballBaseModel(SphHarmModel):
         r, theta, phi = cart2sphere(x, y, z)
         B, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
         L = -n * (n + 1)
-        legendre0 = lpn(sh_order, 0)[0]
+        legendre0 = sps.lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.sh_order = sh_order
         self.B = B
@@ -661,7 +654,7 @@ class CsaOdfModel(QballBaseModel):
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
         coefficients of the odf"""
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
         self._fit_matrix = (F * L) / (8 * np.pi) * invB
@@ -1014,53 +1007,53 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
 
 
 def calculate_max_order(n_coeffs):
-        """Calculate the maximal harmonic order, given that you know the
-        number of parameters that were estimated.
+    r"""Calculate the maximal harmonic order, given that you know the
+    number of parameters that were estimated.
 
-        Parameters
-        ----------
-        n_coeffs : int
-            The number of SH coefficients
+    Parameters
+    ----------
+    n_coeffs : int
+        The number of SH coefficients
 
-        Returns
-        -------
-        L : int
-            The maximal SH order, given the number of coefficients
+    Returns
+    -------
+    L : int
+        The maximal SH order, given the number of coefficients
 
-        Notes
-        -----
-        The calculation in this function proceeds according to the following
-        logic:
-        .. math::
-           n = \frac{1}{2} (L+1) (L+2)
-           \rarrow 2n = L^2 + 3L + 2
-           \rarrow L^2 + 3L + 2 - 2n = 0
-           \rarrow L^2 + 3L + 2(1-n) = 0
-           \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
-           \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
+    Notes
+    -----
+    The calculation in this function proceeds according to the following
+    logic:
+    .. math::
+        n = \frac{1}{2} (L+1) (L+2)
+        \rarrow 2n = L^2 + 3L + 2
+        \rarrow L^2 + 3L + 2 - 2n = 0
+        \rarrow L^2 + 3L + 2(1-n) = 0
+        \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
+        \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
 
-        Finally, the positive value is chosen between the two options.
-        """
+    Finally, the positive value is chosen between the two options.
+    """
 
-        # L2 is negative for all positive values of n_coeffs, so we don't
-        # bother even computing it:
-        # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        # L1 is always the larger value, so we go with that:
-        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2.0
-        # Check that it is a whole even number:
-        if L1.is_integer() and not np.mod(L1, 2):
-            return int(L1)
-        else:
-            # Otherwise, the input didn't make sense:
-            raise ValueError("The input to ``calculate_max_order`` was ",
-                             "%s, but that is not a valid number" % n_coeffs,
-                             "of coefficients for a spherical harmonics ",
-                             "basis set.")
+    # L2 is negative for all positive values of n_coeffs, so we don't
+    # bother even computing it:
+    # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+    # L1 is always the larger value, so we go with that:
+    L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2.0
+    # Check that it is a whole even number:
+    if L1.is_integer() and not np.mod(L1, 2):
+        return int(L1)
+    else:
+        # Otherwise, the input didn't make sense:
+        raise ValueError("The input to ``calculate_max_order`` was ",
+                            "%s, but that is not a valid number" % n_coeffs,
+                            "of coefficients for a spherical harmonics ",
+                            "basis set.")
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
                       non_negative=True):
-    """Calculates anisotropic power map with a given SH coefficient matrix
+    r"""Calculate anisotropic power map with a given SH coefficient matrix.
 
     Parameters
     ----------
@@ -1104,8 +1097,8 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
             anisotropy tissues from HARDI data,
             in: Proceedings of International Society for Magnetic Resonance in
             Medicine. Milan, Italy.
-    """
 
+    """
     dim = sh_coeffs.shape[:-1]
     n_coeffs = sh_coeffs.shape[-1]
     max_order = calculate_max_order(n_coeffs)
