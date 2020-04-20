@@ -317,7 +317,7 @@ class ConstrainedSDTModel(SphHarmModel):
         qball_odf = np.dot(self.B_reg, odf_sh)
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
-        odf_sh /= Z
+        odf_sh /= Z if Z else np.empty(odf_sh.shape) * np.nan
 
         shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
                                        self.lambda_, self.tau)
@@ -655,7 +655,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
 
-    k = []
+    k = np.empty([])
     convergence = 50
     for num_it in range(1, convergence + 1):
         A = np.dot(B_reg, fodf_sh)
