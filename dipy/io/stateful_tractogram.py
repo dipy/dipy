@@ -248,13 +248,11 @@ class StatefulTractogram(object):
             dps_equal = dps_equal and np.allclose(self.data_per_streamline[key],
                                                   other.data_per_streamline[key])
 
-        if streamlines_equal:
-            logger.warning
 
         return streamlines_equal and dpp_equal and dps_equal
 
     def __ne__(self, other):
-        """ Robust StatefulTractogram equality test (NOT) """
+        """ Robust StatefulTractogram equality test (NOT)git c """
         return not self == other
 
     def __add__(self, other_sft):
