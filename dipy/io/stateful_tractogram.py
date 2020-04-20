@@ -184,15 +184,65 @@ class StatefulTractogram(object):
         text += '\nstreamline_count: {}'.format(self._get_streamline_count())
         text += '\npoint_count: {}'.format(self._get_point_count())
         text += '\ndata_per_streamline keys: {}'.format(
-            self.data_per_point.keys())
+            self.get_data_per_streamline_keys())
         text += '\ndata_per_point keys: {}'.format(
-            self.data_per_streamline.keys())
+            self.get_data_per_point_keys())
 
         return text
 
     def __len__(self):
         """ Define the length of the object """
         return self._get_streamline_count()
+
+    def __getitem__(self, key):
+        """ Slice all data in a consistent way """
+        if isinstance(key, int):
+            key = [key]
+
+        return self.from_sft(self.streamlines[key], self,
+                             data_per_point=self.data_per_point[key],
+                             data_per_streamline=self.data_per_streamline[key])
+
+    def __add__(self, other_sft):
+        """ Addition of two StatefulTractogram in a way that is consistent
+        with space, origin, data_per_point and data_per_streamline. """
+        if self.space != other_sft.space:
+            raise ValueError('Inconsistent space between both sft.\n'
+                             'Switch space of one or both sft before addition.')
+
+        if self.origin != other_sft.origin:
+            raise ValueError('Inconsistent origin between both sft.\n'
+                             'Switch origin of one or both sft before addition.')
+
+        if self.get_data_per_point_keys() != other_sft.get_data_per_point_keys():
+            raise ValueError('Inconsistent data_per_point between both sft.\n'
+                             'Either delete it from one or generate it for the '
+                             'other.')
+        if self.get_data_per_streamline_keys() != other_sft.get_data_per_streamline_keys():
+            raise ValueError('Inconsistent data_per_streamline between both '
+                             'sft.\nEither delete it from one or generate it '
+                             'for the other.')
+
+        data_per_point = deepcopy(self.data_per_point)
+        for key in other_sft.data_per_point:
+            data_per_point._extend_entry(key,
+                                         other_sft.data_per_point[key])
+
+        data_per_streamline = deepcopy(self.data_per_streamline)
+        for key in other_sft.data_per_streamline:
+            data_per_streamline._extend_entry(key,
+                                              other_sft.data_per_streamline[key])
+
+        streamlines = deepcopy(self.streamlines)
+        streamlines.extend(other_sft.streamlines)
+
+        return self.from_sft(streamlines, self,
+                             data_per_point=data_per_point,
+                             data_per_streamline=data_per_streamline)
+
+    def __iadd__(self, other):
+        self.value = self + other
+        return self.value
 
     @property
     def space_attributes(self):
@@ -291,6 +341,14 @@ class StatefulTractogram(object):
         """
         self._tractogram.data_per_streamline = data
         logger.warning('Data_per_streamline has been modified')
+
+    def get_data_per_point_keys(self):
+        """ Return a list of the data_per_point attribute names """
+        return list(self.data_per_point.keys())
+
+    def get_data_per_streamline_keys(self):
+        """ Return a list of the data_per_streamline attribute names """
+        return list(self.data_per_streamline.keys())
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
