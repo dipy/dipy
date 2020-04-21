@@ -329,6 +329,16 @@ class MSDeconvFit(shm.SphHarmFit):
         vf[sums > 0] /= sums[sums > 0]
         return vf
 
+    def compartment_shm_coeff(self, compartment):
+        n_compartment = self.model.response.iso
+        if compartment >= n_compartment:
+            msg = """{0} is not a compartment number. There is(are) only {1}
+            compartment(s). Numbering starts at 0."""
+            warnings.warn(msg.format(compartment, n_compartment), UserWarning)
+            return None
+        else:
+            return self._shm_coef[..., compartment]
+
 
 def solve_qp(P, Q, G, H):
     r"""
