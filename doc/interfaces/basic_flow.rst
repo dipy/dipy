@@ -1,8 +1,11 @@
 .. _basic_flow:
 
-====================================================
-A basic DIPY command line series
-====================================================
+======================================================
+Introduction to command line interfaces
+======================================================
+
+This tutorial provides a basic introduction to DIPY's [Garyfallidis14]_
+command line interfaces.
 
 Using a terminal, let's download a dataset. This is multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
@@ -168,7 +171,7 @@ Visualize the mask using ``dipy_horizon``::
     :alt: alternate text
     :align: center
 
-    Visualization of a slice from the first volume of brain mask
+    Visualization of a slice from the generated brain mask
 
 
 Perform DTI using ``dipy_fit_dti`. The input of this function is the DWI data, b-values and b-vector files and the brain mask that we calculated in the previous step::
@@ -199,12 +202,7 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
 Create tracks using peaks::
 
-    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_tractogram tracks_from_peaks.trk
-
-We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
-
-    dipy_horizon out_work/tracts_from_peaks.trk --cluster
-
+    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
     :width: 70 %
@@ -213,19 +211,21 @@ We can visualize the result using ``dipy_horizon``. The ``--cluster`` option all
 
     Showing tracks from the specific dataset. This dataset contains only a few slices.
 
+We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
+
+    dipy_horizon out_work/tracts_from_peaks.trk --cluster
 
 Alternatively, we can create deterministic tracks using the maximum value of a spherical harmonics cone::
 
     dipy_track_local peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
 
-
 For more information about each command line, you see :ref:`workflows_reference`.
 
-These commands are not by any fetch of imagination what we propose as a complete solution to tracking
-but a mere introduction to DIPY's command interfaces, medical imaging requires a number of steps that
-depend on the goal of the analysis strategy and the questions you are looking to answer.
+These series commands shown in this tutorial are not by any stretch of imagination what we
+propose as a complete solution to tracking but a mere introduction to DIPY's command interfaces.
+Medical imaging requires a number of steps that depend on the goal of the analysis strategy.
 
-If you are using any of these commands do cite the relevant papers.
+Nonetheless, if you are using these commands do cite the relevant papers.
 
 References
 ----------
