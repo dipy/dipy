@@ -157,6 +157,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
 
 def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
                     gfa, qa, shm_coeff, B, odf):
+    # Add model_specifics as input and in the doc
     """
     Construct PeaksAndMetrics object (or subclass) from its attributes.
 
@@ -200,6 +201,7 @@ def _pam_from_attrs(klass, sphere, peak_indices, peak_values, peak_dirs,
     this_pam.gfa = gfa
     this_pam.qa = qa
     this_pam.shm_coeff = shm_coeff
+    # Add this_pam.model_specifics = model_specifics
     this_pam.B = B
     this_pam.odf = odf
     return this_pam
@@ -214,6 +216,7 @@ class PeaksAndMetrics(EuDXDirectionGetter):
                                                    self.gfa,
                                                    self.qa,
                                                    self.shm_coeff,
+                                                   # Add self.model_specifics
                                                    self.B,
                                                    self.odf)
 
@@ -222,6 +225,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
                                sh_basis_type, npeaks, B, invB, nbr_processes):
+    # Add return_model_specifics as input
 
     if nbr_processes is None:
         try:
@@ -229,6 +233,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         except NotImplementedError:
             warn("Cannot determine number of cpus. "
                  "returns peaks_from_model(..., parallel=False).")
+            # Add return_model_specifics as input
             return peaks_from_model(model, data, sphere,
                                     relative_peak_threshold,
                                     min_separation_angle, mask, return_odf,
@@ -238,6 +243,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     elif nbr_processes <= 0:
         warn("Invalid number of processes (%d). "
              "returns peaks_from_model(..., parallel=False)." % nbr_processes)
+        # Add return_model_specifics as input
         return peaks_from_model(model, data, sphere,
                                 relative_peak_threshold,
                                 min_separation_angle, mask, return_odf,
@@ -275,6 +281,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                repeat(min_separation_angle),
                                repeat(return_odf),
                                repeat(return_sh),
+                               # Add repeat(return_model_specifics)
                                repeat(gfa_thr),
                                repeat(normalize_peaks),
                                repeat(sh_order),
@@ -325,6 +332,10 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                 shape=(data.shape[0], len(sphere.vertices)))
         else:
             pam.odf = None
+        # Add "if return_model_specifics" with pam.model_specifics = ??? (I don't
+        # know how to do this since it is a dictionary...) Idea: loop on every 
+        # elements of the dictionary?
+        # Add "else pam.model_specifics = None"
 
         # copy subprocesses pam to a single pam (memmaps)
         for i, (start_pos, end_pos) in enumerate(indices):
@@ -337,6 +348,9 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                 pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff
             if return_odf:
                 pam.odf[start_pos: end_pos] = pam_res[i].odf
+            # Add "if return_model_specifics" with pam.model_specifics[???] = pam_res[i].model_specifics[???]
+            # I don't know how to do this since it is a dictionary...
+            # Idea: loop on every elements of the dictionary?
 
         # load memmaps to arrays and reshape the metric
         shape[-1] = -1
@@ -349,6 +363,8 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
             pam.shm_coeff = np.reshape(np.array(pam.shm_coeff), shape)
         if return_odf:
             pam.odf = np.reshape(np.array(pam.odf), shape)
+        # Add "if return_model_specifics" and reshape each element of the dictionary?
+        # Idea: loop on every elements of the dictionary?
 
         # Make sure all worker processes have exited before leaving context
         # manager in order to prevent temporary file deletion errors in windows
@@ -366,6 +382,7 @@ def _peaks_from_model_parallel_sub(args):
     min_separation_angle = args[5]
     return_odf = args[6]
     return_sh = args[7]
+    # Add return_model_specifics = args[8] and push next numbers up
     gfa_thr = args[8]
     normalize_peaks = args[9]
     sh_order = args[10]
@@ -380,6 +397,7 @@ def _peaks_from_model_parallel_sub(args):
     else:
         mask = None
 
+    # Add return_model_specifics as input
     return peaks_from_model(model, data, sphere, relative_peak_threshold,
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
@@ -392,6 +410,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, npeaks=5, B=None,
                      invB=None, parallel=False, nbr_processes=None):
+    # Add return_model_specifics as input and in the doc. This parameter can be
+    # bool or a list of keys if you know them in advance.
     """Fit the model to data and computes peaks and metrics
 
     Parameters
@@ -475,6 +495,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           min_separation_angle,
                                           mask, return_odf,
                                           return_sh,
+                                          # Add return_model_specifics
                                           gfa_thr,
                                           normalize_peaks,
                                           sh_order,
@@ -506,11 +527,16 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     if return_odf:
         odf_array = np.zeros((shape + (len(sphere.vertices),)))
 
+    # Add "if return_model_specifics", with the creation of the dictionary, which
+    # depends on the model, so another "if" for MultiShellDeconvModel with the
+    # specific attributs, and "else" model_specifics = None.
+
     global_max = -np.inf
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
 
+        # Add fit = model.fit(data[idx]) to get model_specifics
         odf = model.fit(data[idx]).odf(sphere)
 
         if return_sh:
@@ -518,6 +544,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
         if return_odf:
             odf_array[idx] = odf
+
+        # Add "if return_model_specifics", with another "if" for MultiShellDeconvModel
+        # with the specific attributs, and "else" model_specifics = None.
 
         gfa_array[idx] = gfa(odf)
         if gfa_array[idx] < gfa_thr:
@@ -554,6 +583,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                            gfa_array,
                            qa_array,
                            shm_coeff if return_sh else None,
+                           # Add model_specifics if return_model_specifics else None
                            B if return_sh else None,
                            odf_array if return_odf else None)
 
