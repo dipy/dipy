@@ -491,7 +491,7 @@ def main():
                                      'with MNIST dataset')
     parser.add_argument('--batch-size', type=int, default=8,
                         help='batch size (default: 8)')
-    parser.add_argument('--epochs', type=int, default=1,
+    parser.add_argument('--epochs', type=int, default=50,
                         help='number of epochs to train (default: 50)')
     parser.add_argument('--lr', type=float, default=0.004,
                         help='learning rate (default: 0.004)')
