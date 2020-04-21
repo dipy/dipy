@@ -7,7 +7,7 @@ import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
-from dipy.io.stateful_tractogram import Space,StatefulTractogram
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 
 
@@ -219,7 +219,7 @@ class RecoBundlesFlow(Workflow):
             t = time()
             logging.info(mb)
             model_bundle = load_tractogram(mb, 'same', 
-            	bbox_valid_check=False).streamlines
+            	                           bbox_valid_check=False).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -275,7 +275,7 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
             new_tractogram = StatefulTractogram(recognized_bundle, 
-                out_recognized_transf, Space.RASMM)
+                                                streamline_files, Space.RASMM)
             save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
@@ -329,7 +329,7 @@ class LabelsBundlesFlow(Workflow):
                 bundle = streamlines[location]
 
             logging.info('Saving output files ...')
-            new_tractogram = StatefulTractogram(streamlines[location],
-                                                        affine_to_rasmm=np.eye(4))
+            new_tractogram = StatefulTractogram(streamlines[location], 
+                                                tractogram_obj, Space.RASMM)
             save_tractogram(new_tractogram, out_bundle)
             logging.info(out_bundle)
