@@ -11,6 +11,7 @@ First import the necessary modules:
 
 from os.path import join as pjoin
 import numpy as np
+import matplotlib.pyplot as plt
 
 """
 Download and read the data for this tutorial.
@@ -21,6 +22,8 @@ models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
+from dipy.segment.mask import median_otsu
+from dipy.core.histeq import histeq
 
 data_fnames = get_fnames('scil_b0')
 data, affine = load_nifti(data_fnames[1])
@@ -36,7 +39,6 @@ but the default parameters work well on most volumes. For this example,
 we used 2 as ``median_radius`` and 1 as ``num_pass``
 """
 
-from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 
 """
@@ -53,9 +55,6 @@ save_nifti(fname + '_mask.nii.gz', b0_mask.astype(np.float32), affine)
 """
 Quick view of the results middle slice using ``matplotlib``.
 """
-
-import matplotlib.pyplot as plt
-from dipy.core.histeq import histeq
 
 sli = data.shape[2] // 2
 plt.figure('Brain segmentation')
