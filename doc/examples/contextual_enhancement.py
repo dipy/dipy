@@ -84,6 +84,14 @@ from dipy.data import get_fnames, default_sphere
 from dipy.io.image import load_nifti_data
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.sims.voxel import add_noise
+from dipy.segment.mask import median_otsu
+from dipy.reconst.csdeconv import auto_response
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.reconst.csdeconv import odf_sh_to_sharp
+from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.denoise.enhancement_kernel import EnhancementKernel
+from dipy.denoise.shift_twist_convolution import convolve
+from dipy.viz import window, actor
 
 # Read data
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -92,7 +100,6 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 # Add Rician noise
-from dipy.segment.mask import median_otsu
 b0_slice = data[:, :, :, 1]
 b0_mask, mask = median_otsu(b0_slice)
 np.random.seed(1)
@@ -117,8 +124,6 @@ Deconvolution is used.
 """
 
 # Perform CSD on the original data
-from dipy.reconst.csdeconv import auto_response
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 csd_model_orig = ConstrainedSphericalDeconvModel(gtab, response)
 csd_fit_orig = csd_model_orig.fit(data_small)
@@ -139,9 +144,6 @@ By default, a sphere with 100 directions is used.
 
 """
 
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.denoise.shift_twist_convolution import convolve
-
 # Create lookup table
 D33 = 1.0
 D44 = 0.02
@@ -152,8 +154,6 @@ k = EnhancementKernel(D33, D44, t)
 Visualize the kernel
 """
 
-from dipy.viz import window, actor
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
 ren = window.Renderer()
 
 # convolve kernel with delta spike
@@ -194,7 +194,6 @@ The Sharpening Deconvolution Transform is applied to sharpen the ODF field.
 """
 
 # Sharpen via the Sharpening Deconvolution Transform
-from dipy.reconst.csdeconv import odf_sh_to_sharp
 csd_shm_enh_sharp = odf_sh_to_sharp(csd_shm_enh, default_sphere, sh_order=8,
                                     lambda_=0.1)
 
