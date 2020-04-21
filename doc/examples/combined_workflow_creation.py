@@ -13,6 +13,7 @@ file is usually located in the ``dipy/workflows`` directory.
 """
 
 from dipy.workflows.combined_workflow import CombinedWorkflow
+from dipy.workflows.flow_runner import run_flow
 
 """
 ``CombinedWorkflow`` is the base class that will be extended to create our
@@ -108,7 +109,6 @@ command line, you need this last bit of code. It is usually in an executable
 file located in ``bin``.
 """
 
-from dipy.workflows.flow_runner import run_flow
 """
 This is the method that will wrap everything that is needed to make a workflow
 ready then run it.
