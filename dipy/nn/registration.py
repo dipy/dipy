@@ -221,7 +221,7 @@ def grid_sample(moving, grid):
     y0 = tf.clip_by_value(y0, zero, y_max)
     y1 = tf.clip_by_value(y1, zero, y_max)
 
-    # Collect indices of the four corners
+    # Collect indices of the four corners.
     b = tf.ones_like(x0) * tf.reshape(tf.range(nb), [nb, 1, 1])
     idx_a = tf.stack([b, y0, x0], axis=-1)  # all top-left corners
     idx_b = tf.stack([b, y1, x0], axis=-1)  # all bottom-left corners
@@ -326,7 +326,7 @@ def train_step(model, moving, static, criterion, optimizer):
     multiples = tf.constant([nb, 1, 1, 1], tf.int32)
     static = tf.tile(static, multiples)
 
-    # Define the GradientTape context for automatic differentiation
+    # Define the GradientTape context for automatic differentiation.
     with tf.GradientTape() as tape:
         # Get the deformation field
         inputs = tf.concat([moving, static], axis=-1)
@@ -425,7 +425,7 @@ def load_data(label=2):
     x_train = x_train[..., None]
     x_test = x_test[..., None]
 
-    # Resize images from (28, 28) to (32, 32)
+    # Resize images from (28, 28) to (32, 32).
     x_train = tf.image.resize(x_train, (32, 32))
     x_test = tf.image.resize(x_test, (32, 32))
     return x_train, x_test
@@ -471,7 +471,7 @@ def plot_images(model, moving, static):
 
     # Plot images.
     fig = plt.figure(figsize=(3 * 1.7, nb * 1.7))
-    titles_list = ['Fixed', 'Moved', 'Moving']
+    titles_list = ['Static', 'Moved', 'Moving']
     images_list = [static, moved, moving]
     for i in range(nb):
         for j in range(3):
