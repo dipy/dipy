@@ -168,17 +168,20 @@ def downsample(xyz, n_pols=3):
     Uses the length of the curve. It works in a similar fashion to
     midpoint and arbitrarypoint but it also reduces the number of segments
     of a streamline.
+
     Parameters
     ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a streamlines
     n_pol : int
        integer representing number of points (poles) we need along the curve.
+
     Returns
     -------
     xyz2 : array shape (M,3)
        array representing x,y,z of M points that where extrapolated. M
        should be equal to n_pols
+
     """
     return set_number_of_points(xyz, n_pols)
 
