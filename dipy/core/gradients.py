@@ -890,7 +890,7 @@ def btens_p2m(bval, bdelta, b_eta):
         b-value
     bdelta: float
         normalized tensor anisotropy
-    bdelta: float
+    b_eta: float
         tensor assymetry
 
     Returns
