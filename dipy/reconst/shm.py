@@ -1061,7 +1061,7 @@ def calculate_max_order(n_coeffs):
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
                       non_negative=True):
-    """Calculates anisotropic power map with a given SH coefficient matrix
+    r"""Calculate anisotropic power map with a given SH coefficient matrix.
 
     Parameters
     ----------
@@ -1082,7 +1082,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
         The log of the resulting power image.
 
     Notes
-    ----------
+    -----
     Calculate AP image based on a IxJxKxC SH coefficient matrix based on the
     equation:
     .. math::

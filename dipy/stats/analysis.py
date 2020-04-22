@@ -25,26 +25,26 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir):
         every point on a streamline used while tracking and saves it in hd5
         file.
 
-        Parameters
-        ----------
-        bundle : string
-            Name of bundle being analyzed
-        peaks : peaks
-            contains peak directions and values
-        dt : DataFrame
-            DataFrame to be populated
-        pname : string
-            Name of the dti metric
-        bname : string
-            Name of bundle being analyzed.
-        subject : string
-            subject number as a string (e.g. 10001)
-        group_id : integer
-            which group subject belongs to 1 patient and 0 for control
-        ind : integer list
-            ind tells which disk number a point belong.
-        dir : string
-            path of output directory
+    Parameters
+    ----------
+    bundle : string
+        Name of bundle being analyzed
+    peaks : peaks
+        contains peak directions and values
+    dt : DataFrame
+        DataFrame to be populated
+    pname : string
+        Name of the dti metric
+    bname : string
+        Name of bundle being analyzed.
+    subject : string
+        subject number as a string (e.g. 10001)
+    group_id : integer
+        which group subject belongs to 1 patient and 0 for control
+    ind : integer list
+        ind tells which disk number a point belong.
+    dir : string
+        path of output directory
 
     """
 
@@ -62,28 +62,28 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
     """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
-        Parameters
-        ----------
-        bundle : string
-            Name of bundle being analyzed
-        metric : matrix of float values
-            dti metric e.g. FA, MD
-        dt : DataFrame
-            DataFrame to be populated
-        pname : string
-            Name of the dti metric
-        bname : string
-            Name of bundle being analyzed.
-        subject : string
-            subject number as a string (e.g. 10001)
-        group_id : integer
-            which group subject belongs to 1 for patient and 0 control
-        ind : integer list
-            ind tells which disk number a point belong.
-        dir : string
-            path of output directory
-    """
+    Parameters
+    ----------
+    bundle : string
+        Name of bundle being analyzed
+    metric : matrix of float values
+        dti metric e.g. FA, MD
+    dt : DataFrame
+        DataFrame to be populated
+    pname : string
+        Name of the dti metric
+    bname : string
+        Name of bundle being analyzed.
+    subject : string
+        subject number as a string (e.g. 10001)
+    group_id : integer
+        which group subject belongs to 1 for patient and 0 control
+    ind : integer list
+        ind tells which disk number a point belong.
+    dir : string
+        path of output directory
 
+    """
     dt["streamline"] = []
     dt["disk"] = []
     dt["subject"] = []
@@ -129,6 +129,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     analyses framework for tractometric studies, Proceedings of:
     International Society of Magnetic Resonance in Medicine (ISMRM),
     Montreal, Canada, 2019.
+
     """
 
     mbundle_streamlines = set_number_of_points(model_bundle,
@@ -166,6 +167,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
         Weights for each node in each streamline, calculated as its relative
         inverse of the Mahalanobis distance, relative to the distribution of
         coordinates at that node position across streamlines.
+
     """
     # Resample to same length for each streamline:
     bundle = set_number_of_points(bundle, n_points)
