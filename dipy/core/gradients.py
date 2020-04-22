@@ -739,26 +739,29 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
-def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
-    """Compute anisotropy of a single b-tensor
+def _btens_m2p(btens_2d, ztol):
+    """Compute trace, anisotropy and assymetry parameters from a single b-tensor
 
-    Auxiliary function where calculation of `bdelta` from a (3,3) b-tensor takes
-    place. The main function `btensor_to_bdelta` then wraps around this to
-    enable support of input (N, 3, 3) arrays, where N = number of b-tensors
+    Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
+    (3,3) b-tensor takes place. The main function `btens_m2p` then wraps
+    around this to enable support of input (N, 3, 3) arrays, where N = number of
+    b-tensors
 
     Parameters
     ----------
     btens_2d : (3, 3) numpy.ndarray
         input b-tensor
     ztol : float
-        bvals or bdeltas smaller than this value are considered to be 0.
+        Any parameters smaller than this value are considered to be 0
 
     Returns
     -------
-    bdelta: float
-        normalized tensor anisotropy
     bval: float
         b-value
+    bdelta: float
+        normalized tensor anisotropy
+    bdelta: float
+        tensor assymetry
 
     Notes
     -----
@@ -772,14 +775,15 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
     Chemistry, Cambridge, UK, 2016.
 
     """
+    btens_2d[abs(btens_2d)<ztol] = 0
+
     evals = np.real(np.linalg.eig(btens_2d)[0])
     bval = np.sum(evals)
-
     bval_is_zero = bval < ztol
 
     if bval_is_zero:
-        bdelta = 0
         bval = 0
+        bdelta = 0
     else:
         lambda_iso = (1/3)*bval
 
@@ -791,6 +795,7 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
         lambda_yy = evals_zzxxyy[1]
 
         bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
+        b_eta = (lambda_yy-lambda_xx)/(2*lambda_iso*bdelta+np.spacing(1))
 
         if np.abs(bval) < ztol:
             bval = 0
@@ -798,34 +803,41 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
         if np.abs(bdelta) < ztol:
             bdelta = 0
 
-    return float(bdelta), float(bval)
+        if np.abs(b_eta) < ztol:
+            b_eta = 0
 
-def btensor_to_bdelta(btens):
-    r"""Compute anisotropy of b-tensor(s)
+    return float(bval), float(bdelta), float(b_eta)
+
+def btens_m2p(btens, ztol=1e-10):
+    r"""Compute trace, anisotropy and assymetry parameters from b-tensors
 
     Parameters
     ----------
     btens : (3, 3) OR (N, 3, 3) numpy.ndarray
         input b-tensor, or b-tensors, where N = number of b-tensors
+    ztol : float
+        Any parameters smaller than this value are considered to be 0
 
     Returns
     -------
-    bdelta: numpy.ndarray
-        normalized tensor anisotropy(s)
     bval: numpy.ndarray
         b-value(s)
+    bdelta: numpy.ndarray
+        normalized tensor anisotropy(s)
+    b_eta: numpy.ndarray
+        tensor assymetry(s)
 
     Notes
     -----
-    This function can be used to get bdeltas from the GradientTable btens
-    attribute.
+    This function can be used to get b-tensor parameters directly from the
+    GradientTable `btens` attribute.
 
     Examples
     --------
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
-    >>> bdelta, bval = btensor_to_bdelta(lte)
-    >>> print("bdelta={}; bval={}".format(bdelta[0], bval[0]))
-    bdelta=1.0; bval=1.0
+    >>> bval, bdelta, b_eta = btens_m2p(lte)
+    >>> print("bval={}; bdelta={}; b_eta={}".format(bdelta, bval, b_eta))
+    bval=[1.]; bdelta=[1.]; b_eta=[0.]
 
     """
     # Bad input checks
@@ -852,16 +864,19 @@ def btensor_to_bdelta(btens):
 
     # Pre-allocate
     n_btens = btens.shape[0]
-    bdelta = np.empty(n_btens)
     bval = np.empty(n_btens)
+    bdelta = np.empty(n_btens)
+    b_eta = np.empty(n_btens)
 
     # Loop over b-tensor(s)
     for i in range(btens.shape[0]):
         i_btens = btens[i, :, :]
-        i_bdelta, i_bval = _btensor_to_bdelta_2d(i_btens)
-        bdelta[i] = i_bdelta
+        i_bval, i_bdelta, i_b_eta = _btens_m2p(i_btens, ztol)
         bval[i] = i_bval
+        bdelta[i] = i_bdelta
+        b_eta[i] = i_b_eta
 
     bdelta = bdelta.round(decimals=6)
+    b_eta = b_eta.round(decimals=6)
 
-    return bdelta, bval
+    return bval, bdelta, b_eta
