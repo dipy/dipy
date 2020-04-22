@@ -1,5 +1,6 @@
 import os
 from os.path import expanduser, join
+import glob
 import wget
 import random
 import numpy as np
@@ -20,17 +21,27 @@ class BuildTemplateFlow(Workflow):
         return 'template'
 
     def create_list_of_files(self, path_to_directory):
+        """
+        Parameters
+        ----------
+        path_to_directory : string
+            The directory which contains one or more FA files for registration.
+        """ 
     
         # return a list of FA files
         files_list = []
-
-        for (dir_path, dir_names, files) in os.walk(path_to_directory):
-            files_list += [join(dir_path, file) for file in files if file.endswith('fa.nii.gz')]
+        files_list = glob.glob(join(path_to_directory, '**/fa.nii.gz'), recursive = True)
 
         return files_list
 
     def prepare_data(self, list_of_files):
-
+        """
+        Parameters
+        ----------
+        list_of_files : list
+            A list of paths of files to register.
+        """        
+        
         # randomize
         random.shuffle(list_of_files)
 
@@ -44,7 +55,22 @@ class BuildTemplateFlow(Workflow):
         return dict_fa
 
     def affine_registration_pair(self, first_im, first_affine, second_im, second_affine):
+        """
+        Parameters
+        ----------
+        first_im : numpy array
+            The data of the 'static' image.
 
+        first_affine : numpy array
+            The affine of the 'static' image.
+
+        second_im : numpy array
+            The data of the 'moving' image.
+
+        second_affine : numpy array
+            The affine of the 'moving' image.
+        """        
+        
         static_data = first_im
         static_grid2world = first_affine    
         moving_data = second_im
@@ -121,6 +147,21 @@ class BuildTemplateFlow(Workflow):
         return moving_transformed_, static_grid2world, cost
 
     def diffeomorphic_registration_pair(self, first_im, first_affine, second_im, second_affine):
+        """
+        Parameters
+        ----------
+        first_im : numpy array
+            The data of the 'static' image.
+
+        first_affine : numpy array
+            The affine of the 'static' image.
+
+        second_im : numpy array
+            The data of the 'moving' image.
+
+        second_affine : numpy array
+            The affine of the 'moving' image.
+        """        
         
         static_data = first_im
         static_grid2world = first_affine    
@@ -139,8 +180,8 @@ class BuildTemplateFlow(Workflow):
         sigmas = [3.0, 1.0, 0.0]
         factors = [4, 2, 1]
 
-        affreg = AffineRegistration(metric=metric, l
-                                    evel_iters=level_iters, 
+        affreg = AffineRegistration(metric=metric, 
+                                    level_iters=level_iters, 
                                     sigmas=sigmas, 
                                     factors=factors)
 
@@ -215,6 +256,21 @@ class BuildTemplateFlow(Workflow):
         return middle, static_grid2world, metric.get_energy()
 
     def iterative_registration(self, dictionary, algorithm='diffeomorphic', output_file='template.nii.gz'):
+        """
+        Parameters
+        ----------
+        dictionary : dictionary
+            Internally uses the output of 'prepare_data'.
+
+        use_algorithm : string, optional
+            The algorithm to use for iterative registration.
+            By default it is diffeomorphic.
+            Also available - affine.
+
+        output_file : string, optional
+            File name to use to store created template.
+            By default it is 'template.nii.gz'.
+        """
 
         print('LEN dictionary keys : =====', len(list(dictionary.keys())))
 
@@ -276,6 +332,25 @@ class BuildTemplateFlow(Workflow):
             return self.iterative_registration(temp, algorithm, output_file)
 
     def register_to_standard_template(self, template='ICBM152', to_register=None, output_file=None):
+        """
+        Parameters
+        ----------
+        template : string
+            The standard template to register the created template to.
+            By default it is ICBM152. 
+            Also available - IITv5.0.
+
+        to_register : string, optional
+            Internally uses the created template for registering to the 
+            standard template.
+
+        output_file : string, optional
+            File name to use to store the output of registerting the 
+            created template to the chosen standard template.
+            By default it is None - meaning the default filename will be 
+            'registered_to_ICBM152.nii.gz' if chosen standard is 'ICBM152' 
+            and 'registered_to_IITv5.0.nii.gz' if chosen standard is 'IITv5.0'.
+        """
 
         if output_file:
             assert (output_file.endswith('.nii') or output_file.endswith('.nii.gz'))
@@ -287,7 +362,6 @@ class BuildTemplateFlow(Workflow):
 
             # download template
             fetch_mni_template()
-            from os.path import expanduser, join
             home = expanduser('~')
             dname = join(home, '.dipy', 'mni_template')
             template_file = join(dname, 'mni_icbm152_t1_tal_nlin_asym_09a.nii')
@@ -357,6 +431,7 @@ class BuildTemplateFlow(Workflow):
             By default it will be 'registered_to_ICBM152.nii.gz' or 'registered_to_IITv5.0.nii.gz'
 
         """
+
         files_list = self.create_list_of_files(path_to_directory)
         files_dict = self.prepare_data(files_list)
         created_template = self.iterative_registration(dictionary=files_dict, 
