@@ -33,6 +33,7 @@ clean: api-clean examples-clean
 
 api-clean:
 	rm -rf reference/*.rst
+	rm -rf reference_cmd/*.rst
 
 api:
 	@mkdir -p reference

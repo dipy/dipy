@@ -16,6 +16,7 @@ from distutils.version import LooseVersion as V
 # List of workflows to ignore
 SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
 
+
 def sh3(cmd):
     """
     Execute command in a subshell, return stdout, stderr
@@ -74,6 +75,12 @@ def get_help_string(class_obj):
     return parser.format_help()
 
 
+def format_title(text):
+    text = text.title()
+    line = '-' * len(text)
+    return '{0}\n{1}\n\n'.format(text, line)
+
+
 if __name__ == '__main__':
     # package name: Eg: dipy
     package = sys.argv[1]
@@ -82,7 +89,7 @@ if __name__ == '__main__':
 
     try:
         __import__(package)
-    except ImportError as e:
+    except ImportError:
         abort("Cannot import " + package)
 
     module = sys.modules[package]
@@ -148,11 +155,22 @@ if __name__ == '__main__':
         print("Generating docs for: {0} ({1})".format(fname, flow_name))
         out_fname = fname + ".rst"
         with open(pjoin(outdir, out_fname), "w") as fp:
-            dashes = "========================"
+            dashes = "=" * len(fname)
             fp.write("\n{0}\n{1}\n{0}\n\n".format(dashes, fname))
             # Trick to avoid docgen_cmd.py as cmd line
             help_txt = workflow_desc[flow_name]["help"]
             help_txt = help_txt.replace("docgen_cmd.py", fname)
+            help_txt = help_txt.replace("usage:", format_title('usage'))
+            help_txt = help_txt.replace("positional arguments:",
+                                        format_title("positional arguments"))
+            help_txt = help_txt.replace("optional arguments:",
+                                        format_title("optional arguments"))
+            help_txt = help_txt.replace(
+                "output arguments(optional):",
+                format_title("output arguments(optional)"))
+            help_txt = help_txt.replace("References:",
+                                        format_title("References"))
+            help_txt = help_txt.rstrip()
             fp.write(help_txt)
 
         cmd_list.append(out_fname)
