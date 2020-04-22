@@ -739,11 +739,11 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
-def _btens_m2p_2d(btens_2d, ztol):
+def _btens_to_params_2d(btens_2d, ztol):
     """Compute trace, anisotropy and assymetry parameters from a single b-tensor
 
     Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
-    (3,3) b-tensor takes place. The main function `btens_m2p` then wraps
+    (3,3) b-tensor takes place. The main function `btens_to_params` then wraps
     around this to enable support of input (N, 3, 3) arrays, where N = number of
     b-tensors
 
@@ -808,7 +808,7 @@ def _btens_m2p_2d(btens_2d, ztol):
 
     return float(bval), float(bdelta), float(b_eta)
 
-def btens_m2p(btens, ztol=1e-10):
+def btens_to_params(btens, ztol=1e-10):
     r"""Compute trace, anisotropy and assymetry parameters from b-tensors
 
     Parameters
@@ -835,7 +835,7 @@ def btens_m2p(btens, ztol=1e-10):
     Examples
     --------
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
-    >>> bval, bdelta, b_eta = btens_m2p(lte)
+    >>> bval, bdelta, b_eta = btens_to_params(lte)
     >>> print("bval={}; bdelta={}; b_eta={}".format(bdelta, bval, b_eta))
     bval=[1.]; bdelta=[1.]; b_eta=[0.]
 
@@ -871,7 +871,7 @@ def btens_m2p(btens, ztol=1e-10):
     # Loop over b-tensor(s)
     for i in range(btens.shape[0]):
         i_btens = btens[i, :, :]
-        i_bval, i_bdelta, i_b_eta = _btens_m2p_2d(i_btens, ztol)
+        i_bval, i_bdelta, i_b_eta = _btens_to_params_2d(i_btens, ztol)
         bval[i] = i_bval
         bdelta[i] = i_bdelta
         b_eta[i] = i_b_eta
@@ -881,7 +881,7 @@ def btens_m2p(btens, ztol=1e-10):
 
     return bval, bdelta, b_eta
 
-def btens_p2m(bval, bdelta, b_eta):
+def params_to_btens(bval, bdelta, b_eta):
     """Compute b-tensor matrix from trace, anisotropy and assymetry parameters
 
     Parameters
