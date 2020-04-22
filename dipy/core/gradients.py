@@ -880,3 +880,38 @@ def btens_m2p(btens, ztol=1e-10):
     b_eta = b_eta.round(decimals=6)
 
     return bval, bdelta, b_eta
+
+def btens_p2m(bval, bdelta, b_eta):
+    """Compute b-tensor matrix from trace, anisotropy and assymetry parameters
+
+    Parameters
+    ----------
+    bval: float
+        b-value
+    bdelta: float
+        normalized tensor anisotropy
+    bdelta: float
+        tensor assymetry
+
+    Returns
+    -------
+    (3, 3) numpy.ndarray
+        output b-tensor
+
+    Notes
+    -----
+    Implements eq. 7.11. p. 231 in [1].
+
+    References
+    ----------
+    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
+    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
+    Chemistry, Cambridge, UK, 2016.
+
+    """
+    m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
+    m2 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
+    btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
+
+    return btens
