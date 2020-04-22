@@ -739,7 +739,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
-def _btens_m2p(btens_2d, ztol):
+def _btens_m2p_2d(btens_2d, ztol):
     """Compute trace, anisotropy and assymetry parameters from a single b-tensor
 
     Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
@@ -871,7 +871,7 @@ def btens_m2p(btens, ztol=1e-10):
     # Loop over b-tensor(s)
     for i in range(btens.shape[0]):
         i_btens = btens[i, :, :]
-        i_bval, i_bdelta, i_b_eta = _btens_m2p(i_btens, ztol)
+        i_bval, i_bdelta, i_b_eta = _btens_m2p_2d(i_btens, ztol)
         bval[i] = i_bval
         bdelta[i] = i_bdelta
         b_eta[i] = i_b_eta
