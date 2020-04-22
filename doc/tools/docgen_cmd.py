@@ -123,6 +123,7 @@ if __name__ == '__main__':
                       if os.path.isfile(pjoin(workflows_folder, f)) and
                       f.lower().startswith("dipy_")]
 
+    workflow_flist = sorted(workflow_flist)
     workflow_desc = {}
     # We get all workflows class obj in a dictionary
     for path_file in os.listdir(pjoin('..', 'dipy', 'workflows')):
