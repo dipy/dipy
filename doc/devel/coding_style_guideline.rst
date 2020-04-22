@@ -25,13 +25,12 @@ The main principles behind DIPY_ development are:
 Coding style
 ------------
 
-DIPY uses the standard Python `PEP8
-<https://www.python.org/dev/peps/pep-0008/>`_ style to ensure the
-readability and consistency across the toolkit. Conformance to the PEP8 syntax
+DIPY uses the standard Python PEP8_ style to ensure the
+readability and consistency across the toolkit. Conformance to the PEP8_ syntax
 is checked automatically when requesting to push to DIPY. There are
 `software systems <https://pypi.python.org/pypi/pep8>`_ that will check your
-code for PEP8 compliance, and most text editors can be configured to check the
-compliance of your code with PEP8. Beyond the aspects checked, as a
+code for PEP8_ compliance, and most text editors can be configured to check the
+compliance of your code with PEP8_. Beyond the aspects checked, as a
 contributor to DIPY, you should try to ensure that your code, including
 comments, conforms to the above principles.
 
@@ -53,8 +52,7 @@ No alias should be used for `h5py`::
 Cython coding style
 -------------------
 DIPY recommends the use of the standard Python
-`PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ style when writing
-`Cython <https://cython.org/>` code.
+PEP8_ style when writing `Cython <https://cython.org/>` code.
 
 Cython-specific syntax should follow these additional rules:
 
