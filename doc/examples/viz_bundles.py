@@ -11,6 +11,7 @@ import numpy as np
 from dipy.viz import window, actor
 from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
 from dipy.tracking.streamline import transform_streamlines
+from dipy.tracking.streamline import length
 
 fetch_bundles_2_subjects()
 dix = read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
@@ -165,8 +166,6 @@ length.
 """
 
 renderer.clear()
-
-from dipy.tracking.streamline import length
 
 lengths = length(bundle_native)
 
