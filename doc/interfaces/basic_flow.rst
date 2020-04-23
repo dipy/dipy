@@ -242,7 +242,7 @@ propose as a complete solution to tracking but a mere introduction to DIPY's com
 Medical imaging requires a number of steps that depend on the goal of the analysis strategy.
 
 Nonetheless, if you are using these commands do cite the relevant papers to support
-the DIPY developers.
+the DIPY developers so that they can continue maintaining and extending these tools.
 
 References
 ----------
