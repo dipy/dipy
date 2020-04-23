@@ -932,9 +932,6 @@ def params_to_btens(bval, bdelta, b_eta):
     if not (b_eta >= 0 and b_eta <= 1):
         raise ValueError("`b_eta` must be >= 0 and <= 1")
 
-    # if bdelta == 0 and b_eta != 0:
-    #     raise ValueError("`b_eta` must be 0 if `bdelta` is 0")
-
     m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
     m2 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
     btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
