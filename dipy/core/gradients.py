@@ -775,15 +775,16 @@ def _btens_to_params_2d(btens_2d, ztol):
     Chemistry, Cambridge, UK, 2016.
 
     """
-    btens_2d[abs(btens_2d)<ztol] = 0
+    btens_2d[abs(btens_2d) <= ztol] = 0
 
     evals = np.real(np.linalg.eig(btens_2d)[0])
     bval = np.sum(evals)
-    bval_is_zero = bval < ztol
+    bval_is_zero = bval <= ztol
 
     if bval_is_zero:
         bval = 0
         bdelta = 0
+        b_eta = 0
     else:
         lambda_iso = (1/3)*bval
 
@@ -791,20 +792,22 @@ def _btens_to_params_2d(btens_2d, ztol):
         evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
 
         lambda_zz = evals_zzxxyy[0]
-        lambda_xx = evals_zzxxyy[2]
-        lambda_yy = evals_zzxxyy[1]
+        lambda_xx = evals_zzxxyy[1]
+        lambda_yy = evals_zzxxyy[2]
 
         bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
-        b_eta = (lambda_yy-lambda_xx)/(2*lambda_iso*bdelta+np.spacing(1))
 
-        if np.abs(bval) < ztol:
-            bval = 0
-
-        if np.abs(bdelta) < ztol:
+        if np.abs(bdelta) <= ztol:
             bdelta = 0
 
-        if np.abs(b_eta) < ztol:
-            b_eta = 0
+        yyxx_diff = lambda_yy-lambda_xx
+        if abs(yyxx_diff) <= np.spacing(1):
+            yyxx_diff = 0
+
+        b_eta = yyxx_diff/(2*lambda_iso*bdelta+np.spacing(1))
+
+        if np.abs(bval) <= ztol:
+            bval = 0
 
     return float(bval), float(bdelta), float(b_eta)
 
@@ -876,22 +879,19 @@ def btens_to_params(btens, ztol=1e-10):
         bdelta[i] = i_bdelta
         b_eta[i] = i_b_eta
 
-    bdelta = bdelta.round(decimals=6)
-    b_eta = b_eta.round(decimals=6)
-
     return bval, bdelta, b_eta
 
 def params_to_btens(bval, bdelta, b_eta):
-    """Compute b-tensor matrix from trace, anisotropy and assymetry parameters
+    """Compute b-tensor from trace, anisotropy and assymetry parameters
 
     Parameters
     ----------
-    bval: float
-        b-value
-    bdelta: float
-        normalized tensor anisotropy
-    b_eta: float
-        tensor assymetry
+    bval: int or float
+        b-value (>= 0)
+    bdelta: int or float
+        normalized tensor anisotropy (>= -0.5 and <= 1)
+    b_eta: int or float
+        tensor assymetry (>= 0 and <= 1)
 
     Returns
     -------
@@ -910,6 +910,31 @@ def params_to_btens(bval, bdelta, b_eta):
     Chemistry, Cambridge, UK, 2016.
 
     """
+
+    # Check input times are OK
+    expected_input_types = (float, int)
+    input_types_all_ok = isinstance(bval, expected_input_types) and \
+                         isinstance(bdelta, expected_input_types) and \
+                         isinstance(b_eta, expected_input_types)
+
+    if not input_types_all_ok:
+        s = [x.__name__ for x in expected_input_types]
+        it_msg = "All input types should any of: {}".format(s)
+        raise ValueError(it_msg)
+
+    # Check input values within expected ranges
+    if bval < 0:
+        raise ValueError("`bval` must be >= 0")
+
+    if not (bdelta >= -0.5 and bdelta <= 1):
+        raise ValueError("`delta` must be >= -0.5 and <= 1")
+
+    if not (b_eta >= 0 and b_eta <= 1):
+        raise ValueError("`b_eta` must be >= 0 and <= 1")
+
+    # if bdelta == 0 and b_eta != 0:
+    #     raise ValueError("`b_eta` must be 0 if `bdelta` is 0")
+
     m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
     m2 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
     btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
