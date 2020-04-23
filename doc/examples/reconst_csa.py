@@ -17,6 +17,7 @@ from dipy.io.image import load_nifti
 from dipy.reconst.shm import CsaOdfModel
 from dipy.direction import peaks_from_model
 from dipy.segment.mask import median_otsu
+from dipy.viz import window, actor
 
 """
 Download and read the data for this tutorial and load the raw diffusion data
@@ -89,8 +90,6 @@ splenium of the corpus callosum (CC).
 """
 
 data_small = maskdata[13:43, 44:74, 28:29]
-
-from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
