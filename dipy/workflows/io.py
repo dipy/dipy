@@ -6,6 +6,7 @@ import logging
 import importlib
 from inspect import getmembers, isfunction
 from dipy.io.image import load_nifti, save_nifti
+from dipy.io.peaks import save_peaks, peaks_to_niftis, arrays_to_peaks
 from dipy.workflows.workflow import Workflow
 
 
@@ -225,6 +226,7 @@ class FetchFlow(Workflow):
             self.load_module('dipy.data.fetcher')
 
 
+<<<<<<< HEAD
 class SplitFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -257,3 +259,100 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, image.header)
 
             logging.info('Split volume saved as {0}'.format(osplit))
+=======
+class NiftisToPamFlow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'niftis_to_pam'
+
+    def run(self, peaks_dir_files, peaks_values_files, peaks_indices_files,
+            shm_files, gfa_files, out_dir='', out_pam="peaks.pam5"):
+        """Convert pam5 files to mutiple nifti files.
+
+        Parameters
+        ----------
+        peaks_dir_files : string
+            Path to the input peaks directions volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_values_files : string
+            Path to the input peaks values volume. This path may contain
+            wildcards to process multiple inputs at once.
+        peaks_indices_files : string
+            Path to the input peaks indices volume. This path may contain
+            wildcards to process multiple inputs at once.
+        shm_files : string
+            Path to the input spherical harmonics volume. This path may
+            contain wildcards to process multiple inputs at once.
+        gfa_files : string
+            Path to the input generalized FA volume. This path may contain
+            wildcards to process multiple inputs at once.
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_pam : string, optional
+            Name of the peaks volume to be saved (default 'peaks.pam5')
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = 'pam5 files saved in '
+        msg += out_dir or 'current directory'
+        for fpeak_dirs, fpeak_values, fpeak_indices, fshm, fgfa, opam in io_it:
+            logging.info('Converting nifti files to pam5')
+            peak_dirs, affine = load_nifti(fpeak_dirs)
+            peak_values, _ = load_nifti(fpeak_values)
+            peak_indices, _ = load_nifti(fpeak_indices)
+            shm, _ = load_nifti(fshm)
+            gfa, _ = load_nifti(fgfa)
+
+            arrays_to_peaks(affine=affine, peak_dirs=peak_dirs,
+                            peak_values=peak_values, peak_indices=peak_indices,
+                            pam_file=opam, gfa=gfa, shm_coeff=shm)
+            logging.info(msg)
+
+
+class PamToNiftisFlow(Workflow):
+
+    @classmethod
+    def get_short_name(cls):
+        return 'pam_to_niftis'
+
+    def run(self, pam_files, out_dir='', out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz', out_gfa='gfa.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz', out_shm='shm.nii.gz'):
+        """Convert pam5 files to mutiple nifti files.
+
+        Parameters
+        ----------
+        pam_files : string
+            Path to the input peaks volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        out_dir : string, optional
+            Output directory (default input file directory)
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved
+            (default 'peaks_dirs.nii.gz')
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved
+            (default 'peaks_values.nii.gz')
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved
+            (default 'peaks_indices.nii.gz')
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved
+            (default 'shm.nii.gz')
+
+        """
+        io_it = self.get_io_iterator()
+
+        msg = 'Nifti files saved in '
+        msg += out_dir or 'current directory'
+        for pam, opeak_dirs, opeak_values, ogfa, opeak_indices, oshm in io_it:
+            logging.info('Converting %s file to niftis...', pam)
+            peaks_to_niftis(pam, fname_shm=oshm, fname_gfa=ogfa,
+                            fname_dirs=opeak_dirs, fname_values=opeak_values,
+                            fname_indices=opeak_indices)
+            logging.info(msg)
+>>>>>>> add converters

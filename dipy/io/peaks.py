@@ -198,28 +198,47 @@ def save_peaks(fname, pam, affine=None, verbose=False):
     return pam
 
 
-def peaks_to_niftis(pam,
-                    fname_shm,
-                    fname_dirs,
-                    fname_values,
-                    fname_indices,
-                    fname_gfa,
-                    reshape_dirs=False):
-        """ Save SH, directions, indices and values of peaks to Nifti.
-        """
+def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
+                    fname_gfa, reshape_dirs=False):
+    """Save SH, directions, indices and values of peaks to Nifti."""
+    save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
 
-        save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
+    if reshape_dirs:
+        pam_dirs = reshape_peaks_for_visualization(pam)
+    else:
+        pam_dirs = pam.peak_dirs.astype(np.float32)
 
-        if reshape_dirs:
-            pam_dirs = reshape_peaks_for_visualization(pam)
-        else:
-            pam_dirs = pam.peak_dirs.astype(np.float32)
+    save_nifti(fname_dirs, pam_dirs, pam.affine)
+    save_nifti(fname_values, pam.peak_values.astype(np.float32), pam.affine)
+    save_nifti(fname_indices, pam.peak_indices, pam.affine)
+    save_nifti(fname_gfa, pam.gfa, pam.affine)
 
-        save_nifti(fname_dirs, pam_dirs, pam.affine)
 
-        save_nifti(fname_values, pam.peak_values.astype(np.float32),
-                   pam.affine)
+def arrays_to_peaks(affine, peak_dirs, peak_values, peak_indices, pam_file,
+                    shm_coeff=None, sphere=None, gfa=None, B=None,
+                    qa=None, odf=None, total_weight=None, ang_thr=None,
+                    verbose=False):
+    """Save SH, directions, indices and values of peaks to pam5."""
+    pam = PeaksAndMetrics()
+    pam.affine = affine
+    pam.peak_dirs = peak_dirs
+    pam.peak_values = peak_values
+    pam.peak_indices = peak_indices
+    if shm_coeff:
+        pam.shm_coeff = shm_coeff
+    if sphere:
+        pam.sphere = sphere
+    if B:
+        pam.B = B
+    if total_weight:
+        pam.total_weight = total_weight
+    if ang_thr:
+        pam.ang_thr = ang_thr
+    if gfa:
+        pam.gfa = gfa
+    if qa:
+        pam.qa = qa
+    if odf:
+        pam.odf = odf
 
-        save_nifti(fname_indices, pam.peak_indices, pam.affine)
-
-        save_nifti(fname_gfa, pam.gfa, pam.affine)
+    save_peaks(pam_file, pam, verbose=verbose)
