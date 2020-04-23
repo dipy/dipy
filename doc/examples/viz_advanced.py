@@ -12,6 +12,8 @@ anymore.
 
 import numpy as np
 from dipy.viz import actor, window, ui
+from dipy.tracking.streamline import Streamlines
+from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 
 """
 In ``window`` we have all the objects that connect what needs to be rendered
@@ -34,9 +36,6 @@ a ``LineSlider2D`` widget.
 
 First we need to fetch and load some datasets.
 """
-
-from dipy.tracking.streamline import Streamlines
-from dipy.data.fetcher import fetch_bundles_2_subjects, read_bundles_2_subjects
 
 fetch_bundles_2_subjects()
 
