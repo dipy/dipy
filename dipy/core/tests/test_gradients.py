@@ -535,7 +535,6 @@ def test_btens_to_params():
 
     base_tensors = [linear_tensor, planar_tensor,
                     spherical_tensor, cigar_tensor]
-    n_base_tensors = len(base_tensors)
 
     # ---------------------------------
     # Test function on baseline tensors

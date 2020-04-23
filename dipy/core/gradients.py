@@ -757,7 +757,7 @@ def _btens_to_params_2d(btens_2d, ztol):
     Returns
     -------
     bval: float
-        b-value
+        b-value (trace)
     bdelta: float
         normalized tensor anisotropy
     bdelta: float
@@ -779,7 +779,7 @@ def _btens_to_params_2d(btens_2d, ztol):
 
     evals = np.real(np.linalg.eig(btens_2d)[0])
     bval = np.sum(evals)
-    bval_is_zero = bval <= ztol
+    bval_is_zero = np.abs(bval) <= ztol
 
     if bval_is_zero:
         bval = 0
@@ -806,8 +806,8 @@ def _btens_to_params_2d(btens_2d, ztol):
 
         b_eta = yyxx_diff/(2*lambda_iso*bdelta+np.spacing(1))
 
-        if np.abs(bval) <= ztol:
-            bval = 0
+        if np.abs(b_eta) <= b_eta:
+            b_eta = 0
 
     return float(bval), float(bdelta), float(b_eta)
 
@@ -824,7 +824,7 @@ def btens_to_params(btens, ztol=1e-10):
     Returns
     -------
     bval: numpy.ndarray
-        b-value(s)
+        b-value(s) (trace(s))
     bdelta: numpy.ndarray
         normalized tensor anisotropy(s)
     b_eta: numpy.ndarray
