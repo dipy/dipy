@@ -128,7 +128,7 @@ time, so we estimate :math:`q\tau` indices between the minimum and maximum
 diffusion times of the data at 5 equally spaced points. However, it should the
 noted that qt-dMRI's combined smoothness and sparsity regularization allows
 for smooth interpolation at any :math:`q\tau` position. In other words, once
-the basis is fitted to the data, its coefficients describe the the entire
+the basis is fitted to the data, its coefficients describe the entire
 :math:`q\tau`-space, and any :math:`q\tau`-position can be freely recovered.
 This including points beyond the dataset's maximum :math:`q\tau` value
 (although this should be done with caution).
