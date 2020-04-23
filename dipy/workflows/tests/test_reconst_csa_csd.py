@@ -10,7 +10,7 @@ from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
-from dipy.io.peaks import load_peaks
+from dipy.io.peaks import load_pam
 from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 from dipy.workflows.reconst import ReconstCSAFlow, ReconstCSDFlow
 
@@ -98,7 +98,7 @@ def reconst_flow_core(flow):
             )
             npt.assert_equal(shm_data.shape[:-1], volume.shape[:-1])
 
-            pam = load_peaks(reconst_flow.last_generated_outputs["out_pam"])
+            pam = load_pam(reconst_flow.last_generated_outputs["out_pam"])
             npt.assert_allclose(
                 pam.peak_dirs.reshape(peaks_dir_data.shape), peaks_dir_data
             )

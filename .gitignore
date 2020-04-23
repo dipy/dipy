@@ -25,6 +25,7 @@ doc/reference_cmd
 doc/*-stamp
 MANIFEST
 dist/
+.pytest_cache
 .project
 .pydevproject
 *.sw[po]

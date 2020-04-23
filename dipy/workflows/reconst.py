@@ -923,12 +923,12 @@ class ReconstCSDFlow(Workflow):
             )
             peaks_csd.affine = affine
 
-            save_peaks(opam, peaks_csd)
+            save_pam(opam, peaks_csd)
 
             logging.info("CSD computation completed.")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csd,
                     oshm,
                     opeaks_dir,
@@ -1084,12 +1084,12 @@ class ReconstCSAFlow(Workflow):
             )
             peaks_csa.affine = affine
 
-            save_peaks(opam, peaks_csa)
+            save_pam(opam, peaks_csa)
 
             logging.info(f"Finished CSA {dwi}")
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     peaks_csa,
                     oshm,
                     opeaks_dir,
@@ -1794,10 +1794,10 @@ class ReconstRUMBAFlow(Workflow):
 
             rumba_peaks.affine = affine
 
-            save_peaks(opam, rumba_peaks)
+            save_pam(opam, rumba_peaks)
 
             if extract_pam_values:
-                peaks_to_niftis(
+                pam_to_niftis(
                     rumba_peaks,
                     oshm,
                     opeaks_dir,
