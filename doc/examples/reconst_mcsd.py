@@ -296,11 +296,16 @@ mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
 
 """
 The volume fractions of tissues for each voxel are also accessible, as well as
-the sh coefficients for all tissues.
+the sh coefficients for all tissues. One can also get each sh tissue separately
+using the ``compartment_shm_coeff`` method for each compartment (isotropic) and
+``shm_coeff`` for white matter.
 """
 
 vf = mcsd_fit.volume_fractions
 sh_coeff = mcsd_fit.all_shm_coeff
+csf_sh_coeff = mcsd_fit.compartment_shm_coeff(0)
+gm_sh_coeff = mcsd_fit.compartment_shm_coeff(1)
+wm_sh_coeff = mcsd_fit.shm_coeff
 
 """
 The model allows to predict a signal from sh coefficients. There are two ways of

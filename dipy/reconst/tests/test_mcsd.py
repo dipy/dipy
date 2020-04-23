@@ -144,14 +144,47 @@ def test_MultiShellDeconvModel():
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
 
-    npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
-
     # Testing both ways to predict
     S_pred_fit = fit.predict()
     S_pred_model = model.predict(fit.all_shm_coeff)
 
     npt.assert_array_almost_equal(S_pred_fit, S_pred_model, 0)
     npt.assert_array_almost_equal(S_pred_fit, signal, 0)
+
+
+@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
+def test_MSDeconvFit():
+    gtab = get_3shell_gtab()
+
+    mevals = np.array([wm_response[:3], wm_response[:3]])
+    angles = [(0, 0), (60, 0)]
+
+    S_wm, sticks = multi_tensor(gtab, mevals, wm_response[3], angles=angles,
+                                fractions=[30., 70.], snr=None)
+    S_gm = gm_response[3] * np.exp(-gtab.bvals * gm_response[0])
+    S_csf = csf_response[3] * np.exp(-gtab.bvals * csf_response[0])
+
+    sh_order = 8
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          wm_response,
+                                          gm_response,
+                                          csf_response)
+    model = MultiShellDeconvModel(gtab, response)
+    vf = [0.325, 0.2, 0.475]
+    signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
+    fit = model.fit(signal)
+
+    # Testing volume fractions
+    npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
+    # Testing shm compartments
+    all_sh = fit.all_shm_coeff
+    npt.assert_array_equal(fit.compartment_shm_coeff(0), all_sh[..., 0])
+    npt.assert_array_equal(fit.compartment_shm_coeff(1), all_sh[..., 1])
+    with warnings.catch_warnings(record=True) as w:
+        bad_compartment = fit.compartment_shm_coeff(2)
+        npt.assert_equal(len(w), 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_array_equal(bad_compartment, None)
 
 
 def test_mask_for_response_msmt():
