@@ -9,7 +9,10 @@ command line interfaces.
 
 Using a terminal, let's download a dataset. This is multi-shell dataset, which was
 kindly provided by Hansen and Jespersen (more details about the data are
-provided in their paper [Hansen2016]_). First let's create a folder::
+provided in their paper [Hansen2016]_). For this tutorial we will use
+a Linux terminal, please adapt accordingly if you are using Mac or Windows.
+
+First let's create a folder::
 
     mkdir data_folder
 
@@ -146,7 +149,6 @@ We can use ``dipy_info`` to check the bval and nii files ::
     [   0.       0.       0.       1.   ]]
     INFO:Voxel size [2.5 2.5 2.5]
 
-
 We can visualize the data using ``dipy_horizon`` ::
 
     dipy_horizon dwi.nii
@@ -192,7 +194,7 @@ Visualize DEC map::
 
     Visualization of a slice from the first volume of DEC image
 
-We can now move to more advanced reconstruction models. One of the fastest we can use is Constant Solid Angle (CSA) ::
+We can now move to more advanced reconstruction models. One of the fastest we can use is Constant Solid Angle (CSA) [Aganj2010]_ ::
 
     dipy_fit_csa dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
 
@@ -200,9 +202,9 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
     dipy_mask out_work/fa.nii.gz 0.4 --out_dir out_work/ --out_mask seed_mask.nii.gz
 
-Create tracks using peaks::
+Build tractography with the ``peaks.pam5`` file as input using the fast EuDX algorithm [Garyfallidis12]_ ::
 
-    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk
+    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
     :width: 70 %
@@ -215,17 +217,32 @@ We can visualize the result using ``dipy_horizon``. The ``--cluster`` option all
 
     dipy_horizon out_work/tracts_from_peaks.trk --cluster
 
-Alternatively, we can create deterministic tracks using the maximum value of a spherical harmonics cone::
+For more information about each command line, try calling the ``-h`` flag for example ::
 
-    dipy_track_local peaks.pam5 fa.nii.gz seed_mask.nii.gz --out_tractogram 'tracks_from_sh.trk' --use_sh
+    dipy_horizon -h
 
-For more information about each command line, you see :ref:`workflows_reference`.
+should provide the available options ::
 
-These series commands shown in this tutorial are not by any stretch of imagination what we
+    usage: dipy_horizon [-h] [--cluster] [--cluster_thr float] [--random_colors]
+                        [--length_gt float] [--length_lt float]
+                        [--clusters_gt int] [--clusters_lt int] [--native_coords]
+                        [--stealth] [--emergency_header str]
+                        [--bg_color [float [float ...]]]
+                        [--disable_order_transparency] [--out_dir str]
+                        [--out_stealth_png str] [--force] [--version]
+                        [--out_strat string] [--mix_names] [--log_level string]
+                        [--log_file string]
+                        input_files [input_files ...]
+
+
+Otherwise please see :ref:`workflows_reference`.
+
+The commands shown in this tutorial are not by any stretch of imagination what we
 propose as a complete solution to tracking but a mere introduction to DIPY's command interfaces.
 Medical imaging requires a number of steps that depend on the goal of the analysis strategy.
 
-Nonetheless, if you are using these commands do cite the relevant papers.
+Nonetheless, if you are using these commands do cite the relevant papers to support
+the DIPY developers.
 
 References
 ----------
