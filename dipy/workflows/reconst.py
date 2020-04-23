@@ -1,4 +1,3 @@
-
 import logging
 import numpy as np
 import os.path
@@ -10,7 +9,7 @@ import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.data import default_sphere, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.peaks import save_peaks, peaks_to_niftis
+from dipy.io.peaks import save_pam, pam_to_niftis
 from dipy.io.image import load_nifti, save_nifti, load_nifti_data
 from dipy.io.utils import nifti1_symmat
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
@@ -580,13 +579,13 @@ class ReconstCSDFlow(Workflow):
                                          num_processes=num_processes)
             peaks_csd.affine = affine
 
-            save_peaks(opam, peaks_csd)
+            save_pam(opam, peaks_csd)
 
             logging.info('CSD computation completed.')
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(peaks_csd, oshm, opeaks_dir, opeaks_values,
+                              opeaks_indices, ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':
@@ -706,14 +705,14 @@ class ReconstCSAFlow(Workflow):
                                          num_processes=num_processes)
             peaks_csa.affine = affine
 
-            save_peaks(opam, peaks_csa)
+            save_pam(opam, peaks_csa)
 
             logging.info('Finished CSA {0}'.format(dwi))
 
             if extract_pam_values:
-                peaks_to_niftis(peaks_csa, oshm, opeaks_dir,
-                                opeaks_values,
-                                opeaks_indices, ogfa, reshape_dirs=True)
+                pam_to_niftis(peaks_csa, oshm, opeaks_dir,
+                              opeaks_values,
+                              opeaks_indices, ogfa, reshape_dirs=True)
 
             dname_ = os.path.dirname(opam)
             if dname_ == '':

@@ -10,15 +10,15 @@ import h5py
 
 
 def _safe_save(group, array, name):
-    """ Safe saving of arrays with specific names
+    """Safe saving of arrays with specific names.
 
     Parameters
     ----------
     group : HDF5 group
     array : array
     name : string
-    """
 
+    """
     if array is not None:
         ds = group.create_dataset(name, shape=array.shape,
                                   dtype=array.dtype, chunks=True)
@@ -26,7 +26,7 @@ def _safe_save(group, array, name):
 
 
 def load_peaks(fname, verbose=False):
-    """ Load a PeaksAndMetrics HDF5 file (PAM5)
+    """Load a PeaksAndMetrics HDF5 file (PAM5).
 
     Parameters
     ----------
@@ -38,8 +38,8 @@ def load_peaks(fname, verbose=False):
     Returns
     -------
     pam : PeaksAndMetrics object
-    """
 
+    """
     if os.path.splitext(fname)[1].lower() != '.pam5':
         raise IOError('This function supports only PAM5 (HDF5) files')
 
@@ -118,7 +118,28 @@ def load_peaks(fname, verbose=False):
 
 
 def save_peaks(fname, pam, affine=None, verbose=False):
-    """ Save all important attributes of object PeaksAndMetrics in a PAM5 file
+    """Save all important attributes of object PeaksAndMetrics in a PAM5 file
+    (HDF5).
+
+    Parameters
+    ----------
+    fname : string
+        Filename of PAM5 file
+    pam : PeaksAndMetrics
+        Object holding peak_dirs, shm_coeffs and other attributes
+    affine : array
+        The 4x4 matrix transforming the date from native to world coordinates.
+        PeaksAndMetrics should have that attribute but if not it can be
+        provided here. Default None.
+    verbose : bool
+        Print summary information about the saved file.
+    """
+    # Todo, ADD deprecation warning
+    return save_pam(fname=fname, pam=pam, affine=affine, verbose=verbose)
+
+
+def save_pam(fname, pam, affine=None, verbose=False):
+    """Save all important attributes of object PeaksAndMetrics in a PAM5 file
     (HDF5).
 
     Parameters
@@ -201,6 +222,16 @@ def save_peaks(fname, pam, affine=None, verbose=False):
 def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
                     fname_gfa, reshape_dirs=False):
     """Save SH, directions, indices and values of peaks to Nifti."""
+    # Todo, ADD deprecation warning
+    return pam_to_niftis(pam=pam, fname_shm=fname_shm, fname_dirs=fname_dirs,
+                         fname_values=fname_values,
+                         fname_indices=fname_indices,
+                         fname_gfa=fname_gfa, reshape_dirs=reshape_dirs)
+
+
+def pam_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
+                  fname_gfa, reshape_dirs=False):
+    """Save SH, directions, indices and values of peaks to Nifti."""
     save_nifti(fname_shm, pam.shm_coeff.astype(np.float32), pam.affine)
 
     if reshape_dirs:
@@ -214,10 +245,10 @@ def peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values, fname_indices,
     save_nifti(fname_gfa, pam.gfa, pam.affine)
 
 
-def arrays_to_peaks(affine, peak_dirs, peak_values, peak_indices, pam_file,
-                    shm_coeff=None, sphere=None, gfa=None, B=None,
-                    qa=None, odf=None, total_weight=None, ang_thr=None,
-                    verbose=False):
+def niftis_to_pam(affine, peak_dirs, peak_values, peak_indices, pam_file,
+                  shm_coeff=None, sphere=None, gfa=None, B=None,
+                  qa=None, odf=None, total_weight=None, ang_thr=None,
+                  verbose=False):
     """Save SH, directions, indices and values of peaks to pam5."""
     pam = PeaksAndMetrics()
     pam.affine = affine
@@ -241,4 +272,4 @@ def arrays_to_peaks(affine, peak_dirs, peak_values, peak_indices, pam_file,
     if odf:
         pam.odf = odf
 
-    save_peaks(pam_file, pam, verbose=verbose)
+    save_pam(pam_file, pam, verbose=verbose)

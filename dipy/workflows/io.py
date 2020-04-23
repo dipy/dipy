@@ -6,7 +6,7 @@ import logging
 import importlib
 from inspect import getmembers, isfunction
 from dipy.io.image import load_nifti, save_nifti
-from dipy.io.peaks import save_peaks, peaks_to_niftis, arrays_to_peaks
+from dipy.io.peaks import save_pam, pam_to_niftis, niftis_to_pam
 from dipy.workflows.workflow import Workflow
 
 
@@ -220,13 +220,12 @@ class FetchFlow(Workflow):
             else:
                 os.environ.pop('DIPY_HOME', None)
 
-            # We load the module again so that if we run another one of these in
-            # the same process, we don't have the env variable pointing to the
-            # wrong place
+            # We load the module again so that if we run another one of these
+            # in the same process, we don't have the env variable pointing to
+            # the wrong place
             self.load_module('dipy.data.fetcher')
 
 
-<<<<<<< HEAD
 class SplitFlow(Workflow):
     @classmethod
     def get_short_name(cls):
@@ -259,7 +258,8 @@ class SplitFlow(Workflow):
             save_nifti(osplit, split_vol, affine, image.header)
 
             logging.info('Split volume saved as {0}'.format(osplit))
-=======
+
+
 class NiftisToPamFlow(Workflow):
 
     @classmethod
@@ -305,9 +305,9 @@ class NiftisToPamFlow(Workflow):
             shm, _ = load_nifti(fshm)
             gfa, _ = load_nifti(fgfa)
 
-            arrays_to_peaks(affine=affine, peak_dirs=peak_dirs,
-                            peak_values=peak_values, peak_indices=peak_indices,
-                            pam_file=opam, gfa=gfa, shm_coeff=shm)
+            niftis_to_pam(affine=affine, peak_dirs=peak_dirs,
+                          peak_values=peak_values, peak_indices=peak_indices,
+                          pam_file=opam, gfa=gfa, shm_coeff=shm)
             logging.info(msg)
 
 
@@ -339,7 +339,8 @@ class PamToNiftisFlow(Workflow):
             Name of the peaks indices volume to be saved
             (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved
+            (default 'gfa.nii.gz')
         out_shm : string, optional
             Name of the spherical harmonics volume to be saved
             (default 'shm.nii.gz')
@@ -351,8 +352,7 @@ class PamToNiftisFlow(Workflow):
         msg += out_dir or 'current directory'
         for pam, opeak_dirs, opeak_values, ogfa, opeak_indices, oshm in io_it:
             logging.info('Converting %s file to niftis...', pam)
-            peaks_to_niftis(pam, fname_shm=oshm, fname_gfa=ogfa,
-                            fname_dirs=opeak_dirs, fname_values=opeak_values,
-                            fname_indices=opeak_indices)
+            pam_to_niftis(pam, fname_shm=oshm, fname_gfa=ogfa,
+                          fname_dirs=opeak_dirs, fname_values=opeak_values,
+                          fname_indices=opeak_indices)
             logging.info(msg)
->>>>>>> add converters

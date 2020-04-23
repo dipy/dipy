@@ -1,4 +1,3 @@
-
 import os
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
@@ -8,7 +7,7 @@ import numpy.testing as npt
 
 from dipy.direction.peaks import PeaksAndMetrics
 from dipy.data import default_sphere
-from dipy.io.peaks import load_peaks, save_peaks, peaks_to_niftis
+from dipy.io.peaks import load_peaks, save_pam, pam_to_niftis
 
 
 def test_io_peaks():
@@ -29,14 +28,14 @@ def test_io_peaks():
         pam.qa = np.zeros((10, 10, 10, 5))
         pam.odf = np.zeros((10, 10, 10, default_sphere.vertices.shape[0]))
 
-        save_peaks(pjoin(tmpdir, fname), pam)
+        save_pam(pjoin(tmpdir, fname), pam)
         pam2 = load_peaks(pjoin(tmpdir, fname), verbose=True)
         npt.assert_array_equal(pam.peak_dirs, pam2.peak_dirs)
 
         pam2.affine = None
 
         fname2 = 'test2.pam5'
-        save_peaks(pjoin(tmpdir, fname2), pam2, np.eye(4))
+        save_pam(pjoin(tmpdir, fname2), pam2, np.eye(4))
         pam2_res = load_peaks(pjoin(tmpdir, fname2), verbose=True)
         npt.assert_array_equal(pam.peak_dirs, pam2_res.peak_dirs)
 
@@ -54,26 +53,26 @@ def test_io_peaks():
 
         fname3 = 'test3.pam5'
         pam4 = PeaksAndMetrics()
-        npt.assert_raises((ValueError, AttributeError), save_peaks,
+        npt.assert_raises((ValueError, AttributeError), save_pam,
                           pjoin(tmpdir, fname3), pam4)
 
         fname4 = 'test4.pam5'
         del pam.affine
-        save_peaks(pjoin(tmpdir, fname4), pam, affine=None)
+        save_pam(pjoin(tmpdir, fname4), pam, affine=None)
 
         fname5 = 'test5.pkm'
-        npt.assert_raises(IOError, save_peaks, pjoin(tmpdir, fname5), pam)
+        npt.assert_raises(IOError, save_pam, pjoin(tmpdir, fname5), pam)
 
         pam.affine = np.eye(4)
         fname6 = 'test6.pam5'
-        save_peaks(pjoin(tmpdir, fname6), pam, verbose=True)
+        save_pam(pjoin(tmpdir, fname6), pam, verbose=True)
 
         del pam.shm_coeff
-        save_peaks(pjoin(tmpdir, fname6), pam, verbose=False)
+        save_pam(pjoin(tmpdir, fname6), pam, verbose=False)
 
         pam.shm_coeff = np.zeros((10, 10, 10, 45))
         del pam.odf
-        save_peaks(pjoin(tmpdir, fname6), pam)
+        save_pam(pjoin(tmpdir, fname6), pam)
         pam_tmp = load_peaks(pjoin(tmpdir, fname6), True)
         npt.assert_equal(pam_tmp.odf, None)
 
@@ -81,7 +80,7 @@ def test_io_peaks():
         npt.assert_raises(IOError, load_peaks, pjoin(tmpdir, fname7))
 
         del pam.shm_coeff
-        save_peaks(pjoin(tmpdir, fname6), pam, verbose=True)
+        save_pam(pjoin(tmpdir, fname6), pam, verbose=True)
 
         fname_shm = 'shm.nii.gz'
         fname_dirs = 'dirs.nii.gz'
@@ -90,8 +89,8 @@ def test_io_peaks():
         fname_gfa = 'gfa.nii.gz'
 
         pam.shm_coeff = np.ones((10, 10, 10, 45))
-        peaks_to_niftis(pam, fname_shm, fname_dirs, fname_values,
-                        fname_indices, fname_gfa, reshape_dirs=False)
+        pam_to_niftis(pam, fname_shm, fname_dirs, fname_values,
+                      fname_indices, fname_gfa, reshape_dirs=False)
 
         os.path.isfile(fname_shm)
         os.path.isfile(fname_dirs)
@@ -100,14 +99,14 @@ def test_io_peaks():
         os.path.isfile(fname_gfa)
 
 
-def test_io_save_peaks_error():
+def test_io_save_pam_error():
     with TemporaryDirectory() as tmpdir:
         fname = 'test.pam5'
 
         pam = PeaksAndMetrics()
 
-        npt.assert_raises(IOError, save_peaks, pjoin(tmpdir, 'test.pam'), pam)
-        npt.assert_raises((ValueError, AttributeError), save_peaks,
+        npt.assert_raises(IOError, save_pam, pjoin(tmpdir, 'test.pam'), pam)
+        npt.assert_raises((ValueError, AttributeError), save_pam,
                           pjoin(tmpdir, fname), pam)
 
         pam.affine = np.eye(4)
