@@ -503,6 +503,7 @@ def test_check_multi_b():
     gtab = gradient_table(bvals, bvecs)
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
+
 def test_btens_to_params():
     """
     Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
@@ -605,6 +606,7 @@ def test_btens_to_params():
     # Input shape must be (3, 3) OR (N, 3, 3)
     npt.assert_raises(ValueError, btens_to_params, np.zeros((4, 4)))
     npt.assert_raises(ValueError, btens_to_params, np.zeros((2, 2, 2)))
+
 
 def test_params_to_btens():
     """

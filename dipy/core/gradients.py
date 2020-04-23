@@ -739,6 +739,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
+
 def _btens_to_params_2d(btens_2d, ztol):
     """Compute trace, anisotropy and assymetry parameters from a single b-tensor
 
@@ -811,6 +812,7 @@ def _btens_to_params_2d(btens_2d, ztol):
 
     return float(bval), float(bdelta), float(b_eta)
 
+
 def btens_to_params(btens, ztol=1e-10):
     r"""Compute trace, anisotropy and assymetry parameters from b-tensors
 
@@ -881,6 +883,7 @@ def btens_to_params(btens, ztol=1e-10):
 
     return bval, bdelta, b_eta
 
+
 def params_to_btens(bval, bdelta, b_eta):
     """Compute b-tensor from trace, anisotropy and assymetry parameters
 
@@ -913,9 +916,9 @@ def params_to_btens(bval, bdelta, b_eta):
 
     # Check input times are OK
     expected_input_types = (float, int)
-    input_types_all_ok = isinstance(bval, expected_input_types) and \
-                         isinstance(bdelta, expected_input_types) and \
-                         isinstance(b_eta, expected_input_types)
+    input_types_all_ok = (isinstance(bval, expected_input_types) and
+                          isinstance(bdelta, expected_input_types) and
+                          isinstance(b_eta, expected_input_types))
 
     if not input_types_all_ok:
         s = [x.__name__ for x in expected_input_types]
