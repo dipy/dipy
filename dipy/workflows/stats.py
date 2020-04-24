@@ -514,7 +514,8 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, threshold=6, out_dir=''):
+    def run(self, subject_folder, threshold=6, clust_thr=[5, 3, 1.5],
+            out_dir=''):
         """Workflow of bundle analytics.
 
         Applies bundle shape similarity analysis on bundles of subjects and
@@ -529,6 +530,9 @@ class BundleShapeAnalysis(Workflow):
 
         threshold : float (default 6), optional
             Bundle shape similarity threshold.
+
+        clust_thr : float (default [5, 3, 1.5])
+            list of bundle clustering thresholds used in quickbundlesX
 
         out_dir : string, optional
             Output directory (default input file directory)
@@ -588,7 +592,7 @@ class BundleShapeAnalysis(Workflow):
                                               bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2, rng,
-                                                       threshold)
+                                                       clust_thr, threshold)
 
                     ba_matrix[i][j] = ba_value
 

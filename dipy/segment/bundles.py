@@ -79,7 +79,7 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
     return res
 
 
-def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=5.):
+def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=6.):
     """ Calculates bundle adjacency score between two given bundles
 
     Parameters
@@ -91,7 +91,7 @@ def ba_analysis(recognized_bundle, expert_bundle, nb_pts=20, threshold=5.):
         from inout tractogram
     nb_pts : integer (default 20)
         Discretizing streamlines to have nb_pts number of points
-    threshold : float (default 5)
+    threshold : float (default 6)
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating bundle adjacency
         between two bundles. Smaller threshold means bundles should be strictly
@@ -123,7 +123,7 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     bundle : Streamlines
         White matter tract
     clust_thr : float
-        clustering threshold used in quickbundles
+        clustering threshold used in quickbundlesX
     rng : RandomState
     nb_pts: integer (default 20)
         Discretizing streamlines to have nb_points number of points
@@ -151,7 +151,8 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     return centroids
 
 
-def bundle_shape_similarity(bundle1, bundle2, rng, threshold=5):
+def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
+                            threshold=6):
     """ Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
 
@@ -162,7 +163,9 @@ def bundle_shape_similarity(bundle1, bundle2, rng, threshold=5):
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
     rng : RandomState
-    threshold : float (default 5)
+    clust_thr : float (default [5, 3, 1.5])
+        list of clustering thresholds used in quickbundlesX
+    threshold : float (default 6)
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating shape similarity
         between two bundles. Smaller threshold means bundles should be strictly
@@ -183,9 +186,9 @@ def bundle_shape_similarity(bundle1, bundle2, rng, threshold=5):
     if len(bundle1) == 0 or len(bundle2) == 0:
         return 0
 
-    bundle1_centroids = cluster_bundle(bundle1, clust_thr=[1.25],
+    bundle1_centroids = cluster_bundle(bundle1, clust_thr=clust_thr,
                                        rng=rng)
-    bundle2_centroids = cluster_bundle(bundle2, clust_thr=[1.25],
+    bundle2_centroids = cluster_bundle(bundle2, clust_thr=clust_thr,
                                        rng=rng)
     bundle1_centroids = Streamlines(bundle1_centroids)
     bundle2_centroids = Streamlines(bundle2_centroids)
