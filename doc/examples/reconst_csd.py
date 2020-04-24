@@ -26,11 +26,16 @@ with b-value 2000.
 """
 
 import numpy as np
-
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.reconst.csdeconv import auto_response
+from dipy.viz import window, actor
+from dipy.sims.voxel import single_tensor_odf
+from dipy.reconst.csdeconv import recursive_response
+import dipy.reconst.dti as dti
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
@@ -58,8 +63,6 @@ will calculate FA for an ROI of radius equal to ``roi_radius`` in the center
 of the volume and return the response function estimated in that region for
 the voxels with FA higher than 0.7.
 """
-
-from dipy.reconst.csdeconv import auto_response
 
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
@@ -92,9 +95,6 @@ print(ratio)
 We can double-check that we have a good response function by visualizing the
 response function's ODF. Here is how you would do that:
 """
-
-from dipy.viz import window, actor
-from dipy.sims.voxel import single_tensor_odf
 
 # Enables/disables interactive visualization
 interactive = False
@@ -141,14 +141,11 @@ function is determined. This process is repeated until convergence is
 reached. Here we calibrate the response function on a small part of the data.
 """
 
-from dipy.reconst.csdeconv import recursive_response
-
 """
 A WM mask can shorten computation time for the whole dataset. Here it is
 created based on the DTI fit.
 """
 
-import dipy.reconst.dti as dti
 tenmodel = dti.TensorModel(gtab)
 tenfit = tenmodel.fit(data, mask=data[..., 0] > 200)
 
@@ -200,7 +197,6 @@ we are ready to start the deconvolution process. Let's import the CSD model
 and fit the datasets.
 """
 
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
 """
