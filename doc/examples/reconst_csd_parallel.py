@@ -17,6 +17,11 @@ from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, default_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
+from dipy.segment.mask import median_otsu
+from dipy.reconst.csdeconv import auto_response
+from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+import time
+from dipy.direction import peaks_from_model
 
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
@@ -26,12 +31,9 @@ data, affine = load_nifti(hardi_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
-from dipy.segment.mask import median_otsu
-
 maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
                              numpass=1, autocrop=False, dilate=2)
 
-from dipy.reconst.csdeconv import auto_response
 
 response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 
@@ -41,8 +43,6 @@ mask = mask[:, :, 33:37]
 """
 Now we are ready to import the CSD model and fit the datasets.
 """
-
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
@@ -55,8 +55,6 @@ number of CPUs available in your system. Alternatively, you can set
 duration of execution with or without parallelism.
 """
 
-import time
-from dipy.direction import peaks_from_model
 
 start_time = time.time()
 csd_peaks_parallel = peaks_from_model(model=csd_model,
