@@ -175,8 +175,8 @@ Visualize the mask using ``dipy_horizon``::
 
     Visualization of a slice from the generated brain mask
 
-
-Perform DTI using ``dipy_fit_dti`. The input of this function is the DWI data, b-values and b-vector files and the brain mask that we calculated in the previous step::
+Perform DTI using ``dipy_fit_dti``. The input of this function is the DWI data, b-values and b-vector files and the
+brain mask that we calculated in the previous step::
 
     dipy_fit_dti dwi.nii dwi.bval dwi.bvec out_work/brain_mask.nii.gz --out_dir out_work/
 
@@ -215,7 +215,7 @@ Build tractography with the ``peaks.pam5`` file as input using the fast EuDX alg
 
 We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
 
-    dipy_horizon out_work/tracts_from_peaks.trk --cluster
+    dipy_horizon out_work/tracks_from_peaks.trk --cluster
 
 For more information about each command line, try calling the ``-h`` flag for example ::
 
