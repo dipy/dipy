@@ -12,12 +12,11 @@ registration
 
 import numpy as np
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
+from dipy.align.metrics import SSDMetric, CCMetric
 import dipy.align.imwarp as imwarp
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data, save_nifti_data
+from dipy.io.image import load_nifti_data
 from dipy.segment.mask import median_otsu
-import os.path
 from dipy.viz import regtools
 
 

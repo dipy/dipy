@@ -142,7 +142,8 @@ def decfa_to_float(img_orig):
 
 
 def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
-    """ Will validate basic data type and value of spatial attribute.
+    """Validate basic data type and value of spatial attribute.
+
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
     the affine.
     Only verify the following:
@@ -169,6 +170,7 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     -------
     output : bool
         Does the input represent a valid 'state' of spatial attribute
+
     """
     all_valid = True
     only_3d_warning = False
