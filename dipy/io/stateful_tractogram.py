@@ -141,7 +141,7 @@ class StatefulTractogram(object):
         logger.debug(self)
 
     @staticmethod
-    def is_compatible_sft(sft_1, sft_2):
+    def are_compatible(sft_1, sft_2):
         """ Compatibility verification of two StatefulTractogram to ensure space,
         origin, data_per_point and data_per_streamline consistency """
 
@@ -236,7 +236,7 @@ class StatefulTractogram(object):
 
     def __eq__(self, other):
         """ Robust StatefulTractogram equality test """
-        if not self.is_compatible_sft(self, other):
+        if not self.are_compatible(self, other):
             return False
 
         streamlines_equal = np.allclose(self.streamlines.get_data(),
@@ -268,7 +268,7 @@ class StatefulTractogram(object):
 
     def __add__(self, other_sft):
         """ Addition of two sft with attributes consistency checks """
-        if not self.is_compatible_sft(self, other_sft):
+        if not self.are_compatible(self, other_sft):
             logger.debug(self)
             logger.debug(other_sft)
             raise ValueError('Inconsistent StatefulTractogram.\n'
