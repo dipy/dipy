@@ -12,12 +12,14 @@ First, we import the modules we will use in this example:
 """
 
 import dipy.reconst.sfm as sfm
+from dipy.reconst.csdeconv import auto_response
 import dipy.data as dpd
 import dipy.direction.peaks as dpp
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.viz import window, actor
+
 
 """
 For the purpose of this example, we will use the Stanford HARDI dataset (150
@@ -80,7 +82,6 @@ function:
 
 """
 
-from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
