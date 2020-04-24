@@ -206,16 +206,16 @@ Build tractography with the ``peaks.pam5`` file as input using the fast EuDX alg
 
     dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
 
+We can visualize the result using ``dipy_horizon``::
+
+    dipy_horizon out_work/tracks_from_peaks.trk
+
 .. figure:: https://github.com/dipy/dipy_data/blob/master/some_tracks.png?raw=true
     :width: 70 %
     :alt: alternate text
     :align: center
 
     Showing tracks from the specific dataset. This dataset contains only a few slices.
-
-We can visualize the result using ``dipy_horizon``. The ``--cluster`` option allows to directly see the clusters of the tractogram::
-
-    dipy_horizon out_work/tracks_from_peaks.trk --cluster
 
 For more information about each command line, try calling the ``-h`` flag for example ::
 
