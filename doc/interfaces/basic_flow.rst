@@ -204,7 +204,7 @@ Now, to move into doing some tracking we will need some seeds. We can generate s
 
 Build tractography with the ``peaks.pam5`` file as input using the fast EuDX algorithm [Garyfallidis12]_ ::
 
-    dipy_track_local out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
+    dipy_track out_work/peaks.pam5 out_work/fa.nii.gz out_work/seed_mask.nii.gz --out_dir out_work/ --out_tractogram tracks_from_peaks.trk --tracking_method eudx
 
 We can visualize the result using ``dipy_horizon``::
 
