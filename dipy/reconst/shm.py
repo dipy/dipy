@@ -1,4 +1,4 @@
-""" Tools for using spherical harmonic models to fit diffusion data
+"""Tools for using spherical harmonic models to fit diffusion data.
 
 References
 ----------
@@ -25,24 +25,14 @@ where data is Y.T and sh_coef is x.T.
 """
 
 import numpy as np
-from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
-from numpy.linalg import pinv, svd
+import scipy.special as sps
+
 from numpy.random import randint
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
-
-from distutils.version import LooseVersion
-import scipy
-from scipy.special import lpn, lpmv, gammaln
-
-if LooseVersion(scipy.version.short_version) >= LooseVersion('0.15.0'):
-    SCIPY_15_PLUS = True
-    import scipy.special as sps
-else:
-    SCIPY_15_PLUS = False
 
 
 def _copydoc(obj):
@@ -157,19 +147,8 @@ def gen_dirac(m, n, theta, phi):
     return real_sph_harm(m, n, theta, phi)
 
 
-def spherical_harmonics(m, n, theta, phi):
-    x = np.cos(phi)
-    val = lpmv(m, n, x).astype(complex)
-    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
-    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
-    val = val * np.exp(1j * m * theta)
-    return val
-
-if SCIPY_15_PLUS:
-    def spherical_harmonics(m, n, theta, phi):
-        return sps.sph_harm(m, n, theta, phi, dtype=complex)
-
-spherical_harmonics.__doc__ = r""" Compute spherical harmonics
+def spherical_harmonics(m, n, theta, phi, use_scipy=True):
+    """Compute spherical harmonics.
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -184,6 +163,8 @@ spherical_harmonics.__doc__ = r""" Compute spherical harmonics
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
         The polar (colatitudinal) coordinate.
+    use_scipy : bool
+        if True, use scipy implementation. default(True)
 
     Returns
     -------
@@ -195,7 +176,17 @@ spherical_harmonics.__doc__ = r""" Compute spherical harmonics
     This is a faster implementation of scipy.special.sph_harm for
     scipy version < 0.15.0. For scipy 0.15 and onwards, we use the scipy
     implementation of the function
+
     """
+    if use_scipy:
+        return sps.sph_harm(m, n, theta, phi, dtype=complex)
+
+    x = np.cos(phi)
+    val = sps.lpmv(m, n, x).astype(complex)
+    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (sps.gammaln(n - m + 1) - sps.gammaln(n + m + 1)))
+    val = val * np.exp(1j * m * theta)
+    return val
 
 
 def real_sph_harm(m, n, theta, phi):
@@ -377,7 +368,7 @@ def sph_harm_ind_list(sh_order):
 
     ncoef = int((sh_order + 2) * (sh_order + 1) // 2)
     offset = 0
-    m_list = empty(ncoef, 'int')
+    m_list = np.empty(ncoef, 'int')
     for ii in n_range:
         m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
         offset = offset + 2 * ii + 1
@@ -419,8 +410,8 @@ def smooth_pinv(B, L):
     product.
 
     """
-    L = diag(L)
-    inv = pinv(concatenate((B, L)))
+    L = np.diag(L)
+    inv = np.linalg.pinv(np.concatenate((B, L)))
     return inv[:, :len(B)]
 
 
@@ -436,7 +427,7 @@ def lazy_index(index):
         index = index.nonzero()[0]
     if len(index) == 1:
         return slice(index[0], index[0] + 1)
-    step = unique(diff(index))
+    step = np.unique(np.diff(index))
     if len(step) != 1 or step[0] == 0:
         return index
     else:
@@ -539,7 +530,7 @@ class QballBaseModel(SphHarmModel):
         r, theta, phi = cart2sphere(x, y, z)
         B, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
         L = -n * (n + 1)
-        legendre0 = lpn(sh_order, 0)[0]
+        legendre0 = sps.lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.sh_order = sh_order
         self.B = B
@@ -613,7 +604,7 @@ class SphHarmFit(OdfFit):
 
         """
         B = self.model.sampling_matrix(sphere)
-        return dot(self.shm_coeff, B.T)
+        return np.dot(self.shm_coeff, B.T)
 
     @auto_attr
     def gfa(self):
@@ -663,7 +654,7 @@ class CsaOdfModel(QballBaseModel):
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
         coefficients of the odf"""
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
         self._fit_matrix = (F * L) / (8 * np.pi) * invB
@@ -673,7 +664,7 @@ class CsaOdfModel(QballBaseModel):
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
         loglog_data = np.log(-np.log(data))
-        sh_coef = dot(loglog_data, self._fit_matrix.T)
+        sh_coef = np.dot(loglog_data, self._fit_matrix.T)
         sh_coef[..., 0] = self._n0_const
         return sh_coef
 
@@ -692,7 +683,7 @@ class OpdtModel(QballBaseModel):
            imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
         delta_b = F * L * invB
@@ -708,7 +699,8 @@ class OpdtModel(QballBaseModel):
 def _slowadc_formula(data, delta_b, delta_q):
     """formula used in SlowAdcOpdfModel"""
     logd = -np.log(data)
-    return dot(logd * (1.5 - logd) * data, delta_q.T) - dot(data, delta_b.T)
+    return (np.dot(logd * (1.5 - logd) * data, delta_q.T)
+            - np.dot(data, delta_b.T))
 
 
 class QballModel(QballBaseModel):
@@ -721,13 +713,13 @@ class QballModel(QballBaseModel):
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth) * L)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
         F = F[:, None]
         self._fit_matrix = F * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
-        return dot(data[..., self._where_dwi], self._fit_matrix.T)
+        return np.dot(data[..., self._where_dwi], self._fit_matrix.T)
 
 
 def normalize_data(data, where_b0, min_signal=1e-5, out=None):
@@ -750,8 +742,8 @@ def hat(B):
     """Returns the hat matrix for the design matrix B
     """
 
-    U, S, V = svd(B, False)
-    H = dot(U, U.T)
+    U, S, V = np.linalg.svd(B, False)
+    H = np.dot(U, U.T)
     return H
 
 
@@ -765,9 +757,9 @@ def lcr_matrix(H):
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
         raise ValueError('H should be a square matrix')
 
-    leverages = sqrt(1 - H.diagonal())
+    leverages = np.sqrt(1 - H.diagonal(), where=H.diagonal() <= 1)
     leverages = leverages[:, None]
-    R = (eye(len(H)) - H) / leverages
+    R = (np.eye(len(H)) - H) / leverages
     return R - R.mean(0)
 
 
@@ -797,7 +789,7 @@ def bootstrap_data_array(data, H, R, permute=None):
     assert R.shape == H.shape
     assert len(permute) == R.shape[-1]
     R = R[permute]
-    data = dot(data, (H + R).T)
+    data = np.dot(data, (H + R).T)
     return data
 
 
@@ -808,8 +800,8 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     """
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
-    r = dot(data, R.T)
-    boot_data = dot(data, H.T)
+    r = np.dot(data, R.T)
+    boot_data = np.dot(data, H.T)
     boot_data += r[permute]
     return boot_data
 
@@ -906,7 +898,7 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
 
     L = -n * (n + 1)
-    invB = smooth_pinv(B, sqrt(smooth) * L)
+    invB = smooth_pinv(B, np.sqrt(smooth) * L)
     sh = np.dot(sf, invB.T)
 
     return sh
@@ -1015,48 +1007,48 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True,
 
 
 def calculate_max_order(n_coeffs):
-        """Calculate the maximal harmonic order, given that you know the
-        number of parameters that were estimated.
+    r"""Calculate the maximal harmonic order, given that you know the
+    number of parameters that were estimated.
 
-        Parameters
-        ----------
-        n_coeffs : int
-            The number of SH coefficients
+    Parameters
+    ----------
+    n_coeffs : int
+        The number of SH coefficients
 
-        Returns
-        -------
-        L : int
-            The maximal SH order, given the number of coefficients
+    Returns
+    -------
+    L : int
+        The maximal SH order, given the number of coefficients
 
-        Notes
-        -----
-        The calculation in this function proceeds according to the following
-        logic:
-        .. math::
-           n = \frac{1}{2} (L+1) (L+2)
-           \rarrow 2n = L^2 + 3L + 2
-           \rarrow L^2 + 3L + 2 - 2n = 0
-           \rarrow L^2 + 3L + 2(1-n) = 0
-           \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
-           \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
+    Notes
+    -----
+    The calculation in this function proceeds according to the following
+    logic:
+    .. math::
+        n = \frac{1}{2} (L+1) (L+2)
+        \rarrow 2n = L^2 + 3L + 2
+        \rarrow L^2 + 3L + 2 - 2n = 0
+        \rarrow L^2 + 3L + 2(1-n) = 0
+        \rarrow L_{1,2} = \frac{-3 \pm \sqrt{9 - 8 (1-n)}}{2}
+        \rarrow L{1,2} = \frac{-3 \pm \sqrt{1 + 8n}}{2}
 
-        Finally, the positive value is chosen between the two options.
-        """
+    Finally, the positive value is chosen between the two options.
+    """
 
-        # L2 is negative for all positive values of n_coeffs, so we don't
-        # bother even computing it:
-        # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
-        # L1 is always the larger value, so we go with that:
-        L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2.0
-        # Check that it is a whole even number:
-        if L1.is_integer() and not np.mod(L1, 2):
-            return int(L1)
-        else:
-            # Otherwise, the input didn't make sense:
-            raise ValueError("The input to ``calculate_max_order`` was ",
-                             "%s, but that is not a valid number" % n_coeffs,
-                             "of coefficients for a spherical harmonics ",
-                             "basis set.")
+    # L2 is negative for all positive values of n_coeffs, so we don't
+    # bother even computing it:
+    # L2 = (-3 - np.sqrt(1 + 8 * n_coeffs)) / 2
+    # L1 is always the larger value, so we go with that:
+    L1 = (-3 + np.sqrt(1 + 8 * n_coeffs)) / 2.0
+    # Check that it is a whole even number:
+    if L1.is_integer() and not np.mod(L1, 2):
+        return int(L1)
+    else:
+        # Otherwise, the input didn't make sense:
+        raise ValueError("The input to ``calculate_max_order`` was ",
+                         "%s, but that is not a valid number" % n_coeffs,
+                         "of coefficients for a spherical harmonics ",
+                         "basis set.")
 
 
 def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
@@ -1105,8 +1097,8 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
             anisotropy tissues from HARDI data,
             in: Proceedings of International Society for Magnetic Resonance in
             Medicine. Milan, Italy.
-    """
 
+    """
     dim = sh_coeffs.shape[:-1]
     n_coeffs = sh_coeffs.shape[-1]
     max_order = calculate_max_order(n_coeffs)

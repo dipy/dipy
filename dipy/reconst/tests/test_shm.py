@@ -427,6 +427,9 @@ def test_faster_sph_harm():
     sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
 
     assert_array_almost_equal(sh, sh2, 8)
+    sh = spherical_harmonics(m, n, theta[:, None], phi[:, None],
+                             use_scipy=False)
+    assert_array_almost_equal(sh, sh2, 8)
 
 
 def test_anisotropic_power():
@@ -467,6 +470,7 @@ def test_calculate_max_order():
         assert_equal(calculate_max_order(n), o)
 
     assert_raises(ValueError, calculate_max_order, 29)
+
 
 if __name__ == "__main__":
     run_module_suite()

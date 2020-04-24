@@ -316,12 +316,15 @@ class ConstrainedSDTModel(SphHarmModel):
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_reg, odf_sh)
         Z = np.linalg.norm(qball_odf)
-        # normalize ODF
-        odf_sh /= Z
 
-        shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
-                                       self.lambda_, self.tau)
-        # print 'SDT CSD converged after %d iterations' % num_it
+        shm_coeff, num_it = np.zeros_like(odf_sh), 0
+        if Z:
+            # normalize ODF
+            odf_sh /= Z
+            shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
+                                           self.lambda_, self.tau)
+            # print 'SDT CSD converged after %d iterations' % num_it
+
         return SphHarmFit(self, shm_coeff, None)
 
 
@@ -655,7 +658,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
 
-    k = []
+    k = np.empty([])
     convergence = 50
     for num_it in range(1, convergence + 1):
         A = np.dot(B_reg, fodf_sh)
