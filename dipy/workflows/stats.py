@@ -514,7 +514,7 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, clust_thr="[5,3,1.5]", threshold=6,
+    def run(self, subject_folder, clust_thr=[5, 3, 1.5], threshold=6,
             out_dir=''):
         """Workflow of bundle analytics.
 
@@ -528,12 +528,11 @@ class BundleShapeAnalysis(Workflow):
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
 
-        clust_thr : string (default [5,3,1.5]), optional
+        clust_thr : variable float (default [5,3,1.5]), optional
             list of bundle clustering thresholds used in quickbundlesX
 
         threshold : float (default 6), optional
             Bundle shape similarity threshold.
-
 
         out_dir : string, optional
             Output directory (default input file directory)
@@ -548,8 +547,6 @@ class BundleShapeAnalysis(Workflow):
 
         """
         rng = np.random.RandomState()
-
-        clust_thr = list(map(float, clust_thr.strip('[]').split(',')))
 
         all_subjects = []
         if os.path.isdir(subject_folder):
