@@ -550,8 +550,6 @@ class BundleShapeAnalysis(Workflow):
         rng = np.random.RandomState()
 
         clust_thr = list(map(float, clust_thr.strip('[]').split(',')))
-        #clust_thr=[5,3,1.5]
-        print(clust_thr)
 
         all_subjects = []
         if os.path.isdir(subject_folder):
@@ -611,5 +609,6 @@ class BundleShapeAnalysis(Workflow):
             matplt.pyplot.title(bun[:-4])
             matplt.pyplot.imshow(ba_matrix, cmap=cmap)
             matplt.pyplot.colorbar()
+            matplt.pyplot.clim(0, 1)
             matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
             matplt.pyplot.clf()

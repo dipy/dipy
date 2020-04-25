@@ -163,7 +163,7 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
     rng : RandomState
-    clust_thr : float (default [5, 3, 1.5])
+    clust_thr : list of float (default [5, 3, 1.5])
         list of clustering thresholds used in quickbundlesX
     threshold : float (default 6)
         Threshold used for in computing bundle adjacency. Threshold controls
