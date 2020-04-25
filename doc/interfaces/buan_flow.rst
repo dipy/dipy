@@ -89,7 +89,7 @@ Create an ``out_dir`` folder (eg: sm_plots)::
 
 Run the following workflow::
 
-    dipy_buan_shapes subjects/ --out_dir "sm_plots"
+    dipy_buan_shapes subjects_small/ --out_dir "sm_plots"
 
 This workflow will generate 30 bundles shape similarity plots.
 Plots will look like the following example:
