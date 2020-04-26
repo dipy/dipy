@@ -47,13 +47,13 @@ Instantiate the Model and apply it to the data.
 dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=35, filter_width=18.5)
 
 """
-Lets just use one slice only from the data.
+Let's just use one slice only from the data.
 """
 
 dataslice = data[30:70, 20:80, data.shape[2] // 2]
 
 """
-Normalize the signal by the b0
+Normalize the signal by b0
 """
 
 dataslice = dataslice / (dataslice[..., 0, None]).astype(np.float)
