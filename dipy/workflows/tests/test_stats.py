@@ -26,6 +26,7 @@ matplt, have_matplotlib, _ = optional_package("matplotlib")
 
 def test_stats():
     with TemporaryDirectory() as out_dir:
+
         data_path, bval_path, bvec_path = get_fnames('small_101D')
         volume, affine = load_nifti(data_path)
         mask = np.ones_like(volume[:, :, :, 0], dtype=np.uint8)
@@ -34,8 +35,8 @@ def test_stats():
 
         snr_flow = SNRinCCFlow(force=True)
         args = [data_path, bval_path, bvec_path, mask_path]
-
         snr_flow.run(*args, out_dir=out_dir)
+
         assert_true(os.path.exists(os.path.join(out_dir, 'product.json')))
         assert_true(os.stat(os.path.join(
             out_dir, 'product.json')).st_size != 0)
@@ -122,7 +123,8 @@ def test_buan_bundle_profiles():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
+                    reason='Requires Pandas, StatsModels, PyTables, and '
+                           'matplotlib')
 def test_bundle_analysis_tractometry_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -189,7 +191,8 @@ def test_bundle_analysis_tractometry_flow():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
+                    reason='Requires Pandas, StatsModels, PyTables, and '
+                           'matplotlib')
 def test_linear_mixed_models_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -256,7 +259,8 @@ def test_linear_mixed_models_flow():
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables
                     or not have_matplotlib,
-                    reason='Requires Pandas, StatsModels, PyTables, and matplotlib')
+                    reason='Requires Pandas, StatsModels, PyTables, and '
+                           'matplotlib')
 def test_bundle_shape_analysis_flow():
 
     with TemporaryDirectory() as dirpath:
@@ -316,4 +320,5 @@ def test_bundle_shape_analysis_flow():
 
 
 if __name__ == '__main__':
-    npt.run_module_suite()
+    # npt.run_module_suite()
+    test_bundle_shape_analysis_flow()
