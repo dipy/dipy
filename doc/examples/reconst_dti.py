@@ -72,6 +72,11 @@ import dipy.reconst.dti as dti
 
 from dipy.data import get_fnames
 
+from dipy.segment.mask import median_otsu
+from dipy.reconst.dti import fractional_anisotropy, color_fa
+from dipy.data import get_sphere
+from dipy.viz import window, actor
+
 """
 ``get_fnames`` will download the raw dMRI dataset of a single subject.
 The size of the dataset is 87 MBytes. You only need to fetch once. It
@@ -96,11 +101,8 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 data.shape ``(81, 106, 76, 160)``
 
 First of all, we mask and crop the data. This is a quick way to avoid
-calculating Tensors on the background of the image. This is done using DIPY_'s
-``mask`` module.
+calculating Tensors on the background of the image. 
 """
-
-from dipy.segment.mask import median_otsu
 
 maskdata, mask = median_otsu(data, vol_idx=range(10, 50), median_radius=3,
                              numpass=1, autocrop=True, dilate=2)
@@ -147,7 +149,6 @@ or where more than one population of white matter fibers crosses.
 """
 
 print('Computing anisotropy measures (FA, MD, RGB)')
-from dipy.reconst.dti import fractional_anisotropy, color_fa
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -212,10 +213,7 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 
 print('Computing tensor ellipsoids in a part of the splenium of the CC')
 
-from dipy.data import get_sphere
 sphere = get_sphere('repulsion724')
-
-from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
