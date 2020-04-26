@@ -83,9 +83,6 @@ def test_squash():
     msk = np.array([1, 0, 1], dtype=np.bool_)  # explicit mask
     npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
                            arr_masked)
-    msk[1] = True  # unmask None, object array back
-    npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
-                           obj_masked)
 
 
 def test_CallableArray():
