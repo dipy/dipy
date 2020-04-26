@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti_data
 from dipy.segment.tissue import TissueClassifierHMRF
+import time
 
 """
 First we fetch the T1 volume from the Syn dataset and determine its shape.
@@ -78,7 +79,6 @@ After setting the necessary parameters we can now call an instance of the class
 parameters defined above to perform the segmentation task.
 """
 
-import time
 t0 = time.time()
 
 hmrf = TissueClassifierHMRF()
@@ -107,8 +107,8 @@ Now we plot the resulting segmentation.
 .. figure:: final_seg.png
    :align: center
 
-   Each tissue class is color coded separately, red for the WM, yellow for
-   the GM and light blue for the CSF.
+   Each tissue class is color coded separately, red for WM, yellow for
+    GM and light blue for CSF.
 
 And we will also have a look at the probability maps for each tissue class.
 """
