@@ -121,7 +121,7 @@ class SNRinCCFlow(Workflow):
 
             if not np.count_nonzero(mask_cc_part.astype(np.uint8)):
                 logging.warning("Empty mask: corpus callosum not found."
-                                " Updated your data or your threshold")
+                                " Update your data or your threshold")
 
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
             logging.info('CC mask saved as {0}'.format(cc_mask_path))
