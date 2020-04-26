@@ -10,6 +10,8 @@ single voxel using a MultiTensor.
 import numpy as np
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
+import matplotlib.pyplot as plt
+from dipy.viz import window, actor
 
 """
 For the simulation we will need a GradientTable with the b-values and b-vectors
@@ -54,8 +56,6 @@ signal_noisy, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
                          fractions=fractions, snr=20)
 
 
-import matplotlib.pyplot as plt
-
 plt.plot(signal, label='noiseless')
 
 plt.plot(signal_noisy, label='with noise')
@@ -81,8 +81,6 @@ sphere = get_sphere('repulsion724')
 sphere = sphere.subdivide(2)
 
 odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)
-
-from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
