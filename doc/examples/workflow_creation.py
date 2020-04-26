@@ -4,7 +4,7 @@ Creating a new workflow.
 ============================================================
 
 A workflow is a series of DIPY_ operations with fixed inputs and outputs
-that is callable via command line or another interface.
+that are callable via command line or another interface.
 
 For example, after installing DIPY_, you can call anywhere from your command
 line::
@@ -119,8 +119,8 @@ text::
 
    python workflow_creation.py --help
 
-You should see all your parameters available along with some extra common ones
-like logging file and force overwrite. Also all the documentation you wrote
+You should see if all your parameters are available along with some extra common ones
+like logging file and force overwrite. Also if all the documentation you wrote
 about each parameter is there.
 
 Now call it for real with a text file::
