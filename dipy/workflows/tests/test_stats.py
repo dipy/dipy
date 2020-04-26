@@ -320,5 +320,4 @@ def test_bundle_shape_analysis_flow():
 
 
 if __name__ == '__main__':
-    # npt.run_module_suite()
-    test_bundle_shape_analysis_flow()
+    npt.run_module_suite()
