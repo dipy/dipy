@@ -36,6 +36,10 @@ from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
 from dipy.segment.mask import median_otsu
 from dipy.reconst.dti import TensorModel
+from dipy.segment.mask import segment_from_cfa
+from dipy.segment.mask import bounding_box
+import matplotlib.pyplot as plt
+from scipy.ndimage.morphology import binary_dilation
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 
@@ -66,8 +70,6 @@ computed mask.
 """
 
 print('Computing worst-case/best-case SNR using the corpus callosum...')
-from dipy.segment.mask import segment_from_cfa
-from dipy.segment.mask import bounding_box
 
 threshold = (0.6, 1, 0, 0.1, 0, 0.1)
 CC_box = np.zeros_like(data[..., 0])
@@ -89,7 +91,7 @@ mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box, threshold,
 save_nifti('cfa_CC_part.nii.gz', (cfa*255).astype(np.uint8), affine)
 save_nifti('mask_CC_part.nii.gz', mask_cc_part.astype(np.uint8), affine)
 
-import matplotlib.pyplot as plt
+
 region = 40
 fig = plt.figure('Corpus callosum segmentation')
 plt.subplot(1, 2, 1)
@@ -125,7 +127,6 @@ also be determined manually with a ROI in the background.
 One thus has to be careful how the noise ROI is defined].
 """
 
-from scipy.ndimage.morphology import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
 mask_noise[..., :mask_noise.shape[-1]//2] = 1
 mask_noise = ~mask_noise
@@ -167,7 +168,7 @@ direction. In comparison, the DW images in the perpendical Y and Z axes have a
 high SNR. The b0 still exhibits the highest SNR, since there is no signal
 attenuation.
 
-Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of
+Hence, we can say that the Stanford diffusion data has a 'worst-case' SNR of
 approximately 5, a 'best-case' SNR of approximately 24, and a SNR of 42 on the
 b0 image.
 
