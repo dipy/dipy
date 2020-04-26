@@ -32,6 +32,12 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
 
+from dipy.viz import window, actor, colormap as cmap
+import matplotlib.pyplot as plt
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_trk
+
+
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')
@@ -101,12 +107,10 @@ other_streamlines = Streamlines(other_streamlines)
 assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
-We can use some of DIPY_'s visualization tools to display the ROI we targeted
+We can use some of DIPY_'s visualization tools to display the ROI that we targeted
 above and all the streamlines that pass though that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
-
-from dipy.viz import window, actor, colormap as cmap
 
 # Enables/disables interactive visualization
 interactive = False
@@ -186,9 +190,6 @@ We can now display this matrix using matplotlib, we display it using a log
 scale to make small values in the matrix easier to see.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 plt.imshow(np.log1p(M), interpolation='nearest')
 plt.savefig("connectivity.png")
 
@@ -230,10 +231,7 @@ visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
 
-"""
-
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_trk
+"""c
 
 # Save density map
 save_nifti("lr-superiorfrontal-dm.nii.gz", dm.astype("int16"), affine)
