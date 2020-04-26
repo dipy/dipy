@@ -61,6 +61,15 @@ Let's start by importing the necessary modules.
 
 from dipy.segment.metric import Feature
 from dipy.tracking.streamline import length
+import numpy as np
+from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
+from dipy.tracking.streamline import Streamlines
+from dipy.viz import window, actor
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metric import SumPointwiseEuclideanMetric
+from dipy.segment.metric import Metric
+from dipy.segment.metric import VectorOfEndpointsFeature
 
 """
 We now define the class ``ArcLengthFeature`` that will perform the desired
@@ -101,12 +110,6 @@ neuroanatomy as the fornix.
 We start by loading the fornix streamlines.
 """
 
-import numpy as np
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor
-
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same',
                          bbox_valid_check=False).streamlines
@@ -117,9 +120,6 @@ streamlines = Streamlines(fornix)
 Perform QuickBundles clustering using the metric
 ``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
 """
-
-from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import SumPointwiseEuclideanMetric
 
 metric = SumPointwiseEuclideanMetric(feature=ArcLengthFeature())
 qb = QuickBundles(threshold=2., metric=metric)
@@ -163,13 +163,7 @@ distance giving the vector between endpoints of each streamline (i.e. one
 minus the cosine of the angle between two vectors). For more information
 about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
 
-Let's start by importing the necessary modules.
-"""
 
-from dipy.segment.metric import Metric
-from dipy.segment.metric import VectorOfEndpointsFeature
-
-"""
 We now define the class ``CosineMetric`` that will perform the desired
 distance computation. When subclassing ``Metric``, two methods have to be
 redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
@@ -208,14 +202,7 @@ it to cluster a set of streamlines according to the cosine distance of the
 vector between their endpoints. For educational purposes we will try to
 cluster a small streamline bundle known from neuroanatomy as the fornix.
 
-We start by loading the fornix streamlines.
 """
-
-import numpy as np
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor
 
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
@@ -224,8 +211,6 @@ streamlines = fornix.streamlines
 """
 Perform QuickBundles clustering using our metric ``CosineMetric``.
 """
-
-from dipy.segment.clustering import QuickBundles
 
 metric = CosineMetric()
 qb = QuickBundles(threshold=0.1, metric=metric)
