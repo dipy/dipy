@@ -18,6 +18,7 @@ from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dsi import (DiffusionSpectrumDeconvModel,
                               DiffusionSpectrumModel)
+from dipy.viz import window, actor
 
 """
 For the simulation we will use a standard DSI acqusition scheme with 514
@@ -64,8 +65,6 @@ Finally, we can visualize the ground truth ODF, together with the DSI and DSI
 with deconvolution ODFs and observe that with the deconvolved method it is
 easier to resolve the correct fiber directions because the ODF is sharper.
 """
-
-from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
