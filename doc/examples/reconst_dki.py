@@ -281,10 +281,10 @@ These water diffusion compartmentalization is expected to be more pronounced
 prependicularly to white matter fibers and thus the RK map presents higher
 amplitudes than the AK map.
 
-It is important to note that kurtosis estimates might presented negative
+It is important to note that kurtosis estimates might present negative
 estimates in deep white matter regions (e.g. red arrow added in the figure
 above). This negative kurtosis values are artefactual and might be induced by:
-1) low radial diffusivities of aligned white matter - since it is very hard
+1) Low radial diffusivities of aligned white matter - Since it is very hard
 to capture non-Gaussian information in radial direction due to it's low
 diffusion decays, radial kurtosis estimates (and consequently the mean
 kurtosis estimates) might have low robustness and tendency to exhibit negative
