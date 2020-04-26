@@ -11,10 +11,13 @@ First import the necessary modules:
 
 import numpy as np
 from dipy.core.gradients import gradient_table
+from dipy.core.ndindex import ndindex
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.odf import gfa
+import matplotlib.pyplot as plt
 
 """
 Download and get the data filenames for this tutorial.
@@ -91,8 +94,6 @@ The simple solution is to generate/analyze the ODFs/PDFs by iterating through
 each voxel and not store them in memory if that is not necessary.
 """
 
-from dipy.core.ndindex import ndindex
-
 for index in ndindex(dataslice.shape[:2]):
     pdf = dsmodel.fit(dataslice[index]).pdf()
 
@@ -107,11 +108,7 @@ Let's now calculate a map of Generalized Fractional Anisotropy (GFA) [Tuch04]_
 using the DSI ODFs.
 """
 
-from dipy.reconst.odf import gfa
-
 GFA = gfa(ODF)
-
-import matplotlib.pyplot as plt
 
 fig_hist, ax = plt.subplots(1)
 ax.set_axis_off()
