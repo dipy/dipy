@@ -514,7 +514,8 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, threshold=6, out_dir=''):
+    def run(self, subject_folder, clust_thr=[5, 3, 1.5], threshold=6,
+            out_dir=''):
         """Workflow of bundle analytics.
 
         Applies bundle shape similarity analysis on bundles of subjects and
@@ -526,6 +527,9 @@ class BundleShapeAnalysis(Workflow):
         subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
+
+        clust_thr : variable float (default [5,3,1.5]), optional
+            list of bundle clustering thresholds used in quickbundlesX
 
         threshold : float (default 6), optional
             Bundle shape similarity threshold.
@@ -543,6 +547,7 @@ class BundleShapeAnalysis(Workflow):
 
         """
         rng = np.random.RandomState()
+
         all_subjects = []
         if os.path.isdir(subject_folder):
             groups = os.listdir(subject_folder)
@@ -588,7 +593,7 @@ class BundleShapeAnalysis(Workflow):
                                               bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2, rng,
-                                                       threshold)
+                                                       clust_thr, threshold)
 
                     ba_matrix[i][j] = ba_value
 
@@ -601,5 +606,6 @@ class BundleShapeAnalysis(Workflow):
             matplt.pyplot.title(bun[:-4])
             matplt.pyplot.imshow(ba_matrix, cmap=cmap)
             matplt.pyplot.colorbar()
+            matplt.pyplot.clim(0, 1)
             matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
             matplt.pyplot.clf()

@@ -89,18 +89,20 @@ Create an ``out_dir`` folder (eg: sm_plots)::
 
 Run the following workflow::
 
-    dipy_buan_shapes subjects/ --out_dir "sm_plots"
+    dipy_buan_shapes subjects_small/ --out_dir "sm_plots"
 
-This workflow will generate 30 bundles shape similarity plots.
+This workflow will generate 30 bundles shape similarity plots. Shape similarity
+score ranges between 0-1, where 1 being highest similarity and 0 being lowest.
 Plots will look like the following example:
 
-.. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_ML_L__recognized.png?raw=true
+.. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_UF_R__recognized.png?raw=true
     :width: 70 %
     :alt: alternate text
     :align: center
 
-    Result plot for left medial lemniscus (ML_L) for 10 subjects.
-    First 5 subjects belong to the healthy control group and last 5 subjects belong to patient group
+    Result plot for right uncinate fasciculus (UF_R) for 10 subjects.
+    First 5 subjects belong to the healthy control group and last 5 subjects belong to patient group.
+    In the diagonal, we have shape similarity score of 1 as it is calculated between a bundle and itself.
 
 --------------------------------------
 Reproducing results on larger dataset:
