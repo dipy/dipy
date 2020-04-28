@@ -35,3 +35,4 @@ __config__.py
 dipy/.idea/
 .idea
 .vscode
+.pytest_cache/*

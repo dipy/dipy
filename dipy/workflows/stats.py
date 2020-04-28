@@ -119,10 +119,17 @@ class SNRinCCFlow(Workflow):
                                                  bbox_threshold,
                                                  return_cfa=True)
 
+            if not np.count_nonzero(mask_cc_part.astype(np.uint8)):
+                logging.warning("Empty mask: corpus callosum not found."
+                                " Update your data or your threshold")
+
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
             logging.info('CC mask saved as {0}'.format(cc_mask_path))
 
-            mean_signal = np.mean(data[mask_cc_part], axis=0)
+            masked_data = data[mask_cc_part]
+            mean_signal = 0
+            if masked_data.size:
+                mean_signal = np.mean(masked_data, axis=0)
             mask_noise = binary_dilation(mask, iterations=10)
             mask_noise[..., :mask_noise.shape[-1]//2] = 1
             mask_noise = ~mask_noise
@@ -130,7 +137,10 @@ class SNRinCCFlow(Workflow):
             save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
             logging.info('Mask noise saved as {0}'.format(mask_noise_path))
 
-            noise_std = np.std(data[mask_noise, :])
+            noise_std = 0
+            if np.count_nonzero(mask_noise.astype(np.uint8)):
+                noise_std = np.std(data[mask_noise, :])
+
             logging.info('Noise standard deviation sigma= ' + str(noise_std))
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
@@ -146,14 +156,14 @@ class SNRinCCFlow(Workflow):
             SNR_directions = []
             for direction in ['b0', axis_X, axis_Y, axis_Z]:
                 if direction == 'b0':
-                    SNR = mean_signal[0]/noise_std
+                    SNR = mean_signal[0]/noise_std if noise_std else 0
                     logging.info("SNR for the b=0 image is :" + str(SNR))
                 else:
                     logging.info("SNR for direction " + str(direction) +
                                  " " + str(gtab.bvecs[direction]) + "is :" +
                                  str(SNR))
                     SNR_directions.append(direction)
-                    SNR = mean_signal[direction]/noise_std
+                    SNR = mean_signal[direction]/noise_std if noise_std else 0
                 SNR_output.append(SNR)
 
             data = []
