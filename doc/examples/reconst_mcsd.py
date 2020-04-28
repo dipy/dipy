@@ -29,6 +29,7 @@ The reconstruction of the fiber orientation distribution function
 First, we import all the modules we need from dipy as follows:
 """
 
+import time
 import numpy as np
 import dipy.reconst.shm as shm
 import dipy.direction.peaks as dp
@@ -47,6 +48,8 @@ from dipy.reconst.mcsd import (auto_response_msmt,
 from dipy.segment.tissue import TissueClassifierHMRF
 from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
 from dipy.viz import window, actor
+
+from dipy.direction.peaks import peaks_from_model
 
 from dipy.data import get_sphere, get_fnames
 sphere = get_sphere('symmetric724')
@@ -110,31 +113,31 @@ As for the next step, we generate the anisotropic powermap introduced by
 [DellAcqua2014]_. To do so, we make use of the Q-ball Model as follows:
 """
 
-# qball_model = shm.QballModel(gtab, 8)
+qball_model = shm.QballModel(gtab, 8)
 
-# """
-# We generate the peaks from the ``qball_model`` as follows:
-# """
+"""
+We generate the peaks from the ``qball_model`` as follows:
+"""
 
-# peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
-#                             relative_peak_threshold=.5,
-#                             min_separation_angle=25,
-#                             sphere=sphere, mask=mask)
+peaks = dp.peaks_from_model(model=qball_model, data=denoised_arr,
+                            relative_peak_threshold=.5,
+                            min_separation_angle=25,
+                            sphere=sphere, mask=mask)
 
-# ap = shm.anisotropic_power(peaks.shm_coeff)
+ap = shm.anisotropic_power(peaks.shm_coeff)
 
-# plt.matshow(np.rot90(ap[:, :, 10]), cmap=plt.cm.bone)
-# plt.savefig("anisotropic_power_map.png")
-# plt.close()
+plt.matshow(np.rot90(ap[:, :, 10]), cmap=plt.cm.bone)
+plt.savefig("anisotropic_power_map.png")
+plt.close()
 
-# """
-# .. figure:: anisotropic_power_map.png
-#    :align: center
+"""
+.. figure:: anisotropic_power_map.png
+   :align: center
 
-#    Anisotropic Power Map (Axial Slice)
-# """
+   Anisotropic Power Map (Axial Slice)
+"""
 
-# print(ap.shape)
+print(ap.shape)
 
 """
 The above figure is a visualization of the axial slice of the Anisotropic
@@ -165,17 +168,17 @@ We then call the ``TissueClassifierHMRF`` with the parameters specified as
 above:
 """
 
-# hmrf = TissueClassifierHMRF()
-# initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
+hmrf = TissueClassifierHMRF()
+initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
 
 
-# """
-# Then, we get the tissues segmentation from the final_segmentation.
-# """
+"""
+Then, we get the tissues segmentation from the final_segmentation.
+"""
 
-# csf = np.where(final_segmentation == 1, 1, 0)
-# gm = np.where(final_segmentation == 2, 1, 0)
-# wm = np.where(final_segmentation == 3, 1, 0)
+csf = np.where(final_segmentation == 1, 1, 0)
+gm = np.where(final_segmentation == 2, 1, 0)
+wm = np.where(final_segmentation == 3, 1, 0)
 
 
 """
@@ -206,9 +209,9 @@ If one wants to use the previously computed tissue segmentation in addition to
 the threshold method, it is possible by simply multiplying both masks together.
 """
 
-# mask_wm *= wm
-# mask_gm *= gm
-# mask_csf *= csf
+mask_wm *= wm
+mask_gm *= gm
+mask_csf *= csf
 
 """
 The masks can also be used to calculate the number of voxels for each tissue.

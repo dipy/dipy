@@ -9,13 +9,14 @@ from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import scipy.optimize as opt
 
+from dipy.reconst.multi_voxel import MultiVoxelFit
 from dipy.reconst.odf import gfa
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
-from dipy.reconst.shm import sh_to_sf_matrix
+from dipy.reconst.shm import sh_to_sf_matrix, SphHarmFit
 from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
 
 
@@ -222,7 +223,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
                                sh_basis_type, npeaks, B, invB, nbr_processes):
-
     if nbr_processes is None:
         try:
             nbr_processes = cpu_count()
@@ -397,8 +397,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     Parameters
     ----------
     model : a model instance
-        If model is an instance of the model SphHarmFit, no fit will be done
-        again. Else, `model` will be used to fit the data.
+        `model` will be used to fit the data.
     sphere : Sphere
         The Sphere providing discrete directions for evaluation.
     relative_peak_threshold : float
@@ -512,10 +511,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if not mask[idx]:
             continue
 
-        if isinstance(model, SphHarmFit):
-            odf = model[idx].odf(sphere)
-        else:
-            odf = model.fit(data[idx]).odf(sphere)
+        odf = model.fit(data[idx]).odf(sphere)
 
         if return_sh:
             shm_coeff[idx] = np.dot(odf, invB)
