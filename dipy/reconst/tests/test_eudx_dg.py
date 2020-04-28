@@ -1,7 +1,26 @@
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import default_sphere, peaks_from_model
+import dipy.reconst.peak_direction_getter
+import dipy.reconst.eudx_direction_getter
+
+
+def test_EuDXDirectionGetter_deprecated_warning():
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # create a EuDXDirectionGetter from deprecated file
+        dg_peak = dipy.reconst.peak_direction_getter.EuDXDirectionGetter()
+        npt.assert_equal(len(w), 1)
+        npt.assert_equal(issubclass(w[-1].category, DeprecationWarning), True)
+        npt.assert_equal("deprecated" in str(w[-1].message), True)
+
+    npt.assert_equal(
+        isinstance(dg_peak,
+                   dipy.reconst.eudx_direction_getter.EuDXDirectionGetter),
+        True)
 
 
 def test_EuDXDirectionGetter():
@@ -36,9 +55,9 @@ def test_EuDXDirectionGetter():
     up[2] = 1.
     down = -up
 
-    for i in range(3-1):
-        for j in range(4-1):
-            for k in range(5-1):
+    for i in range(3 - 1):
+        for j in range(4 - 1):
+            for k in range(5 - 1):
                 point = np.array([i, j, k], dtype=float)
 
                 # Test that the angle threshold rejects points

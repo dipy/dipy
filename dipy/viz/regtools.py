@@ -39,6 +39,8 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     """
 
     plt.plot(x, y)
+    axes = plt.gca()
+    axes.set_ylim([0, 4])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
@@ -222,25 +224,25 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         # By default, direct_grid_shape is the codomain grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.codomain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.codomain_grid2world
 
         # By default, the inverse grid is the domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.domain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.domain_grid2world
     else:
         # Now by default, direct_grid_shape is the mapping's input grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.domain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.domain_grid2world
 
         # By default, the output grid is the mapping's domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.codomain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.codomain_grid2world
 
     # The world-to-image (image = drawn lattice on the output grid)
@@ -384,19 +386,19 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
 
     # Create the color image to draw the overlapped slices into, and extract
     # the slices (note the transpositions)
-    if slice_type is 0:
+    if slice_type == 0:
         if slice_index is None:
             slice_index = sh[0] // 2
         colorImage = np.zeros(shape=(sh[2], sh[1], 3), dtype=np.uint8)
         ll = np.asarray(L[slice_index, :, :]).astype(np.uint8).T
         rr = np.asarray(R[slice_index, :, :]).astype(np.uint8).T
-    elif slice_type is 1:
+    elif slice_type == 1:
         if slice_index is None:
             slice_index = sh[1] // 2
         colorImage = np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, slice_index, :]).astype(np.uint8).T
         rr = np.asarray(R[:, slice_index, :]).astype(np.uint8).T
-    elif slice_type is 2:
+    elif slice_type == 2:
         if slice_index is None:
             slice_index = sh[2] // 2
         colorImage = np.zeros(shape=(sh[1], sh[0], 3), dtype=np.uint8)

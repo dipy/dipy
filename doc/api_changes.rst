@@ -5,16 +5,25 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.2.0 changes
+------------------
+
+**Tracking**
+
+The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
+been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
+
+
 DIPY 1.1.1 changes
-----------------
+------------------
 
 **IO**
 
-`img.get_data()` is deprecated since Nibabel 3.0.0. Using `np.asanyarray(img.dataobj)` instead of `img.get_data()`.
+``img.get_data()`` is deprecated since Nibabel 3.0.0. Using ``np.asanyarray(img.dataobj)`` instead of ``img.get_data()``.
 
 **Tractogram**
 
-``dipy.io.streamlines.StatefulTractogram``can be created by another one.
+``dipy.io.streamlines.StatefulTractogram`` can be created by another one.
 
 **Workflows**
 
@@ -27,14 +36,14 @@ applied to all the codebase. The default datatype is now float64.
 
 
 DIPY 1.0.0 changes
-----------------
+------------------
 Some of the changes introduced in the 1.0 release will break backward
 compatibility with previous versions. This release is compatible with Python 3.5+
 
 **Reconstruction**
 
-The spherical harmonics bases `mrtrix` and `fibernav` have been renamed to
-`tournier07` and `descoteaux07` after the deprecation cycle started in the
+The spherical harmonics bases ``mrtrix`` and ``fibernav`` have been renamed to
+``tournier07`` and ``descoteaux07`` after the deprecation cycle started in the
 0.15 release.
 
 We changed ``dipy.data.default_sphere`` from symmetric724 to repulsion724 which is
@@ -155,7 +164,7 @@ DIPY 0.15 Changes
 
 **IO**
 
-``load_tck`` and ``save_tck`` from ``dipy.io.streamline``have been added. They are highly recommended for managing streamlines.
+``load_tck`` and ``save_tck`` from ``dipy.io.streamline`` have been added. They are highly recommended for managing streamlines.
 
 **Gradient Table**
 
@@ -240,7 +249,7 @@ Use the module ``nibabel.streamlines`` for saving trk files and not
 DIPY 0.10 Changes
 -----------------
 
-** New visualization module**
+**New visualization module**
 
 ``fvtk.slicer`` input parameters have changed. Now the slicer function is
 more powerful and supports RGB images too. See tutorial ``viz_slice.py`` for

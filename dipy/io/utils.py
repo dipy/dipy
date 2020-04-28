@@ -2,12 +2,16 @@
 import logging
 import numbers
 import os
-
+from dipy.utils.optpkg import optional_package
 import dipy
 import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
 import numpy as np
+pd, have_pd, _ = optional_package("pandas")
+
+if have_pd:
+    import pandas as pd
 
 
 def nifti1_symmat(image_data, *args, **kwargs):
@@ -138,7 +142,8 @@ def decfa_to_float(img_orig):
 
 
 def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
-    """ Will validate basic data type and value of spatial attribute.
+    """Validate basic data type and value of spatial attribute.
+
     Does not ensure that voxel_sizes and voxel_order are self-coherent with
     the affine.
     Only verify the following:
@@ -165,6 +170,7 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     -------
     output : bool
         Does the input represent a valid 'state' of spatial attribute
+
     """
     all_valid = True
     only_3d_warning = False
@@ -267,10 +273,7 @@ def get_reference_info(reference):
         is_sft = True
 
     if is_nifti:
-        affine = np.eye(4).astype(np.float32)
-        affine[0, 0:4] = header['srow_x']
-        affine[1, 0:4] = header['srow_y']
-        affine[2, 0:4] = header['srow_z']
+        affine = header.get_best_affine()
         dimensions = header['dim'][1:4]
         voxel_sizes = header['pixdim'][1:4]
 
@@ -358,10 +361,28 @@ def create_tractogram_header(tractogram_type, affine, dimensions, voxel_sizes,
 def create_nifti_header(affine, dimensions, voxel_sizes):
     """ Write a standard nifti header from spatial attribute """
     new_header = nib.Nifti1Header()
-    new_header['srow_x'] = affine[0, 0:4]
-    new_header['srow_y'] = affine[1, 0:4]
-    new_header['srow_z'] = affine[2, 0:4]
+    new_header.set_sform(affine)
     new_header['dim'][1:4] = dimensions
     new_header['pixdim'][1:4] = voxel_sizes
 
     return new_header
+
+
+def save_buan_profiles_hdf5(fname, dt):
+    """ Saves the given input dataframe to .h5 file
+
+    Parameters
+    ----------
+    fname : string
+        file name for saving the hdf5 file
+    dt : Pandas DataFrame
+        DataFrame to be saved as .h5 file
+
+    """
+
+    df = pd.DataFrame(dt)
+    filename_hdf5 = fname + '.h5'
+
+    store = pd.HDFStore(filename_hdf5, complevel=9)
+    store.append(fname, df, data_columns=True, complevel=9)
+    store.close()

@@ -82,7 +82,6 @@ This is needed as there is no way one can tell which extremity of a
 streamline is the beginning and which one is the end.
 """
 
-
 class ArcLengthFeature(Feature):
     """ Computes the arc length of a streamline. """
     def __init__(self):
@@ -99,7 +98,6 @@ class ArcLengthFeature(Feature):
         # return np.sum(np.sqrt(np.sum((streamline[1:] - streamline[:-1]) ** 2)))
         # or use a DIPY's function that computes the arc length of a streamline.
         return length(streamline)
-
 
 """
 The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's use
@@ -163,14 +161,16 @@ distance giving the vector between endpoints of each streamline (i.e. one
 minus the cosine of the angle between two vectors). For more information
 about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
 
+Let's start by importing the necessary modules.
+"""
 
+"""
 We now define the class ``CosineMetric`` that will perform the desired
 distance computation. When subclassing ``Metric``, two methods have to be
 redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
 ``dist`` method, one needs to make sure the distance returned is symmetric
 (i.e. `dist(A, B) == dist(B, A)`).
 """
-
 
 class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
@@ -181,7 +181,7 @@ class CosineMetric(Metric):
     def are_compatible(self, shape1, shape2):
         """ Checks if two features are vectors of same dimension.
 
-        Basically this method exists so we don't have to do this check
+        Basically this method exists so that we don't have to check
         inside the `dist` method (speedup).
         """
         return shape1 == shape2 and shape1[0] == 1

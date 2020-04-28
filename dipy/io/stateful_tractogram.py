@@ -11,7 +11,9 @@ from nibabel.streamlines.tractogram import (Tractogram,
 import numpy as np
 
 from dipy.io.dpy import Streamlines
-from dipy.io.utils import get_reference_info, is_reference_info_valid
+from dipy.io.utils import (get_reference_info,
+                           is_reference_info_valid,
+                           is_header_compatible)
 
 
 logger = logging.getLogger('StatefulTractogram')
@@ -102,13 +104,13 @@ class StatefulTractogram(object):
                                       data_per_streamline=data_per_streamline)
 
         if isinstance(reference, type(self)):
-            logging.warning('Using a StatefulTractogram as reference, this '
-                            'will copy only the space_attributes, not '
-                            'the state. The variables space and origin '
-                            'must be specified separately.')
-            logging.warning('To copy the state from another StatefulTractogram'
-                            'you may want to use the function from_sft'
-                            '(static function of the StatefulTractogram)')
+            logger.warning('Using a StatefulTractogram as reference, this '
+                           'will copy only the space_attributes, not '
+                           'the state. The variables space and origin '
+                           'must be specified separately.')
+            logger.warning('To copy the state from another StatefulTractogram '
+                           'you may want to use the function from_sft '
+                           '(static function of the StatefulTractogram)')
 
         if isinstance(reference, tuple) and len(reference) == 4:
             if is_reference_info_valid(*reference):
@@ -137,6 +139,35 @@ class StatefulTractogram(object):
                              'e.g Origin.NIFTI')
         self._origin = origin
         logger.debug(self)
+
+    @staticmethod
+    def are_compatible(sft_1, sft_2):
+        """ Compatibility verification of two StatefulTractogram to ensure space,
+        origin, data_per_point and data_per_streamline consistency """
+
+        are_sft_compatible = True
+        if not is_header_compatible(sft_1, sft_2):
+            logger.warning('Inconsistent spatial attributes between both sft.')
+            are_sft_compatible = False
+
+        if sft_1.space != sft_2.space:
+            logger.warning('Inconsistent space between both sft.')
+            are_sft_compatible = False
+        if sft_1.origin != sft_2.origin:
+            logger.warning('Inconsistent origin between both sft.')
+            are_sft_compatible = False
+
+        if sft_1.get_data_per_point_keys() != sft_2.get_data_per_point_keys():
+            logger.warning(
+                'Inconsistent data_per_point between both sft.')
+            are_sft_compatible = False
+        if sft_1.get_data_per_streamline_keys() != \
+                sft_2.get_data_per_streamline_keys():
+            logger.warning(
+                'Inconsistent data_per_streamline between both sft.')
+            are_sft_compatible = False
+
+        return are_sft_compatible
 
     @staticmethod
     def from_sft(streamlines, sft,
@@ -184,15 +215,83 @@ class StatefulTractogram(object):
         text += '\nstreamline_count: {}'.format(self._get_streamline_count())
         text += '\npoint_count: {}'.format(self._get_point_count())
         text += '\ndata_per_streamline keys: {}'.format(
-            self.data_per_point.keys())
+            self.get_data_per_streamline_keys())
         text += '\ndata_per_point keys: {}'.format(
-            self.data_per_streamline.keys())
+            self.get_data_per_point_keys())
 
         return text
 
     def __len__(self):
         """ Define the length of the object """
         return self._get_streamline_count()
+
+    def __getitem__(self, key):
+        """ Slice all data in a consistent way """
+        if isinstance(key, int):
+            key = [key]
+
+        return self.from_sft(self.streamlines[key], self,
+                             data_per_point=self.data_per_point[key],
+                             data_per_streamline=self.data_per_streamline[key])
+
+    def __eq__(self, other):
+        """ Robust StatefulTractogram equality test """
+        if not self.are_compatible(self, other):
+            return False
+
+        streamlines_equal = np.allclose(self.streamlines.get_data(),
+                                        other.streamlines.get_data())
+        if not streamlines_equal:
+            return False
+
+        dpp_equal = True
+        for key in self.data_per_point:
+            dpp_equal = dpp_equal and np.allclose(
+                self.data_per_point[key].get_data(),
+                other.data_per_point[key].get_data())
+        if not dpp_equal:
+            return False
+
+        dps_equal = True
+        for key in self.data_per_streamline:
+            dps_equal = dps_equal and np.allclose(
+                self.data_per_streamline[key],
+                other.data_per_streamline[key])
+        if not dps_equal:
+            return False
+
+        return True
+
+    def __ne__(self, other):
+        """ Robust StatefulTractogram equality test (NOT) """
+        return not self == other
+
+    def __add__(self, other_sft):
+        """ Addition of two sft with attributes consistency checks """
+        if not self.are_compatible(self, other_sft):
+            logger.debug(self)
+            logger.debug(other_sft)
+            raise ValueError('Inconsistent StatefulTractogram.\n'
+                             'Make sure Space, Origin are the same and that '
+                             'data_per_point and data_per_streamline keys are '
+                             'the same.')
+
+        streamlines = self.streamlines.copy()
+        streamlines.extend(other_sft.streamlines)
+
+        data_per_point = deepcopy(self.data_per_point)
+        data_per_point.extend(other_sft.data_per_point)
+
+        data_per_streamline = deepcopy(self.data_per_streamline)
+        data_per_streamline.extend(other_sft.data_per_streamline)
+
+        return self.from_sft(streamlines, self,
+                             data_per_point=data_per_point,
+                             data_per_streamline=data_per_streamline)
+
+    def __iadd__(self, other):
+        self.value = self + other
+        return self.value
 
     @property
     def space_attributes(self):
@@ -291,6 +390,14 @@ class StatefulTractogram(object):
         """
         self._tractogram.data_per_streamline = data
         logger.warning('Data_per_streamline has been modified')
+
+    def get_data_per_point_keys(self):
+        """ Return a list of the data_per_point attribute names """
+        return list(self.data_per_point.keys())
+
+    def get_data_per_streamline_keys(self):
+        """ Return a list of the data_per_streamline attribute names """
+        return list(self.data_per_streamline.keys())
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
@@ -403,11 +510,18 @@ class StatefulTractogram(object):
 
         return is_valid
 
-    def remove_invalid_streamlines(self):
+    def remove_invalid_streamlines(self, epsilon=1e-6):
         """ Remove streamlines with invalid coordinates from the object.
         Will also remove the data_per_point and data_per_streamline.
         Invalid coordinates are any X,Y,Z values above the reference
         dimensions or below zero
+
+        Parameters
+        ----------
+        epsilon : float (optional)
+            Epsilon value for the bounding box verification.
+            Default is 1e-6.
+
         Returns
         -------
         output : tuple
@@ -423,9 +537,9 @@ class StatefulTractogram(object):
         self.to_corner()
 
         min_condition = np.min(self._tractogram.streamlines._data,
-                               axis=1) < 0.0
+                               axis=1) < epsilon
         max_condition = np.any(self._tractogram.streamlines._data >
-                               self._dimensions, axis=1)
+                               self._dimensions-epsilon, axis=1)
         ic_offsets_indices = np.where(np.logical_or(min_condition,
                                                     max_condition))[0]
 
@@ -438,13 +552,12 @@ class StatefulTractogram(object):
                                        np.array(indices_to_remove)).astype(int)
 
         tmp_streamlines = self.streamlines[indices_to_keep]
-        tmp_data_per_point = self._tractogram.data_per_point[indices_to_keep]
-        tmp_data_per_streamline =\
-            self._tractogram.data_per_streamline[indices_to_keep]
+        tmp_dpp = self._tractogram.data_per_point[indices_to_keep]
+        tmp_dps = self._tractogram.data_per_streamline[indices_to_keep]
 
         self._tractogram = Tractogram(tmp_streamlines.copy(),
-                                      data_per_point=tmp_data_per_point,
-                                      data_per_streamline=tmp_data_per_streamline,
+                                      data_per_point=tmp_dpp,
+                                      data_per_streamline=tmp_dps,
                                       affine_to_rasmm=np.eye(4))
 
         self.to_space(old_space)
@@ -591,7 +704,7 @@ def _is_data_per_point_valid(streamlines, data):
         total_point_entries = 0
         if not len(data[key]) == total_streamline:
             logger.error('Missing entry for streamlines points data, '
-                         'incoherent number of streamlines.')
+                         'inconsistent number of streamlines.')
             return False
 
         for values in data[key]:
@@ -599,7 +712,7 @@ def _is_data_per_point_valid(streamlines, data):
 
         if total_point_entries != total_point:
             logger.error('Missing entry for streamlines points data, '
-                         'incoherent number of points per streamlines.')
+                         'inconsistent number of points per streamlines.')
             return False
 
     return True
@@ -634,7 +747,7 @@ def _is_data_per_streamline_valid(streamlines, data):
     for key in data.keys():
         if not len(data[key]) == total_streamline:
             logger.error('Missing entry for streamlines points data, '
-                         'incoherent number of streamlines.')
+                         'inconsistent number of streamlines.')
             return False
 
     return True

@@ -21,7 +21,7 @@ RegistrationStages = Bunch(INIT_START=0,
                            SCALE_END=5,
                            ITER_START=6,
                            ITER_END=7)
-r"""Registration Stages
+"""Registration Stages
 
 This enum defines the different stages which the Volumetric Registration
 may be in. The value of the stage is passed as a parameter to the call-back
@@ -40,7 +40,7 @@ ITER_END: the current iteration ends
 logger = logging.getLogger(__name__)
 
 def mult_aff(A, B):
-    r"""Returns the matrix product A.dot(B) considering None as the identity
+    """Returns the matrix product A.dot(B) considering None as the identity
 
     Parameters
     ----------
@@ -60,7 +60,7 @@ def mult_aff(A, B):
 
 
 def get_direction_and_spacings(affine, dim):
-    r"""Extracts the rotational and spacing components from a matrix
+    """Extracts the rotational and spacing components from a matrix
 
     Extracts the rotational and spacing (voxel dimensions) components from a
     matrix. An image gradient represents the local variation of the image's
@@ -109,7 +109,7 @@ class DiffeomorphicMap(object):
                  codomain_shape=None,
                  codomain_grid2world=None,
                  prealign=None):
-        r""" DiffeomorphicMap
+        """ DiffeomorphicMap
 
         Implements a diffeomorphic transformation on the physical space. The
         deformation fields encoding the direct and inverse transformations
@@ -130,7 +130,7 @@ class DiffeomorphicMap(object):
             grid and space
         domain_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the default
-            discretizatio of this map's domain
+            discretization of this map's domain
         domain_grid2world : array, shape (dim+1, dim+1)
             the default voxel-to-space transformation between this map's
             discretization and physical space
@@ -225,7 +225,7 @@ class DiffeomorphicMap(object):
         raise ValueError('Invalid matrix')
 
     def get_forward_field(self):
-        r"""Deformation field to transform an image in the forward direction
+        """Deformation field to transform an image in the forward direction
 
         Returns the deformation field that must be used to warp an image under
         this transformation in the forward direction (note the 'is_inverse'
@@ -237,7 +237,7 @@ class DiffeomorphicMap(object):
             return self.forward
 
     def get_backward_field(self):
-        r"""Deformation field to transform an image in the backward direction
+        """Deformation field to transform an image in the backward direction
 
         Returns the deformation field that must be used to warp an image under
         this transformation in the backward direction (note the 'is_inverse'
@@ -249,7 +249,7 @@ class DiffeomorphicMap(object):
             return self.backward
 
     def allocate(self):
-        r"""Creates a zero displacement field
+        """Creates a zero displacement field
 
         Creates a zero displacement field (the identity transformation).
         """
@@ -259,7 +259,7 @@ class DiffeomorphicMap(object):
                                  dtype=floating)
 
     def _get_warping_function(self, interpolation):
-        r"""Appropriate warping function for the given interpolation type
+        """Appropriate warping function for the given interpolation type
 
         Returns the right warping function from vector_fields that must be
         called for the specified data dimension and interpolation type
@@ -278,7 +278,7 @@ class DiffeomorphicMap(object):
     def _warp_forward(self, image, interpolation='linear',
                       image_world2grid=None, out_shape=None,
                       out_grid2world=None):
-        r"""Warps an image in the forward direction
+        """Warps an image in the forward direction
 
         Deforms the input image under this diffeomorphic map in the forward
         direction. Since the mapping is defined in the physical space, the user
@@ -298,7 +298,7 @@ class DiffeomorphicMap(object):
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
         out_shape : array, shape (dim,)
-            the number of slices, rows and columns of the desired warped image
+            the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
@@ -389,7 +389,7 @@ class DiffeomorphicMap(object):
     def _warp_backward(self, image, interpolation='linear',
                        image_world2grid=None, out_shape=None,
                        out_grid2world=None):
-        r"""Warps an image in the backward direction
+        """Warps an image in the backward direction
 
         Deforms the input image under this diffeomorphic map in the backward
         direction. Since the mapping is defined in the physical space, the user
@@ -500,7 +500,7 @@ class DiffeomorphicMap(object):
 
     def transform(self, image, interpolation='linear', image_world2grid=None,
                   out_shape=None, out_grid2world=None):
-        r"""Warps an image in the forward direction
+        """Warps an image in the forward direction
 
         Transforms the input image under this transformation in the forward
         direction. It uses the "is_inverse" flag to switch between "forward"
@@ -547,7 +547,7 @@ class DiffeomorphicMap(object):
     def transform_inverse(self, image, interpolation='linear',
                           image_world2grid=None, out_shape=None,
                           out_grid2world=None):
-        r"""Warps an image in the backward direction
+        """Warps an image in the backward direction
 
         Transforms the input image under this transformation in the backward
         direction. It uses the "is_inverse" flag to switch between "forward"
@@ -566,7 +566,7 @@ class DiffeomorphicMap(object):
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
         out_shape : array, shape (dim,)
-            the number of slices, rows and columns of the desired warped image
+            the number of slices, rows, and columns of the desired warped image
         out_grid2world : the transformation bringing voxel coordinates of the
             warped image to physical space
 
@@ -590,7 +590,7 @@ class DiffeomorphicMap(object):
         return np.asarray(warped)
 
     def inverse(self):
-        r"""Inverse of this DiffeomorphicMap instance
+        """Inverse of this DiffeomorphicMap instance
 
         Returns a diffeomorphic map object representing the inverse of this
         transformation. The internal arrays are not copied but just referenced.
@@ -615,7 +615,7 @@ class DiffeomorphicMap(object):
         return inv
 
     def expand_fields(self, expand_factors, new_shape):
-        r"""Expands the displacement fields from current shape to new_shape
+        """Expands the displacement fields from current shape to new_shape
 
         Up-samples the discretization of the displacement fields to be of
         new_shape shape.
@@ -648,7 +648,7 @@ class DiffeomorphicMap(object):
         self.disp_world2grid = expanded_world2grid
 
     def compute_inversion_error(self):
-        r"""Inversion error of the displacement fields
+        """Inversion error of the displacement fields
 
         Estimates the inversion error of the displacement fields by computing
         statistics of the residual vectors obtained after composing the forward
@@ -687,7 +687,7 @@ class DiffeomorphicMap(object):
         return np.asarray(residual), np.asarray(stats)
 
     def shallow_copy(self):
-        r"""Shallow copy of this DiffeomorphicMap instance
+        """Shallow copy of this DiffeomorphicMap instance
 
         Creates a shallow copy of this diffeomorphic map (the arrays are not
         copied but just referenced)
@@ -712,7 +712,7 @@ class DiffeomorphicMap(object):
         return new_map
 
     def warp_endomorphism(self, phi):
-        r"""Composition of this DiffeomorphicMap with a given endomorphism
+        """Composition of this DiffeomorphicMap with a given endomorphism
 
         Creates a new DiffeomorphicMap C with the same properties as self and
         composes its displacement fields with phi's corresponding fields.
@@ -768,7 +768,7 @@ class DiffeomorphicMap(object):
         return composition
 
     def get_simplified_transform(self):
-        r""" Constructs a simplified version of this Diffeomorhic Map
+        """ Constructs a simplified version of this Diffeomorhic Map
 
         The simplified version incorporates the pre-align transform, as well as
         the domain and codomain affine transforms into the displacement field.
@@ -832,7 +832,7 @@ class DiffeomorphicMap(object):
 
 class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
     def __init__(self, metric=None):
-        r""" Diffeomorphic Registration
+        """ Diffeomorphic Registration
 
         This abstract class defines the interface to be implemented by any
         optimization algorithm for diffeomorphic registration.
@@ -850,7 +850,7 @@ class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
         self.dim = metric.dim
 
     def set_level_iters(self, level_iters):
-        r"""Sets the number of iterations at each pyramid level
+        """Sets the number of iterations at each pyramid level
 
         Establishes the maximum number of iterations to be performed at each
         level of the Gaussian pyramid, similar to ANTS.
@@ -867,7 +867,7 @@ class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def optimize(self):
-        r"""Starts the metric optimization
+        """Starts the metric optimization
 
         This is the main function each specialized class derived from this must
         implement. Upon completion, the deformation field must be available
@@ -876,7 +876,7 @@ class DiffeomorphicRegistration(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_map(self):
-        r"""
+        """
         Returns the resulting diffeomorphic map after optimization
         """
 
@@ -891,7 +891,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  inv_iter=20,
                  inv_tol=1e-3,
                  callback=None):
-        r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
+        """ Symmetric Diffeomorphic Registration (SyN) Algorithm
 
         Performs the multi-resolution optimization algorithm for non-linear
         registration using a given similarity metric.
@@ -951,7 +951,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def update(self, current_displacement, new_displacement,
                disp_world2grid, time_scaling):
-        r"""Composition of the current displacement field with the given field
+        """Composition of the current displacement field with the given field
 
         Interpolates new displacement at the locations defined by
         current_displacement. Equivalently, computes the composition C of the
@@ -993,14 +993,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return np.array(current_displacement), np.array(mean_norm)
 
     def get_map(self):
-        r"""Returns the resulting diffeomorphic map
+        """Returns the resulting diffeomorphic map
         Returns the DiffeomorphicMap registering the moving image towards
         the static image.
         """
         return self.static_to_ref
 
     def _connect_functions(self):
-        r"""Assign the methods to be called according to the image dimension
+        """Assign the methods to be called according to the image dimension
 
         Assigns the appropriate functions to be called for displacement field
         inversion, Gaussian pyramid, and affine / dense deformation composition
@@ -1015,7 +1015,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def _init_optimizer(self, static, moving,
                         static_grid2world, moving_grid2world, prealign):
-        r"""Initializes the registration optimizer
+        """Initializes the registration optimizer
 
         Initializes the optimizer by computing the scale space of the input
         images and allocating the required memory for the transformation models
@@ -1137,13 +1137,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_to_ref.allocate()
 
     def _end_optimizer(self):
-        r"""Frees the resources allocated during initialization
+        """Frees the resources allocated during initialization
         """
         del self.moving_ss
         del self.static_ss
 
     def _iterate(self):
-        r"""Performs one symmetric iteration
+        """Performs one symmetric iteration
 
         Performs one iteration of the SyN algorithm:
             1.Compute forward
@@ -1336,7 +1336,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                      self.moving_to_ref.forward))
 
     def _approximate_derivative_direct(self, x, y):
-        r"""Derivative of the degree-2 polynomial fit of the given x, y pairs
+        """Derivative of the degree-2 polynomial fit of the given x, y pairs
 
         Directly computes the derivative of the least-squares-fit quadratic
         function estimated from (x[...],y[...]) pairs.
@@ -1365,7 +1365,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return y0
 
     def _get_energy_derivative(self):
-        r"""Approximate derivative of the energy profile
+        """Approximate derivative of the energy profile
 
         Returns the derivative of the estimated energy as a function of "time"
         (iterations) at the last iteration
@@ -1383,7 +1383,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return der
 
     def _optimize(self):
-        r"""Starts the optimization
+        """Starts the optimization
 
         The main multi-scale symmetric optimization algorithm
         """
@@ -1450,7 +1450,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def optimize(self, static, moving, static_grid2world=None,
                  moving_grid2world=None, prealign=None):
-        r"""
+        """
         Starts the optimization
 
         Parameters

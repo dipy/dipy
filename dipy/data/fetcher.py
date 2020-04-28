@@ -522,18 +522,19 @@ def get_fnames(name='small_64D'):
     ----------
     name : str
         the filename/s of which dataset to return, one of:
-        'small_64D' small region of interest nifti,bvecs,bvals 64 directions
-        'small_101D' small region of interest nifti,bvecs,bvals 101 directions
-        'aniso_vox' volume with anisotropic voxel size as Nifti
-        'fornix' 300 tracks in Trackvis format (from Pittsburgh
-            Brain Competition)
-        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
-            of 101 directions tested on Siemens 3T Trio
-        'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
-        'test_piesno' slice of N=8, K=14 diffusion data
-        'reg_c' small 2D image used for validating registration
-        'reg_o' small 2D image used for validation registration
-        'cb_2' two vectorized cingulum bundles
+        - 'small_64D' small region of interest nifti,bvecs,bvals 64 directions
+        - 'small_101D' small region of interest nifti, bvecs, bvals
+          101 directions
+        - 'aniso_vox' volume with anisotropic voxel size as Nifti
+        - 'fornix' 300 tracks in Trackvis format (from Pittsburgh
+          Brain Competition)
+        - 'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions
+          of 101 directions tested on Siemens 3T Trio
+        - 'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+        - 'test_piesno' slice of N=8, K=14 diffusion data
+        - 'reg_c' small 2D image used for validating registration
+        - 'reg_o' small 2D image used for validation registration
+        - 'cb_2' two vectorized cingulum bundles
 
     Returns
     -------
@@ -541,7 +542,7 @@ def get_fnames(name='small_64D'):
         filenames for dataset
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
     >>> from dipy.io.image import load_nifti
     >>> from dipy.data import get_fnames
@@ -995,8 +996,8 @@ mni_notes = \
             Organization for Human Brain Mapping 2009 Annual Meeting,
             DOI: https://doi.org/10.1016/S1053-8119(09)70884-5
 
-    License for the MNI templates:
-    -----------------------------
+    **License for the MNI templates:**
+
     Copyright (C) 1993-2004, Louis Collins McConnell Brain Imaging Centre,
     Montreal Neurological Institute, McGill University. Permission to use,
     copy, modify, and distribute this software and its documentation for any
@@ -1011,8 +1012,7 @@ mni_notes = \
 
 
 def read_mni_template(version="a", contrast="T2"):
-    """
-    Read the MNI template from disk
+    """Read the MNI template from disk.
 
     Parameters
     ----------
@@ -1031,10 +1031,11 @@ def read_mni_template(version="a", contrast="T2"):
 
     Examples
     --------
-    Get only the T1 file for version c:
+    >>> # Get only the T1 file for version c:
     >>> T1 = read_mni_template("c", contrast = "T1") # doctest: +SKIP
-    Get both files in this order for version a:
+    >>> # Get both files in this order for version a:
     >>> T1, T2 = read_mni_template(contrast = ["T1", "T2"]) # doctest: +SKIP
+
     """
     files, folder = fetch_mni_template()
     file_dict_a = {"T1": pjoin(folder, 'mni_icbm152_t1_tal_nlin_asym_09a.nii'),
@@ -1200,7 +1201,7 @@ read_cenir_multib.__doc__ += CENIR_notes
 
 def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
                             bundles=['af.left', 'cst.right', 'cc_1']):
-    r""" Read images and streamlines from 2 subjects of the SNAIL dataset
+    r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
     Parameters
     ----------
@@ -1224,7 +1225,6 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
 
     References
     ----------
-
     .. [1] Renauld, E., M. Descoteaux, M. Bernier, E. Garyfallidis,
     K. Whittingstall, "Morphology of thalamus, LGN and optic radiation do not
     influence EEG alpha waves", Plos One (under submission), 2015.
@@ -1234,7 +1234,6 @@ def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
     space of streamlines , Neuroimage, 117:124-140, 2015.
 
     """
-
     dname = pjoin(dipy_home, 'exp_bundles_and_maps', 'bundles_2_subjects')
 
     from dipy.io.streamline import load_tractogram

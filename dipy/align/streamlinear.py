@@ -522,10 +522,10 @@ def bundle_sum_distance(t, static, moving, num_threads=None):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with
+        t is a vector of affine transformation parameters with
         size at least 6.
-        If size is 6, t is interpreted as translation + rotation.
-        If size is 7, t is interpreted as translation + rotation +
+        If the size is 6, t is interpreted as translation + rotation.
+        If the size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
@@ -534,7 +534,7 @@ def bundle_sum_distance(t, static, moving, num_threads=None):
         Static streamlines
 
     moving : list
-        Moving streamlines. These will be transform to align with
+        Moving streamlines. These will be transformed to align with
         the static streamlines
 
     Returns
@@ -558,7 +558,7 @@ def bundle_min_distance(t, static, moving):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with
+        t is a vector of affine transformation parameters with
         size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
@@ -599,10 +599,10 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
     Parameters
     -----------
     t : array
-        1D array. t is a vector of of affine transformation parameters with
+        1D array. t is a vector of affine transformation parameters with
         size at least 6.
-        If size is 6, t is interpreted as translation + rotation.
-        If size is 7, t is interpreted as translation + rotation +
+        If the size is 6, t is interpreted as translation + rotation.
+        If the size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
@@ -662,10 +662,10 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     Parameters
     -----------
     t : array
-        1D array. t is a vector of of affine transformation parameters with
+        1D array. t is a vector of affine transformation parameters with
         size at least 6.
-        If size is 6, t is interpreted as translation + rotation.
-        If size is 7, t is interpreted as translation + rotation +
+        If the size is 6, t is interpreted as translation + rotation.
+        If the size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
@@ -721,7 +721,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
     [Garyfallidis15]_ by starting with translation first, then rigid,
     then similarity, scaling and finally affine.
 
-    Similarly, if for example you want to perform rigid then you start with
+    Similarly, if for example, you want to perform rigid then you start with
     translation first. This progressive strategy can helps with finding the
     optimal parameters of the final transformation.
 
@@ -851,7 +851,7 @@ def slr_with_qbx(static, moving,
                  progressive=True, rng=None, num_threads=None):
     """ Utility function for registering large tractograms.
 
-    For efficiency we apply the registration on cluster centroids and remove
+    For efficiency, we apply the registration on cluster centroids and remove
     small clusters.
 
     Parameters
@@ -866,7 +866,7 @@ def slr_with_qbx(static, moving,
         Remove clusters that have less than `rm_small_clusters` (default 50)
 
     select_random : int, optional.
-        If not None select a random number of streamlines to apply clustering
+        If not, None selects a random number of streamlines to apply clustering
         Default None.
 
     verbose : bool, optional
@@ -898,7 +898,7 @@ def slr_with_qbx(static, moving,
     Notes
     -----
     The order of operations is the following. First short or long streamlines
-    are removed. Second the tractogram or a random selection of the tractogram
+    are removed. Second, the tractogram or a random selection of the tractogram
     is clustered with QuickBundles. Then SLR [Garyfallidis15]_ is applied.
 
     References
@@ -1010,13 +1010,13 @@ def compose_matrix44(t, dtype=np.double):
     Parameters
     -----------
     t : ndarray
-        This is a 1D vector of of affine transformation parameters with
+        This is a 1D vector of affine transformation parameters with
         size at least 3.
-        If size is 3, t is interpreted as translation.
-        If size is 6, t is interpreted as translation + rotation.
-        If size is 7, t is interpreted as translation + rotation +
+        If the size is 3, t is interpreted as translation.
+        If the size is 6, t is interpreted as translation + rotation.
+        If the size is 7, t is interpreted as translation + rotation +
         isotropic scaling.
-        If size is 9, t is interpreted as translation + rotation +
+        If the size is 9, t is interpreted as translation + rotation +
         anisotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
@@ -1058,7 +1058,7 @@ def decompose_matrix44(mat, size=12):
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int
-        Size of output vector. 3, for translation, 6 for rigid,
+        Size of the output vector. 3, for translation, 6 for rigid,
         7 for similarity, 9 for scaling and 12 for affine. Default is 12.
 
     Returns

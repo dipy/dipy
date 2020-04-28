@@ -143,7 +143,7 @@ class SimilarityMetric(object, metaclass=abc.ABCMeta):
         original_moving_image : array, shape (R, C) or (S, R, C)
             original image from which the current moving image was generated
         transformation : DiffeomorphicMap object
-            the transformation that was applied to original image to generate
+            the transformation that was applied to the original image to generate
             the current moving image
         """
         pass
@@ -773,7 +773,7 @@ class SSDMetric(SimilarityMetric):
     def compute_backward(self):
         r"""Computes one step bringing the static image towards the moving.
 
-        Computes the update displacement field to be used for registration of
+        Computes the updated displacement field to be used for registration of
         the static image towards the moving image
         """
         return self.compute_step(False)
@@ -928,7 +928,7 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     References
     ----------
     [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-              estimation: combining highest accuracy with real-time
+              estimation: combining the highest accuracy with real-time
               performance", 10th IEEE International Conference on Computer
               Vision, 2005. ICCV 2005.
     """

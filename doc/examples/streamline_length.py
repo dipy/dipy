@@ -8,7 +8,7 @@ also how to compress the streamlines without considerably reducing their
 lengths or overall shape.
 
 A streamline in DIPY_ is represented as a numpy array of size
-:math:`(N \times 3)` where each row of the array represent a 3D point of the
+:math:`(N \times 3)` where each row of the array represents a 3D point of the
 streamline. A set of streamlines is represented with a list of
 numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
 number of streamlines in the set.
@@ -20,7 +20,6 @@ from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import length
 import matplotlib.pyplot as plt
 from dipy.viz import window, actor
-
 
 """
 Let's first create a simple simulation of a bundle of streamlines using
@@ -178,6 +177,7 @@ ax.plot(lengths_downsampled, color='g', label='set_number_of_points (12)')
 ax.plot(lengths_downsampled2, color='b', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Streamline ID')
 ax.set_ylabel('Length')
+
 # plt.show()
 plt.legend()
 plt.savefig('lengths_plots.png')

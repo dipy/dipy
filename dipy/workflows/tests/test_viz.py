@@ -98,6 +98,14 @@ def test_horizon_flow():
 
         npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
                          True)
+        npt.assert_raises(ValueError, hz_flow.run,
+                          input_files=input_files, bg_color=(0.2, 0.2))
+
+        hz_flow.run(input_files=input_files, stealth=True, bg_color=[0.5, ],
+                    out_dir=out_dir, out_stealth_png='tmp_x.png')
+        npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
+                         True)
+
 
 
 if __name__ == '__main__':

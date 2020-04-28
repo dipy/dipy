@@ -1,5 +1,6 @@
 import json
 import os
+from copy import deepcopy
 
 from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
@@ -32,7 +33,7 @@ def trk_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_vox_space():
@@ -40,7 +41,7 @@ def tck_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
@@ -51,7 +52,7 @@ def fib_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_vox_space():
@@ -59,7 +60,7 @@ def dpy_equal_in_vox_space():
                           to_space=Space.VOX)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def trk_equal_in_rasmm_space():
@@ -67,7 +68,7 @@ def trk_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_rasmm_space():
@@ -75,7 +76,7 @@ def tck_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
@@ -86,7 +87,7 @@ def fib_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_rasmm_space():
@@ -94,7 +95,7 @@ def dpy_equal_in_rasmm_space():
                           to_space=Space.RASMM)
     tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
     assert_allclose(tmp_points_rasmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def trk_equal_in_voxmm_space():
@@ -102,7 +103,7 @@ def trk_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def tck_equal_in_voxmm_space():
@@ -110,7 +111,7 @@ def tck_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
@@ -121,7 +122,7 @@ def fib_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def dpy_equal_in_voxmm_space():
@@ -129,7 +130,7 @@ def dpy_equal_in_voxmm_space():
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
-                    sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def switch_voxel_sizes_from_rasmm():
@@ -143,11 +144,11 @@ def switch_voxel_sizes_from_rasmm():
 
     sft_switch.to_rasmm()
     assert_allclose(tmp_points_rasmm,
-                    sft_switch.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
     sft_switch.to_voxmm()
     assert_allclose(tmp_points_voxmm,
-                    sft_switch.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def switch_voxel_sizes_from_voxmm():
@@ -161,11 +162,11 @@ def switch_voxel_sizes_from_voxmm():
 
     sft_switch.to_rasmm()
     assert_allclose(tmp_points_rasmm,
-                    sft_switch.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
     sft_switch.to_voxmm()
     assert_allclose(tmp_points_voxmm,
-                    sft_switch.streamlines._data, atol=1e-3, rtol=1e-6)
+                    sft_switch.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def to_rasmm_equivalence():
@@ -176,8 +177,8 @@ def to_rasmm_equivalence():
 
     sft_1.to_rasmm()
     sft_2.to_space(Space.RASMM)
-    assert_allclose(sft_1.streamlines._data,
-                    sft_2.streamlines._data, atol=1e-3, rtol=1e-6)
+    assert_allclose(sft_1.streamlines.get_data(),
+                    sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def to_voxmm_equivalence():
@@ -188,8 +189,8 @@ def to_voxmm_equivalence():
 
     sft_1.to_voxmm()
     sft_2.to_space(Space.VOXMM)
-    assert_allclose(sft_1.streamlines._data,
-                    sft_2.streamlines._data, atol=1e-3, rtol=1e-6)
+    assert_allclose(sft_1.streamlines.get_data(),
+                    sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def to_vox_equivalence():
@@ -200,8 +201,8 @@ def to_vox_equivalence():
 
     sft_1.to_vox()
     sft_2.to_space(Space.VOX)
-    assert_allclose(sft_1.streamlines._data,
-                    sft_2.streamlines._data, atol=1e-3, rtol=1e-6)
+    assert_allclose(sft_1.streamlines.get_data(),
+                    sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def to_corner_equivalence():
@@ -212,8 +213,8 @@ def to_corner_equivalence():
 
     sft_1.to_corner()
     sft_2.to_origin(Origin.TRACKVIS)
-    assert_allclose(sft_1.streamlines.data,
-                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+    assert_allclose(sft_1.streamlines.get_data(),
+                    sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def to_center_equivalence():
@@ -224,8 +225,8 @@ def to_center_equivalence():
 
     sft_1.to_center()
     sft_2.to_origin(Origin.NIFTI)
-    assert_allclose(sft_1.streamlines.data,
-                    sft_2.streamlines.data, atol=1e-3, rtol=1e-6)
+    assert_allclose(sft_1.streamlines.get_data(),
+                    sft_2.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def trk_iterative_saving_loading():
@@ -239,7 +240,7 @@ def trk_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.trk', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.streamlines._data,
+                            sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.trk')
 
@@ -255,7 +256,7 @@ def tck_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.tck', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.streamlines._data,
+                            sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.tck')
 
@@ -274,7 +275,7 @@ def fib_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.fib', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.streamlines._data,
+                            sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.fib')
 
@@ -290,7 +291,7 @@ def dpy_iterative_saving_loading():
             sft_iter = load_tractogram('gs_iter.dpy', filepath_dix['gs.nii'],
                                        to_space=Space.RASMM)
             assert_allclose(tmp_points_rasmm,
-                            sft_iter.streamlines._data,
+                            sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, 'gs_iter.dpy')
 
@@ -303,7 +304,7 @@ def iterative_to_vox_transformation():
         sft.to_vox()
         sft.to_rasmm()
         assert_allclose(tmp_points_rasmm,
-                        sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                        sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def iterative_to_voxmm_transformation():
@@ -314,7 +315,7 @@ def iterative_to_voxmm_transformation():
         sft.to_voxmm()
         sft.to_rasmm()
         assert_allclose(tmp_points_rasmm,
-                        sft.streamlines._data, atol=1e-3, rtol=1e-6)
+                        sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
 def empty_space_change():
@@ -322,20 +323,20 @@ def empty_space_change():
     sft.to_vox()
     sft.to_voxmm()
     sft.to_rasmm()
-    assert_array_equal([], sft.streamlines._data)
+    assert_array_equal([], sft.streamlines.get_data())
 
 
 def empty_shift_change():
     sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
     sft.to_corner()
     sft.to_center()
-    assert_array_equal([], sft.streamlines._data)
+    assert_array_equal([], sft.streamlines.get_data())
 
 
 def empty_remove_invalid():
     sft = StatefulTractogram([], filepath_dix['gs.nii'], Space.VOX)
     sft.remove_invalid_streamlines()
-    assert_array_equal([], sft.streamlines._data)
+    assert_array_equal([], sft.streamlines.get_data())
 
 
 def shift_corner_from_rasmm():
@@ -447,6 +448,12 @@ def remove_invalid_streamlines(resize):
     return len(sft)
 
 
+def remove_invalid_streamlines_epsilon(epsilon):
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft.remove_invalid_streamlines(epsilon=epsilon)
+    return len(sft)
+
+
 def random_point_color():
     np.random.seed(0)
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
@@ -533,6 +540,208 @@ def out_of_grid(value):
         return sft.is_bbox_in_vox_valid()
     except (TypeError, ValueError):
         return True
+
+
+def data_per_point_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.data_per_point = {}
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def data_per_streamline_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.data_per_streamline = {}
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def space_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.to_vox()
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def origin_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    sft_first_half.to_corner()
+    try:
+        _ = sft_first_half + sft_last_half
+        return True
+    except ValueError:
+        return False
+
+
+def space_attributes_consistency_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_switch = StatefulTractogram(sft.streamlines,
+                                    filepath_dix['gs_3mm.nii'],
+                                    Space.RASMM)
+
+    try:
+        _ = sft + sft_switch
+        return True
+    except ValueError:
+        return False
+
+
+def test_equality():
+    sft_1 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_2 = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+
+    assert_(sft_1 == sft_2,
+            msg='Identical sft should be equal (==)')
+
+
+def test_basic_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline_sft = sft[0]
+
+    npt.assert_allclose(first_streamline_sft.streamlines[0][0],
+                        [11.149319, 21.579943, 37.600685],
+                        err_msg='streamlines were not sliced correctly')
+    rgb = np.array([first_streamline_sft.data_per_point['color_x'][0][0],
+                    first_streamline_sft.data_per_point['color_y'][0][0],
+                    first_streamline_sft.data_per_point['color_z'][0][0]])
+    npt.assert_allclose(np.squeeze(rgb), [220., 20., 60.],
+                        err_msg='data_per_point were not sliced correctly')
+    rand_coord = first_streamline_sft.data_per_streamline['random_coord']
+    npt.assert_allclose(np.squeeze(rand_coord), [7., 1., 5.],
+                        err_msg='data_per_streamline were not sliced correctly')
+
+
+def test_space_side_effect_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline = deepcopy(sft.streamlines[0])
+
+    first_streamline_sft = sft[0]
+    sft.to_vox()
+    npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+    # Testing it both ways
+    sft.to_rasmm()
+    first_streamline_sft.to_vox()
+    npt.assert_allclose(sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+
+
+def test_origin_side_effect_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    first_streamline = deepcopy(sft.streamlines[0])
+
+    first_streamline_sft = sft[0]
+    sft.to_corner()
+    npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+    # Testing it both ways
+    sft.to_center()
+    first_streamline_sft.to_corner()
+    npt.assert_allclose(sft.streamlines[0], first_streamline,
+                        err_msg='Side effect, modifying a StatefulTractogram '
+                                'after slicing should not modify the slice')
+
+
+def test_advanced_slicing():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    last_streamline_sft = sft[::-1][0]
+
+    npt.assert_allclose(last_streamline_sft.streamlines[0][0],
+                        [14.389803, 27.857153, 39.3602],
+                        err_msg='streamlines were not sliced correctly')
+    rgb = np.array([last_streamline_sft.data_per_point['color_x'][0][0],
+                    last_streamline_sft.data_per_point['color_y'][0][0],
+                    last_streamline_sft.data_per_point['color_z'][0][0]])
+    npt.assert_allclose(np.squeeze(rgb), [0., 255., 0.],
+                        err_msg='data_per_point were not sliced correctly')
+    rand_coord = last_streamline_sft.data_per_streamline['random_coord']
+    npt.assert_allclose(np.squeeze(rand_coord), [7., 9., 8.],
+                        err_msg='data_per_streamline were not sliced correctly')
+
+
+def test_basic_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    assert_(concatenate_sft == sft,
+            msg='sft were not added correctly')
+
+
+def test_space_side_effect_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    sft.to_vox()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+    # Testing it both ways
+    sft.to_rasmm()
+    concatenate_sft.to_vox()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+
+def test_origin_side_effect_addition():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    sft_first_half = sft[0:7]
+    sft_last_half = sft[7:13]
+
+    concatenate_sft = sft_first_half + sft_last_half
+    sft.to_corner()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+    # Testing it both ways
+    sft.to_center()
+    concatenate_sft.to_corner()
+    assert_(concatenate_sft != sft,
+            msg='Side effect, modifying a StatefulTractogram '
+            'after an addition should not modify the result')
+
+
+def test_addition_consistency():
+    assert_(not space_attributes_consistency_addition(),
+            msg='Adding sft with different space attributes should fail')
+    assert_(not data_per_point_consistency_addition(),
+            msg='Adding sft with different data_per_point keys should fail')
+    assert_(not data_per_streamline_consistency_addition(),
+            msg='Adding sft with different data_per_streamline keys should fail')
+    assert_(not space_consistency_addition(),
+            msg='Adding sft with different Space should fail')
+    assert_(not origin_consistency_addition(),
+            msg='Adding sft with different Origin should fail')
 
 
 def test_iterative_transformation():
@@ -626,6 +835,14 @@ def test_invalid_streamlines():
             msg='A unshifted gold standard should have 0 invalid streamlines')
 
 
+def test_invalid_streamlines_epsilon():
+    assert_(remove_invalid_streamlines_epsilon(1e-6) == 13,
+            msg='A small epsilon should not remove any streamlines')
+    assert_(remove_invalid_streamlines_epsilon(1.0) == 5,
+            msg='Too big of an epsilon (1mm) should remove the 8 streamlines '
+                '(8 corners)')
+
+
 def test_trk_coloring():
     assert_(random_streamline_color(),
             msg='Streamlines color assignement failed')
@@ -650,6 +867,7 @@ def test_create_from_sft():
             and sft_1.data_per_streamline == sft_2.data_per_streamline):
         raise AssertionError()
 
+    # Side effect testing
     sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
     if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()

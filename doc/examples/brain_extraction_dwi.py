@@ -9,9 +9,12 @@ We show how to extract brain information and mask from a b0 image using DIPY_'s
 First import the necessary modules:
 """
 
-from os.path import join as pjoin
 import numpy as np
 import matplotlib.pyplot as plt
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti, save_nifti
+from dipy.segment.mask import median_otsu
+from os.path import join as pjoin
 
 """
 Download and read the data for this tutorial.
@@ -19,6 +22,7 @@ Download and read the data for this tutorial.
 The ``scil_b0`` dataset contains different data from different companies and
 models. For this example, the data comes from a 1.5 Tesla Siemens MRI.
 """
+
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti
