@@ -1,0 +1,102 @@
+.. _bundle_segmentation_flow:
+
+===============================================
+White Matter Bundle Extraction with RecoBundles
+===============================================
+
+This tutorial explains how we can use RecoBundles [1]_ to extract
+bundles from input tractograms.
+
+
+First we need to download streamline atlas [2]_ with 30 bundles in MNI space from:
+
+    `<https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652>`_
+
+Let's say we have an input target tractogram named ``target.trk`` and atlas we
+download named ``whole_brain_MNI.trk``.
+
+Visualizing target and atlas tractograms before registration::
+
+    dipy_horizon "target.trk" "whole_brain_MNI.trk" --random_color
+
+
+------------------------------------
+Streamline-Based Linear Registration
+------------------------------------
+
+For extracting bundles from tractogram we first need our target tractogram to
+be in common space (atlas space). We will register target tractogram to
+model atlas’ space using streamline-based linear registeration (SLR)[3]_.
+
+Following workflows require two positional input arguments; ``Static`` and
+``Moving`` .trk files. ``Static`` would be the atlas and ``Moving`` would be
+our target tractogram.
+
+Run the following workflow::
+
+    dipy_slr "whole_brain_MNI.trk" "target.trk" --force
+
+SLR workflow will save transformed tractogram as ``moved.trk``.
+
+Visualizing target and atlas tractograms after registration::
+
+    dipy_horizon "moved.trk" "whole_brain_MNI.trk" --random_color
+
+-----------
+Recobundles
+-----------
+
+Create an ``out_dir`` folder (eg: sm_plots)::
+
+    mkdir rb_output
+
+For Recobundles workflow, we will be using 30 model bundles downloaded earlier.
+Run the following workflow::
+
+    dipy_recobundles "moved.trk" "bundles/*.trk" --force --mix_names --out_dir "rb_output"
+
+This workflow will extract 30 bundles from the tractogram.
+Plots will look like the following example:
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_UF_R__recognized.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+Output of recobundles will be in native space. To get bundles in subject's
+original space, run following command::
+
+     dipy_labelsbundles 'target.trk' 'rb_output/*.npy' --mix_names
+
+
+
+For more information about each command line, you can go to
+`<https://github.com/dipy/dipy/blob/master/dipy/workflows/segment.py>`_
+
+If you are using any of these commands do cite the relevant papers.
+
+.. [1] Garyfallidis et al. Recognition of white matter bundles using local and
+    global streamline-based registration and clustering, Neuroimage, 2017
+
+.. [2] Yeh F.C., Panesar S., Fernandes D., Meola A., Yoshino M.,
+    Fernandez-Miranda J.C., Vettel J.M., Verstynen T.
+    Population-averaged atlas of the macroscale human structural
+    connectome and its network topology.
+    Neuroimage, 2018.
+
+.. [3] Garyfallidis et al., “Robust and efficient linear registration of
+    white-matter fascicles in the space of streamlines”, Neuroimage,
+    117:124-140, 2015.
+
+
+.. [4] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
+    S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
+    "DIPY, a library for the analysis of diffusion MRI data".
+    Frontiers in Neuroinformatics, 1-18, 2014.
+
+
+
+
+
+
+
