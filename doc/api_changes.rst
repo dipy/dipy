@@ -13,6 +13,8 @@ DIPY 1.2.0 changes
 The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
 been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
 
+The command line ``dipy_track_local`` has been renamed ``dipy_track``.
+
 
 DIPY 1.1.1 changes
 ------------------
