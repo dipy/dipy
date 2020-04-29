@@ -41,7 +41,8 @@ cdef class EuDXDirectionGetter(DirectionGetter):
 
         self.initialized = True
 
-    def initial_direction(self, double[::1] point):
+    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+                                                           double[::1] point):
         """The best starting directions for fiber tracking from point
 
         All the valid peaks in the voxel closest to point are returned as
