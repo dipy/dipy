@@ -1075,7 +1075,7 @@ def approx_polygon_track(xyz,alpha=0.392):
     next point.
     """
     cdef :
-        int mid_index
+        size_t mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track
         float *fvec0
         float *fvec1
