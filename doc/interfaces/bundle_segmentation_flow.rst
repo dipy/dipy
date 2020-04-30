@@ -24,7 +24,7 @@ Visualizing target and atlas tractograms before registration::
     :alt: alternate text
     :align: center
 
-    Atlas and target before registration.
+    Atlas and target tractograms before registration.
 
 ------------------------------------
 Streamline-Based Linear Registration
@@ -32,7 +32,7 @@ Streamline-Based Linear Registration
 
 For extracting bundles from tractogram we first need our target tractogram to
 be in common space (atlas space). We will register target tractogram to
-model atlas’ space using streamline-based linear registeration (SLR)[3]_.
+model atlas’ space using streamline-based linear registeration (SLR) [3]_.
 
 Following workflows require two positional input arguments; ``Static`` and
 ``Moving`` .trk files. ``Static`` would be the ``atlas``  and ``Moving`` would be
@@ -53,7 +53,7 @@ Visualizing target and atlas tractograms after registration::
     :alt: alternate text
     :align: center
 
-    Atlas and target after registration.
+    Atlas and target tractograms after registration.
 
 -----------
 Recobundles
@@ -100,7 +100,8 @@ original space, run following commands::
 For more information about each command line, you can go to
 `<https://github.com/dipy/dipy/blob/master/dipy/workflows/segment.py>`_
 
-If you are using any of these commands do cite the relevant papers.
+If you are using any of these commands do cite the relevant papers and
+DIPY [4]_.
 
 .. [1] Garyfallidis et al. Recognition of white matter bundles using local and
     global streamline-based registration and clustering, Neuroimage, 2017
@@ -114,7 +115,6 @@ If you are using any of these commands do cite the relevant papers.
 .. [3] Garyfallidis et al., “Robust and efficient linear registration of
     white-matter fascicles in the space of streamlines”, Neuroimage,
     117:124-140, 2015.
-
 
 .. [4] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
     S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
