@@ -72,6 +72,18 @@ Example of extracted Left Arcuate fasciculus (AF_L) bundle:
     :alt: alternate text
     :align: center
 
+    Extracted Left Arcuate fasciculus (AF_L) from input tractogram
+
+Example of extracted Left Arcuate fasciculus (AF_L) bundle visualized along
+model AF_L bundle used as reference in RecoBundles:
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_rb_with_model.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Extracted Left Arcuate fasciculus (AF_L) in Pink and model AF_L bundle in green color.
+
 Output of recobundles will be in native space. To get bundles in subject's
 original space, run following commands::
 
