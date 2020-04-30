@@ -15,7 +15,7 @@ from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 cdef extern from "dpy_math.h" nogil:
     int dpy_signbit(double x)
     double dpy_rint(double x)
-    double abs(double)
+    double fabs(double)
 
 
 @cython.cdivision(True)
@@ -27,7 +27,7 @@ cdef inline double stepsize(double point, double increment) nogil:
     if dist == 0:
         # Point is on an edge, return step size to next edge.  This is most
         # likely to come up if overstep is set to 0.
-        return 1. / abs(increment)
+        return 1. / fabs(increment)
     else:
         return dist / increment
 
