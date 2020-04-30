@@ -19,6 +19,10 @@ Visualizing target and atlas tractograms before registration::
 
     dipy_horizon "target.trk" "whole_brain_MNI.trk" --random_color
 
+.. figure:: https://github.com/dipy/dipy_data/blob/master/tractograms_initial.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
 
 ------------------------------------
 Streamline-Based Linear Registration
@@ -42,11 +46,16 @@ Visualizing target and atlas tractograms after registration::
 
     dipy_horizon "moved.trk" "whole_brain_MNI.trk" --random_color
 
+.. figure:: https://github.com/dipy/dipy_data/blob/master/tractograms_after_registration.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
 -----------
 Recobundles
 -----------
 
-Create an ``out_dir`` folder (eg: sm_plots)::
+Create an ``out_dir`` folder (eg: rb_output)::
 
     mkdir rb_output
 
@@ -56,17 +65,19 @@ Run the following workflow::
     dipy_recobundles "moved.trk" "bundles/*.trk" --force --mix_names --out_dir "rb_output"
 
 This workflow will extract 30 bundles from the tractogram.
-Plots will look like the following example:
+Example of extracted Left Arcuate fasciculus (AF_L) bundle:
 
-.. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_UF_R__recognized.png?raw=true
+.. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_rb.png?raw=true
     :width: 70 %
     :alt: alternate text
     :align: center
 
 Output of recobundles will be in native space. To get bundles in subject's
-original space, run following command::
+original space, run following commands::
 
-     dipy_labelsbundles 'target.trk' 'rb_output/*.npy' --mix_names
+    mkdir org_output
+
+    dipy_labelsbundles 'target.trk' 'rb_output/*.npy' --mix_names --out_dir "org_output"
 
 
 
@@ -93,10 +104,3 @@ If you are using any of these commands do cite the relevant papers.
     S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
     "DIPY, a library for the analysis of diffusion MRI data".
     Frontiers in Neuroinformatics, 1-18, 2014.
-
-
-
-
-
-
-
