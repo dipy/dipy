@@ -83,18 +83,17 @@ class IsotropicModel(ReconstModel):
     direction.
     """
     def __init__(self, gtab):
-        """
-        Initialize an IsotropicModel.
+        """Initialize an IsotropicModel.
 
         Parameters
         ----------
         gtab : a GradientTable class instance
+
         """
         ReconstModel.__init__(self, gtab)
 
     def fit(self, data, mask=None):
-        """
-        Fit an IsotropicModel.
+        """Fit an IsotropicModel.
 
         This boils down to finding the mean diffusion-weighted signal in each
         voxel
@@ -106,6 +105,7 @@ class IsotropicModel(ReconstModel):
         Returns
         -------
         IsotropicFit class instance.
+
         """
         # This returns as a 2D thing:
         to_fit = _to_fit_iso(data, self.gtab, mask=mask)
@@ -125,8 +125,7 @@ class IsotropicFit(ReconstFit):
     diffusion-weighted signal.
     """
     def __init__(self, model, params):
-        """
-        Initialize an IsotropicFit object.
+        """Initialize an IsotropicFit object.
 
         Parameters
         ----------
@@ -136,13 +135,13 @@ class IsotropicFit(ReconstFit):
             signal in each voxel).
         n_vox : int
             The number of voxels for which the fit was done.
+
         """
         self.model = model
         self.params = params
 
     def predict(self, gtab=None):
-        """
-        Predict the isotropic signal.
+        """Predict the isotropic signal.
 
         Based on a gradient table. In this case, the (naive!) prediction will
         be the mean of the diffusion-weighted signal in the voxels.
@@ -152,6 +151,7 @@ class IsotropicFit(ReconstFit):
         gtab : a GradientTable class instance (optional)
             Defaults to use the gtab from the IsotropicModel from which this
             fit was derived.
+
         """
         if gtab is None:
             gtab = self.model.gtab
@@ -171,6 +171,7 @@ class ExponentialIsotropicModel(IsotropicModel):
     """
     def fit(self, data, mask=None):
         """
+
         Parameters
         ----------
         data : ndarray
@@ -215,13 +216,13 @@ class ExponentialIsotropicFit(IsotropicFit):
             gtab = self.model.gtab
         if len(self.params.shape) == 0:
             pred = np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                      (np.zeros(np.sum(~gtab.b0s_mask)) +
-                       self.params[..., np.newaxis]))
+                          (np.zeros(np.sum(~gtab.b0s_mask)) +
+                          self.params[..., np.newaxis]))
         else:
             pred = np.exp(-gtab.bvals[~gtab.b0s_mask] *
-                      (np.zeros((self.params.shape[0],
-                       np.sum(~gtab.b0s_mask))) +
-                       self.params[..., np.newaxis]))
+                          (np.zeros((self.params.shape[0],
+                                     np.sum(~gtab.b0s_mask))) +
+                          self.params[..., np.newaxis]))
         return pred
 
 
@@ -327,7 +328,8 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
-                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001, isotropic=None):
+                 solver='ElasticNet', l1_ratio=0.5, alpha=0.001,
+                 isotropic=None):
         """
         Initialize a Sparse Fascicle Model
 
@@ -360,12 +362,12 @@ class SparseFascicleModel(ReconstModel, Cache):
             regularization in ElasticNet [Zou2005]_. Default: 0.001
         isotropic : IsotropicModel class instance
             This is a class that implements the function that calculates the
-            value of the isotropic signal. This is a value of the signal that is
-            independent of direction, and therefore removed from both sides of
-            the SFM equation. The default is an instance of IsotropicModel, but
-            other functions can be inherited from IsotropicModel to implement
-            other fits to the aspects of the data that depend on b-value, but
-            not on direction.
+            value of the isotropic signal. This is a value of the signal that
+            is independent of direction, and therefore removed from both sides
+            of the SFM equation. The default is an instance of IsotropicModel,
+            but other functions can be inherited from IsotropicModel to
+            implement other fits to the aspects of the data that depend on
+            b-value, but not on direction.
 
         Notes
         -----
@@ -448,8 +450,11 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         # Fitting is done on the relative signal (S/S0):
         flat_S0 = np.mean(data_in_mask[..., self.gtab.b0s_mask], -1)
-        flat_S = (data_in_mask[..., ~self.gtab.b0s_mask] /
-                  flat_S0[..., None])
+        if not flat_S0.size or not flat_S0.max():
+            flat_S = np.zeros(data_in_mask[..., ~self.gtab.b0s_mask].shape)
+        else:
+            flat_S = (data_in_mask[..., ~self.gtab.b0s_mask] /
+                      flat_S0[..., None])
         isotropic = self.isotropic(self.gtab).fit(data, mask)
         flat_params = np.zeros((data_in_mask.shape[0],
                                 self.design_matrix.shape[-1]))
@@ -458,6 +463,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             isopredict = np.reshape(isopredict, (-1, isopredict.shape[-1]))
         else:
             isopredict = isopredict[mask]
+
         for vox, vox_data in enumerate(flat_S):
             # In voxels in which S0 is 0, we just want to keep the
             # parameters at all-zeros, and avoid nasty sklearn errors:
