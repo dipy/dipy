@@ -24,6 +24,8 @@ Visualizing target and atlas tractograms before registration::
     :alt: alternate text
     :align: center
 
+    Atlas and target before registration.
+
 ------------------------------------
 Streamline-Based Linear Registration
 ------------------------------------
@@ -33,8 +35,8 @@ be in common space (atlas space). We will register target tractogram to
 model atlas’ space using streamline-based linear registeration (SLR)[3]_.
 
 Following workflows require two positional input arguments; ``Static`` and
-``Moving`` .trk files. ``Static`` would be the atlas and ``Moving`` would be
-our target tractogram.
+``Moving`` .trk files. ``Static`` would be the ``atlas``  and ``Moving`` would be
+our ``target``  tractogram.
 
 Run the following workflow::
 
@@ -50,6 +52,8 @@ Visualizing target and atlas tractograms after registration::
     :width: 70 %
     :alt: alternate text
     :align: center
+
+    Atlas and target after registration.
 
 -----------
 Recobundles
