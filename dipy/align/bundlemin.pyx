@@ -303,8 +303,8 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
 
         min_j = <double *> malloc(static_size * sizeof(double))
 
-        for i in range(static_size):
-            min_j[i] = inf
+        for sz_i in range(static_size):
+            min_j[sz_i] = inf
 
         for i in prange(static_size):
 

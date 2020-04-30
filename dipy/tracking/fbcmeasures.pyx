@@ -172,9 +172,11 @@ cdef class FBCMeasures:
             double [:, :, :] streamlines_tangent
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
-            double [:] tangent
-            int line_id, point_id
-            int line_id2, point_id2
+            int line_id = 0
+            int point_id = 0
+            int line_id2 = 0
+            int point_id2 = 0
+            int dims
             double score
             double [:] score_mp
             int [:] xd_mp, yd_mp, zd_mp
@@ -228,9 +230,9 @@ cdef class FBCMeasures:
         # copy python streamlines into numpy array
         for line_id in range(num_fibers):
             for point_id in range(streamlines_length[line_id]):
-                for dim in range(3):
-                    streamlines[line_id, point_id, dim] = \
-                        py_streamlines[line_id][point_id][dim]
+                for dims in range(3):
+                    streamlines[line_id, point_id, dims] = \
+                        py_streamlines[line_id][point_id][dims]
         self.streamline_points = streamlines
 
         # compute tangents
