@@ -671,7 +671,7 @@ cdef inline void min_distances(size_t t1_len,
         cnp.float32_t *t2_pt
         cnp.float32_t d0, d1, d2
         cnp.float32_t delta2
-        int t1_pi, t2_pi
+        size_t t1_pi, t2_pi
     for t2_pi from 0<= t2_pi < t2_len:
         min_t2t1[t2_pi] = inf
     for t1_pi from 0<= t1_pi < t1_len:
@@ -1075,7 +1075,7 @@ def approx_polygon_track(xyz,alpha=0.392):
     next point.
     """
     cdef :
-        int mid_index
+        size_t mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track
         float *fvec0
         float *fvec1
