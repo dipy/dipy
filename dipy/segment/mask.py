@@ -35,8 +35,10 @@ def multi_median(input, median_radius, numpass):
     medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
 
     # Multi pass
+    output = np.empty_like(input)
     for i in range(0, numpass):
-        median_filter(input, medarr, output=input)
+        median_filter(input, medarr, output=output)
+        input, output = output, input
     return input
 
 
