@@ -39,13 +39,13 @@ def test_mask():
     # Test multi_median.
     median_test = np.arange(25).reshape(5, 5)
     median_control = median_test.copy()
-    medianradius = 3
+    medianradius = 2
     median_test = multi_median(median_test, medianradius, 3)
 
     medarr = np.ones_like(median_control.shape) * ((medianradius * 2) + 1)
-    median_filter(median_control, medarr, output=median_control)
-    median_filter(median_control, medarr, output=median_control)
-    median_filter(median_control, medarr, output=median_control)
+    median_control = median_filter(median_control, medarr)
+    median_control = median_filter(median_control, medarr)
+    median_control = median_filter(median_control, medarr)
     assert_equal(median_test, median_control)
 
 
