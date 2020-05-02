@@ -154,7 +154,7 @@ class QtdmriModel(Cache):
             msg += "or a float larger or equal than zero."
             msg += " Input value was %s." % laplacian_weighting
             if isinstance(laplacian_weighting, str):
-                if laplacian_weighting is not 'GCV':
+                if laplacian_weighting != 'GCV':
                     raise ValueError(msg)
             elif isinstance(laplacian_weighting, float):
                 if laplacian_weighting < 0:
@@ -172,7 +172,7 @@ class QtdmriModel(Cache):
             msg += "or a float larger or equal than zero."
             msg += " Input value was %s." % l1_weighting
             if isinstance(l1_weighting, str):
-                if l1_weighting is not 'CV':
+                if l1_weighting != 'CV':
                     raise ValueError(msg)
             elif isinstance(l1_weighting, float):
                 if l1_weighting < 0:
