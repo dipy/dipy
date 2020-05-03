@@ -1,7 +1,7 @@
 .. _bundle_segmentation_flow:
 
 ===============================================
-White Matter Bundle Extraction with RecoBundles
+White Matter Bundle Segmentation with RecoBundles
 ===============================================
 
 This tutorial explains how we can use RecoBundles [1]_ to extract
