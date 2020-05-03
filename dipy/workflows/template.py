@@ -2,7 +2,8 @@ import os
 from os.path import expanduser, join
 import glob
 import logging
-import requests
+from urllib.request import urlopen
+from shutil import copyfileobj
 import random
 import numpy as np
 from dipy.data import fetch_mni_template
@@ -387,12 +388,12 @@ class BuildTemplateFlow(Workflow):
                 # download template
                 logging.info('\nDownloading template')
                 url = 'https://www.nitrc.org/frs/download.php/11271/IITmean_FA.nii.gz'
-                r = requests.get(url, allow_redirects = False)
-                with open(dpath, 'wb') as fp:
-                    fp.write(r.content)
+                with urlopen(url) as response:
+                    with open(dpath, 'wb') as fp:
+                        shutil.copyfileobj(response, fp)
                 logging.info('\nDownloaded template')
             # diffeomorphic registration
-            first_im, first_aff = load_nifti('IITv5.0_mean_DTI_FA.nii.gz', return_img=False)
+            first_im, first_aff = load_nifti(dpath, return_img=False)
             second_im, second_aff = load_nifti(to_register, return_img=False)
             # register
             im, aff, cost = self.diffeomorphic_registration_pair(first_im, 
