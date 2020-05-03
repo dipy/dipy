@@ -8,14 +8,15 @@ This tutorial explains how we can use RecoBundles [1]_ to extract
 bundles from input tractograms.
 
 
-First we need to download streamline atlas [2]_ with 30 bundles in MNI space from:
+First, we need to download a reference streamline atlas. Here, we downloaded an atlas with 
+30 bundles in MNI space [2]_ from:
 
     `<https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652>`_
 
-Let's say we have an input target tractogram named ``target.trk`` and atlas we
-download named ``whole_brain_MNI.trk``.
+Let's say we have an input target tractogram named ``target.trk`` and the atlas we
+downloaded, named ``whole_brain_MNI.trk``.
 
-Visualizing target and atlas tractograms before registration::
+Visualizing the target and atlas tractograms before registration::
 
     dipy_horizon "target.trk" "whole_brain_MNI.trk" --random_color
 
@@ -30,21 +31,21 @@ Visualizing target and atlas tractograms before registration::
 Streamline-Based Linear Registration
 ------------------------------------
 
-For extracting bundles from tractogram we first need our target tractogram to
-be in common space (atlas space). We will register target tractogram to
-model atlas’ space using streamline-based linear registeration (SLR) [3]_.
+To extract the bundles from the tractogram, we first need move our target tractogram to
+be in the same space as the atlas (MNI, in this case). We can directly register the target tractogram to
+the space of the atlas, using streamline-based linear registration (SLR) [3]_.
 
-Following workflows require two positional input arguments; ``Static`` and
-``Moving`` .trk files. ``Static`` would be the ``atlas``  and ``Moving`` would be
+The following workflows require two positional input arguments; ``static`` and
+``moving`` .trk files. In our case, the ``static`` input is the atlas and the ``moving`` is
 our ``target``  tractogram.
 
 Run the following workflow::
 
     dipy_slr "whole_brain_MNI.trk" "target.trk" --force
 
-SLR workflow will save transformed tractogram as ``moved.trk``.
+Per default, the SLR workflow will save a transformed tractogram as ``moved.trk``.
 
-Visualizing target and atlas tractograms after registration::
+Visualizing the target and atlas tractograms after registration::
 
     dipy_horizon "moved.trk" "whole_brain_MNI.trk" --random_color
 
@@ -59,17 +60,17 @@ Visualizing target and atlas tractograms after registration::
 Recobundles
 -----------
 
-Create an ``out_dir`` folder (eg: rb_output)::
+Create an ``out_dir`` folder (e.g., ``rb_output``), into which output will be placed::
 
     mkdir rb_output
 
-For Recobundles workflow, we will be using 30 model bundles downloaded earlier.
+For the Recobundles workflow, we will use the 30 model bundles downloaded earlier.
 Run the following workflow::
 
     dipy_recobundles "moved.trk" "bundles/*.trk" --force --mix_names --out_dir "rb_output"
 
 This workflow will extract 30 bundles from the tractogram.
-Example of extracted Left Arcuate fasciculus (AF_L) bundle:
+Example of extracted Left Arcuate fasciculus (AF_L) bundle (visualized with ``dipy_horizon``):
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_rb.png?raw=true
     :width: 70 %
@@ -79,14 +80,14 @@ Example of extracted Left Arcuate fasciculus (AF_L) bundle:
     Extracted Left Arcuate fasciculus (AF_L) from input tractogram
 
 Example of extracted Left Arcuate fasciculus (AF_L) bundle visualized along
-model AF_L bundle used as reference in RecoBundles:
+with the model AF_L bundle used as reference in RecoBundles:
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_rb_with_model.png?raw=true
     :width: 70 %
     :alt: alternate text
     :align: center
 
-    Extracted Left Arcuate fasciculus (AF_L) in Pink and model AF_L bundle in green color.
+    Extracted Left Arcuate fasciculus (AF_L) in pink and model AF_L bundle in green color.
 
 Output of recobundles will be in native space. To get bundles in subject's
 original space, run following commands::
@@ -100,7 +101,7 @@ original space, run following commands::
 For more information about each command line, you can go to
 `<https://github.com/dipy/dipy/blob/master/dipy/workflows/segment.py>`_
 
-If you are using any of these commands do cite the relevant papers and
+If you are using any of these commands please be sure to cite the relevant papers and
 DIPY [4]_.
 
 .. [1] Garyfallidis et al. Recognition of white matter bundles using local and
