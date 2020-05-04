@@ -200,7 +200,7 @@ def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
         else:
             raise ValueError("For 4D images, must provide vol_idx input")
     else:
-        b0vol = input_volume.copy()
+        b0vol = input_volume
     # Make a mask using a multiple pass median filter and histogram
     # thresholding.
     mask = multi_median(b0vol, median_radius, numpass)
