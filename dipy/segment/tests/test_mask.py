@@ -37,13 +37,14 @@ def test_mask():
     assert_equal(final, initial)
 
     # Test multi_median.
-    median_test = np.arange(25).reshape(5, 5)
-    median_control = median_test.copy()
+    img = np.arange(25).reshape(5, 5)
+    img_copy = img.copy()
     medianradius = 2
-    median_test = multi_median(median_test, medianradius, 3)
+    median_test = multi_median(img, medianradius, 3)
+    assert_equal(img, img_copy)
 
-    medarr = np.ones_like(median_control.shape) * ((medianradius * 2) + 1)
-    median_control = median_filter(median_control, medarr)
+    medarr = np.ones_like(img.shape) * ((medianradius * 2) + 1)
+    median_control = median_filter(img, medarr)
     median_control = median_filter(median_control, medarr)
     median_control = median_filter(median_control, medarr)
     assert_equal(median_test, median_control)
