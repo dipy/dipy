@@ -11,7 +11,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
+import re
 
 # Doc generation depends on being able to import dipy
 try:
@@ -46,6 +48,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
+              'sphinx_gallery.gen_gallery',
               'math_dollar', # has to go before numpydoc
               'numpydoc',
               'github']
@@ -236,6 +239,30 @@ latex_preamble = r"""
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+
+# -- Options for sphinx gallery -------------------------------------------
+from docimage_scrap import ImageFileScraper
+
+sc = ImageFileScraper()
+ignore_examples = [r'piesno.py', r'workflow_creation.py',
+                   r'combined_workflow_creation.py', r'denoise_ascm.py',
+                   ]
+
+sphinx_gallery_conf = {
+     'doc_module': ('dipy',),
+     # path to your examples scripts
+     'examples_dirs': ['examples', ],
+     # path where to save gallery generated examples
+     'gallery_dirs': ['examples_built', ],
+     'image_scrapers': (sc),
+     'backreferences_dir': 'examples_built',
+     'reference_url': {'dipy': None, },
+     'abort_on_example_error': False,
+     'filename_pattern': re.escape(os.sep),
+     'ignore_pattern': r'\b(?:{0})\b'.format('|'.join(ignore_examples)),
+    #  'expected_failing_examples': ['examples/workflow_creation.py', ]
+}
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
