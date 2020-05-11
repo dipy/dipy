@@ -324,6 +324,7 @@ class MSDeconvFit(shm.SphHarmFit):
         tissue_classes = self.model.response.iso + 1
         vf = self._shm_coef[..., :tissue_classes] / SH_CONST
         vf = vf.clip(min=0)
+        print("Data type : ", vf.dtype)
         sums = np.sum(vf)
         print("Somme : ", sums)
         print("VF before : ", vf)
