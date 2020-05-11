@@ -323,18 +323,11 @@ class MSDeconvFit(shm.SphHarmFit):
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
         vf = self._shm_coef[..., :tissue_classes] / SH_CONST
-        sums = np.sum(vf)
-        print("Somme : ", sums)
-        print("VF before : ", vf)
-        for i in range(3):
-            vf[i] /= sums
-        print("VF after : ", vf)
-        print("Somme after : ", np.sum(vf))
-        # vf = vf.reshape(data_shape)
-        # sums = np.sum(vf, axis=-1)
-        # sums = np.repeat(sums, 3)
-        # sums = np.reshape(sums, vf.shape)
-        # vf[sums > 0] /= sums[sums > 0]
+        vf = vf.clip(min=0)
+        sums = np.sum(vf, axis=-1)
+        sums = np.repeat(sums, 3)
+        sums = np.reshape(sums, vf.shape)
+        vf[sums > 0.01] /= sums[sums > 0.01]
         return vf
 
     def compartment_shm_coeff(self, compartment):
