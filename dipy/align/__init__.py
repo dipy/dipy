@@ -28,3 +28,9 @@ from dipy.align._public import (syn_registration, register_dwi_to_template,
                                 c_of_mass, translation, rigid, affine,
                                 affine_registration, register_series,
                                 register_dwi_series, streamline_registration)
+
+__all__ =  ["syn_registration", "register_dwi_to_template",
+            "write_mapping", "read_mapping", "resample",
+            "c_of_mass", "translation", "rigid", "affine",
+            "affine_registration", "register_series",
+            "register_dwi_series", "streamline_registration"]
