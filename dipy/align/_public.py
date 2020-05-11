@@ -49,14 +49,17 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
     moving, static: Either as a 3D/4D array or as a nifti image object, or as
         a string containing the full path to a nifti file.
 
-    static_affine, moving_affine: 4D arrays
+    static_affine, moving_affine: 2D arrays.
+        The array associated with the static/moving images.
 
-    starting_affine : in case this is needed.
+    starting_affine : 2D array, optional.
+        This is the registration matrix that is inherited from previous steps
+        in the pipeline. Default: 4-by-4 identity matrix.
     """
     static, static_affine = read_img_arr_or_path(static,
-                                                      affine=static_affine)
+                                                 affine=static_affine)
     moving, moving_affine = read_img_arr_or_path(moving,
-                                                      affine=moving_affine)
+                                                 affine=moving_affine)
     if starting_affine is None:
         starting_affine = np.eye(4)
 
