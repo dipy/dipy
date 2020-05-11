@@ -1,10 +1,13 @@
 import os
+import tempfile
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.utils import (create_nifti_header,
                            decfa, decfa_to_float,
                            get_reference_info,
-                           is_reference_info_valid)
+                           is_reference_info_valid,
+                           read_img_arr_or_path)
+
 from nibabel import Nifti1Image
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
@@ -137,4 +140,12 @@ def test_all_zeros_affine():
 
 
 def test_read_img_arr_or_path():
-    raise NotImplementedError
+    data = np.zeros((4, 4, 4, 3))
+    aff = np.eye(4)
+    img = Nifti1Image(data, aff)
+    path = tempfile.NamedTemporaryFile().name
+
+    for this in [data, img, path]:
+        dd, aa = read_img_arr_or_path(this, affine=None)
+        assert np.allclose(dd, data)
+        assert np.allclose(aa, aff)
