@@ -323,18 +323,14 @@ class MSDeconvFit(shm.SphHarmFit):
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
         vf = self._shm_coef[..., :tissue_classes] / SH_CONST
-        data_shape = vf.shape
-        print(data_shape)
-        vf = vf.ravel().reshape(np.prod(data_shape[0:3]), data_shape[3])
-        for i in range(vf.shape[0]):
-            sums = np.sum(vf[i])
+            sums = np.sum(vf)
             print("Somme : ", sums)
-            print("VF before : ", vf[i])
-            for j in range(vf.shape[1]):
-                vf[i][j] /= sums
-            print("VF after : ", vf[i])
-            print("Somme after : ", np.sum(vf[i]))
-        vf = vf.reshape(data_shape)
+            print("VF before : ", vf)
+            for i in range(3):
+                vf[i] /= sums
+            print("VF after : ", vf)
+            print("Somme after : ", np.sum(vf))
+        # vf = vf.reshape(data_shape)
         # sums = np.sum(vf, axis=-1)
         # sums = np.repeat(sums, 3)
         # sums = np.reshape(sums, vf.shape)
