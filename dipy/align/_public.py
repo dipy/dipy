@@ -604,14 +604,10 @@ def affine_registration(moving, static,
     step (`affine`) is ommitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
     """
-    if pipeline is None:
-        pipeline = [c_of_mass, translation, rigid, affine]
-    if level_iters is None:
-        level_iters = [10000, 1000, 100]
-    if sigmas is None:
-        sigmas = [3, 1, 0.0]
-    if factors is None:
-        factors = [4, 2, 1]
+    pipeline = pipeline or [c_of_mass, translation, rigid, affine]
+    level_iters = level_iters or [10000, 1000, 100]
+    sigmas = sigmas or [3, 1, 0.0]
+    factors = factors or [4, 2, 1]
 
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
