@@ -673,8 +673,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     with 4x4 matrices associated with each of the volumes of the input moving
     data that was used to transform it into register with the static data.
     """
-    if pipeline is None:
-        [c_of_mass, translation, rigid, affine]
+    pipeline = pipeline or [c_of_mass, translation, rigid, affine]
 
     series, series_affine = read_img_arr_or_path(series,
                                                       affine=series_affine)
