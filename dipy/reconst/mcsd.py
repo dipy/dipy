@@ -332,7 +332,6 @@ class MSDeconvFit(shm.SphHarmFit):
                 vf[i] /= sums
         print("VF after : ", vf)
         print("Somme after : ", np.sum(vf))
-        vf = vf.reshape(data_shape)
         # sums = np.sum(vf, axis=-1, dtype=np.float64)
         # sums = np.repeat(sums, 3)
         # sums = np.reshape(sums, vf.shape)
