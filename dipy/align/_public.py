@@ -60,8 +60,7 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
                                                  affine=static_affine)
     moving, moving_affine = read_img_arr_or_path(moving,
                                                  affine=moving_affine)
-    if starting_affine is None:
-        starting_affine = np.eye(4)
+    starting_affine = starting_affine or np.eye(4)
 
     return static, static_affine, moving, moving_affine, starting_affine
 
@@ -111,8 +110,7 @@ def syn_registration(moving, static,
         The vector field describing the backward warping from the target to the
         source.
     """
-    if level_iters is None:
-        level_iters = [10, 10, 5]
+    level_iters = level_iters or level_iters = [10, 10, 5]
 
     static, static_affine, moving, moving_affine, _ = \
         _handle_pipeline_inputs(moving, static,
