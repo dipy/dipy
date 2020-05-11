@@ -110,7 +110,7 @@ def syn_registration(moving, static,
         The vector field describing the backward warping from the target to the
         source.
     """
-    level_iters = level_iters or level_iters = [10, 10, 5]
+    level_iters = level_iters or [10, 10, 5]
 
     static, static_affine, moving, moving_affine, _ = \
         _handle_pipeline_inputs(moving, static,
@@ -118,8 +118,8 @@ def syn_registration(moving, static,
                                 static_affine=static_affine,
                                 starting_affine=None)
 
-    use_metric = syn_metric_dict[metric](dim, sigma_diff=sigma_diff,
-                                         radius=radius)
+    use_metric = syn_metric_dict[metric.upper()](dim, sigma_diff=sigma_diff,
+                                                 radius=radius)
 
     sdr = SymmetricDiffeomorphicRegistration(use_metric, level_iters,
                                              step_length=step_length)
