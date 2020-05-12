@@ -1,6 +1,7 @@
 import os
 import os.path as op
 import tempfile
+import pytest
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.utils import (create_nifti_header,
@@ -141,8 +142,9 @@ def test_all_zeros_affine():
 
 
 def test_read_img_arr_or_path():
-    data = np.zeros((4, 4, 4, 3))
+    data = np.random.rand(4, 4, 4, 3)
     aff = np.eye(4)
+    aff[:3, :] = np.random.randn(3, 4)
     img = Nifti1Image(data, aff)
     path = tempfile.NamedTemporaryFile().name + '.nii.gz'
     save(img, path)
@@ -150,3 +152,12 @@ def test_read_img_arr_or_path():
         dd, aa = read_img_arr_or_path(this, affine=aff)
         assert np.allclose(dd, data)
         assert np.allclose(aa, aff)
+
+    # Tests that if an array is provided, but no affine, an error is raised:
+    with pytest.raises(ValueError):
+        read_img_arr_or_path(data)
+
+    # Tests that the affine is recovered correctly from path:
+    dd, aa = read_img_arr_or_path(path)
+    assert np.allclose(dd, data)
+    assert np.allclose(aa, aff)
