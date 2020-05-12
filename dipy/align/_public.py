@@ -60,7 +60,8 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
                                                  affine=static_affine)
     moving, moving_affine = read_img_arr_or_path(moving,
                                                  affine=moving_affine)
-    starting_affine = starting_affine or np.eye(4)
+    if starting_affine is None:
+        starting_affine = np.eye(4)
 
     return static, static_affine, moving, moving_affine, starting_affine
 
