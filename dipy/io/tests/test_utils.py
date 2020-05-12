@@ -1,4 +1,5 @@
 import os
+import os.path as op
 import tempfile
 
 from dipy.data import fetch_gold_standard_io
@@ -8,7 +9,7 @@ from dipy.io.utils import (create_nifti_header,
                            is_reference_info_valid,
                            read_img_arr_or_path)
 
-from nibabel import Nifti1Image
+from nibabel import Nifti1Image, save
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
 
@@ -143,9 +144,9 @@ def test_read_img_arr_or_path():
     data = np.zeros((4, 4, 4, 3))
     aff = np.eye(4)
     img = Nifti1Image(data, aff)
-    path = tempfile.NamedTemporaryFile().name
-
+    path = tempfile.NamedTemporaryFile().name + '.nii.gz'
+    save(img, path)
     for this in [data, img, path]:
-        dd, aa = read_img_arr_or_path(this, affine=None)
+        dd, aa = read_img_arr_or_path(this, affine=aff)
         assert np.allclose(dd, data)
         assert np.allclose(aa, aff)
