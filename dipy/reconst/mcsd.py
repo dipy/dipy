@@ -325,13 +325,13 @@ class MSDeconvFit(shm.SphHarmFit):
         vf = self._shm_coef[..., :tissue_classes] / SH_CONST
         vf = vf.clip(min=0)
         sums = np.sum(vf, dtype=np.float64)
-        # print("Somme : ", sums)
-        # print("VF before : ", vf)
+        print("Somme : ", sums)
+        print("VF before : ", vf[0], vf[1], vf[2])
         if sums > 0.01:
             for i in range(3):
                 vf[i] /= sums
-        # print("VF after : ", vf)
-        # print("Somme after : ", np.sum(vf))
+        print("VF after : ", vf[0], vf[1], vf[2])
+        print("Somme after : ", np.sum(vf))
         # sums = np.sum(vf, axis=-1, dtype=np.float64)
         # sums = np.repeat(sums, 3)
         # sums = np.reshape(sums, vf.shape)
