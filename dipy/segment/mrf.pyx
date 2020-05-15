@@ -239,48 +239,6 @@ class ConstantObservationModel(object):
         return mu_upd, var_upd
 
 
-    def update_param_new(self, image, P_L_Y, mu, cnp.npy_intp nclasses):
-        r""" Updates the means and the variances in each iteration for all
-        the labels. This is for equations 25 and 26 of the Zhang et al. paper
-
-        Parameters
-        -----------
-        image : ndarray
-            3D structural gray-scale image
-        P_L_Y : ndarray
-            4D probability map of the label given the input image
-            computed by the expectation maximization (EM) algorithm
-        mu : ndarray
-            1 x nclasses, current estimate of the mean of each tissue
-            class.
-        nclasses : int
-            number of tissue classes
-
-        Returns
-        --------
-
-        mu_upd : ndarray
-            1 x nclasses, updated mean of each tissue class
-        var_upd : ndarray
-            1 x nclasses, updated variance of each tissue class
-        """
-        cdef int l
-        mu_upd = np.zeros(nclasses, dtype=np.float64)
-        var_upd = np.zeros(nclasses, dtype=np.float64)
-        mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
-        var_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
-
-        for l in range(nclasses):
-            mu_num[..., l] = P_L_Y[..., l] * image
-            var_num[..., l] = mu_num[..., l] * image
-
-            mu_upd[l] = np.sum(mu_num[..., l]) / np.sum(P_L_Y[..., l])
-            var_upd[l] = (np.sum(var_num[..., l]) / np.sum(P_L_Y[..., l]) -
-                          mu_upd[l] ** 2)
-
-        return mu_upd, var_upd
-
-
 cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
                                     double[:] sigma) nogil:
     r""" Initializes the means and standard deviations uniformly
