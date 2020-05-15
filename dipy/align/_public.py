@@ -22,6 +22,8 @@ from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
                                    AffineTransform3D)
 
+
+
 import dipy.core.gradients as dpg
 import dipy.data as dpd
 from dipy.align.streamlinear import StreamlineLinearRegistration
@@ -29,6 +31,7 @@ from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.utils import transform_tracking_output
 from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
+from dipy.io.image import load_nifti, save_nifti
 
 
 # Global dicts for choosing metrics for registration:
@@ -73,9 +76,8 @@ def syn_registration(moving, static,
                      metric='CC',
                      dim=3,
                      level_iters=None,
-                     sigma_diff=2.0,
-                     radius=4,
-                     prealign=None):
+                     prealign=None,
+                     **metric_kwargs):
     """Register a 2D/3D source image (moving) to a 2D/3D target image (static).
 
     Parameters
@@ -97,8 +99,9 @@ def syn_registration(moving, static,
         the number of iterations at each level of the Gaussian Pyramid (the
         length of the list defines the number of pyramid levels to be
         used). Default: [10, 10, 5].
-    sigma_diff, radius : float
-        Parameters for initialization of the metric.
+    metric_kwargs : dict, optional
+        Parameters for initialization of the metric object. If not provided,
+        uses the default settings of each metric.
 
     Returns
     -------
@@ -119,8 +122,7 @@ def syn_registration(moving, static,
                                 static_affine=static_affine,
                                 starting_affine=None)
 
-    use_metric = syn_metric_dict[metric.upper()](dim, sigma_diff=sigma_diff,
-                                                 radius=radius)
+    use_metric = syn_metric_dict[metric.upper()](dim, **metric_kwargs)
 
     sdr = SymmetricDiffeomorphicRegistration(use_metric, level_iters,
                                              step_length=step_length)
@@ -187,23 +189,25 @@ def register_dwi_to_template(dwi, gtab, dwi_affine=None, template=None,
     template_data, template_affine = read_img_arr_or_path(
                                        template,
                                        affine=template_affine)
-    if isinstance(dwi, str):
-        dwi = nib.load(dwi)
 
     if not isinstance(gtab, dpg.GradientTable):
         gtab = dpg.gradient_table(*gtab)
 
     mean_b0 = np.mean(dwi_data[..., gtab.b0s_mask], -1)
-    if reg_method == "syn":
+    if reg_method.lower() == "syn":
         warped_b0, mapping = syn_registration(mean_b0, template_data,
                                               moving_affine=dwi_affine,
                                               static_affine=template_affine,
                                               **reg_kwargs)
-    elif reg_method == "aff":
+    elif reg_method.lower() == "aff":
         warped_b0, mapping = affine_registration(mean_b0, template_data,
                                                  moving_affine=dwi_affine,
                                                  static_affine=template_affine,
                                                  **reg_kwargs)
+    else:
+        raise ValueError("reg_method should be one of 'aff' or 'syn', but you"
+                         " provided %s" % reg_method)
+
     return warped_b0, mapping
 
 
@@ -224,7 +228,7 @@ def write_mapping(mapping, fname):
     the backward mapping in each voxel is in `data[i, j, k, 0, :, :]`.
     """
     mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
-    nib.save(nib.Nifti1Image(mapping_data, mapping.codomain_world2grid), fname)
+    save_nifti(fname, mapping.codomain_world2grid, mapping_data)
 
 
 def read_mapping(disp, domain_img, codomain_img, prealign=None):
@@ -250,7 +254,7 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
     See :func:`write_mapping` for the data format expected.
     """
     if isinstance(disp, str):
-        disp = nib.load(disp)
+        disp_data, disp = load_nifti(disp, return_img=True)
 
     if isinstance(domain_img, str):
         domain_img = nib.load(domain_img)
