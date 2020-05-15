@@ -66,7 +66,7 @@ class ConstantObservationModel(object):
         return np.array(mu), np.array(sigma)
 
 
-    def seg_stats(self, input_image, seg_image, int nclass):
+    def seg_stats(self, input_image, seg_image, cnp.npy_intp nclass):
         r""" Mean and standard variation for N desired  tissue classes
 
         Parameters
@@ -86,8 +86,8 @@ class ConstantObservationModel(object):
 
         """
         cdef:
-            cnp.npy_intp index
-            int i, s
+            cnp.npy_intp i, j
+            cnp.npy_int16 s
             double v
             cnp.npy_intp size = input_image.size
             double [::1] input_view
@@ -108,10 +108,10 @@ class ConstantObservationModel(object):
         std_view = std
         num_vox_view = num_vox
 
-        for index in range(size):
+        for j in range(size):
 
-            s = <int>seg_view[index]
-            v = input_view[index]
+            s = seg_view[j]
+            v = input_view[j]
 
             for i in range(nclass):
 
@@ -126,7 +126,7 @@ class ConstantObservationModel(object):
         return mu, std
 
 
-    def negloglikelihood(self, image, mu, sigmasq, nclasses):
+    def negloglikelihood(self, image, mu, sigmasq, cnp.npy_intp nclasses):
         r""" Computes the gaussian negative log-likelihood of each class at
         each voxel of `image` assuming a gaussian distribution with means and
         variances given by `mu` and `sigmasq`, respectively (constant models
@@ -149,6 +149,7 @@ class ConstantObservationModel(object):
         nloglike : ndarray,
                 4D negloglikelihood for each class in each volume
         """
+        cdef int l
         nloglike = np.zeros(image.shape + (nclasses,), dtype=np.float64)
 
         for l in range(nclasses):
@@ -157,7 +158,7 @@ class ConstantObservationModel(object):
         return nloglike
 
 
-    def prob_image(self, img, nclasses, mu, sigmasq, P_L_N):
+    def prob_image(self, img, cnp.npy_intp nclasses, mu, sigmasq, P_L_N):
         r""" Conditional probability of the label given the image
 
         Parameters
@@ -181,13 +182,13 @@ class ConstantObservationModel(object):
         P_L_Y : ndarray,
             4D probability of the label given the input image
         """
+        cdef int l
         P_L_Y = np.zeros_like(P_L_N)
         P_L_Y_norm = np.zeros_like(img)
 
+        g = np.empty_like(img)
+
         for l in range(nclasses):
-
-            g = np.zeros_like(img)
-
             _prob_image(img, g, mu, sigmasq, l, P_L_N, P_L_Y)
             P_L_Y_norm[:, :, :] += P_L_Y[:, :, :, l]
 
@@ -197,7 +198,7 @@ class ConstantObservationModel(object):
         return P_L_Y
 
 
-    def update_param(self, image, P_L_Y, mu, nclasses):
+    def update_param(self, image, P_L_Y, mu, cnp.npy_intp nclasses):
         r""" Updates the means and the variances in each iteration for all
         the labels. This is for equations 25 and 26 of Zhang et. al.,
         IEEE Trans. Med. Imag, Vol. 20, No. 1, Jan 2001.
@@ -222,6 +223,7 @@ class ConstantObservationModel(object):
         var_upd : ndarray,
                 1 x nclasses, updated variance of each tissue class
         """
+        cdef int l
         mu_upd = np.zeros(nclasses, dtype=np.float64)
         var_upd = np.zeros(nclasses, dtype=np.float64)
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
@@ -237,7 +239,7 @@ class ConstantObservationModel(object):
         return mu_upd, var_upd
 
 
-    def update_param_new(self, image, P_L_Y, mu, nclasses):
+    def update_param_new(self, image, P_L_Y, mu, cnp.npy_intp nclasses):
         r""" Updates the means and the variances in each iteration for all
         the labels. This is for equations 25 and 26 of the Zhang et al. paper
 
@@ -262,6 +264,7 @@ class ConstantObservationModel(object):
         var_upd : ndarray,
                 1 x nclasses, updated variance of each tissue class
         """
+        cdef int l
         mu_upd = np.zeros(nclasses, dtype=np.float64)
         var_upd = np.zeros(nclasses, dtype=np.float64)
         mu_num = np.zeros(image.shape + (nclasses,), dtype=np.float64)
@@ -303,7 +306,7 @@ cdef void _initialize_param_uniform(double[:,:,:] image, double[:] mu,
         cnp.npy_intp nx = image.shape[0]
         cnp.npy_intp ny = image.shape[1]
         cnp.npy_intp nz = image.shape[2]
-        int nclasses = mu.shape[0]
+        cnp.npy_intp nclasses = mu.shape[0]
         int i
         double min_val
         double max_val
@@ -499,7 +502,7 @@ class IteratedConditionalModes(object):
         return new_seg, energy
 
 
-    def prob_neighborhood(self, seg, beta, nclasses):
+    def prob_neighborhood(self, seg, beta, cnp.npy_intp nclasses):
         r""" Conditional probability of the label given the neighborhood
         Equation 2.18 of the Stan Z. Li book (Stan Z. Li, Markov Random Field
         Modeling in Image Analysis, 3rd ed., Advances in Pattern Recognition
