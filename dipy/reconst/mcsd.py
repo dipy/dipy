@@ -489,7 +489,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     roi_radii : int or array-like, (3,)
         radii of cuboid ROI
     fa_data : ndarray
-        FA data, optionnal.
+        FA data (must have the same shape as data), optionnal.
     wm_fa_thr : float
         FA threshold for WM.
     gm_fa_thr : float
@@ -497,7 +497,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     csf_fa_thr : float
         FA threshold for CSF.
     md_data : ndarray
-        MD data, optionnal.
+        MD data (must have the same shape as data), optionnal.
     gm_md_thr : float
         MD threshold for GM.
     csf_md_thr : float
