@@ -66,7 +66,7 @@ class ConstantObservationModel(object):
         return np.array(mu), np.array(sigma)
 
 
-    def seg_stats(self, input_image, seg_image, nclass):
+    def seg_stats(self, input_image, seg_image, int nclass):
         r""" Mean and standard variation for N desired  tissue classes
 
         Parameters
@@ -83,25 +83,45 @@ class ConstantObservationModel(object):
         mu, std: ndarrays,
                  1 x nclasses dimension
                  Mean and standard deviation for each class
+
         """
-        mu = np.zeros(nclass)
-        std = np.zeros(nclass)
-        num_vox = np.zeros(nclass)
+        cdef:
+            cnp.npy_intp index
+            int i, s
+            double v
+            cnp.npy_intp size = input_image.size
+            double [::1] input_view
+            short [::1] seg_view
+            double [::1] mu_view
+            double [::1] std_view
+            cnp.npy_intp [::1] num_vox_view
 
-        for index in ndindex(np.shape(input_image)):
+        # ravel C-contiguous array so we can use 1D indexing in the loop below
+        input_view = np.ascontiguousarray(input_image, dtype=np.double).ravel()
+        seg_view = np.ascontiguousarray(seg_image, dtype=np.int16).ravel()
 
-            s = seg_image[index]
-            v = input_image[index]
+        mu = np.zeros(nclass, dtype=np.float64)
+        std = np.zeros(nclass, dtype=np.float64)
+        num_vox = np.zeros(nclass, dtype=np.intp)
 
-            for i in range(0, nclass):
+        mu_view = mu
+        std_view = std
+        num_vox_view = num_vox
+
+        for index in range(size):
+
+            s = <int>seg_view[index]
+            v = input_view[index]
+
+            for i in range(nclass):
 
                 if s == i:
-                    mu[i] += v
-                    std[i] += v * v
-                    num_vox[i] += 1
+                    mu_view[i] += v
+                    std_view[i] += v * v
+                    num_vox_view[i] += 1
 
         mu = mu / num_vox
-        std = np.sqrt(std/num_vox - mu**2)
+        std = np.sqrt(std/num_vox - mu*mu)
 
         return mu, std
 
