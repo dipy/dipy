@@ -1,11 +1,19 @@
 """A simple example for deep-learning-based non-rigid image registration
 with the MNIST dataset.
 """
-import tensorflow as tf
-import tensorflow.keras.layers as layers
 import numpy as np
-import matplotlib.pyplot as plt
 import argparse
+from dipy.utils.optpkg import optional_package
+from distutils.version import LooseVersion
+
+matplotlib, has_mpl, setup_module = optional_package("matplotlib")
+plt, _, _ = optional_package("matplotlib.pyplot")
+tf, have_tf, _ = optional_package("tensorflow")
+layers, _, _ = optional_package("tensorflow.keras.layers")
+
+if have_tf:
+    if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+        raise ImportError('Please upgrade to TensorFlow 2+')
 
 
 @tf.function
