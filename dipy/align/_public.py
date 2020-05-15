@@ -228,7 +228,7 @@ def write_mapping(mapping, fname):
     the backward mapping in each voxel is in `data[i, j, k, 0, :, :]`.
     """
     mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
-    save_nifti(fname, mapping.codomain_world2grid, mapping_data)
+    save_nifti(fname, mapping_data, mapping.codomain_world2grid)
 
 
 def read_mapping(disp, domain_img, codomain_img, prealign=None):
@@ -254,7 +254,7 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
     See :func:`write_mapping` for the data format expected.
     """
     if isinstance(disp, str):
-        disp_data, disp = load_nifti(disp, return_img=True)
+        disp_data, disp_affine = load_nifti(disp)
 
     if isinstance(domain_img, str):
         domain_img = nib.load(domain_img)
@@ -262,15 +262,14 @@ def read_mapping(disp, domain_img, codomain_img, prealign=None):
     if isinstance(codomain_img, str):
         codomain_img = nib.load(codomain_img)
 
-    mapping = DiffeomorphicMap(3, disp.shape[:3],
-                               disp_grid2world=np.linalg.inv(disp.affine),
+    mapping = DiffeomorphicMap(3, disp_data.shape[:3],
+                               disp_grid2world=np.linalg.inv(disp_affine),
                                domain_shape=domain_img.shape[:3],
                                domain_grid2world=domain_img.affine,
                                codomain_shape=codomain_img.shape,
                                codomain_grid2world=codomain_img.affine,
                                prealign=prealign)
 
-    disp_data = disp.get_fdata().astype(np.float32)
     mapping.forward = disp_data[..., 0]
     mapping.backward = disp_data[..., 1]
     mapping.is_inverse = True
@@ -523,11 +522,10 @@ def affine_registration(moving, static,
                         pipeline=None,
                         starting_affine=None,
                         metric='MI',
-                        nbins=32,
-                        sampling_proportion=None,
                         level_iters=None,
                         sigmas=None,
-                        factors=None):
+                        factors=None,
+                        **metric_kwargs):
 
     """
     Find the affine transformation between two 3D images.
@@ -620,10 +618,9 @@ def affine_registration(moving, static,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
 
-    # Define the Affine registration object we'll use with the chosen metric:
-    use_metric = affine_metric_dict[metric](
-                        nbins=nbins,
-                        sampling_proportion=sampling_proportion)
+    # Define the Affine registration object we'll use with the chosen metric.
+    # For now, there is only one metric (mutual information)
+    use_metric = affine_metric_dict[metric](**metric_kwargs)
 
     affreg = AffineRegistration(metric=use_metric,
                                 level_iters=level_iters,
