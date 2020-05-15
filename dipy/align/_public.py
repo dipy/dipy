@@ -324,7 +324,7 @@ def resample(moving, static, moving_affine=None, static_affine=None,
     return nib.Nifti1Image(resampled, static_affine)
 
 
-def c_of_mass(moving, static, static_affine=None, moving_affine=None,
+def center_of_mass(moving, static, static_affine=None, moving_affine=None,
               starting_affine=None, reg=None):
     """
     Implements a center of mass transform
@@ -555,7 +555,7 @@ def affine_registration(moving, static,
     pipeline : sequence, optional
         Sequence of transforms to use in the gradual fitting of the full
         affine. Default: (executed from left to right):
-        `[c_of_mass, translation, rigid, affine]`
+        `[center_of_mass, translation, rigid, affine]`
 
     starting_affine: 4x4 array, optional
         Initial guess for the transformation between the spaces.
@@ -609,7 +609,7 @@ def affine_registration(moving, static,
     step (`affine`) is ommitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
     """
-    pipeline = pipeline or [c_of_mass, translation, rigid, affine]
+    pipeline = pipeline or [center_of_mass, translation, rigid, affine]
     level_iters = level_iters or [10000, 1000, 100]
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
@@ -666,7 +666,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     pipeline : sequence, optional
         Sequence of transforms to do for each volume in the series.
         Default: (executed from left to right):
-        `[c_of_mass, translation, rigid, affine]`
+        `[center_of_mass, translation, rigid, affine]`
 
     series_affine, ref_affine : 4x4 arrays, optional.
         The affine. If provided, this input will over-ride the affine provided
@@ -678,7 +678,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     with 4x4 matrices associated with each of the volumes of the input moving
     data that was used to transform it into register with the static data.
     """
-    pipeline = pipeline or [c_of_mass, translation, rigid, affine]
+    pipeline = pipeline or [center_of_mass, translation, rigid, affine]
 
     series, series_affine = read_img_arr_or_path(series,
                                                       affine=series_affine)
@@ -741,7 +741,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
 
     pipeline : list of callables, optional.
         The transformations to perform in sequence (from left to right):
-        Default: `[c_of_mass, translation, rigid, affine]`
+        Default: `[center_of_mass, translation, rigid, affine]`
 
 
     Returns
@@ -752,7 +752,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
 
     """
     if pipeline is None:
-        [c_of_mass, translation, rigid, affine]
+        [center_of_mass, translation, rigid, affine]
 
     data, affine = read_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.Sequence):
