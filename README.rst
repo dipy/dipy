@@ -46,7 +46,7 @@ https://mail.python.org/mailman/listinfo/neuroimaging
 Please see the users' forum at
 https://neurostars.org/tags/dipy
 
-Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
+Please join the gitter chatroom `here <https://gitter.im/dipy/dipy>`_.
 
 Code
 ====
