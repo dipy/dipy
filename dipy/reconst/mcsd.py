@@ -605,14 +605,15 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     # Other part of the isotropic tolerance testing.
     if iso_tol != 0:
+        tol = iso_tol / 100.
         print("Sum GM before iso: ", np.sum(mask_gm))
         gm_evals_mean = np.mean(evals[mask_gm, 1], evals[mask_gm, 2], axis=-1)
-        mask_gm_iso = np.allclose(evals[mask_gm, 0], gm_evals_mean, rtol=0.1)
+        mask_gm_iso = np.allclose(evals[mask_gm, 0], gm_evals_mean, rtol=tol)
         mask_gm *= mask_gm_iso
         print("Sum GM after iso: ", np.sum(mask_gm))
         print("Sum CSF before iso: ", np.sum(mask_CSF))
         csf_evals_mean = np.mean(evals[mask_csf, 1], evals[mask_csf, 2], axis=-1)
-        mask_csf_iso = np.allclose(evals[mask_csf, 0], csf_evals_mean, rtol=0.1)
+        mask_csf_iso = np.allclose(evals[mask_csf, 0], csf_evals_mean, rtol=tol)
         mask_csf *= mask_csf_iso
         print("Sum CSF after iso: ", np.sum(mask_CSF))
 
