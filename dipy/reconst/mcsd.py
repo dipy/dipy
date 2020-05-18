@@ -548,6 +548,12 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
+    list_bvals = unique_bvals_tol(bvals)
+    if np.all(list_bvals <= 1200):
+        msg_bvals = """Some b-values are higher than 1200. The DTI fit might
+        be affected."""
+        warnings.warn(msg_bvals, UserWarning)
+
     # if fa_data is None and md_data is None:
     #     ten = TensorModel(gtab)
     #     tenfit = ten.fit(data, mask=roi_mask)
@@ -598,16 +604,17 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     mask_csf *= roi_mask
 
     # Other part of the isotropic tolerance testing.
-    print("Sum GM before iso: ", np.sum(mask_gm))
-    gm_evals_mean = np.mean(evals[mask_gm, 1], evals[mask_gm, 2], axis=-1)
-    mask_gm_iso = np.allclose(evals[mask_gm, 0], gm_evals_mean, rtol=0.1)
-    mask_gm *= mask_gm_iso
-    print("Sum GM after iso: ", np.sum(mask_gm))
-    print("Sum CSF before iso: ", np.sum(mask_CSF))
-    csf_evals_mean = np.mean(evals[mask_csf, 1], evals[mask_csf, 2], axis=-1)
-    mask_csf_iso = np.allclose(evals[mask_csf, 0], csf_evals_mean, rtol=0.1)
-    mask_csf *= mask_csf_iso
-    print("Sum CSF after iso: ", np.sum(mask_CSF))
+    if iso_tol != 0:
+        print("Sum GM before iso: ", np.sum(mask_gm))
+        gm_evals_mean = np.mean(evals[mask_gm, 1], evals[mask_gm, 2], axis=-1)
+        mask_gm_iso = np.allclose(evals[mask_gm, 0], gm_evals_mean, rtol=0.1)
+        mask_gm *= mask_gm_iso
+        print("Sum GM after iso: ", np.sum(mask_gm))
+        print("Sum CSF before iso: ", np.sum(mask_CSF))
+        csf_evals_mean = np.mean(evals[mask_csf, 1], evals[mask_csf, 2], axis=-1)
+        mask_csf_iso = np.allclose(evals[mask_csf, 0], csf_evals_mean, rtol=0.1)
+        mask_csf *= mask_csf_iso
+        print("Sum CSF after iso: ", np.sum(mask_CSF))
 
     msg = """No voxel with a {0} than {1} were found.
     Try a larger roi or a {2} threshold for {3}."""
@@ -678,6 +685,10 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
 
     list_bvals = unique_bvals_tol(bvals, tol)
+    if np.all(list_bvals <= 1200):
+        msg_bvals = """Some b-values are higher than 1200. The DTI fit might
+        be affected."""
+        warnings.warn(msg_bvals, UserWarning)
 
     b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
