@@ -26,7 +26,7 @@ of the documentation for the procedures we use in developing the code.
 ### Tests and test coverage
 
 We use [pytest](https://docs.pytest.org) to write tests of the code,
-and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.org/dipy/dipy)
+and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.com/dipy/dipy)
 for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
