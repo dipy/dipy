@@ -478,7 +478,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
 #                            gm_md_thr=0.001, csf_md_thr=0.0032):
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
                            wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
-                           gm_md_thr=0.001, csf_md_thr=0.0032, iso_tol=0):
+                           gm_md_thr=0.001, csf_md_thr=0.0032, iso_tol=None):
     """ Computation of masks for msmt response function using FA and MD.
 
     Parameters
@@ -604,7 +604,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     mask_csf *= roi_mask
 
     # Other part of the isotropic tolerance testing.
-    if iso_tol != 0:
+    if iso_tol is not None:
         tol = iso_tol / 100.
         print("Sum GM before iso: ", np.sum(mask_gm))
         gm_evals_mean = np.mean(evals[mask_gm, 1], evals[mask_gm, 2], axis=-1)
