@@ -609,14 +609,14 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         evals = tenfit.evals
         print("Sum GM before iso: ", np.sum(mask_gm))
         gm_evals = evals[mask_gm.astype(bool)]
-        gm_evals_mean = np.mean(gm_evals[1], gm_evals[2])
-        mask_gm_iso = np.allclose(gm_evals[0], gm_evals_mean, rtol=tol)
+        gm_evals_mean = np.mean(gm_evals[..., 1], gm_evals[..., 2])
+        mask_gm_iso = np.allclose(gm_evals[..., 0], gm_evals_mean, rtol=tol)
         mask_gm *= mask_gm_iso
         print("Sum GM after iso: ", np.sum(mask_gm))
         print("Sum CSF before iso: ", np.sum(mask_CSF))
         csf_evals = evals[mask_csf.astype(bool)]
-        csf_evals_mean = np.mean(csf_evals[1], csf_evals[2])
-        mask_csf_iso = np.allclose(csf_evals[0], csf_evals_mean, rtol=tol)
+        csf_evals_mean = np.mean(csf_evals[..., 1], csf_evals[..., 2])
+        mask_csf_iso = np.allclose(csf_evals[..., 0], csf_evals_mean, rtol=tol)
         mask_csf *= mask_csf_iso
         print("Sum CSF after iso: ", np.sum(mask_CSF))
 
