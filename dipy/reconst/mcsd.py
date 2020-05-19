@@ -606,6 +606,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     # Other part of the isotropic tolerance testing.
     if iso_tol is not None:
         tol = iso_tol / 100.
+        evals = tenfit.evals
         print("Sum GM before iso: ", np.sum(mask_gm))
         gm_evals_mean = np.mean(evals[mask_gm, 1], evals[mask_gm, 2], axis=-1)
         mask_gm_iso = np.allclose(evals[mask_gm, 0], gm_evals_mean, rtol=tol)
