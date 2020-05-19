@@ -1,6 +1,4 @@
 # Powershell Install script
-# verify whether the certificate has been installed correctly
-Invoke-WebRequest -Uri https://zenodo.org/record/2651349/files/gs.trk -UseDefaultCredentials
 
 if($env:INSTALL_TYPE -match "conda")
 {
