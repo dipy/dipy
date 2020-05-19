@@ -94,14 +94,14 @@ def save_vtk_streamlines(streamlines, filename,
                          to_lps=True, binary=False):
     """Save streamlines as vtk polydata to a supported format file.
 
-    File formats can be VTK, FIB
+    File formats can be VTK, FIB and everything supported by save_polydata method
 
     Parameters
     ----------
     streamlines : list
         list of 2D arrays or ArraySequence
     filename : string
-        output filename (.vtk or .fib)
+        output filename (.vtk, .fib or everything supported by save_polydata method)
     to_lps : bool
         Default to True, will follow the vtk file convention for streamlines
         Will be supported by MITKDiffusion and MI-Brain
@@ -146,15 +146,19 @@ def save_vtk_streamlines(streamlines, filename,
     polydata.SetPoints(vtk_points)
     polydata.SetLines(vtk_lines)
 
-    writer = vtk.vtkPolyDataWriter()
-    writer.SetFileName(filename)
-    writer = utils.set_input(writer, polydata)
+    file_extension = filename.split(".")[-1].lower()
+    if file_extension != ".vtk" or file_extension != ".fib":
+        save_polydata(polydata, filename)
+    else:
+        writer = vtk.vtkPolyDataWriter()
+        writer.SetFileName(filename)
+        writer = utils.set_input(writer, polydata)
 
-    if binary:
-        writer.SetFileTypeToBinary()
+        if binary:
+            writer.SetFileTypeToBinary()
 
-    writer.Update()
-    writer.Write()
+        writer.Update()
+        writer.Write()
 
 
 def load_vtk_streamlines(filename, to_lps=True):
