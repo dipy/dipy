@@ -581,23 +581,23 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     md = mean_diffusivity(tenfit.evals)
     md[np.isnan(md)] = 0
 
-    mask_wm = np.zeros(fa.shape)
+    mask_wm = np.zeros(fa.shape, dtype=np.int64)
     mask_wm[fa > wm_fa_thr] = 1
     mask_wm *= roi_mask
 
-    md_mask_gm = np.ones(md.shape)
+    md_mask_gm = np.ones(md.shape, dtype=np.int64)
     md_mask_gm[(md > gm_md_thr)] = 0
 
-    fa_mask_gm = np.zeros(fa.shape)
+    fa_mask_gm = np.zeros(fa.shape, dtype=np.int64)
     fa_mask_gm[(fa < gm_fa_thr) & (fa >= 0)] = 1
 
     mask_gm = md_mask_gm * fa_mask_gm
     mask_gm *= roi_mask
 
-    md_mask_csf = np.ones(md.shape)
+    md_mask_csf = np.ones(md.shape, dtype=np.int64)
     md_mask_csf[(md > csf_md_thr)] = 0
 
-    fa_mask_csf = np.zeros(fa.shape)
+    fa_mask_csf = np.zeros(fa.shape, dtype=np.int64)
     fa_mask_csf[(fa < csf_fa_thr) & (fa >= 0)] = 1
 
     mask_csf = md_mask_csf * fa_mask_csf

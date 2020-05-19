@@ -109,7 +109,7 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
     elif wk == 0:
         interval_k = ck
 
-    mask = np.zeros(data_shape)
+    mask = np.zeros(data_shape, dtype=np.int64)
     mask[interval_i, interval_j, interval_k] = 1
 
     return mask
