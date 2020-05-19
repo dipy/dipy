@@ -549,7 +549,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
     list_bvals = unique_bvals_tol(gtab.bvals)
-    if np.all(list_bvals <= 1200):
+    if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200. The DTI fit might
         be affected."""
         warnings.warn(msg_bvals, UserWarning)
@@ -686,7 +686,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
 
     list_bvals = unique_bvals_tol(bvals, tol)
-    if np.all(list_bvals <= 1200):
+    if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200. The DTI fit might
         be affected."""
         warnings.warn(msg_bvals, UserWarning)
