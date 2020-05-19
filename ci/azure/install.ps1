@@ -1,4 +1,6 @@
 # Powershell Install script
+# verify whether the certificate has been installed correctly
+Invoke-WebRequest -Uri https://zenodo.org/record/2651349/files/gs.trk -UseDefaultCredentials
 
 if($env:INSTALL_TYPE -match "conda")
 {
@@ -11,7 +13,7 @@ if($env:INSTALL_TYPE -match "conda")
   Invoke-Expression "conda install conda-build anaconda-client"
   Invoke-Expression "conda config --add channels conda-forge"
   Invoke-Expression "conda create -n testenv --yes python=$env:PYTHON_VERSION pip"
-  Invoke-Expression "conda install -yq --name testenv $env:DEPENDS $env:EXTRA_DEPENDS pytest certifi"
+  Invoke-Expression "conda install -yq --name testenv $env:DEPENDS $env:EXTRA_DEPENDS pytest"
 }
 else
 {
@@ -20,5 +22,5 @@ else
   Write-Output "Pip command: $env:PIPI"
   Invoke-Expression "python -m pip install -U pip"
   Invoke-Expression "pip --version"
-  Invoke-Expression "$env:PIPI $env:DEPENDS $env:EXTRA_DEPENDS pytest certifi"
+  Invoke-Expression "$env:PIPI $env:DEPENDS $env:EXTRA_DEPENDS pytest"
 }
