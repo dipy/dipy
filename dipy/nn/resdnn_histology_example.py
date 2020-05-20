@@ -34,6 +34,7 @@ print('Number of b-values: {}'.format(np.unique(bvals)))
 # Going with the assumption that the first shell would be b0's
 # and the second would be Diffusion-Weighted
 dw_indices = np.where(bvals == unique_shells[1])
+dw_indices = np.squeeze(dw_indices)
 
 dw_data = data[:, :, :, dw_indices]
 dw_data = np.squeeze(dw_data)
@@ -65,9 +66,14 @@ dw_sh_coef = sf_to_sh(norm_dw_data,
 # TODO The Hard-coded path needs a fetcher here
 resdnn_model = Histo_ResDNN()
 #print(resdnn_model.model.weights)
-model_weights_path = r'/nfs/masi/nathv/dipy_data_2020/monkey_stuff/monkey_weights_resdnn_mri_2018.h5'
-model_weights_path = os.path.normpath(model_weights_path)
-resdnn_model.model.load_weights(model_weights_path)
+
+# Using a fetcher to grab model weights
+fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+
+#model_weights_path = r'/nfs/masi/nathv/dipy_data_2020/monkey_stuff/monkey_weights_resdnn_mri_2018.h5'
+#model_weights_path = os.path.normpath(model_weights_path)
+
+resdnn_model.model.load_weights(fetch_model_weights_path)
 #print(resdnn_model.model.weights)
 #resdnn_model.load_model_weights(model_weights_path)
 
@@ -82,23 +88,6 @@ small_data_preds = resdnn_model.predict(small_data_re)
 small_data_orig_shape = np.reshape(small_data_preds, [small_data_dims[0], small_data_dims[1], small_data_dims[2], 45])
 
 # Visualization Mean FOD SH
-'''
-slice_num = 35
-plt.figure(1)
-plt.subplot(2, 3, 1)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 0]))
-plt.subplot(2, 3, 2)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 1]))
-plt.subplot(2, 3, 3)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 2]))
-plt.subplot(2, 3, 4)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 3]))
-plt.subplot(2, 3, 5)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 4]))
-plt.subplot(2, 3, 6)
-plt.imshow(np.squeeze(small_data_orig_shape[:, :, slice_num, 5]))
-plt.show()
-'''
 
 plt.imshow(np.squeeze(small_data_orig_shape[:, :, 0, 0]))
 plt.colorbar()

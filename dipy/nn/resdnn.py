@@ -66,13 +66,13 @@ def train():
                           f_sphere,
                           sh_order=8,
                           basis_type='tournier07',
-                          smooth=0.005)
+                          smooth=0.0005)
 
     fod_sh_coef = sf_to_sh(fod_signal,
                            f_sphere,
                            sh_order=8,
                            basis_type='tournier07',
-                           smooth=0.005)
+                           smooth=0.0005)
 
     sh_basis_full_sphere = just_sh_basis(sphere=sph, sh_order=8, basis_type='tournier07')
 
@@ -82,12 +82,13 @@ def train():
 
     # Call Deep learning on SH Coeffs
     dl_model = Histo_ResDNN()
-    history_metrics = dl_model.fit(dw_sh_coef, fod_sh_coef, epochs=100)
+    history_metrics = dl_model.fit(dw_sh_coef, fod_sh_coef, epochs=200)
 
     #### End of Training ####
 
     # Saving the weights file
     dl_model.model.save_weights('/nfs/masi/nathv/dipy_data_2020/monkey_stuff/monkey_weights_resdnn_mri_2018.h5')
+
 
 if __name__ == '__main__':
     train()

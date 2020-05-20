@@ -1,3 +1,23 @@
+"""
+This script is intended for the model object
+of ResDNN Histology Network.
+
+The model was re-trained for usage with different basis function ('mrtrix') set
+as per the proposed model from the paper:
+
+[1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
+C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
+Deep learning reveals untapped information for local white-matter
+fiber reconstruction in diffusion-weighted MRI.
+Magnetic resonance imaging, 62, 220-227.
+
+[2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
+P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
+Deep learning captures more accurate diffusion fiber orientations
+distributions than constrained spherical deconvolution.
+arXiv preprint arXiv:1911.07927.
+
+"""
 from distutils.version import LooseVersion
 
 from dipy.utils.optpkg import optional_package
