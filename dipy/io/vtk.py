@@ -1,5 +1,6 @@
 
 import numpy as np
+import os
 
 from dipy.tracking.streamline import transform_streamlines
 
@@ -146,8 +147,8 @@ def save_vtk_streamlines(streamlines, filename,
     polydata.SetPoints(vtk_points)
     polydata.SetLines(vtk_lines)
 
-    file_extension = filename.split(".")[-1].lower()
-    if file_extension != ".vtk" or file_extension != ".fib":
+    file_extension = os.path.splitext(filename)
+    if file_extension not in [".vtk", ".fib"]:
         save_polydata(polydata, filename)
     else:
         writer = vtk.vtkPolyDataWriter()
