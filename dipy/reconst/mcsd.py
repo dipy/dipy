@@ -464,10 +464,11 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
         response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
-        response[i, 1] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
-        response[i, 0] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
+        response[i, 0] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
+        response[i, 1] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
 
-    S0 = [csf_rf[3], gm_rf[3], wm_rf[3]]
+    # S0 = [csf_rf[3], gm_rf[3], wm_rf[3]]
+    S0 = [gm_rf[3], csf_rf[3], wm_rf[3]]
 
     return MultiShellResponse(S0, response, sh_order, bvals)
 
