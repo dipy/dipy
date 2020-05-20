@@ -52,6 +52,8 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     iso = np.empty([B.shape[0], iso_comp])
     iso[:] = SH_CONST
 
+    print(iso)
+    print(B)
     B = np.concatenate([iso, B], axis=1)
     return B, m, n
 
