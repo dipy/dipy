@@ -209,6 +209,15 @@ def test_low_io_vtk():
         npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_ply_io_vtk():
+    with InTemporaryDirectory():
+        fname = 'test.ply'
+
+        # Test save
+        save_vtk_streamlines(streamlines, fname)
+
+
 def trk_loader(filename):
     try:
         with InTemporaryDirectory():
