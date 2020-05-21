@@ -4,12 +4,12 @@ import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.testing import assert_true
+from dipy.testing import assert_true, assert_less
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, run_module_suite)
 from scipy.special import sph_harm as sph_harm_sp
 
-from dipy.core.sphere import hemi_icosahedron
+from dipy.core.sphere import hemi_icosahedron, Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.interpolation import NearestNeighborInterpolator
 from dipy.sims.voxel import single_tensor
@@ -21,14 +21,15 @@ from dipy.reconst import odf
 
 
 from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
-                              real_sym_sh_mrtrix, sph_harm_ind_list,
-                              order_from_ncoef,
+                              real_sym_sh_mrtrix, real_full_sh_basis,
+                              real_full_sh_mrtrix, sph_harm_ind_list,
+                              sph_harm_full_ind_list, order_from_ncoef,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
                               spherical_harmonics, anisotropic_power,
-                              calculate_max_order)
+                              calculate_max_order, sh_to_sf_matrix, gen_dirac)
 
 
 def test_order_from_ncoeff():
@@ -41,6 +42,11 @@ def test_order_from_ncoeff():
         n_coef = m.shape[0]
         assert_equal(order_from_ncoef(n_coef), sh_order)
 
+        # Try out full basis
+        m_full, n_full = sph_harm_full_ind_list(sh_order)
+        n_coef_full = m_full.shape[0]
+        assert_equal(order_from_ncoef(n_coef_full, True), sh_order)
+
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -49,6 +55,14 @@ def test_sph_harm_ind_list():
     assert_true(np.all(np.abs(m_list) <= n_list))
     assert_array_equal(n_list % 2, 0)
     assert_raises(ValueError, sph_harm_ind_list, 1)
+
+
+def test_sph_harm_full_ind_list():
+    m_list, n_list = sph_harm_full_ind_list(8)
+    assert_equal(m_list.shape, n_list.shape)
+    # There are (sh_order + 1) * (sh_order + 1) coefficients
+    assert_equal(m_list.shape, (81,))
+    assert_true(np.all(np.abs(m_list) <= n_list))
 
 
 def test_real_sph_harm():
@@ -98,6 +112,11 @@ def test_real_sph_harm():
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
 
+def test_gen_dirac():
+    sh = gen_dirac(np.array([0]), np.array([0]), np.array([0]), np.array([0]))
+    assert_true(np.abs(sh[0] - 1.0/np.sqrt(4.0 * np.pi)) < 0.0001)
+
+
 def test_real_sym_sh_mrtrix():
     coef, expected, sphere = mrtrix_spherical_functions()
     basis, m, n = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
@@ -117,6 +136,63 @@ def test_real_sym_sh_basis():
 
     descoteaux07_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
     assert_array_almost_equal(descoteaux07_basis, expected)
+
+
+def test_real_full_sh_mrtrix():
+    vertices = hemi_icosahedron.subdivide(2).vertices
+    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
+    # Asymmetric spherical function composed of a hemisphere with a radius
+    # of 1 and a hemisphere with a radius of 0.5
+    sf = np.ones(sphere.vertices.shape[0])
+    sf[np.int(vertices.shape[0]):] *= 0.5
+
+    B, m, n = real_full_sh_mrtrix(9, sphere.theta, sphere.phi)
+    invB = smooth_pinv(B, L=np.zeros_like(n))
+    sh_coefs = np.dot(invB, sf)
+    sf_approx = np.dot(B, sh_coefs)
+
+    # Since the best reconstruction using a symmetric basis would be one where
+    # all approximated points are midway between 1 and 0.5, for a mean distance
+    # of 0.25 between a point and its approximation,  we test that the
+    # reconstruction error using the full Tournier basis is inferior to 0.25 by
+    # some epsilon factor
+    epsilon = 0.2
+    assert_less(np.mean(np.abs(sf - sf_approx)), 0.25 - epsilon)
+
+
+def test_real_full_sh_basis():
+    vertices = hemi_icosahedron.subdivide(2).vertices
+    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
+    # Asymmetric spherical function composed of a hemisphere with a radius
+    # of 1 and a hemisphere with a radius of 0.5
+    sf = np.ones(sphere.vertices.shape[0])
+    sf[np.int(vertices.shape[0]):] *= 0.5
+
+    B, m, n = real_full_sh_basis(9, sphere.theta, sphere.phi)
+    invB = smooth_pinv(B, L=np.zeros_like(n))
+    sh_coefs = np.dot(invB, sf)
+    sf_approx = np.dot(B, sh_coefs)
+
+    # Since the best reconstruction using a symmetric basis would be one where
+    # all approximated points are midway between 1 and 0.5, for a mean distance
+    # of 0.25 between each point and its approximation,  we test that the
+    # reconstruction error using the full Descoteaux basis is inferior to 0.25
+    # by some epsilon factor
+    epsilon = 0.2
+    assert_less(np.mean(np.abs(sf - sf_approx)), 0.25 - epsilon)
+
+
+def test_sh_to_sf_matrix():
+    sphere = Sphere(xyz=hemi_icosahedron.vertices)
+    B1, invB1 = sh_to_sf_matrix(sphere)
+    B2, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
+    invB2 = smooth_pinv(B2, L=np.zeros_like(n))
+    B3 = sh_to_sf_matrix(sphere, return_inv=False)
+
+    assert_array_almost_equal(B1, B2.T)
+    assert_array_almost_equal(invB1, invB2.T)
+    assert_array_almost_equal(B3, B1)
+    assert_raises(ValueError, sh_to_sf_matrix, sphere, basis_type="")
 
 
 def test_smooth_pinv():
@@ -365,10 +441,6 @@ def test_sf_to_sh():
     odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
     # 1D case with the 3 bases functions
-    odf_sh = sf_to_sh(odf, sphere, 8)
-    odf2 = sh_to_sf(odf_sh, sphere, 8)
-    assert_array_almost_equal(odf, odf2, 2)
-
     odf_sh = sf_to_sh(odf, sphere, 8, "tournier07")
     odf2 = sh_to_sf(odf_sh, sphere, 8, "tournier07")
     assert_array_almost_equal(odf, odf2, 2)
@@ -376,6 +448,24 @@ def test_sf_to_sh():
     odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux07")
     odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux07")
     assert_array_almost_equal(odf, odf2, 2)
+
+    # Try out full bases with order 7 (64 coefficients) instead of 8
+    # (exactly 81 coefficients)
+    odf_sh = sf_to_sh(odf, sphere, 7, "tournier07_full")
+    odf2 = sh_to_sf(odf_sh, sphere, 7, "tournier07_full")
+    assert_array_almost_equal(odf, odf2, 2)
+
+    odf_sh = sf_to_sh(odf, sphere, 7, "descoteaux07_full")
+    odf2 = sh_to_sf(odf_sh, sphere, 7, "descoteaux07_full")
+    assert_array_almost_equal(odf, odf2, 2)
+
+    odf_sh = sf_to_sh(odf, sphere, 8)
+    odf2 = sh_to_sf(odf_sh, sphere, 8)
+    assert_array_almost_equal(odf, odf2, 2)
+
+    # An invalid basis name should raise an error
+    assert_raises(ValueError, sh_to_sf, odf, sphere, basis_type="")
+    assert_raises(ValueError, sf_to_sh, odf_sh, sphere, basis_type="")
 
     # 2D case
     odf2d = np.vstack((odf2, odf))
