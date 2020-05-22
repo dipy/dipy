@@ -1032,7 +1032,7 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
         ``tournier07`` for the symmetric Tournier 2007 [2]_ basis,
         ``descoteaux07`` for the symmetric Descoteaux 2007 [1]_ basis,
         ``tournier07_full`` for Tournier 2007 [2]_ basis with odd orders, and
-        ``descoteaux07_full`` for Descoteaux 2007 [1]_ basis with orders
+        ``descoteaux07_full`` for Descoteaux 2007 [1]_ basis with odd orders
         (``None`` defaults to ``descoteaux07``).
     smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
