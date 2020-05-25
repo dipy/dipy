@@ -642,6 +642,132 @@ cdef class RigidTransform3D(Transform):
         R[2,3] = dz
         R[3,3] = 1
 
+cdef class RigidScalingTransform3D(Transform):
+    def __init__(self):
+        r""" Rigid transform in 3D (rotation + translation + scaling)
+        The parameter vector theta of length 6 is interpreted as follows:
+        theta[0] : rotation about the x axis
+        theta[1] : rotation about the y axis
+        theta[2] : rotation about the z axis
+        theta[3] : translation along the x axis
+        theta[4] : translation along the y axis
+        theta[5] : translation along the z axis
+        theta[6] : isotropic scaling
+        """
+        self.dim = 3
+        self.number_of_parameters = 7
+
+    cdef int _jacobian(self, double[:] theta, double[:] x,
+                       double[:, :] J)nogil:
+        r""" Jacobian matrix of a 3D rigid transform (rotation + translation + scaling)
+
+        Parameters
+        ----------
+        theta : array, shape (6,)
+            the parameters of the 3D rigid transform
+            theta[0] : rotation about the x axis
+            theta[1] : rotation about the y axis
+            theta[2] : rotation about the z axis
+            theta[3] : translation along the x axis
+            theta[4] : translation along the y axis
+            theta[5] : translation along the z axis
+        x : array, shape (3,)
+            the point at which to compute the Jacobian
+        J : array, shape (3, 6)
+            the buffer in which to write the Jacobian
+
+        Returns
+        -------
+        is_constant : int
+            always returns 0, indicating that the Jacobian is not
+            constant (it depends on the value of x)
+        """
+        cdef:
+            double sa = sin(theta[0])
+            double ca = cos(theta[0])
+            double sb = sin(theta[1])
+            double cb = cos(theta[1])
+            double sc = sin(theta[2])
+            double cc = cos(theta[2])
+            double px = x[0], py = x[1], z = x[2]
+
+        J[0, 0] = (-sc * ca * sb) * px + (sc * sa) * py + (sc * ca * cb) * z
+        J[1, 0] = (cc * ca * sb) * px + (-cc * sa) * py + (-cc * ca * cb) * z
+        J[2, 0] = (sa * sb) * px + ca * py + (-sa * cb) * z
+
+        J[0, 1] = (-cc * sb - sc * sa * cb) * px + (cc * cb - sc * sa * sb) * z
+        J[1, 1] = (-sc * sb + cc * sa * cb) * px + (sc * cb + cc * sa * sb) * z
+        J[2, 1] = (-ca * cb) * px + (-ca * sb) * z
+
+        J[0, 2] = (-sc * cb - cc * sa * sb) * px + (-cc * ca) * py + \
+                  (-sc * sb + cc * sa * cb) * z
+        J[1, 2] = (cc * cb - sc * sa * sb) * px + (-sc * ca) * py + \
+                  (cc * sb + sc * sa * cb) * z
+        J[2, 2] = 0
+
+        J[0, 3:6] = 0
+        J[1, 3:6] = 0
+        J[2, 3:6] = 0
+        J[0, 3], J[1, 4], J[2, 5] = 1, 1, 1
+        J[0, 6], J[1, 6], J[2, 6] = x[0], x[1], x[2]
+        # This Jacobian depends on x (it's not constant): return 0
+        return 0
+
+    cdef void _get_identity_parameters(self, double[:] theta) nogil:
+        r""" Parameter values corresponding to the identity
+        Sets in theta the parameter values corresponding to the identity
+        transform
+
+        Parameters
+        ----------
+        theta : array, shape (6,)
+            buffer to write the parameters of the 3D rigid transform
+            theta[0] : rotation about the x axis
+            theta[1] : rotation about the y axis
+            theta[2] : rotation about the z axis
+            theta[3] : translation along the x axis
+            theta[4] : translation along the y axis
+            theta[5] : translation along the z axis
+        """
+        theta[:6] = 0
+        theta[6] = 1
+
+    cdef void _param_to_matrix(self, double[:] theta, double[:, :] R) nogil:
+        r""" Matrix associated with the 3D rigid transform
+
+        Parameters
+        ----------
+        theta : array, shape (6,)
+            the parameters of the 3D rigid transform
+            theta[0] : rotation about the x axis
+            theta[1] : rotation about the y axis
+            theta[2] : rotation about the z axis
+            theta[3] : translation along the x axis
+            theta[4] : translation along the y axis
+            theta[5] : translation along the z axis
+        R : array, shape (4, 4)
+            buffer in which to write the rigid matrix
+        """
+        cdef:
+            double sa = sin(theta[0])
+            double ca = cos(theta[0])
+            double sb = sin(theta[1])
+            double cb = cos(theta[1])
+            double sc = sin(theta[2])
+            double cc = cos(theta[2])
+            double dx = theta[3]
+            double dy = theta[4]
+            double dz = theta[5]
+
+        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb*theta[6], -sc*ca*theta[6], cc*sb+sc*sa*cb*theta[6]
+        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb*theta[6], cc*ca*theta[6], sc*sb-cc*sa*cb*theta[6]
+        R[2,0], R[2,1], R[2,2] = -ca*sb*theta[6], sa*theta[6], ca*cb*theta[6]
+        R[3,0], R[3,1], R[3,2] = 0, 0, 0
+        R[0,3] = dx
+        R[1,3] = dy
+        R[2,3] = dz
+        R[3,3] = 1
+
 
 cdef class ScalingTransform2D(Transform):
     def __init__(self):
@@ -973,3 +1099,4 @@ regtransforms [('SCALING', 2)] = ScalingTransform2D()
 regtransforms [('SCALING', 3)] = ScalingTransform3D()
 regtransforms [('AFFINE', 2)] = AffineTransform2D()
 regtransforms [('AFFINE', 3)] = AffineTransform3D()
+regtransforms [('RIGIDSCALING', 3)] = RigidScalingTransform3D()
