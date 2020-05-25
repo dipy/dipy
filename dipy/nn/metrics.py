@@ -9,24 +9,15 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-class MeanSquaredError(tf.keras.losses.Loss):
-    def __init__(self, reduction=tf.keras.losses.Reduction.AUTO,
-                 name='mean_squared_error'):
-        super().__init__(reduction=reduction, name=name)
-
-    def call(self, y_true, y_pred):
-        mse = tf.reduce_mean(tf.square(y_pred - y_true))
-        return mse
+def mean_squared_error():
+    def mse(y_true, y_pred):
+        return tf.reduce_mean(tf.square(y_pred - y_true))
+    return mse
 
 
-class NormalizedCrossCorrelation(tf.keras.losses.Loss):
-    def __init__(self, reduction=tf.keras.losses.Reduction.AUTO,
-                 name='normalized_cross_correlation'):
-        super().__init__(reduction=reduction, name=name)
-
-        self.eps = tf.constant(1e-9, 'float32')
-
-    def call(self, y_true, y_pred):
+def normalized_cross_correlation_loss():
+    def ncc(y_true, y_pred):
+        eps = tf.constant(1e-7, 'float32')
         y_true_mean = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
         y_pred_mean = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
         # shape (N, 1, 1, C)
@@ -35,9 +26,9 @@ class NormalizedCrossCorrelation(tf.keras.losses.Loss):
         y_pred_std = tf.math.reduce_std(y_pred, axis=[1, 2], keepdims=True)
         # shape (N, 1, 1, C)
 
-        y_true_hat = (y_true - y_true_mean) / (y_true_std + self.eps)
-        y_pred_hat = (y_pred - y_pred_mean) / (y_pred_std + self.eps)
+        y_true_hat = (y_true - y_true_mean) / (y_true_std + eps)
+        y_pred_hat = (y_pred - y_pred_mean) / (y_pred_std + eps)
         # shape (N, H, W, C)
 
-        ncc = tf.reduce_mean(y_true_hat * y_pred_hat)  # shape ()
-        return -ncc
+        return -tf.reduce_mean(y_true_hat * y_pred_hat)  # shape ()
+    return ncc
