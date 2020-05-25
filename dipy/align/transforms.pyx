@@ -759,8 +759,8 @@ cdef class RigidScalingTransform3D(Transform):
             double dy = theta[4]
             double dz = theta[5]
 
-        R[0,0], R[0,1], R[0,2] = cc*cb-sc*sa*sb*theta[6], -sc*ca*theta[6], cc*sb+sc*sa*cb*theta[6]
-        R[1,0], R[1,1], R[1,2] = sc*cb+cc*sa*sb*theta[6], cc*ca*theta[6], sc*sb-cc*sa*cb*theta[6]
+        R[0,0], R[0,1], R[0,2] = (cc*cb-sc*sa*sb)*theta[6], -sc*ca*theta[6], (cc*sb+sc*sa*cb)*theta[6]
+        R[1,0], R[1,1], R[1,2] = (sc*cb+cc*sa*sb)*theta[6], cc*ca*theta[6], (sc*sb-cc*sa*cb)*theta[6]
         R[2,0], R[2,1], R[2,2] = -ca*sb*theta[6], sa*theta[6], ca*cb*theta[6]
         R[3,0], R[3,1], R[3,2] = 0, 0, 0
         R[0,3] = dx
