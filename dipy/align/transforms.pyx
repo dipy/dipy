@@ -838,7 +838,9 @@ cdef class RigidScalingTransform3D(Transform):
         J[1, 3:6] = 0
         J[2, 3:6] = 0
         J[0, 3], J[1, 4], J[2, 5] = 1, 1, 1
-        J[0, 6], J[1, 6], J[2, 6] = x[0], x[1], x[2]
+        J[0, 6], J[1, 6], J[2, 6] = x[0], 0, 0
+        J[0, 7], J[1, 7], J[2, 7] = 0, x[1], 0
+        J[0, 8], J[1, 8], J[2, 8] = 0, 0, x[2]
         # This Jacobian depends on x (it's not constant): return 0
         return 0
 
