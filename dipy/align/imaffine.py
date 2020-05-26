@@ -933,6 +933,12 @@ class AffineRegistration(object):
         n = transform.get_number_of_parameters()
         self.nparams = n
 
+        static_masked, moving_masked = static, moving
+        if static_mask:
+            static_masked = static*static_mask
+        if moving_mask:
+            moving_masked = moving*moving_mask
+
         if params0 is None:
             params0 = self.transform.get_identity_parameters()
         self.params0 = params0
@@ -940,9 +946,9 @@ class AffineRegistration(object):
             self.starting_affine = np.eye(self.dim + 1)
         elif isinstance(starting_affine, str):
             if starting_affine == 'mass':
-                affine_map = transform_centers_of_mass(static,
+                affine_map = transform_centers_of_mass(static_masked,
                                                        static_grid2world,
-                                                       moving,
+                                                       moving_masked,
                                                        moving_grid2world)
                 self.starting_affine = affine_map.affine
             elif starting_affine == 'voxel-origin':
@@ -968,10 +974,10 @@ class AffineRegistration(object):
         moving_direction, moving_spacing = \
             get_direction_and_spacings(moving_grid2world, self.dim)
 
-        static = ((static.astype(np.float64) - static.min()) /
-                  (static.max() - static.min()))
-        moving = ((moving.astype(np.float64) - moving.min()) /
-                  (moving.max() - moving.min()))
+        static = ((static.astype(np.float64) - static_masked.min()) /
+                  (static_masked.max() - static_masked.min()))
+        moving = ((moving.astype(np.float64) - moving_masked.min()) /
+                  (moving_masked.max() - moving_masked.min()))
 
         # Build the scale space of the input images
         if self.use_isotropic:
