@@ -52,8 +52,6 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
     iso = np.empty([B.shape[0], iso_comp])
     iso[:] = SH_CONST
 
-    print(iso)
-    print(B)
     B = np.concatenate([iso, B], axis=1)
     return B, m, n
 
@@ -324,18 +322,19 @@ class MSDeconvFit(shm.SphHarmFit):
     @property
     def volume_fractions(self):
         tissue_classes = self.model.response.iso + 1
-        vf = self._shm_coef[..., :tissue_classes] / SH_CONST
-        vf = vf.clip(min=0)
-        sums = np.sum(vf, axis=-1, dtype=np.float64)
-        sums = np.repeat(sums, 3)
-        sums = np.reshape(sums, vf.shape)
-        vf[sums > 0.01] /= sums[sums > 0.01]
+        vf = self._shm_coef[..., :tissue_classes]
+        # vf = self._shm_coef[..., :tissue_classes] / SH_CONST
+        # vf = vf.clip(min=0)
+        # sums = np.sum(vf, axis=-1, dtype=np.float64)
+        # sums = np.repeat(sums, 3)
+        # sums = np.reshape(sums, vf.shape)
+        # vf[sums > 0.01] /= sums[sums > 0.01]
 
-        sums = np.sum(vf, axis=-1, dtype=np.float64)
-        if sums > 1.:
-            sums = np.repeat(sums, 3)
-            sums = np.reshape(sums, vf.shape)
-            vf[sums > 0.01] /= sums[sums > 0.01]
+        # sums = np.sum(vf, axis=-1, dtype=np.float64)
+        # if sums > 1.:
+        #     sums = np.repeat(sums, 3)
+        #     sums = np.reshape(sums, vf.shape)
+        #     vf[sums > 0.01] /= sums[sums > 0.01]
         return vf
 
     def compartment_shm_coeff(self, compartment):
