@@ -17,10 +17,10 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
-cvx, have_cvxopt, _ = optional_package("cvxopt")
-if have_cvxopt:
-    cvx.solvers.options['show_progress'] = False
-# cvx, have_cvxpy, _ = optional_package("cvxpy")
+# cvx, have_cvxopt, _ = optional_package("cvxopt")
+# if have_cvxopt:
+#     cvx.solvers.options['show_progress'] = False
+cvx, have_cvxpy, _ = optional_package("cvxpy")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
@@ -262,7 +262,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
 
-        delta_f = delta_functions['positivity_constrained']
+        # delta_f = delta_functions['positivity_constrained']
         delta = _basic_delta(response.iso, response.m, response.n, 0., 0.)
         self.delta = delta
         multiplier_matrix = _inflate_response(response, gtab, n, delta)
@@ -392,114 +392,114 @@ class MSDeconvFit(shm.SphHarmFit):
             return self._shm_coef[..., compartment]
 
 
-# def solve_qp(P, Q, G, H):
-#     r"""
-#     Helper function to set up and solve the Quadratic Program (QP) in CVXPY.
-#     A QP problem has the following form:
-#     minimize      1/2 x' P x + Q' x
-#     subject to    G x <= H
+def solve_qp(P, Q, G, H):
+    r"""
+    Helper function to set up and solve the Quadratic Program (QP) in CVXPY.
+    A QP problem has the following form:
+    minimize      1/2 x' P x + Q' x
+    subject to    G x <= H
 
-#     Here the QP solver is based on CVXPY and uses OSQP.
+    Here the QP solver is based on CVXPY and uses OSQP.
 
-#     Parameters
-#     ----------
-#     P : ndarray
-#         n x n matrix for the primal QP objective function.
-#     Q : ndarray
-#         n x 1 matrix for the primal QP objective function.
-#     G : ndarray
-#         m x n matrix for the inequality constraint.
-#     H : ndarray
-#         m x 1 matrix for the inequality constraint.
+    Parameters
+    ----------
+    P : ndarray
+        n x n matrix for the primal QP objective function.
+    Q : ndarray
+        n x 1 matrix for the primal QP objective function.
+    G : ndarray
+        m x n matrix for the inequality constraint.
+    H : ndarray
+        m x 1 matrix for the inequality constraint.
 
-#     Returns
-#     -------
-#     x : array
-#         Optimal solution to the QP problem.
-#     """
-#     x = cvx.Variable(Q.shape[0])
-#     P = cvx.Constant(P)
-#     objective = cvx.Minimize(0.5 * cvx.quad_form(x, P) + Q * x)
-#     constraints = [G*x <= H]
+    Returns
+    -------
+    x : array
+        Optimal solution to the QP problem.
+    """
+    x = cvx.Variable(Q.shape[0])
+    P = cvx.Constant(P)
+    objective = cvx.Minimize(0.5 * cvx.quad_form(x, P) + Q * x)
+    constraints = [G*x <= H]
 
-#     # setting up the problem
-#     prob = cvx.Problem(objective, constraints)
-#     prob.solve()
-#     opt = np.array(x.value).reshape((Q.shape[0],))
-#     return opt
-
-
-# class QpFitter(object):
-
-#     def __init__(self, X, reg):
-#         r"""
-#         Makes use of the quadratic programming solver `solve_qp` to fit the
-#         model. The initialization for the model is done using the warm-start by
-#         default in `CVXPY`.
-
-#         Parameters
-#         ----------
-#         X : ndarray
-#             Matrix to be fit by the QP solver calculated in
-#             `MultiShellDeconvModel`
-#         reg : ndarray
-#             the regularization B matrix calculated in `MultiShellDeconvModel`
-#         """
-#         self._P = P = np.dot(X.T, X)
-#         self._X = X
-
-#         self._reg = reg
-#         self._P_mat = np.array(P)
-#         self._reg_mat = np.array(-reg)
-#         self._h_mat = np.array([0])
-
-#     def __call__(self, signal):
-#         Q = np.dot(self._X.T, signal)
-#         Q_mat = np.array(-Q)
-#         fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
-#         return fodf_sh
-
-def _rank(A, tol=1e-8):
-    s = la.svd(A, False, False)
-    threshold = (s[0] * tol)
-    rnk = (s > threshold).sum()
-    return rnk
+    # setting up the problem
+    prob = cvx.Problem(objective, constraints)
+    prob.solve()
+    opt = np.array(x.value).reshape((Q.shape[0],))
+    return opt
 
 
 class QpFitter(object):
 
-    def _lstsq_initial(self, z):
-        fodf_sh = csd._solve_cholesky(self._P, z)
-        s = np.dot(self._reg, fodf_sh)
-        init = {'x':cvx.matrix(fodf_sh),
-                's':cvx.matrix(s.clip(1e-10))}
-        return init
-
     def __init__(self, X, reg):
+        r"""
+        Makes use of the quadratic programming solver `solve_qp` to fit the
+        model. The initialization for the model is done using the warm-start by
+        default in `CVXPY`.
+
+        Parameters
+        ----------
+        X : ndarray
+            Matrix to be fit by the QP solver calculated in
+            `MultiShellDeconvModel`
+        reg : ndarray
+            the regularization B matrix calculated in `MultiShellDeconvModel`
+        """
         self._P = P = np.dot(X.T, X)
         self._X = X
 
-        # No super res for now.
-        assert _rank(P) == P.shape[0]
-
         self._reg = reg
-        # self._P_init = np.dot(X[:, :N].T, X[:, :N])
-
-        # Make cvxopt matrix types for later re-use.
-        self._P_mat = cvx.matrix(P)
-        self._reg_mat = cvx.matrix(-reg)
-        self._h_mat = cvx.matrix(0., (reg.shape[0], 1))
+        self._P_mat = np.array(P)
+        self._reg_mat = np.array(-reg)
+        self._h_mat = np.array([0])
 
     def __call__(self, signal):
-        z = np.dot(self._X.T, signal)
-        init = self._lstsq_initial(z)
-
-        z_mat = cvx.matrix(-z)
-        qp = cvx.solvers.qp
-        r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
-        fodf_sh = r['x']
-        fodf_sh = np.array(fodf_sh)[:, 0]
+        Q = np.dot(self._X.T, signal)
+        Q_mat = np.array(-Q)
+        fodf_sh = solve_qp(self._P_mat, Q_mat, self._reg_mat, self._h_mat)
         return fodf_sh
+
+# def _rank(A, tol=1e-8):
+#     s = la.svd(A, False, False)
+#     threshold = (s[0] * tol)
+#     rnk = (s > threshold).sum()
+#     return rnk
+
+
+# class QpFitter(object):
+
+#     def _lstsq_initial(self, z):
+#         fodf_sh = csd._solve_cholesky(self._P, z)
+#         s = np.dot(self._reg, fodf_sh)
+#         init = {'x':cvx.matrix(fodf_sh),
+#                 's':cvx.matrix(s.clip(1e-10))}
+#         return init
+
+#     def __init__(self, X, reg):
+#         self._P = P = np.dot(X.T, X)
+#         self._X = X
+
+#         # No super res for now.
+#         assert _rank(P) == P.shape[0]
+
+#         self._reg = reg
+#         # self._P_init = np.dot(X[:, :N].T, X[:, :N])
+
+#         # Make cvxopt matrix types for later re-use.
+#         self._P_mat = cvx.matrix(P)
+#         self._reg_mat = cvx.matrix(-reg)
+#         self._h_mat = cvx.matrix(0., (reg.shape[0], 1))
+
+#     def __call__(self, signal):
+#         z = np.dot(self._X.T, signal)
+#         init = self._lstsq_initial(z)
+
+#         z_mat = cvx.matrix(-z)
+#         qp = cvx.solvers.qp
+#         r = qp(self._P_mat, z_mat, self._reg_mat, self._h_mat, initvals=init)
+#         fodf_sh = r['x']
+#         fodf_sh = np.array(fodf_sh)[:, 0]
+#         return fodf_sh
 
 
 def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
