@@ -144,6 +144,44 @@ def _basic_delta(iso, m, n, theta, phi):
     return np.concatenate([iso_d, wm_d])
 
 
+def _pos_constrained_delta(iso, m, n, theta, phi, reg_sphere=default_sphere):
+    """Delta function optimized to avoid negative lobes."""
+
+    x, y, z = geo.sphere2cart(1., theta, phi)
+
+    # Realign reg_sphere so that the first vertex is aligned with delta
+    # orientation (theta, phi).
+    M = geo.vec2vec_rotmat(reg_sphere.vertices[0], [x, y, z])
+    new_vertices = np.dot(reg_sphere.vertices, M.T)
+    _, t, p = geo.cart2sphere(*new_vertices.T)
+
+    B = shm.real_sph_harm(m, n, t[:, None], p[:, None])
+    G = B[:, n != 0]
+    # c samples the delta function at the delta orientation.
+    c = G[0]
+    a, b = G.shape
+
+    c = cvx.matrix(-c)
+    G = cvx.matrix(-G)
+    h = cvx.matrix(sh_const**2, (a, 1))
+
+    # n == 0 is set to sh_const to ensure a normalized delta function.
+    # n > 0 values are optimized so that delta > 0 on all points of the sphere
+    # and delta(theta, phi) is maximized.
+    r = cvx.solvers.lp(c, G, h)
+    x = np.asarray(r['x'])[:, 0]
+    out = np.zeros(B.shape[1])
+    out[n == 0] = sh_const
+    out[n != 0] = x
+
+    iso_d = [sh_const] * iso
+    return np.concatenate([iso_d, out])
+
+delta_functions = {"basic":_basic_delta,
+                   "positivity_constrained":_pos_constrained_delta}
+
+
+
 class MultiShellDeconvModel(shm.SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=default_sphere,
@@ -224,6 +262,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
 
         B, m, n = multi_tissue_basis(gtab, sh_order, iso)
 
+        delta_f = delta_functions['positivity_constrained']
         delta = _basic_delta(response.iso, response.m, response.n, 0., 0.)
         self.delta = delta
         multiplier_matrix = _inflate_response(response, gtab, n, delta)
