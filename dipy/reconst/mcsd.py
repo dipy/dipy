@@ -8,6 +8,7 @@ from dipy.core.gradients import (GradientTable, gradient_table,
                                  unique_bvals_tol, get_bval_indices)
 from dipy.data import default_sphere
 from dipy.reconst import shm
+from dipy.reconst import csdeconv as csd
 from dipy.reconst.csdeconv import response_from_mask_ssst
 from dipy.reconst.dti import (TensorModel, fractional_anisotropy,
                               mean_diffusivity)
