@@ -473,13 +473,10 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     return MultiShellResponse(S0, response, sh_order, bvals)
 
 
-# def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
-#                            fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-#                            csf_fa_thr=0.15, md_data=None,
-#                            gm_md_thr=0.001, csf_md_thr=0.0032):
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
-                           wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
-                           gm_md_thr=0.001, csf_md_thr=0.0032, iso_tol=None):
+                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
+                           csf_fa_thr=0.15, md_data=None,
+                           gm_md_thr=0.001, csf_md_thr=0.0032):
     """ Computation of masks for msmt response function using FA and MD.
 
     Parameters
@@ -555,32 +552,22 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         The DTI fit might be affected."""
         warnings.warn(msg_bvals, UserWarning)
 
-    # if fa_data is None and md_data is None:
-    #     ten = TensorModel(gtab)
-    #     tenfit = ten.fit(data, mask=roi_mask)
-    #     fa = fractional_anisotropy(tenfit.evals)
-    #     fa[np.isnan(fa)] = 0
-    #     md = mean_diffusivity(tenfit.evals)
-    #     md[np.isnan(md)] = 0
-    # elif fa_data is not None and md_data is None:
-    #     msg = "Missing MD data."
-    #     raise ValueError(msg)
-    # elif fa_data is None and md_data is not None:
-    #     msg = "Missing FA data."
-    #     raise ValueError(msg)
-    # else:
-    #     fa = fa_data * roi_mask
-    #     md = md_data * roi_mask
-
-    # Testing isotropic tolerance check-up. Delete previous commented code if
-    # this works. Don't forget to remove the commented input and change the doc.
-    # Don't forget to change the tests and examples.
-    ten = TensorModel(gtab)
-    tenfit = ten.fit(data, mask=roi_mask)
-    fa = fractional_anisotropy(tenfit.evals)
-    fa[np.isnan(fa)] = 0
-    md = mean_diffusivity(tenfit.evals)
-    md[np.isnan(md)] = 0
+    if fa_data is None and md_data is None:
+        ten = TensorModel(gtab)
+        tenfit = ten.fit(data, mask=roi_mask)
+        fa = fractional_anisotropy(tenfit.evals)
+        fa[np.isnan(fa)] = 0
+        md = mean_diffusivity(tenfit.evals)
+        md[np.isnan(md)] = 0
+    elif fa_data is not None and md_data is None:
+        msg = "Missing MD data."
+        raise ValueError(msg)
+    elif fa_data is None and md_data is not None:
+        msg = "Missing FA data."
+        raise ValueError(msg)
+    else:
+        fa = fa_data * roi_mask
+        md = md_data * roi_mask
 
     mask_wm = np.zeros(fa.shape, dtype=np.int64)
     mask_wm[fa > wm_fa_thr] = 1
@@ -603,25 +590,6 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     mask_csf = md_mask_csf * fa_mask_csf
     mask_csf *= roi_mask
-
-    # Other part of the isotropic tolerance testing.
-    if iso_tol is not None:
-        tol = iso_tol / 100.
-        evals = tenfit.evals
-        print("Sum GM before iso: ", np.sum(mask_gm))
-        gm_evals = evals[mask_gm.astype(bool)]
-        gm_evals_mean = np.mean(np.array([gm_evals[..., 1], gm_evals[..., 2]]),
-                                axis=0)
-        mask_gm_iso = np.allclose(gm_evals_mean, gm_evals[..., 0], rtol=tol)
-        mask_gm *= mask_gm_iso
-        print("Sum GM after iso: ", np.sum(mask_gm))
-        print("Sum CSF before iso: ", np.sum(mask_csf))
-        csf_evals = evals[mask_csf.astype(bool)]
-        csf_evals_mean = np.mean(np.array([csf_evals[..., 1], csf_evals[..., 2]]),
-                                 axis=0)
-        mask_csf_iso = np.allclose(csf_evals_mean, csf_evals[..., 0], rtol=tol)
-        mask_csf *= mask_csf_iso
-        print("Sum CSF after iso: ", np.sum(mask_csf))
 
     msg = """No voxel with a {0} than {1} were found.
     Try a larger roi or a {2} threshold for {3}."""
