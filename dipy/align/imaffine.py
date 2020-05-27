@@ -934,9 +934,9 @@ class AffineRegistration(object):
         self.nparams = n
 
         static_masked, moving_masked = static, moving
-        if static_mask:
+        if not static_mask is None:
             static_masked = static*static_mask
-        if moving_mask:
+        if not moving_mask is None:
             moving_masked = moving*moving_mask
 
         if params0 is None:
@@ -985,7 +985,7 @@ class AffineRegistration(object):
                                                  self.sigmas,
                                                  moving_grid2world,
                                                  moving_spacing, False)
-            if moving_mask:
+            if not moving_mask is None:
                 self.moving_mask_ss = IsotropicScaleSpace(
                     moving_mask, self.factors,
                     [0]*len(self.factors),
@@ -996,7 +996,7 @@ class AffineRegistration(object):
                                                  self.sigmas,
                                                  static_grid2world,
                                                  static_spacing, False)
-            if static_mask:
+            if not static_mask is None:
                 self.static_mask_ss = IsotropicScaleSpace(
                     static_mask, self.factors,
                     [0]*len(self.factors),
@@ -1007,7 +1007,7 @@ class AffineRegistration(object):
             self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
                                         moving_spacing, self.ss_sigma_factor,
                                         False)
-            if moving_mask:
+            if not moving_mask is None:
                 self.moving_mask_ss = ScaleSpace(
                     moving_mask, self.levels, moving_grid2world,
                     moving_spacing, 1,
@@ -1016,7 +1016,7 @@ class AffineRegistration(object):
             self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                         static_spacing, self.ss_sigma_factor,
                                         False)
-            if static_mask:
+            if not static_mask is None:
                 self.static_ss = ScaleSpace(
                     static_mask, self.levels, static_grid2world,
                     static_spacing, 1,
@@ -1114,7 +1114,7 @@ class AffineRegistration(object):
                                            original_static_grid2world)
             current_static = current_affine_map.transform(smooth_static)
             current_static_mask = None
-            if static_mask:
+            if not static_mask is None:
                 current_static_mask = self.static_mask_ss.get_image(level) > 0
 
             # The moving image is full resolution
@@ -1122,7 +1122,7 @@ class AffineRegistration(object):
 
             current_moving = self.moving_ss.get_image(level)
             current_moving_mask = None
-            if moving_mask:
+            if not moving_mask is None:
                 current_moving_mask = self.moving_mask_ss.get_image(level) > 0
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
