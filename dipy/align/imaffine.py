@@ -985,42 +985,20 @@ class AffineRegistration(object):
                                                  self.sigmas,
                                                  moving_grid2world,
                                                  moving_spacing, False)
-            if not moving_mask is None:
-                self.moving_mask_ss = IsotropicScaleSpace(
-                    moving_mask, self.factors,
-                    [0]*len(self.factors),
-                    moving_grid2world,
-                    moving_spacing, False)
 
             self.static_ss = IsotropicScaleSpace(static, self.factors,
                                                  self.sigmas,
                                                  static_grid2world,
                                                  static_spacing, False)
-            if not static_mask is None:
-                self.static_mask_ss = IsotropicScaleSpace(
-                    static_mask, self.factors,
-                    [0]*len(self.factors),
-                    static_grid2world,
-                    static_spacing, False)
 
         else:
             self.moving_ss = ScaleSpace(moving, self.levels, moving_grid2world,
                                         moving_spacing, self.ss_sigma_factor,
                                         False)
-            if not moving_mask is None:
-                self.moving_mask_ss = ScaleSpace(
-                    moving_mask, self.levels, moving_grid2world,
-                    moving_spacing, 1,
-                    False)
 
             self.static_ss = ScaleSpace(static, self.levels, static_grid2world,
                                         static_spacing, self.ss_sigma_factor,
                                         False)
-            if not static_mask is None:
-                self.static_ss = ScaleSpace(
-                    static_mask, self.levels, static_grid2world,
-                    static_spacing, 1,
-                    False)
 
     def optimize(self, static, moving, transform, params0,
                  static_grid2world=None, moving_grid2world=None,
@@ -1115,20 +1093,17 @@ class AffineRegistration(object):
             current_static = current_affine_map.transform(smooth_static)
             current_static_mask = None
             if not static_mask is None:
-                current_static_mask = self.static_mask_ss.get_image(level) > 0
+                current_static_mask = current_affine_map.transform(static_mask) > 0
 
             # The moving image is full resolution
             current_moving_grid2world = original_moving_grid2world
 
             current_moving = self.moving_ss.get_image(level)
-            current_moving_mask = None
-            if not moving_mask is None:
-                current_moving_mask = self.moving_mask_ss.get_image(level) > 0
             # Prepare the metric for iterations at this resolution
             self.metric.setup(transform, current_static, current_moving,
                               current_static_grid2world,
                               current_moving_grid2world, self.starting_affine,
-                              current_static_mask, current_moving_mask)
+                              current_static_mask, moving_mask)
 
             # Optimize this level
             if self.options is None:
