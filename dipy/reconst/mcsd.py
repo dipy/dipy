@@ -545,6 +545,9 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
     A = shm.real_sph_harm(0, 0, 0, 0)
 
+    print(B.shape)
+    print(A.shape)
+
     response = np.empty([len(bvals), len(n) + 2])
     for i, bvalue in enumerate(bvals):
         gtab = GradientTable(big_sphere.vertices * bvalue)
