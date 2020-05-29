@@ -10,17 +10,88 @@ if have_tf:
 
 
 def regular_grid_2d(height, width):
+    """Returns a 2-D regular grid.
+
+    Parameters
+    ----------
+    height : int
+        The desired height of the grid.
+    width : int
+        The desired width of the grid.
+    Returns
+    -------
+    grid : tf.Tensor, shape (H, W, 2)
+        A 2-D regular grid, values normalized to [-1.0, 1.0]
+        range.
+
+    Notes
+    -----
+    Sampling using the regular grid is an identity transformation, i.e.,
+    it results in the same input and output images.
+
+    References
+    ----------
+    .. [1] `NumPy, "numpy.meshgrid"
+        <https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html>`_
+    .. [2] `NumPy, "numpy.indices"
+        <https://numpy.org/doc/stable/reference/generated/numpy.indices.html>`_
+
+    """
     x = tf.linspace(-1.0, 1.0, width)  # shape (W, )
     y = tf.linspace(-1.0, 1.0, height)  # shape (H, )
 
     X, Y = tf.meshgrid(x, y)  # shape (H, W), both X and Y
 
     grid = tf.stack([X, Y], axis=-1)
-
     return grid
 
 
 def grid_sample_2d(moving, grid):
+    """Given a moving image and a sampling grid as input, computes the
+    transformed image by sampling the moving image at locations given by
+    the grid.
+
+    Supports only 2-D images, i.e., 4-D inputs.
+
+    Parameters
+    ----------
+    moving : tf.Tensor, shape (N, H, W, C)
+        The moving image.
+    grid : tf.Tensor, shape (N, H, W, C)
+        A tensor of sampling points (x, y). The x and y values should be
+        normalized to [-1.0, 1.0] range.
+
+    Returns
+    -------
+    moved : tf.Tensor, shape (N, H, W, C)
+        The transformed image.
+
+    Notes
+    -----
+    Let M be the moving image of shape (H, W, C), T be the transformed
+    image of the same shape and G be the 2D sampling grid of shape
+    (H, W, 2). The value of T at a location (x, y) is T[y, x, :] =
+    M[y', x', :] where [x', y'] = G[y, x, :].
+
+    Further, [x', y'] = [x + dx, y + dy] where [dx, dy] are the
+    displacements outputted by the CNN. When dx and dy are 0, the
+    sampling grid G is a regular grid and the transformed image is the
+    same as the moving image.
+
+    Since the sampling point (x + dx, y + dy) can be non-integral, the
+    value M[y', x'] is calculated using bi-linear interpolation.
+
+    References
+    ----------
+    .. [1] `Jaderberg, Max, Karen Simonyan, and Andrew Zisserman. "Spatial
+        transformer networks." Advances in neural information processing
+        systems. 2015. <https://arxiv.org/abs/1506.02025>`_
+    .. [2] `TensorFlow implementation of spatial transformer networks.
+        <https://github.com/tensorflow/models/tree/master/research/transformer>`_
+    .. [3] `Spatial Transformer Networks by Kushagra Bhatnagar
+        <https://link.medium.com/0b2OrmqVO5>`_
+
+    """
     nb, nh, nw, nc = tf.shape(moving)
 
     x = grid[..., 0]  # shape (N, H, W)
