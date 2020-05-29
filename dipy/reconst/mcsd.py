@@ -545,18 +545,13 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
     A = shm.real_sph_harm(0, 0, 0, 0)
 
-    print(B.shape)
-    print(A.shape)
-
     response = np.empty([len(bvals), len(n) + 2])
     for i, bvalue in enumerate(bvals):
         if bvalue < 20:
             bvalue = 0
         gtab = GradientTable(big_sphere.vertices * bvalue)
         wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
-        print(wm_response.shape)
         response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
-        print(response[i, 2:])
 
         response[i, 1] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
         response[i, 0] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
