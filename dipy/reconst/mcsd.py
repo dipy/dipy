@@ -550,6 +550,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
 
     response = np.empty([len(bvals), len(n) + 2])
     for i, bvalue in enumerate(bvals):
+        if bvalue < 20:
+            bvalue = 0
         gtab = GradientTable(big_sphere.vertices * bvalue)
         wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
         print(wm_response.shape)
