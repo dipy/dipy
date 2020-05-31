@@ -100,8 +100,8 @@ def grid_sample_2d(moving, grid):
     y = tf.cast(y, 'float32')
 
     # Scale x and y from [-1.0, 1.0] to [0, W] and [0, H] respectively.
-    x = (x + 1.0) * 0.5 * tf.cast(nw, 'float32')
-    y = (y + 1.0) * 0.5 * tf.cast(nh, 'float32')
+    x = (x + 1.0) * 0.5 * tf.cast(nw-1, 'float32')
+    y = (y + 1.0) * 0.5 * tf.cast(nh-1, 'float32')
 
     y_max = tf.cast(nh - 1, 'int32')
     x_max = tf.cast(nw - 1, 'int32')
