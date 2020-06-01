@@ -367,6 +367,8 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         print(dot(g.T, D).shape)
         print(dot(dot(g.T, D), g).shape)
         print(gtab.bvals[i].shape)
+        print(S.shape)
+        print(S0.shape)
         S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
         print(S0.shape)
 
