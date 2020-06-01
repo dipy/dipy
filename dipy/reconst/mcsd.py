@@ -550,8 +550,6 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         if bvalue < 20:
             bvalue = 0
         gtab = GradientTable(big_sphere.vertices * bvalue)
-        print(wm_rf)
-        print(wm_rf[3])
         wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
         response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
