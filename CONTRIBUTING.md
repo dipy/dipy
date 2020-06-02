@@ -10,7 +10,7 @@ that you follow the [NIPY community code of conduct](http://nipy.org/conduct.htm
 If you are looking for places that you could make a meaningful contribution,
 please contact us! We respond to queries on the [Nipy mailing
 list](https://mail.python.org/mailman/listinfo/neuroimaging), and to questions
-on our [gitter channel](https://gitter.im/nipy/dipy). A good place to get an
+on our [gitter channel](https://gitter.im/dipy/dipy). A good place to get an
 idea for things that currently need attention is the
 [issues](https://github.com/dipy/dipy/issues) page of our Github repository.
 This page collects outstanding issues that you can help address. Join the
@@ -26,7 +26,7 @@ of the documentation for the procedures we use in developing the code.
 ### Tests and test coverage
 
 We use [pytest](https://docs.pytest.org) to write tests of the code,
-and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.org/dipy/dipy)
+and [Azure Pipelines](https://dev.azure.com/dipy/dipy) and [Travis-CI](https://travis-ci.com/dipy/dipy)
 for continuous integration.
 
 If you are adding code into a module that already has a 'test' file (e.g., if
