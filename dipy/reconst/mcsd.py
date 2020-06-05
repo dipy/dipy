@@ -562,8 +562,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
 
 
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                           csf_fa_thr=0.15, md_data=None,
+                           wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
                            gm_md_thr=0.001, csf_md_thr=0.0032):
     """ Computation of masks for msmt response function using FA and MD.
 
@@ -577,16 +576,12 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
         radii of cuboid ROI
-    fa_data : ndarray
-        FA data (must have the same shape as data), optionnal.
     wm_fa_thr : float
         FA threshold for WM.
     gm_fa_thr : float
         FA threshold for GM.
     csf_fa_thr : float
         FA threshold for CSF.
-    md_data : ndarray
-        MD data (must have the same shape as data), optionnal.
     gm_md_thr : float
         MD threshold for GM.
     csf_md_thr : float
@@ -612,10 +607,8 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
     returning a mask of voxels within a ROI and who respect some threshold
     constraints, for each tissue. More precisely, the WM mask must have a FA
     value above a given threshold. The GM mask and CSF mask must have a FA
-    below given thresholds and a MD below other thresholds. Of course, if we
-    haven't precalculated FA and MD, we need to fit a Tensor model to the
-    datasets. The option is given to the user with this function. Note that
-    the user has to give either the FA and MD data, or none of them.
+    below given thresholds and a MD below other thresholds. To get the FA and
+    MD, we need to fit a Tensor model to the datasets.
     """
 
     if len(data.shape) < 4:
@@ -640,22 +633,12 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         The DTI fit might be affected."""
         warnings.warn(msg_bvals, UserWarning)
 
-    if fa_data is None and md_data is None:
-        ten = TensorModel(gtab)
-        tenfit = ten.fit(data, mask=roi_mask)
-        fa = fractional_anisotropy(tenfit.evals)
-        fa[np.isnan(fa)] = 0
-        md = mean_diffusivity(tenfit.evals)
-        md[np.isnan(md)] = 0
-    elif fa_data is not None and md_data is None:
-        msg = "Missing MD data."
-        raise ValueError(msg)
-    elif fa_data is None and md_data is not None:
-        msg = "Missing FA data."
-        raise ValueError(msg)
-    else:
-        fa = fa_data * roi_mask
-        md = md_data * roi_mask
+    ten = TensorModel(gtab)
+    tenfit = ten.fit(data, mask=roi_mask)
+    fa = fractional_anisotropy(tenfit.evals)
+    fa[np.isnan(fa)] = 0
+    md = mean_diffusivity(tenfit.evals)
+    md[np.isnan(md)] = 0
 
     mask_wm = np.zeros(fa.shape, dtype=np.int64)
     mask_wm[fa > wm_fa_thr] = 1
@@ -781,8 +764,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
 
 def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
-                       fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                       csf_fa_thr=0.15, md_data=None,
+                       wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
                        gm_md_thr=0.001, csf_md_thr=0.0032):
     """ Automatic estimation of msmt response functions using FA and MD.
 
@@ -796,16 +778,12 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
         radii of cuboid ROI
-    fa_data : ndarray
-        FA data, optionnal.
     wm_fa_thr : float
         FA threshold for WM.
     gm_fa_thr : float
         FA threshold for GM.
     csf_fa_thr : float
         FA threshold for CSF.
-    md_data : ndarray
-        MD data, optionnal.
     gm_md_thr : float
         MD threshold for GM.
     csf_md_thr : float
@@ -836,9 +814,10 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                         roi_center,
                                                         roi_radii,
-                                                        fa_data, wm_fa_thr,
-                                                        gm_fa_thr, csf_fa_thr,
-                                                        md_data, gm_md_thr,
+                                                        wm_fa_thr,
+                                                        gm_fa_thr,
+                                                        csf_fa_thr,
+                                                        gm_md_thr,
                                                         csf_md_thr)
     response_wm, response_gm, response_csf = response_from_mask_msmt(
                                                         gtab, data,
