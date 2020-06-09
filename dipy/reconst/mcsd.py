@@ -551,12 +551,19 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     for i, bvalue in enumerate(bvals):
         if bvalue < 20:
             bvalue = 0
-        gtab = GradientTable(big_sphere.vertices * bvalue)
-        wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None)
-        response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+            gtab = GradientTable(big_sphere.vertices * bvalue)
+            wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
+            response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
-        response[i, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
-        response[i, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
+            response[i, 1] = gm_rf[0, 3] * np.exp(-bvalue * gm_rf[0, 0]) / A
+            response[i, 0] = csf_rf[0, 3] * np.exp(-bvalue * csf_rf[0, 0]) / A
+        else:
+            gtab = GradientTable(big_sphere.vertices * bvalue)
+            wm_response = single_tensor(gtab, wm_rf[i-1, 3], wm_rf[i-1, :3], evecs, snr=None)
+            response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+
+            response[i, 1] = gm_rf[i-1, 3] * np.exp(-bvalue * gm_rf[i-1, 0]) / A
+            response[i, 0] = csf_rf[i-1, 3] * np.exp(-bvalue * csf_rf[i-1, 0]) / A
 
     S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
