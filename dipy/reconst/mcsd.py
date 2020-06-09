@@ -733,10 +733,10 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
 
     list_bvals = unique_bvals_tol(bvals, tol)
-    if not np.all(list_bvals <= 1200):
-        msg_bvals = """Some b-values are higher than 1200.
-        The DTI fit might be affected."""
-        warnings.warn(msg_bvals, UserWarning)
+    # if not np.all(list_bvals <= 1200):
+    #     msg_bvals = """Some b-values are higher than 1200.
+    #     The DTI fit might be affected."""
+    #     warnings.warn(msg_bvals, UserWarning)
 
     b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
@@ -757,7 +757,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
             gtab = gradient_table(bvals_sub, bvecs_sub)
             response, _ = response_from_mask_ssst(gtab, data_conc, mask)
 
-            responses.append(list(np.concatenate(response[0],[response[1]])))
+            responses.append(list(np.concatenate([response[0],[response[1]]])))
 
         tissue_responses.append(list(responses))
         #         responses.append(list(response))
