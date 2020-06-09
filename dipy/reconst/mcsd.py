@@ -545,18 +545,20 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
     A = shm.real_sph_harm(0, 0, 0, 0)
 
+    # Add check for len(frf) == len(bvals) !!!!!!!
+
     response = np.empty([len(bvals), len(n) + 2])
     for i, bvalue in enumerate(bvals):
         if bvalue < 20:
             bvalue = 0
         gtab = GradientTable(big_sphere.vertices * bvalue)
-        wm_response = single_tensor(gtab, wm_rf[3], wm_rf[:3], evecs, snr=None)
+        wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None)
         response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
-        response[i, 1] = gm_rf[3] * np.exp(-bvalue * gm_rf[0]) / A
-        response[i, 0] = csf_rf[3] * np.exp(-bvalue * csf_rf[0]) / A
+        response[i, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
+        response[i, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
 
-    S0 = [csf_rf[3], gm_rf[3], wm_rf[3]]
+    S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
     return MultiShellResponse(S0, response, sh_order, bvals)
 
@@ -755,10 +757,13 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
             gtab = gradient_table(bvals_sub, bvecs_sub)
             response, _ = response_from_mask_ssst(gtab, data_conc, mask)
 
-            responses.append(list(response))
-        response_mean = np.mean(responses, axis=0)
-        tissue_responses.append(list(np.concatenate([response_mean[0],
-                                                    [response_mean[1]]])))
+            responses.append(list(np.concatenate(response[0],[response[1]])))
+
+        tissue_responses.append(list(responses))
+        #         responses.append(list(response))
+        # response_mean = np.mean(responses, axis=0)
+        # tissue_responses.append(list(np.concatenate([response_mean[0],
+        #                                             [response_mean[1]]])))
 
     return tissue_responses[0], tissue_responses[1], tissue_responses[2]
 
