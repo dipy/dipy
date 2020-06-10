@@ -503,7 +503,7 @@ class QpFitter(object):
 
 
 def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
-                               sphere=None):
+                               sphere=None, tol=20):
     """Fiber response function estimation for multi-shell data.
 
     Parameters
@@ -511,7 +511,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     sh_order : int
          Maximum spherical harmonics order.
     bvals : ndarray
-        Array containing the b-values.
+        Array containing the b-values. Must be unique b-values, like outputed
+        by `dipy.core.gradients.unique_bvals_tol`.
     wm_rf : (4,) ndarray
         Response function of the WM tissue
     gm_rf : (4,) ndarray
@@ -545,27 +546,37 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
     A = shm.real_sph_harm(0, 0, 0, 0)
 
-    # Add check for len(frf) == len(bvals) !!!!!!!
-
     response = np.empty([len(bvals), len(n) + 2])
-    for i, bvalue in enumerate(bvals):
-        if bvalue < 20:
-            bvalue = 0
+
+    if bvals[0] < tol:
+        gtab = GradientTable(big_sphere.vertices * 0)
+        wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
+        response[0, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+
+        response[0, 1] = gm_rf[0, 3] * np.exp(-bvalue * gm_rf[0, 0]) / A
+        response[0, 0] = csf_rf[0, 3] * np.exp(-bvalue * csf_rf[0, 0]) / A
+
+        for i, bvalue in enumerate(bvals[1:]):
             gtab = GradientTable(big_sphere.vertices * bvalue)
-            wm_response = single_tensor(gtab, wm_rf[0, 3], wm_rf[0, :3], evecs, snr=None)
+            wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None)
+            response[i+1, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+
+            response[i+1, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
+            response[i+1, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
+
+        S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
+
+    else:
+        warnings.warn("""No b0 was given. Proceeding either way.""", UserWarning)
+        for i, bvalue in enumerate(bvals):
+            gtab = GradientTable(big_sphere.vertices * bvalue)
+            wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs, snr=None)
             response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
 
-            response[i, 1] = gm_rf[0, 3] * np.exp(-bvalue * gm_rf[0, 0]) / A
-            response[i, 0] = csf_rf[0, 3] * np.exp(-bvalue * csf_rf[0, 0]) / A
-        else:
-            gtab = GradientTable(big_sphere.vertices * bvalue)
-            wm_response = single_tensor(gtab, wm_rf[i-1, 3], wm_rf[i-1, :3], evecs, snr=None)
-            response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=None)[0]
+            response[i, 1] = gm_rf[i, 3] * np.exp(-bvalue * gm_rf[i, 0]) / A
+            response[i, 0] = csf_rf[i, 3] * np.exp(-bvalue * csf_rf[i, 0]) / A
 
-            response[i, 1] = gm_rf[i-1, 3] * np.exp(-bvalue * gm_rf[i-1, 0]) / A
-            response[i, 0] = csf_rf[i-1, 3] * np.exp(-bvalue * csf_rf[i-1, 0]) / A
-
-    S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
+        S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
     return MultiShellResponse(S0, response, sh_order, bvals)
 
@@ -740,10 +751,6 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvecs = gtab.bvecs
 
     list_bvals = unique_bvals_tol(bvals, tol)
-    # if not np.all(list_bvals <= 1200):
-    #     msg_bvals = """Some b-values are higher than 1200.
-    #     The DTI fit might be affected."""
-    #     warnings.warn(msg_bvals, UserWarning)
 
     b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
@@ -767,10 +774,6 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
             responses.append(list(np.concatenate([response[0],[response[1]]])))
 
         tissue_responses.append(list(responses))
-        #         responses.append(list(response))
-        # response_mean = np.mean(responses, axis=0)
-        # tissue_responses.append(list(np.concatenate([response_mean[0],
-        #                                             [response_mean[1]]])))
 
     return tissue_responses[0], tissue_responses[1], tissue_responses[2]
 
