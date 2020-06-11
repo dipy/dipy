@@ -6,6 +6,7 @@ from dipy.viz.app import horizon
 from dipy.io.peaks import load_peaks
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import create_nifti_header
+from dipy.stats.analysis import assignment_map
 
 
 class HorizonFlow(Workflow):
@@ -18,8 +19,8 @@ class HorizonFlow(Workflow):
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
-            disable_order_transparency=False, out_dir='',
-            out_stealth_png='tmp.png'):
+            disable_order_transparency=False, buan=False, buan_thr=2,
+            out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -62,6 +63,11 @@ class HorizonFlow(Workflow):
         disable_order_transparency : bool, optional
             Default False. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
+        buan : bool
+            Enables BUAN framework visualization.
+        buan_thr : float, optional
+            Default 2. Uses the threshold value to highlight segments on the
+            bundle which have pvalues higher than this threshold.
         out_dir : str, optional
             Output directory. Default current directory.
         out_stealth_png : str, optional
@@ -79,6 +85,7 @@ class HorizonFlow(Workflow):
         tractograms = []
         images = []
         pams = []
+        numpy_files = []
         interactive = not stealth
         world_coords = not native_coords
 
@@ -150,6 +157,38 @@ class HorizonFlow(Workflow):
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
+            if ends(".npy"):
+
+                data = np.load(fname)
+                numpy_files.append(data)
+
+                if verbose:
+                    print('numpy array length')
+                    print(len(data))
+
+        if buan:
+            bundle_colors = []
+            for i in range(len(numpy_files)):
+
+                n = len(numpy_files[i])
+                pvalues = numpy_files[i]
+                bundle = tractograms[i].streamlines
+
+                indx = assignment_map(bundle, bundle, n)
+                ind = np.array(indx)
+
+                colors = []
+                for i in range(len(ind)):
+
+                    if pvalues[ind[i]] < buan_thr:
+                        colors.append([0,1,0])
+                    else:
+                        colors.append([1,0,0])
+
+                bundle_colors.append(colors)
+
+
+
         if len(bg_color) == 1:
             bg_color *= 3
         elif len(bg_color) != 3:
@@ -158,11 +197,11 @@ class HorizonFlow(Workflow):
 
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
-                cluster=cluster, cluster_thr=cluster_thr,
+                np_files=numpy_files, cluster=cluster, cluster_thr=cluster_thr,
                 random_colors=random_colors, bg_color=bg_color,
                 order_transparent=order_transparent,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
-                interactive=interactive,
+                interactive=interactive, buan=buan, buan_colors=bundle_colors,
                 out_png=pjoin(out_dir, out_stealth_png))
