@@ -181,13 +181,11 @@ class HorizonFlow(Workflow):
                 for i in range(len(ind)):
 
                     if pvalues[ind[i]] < buan_thr:
-                        colors.append([0,1,0])
+                        colors.append([0, 1, 0])
                     else:
-                        colors.append([1,0,0])
+                        colors.append([1, 0, 0])
 
                 bundle_colors.append(colors)
-
-
 
         if len(bg_color) == 1:
             bg_color *= 3
