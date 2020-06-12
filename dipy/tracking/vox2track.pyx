@@ -298,8 +298,9 @@ cdef cnp.npy_intp _streamline_in_mask(
             x = <cnp.npy_intp>(current_pt[0] + half_ratio * direction[0])
             y = <cnp.npy_intp>(current_pt[1] + half_ratio * direction[1])
             z = <cnp.npy_intp>(current_pt[2] + half_ratio * direction[2])
-            if mask[x, y, z]:
-                return 1
+            if x >= 0 and y >= 0 and z >= 0 and x < mask.shape[0] and y < mask.shape[1] and z < mask.shape[2]:
+                if mask[x, y, z]:
+                    return 1
 
             # current_pt is moved to the closest edge
             for dim_idx in range(3):
@@ -316,7 +317,9 @@ cdef cnp.npy_intp _streamline_in_mask(
     x = <cnp.npy_intp>next_pt[0]
     y = <cnp.npy_intp>next_pt[1]
     z = <cnp.npy_intp>next_pt[2]
-    return mask[x, y, z]
+    if x >= 0 and y >= 0 and z >= 0 and x < mask.shape[0] and y < mask.shape[1] and z < mask.shape[2]:
+        if mask[x, y, z]:
+            return 1
 
 
 @cython.boundscheck(False)
