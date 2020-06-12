@@ -320,6 +320,7 @@ cdef cnp.npy_intp _streamline_in_mask(
     if x >= 0 and y >= 0 and z >= 0 and x < mask.shape[0] and y < mask.shape[1] and z < mask.shape[2]:
         if mask[x, y, z]:
             return 1
+    return 0
 
 
 @cython.boundscheck(False)
