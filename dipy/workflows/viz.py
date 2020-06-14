@@ -88,6 +88,7 @@ class HorizonFlow(Workflow):
         numpy_files = []
         interactive = not stealth
         world_coords = not native_coords
+        bundle_colors = None
 
         mni_2009a = {}
         mni_2009a['affine'] = np.array([[1., 0., 0., -98.],
