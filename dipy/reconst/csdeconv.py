@@ -24,6 +24,48 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
+from dipy.utils.deprecator import deprecate_with_version
+@deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
+                        "Please use "
+                        "dipy.reconst.csdeconv.auto_response_ssst instead",
+                        since='1.2', until='1.4')
+
+def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+    """ Automatic estimation of ssst response function using FA.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    roi_center : tuple, (3,)
+        Center of ROI in data. If center is None, it is assumed that it is
+        the center of the volume with shape `data.shape[:3]`.
+    roi_radii : int or array-like, (3,)
+        radii of cuboid ROI
+    fa_thr : float
+        FA threshold
+
+    Returns
+    -------
+    response : tuple, (2,)
+        (`evals`, `S0`)
+    ratio : float
+        The ratio between smallest versus largest eigenvalue of the response.
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. In order to do this we look for voxels with very
+    anisotropic configurations. We get this information from
+    csdeconv.mask_for_response_ssst(), which returns a mask of selected voxels
+    (more details are available in the description of the function).
+
+    With the mask, we compute the response function by using
+    csdeconv.response_from_mask_ssst(), which returns the `response` and the
+    `ratio` (more details are available in the description of the function).
+    """
+    return auto_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
 
 class AxSymShResponse(object):
     """A simple wrapper for response functions represented using only axially

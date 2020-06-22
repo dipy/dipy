@@ -19,6 +19,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    mask_for_response_ssst,
                                    response_from_mask_ssst,
                                    auto_response_ssst,
+                                   auto_response,
                                    recursive_response)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere import HemiSphere
@@ -50,6 +51,18 @@ def get_test_data():
     response = (evals_list[0], s0[0])
     fa = fractional_anisotropy(evals)
     return (gtab, data, mask, response, fa)
+
+
+def test_auto_response_deprecated():
+    with warnings.catch_warnings(record=True) as cw:
+        warnings.simplefilter("always", DeprecationWarning)
+        gtab, data, _, _, _ = get_test_data()
+        response_auto, ratio_auto = auto_response(gtab,
+                                                       data,
+                                                       roi_center=None,
+                                                       roi_radii=(1, 1, 0),
+                                                       fa_thr=0.7)
+        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
 def test_recursive_response_calibration():
