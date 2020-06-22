@@ -771,7 +771,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
 
 
 def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
-                           fa_data=None, fa_thr=0.7):
+                           fa_thr=0.7):
     """ Computation of mask for ssst response function using FA.
 
     Parameters
@@ -784,8 +784,6 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
         radii of cuboid ROI
-    fa_data : ndarray
-        FA data, optionnal.
     fa_thr : float
         FA threshold
 
@@ -802,9 +800,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     returning a mask of voxels within a ROI, that have a FA value above a
     given threshold. For example we can use a ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
-    FA values higher than 0.7 (see [1]_). Of course, if we haven't
-    precalculated FA we need to fit a Tensor model to the datasets. The
-    option is given to the user with this function.
+    FA values higher than 0.7 (see [1]_).
 
     References
     ----------
@@ -829,13 +825,11 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
 
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
-    if fa_data is None:
-        ten = TensorModel(gtab)
-        tenfit = ten.fit(data, mask=roi_mask)
-        fa = fractional_anisotropy(tenfit.evals)
-        fa[np.isnan(fa)] = 0
-    else:
-        fa = fa_data * roi_mask
+    ten = TensorModel(gtab)
+    tenfit = ten.fit(data, mask=roi_mask)
+    fa = fractional_anisotropy(tenfit.evals)
+    fa[np.isnan(fa)] = 0
+
     mask = np.zeros(fa.shape)
     mask[fa > fa_thr] = 1
 
@@ -906,8 +900,7 @@ def response_from_mask_ssst(gtab, data, mask):
     return _get_response(S0s, lambdas)
 
 
-def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10,
-                       fa_data=None, fa_thr=0.7):
+def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     """ Automatic estimation of ssst response function using FA.
 
     Parameters
@@ -920,8 +913,6 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10,
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
         radii of cuboid ROI
-    fa_data : ndarray
-        FA data, optionnal.
     fa_thr : float
         FA threshold
 
@@ -945,8 +936,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     `ratio` (more details are available in the description of the function).
     """
 
-    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii,
-                                  fa_data, fa_thr)
+    mask = mask_for_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
     response, ratio = response_from_mask_ssst(gtab, data, mask)
 
     return response, ratio
