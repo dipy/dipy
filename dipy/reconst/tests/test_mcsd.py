@@ -23,31 +23,33 @@ cvx, have_cvxpy, _ = optional_package("cvxpy")
 needs_cvxpy = pytest.mark.skipif(not have_cvxpy)
 
 
-wm_response = np.array([1.7E-3, 0.4E-3, 0.4E-3, 25.])
-csf_response = np.array([3.0E-3, 3.0E-3, 3.0E-3, 100.])
-gm_response = np.array([4.0E-4, 4.0E-4, 4.0E-4, 40.])
+wm_response = np.array([[1.7E-3, 0.4E-3, 0.4E-3, 25.],
+                        [1.7E-3, 0.4E-3, 0.4E-3, 25.],
+                        [1.7E-3, 0.4E-3, 0.4E-3, 25.]])
+csf_response = np.array([[3.0E-3, 3.0E-3, 3.0E-3, 100.],
+                         [3.0E-3, 3.0E-3, 3.0E-3, 100.],
+                         [3.0E-3, 3.0E-3, 3.0E-3, 100.]])
+gm_response = np.array([[4.0E-4, 4.0E-4, 4.0E-4, 40.],
+                        [4.0E-4, 4.0E-4, 4.0E-4, 40.],
+                        [4.0E-4, 4.0E-4, 4.0E-4, 40.]])
 
 
 def get_test_data():
-    _, fbvals, fbvecs, _ = get_fnames('cfin_multib')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gtab = gradient_table(bvals, bvecs)
+    gtab = get_3shell_gtab()
     evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
                   np.array([6.0E-4, 4.0E-4, 4.0E-4]),
                   np.array([3.0E-3, 3.0E-3, 3.0E-3])]
     s0 = [0.8, 1, 4]
     signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
-    data = [add_noise(signals[tissue], None, s0[0]) for tissue in tissues]
+    data = [add_noise(signals[tissue], 80, s0[0]) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
     evals = [evals_list[tissue] for tissue in tissues]
     evals = np.asarray(evals).reshape((3, 3, 1, 3))
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]
     responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
-    fa = fractional_anisotropy(evals)
-    md = mean_diffusivity(evals)
-    return (gtab, data, masks, responses, fa, md)
+    return (gtab, data, masks, responses)
 
 
 def _expand(m, iso, coeff):
@@ -61,8 +63,7 @@ def _expand(m, iso, coeff):
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
-    shells = np.unique(gtab.bvals // 100.) * 100.
-    response = multi_shell_fiber_response(sh_order, shells,
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
                                           wm_response,
                                           gm_response,
                                           csf_response)
@@ -77,7 +78,7 @@ def test_mcsd_model_delta():
     wm_delta[:iso] = 0.
     wm_delta = _expand(model.m, iso, wm_delta)
 
-    for i, s in enumerate(shells):
+    for i, s in enumerate([0, 1000, 2000, 3500]):
         g = GradientTable(default_sphere.vertices * s)
         signal = model.predict(wm_delta, g)
         expected = np.dot(response.response[i, iso:], B.T)
@@ -90,18 +91,6 @@ def test_mcsd_model_delta():
 
 
 @pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
-def test_compartments():
-    # test for failure if no. of compartments less than 2
-    gtab = get_3shell_gtab()
-    sh_order = 8
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
-    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, response, iso=1)
-
-
-@pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
 def test_MultiShellDeconvModel_response():
     gtab = get_3shell_gtab()
 
@@ -110,15 +99,16 @@ def test_MultiShellDeconvModel_response():
                                           wm_response,
                                           gm_response,
                                           csf_response)
-    model_1 = MultiShellDeconvModel(gtab, response)
+    model_1 = MultiShellDeconvModel(gtab, response, sh_order=sh_order)
     responses = np.array([wm_response, gm_response, csf_response])
+    print(responses.shape)
     model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
     response_1 = model_1.response.response
     response_2 = model_2.response.response
     npt.assert_array_almost_equal(response_1, response_2, 0)
 
-    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((4, 4)))
-    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((3, 4)),
+    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((4, 3, 4)))
+    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((3, 3, 4)),
                       iso=3)
 
 
@@ -126,13 +116,13 @@ def test_MultiShellDeconvModel_response():
 def test_MultiShellDeconvModel():
     gtab = get_3shell_gtab()
 
-    mevals = np.array([wm_response[:3], wm_response[:3]])
+    mevals = np.array([wm_response[0, :3], wm_response[0, :3]])
     angles = [(0, 0), (60, 0)]
 
-    S_wm, sticks = multi_tensor(gtab, mevals, wm_response[3], angles=angles,
+    S_wm, sticks = multi_tensor(gtab, mevals, wm_response[0, 3], angles=angles,
                                 fractions=[30., 70.], snr=None)
-    S_gm = gm_response[3] * np.exp(-gtab.bvals * gm_response[0])
-    S_csf = csf_response[3] * np.exp(-gtab.bvals * csf_response[0])
+    S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
+    S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
     sh_order = 8
     response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
@@ -156,13 +146,13 @@ def test_MultiShellDeconvModel():
 def test_MSDeconvFit():
     gtab = get_3shell_gtab()
 
-    mevals = np.array([wm_response[:3], wm_response[:3]])
+    mevals = np.array([wm_response[0, :3], wm_response[0, :3]])
     angles = [(0, 0), (60, 0)]
 
-    S_wm, sticks = multi_tensor(gtab, mevals, wm_response[3], angles=angles,
+    S_wm, sticks = multi_tensor(gtab, mevals, wm_response[0, 3], angles=angles,
                                 fractions=[30., 70.], snr=None)
-    S_gm = gm_response[3] * np.exp(-gtab.bvals * gm_response[0])
-    S_csf = csf_response[3] * np.exp(-gtab.bvals * csf_response[0])
+    S_gm = gm_response[0, 3] * np.exp(-gtab.bvals * gm_response[0, 0])
+    S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
     sh_order = 8
     response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
@@ -176,53 +166,34 @@ def test_MSDeconvFit():
 
     # Testing volume fractions
     npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
-    # Testing shm compartments
-    all_sh = fit.all_shm_coeff
-    npt.assert_array_equal(fit.compartment_shm_coeff(0), all_sh[..., 0])
-    npt.assert_array_equal(fit.compartment_shm_coeff(1), all_sh[..., 1])
-    with warnings.catch_warnings(record=True) as w:
-        bad_compartment = fit.compartment_shm_coeff(2)
-        npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_array_equal(bad_compartment, None)
 
 
 def test_mask_for_response_msmt():
-    gtab, data, masks_gt, _, fa, md = get_test_data()
+    gtab, data, masks_gt, _= get_test_data()
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
                                     roi_center=None, roi_radii=(1, 1, 0),
-                                    fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                    csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.0032)
+                                    wm_fa_thr=0.7, gm_fa_thr=0.3,
+                                    csf_fa_thr=0.15, gm_md_thr=0.001, 
+                                    csf_md_thr=0.0032)
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
     npt.assert_equal(masks_sum != 0, True)
 
-    wm_mask_fa_md, gm_mask_fa_md, csf_mask_fa_md = mask_for_response_msmt(
-                                gtab, data,
-                                roi_center=None, roi_radii=(1, 1, 0),
-                                fa_data=fa, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                csf_fa_thr=0.15, md_data=md,
-                                gm_md_thr=0.001, csf_md_thr=0.0032)
-
-    npt.assert_array_almost_equal(wm_mask_fa_md, wm_mask)
-    npt.assert_array_almost_equal(gm_mask_fa_md, gm_mask)
-    npt.assert_array_almost_equal(csf_mask_fa_md, csf_mask)
-    npt.assert_array_almost_equal(masks_gt[0], wm_mask_fa_md)
-    npt.assert_array_almost_equal(masks_gt[1], gm_mask_fa_md)
-    npt.assert_array_almost_equal(masks_gt[2], csf_mask_fa_md)
+    npt.assert_array_almost_equal(masks_gt[0], wm_mask)
+    npt.assert_array_almost_equal(masks_gt[1], gm_mask)
+    npt.assert_array_almost_equal(masks_gt[2], csf_mask)
 
 
 def test_mask_for_response_msmt_nvoxels():
-    gtab, data, _, _, _, _ = get_test_data()
+    gtab, data, _, _ = get_test_data()
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
                                     roi_center=None, roi_radii=(1, 1, 0),
-                                    fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                    csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.0032)
+                                    wm_fa_thr=0.7, gm_fa_thr=0.3,
+                                    csf_fa_thr=0.15, gm_md_thr=0.001, 
+                                    csf_md_thr=0.0032)
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -234,21 +205,22 @@ def test_mask_for_response_msmt_nvoxels():
     with warnings.catch_warnings(record=True) as w:
         wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
                                         roi_center=None, roi_radii=(1, 1, 0),
-                                        fa_data=None, wm_fa_thr=1, gm_fa_thr=0,
-                                        csf_fa_thr=0, md_data=None,
+                                        wm_fa_thr=1, gm_fa_thr=0, csf_fa_thr=0,
                                         gm_md_thr=0, csf_md_thr=0)
-        npt.assert_equal(len(w), 5)
+        npt.assert_equal(len(w), 6)
         npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in
+        npt.assert_("""Some b-values are higher than 1200.""" in
                     str(w[0].message))
-        npt.assert_("No voxel with a FA lower than 0 were found" in
+        npt.assert_("No voxel with a FA higher than 1 were found" in
                     str(w[1].message))
-        npt.assert_("No voxel with a MD lower than 0 were found" in
-                    str(w[2].message))
         npt.assert_("No voxel with a FA lower than 0 were found" in
-                    str(w[3].message))
+                    str(w[2].message))
         npt.assert_("No voxel with a MD lower than 0 were found" in
+                    str(w[3].message))
+        npt.assert_("No voxel with a FA lower than 0 were found" in
                     str(w[4].message))
+        npt.assert_("No voxel with a MD lower than 0 were found" in
+                    str(w[5].message))
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -259,7 +231,7 @@ def test_mask_for_response_msmt_nvoxels():
 
 
 def test_response_from_mask_msmt():
-    gtab, data, masks_gt, responses_gt, _, _ = get_test_data()
+    gtab, data, masks_gt, responses_gt = get_test_data()
 
     response_wm, response_gm, response_csf = response_from_mask_msmt(gtab,
                                                 data, masks_gt[0],
@@ -267,46 +239,53 @@ def test_response_from_mask_msmt():
                                                 tol=20)
 
     # Verifying that csf's response is greater than gm's
-    npt.assert_equal(np.sum(response_csf[:3]) > np.sum(response_gm[:3]), True)
+    npt.assert_equal(np.sum(response_csf[:, :3]) > np.sum(response_gm[:, :3]), True)
     # Verifying that csf and gm are described by spheres
-    npt.assert_almost_equal(response_csf[1], response_csf[2])
-    npt.assert_almost_equal(response_csf[0], response_csf[1])
-    npt.assert_almost_equal(response_gm[1], response_gm[2])
-    npt.assert_allclose(response_gm[0], response_gm[1], rtol=1, atol=0)
+    npt.assert_almost_equal(response_csf[:, 1], response_csf[:, 2])
+    npt.assert_allclose(response_csf[:, 0], response_csf[:, 1], rtol=1, atol=0)
+    npt.assert_almost_equal(response_gm[:, 1], response_gm[:, 2])
+    npt.assert_allclose(response_gm[:, 0], response_gm[:, 1], rtol=1, atol=0)
     # Verifying that wm is anisotropic in one direction
-    npt.assert_almost_equal(response_wm[1], response_wm[2])
-    npt.assert_equal(response_wm[0] > 2.5 * response_wm[1], True)
+    npt.assert_almost_equal(response_wm[:, 1], response_wm[:, 2])
+    npt.assert_equal(response_wm[:, 0] > 2.5 * response_wm[:, 1], True)
 
-    # Verifying with ground truth
-    npt.assert_array_almost_equal(response_wm, responses_gt[0])
-    npt.assert_array_almost_equal(response_gm, responses_gt[1])
-    npt.assert_array_almost_equal(response_csf, responses_gt[2])
+    # Verifying with ground truth for the first bvalue
+    print(response_wm)
+    npt.assert_array_almost_equal(response_wm[0], responses_gt[0], 2)
+    npt.assert_array_almost_equal(response_gm[0], responses_gt[1], 2)
+    npt.assert_array_almost_equal(response_csf[0], responses_gt[2], 2)
 
 
 def test_auto_response_msmt():
-    gtab, data, _, _, _, _ = get_test_data()
+    gtab, data, _, _ = get_test_data()
 
-    response_auto_wm, response_auto_gm, response_auto_csf = \
-        auto_response_msmt(gtab, data, tol=20,
-                           roi_center=None, roi_radii=(1, 1, 0),
-                           fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                           csf_fa_thr=0.15, md_data=None,
-                           gm_md_thr=0.001, csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        response_auto_wm, response_auto_gm, response_auto_csf = \
+            auto_response_msmt(gtab, data, tol=20,
+                            roi_center=None, roi_radii=(1, 1, 0),
+                            wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
+                            gm_md_thr=0.001, csf_md_thr=0.0032)
 
-    mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
-                                    roi_center=None, roi_radii=(1, 1, 0),
-                                    fa_data=None, wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                    csf_fa_thr=0.15, md_data=None,
-                                    gm_md_thr=0.001, csf_md_thr=0.0032)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("""Some b-values are higher than 1200.
+        The DTI fit might be affected. It is adviced use mask_for_response_msmt
+        with bvalues lower than 1200, followed by response_from_mask_msmt
+        to overcome this.""" in str(w[0].message))
 
-    response_from_mask_wm, response_from_mask_gm, response_from_mask_csf = \
-        response_from_mask_msmt(gtab, data,
-                                mask_wm, mask_gm, mask_csf,
-                                tol=20)
+        mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
+                                        roi_center=None, roi_radii=(1, 1, 0),
+                                        wm_fa_thr=0.7, gm_fa_thr=0.3,
+                                        csf_fa_thr=0.15, gm_md_thr=0.001, 
+                                        csf_md_thr=0.0032)
 
-    npt.assert_array_equal(response_auto_wm, response_from_mask_wm)
-    npt.assert_array_equal(response_auto_gm, response_from_mask_gm)
-    npt.assert_array_equal(response_auto_csf, response_from_mask_csf)
+        response_from_mask_wm, response_from_mask_gm, response_from_mask_csf = \
+            response_from_mask_msmt(gtab, data,
+                                    mask_wm, mask_gm, mask_csf,
+                                    tol=20)
+
+        npt.assert_array_equal(response_auto_wm, response_from_mask_wm)
+        npt.assert_array_equal(response_auto_gm, response_from_mask_gm)
+        npt.assert_array_equal(response_auto_csf, response_from_mask_csf)
 
 
 if __name__ == "__main__":

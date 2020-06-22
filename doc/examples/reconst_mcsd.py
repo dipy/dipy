@@ -37,7 +37,7 @@ import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 
 from dipy.denoise.localpca import mppca
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, unique_bvals_tol
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
@@ -182,19 +182,20 @@ wm = np.where(final_segmentation == 3, 1, 0)
 
 
 """
-Now, we want the response function for each of the three tissues. This can be
-achieved in two different ways. If the case that tissue segmentation is
-available or that one wants to see the tissue masks used to compute the
-response functions, a combination of the functions
+Now, we want the response function for each of the three tissues and for each
+bvalues. This can be achieved in two different ways. If the case that tissue
+segmentation is available or that one wants to see the tissue masks used to
+compute the response functions, a combination of the functions
 ``mask_for_response_msmt`` and ``response_from_mask`` is needed.
 
 The ``mask_for_response_msmt`` function will return a mask of voxels within a
-cuboid ROI and that meet some threshold constraints, for each tissue. More
-precisely, the WM mask must have a FA value above a given threshold. The GM
+cuboid ROI and that meet some threshold constraints, for each tissue and bvalue.
+More precisely, the WM mask must have a FA value above a given threshold. The GM
 mask and CSF mask must have a FA below given thresholds and a MD below other
-thresholds. Of course, if we haven't precalculated FA and MD, we need to fit
-a Tensor model to the datasets. The option is given to the user with this
-function.
+thresholds.
+
+Note that for ``mask_for_response_msmt``, the gtab and data should be for 
+bvalues under 1200, for optimal tensor fit.
 """
 
 mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data, roi_radii=10,
@@ -237,7 +238,8 @@ response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data,
 Note that we can also get directly the response functions by calling the
 ``auto_response_msmt`` function, which internally calls
 ``mask_for_response_msmt`` followed by ``response_from_mask``. By doing so, we
-don't have access to the masks.
+don't have access to the masks and we might have problems with high bvalues
+tensor fit.
 """
 
 auto_response_wm, auto_response_gm, auto_response_csf = \
@@ -248,10 +250,11 @@ As we can see below, adding the tissue segmentation can change the results
 of the response functions.
 """
 
+print("Responses")
 print(response_wm)
 print(response_gm)
 print(response_csf)
-
+print("Auto responses")
 print(auto_response_wm)
 print(auto_response_gm)
 print(auto_response_csf)
@@ -263,10 +266,11 @@ want to create a MultiShellDeconvModel, which takes a response function as
 input. This response function can either be directly in the current format, or
 it can be a MultiShellResponse format, as produced by the
 ``multi_shell_fiber_response`` method. This function assumes a 3 compartments
-model (wm, gm, csf).
+model (wm, gm, csf) and takes one response function per tissue per bvalue.
 """
 
-response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
+response_mcsd = multi_shell_fiber_response(sh_order=8,
+                                           bvals=unique_bvals_tol(gtab.bvals),
                                            wm_rf=response_wm,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)
@@ -300,14 +304,14 @@ mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
 """
 The volume fractions of tissues for each voxel are also accessible, as well as
 the sh coefficients for all tissues. One can also get each sh tissue separately
-using the ``compartment_shm_coeff`` method for each compartment (isotropic) and
+using ``all_shm_coeff`` for each compartment (isotropic) and
 ``shm_coeff`` for white matter.
 """
 
 vf = mcsd_fit.volume_fractions
 sh_coeff = mcsd_fit.all_shm_coeff
-csf_sh_coeff = mcsd_fit.compartment_shm_coeff(0)
-gm_sh_coeff = mcsd_fit.compartment_shm_coeff(1)
+csf_sh_coeff = sh_coeff[..., 0]
+gm_sh_coeff = sh_coeff[..., 1]
 wm_sh_coeff = mcsd_fit.shm_coeff
 
 """
@@ -332,7 +336,7 @@ print(mcsd_odf[40, 40, 0])
 fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
                                 norm=False, colormap='plasma')
 
-interactive = False
+interactive = True
 ren = window.Renderer()
 ren.add(fodf_spheres)
 ren.reset_camera_tight()
