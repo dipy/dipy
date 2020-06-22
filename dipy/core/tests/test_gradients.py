@@ -375,13 +375,13 @@ def test_unique_bvals_tol():
     # All unique b-values are kept if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     ubvals_gt = np.array([0, 990, 1000, 2000, 2050])
-    b = unique_bvals_tol(bvals)
+    b = unique_bvals_tol(bvals, 0)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
-    b = unique_bvals_mag(bvals, 0.5)
+    b = unique_bvals_tol(bvals, 0.5)
     ubvals_gt = np.array([0, 0.995, 2.005])
     npt.assert_array_almost_equal(ubvals_gt, b)
 

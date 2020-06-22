@@ -617,10 +617,15 @@ def get_bval_indices(bvals, bval, tol=20):
 
     Parameters
     ----------
-    bvals: b-values array
-    bval: b-value to extract indices
-    tol: The tolerated gap between the b-values to extract
-               and the actual b-values.
+    bvals: ndarray
+        Array containing the b-values
+
+    bval: float or int
+        b-value to extract indices
+
+    tol: int
+        The tolerated gap between the b-values to extract
+        and the actual b-values.
 
     Returns
     ------
