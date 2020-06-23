@@ -168,6 +168,28 @@ def test_MSDeconvFit():
     npt.assert_array_almost_equal(fit.volume_fractions, vf, 1)
 
 
+def test_multi_shell_fiber_response():
+    gtab = get_3shell_gtab()
+    sh_order = 8
+    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                          wm_response,
+                                          gm_response,
+                                          csf_response)
+
+    npt.assert_equal(response.response.shape, (4, 7))
+
+
+    with warnings.catch_warnings(record=True) as w:
+        response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("""No b0 was given. Proceeding either way.""" in
+                    str(w[0].message))
+        npt.assert_equal(response.response.shape, (3, 7))
+
+
 def test_mask_for_response_msmt():
     gtab, data, masks_gt, _= get_test_data()
 
