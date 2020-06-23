@@ -266,7 +266,8 @@ want to create a MultiShellDeconvModel, which takes a response function as
 input. This response function can either be directly in the current format, or
 it can be a MultiShellResponse format, as produced by the
 ``multi_shell_fiber_response`` method. This function assumes a 3 compartments
-model (wm, gm, csf) and takes one response function per tissue per bvalue.
+model (wm, gm, csf) and takes one response function per tissue per bvalue. It is
+important to note that the bvalues must be unique for this function.
 """
 
 response_mcsd = multi_shell_fiber_response(sh_order=8,
