@@ -10,19 +10,18 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-__all__ = ["SimpleFCN2d"]
+__all__ = ["FCN2d"]
 
 
-class SimpleFCN2d(object):
-    def __init__(self, input_shape=(32, 32)):
-        in_channels = 1
+class FCN2d(object):
+    def __init__(self, input_shape=(32, 32, 1), optimizer='adam', loss=None,
+                 metrics=None, loss_weights=None):
         out_channels = 2
 
-        input_shape = input_shape + (in_channels,)
         moving = layers.Input(shape=input_shape, name='moving')
         static = layers.Input(shape=input_shape, name='static')
 
-        x = layers.concatenate([static, moving], axis=-1)
+        x = layers.concatenate([moving, static], axis=-1)
 
         # encoder
         x = layers.Conv2D(32, kernel_size=3, strides=2, padding='same',
@@ -77,11 +76,11 @@ class SimpleFCN2d(object):
         # Sample the moving image using the new sampling grid.
         moved = grid_sample_2d(moving, grid_new)
 
-        model = tf.keras.Model(inputs=[static, moving],
+        model = tf.keras.Model(inputs={'moving': moving, 'static': static},
                                outputs=moved, name='simple_fcn_2d')
+        model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
+                      loss_weights=loss_weights)
         self.model = model
-        # self.metrics = None  # todo: need to save train and test metrics
-        # self.loss = None
 
     def compile(self, optimizer='adam', loss=None, metrics=None,
                 loss_weights=None):
@@ -130,14 +129,6 @@ class SimpleFCN2d(object):
                                   max_queue_size=max_queue_size,
                                   workers=workers,
                                   use_multiprocessing=use_multiprocessing)
-
-    def predict_on_batch(self, x):
-        return self.model.predict_on_batch(x)
-
-    def test_on_batch(self, x, y=None, reset_metrics=True, return_dict=False):
-        return self.model.test_on_batch(x=x, y=y,
-                                        reset_metrics=reset_metrics,
-                                        return_dict=return_dict)
 
     def save_weights(self, filepath, overwrite=True):
         self.model.save_weights(filepath=filepath, overwrite=overwrite,

@@ -56,17 +56,17 @@ def normalized_cross_correlation_loss():
 
         """
         eps = tf.constant(1e-7, 'float32')
-        ndim = len(tf.keras.backend.int_shape(y_true))
+        ndim = len(tf.keras.backend.int_shape(y_true))-2
 
-        y_true_mean = tf.reduce_mean(y_true, axis=range(1, ndim-1),
+        y_true_mean = tf.reduce_mean(y_true, axis=range(1, ndim+1),
                                      keepdims=True)
-        y_pred_mean = tf.reduce_mean(y_pred, axis=range(1, ndim-1),
+        y_pred_mean = tf.reduce_mean(y_pred, axis=range(1, ndim+1),
                                      keepdims=True)
         # shape (N, 1, 1, C)
 
-        y_true_std = tf.math.reduce_std(y_true, axis=range(1, ndim-1),
+        y_true_std = tf.math.reduce_std(y_true, axis=range(1, ndim+1),
                                         keepdims=True)
-        y_pred_std = tf.math.reduce_std(y_pred, axis=range(1, ndim-1),
+        y_pred_std = tf.math.reduce_std(y_pred, axis=range(1, ndim+1),
                                         keepdims=True)
         # shape (N, 1, 1, C)
 
