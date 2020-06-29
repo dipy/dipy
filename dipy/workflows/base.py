@@ -9,7 +9,7 @@ def get_args_default(func):
     if sys.version_info[0] >= 3:
         sig_object = inspect.signature(func)
         params = sig_object.parameters.values()
-        names = [param.name for param in params if param.name is not 'self']
+        names = [param.name for param in params if param.name != 'self']
         defaults = [param.default for param in params
                     if param.default is not inspect._empty]
     else:

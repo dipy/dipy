@@ -1,6 +1,6 @@
 import pytest
 from distutils.version import LooseVersion
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_
 
 from dipy.utils.optpkg import optional_package
 
@@ -10,7 +10,7 @@ if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
-    from dipy.nn.model import SingleLayerPerceptron
+    from dipy.nn.model import SingleLayerPerceptron, MultipleLayerPercepton
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
@@ -37,7 +37,7 @@ def test_default_mnist_sequential():
     hist = model.fit(x_train, y_train, epochs=epochs)
     model.evaluate(x_test, y_test, verbose=2)
     accuracy = hist.history['accuracy'][0]
-    assert_equal(accuracy > 0.9, True)
+    assert_(accuracy > 0.9)
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
@@ -55,12 +55,34 @@ def test_default_mnist_slp():
     x_test_prob = slp.predict(x_test)
 
     accuracy = hist.history['accuracy'][0]
-    assert_equal(slp.accuracy > 0.9, True)
+    assert_(slp.accuracy > 0.9)
+    assert_(slp.loss < 0.4)
     assert_equal(slp.accuracy, accuracy)
-    assert_equal(slp.loss < 0.4, True)
     assert_equal(x_test_prob.shape, (10000, 10))
+
+
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
+def test_default_mnist_mlp():
+    mnist = tf.keras.datasets.mnist
+    epochs = 1
+
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+
+    mlp = MultipleLayerPercepton(input_shape=(28, 28),num_hidden=[128,128])
+    hist = mlp.fit(x_train, y_train, epochs=epochs)
+    mlp.evaluate(x_test, y_test, verbose=2)
+    x_test_prob = mlp.predict(x_test)
+
+    accuracy = hist.history['accuracy'][0]
+    assert_(mlp.accuracy > 0.8)
+    assert_(mlp.loss < 0.4)
+    assert_equal(mlp.accuracy, accuracy)
+    assert_equal(x_test_prob.shape, (10000, 10))
+
 
 
 if __name__ == "__main__":
     test_default_mnist_sequential()
     test_default_mnist_slp()
+    test_default_mnist_mlp()

@@ -36,6 +36,9 @@ jobs:
     displayName: 'Install OpenGL'
     condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - powershell: |
+      Invoke-WebRequest -Uri https://zenodo.org/record/2651349/files/gs.trk -UseDefaultCredentials
+    displayName: Add/Verify whether the certificate has been installed correctly
+  - powershell: |
       Set-StrictMode -Version Latest
       $ErrorActionPreference = "Stop"
       $PSDefaultParameterValues['*:ErrorAction']='Stop'

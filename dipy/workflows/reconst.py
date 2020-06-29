@@ -43,7 +43,7 @@ class ReconstMAPMRIFlow(Workflow):
             out_rtpp='rtpp.nii.gz', out_ng='ng.nii.gz',
             out_perng='perng.nii.gz',
             out_parng='parng.nii.gz'):
-        """ Workflow for fitting the MAPMRI model (with optional Laplacian
+        """Workflow for fitting the MAPMRI model (with optional Laplacian
         regularization). Generates rtop, lapnorm, msd, qiv, rtap, rtpp,
         non-gaussian (ng), parallel ng, perpendicular ng saved in a nifti
         format in input files provided by `data_files` and saves the nifti
@@ -171,6 +171,12 @@ class ReconstMAPMRIFlow(Workflow):
                             positivity_constraint=False,
                             bval_threshold=bval_threshold)
                 mapfit_aniso = map_model_aniso.fit(data)
+
+            # for name, fname, func in [('rtop', out_rtop, mapfit_aniso.rtop),
+            #                           ]:
+            #     if name in save_metrics:
+            #         r = func()
+            #         save_nifti(fname, r.astype(np.float32), affine)
 
             if 'rtop' in save_metrics:
                 r = mapfit_aniso.rtop()

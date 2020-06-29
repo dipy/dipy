@@ -7,7 +7,7 @@ script.
 
 Notes
 -----
-This parsing is based on import and introspection of modules.
+This parsing is based on the import and introspection of modules.
 Previously functions and classes were found by parsing the text of .py files.
 
 Extension modules should be discovered and included as well.
@@ -475,7 +475,7 @@ class ApiDocWriter(object):
         Parameters
         ----------
         path : string
-            Filename to write index to
+            Filename to write an index to
         outdir : string
             Directory to which to write generated index file
         froot : string, optional
@@ -485,7 +485,7 @@ class ApiDocWriter(object):
             path to which written filenames are relative.  This
             component of the written file path will be removed from
             outdir, in the generated index.  Default is None, meaning,
-            leave path as it is.
+            leave the path as it is.
         """
         if self.written_modules is None:
             raise ValueError('No modules written')

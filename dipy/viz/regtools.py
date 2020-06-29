@@ -28,9 +28,9 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     title : string
         title of the plot
     x : integer list
-        x-axis values to be ploted
+        x-axis values to be plotted
     y : integer list
-        y-axis values to be ploted
+        y-axis values to be plotted
     xlabel : string
         label for x-axis
     ylable : string
@@ -39,6 +39,8 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     """
 
     plt.plot(x, y)
+    axes = plt.gca()
+    axes.set_ylim([0, 4])
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)
@@ -196,17 +198,17 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         inverse_grid_shape (in general, if users specify an inverse_grid_shape,
         they should also specify inverse_grid2world).
     show_figure : bool, optional
-        if True (default), the deformed grids will be ploted using matplotlib,
+        if True (default), the deformed grids will be plotted using matplotlib,
         else the grids are just returned
 
     Returns
     -------
     warped_forward : array
-        Image with grid showing the effect of transforming the moving image to
-        the static image.  Shape will be `direct_grid_shape` if specified,
+        Image with the grid showing the effect of transforming the moving image to
+        the static image.  The shape will be `direct_grid_shape` if specified,
         otherwise the shape of the static image.
     warped_backward : array
-        Image with grid showing the effect of transforming the static image to
+        Image with the grid showing the effect of transforming the static image to
         the moving image.  Shape will be `inverse_grid_shape` if specified,
         otherwise the shape of the moving image.
 
@@ -216,31 +218,31 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
     in which the user provides "None" as input meaning "identity". If we used
     None as default, we wouldn't know if the user specifically wants to use
     the identity (specifically passing None) or if it was left unspecified,
-    meaning to use the apropriate default matrix.
+    meaning to use the appropriate default matrix.
     """
     if mapping.is_inverse:
         # By default, direct_grid_shape is the codomain grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.codomain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.codomain_grid2world
 
         # By default, the inverse grid is the domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.domain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.domain_grid2world
     else:
         # Now by default, direct_grid_shape is the mapping's input grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.domain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.domain_grid2world
 
         # By default, the output grid is the mapping's domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.codomain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.codomain_grid2world
 
     # The world-to-image (image = drawn lattice on the output grid)
@@ -300,7 +302,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
 def plot_slices(V, slice_indices=None, fname=None):
     r"""Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial
 
-    Creates a figure showing the axial, coronal and sagital slices at the
+    Creates a figure showing the axial, coronal and sagittal slices at the
     requested positions of the given volume. The requested slices are specified
     by slice_indices.
 
@@ -355,7 +357,7 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     Parameters
     ----------
     L : array, shape (S, R, C)
-        the first volume to extract the slice from, plottet to the left
+        the first volume to extract the slice from plotted to the left
     R : array, shape (S, R, C)
         the second volume to extract the slice from, plotted to the right
     slice_index : int (optional)
@@ -365,10 +367,10 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
         the type of slice to be extracted:
         0=sagital, 1=coronal (default), 2=axial.
     ltitle : string (optional)
-        the string to be written as title of the left image. By default,
+        the string to be written as the title of the left image. By default,
         no title is displayed.
     rtitle : string (optional)
-        the string to be written as title of the right image. By default,
+        the string to be written as the title of the right image. By default,
         no title is displayed.
     fname : string (optional)
         the name of the file to write the image to. If None (default), the
@@ -384,19 +386,19 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
 
     # Create the color image to draw the overlapped slices into, and extract
     # the slices (note the transpositions)
-    if slice_type is 0:
+    if slice_type == 0:
         if slice_index is None:
             slice_index = sh[0] // 2
         colorImage = np.zeros(shape=(sh[2], sh[1], 3), dtype=np.uint8)
         ll = np.asarray(L[slice_index, :, :]).astype(np.uint8).T
         rr = np.asarray(R[slice_index, :, :]).astype(np.uint8).T
-    elif slice_type is 1:
+    elif slice_type == 1:
         if slice_index is None:
             slice_index = sh[1] // 2
         colorImage = np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, slice_index, :]).astype(np.uint8).T
         rr = np.asarray(R[:, slice_index, :]).astype(np.uint8).T
-    elif slice_type is 2:
+    elif slice_type == 2:
         if slice_index is None:
             slice_index = sh[2] // 2
         colorImage = np.zeros(shape=(sh[1], sh[0], 3), dtype=np.uint8)

@@ -351,7 +351,9 @@ class MapmriModel(ReconstModel, Cache):
                     self.ind_mat, mu, self.S_mat, self.T_mat, self.U_mat)
             else:
                 laplacian_matrix = self.laplacian_matrix * mu[0]
-            if self.laplacian_weighting == 'GCV':
+
+            if (isinstance(self.laplacian_weighting, str) and
+                    self.laplacian_weighting.upper() == 'GCV'):
                 try:
                     lopt = generalized_crossvalidation(data, M,
                                                        laplacian_matrix)

@@ -55,7 +55,8 @@ if using_setuptools:
         zip_safe=False,
         extras_require=dict(
             doc=['Sphinx>=1.0'],
-            test=['pytest']))
+            test=['pytest']),
+        python_requires=">= 3.5")
 
 # Define extensions
 EXTS = []
@@ -69,7 +70,7 @@ for modulename, other_sources, language in (
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
         ('dipy.direction.bootstrap_direction_getter', [], 'c'),
-        ('dipy.reconst.peak_direction_getter', [], 'c'),
+        ('dipy.reconst.eudx_direction_getter', [], 'c'),
         ('dipy.reconst.recspeed', [], 'c'),
         ('dipy.reconst.vec_val_sum', [], 'c'),
         ('dipy.reconst.quick_squash', [], 'c'),
@@ -221,7 +222,6 @@ def main(**extra_args):
                     'dipy.nn.tests'],
 
           ext_modules=EXTS,
-          python_requires=">= 3.5",
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the
           # source distribution -- not sure if it has something to do with the

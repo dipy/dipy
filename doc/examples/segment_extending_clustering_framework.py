@@ -61,6 +61,15 @@ Let's start by importing the necessary modules.
 
 from dipy.segment.metric import Feature
 from dipy.tracking.streamline import length
+import numpy as np
+from dipy.data import get_fnames
+from dipy.io.streamline import load_tractogram
+from dipy.tracking.streamline import Streamlines
+from dipy.viz import window, actor
+from dipy.segment.clustering import QuickBundles
+from dipy.segment.metric import SumPointwiseEuclideanMetric
+from dipy.segment.metric import Metric
+from dipy.segment.metric import VectorOfEndpointsFeature
 
 """
 We now define the class ``ArcLengthFeature`` that will perform the desired
@@ -72,7 +81,6 @@ its process is invariant to the order of the points within a streamline.
 This is needed as there is no way one can tell which extremity of a
 streamline is the beginning and which one is the end.
 """
-
 
 class ArcLengthFeature(Feature):
     """ Computes the arc length of a streamline. """
@@ -91,7 +99,6 @@ class ArcLengthFeature(Feature):
         # or use a DIPY's function that computes the arc length of a streamline.
         return length(streamline)
 
-
 """
 The new feature extraction ``ArcLengthFeature`` is ready to be used. Let's use
 it to cluster a set of streamlines by their arc length. For educational
@@ -100,12 +107,6 @@ neuroanatomy as the fornix.
 
 We start by loading the fornix streamlines.
 """
-
-import numpy as np
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor
 
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same',
@@ -117,9 +118,6 @@ streamlines = Streamlines(fornix)
 Perform QuickBundles clustering using the metric
 ``SumPointwiseEuclideanMetric`` and our ``ArcLengthFeature``.
 """
-
-from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import SumPointwiseEuclideanMetric
 
 metric = SumPointwiseEuclideanMetric(feature=ArcLengthFeature())
 qb = QuickBundles(threshold=2., metric=metric)
@@ -166,9 +164,6 @@ about this distance check `<http://en.wikipedia.org/wiki/Cosine_similarity>`_.
 Let's start by importing the necessary modules.
 """
 
-from dipy.segment.metric import Metric
-from dipy.segment.metric import VectorOfEndpointsFeature
-
 """
 We now define the class ``CosineMetric`` that will perform the desired
 distance computation. When subclassing ``Metric``, two methods have to be
@@ -176,7 +171,6 @@ redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
 ``dist`` method, one needs to make sure the distance returned is symmetric
 (i.e. `dist(A, B) == dist(B, A)`).
 """
-
 
 class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
@@ -187,7 +181,7 @@ class CosineMetric(Metric):
     def are_compatible(self, shape1, shape2):
         """ Checks if two features are vectors of same dimension.
 
-        Basically this method exists so we don't have to do this check
+        Basically this method exists so that we don't have to check
         inside the `dist` method (speedup).
         """
         return shape1 == shape2 and shape1[0] == 1
@@ -211,12 +205,6 @@ cluster a small streamline bundle known from neuroanatomy as the fornix.
 We start by loading the fornix streamlines.
 """
 
-import numpy as np
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
-from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor
-
 fname = get_fnames('fornix')
 fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
 streamlines = fornix.streamlines
@@ -224,8 +212,6 @@ streamlines = fornix.streamlines
 """
 Perform QuickBundles clustering using our metric ``CosineMetric``.
 """
-
-from dipy.segment.clustering import QuickBundles
 
 metric = CosineMetric()
 qb = QuickBundles(threshold=0.1, metric=metric)

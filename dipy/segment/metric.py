@@ -44,3 +44,4 @@ def mdf(s1, s2):
                         vol 6, no 175, 2012.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
+ 

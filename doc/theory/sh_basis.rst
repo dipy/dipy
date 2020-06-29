@@ -12,7 +12,7 @@ Spherical harmonics are ortho-normal functions defined by:
 
 ..  math::
 
-    Y_l^m(\theta, \phi) = (-1)^m \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
+    Y_l^m(\theta, \phi) = \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
 
 where $l$ is the band index, $m$ is the order, $P_l^m$ is an associated
 $l$-th degree, $m$-th order Legendre polynomial, and $(\theta, \phi)$ is the
@@ -46,7 +46,7 @@ literature for the computation of the ODF. DIPY implements two of these in the
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
      \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
@@ -57,9 +57,9 @@ literature for the computation of the ODF. DIPY implements two of these in the
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
-     Y_k^0(\theta, \phi) & m = 0, \\
-     \Im(Y_{|l|}^m(\theta, \phi)) & 0 < m \leq l
+     \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     Y_l^0(\theta, \phi) & m = 0, \\
+     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and

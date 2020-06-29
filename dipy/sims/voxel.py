@@ -68,8 +68,7 @@ def _add_rician(sig, noise1, noise2):
 
 
 def _add_rayleigh(sig, noise1, noise2):
-    """
-    Helper function to add_noise
+    r"""Helper function to add_noise.
 
     The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
 
@@ -216,9 +215,10 @@ def callaghan_perpendicular(q, radius):
            117.1 (1995): 94-97.
     """
     # Eq. [6] in the paper
-    E = ((2 * jn(1, 2 * np.pi * q * radius)) ** 2 /
-         (2 * np.pi * q * radius) ** 2
-         )
+    numerator = (2 * jn(1, 2 * np.pi * q * radius)) ** 2
+    denom = (2 * np.pi * q * radius) ** 2
+
+    E = np.divide(numerator, denom, out=np.zeros_like(q), where=denom != 0)
     return E
 
 
@@ -997,3 +997,58 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     for j, f in enumerate(mf):
         msd += f * single_tensor_msd(mevals[j], tau=tau)
     return msd
+
+
+def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
+                               sphere=None):
+    """Fiber response function estimation for multi-shell data.
+
+    Parameters
+    ----------
+    sh_order : int
+         Maximum spherical harmonics order.
+    bvals : ndarray
+        Array containing the b-values.
+    evals : (3,) ndarray
+        Eigenvalues of the diffusion tensor.
+    csf_md : float
+        CSF tissue mean diffusivity value.
+    gm_md : float
+        GM tissue mean diffusivity value.
+    sphere : `dipy.core.Sphere` instance, optional
+        Sphere where the signal will be evaluated.
+
+    Returns
+    -------
+    MultiShellResponse
+        MultiShellResponse object.
+    """
+
+    bvals = np.array(bvals, copy=True)
+    evecs = np.zeros((3, 3))
+    z = np.array([0, 0, 1.])
+    evecs[:, 0] = z
+    evecs[:2, 1:] = np.eye(2)
+
+    n = np.arange(0, sh_order + 1, 2)
+    m = np.zeros_like(n)
+
+    if sphere is None:
+        sphere = default_sphere
+
+    big_sphere = sphere.subdivide()
+    theta, phi = big_sphere.theta, big_sphere.phi
+
+    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+    A = shm.real_sph_harm(0, 0, 0, 0)
+
+    response = np.empty([len(bvals), len(n) + 2])
+    for i, bvalue in enumerate(bvals):
+        gtab = GradientTable(big_sphere.vertices * bvalue)
+        wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
+        response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=-1)[0]
+
+        response[i, 0] = np.exp(-bvalue * csf_md) / A
+        response[i, 1] = np.exp(-bvalue * gm_md) / A
+
+    return MultiShellResponse(response, sh_order, bvals)

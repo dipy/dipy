@@ -160,6 +160,7 @@ def slicer_panel(renderer, iren,
             mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
                                                     0, shape[1] - 1, z, z)
         mem.slicer_curr_z = z
+        renderer.reset_clipping_range()
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1,
@@ -173,6 +174,7 @@ def slicer_panel(renderer, iren,
         x = int(np.round(slider.value))
         mem.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                shape[2] - 1)
+        renderer.reset_clipping_range()
         mem.slicer_curr_x = x
         mem.window_timer_cnt += 100
 
@@ -189,6 +191,7 @@ def slicer_panel(renderer, iren,
 
         mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
                                                0, shape[2] - 1)
+        renderer.reset_clipping_range()
         mem.slicer_curr_y = y
 
     # TODO there is some small bug when starting the app the handles

@@ -11,10 +11,12 @@ registration
 """
 
 import numpy as np
-from dipy.data import get_fnames
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
+from dipy.align.metrics import SSDMetric, CCMetric
 import dipy.align.imwarp as imwarp
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti_data
+from dipy.segment.mask import median_otsu
 from dipy.viz import regtools
 
 
@@ -146,10 +148,6 @@ def callback_CC(sdr, status):
 Now we are ready to configure and run the registration. First load the data
 """
 
-from dipy.data import get_fnames
-from dipy.io.image import load_nifti_data
-from dipy.segment.mask import median_otsu
-
 t1_name, b0_name = get_fnames('syn_data')
 data = load_nifti_data(b0_name)
 
@@ -167,7 +165,7 @@ static = b0_mask[:, :, 40]
 moving = b0_mask[:, :, 38]
 
 """
-After loading the data, we instantiate the Cross Correlation metric. The metric
+After loading the data, we instantiate the Cross-Correlation metric. The metric
 receives three parameters: the dimension of the input images, the standard
 deviation of the Gaussian Kernel to be used to regularize the gradient and the
 radius of the window to be used for evaluating the local normalized cross

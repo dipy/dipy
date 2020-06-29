@@ -17,7 +17,8 @@ class HorizonFlow(Workflow):
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
-            stealth=False, emergency_header='icbm_2009a', out_dir='',
+            stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
+            disable_order_transparency=False, out_dir='',
             out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
@@ -27,36 +28,43 @@ class HorizonFlow(Workflow):
         Parameters
         ----------
         input_files : variable string
-        cluster : bool
+        cluster : bool, optional
             Enable QuickBundlesX clustering
-        cluster_thr : float
+        cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal brains you may need to use something smaller such
             as 2.0. The distance is in mm. For this parameter to be active
             ``cluster`` should be enabled
-        random_colors : bool
+        random_colors : bool, optional
             Given multiple tractograms have been included then each tractogram
             will be shown with different color
-        length_gt : float
+        length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown
-        length_lt : float
+        length_lt : float, optional
             Clusters with average length less than ``length_lt`` amount in
             mm will be shown
-        clusters_gt : int
+        clusters_gt : int, optional
             Clusters with size greater than ``clusters_gt`` will be shown.
-        clusters_lt : int
+        clusters_lt : int, optional
             Clusters with size less than ``clusters_gt`` will be shown.
-        native_coords : bool
+        native_coords : bool, optional
             Show results in native coordinates
-        stealth : bool
+        stealth : bool, optional
             Do not use interactive mode just save figure.
-        emergency_header : str
+        emergency_header : str, optional
             If no anatomy reference is provided an emergency header is
             provided. Current options 'icbm_2009a' and 'icbm_2009c'.
-        out_dir : string
+        bg_color : variable float, optional
+            Define the background color of the scene. Colors can be defined
+            with 1 or 3 values and should be between [0-1].
+            Default is black (e.g --bg_color 0 0 0 or --bg_color 0).
+        disable_order_transparency : bool, optional
+            Default False. Use depth peeling to sort transparent objects.
+            If True also enables anti-aliasing.
+        out_dir : str, optional
             Output directory. Default current directory.
-        out_stealth_png : string
+        out_stealth_png : str, optional
             Filename of saved picture.
 
         References
@@ -142,9 +150,17 @@ class HorizonFlow(Workflow):
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
+        if len(bg_color) == 1:
+            bg_color *= 3
+        elif len(bg_color) != 3:
+            raise ValueError('You need 3 values to set up backgound color. '
+                             'e.g --bg_color 0.5 0.5 0.5')
+
+        order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
                 cluster=cluster, cluster_thr=cluster_thr,
-                random_colors=random_colors,
+                random_colors=random_colors, bg_color=bg_color,
+                order_transparent=order_transparent,
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
