@@ -4,7 +4,7 @@ import numpy as np
 import numbers
 from dipy.core import geometry as geo
 from dipy.core.gradients import (GradientTable, gradient_table,
-                                 unique_bvals_tol, get_bval_indices)
+                                 unique_bvals_tolerance, get_bval_indices)
 from dipy.data import default_sphere
 from dipy.reconst import shm
 from dipy.reconst.csdeconv import response_from_mask_ssst
@@ -167,8 +167,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             The later must be of shape (3, len(bvals)-1, 4), because it will be
             converted into a MultiShellResponse object via the
             `multi_shell_fiber_response` method (important note: the function
-            `unique_bvals_tol` is used here to select unique bvalues from gtab
-            as input). Each column (3,) has two elements. The first is the
+            `unique_bvals_tolerance` is used here to select unique bvalues from
+            gtab as input). Each column (3,) has two elements. The first is the
             eigen-values as a (3,) ndarray and the second is the signal value
             for the response function without diffusion weighting (S0). Note
             that in order to use more than three compartments, one must create
@@ -202,7 +202,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         super(MultiShellDeconvModel, self).__init__(gtab)
 
         if not isinstance(response, MultiShellResponse):
-            bvals = unique_bvals_tol(gtab.bvals, tol=20)
+            bvals = unique_bvals_tolerance(gtab.bvals, tol=20)
             if iso > 2:
                 msg = """Too many compartments for this kind of response
                 input. It must be two tissue compartments."""
@@ -403,7 +403,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
          Maximum spherical harmonics order.
     bvals : ndarray
         Array containing the b-values. Must be unique b-values, like outputed
-        by `dipy.core.gradients.unique_bvals_tol`.
+        by `dipy.core.gradients.unique_bvals_tolerance`.
     wm_rf : (4, len(bvals)) ndarray
         Response function of the WM tissue, for each bvals.
     gm_rf : (4, len(bvals)) ndarray
@@ -478,7 +478,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
                            wm_fa_thr=0.7, gm_fa_thr=0.2, csf_fa_thr=0.1,
                            gm_md_thr=0.0007, csf_md_thr=0.002):
-    """ Computation of masks for msmt response function using FA and MD.
+    """ Computation of masks for multi-shell multi-tissue (msmt) response
+        function using FA and MD.
 
     Parameters
     ----------
@@ -541,7 +542,7 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
     roi_mask = _mask_from_roi(data.shape[:3], roi_center, roi_radii)
 
-    list_bvals = unique_bvals_tol(gtab.bvals)
+    list_bvals = unique_bvals_tolerance(gtab.bvals)
     if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200.
         The DTI fit might be affected."""
@@ -599,7 +600,8 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
 
 
 def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
-    """ Computation of msmt response functions from given tissues masks.
+    """ Computation of multi-shell multi-tissue (msmt) response
+        functions from given tissues masks.
 
     Parameters
     ----------
@@ -644,7 +646,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
     bvals = gtab.bvals
     bvecs = gtab.bvecs
 
-    list_bvals = unique_bvals_tol(bvals, tol)
+    list_bvals = unique_bvals_tolerance(bvals, tol)
 
     b0_indices = get_bval_indices(bvals, list_bvals[0], tol)
     b0_map = np.mean(data[..., b0_indices], axis=-1)[..., np.newaxis]
@@ -678,7 +680,8 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
                        wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
                        gm_md_thr=0.001, csf_md_thr=0.0032):
-    """ Automatic estimation of msmt response functions using FA and MD.
+    """ Automatic estimation of multi-shell multi-tissue (msmt) response
+        functions using FA and MD.
 
     Parameters
     ----------
@@ -723,7 +726,7 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     tissue (more details are available in the description of the function).
     """
 
-    list_bvals = unique_bvals_tol(gtab.bvals)
+    list_bvals = unique_bvals_tolerance(gtab.bvals)
     if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200.
         The DTI fit might be affected. It is adviced use mask_for_response_msmt

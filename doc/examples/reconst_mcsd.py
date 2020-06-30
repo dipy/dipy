@@ -37,7 +37,7 @@ import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 
 from dipy.denoise.localpca import mppca
-from dipy.core.gradients import gradient_table, unique_bvals_tol
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
@@ -271,7 +271,7 @@ important to note that the bvalues must be unique for this function.
 """
 
 response_mcsd = multi_shell_fiber_response(sh_order=8,
-                                           bvals=unique_bvals_tol(gtab.bvals),
+                                           bvals=unique_bvals_tolerance(gtab.bvals),
                                            wm_rf=response_wm,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)
@@ -279,10 +279,10 @@ response_mcsd = multi_shell_fiber_response(sh_order=8,
 """
 As mentionned, we can also build the model directly and it will call
 ``multi_shell_fiber_response`` internally. Important note here, the function
-``unique_bvals_tol`` is used to keep only unique bvalues from the gtab given to
-the model, as input for ``multi_shell_fiber_response``. This may introduce
-differences between the calculted response of each method, depending on the
-bvalues given to ``multi_shell_fiber_response`` externally.
+``unique_bvals_tolerance`` is used to keep only unique bvalues from the gtab
+given to the model, as input for ``multi_shell_fiber_response``. This may
+introduce differences between the calculted response of each method, depending
+on the bvalues given to ``multi_shell_fiber_response`` externally.
 """
 
 response = np.array([response_wm, response_gm, response_csf])

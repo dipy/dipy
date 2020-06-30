@@ -11,7 +11,7 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
-                                 unique_bvals_mag, unique_bvals_tol,
+                                 unique_bvals_magnitude, unique_bvals_tolerance,
                                  btensor_to_bdelta)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.geometry import vec2vec_rotmat
@@ -447,28 +447,28 @@ def test_round_bvals():
     npt.assert_array_almost_equal(bvals_gt, b)
 
 
-def test_unique_bvals_tol():
+def test_unique_bvals_tolerance():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     ubvals_gt = np.array([0, 1000, 2000])
-    b = unique_bvals_tol(bvals)
+    b = unique_bvals_tolerance(bvals)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # Testing the tolerance factor on many b-values that are within tol.
     bvals = np.array([950, 980, 995, 1000, 1000, 1010, 1999, 2000, 2001, 0])
     ubvals_gt = np.array([0, 950, 1000, 2001])
-    b = unique_bvals_tol(bvals)
+    b = unique_bvals_tolerance(bvals)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # All unique b-values are kept if tolerance is set to zero:
     bvals = np.array([990, 990, 1000, 1000, 2000, 2000, 2050, 2050, 0])
     ubvals_gt = np.array([0, 990, 1000, 2000, 2050])
-    b = unique_bvals_tol(bvals, 0)
+    b = unique_bvals_tolerance(bvals, 0)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
-    b = unique_bvals_tol(bvals, 0.5)
+    b = unique_bvals_tolerance(bvals, 0.5)
     ubvals_gt = np.array([0, 0.995, 2.005])
     npt.assert_array_almost_equal(ubvals_gt, b)
 
@@ -505,26 +505,26 @@ def test_get_bval_indices():
     npt.assert_array_almost_equal(indices_gt, indices)
 
 
-def test_unique_bvals_mag():
+def test_unique_bvals_magnitude():
     bvals = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
     ubvals_gt = np.array([0, 1000, 2000])
-    b = unique_bvals_mag(bvals)
+    b = unique_bvals_magnitude(bvals)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     bvals = np.array([995, 995, 995, 995, 2005, 2005, 2005, 2005, 0])
     # Case that b-values are rounded:
-    b = unique_bvals_mag(bvals)
+    b = unique_bvals_magnitude(bvals)
     npt.assert_array_almost_equal(ubvals_gt, b)
 
     # b-values are not rounded if you specific the magnitude of the values
     # precision:
-    b = unique_bvals_mag(bvals, bmag=0)
+    b = unique_bvals_magnitude(bvals, bmag=0)
     npt.assert_array_almost_equal(b, np.array([0, 995, 2005]))
 
     # Case that b-values are in ms/um2
     bvals = np.array([0.995, 0.995, 0.995, 0.995, 2.005, 2.005, 2.005, 2.005,
                       0])
-    b = unique_bvals_mag(bvals)
+    b = unique_bvals_magnitude(bvals)
     ubvals_gt = np.array([0, 1, 2])
     npt.assert_array_almost_equal(ubvals_gt, b)
 
@@ -532,7 +532,7 @@ def test_unique_bvals_mag():
     bvals = np.array([995, 1000, 1004, 1000, 2001, 2000, 1988, 2017, 0])
     ubvals_gt = np.array([0, 1000, 2000])
     rbvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
-    ub, rb = unique_bvals_mag(bvals, rbvals=True)
+    ub, rb = unique_bvals_magnitude(bvals, rbvals=True)
     npt.assert_array_almost_equal(ubvals_gt, ub)
     npt.assert_array_almost_equal(rbvals_gt, rb)
 

@@ -817,7 +817,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
 
 def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
                            fa_thr=0.7):
-    """ Computation of mask for ssst response function using FA.
+    """ Computation of mask for single-shell single-tissue (ssst) response
+        function using FA.
 
     Parameters
     ----------
@@ -887,7 +888,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
 
 
 def response_from_mask_ssst(gtab, data, mask):
-    """ Computation of ssst response function from a given mask.
+    """ Computation of single-shell single-tissue (ssst) response
+        function from a given mask.
 
     Parameters
     ----------
@@ -946,7 +948,8 @@ def response_from_mask_ssst(gtab, data, mask):
 
 
 def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
-    """ Automatic estimation of ssst response function using FA.
+    """ Automatic estimation of single-shell single-tissue (ssst) response
+        function using FA.
 
     Parameters
     ----------

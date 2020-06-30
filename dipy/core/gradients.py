@@ -674,7 +674,7 @@ def round_bvals(bvals, bmag=None):
     return b.round() * (10 ** bmag)
 
 
-def unique_bvals_tol(bvals, tol=20):
+def unique_bvals_tolerance(bvals, tol=20):
     """ Gives the unique b-values of the data, within a tolerance gap
 
     The b-values must be regrouped in clusters easily separated by a
@@ -754,7 +754,7 @@ def get_bval_indices(bvals, bval, tol=20):
                                    bvals >= bval - tol))[0]
 
 
-def unique_bvals_mag(bvals, bmag=None, rbvals=False):
+def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
     """ This function gives the unique rounded b-values of the data
 
     Parameters
@@ -813,7 +813,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     if non_zero:
         bvals = bvals[~gtab.b0s_mask]
 
-    uniqueb = unique_bvals_mag(bvals, bmag=bmag)
+    uniqueb = unique_bvals_magnitude(bvals, bmag=bmag)
     if uniqueb.shape[0] < n_bvals:
         return False
     else:
