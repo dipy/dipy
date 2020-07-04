@@ -324,8 +324,6 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
     (np.array([[1, -10, 0], [1, 10, 0]]), 1),
 ])
 def test_target_line_based_out_of_bounds(streamline, expected_matched):
-    # Ensures https://github.com/dipy/dipy/issues/2182 doesn't happen
-    # and that target_line_based works with out of bounds points
     mask = np.zeros((2, 1, 1), dtype=np.uint8)
     mask[1, 0, 0] = 1
     matched = list(target_line_based([streamline], np.eye(4), mask))
