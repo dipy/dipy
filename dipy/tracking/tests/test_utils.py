@@ -1,4 +1,3 @@
-import pytest
 import warnings
 
 import numpy as np
@@ -314,20 +313,21 @@ def _target(target_f, streamlines, voxel_both_true, voxel_one_true,
     assert_true(exclude[0] is streamlines[1])
 
 
-@pytest.mark.parametrize("streamline, expected_matched", [
-    (np.array([[-10, 0, 0], [0, 0, 0]]), 0),
-    (np.array([[-10, 0, 0], [1, -10, 0]]), 0),
-    (np.array([[0, 0, 0], [10, 10, 10]]), 0),
-    (np.array([[-2, -0.6, -0.6], [2, -0.6, -0.6]]), 0),
-    (np.array([[-10000, 0, 0], [0, 0, 0]]), 0),
-    (np.array([[-10, 0, 0], [10, 0, 0]]), 1),
-    (np.array([[1, -10, 0], [1, 10, 0]]), 1),
-])
-def test_target_line_based_out_of_bounds(streamline, expected_matched):
-    mask = np.zeros((2, 1, 1), dtype=np.uint8)
-    mask[1, 0, 0] = 1
-    matched = list(target_line_based([streamline], np.eye(4), mask))
-    assert len(matched) == expected_matched
+def test_target_line_based_out_of_bounds():
+    test_cases = [
+        (np.array([[-10, 0, 0], [0, 0, 0]]), 0),
+        (np.array([[-10, 0, 0], [1, -10, 0]]), 0),
+        (np.array([[0, 0, 0], [10, 10, 10]]), 0),
+        (np.array([[-2, -0.6, -0.6], [2, -0.6, -0.6]]), 0),
+        (np.array([[-10000, 0, 0], [0, 0, 0]]), 0),
+        (np.array([[-10, 0, 0], [10, 0, 0]]), 1),
+        (np.array([[1, -10, 0], [1, 10, 0]]), 1),
+    ]
+    for streamline, expected_matched in test_cases:
+        mask = np.zeros((2, 1, 1), dtype=np.uint8)
+        mask[1, 0, 0] = 1
+        matched = list(target_line_based([streamline], np.eye(4), mask))
+        assert len(matched) == expected_matched
 
 
 def test_near_roi():
