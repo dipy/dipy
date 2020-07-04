@@ -298,7 +298,7 @@ cdef cnp.npy_intp _streamline_in_mask(
             x = <cnp.npy_intp>floor(current_pt[0] + half_ratio * direction[0])
             y = <cnp.npy_intp>floor(current_pt[1] + half_ratio * direction[1])
             z = <cnp.npy_intp>floor(current_pt[2] + half_ratio * direction[2])
-            if x >= 0 and y >= 0 and z >= 0 and x < mask.shape[0] and y < mask.shape[1] and z < mask.shape[2]:
+            if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
                 if mask[x, y, z]:
                     return 1
 
@@ -317,7 +317,7 @@ cdef cnp.npy_intp _streamline_in_mask(
     x = <cnp.npy_intp>floor(next_pt[0])
     y = <cnp.npy_intp>floor(next_pt[1])
     z = <cnp.npy_intp>floor(next_pt[2])
-    if x >= 0 and y >= 0 and z >= 0 and x < mask.shape[0] and y < mask.shape[1] and z < mask.shape[2]:
+    if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
         if mask[x, y, z]:
             return 1
     return 0
