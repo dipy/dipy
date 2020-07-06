@@ -185,7 +185,7 @@ def test_multi_shell_fiber_response():
                                               gm_response,
                                               csf_response)
         npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("""No b0 was given. Proceeding either way.""" in
+        npt.assert_("""No b0 given. Proceeding either way.""" in
                     str(w[0].message))
         npt.assert_equal(response.response.shape, (3, 7))
 
@@ -265,10 +265,9 @@ def test_mask_for_response_msmt_nvoxels():
 def test_response_from_mask_msmt():
     gtab, data, masks_gt, responses_gt = get_test_data()
 
-    response_wm, response_gm, response_csf = response_from_mask_msmt(gtab,
-                                                    data, masks_gt[0],
-                                                    masks_gt[1], masks_gt[2],
-                                                    tol=20)
+    response_wm, response_gm, response_csf \
+        = response_from_mask_msmt(gtab, data, masks_gt[0],
+                                  masks_gt[1], masks_gt[2], tol=20)
 
     # Verifying that csf's response is greater than gm's
     npt.assert_equal(np.sum(response_csf[:, :3]) > np.sum(response_gm[:, :3]),
@@ -283,10 +282,9 @@ def test_response_from_mask_msmt():
     npt.assert_equal(response_wm[:, 0] > 2.5 * response_wm[:, 1], True)
 
     # Verifying with ground truth for the first bvalue
-    print(response_wm)
-    npt.assert_array_almost_equal(response_wm[0], responses_gt[0], 2)
-    npt.assert_array_almost_equal(response_gm[0], responses_gt[1], 2)
-    npt.assert_array_almost_equal(response_csf[0], responses_gt[2], 2)
+    npt.assert_array_almost_equal(response_wm[0], responses_gt[0], 1)
+    npt.assert_array_almost_equal(response_gm[0], responses_gt[1], 1)
+    npt.assert_array_almost_equal(response_csf[0], responses_gt[2], 1)
 
 
 def test_auto_response_msmt():
