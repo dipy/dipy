@@ -9,14 +9,13 @@ from nibabel.tmpdirs import InTemporaryDirectory
 import numpy as np
 import scipy.optimize as opt
 
-from dipy.reconst.multi_voxel import MultiVoxelFit
 from dipy.reconst.odf import gfa
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
 from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
-from dipy.reconst.shm import sh_to_sf_matrix, SphHarmFit
+from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
 
 
