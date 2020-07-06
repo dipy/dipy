@@ -16,7 +16,7 @@ from dipy.core.sphere import Sphere
 from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-from dipy.reconst.peak_direction_getter import EuDXDirectionGetter
+from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -222,6 +222,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
                                sh_basis_type, npeaks, B, invB, nbr_processes):
+
     if nbr_processes is None:
         try:
             nbr_processes = cpu_count()
