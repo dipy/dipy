@@ -107,9 +107,10 @@ def test_MultiShellDeconvModel_response():
     response_2 = model_2.response.response
     npt.assert_array_almost_equal(response_1, response_2, 0)
 
-    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((4, 3, 4)))
-    npt.assert_raises(ValueError, MultiShellDeconvModel, gtab, np.ones((3, 3, 4)),
-                      iso=3)
+    npt.assert_raises(ValueError, MultiShellDeconvModel,
+                      gtab, np.ones((4, 3, 4)))
+    npt.assert_raises(ValueError, MultiShellDeconvModel,
+                      gtab, np.ones((3, 3, 4)), iso=3)
 
 
 @pytest.mark.skipif(not mcsd.have_cvxpy, reason="Requires CVXPY")
@@ -178,7 +179,6 @@ def test_multi_shell_fiber_response():
 
     npt.assert_equal(response.response.shape, (4, 7))
 
-
     with warnings.catch_warnings(record=True) as w:
         response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
                                               wm_response,
@@ -191,13 +191,16 @@ def test_multi_shell_fiber_response():
 
 
 def test_mask_for_response_msmt():
-    gtab, data, masks_gt, _= get_test_data()
+    gtab, data, masks_gt, _ = get_test_data()
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                    roi_center=None, roi_radii=(1, 1, 0),
-                                    wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                    csf_fa_thr=0.15, gm_md_thr=0.001, 
-                                    csf_md_thr=0.0032)
+                                                        roi_center=None,
+                                                        roi_radii=(1, 1, 0),
+                                                        wm_fa_thr=0.7,
+                                                        gm_fa_thr=0.3,
+                                                        csf_fa_thr=0.15,
+                                                        gm_md_thr=0.001,
+                                                        csf_md_thr=0.0032)
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
@@ -212,10 +215,13 @@ def test_mask_for_response_msmt_nvoxels():
     gtab, data, _, _ = get_test_data()
 
     wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                    roi_center=None, roi_radii=(1, 1, 0),
-                                    wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                    csf_fa_thr=0.15, gm_md_thr=0.001, 
-                                    csf_md_thr=0.0032)
+                                                        roi_center=None,
+                                                        roi_radii=(1, 1, 0),
+                                                        wm_fa_thr=0.7,
+                                                        gm_fa_thr=0.3,
+                                                        csf_fa_thr=0.15,
+                                                        gm_md_thr=0.001,
+                                                        csf_md_thr=0.0032)
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
@@ -226,9 +232,13 @@ def test_mask_for_response_msmt_nvoxels():
 
     with warnings.catch_warnings(record=True) as w:
         wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                        roi_center=None, roi_radii=(1, 1, 0),
-                                        wm_fa_thr=1, gm_fa_thr=0, csf_fa_thr=0,
-                                        gm_md_thr=0, csf_md_thr=0)
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=1,
+                                                            gm_fa_thr=0,
+                                                            csf_fa_thr=0,
+                                                            gm_md_thr=0,
+                                                            csf_md_thr=0)
         npt.assert_equal(len(w), 6)
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("""Some b-values are higher than 1200.""" in
@@ -256,12 +266,13 @@ def test_response_from_mask_msmt():
     gtab, data, masks_gt, responses_gt = get_test_data()
 
     response_wm, response_gm, response_csf = response_from_mask_msmt(gtab,
-                                                data, masks_gt[0],
-                                                masks_gt[1], masks_gt[2],
-                                                tol=20)
+                                                    data, masks_gt[0],
+                                                    masks_gt[1], masks_gt[2],
+                                                    tol=20)
 
     # Verifying that csf's response is greater than gm's
-    npt.assert_equal(np.sum(response_csf[:, :3]) > np.sum(response_gm[:, :3]), True)
+    npt.assert_equal(np.sum(response_csf[:, :3]) > np.sum(response_gm[:, :3]),
+                     True)
     # Verifying that csf and gm are described by spheres
     npt.assert_almost_equal(response_csf[:, 1], response_csf[:, 2])
     npt.assert_allclose(response_csf[:, 0], response_csf[:, 1], rtol=1, atol=0)
@@ -284,9 +295,9 @@ def test_auto_response_msmt():
     with warnings.catch_warnings(record=True) as w:
         response_auto_wm, response_auto_gm, response_auto_csf = \
             auto_response_msmt(gtab, data, tol=20,
-                            roi_center=None, roi_radii=(1, 1, 0),
-                            wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
-                            gm_md_thr=0.001, csf_md_thr=0.0032)
+                               roi_center=None, roi_radii=(1, 1, 0),
+                               wm_fa_thr=0.7, gm_fa_thr=0.3, csf_fa_thr=0.15,
+                               gm_md_thr=0.001, csf_md_thr=0.0032)
 
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("""Some b-values are higher than 1200.
@@ -295,10 +306,13 @@ def test_auto_response_msmt():
         to overcome this.""" in str(w[0].message))
 
         mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
-                                        roi_center=None, roi_radii=(1, 1, 0),
-                                        wm_fa_thr=0.7, gm_fa_thr=0.3,
-                                        csf_fa_thr=0.15, gm_md_thr=0.001, 
-                                        csf_md_thr=0.0032)
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
 
         response_from_mask_wm, response_from_mask_gm, response_from_mask_csf = \
             response_from_mask_msmt(gtab, data,

@@ -194,7 +194,7 @@ More precisely, the WM mask must have a FA value above a given threshold. The GM
 mask and CSF mask must have a FA below given thresholds and a MD below other
 thresholds.
 
-Note that for ``mask_for_response_msmt``, the gtab and data should be for 
+Note that for ``mask_for_response_msmt``, the gtab and data should be for
 bvalues under 1200, for optimal tensor fit.
 """
 
@@ -270,8 +270,9 @@ model (wm, gm, csf) and takes one response function per tissue per bvalue. It is
 important to note that the bvalues must be unique for this function.
 """
 
+ubvals = unique_bvals_tolerance(gtab.bvals)
 response_mcsd = multi_shell_fiber_response(sh_order=8,
-                                           bvals=unique_bvals_tolerance(gtab.bvals),
+                                           bvals=ubvals,
                                            wm_rf=response_wm,
                                            gm_rf=response_gm,
                                            csf_rf=response_csf)

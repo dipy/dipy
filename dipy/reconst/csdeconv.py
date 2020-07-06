@@ -25,11 +25,12 @@ from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
 from dipy.utils.deprecator import deprecate_with_version
+
+
 @deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
                         "Please use "
                         "dipy.reconst.csdeconv.auto_response_ssst instead",
                         since='1.2', until='1.4')
-
 def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     """ Automatic estimation of ssst response function using FA.
 
@@ -66,6 +67,7 @@ def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     `ratio` (more details are available in the description of the function).
     """
     return auto_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
+
 
 class AxSymShResponse(object):
     """A simple wrapper for response functions represented using only axially

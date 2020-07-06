@@ -58,10 +58,10 @@ def test_auto_response_deprecated():
         warnings.simplefilter("always", DeprecationWarning)
         gtab, data, _, _, _ = get_test_data()
         response_auto, ratio_auto = auto_response(gtab,
-                                                       data,
-                                                       roi_center=None,
-                                                       roi_radii=(1, 1, 0),
-                                                       fa_thr=0.7)
+                                                  data,
+                                                  roi_center=None,
+                                                  roi_radii=(1, 1, 0),
+                                                  fa_thr=0.7)
         npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
@@ -147,9 +147,9 @@ def test_mask_for_response_ssst():
     gtab, data, mask_gt, _, _ = get_test_data()
 
     mask = mask_for_response_ssst(gtab, data,
-                                          roi_center=None,
-                                          roi_radii=(1, 1, 0),
-                                          fa_thr=0.7)
+                                  roi_center=None,
+                                  roi_radii=(1, 1, 0),
+                                  fa_thr=0.7)
 
     # Verifies that mask is not empty:
     assert_equal(int(np.sum(mask)) != 0, True)

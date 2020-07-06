@@ -460,7 +460,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
         S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
     else:
-        warnings.warn("""No b0 was given. Proceeding either way.""", UserWarning)
+        warnings.warn("""No b0 given. Proceeding either way.""", UserWarning)
         for i, bvalue in enumerate(bvals):
             gtab = GradientTable(big_sphere.vertices * bvalue)
             wm_response = single_tensor(gtab, wm_rf[i, 3], wm_rf[i, :3], evecs,
