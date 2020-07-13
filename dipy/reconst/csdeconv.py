@@ -14,7 +14,7 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.dti import (TensorModel, fractional_anisotropy)
+from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
@@ -39,7 +39,7 @@ def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     gtab : GradientTable
     data : ndarray
         diffusion data
-    roi_center : tuple, (3,)
+    roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
@@ -57,7 +57,7 @@ def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     Notes
     -----
     In CSD there is an important pre-processing step: the estimation of the
-    fiber response function. In order to do this we look for voxels with very
+    fiber response function. In order to do this, we look for voxels with very
     anisotropic configurations. We get this information from
     csdeconv.mask_for_response_ssst(), which returns a mask of selected voxels
     (more details are available in the description of the function).
@@ -878,7 +878,7 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     fa = fractional_anisotropy(tenfit.evals)
     fa[np.isnan(fa)] = 0
 
-    mask = np.zeros(fa.shape)
+    mask = np.zeros(fa.shape, dtype=np.int64)
     mask[fa > fa_thr] = 1
 
     if np.sum(mask) == 0:
@@ -958,7 +958,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     gtab : GradientTable
     data : ndarray
         diffusion data
-    roi_center : tuple, (3,)
+    roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
     roi_radii : int or array-like, (3,)
@@ -976,7 +976,7 @@ def auto_response_ssst(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     Notes
     -----
     In CSD there is an important pre-processing step: the estimation of the
-    fiber response function. In order to do this we look for voxels with very
+    fiber response function. In order to do this, we look for voxels with very
     anisotropic configurations. We get this information from
     csdeconv.mask_for_response_ssst(), which returns a mask of selected voxels
     (more details are available in the description of the function).

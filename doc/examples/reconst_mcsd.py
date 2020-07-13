@@ -29,7 +29,6 @@ The reconstruction of the fiber orientation distribution function
 First, we import all the modules we need from dipy as follows:
 """
 
-import time
 import numpy as np
 import dipy.reconst.shm as shm
 import dipy.direction.peaks as dp
@@ -66,8 +65,6 @@ fraw, fbval, fbvec, t1_fname = get_fnames('cfin_multib')
 data, affine = load_nifti(fraw)
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
-
-data *= 1
 
 """
 For the sake of simplicity, we only select two non-zero b-values for this
@@ -287,7 +284,7 @@ on the bvalues given to ``multi_shell_fiber_response`` externally.
 """
 
 response = np.array([response_wm, response_gm, response_csf])
-rapid_model = MultiShellDeconvModel(gtab, response, sh_order=8)
+mcsd_model_simple_response = MultiShellDeconvModel(gtab, response, sh_order=8)
 
 """
 Note that this technique only works for a 3 compartments model (wm, gm, csf). If

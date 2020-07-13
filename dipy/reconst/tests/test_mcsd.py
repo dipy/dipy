@@ -101,7 +101,6 @@ def test_MultiShellDeconvModel_response():
                                           csf_response)
     model_1 = MultiShellDeconvModel(gtab, response, sh_order=sh_order)
     responses = np.array([wm_response, gm_response, csf_response])
-    print(responses.shape)
     model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
     response_1 = model_1.response.response
     response_2 = model_2.response.response
