@@ -80,8 +80,8 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-    def __init__(self, tractograms=None, images=None, pams=None, np_files=None,
-                 cluster=False, cluster_thr=15.0,
+    def __init__(self, tractograms=None, images=None, pams=None,
+                 npy_files=None, cluster=False, cluster_thr=15.0,
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
@@ -100,7 +100,7 @@ class Horizon(object):
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
             Contains peak directions and spherical harmonic coefficients
-        np_files : sequence of arrays
+        npy_files : sequence of arrays
             Contains numpy array with pvalues along the length of bundles
             extracted from BUAN framework.
         cluster : bool
@@ -774,7 +774,7 @@ class Horizon(object):
                           reset_camera=False)
 
 
-def horizon(tractograms=None, images=None, pams=None, np_files=None,
+def horizon(tractograms=None, images=None, pams=None, npy_files=None,
             cluster=False, cluster_thr=15.0,
             random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
@@ -792,7 +792,7 @@ def horizon(tractograms=None, images=None, pams=None, np_files=None,
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
         Contains peak directions and spherical harmonic coefficients
-    np_files : sequence of arrays
+    npy_files : sequence of arrays
         Contains numpy array with pvalues along the length of bundles
         extracted from BUAN framework.
     cluster : bool
@@ -847,7 +847,7 @@ def horizon(tractograms=None, images=None, pams=None, np_files=None,
         adaptive visualization, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
-    hz = Horizon(tractograms, images, pams, np_files, cluster, cluster_thr,
+    hz = Horizon(tractograms, images, pams, npy_files, cluster, cluster_thr,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
