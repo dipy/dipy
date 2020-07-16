@@ -37,7 +37,8 @@ def remove_similar_vertices(
     cython.floating[:, :] vertices,
     double theta,
     bint return_mapping=False,
-    bint return_index=False):
+    bint return_index=False,
+    bint is_symmetric=True):
     """Remove vertices that are less than `theta` degrees from any other
 
     Returns vertices that are at least theta degrees from any other vertex.
@@ -57,6 +58,8 @@ def remove_similar_vertices(
     return_indices : {False, True}, optional
         If True, return `indices` as well as `vertices` and maybe `mapping`
         (see below).
+    is_symmetric : {False, True}, optional
+        If False, v is considered different from -v.
 
     Returns
     -------
@@ -105,9 +108,11 @@ def remove_similar_vertices(
         c = vertices[i, 2]
         # Check all other accepted vertices for similarity to this one
         for j in range(n_unique):
-            sim = fabs(a * unique_vertices[j, 0] +
-                       b * unique_vertices[j, 1] +
-                       c * unique_vertices[j, 2])
+            sim = (a * unique_vertices[j, 0] +
+                   b * unique_vertices[j, 1] +
+                   c * unique_vertices[j, 2])
+            if is_symmetric:
+                sim = fabs(sim)
             if sim > cos_similarity:  # too similar, drop
                 pass_all = 0
                 if return_mapping:
