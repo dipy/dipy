@@ -38,6 +38,7 @@ if have_smf:
 
 if have_matplotlib:
     import matplotlib as matplt
+    import matplotlib.pyplot as plt
 
 
 class SNRinCCFlow(Workflow):
@@ -430,29 +431,29 @@ class LinearMixedModelsFlow(Workflow):
 
         y_pos = np.arange(n)
 
-        l1, = matplt.pyplot.plot(y_pos, dotted, color='red', marker='.',
-                                 linestyle='solid', linewidth=0.6,
-                                 markersize=0.7, label="p-value < 0.01")
+        l1, = plt.plot(y_pos, dotted, color='red', marker='.',
+                       linestyle='solid', linewidth=0.6,
+                       markersize=0.7, label="p-value < 0.01")
 
-        l2, = matplt.pyplot.plot(y_pos, dotted+1, color='black', marker='.',
-                                 linestyle='solid', linewidth=0.4,
-                                 markersize=0.4, label="p-value < 0.001")
+        l2, = plt.plot(y_pos, dotted+1, color='black', marker='.',
+                       linestyle='solid', linewidth=0.4,
+                       markersize=0.4, label="p-value < 0.001")
 
-        first_legend = matplt.pyplot.legend(handles=[l1, l2],
-                                            loc='upper right')
+        first_legend = plt.legend(handles=[l1, l2],
+                                  loc='upper right')
 
-        axes = matplt.pyplot.gca()
+        axes = plt.gca()
         axes.add_artist(first_legend)
         axes.set_ylim([0, 6])
 
-        l3 = matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
+        l3 = plt.bar(y_pos, y, color=c1, alpha=0.5,
                                label=bundle_name)
-        matplt.pyplot.legend(handles=[l3], loc='upper left')
-        matplt.pyplot.title(title.upper())
-        matplt.pyplot.xlabel("Segment Number")
-        matplt.pyplot.ylabel("-log10(Pvalues)")
-        matplt.pyplot.savefig(plot_file)
-        matplt.pyplot.clf()
+        plt.legend(handles=[l3], loc='upper left')
+        plt.title(title.upper())
+        plt.xlabel("Segment Number")
+        plt.ylabel("-log10(Pvalues)")
+        plt.savefig(plot_file)
+        plt.clf()
 
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
@@ -613,9 +614,9 @@ class BundleShapeAnalysis(Workflow):
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
-            matplt.pyplot.title(bun[:-4])
-            matplt.pyplot.imshow(ba_matrix, cmap=cmap)
-            matplt.pyplot.colorbar()
-            matplt.pyplot.clim(0, 1)
-            matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
-            matplt.pyplot.clf()
+            plt.title(bun[:-4])
+            plt.imshow(ba_matrix, cmap=cmap)
+            plt.colorbar()
+            plt.clim(0, 1)
+            plt.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
+            plt.clf()
