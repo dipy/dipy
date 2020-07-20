@@ -1,5 +1,5 @@
 import os.path as op
-
+import pytest
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.data as dpd
@@ -94,17 +94,23 @@ def test_voxel2streamline():
                             1: {0: [0], 1: [1], 2: [2]}})
 
 
-def test_FiberModel_init():
+@pytest.mark.parametrize("streamline", [[[[1, 2, 3], [4, 5, 3], [5, 6, 3],
+                                   [6, 7, 3]], [[1, 2, 3], [4, 5, 3],
+                                                [5, 6, 3]]],
+                                 pytest.param([[[[1, 2, 3]], [[1, 2, 3],
+                                                              [4, 5, 3],
+                                                              [5, 6, 3]]]],
+                                              marks=pytest.mark.xfail(
+                                     raises=ValueError))],
+                         "affine", [np.eye(4), pytest.param(
+                                                None, marks=pytest.mark.xfail(
+                                                    raises=ValueError))])
+def test_FiberModel_init(streamline, affine):
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
-
-    streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
-
-    affine = np.eye(4)
 
     for sphere in [None, False, dpd.get_sphere('symmetric362')]:
         fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
