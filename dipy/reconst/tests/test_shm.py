@@ -140,46 +140,50 @@ def test_real_sym_sh_basis():
 
 def test_real_full_sh_mrtrix():
     vertices = hemi_icosahedron.subdivide(2).vertices
-    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
-    # Asymmetric spherical function composed of a hemisphere with a radius
-    # of 1 and a hemisphere with a radius of 0.5
-    sf = np.ones(sphere.vertices.shape[0])
-    sf[np.int(vertices.shape[0]):] *= 0.5
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
-    B, m, n = real_full_sh_mrtrix(9, sphere.theta, sphere.phi)
+    mevals = np.array([[0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0)]
+    odf2 = multi_tensor_odf(-vertices, mevals, angles, [100])
+
+    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
+    # Asymmetric spherical function with 162 coefficients
+    sf = np.append(odf, odf2)
+
+    # In order for our approximation to be precise enough, we
+    # will use a SH basis of orders up to 10 (121 coefficients)
+    B, m, n = real_full_sh_mrtrix(10, sphere.theta, sphere.phi)
     invB = smooth_pinv(B, L=np.zeros_like(n))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
-    # Since the best reconstruction using a symmetric basis would be one where
-    # all approximated points are midway between 1 and 0.5, for a mean distance
-    # of 0.25 between a point and its approximation,  we test that the
-    # reconstruction error using the full Tournier basis is inferior to 0.25 by
-    # some epsilon factor
-    epsilon = 0.2
-    assert_less(np.mean(np.abs(sf - sf_approx)), 0.25 - epsilon)
+    assert_array_almost_equal(sf_approx, sf, 2)
 
 
 def test_real_full_sh_basis():
     vertices = hemi_icosahedron.subdivide(2).vertices
-    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
-    # Asymmetric spherical function composed of a hemisphere with a radius
-    # of 1 and a hemisphere with a radius of 0.5
-    sf = np.ones(sphere.vertices.shape[0])
-    sf[np.int(vertices.shape[0]):] *= 0.5
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
-    B, m, n = real_full_sh_basis(9, sphere.theta, sphere.phi)
+    mevals = np.array([[0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0)]
+    odf2 = multi_tensor_odf(-vertices, mevals, angles, [100])
+
+    sphere = Sphere(xyz=np.vstack((vertices, -vertices)))
+    # Asymmetric spherical function with 162 coefficients
+    sf = np.append(odf, odf2)
+
+    # In order for our approximation to be precise enough, we
+    # will use a SH basis of orders up to 10 (121 coefficients)
+    B, m, n = real_full_sh_basis(10, sphere.theta, sphere.phi)
     invB = smooth_pinv(B, L=np.zeros_like(n))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
 
-    # Since the best reconstruction using a symmetric basis would be one where
-    # all approximated points are midway between 1 and 0.5, for a mean distance
-    # of 0.25 between each point and its approximation,  we test that the
-    # reconstruction error using the full Descoteaux basis is inferior to 0.25
-    # by some epsilon factor
-    epsilon = 0.2
-    assert_less(np.mean(np.abs(sf - sf_approx)), 0.25 - epsilon)
+    assert_array_almost_equal(sf_approx, sf, 2)
 
 
 def test_sh_to_sf_matrix():
@@ -433,44 +437,49 @@ def test_ResidualBootstrapWrapper():
 def test_sf_to_sh():
     # Subdividing a hemi_icosahedron twice produces 81 unique points, which
     # is more than enough to fit a order 8 (45 coefficients) spherical harmonic
-    sphere = hemi_icosahedron.subdivide(2)
+    hemisphere = hemi_icosahedron.subdivide(2)
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
 
-    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
-    angles = [(0, 0), (90, 0)]
+    # 1D case with the 2 symmetric bases functions
+    odf_sh = sf_to_sh(odf, hemisphere, 8, "tournier07")
+    odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "tournier07")
+    assert_array_almost_equal(odf, odf_reconst, 2)
 
-    odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    odf_sh = sf_to_sh(odf, hemisphere, 8, "descoteaux07")
+    odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "descoteaux07")
+    assert_array_almost_equal(odf, odf_reconst, 2)
 
-    # 1D case with the 3 bases functions
-    odf_sh = sf_to_sh(odf, sphere, 8, "tournier07")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "tournier07")
-    assert_array_almost_equal(odf, odf2, 2)
+    # We now create an asymmetric signal
+    # to try out our full SH basis
+    mevals = np.array([[0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0)]
+    odf2 = multi_tensor_odf(hemisphere.vertices, mevals, angles, [100])
 
-    odf_sh = sf_to_sh(odf, sphere, 8, "descoteaux07")
-    odf2 = sh_to_sf(odf_sh, sphere, 8, "descoteaux07")
-    assert_array_almost_equal(odf, odf2, 2)
+    # We simulate our asymmetric signal by using a different ODF
+    # per hemisphere. The sphere used is a concatenation of the
+    # vertices of our hemisphere, for a total of 162 vertices.
+    sphere = Sphere(xyz=np.vstack((hemisphere.vertices, -hemisphere.vertices)))
+    asym_odf = np.append(odf, odf2)
 
-    # Try out full bases with order 7 (64 coefficients) instead of 8
-    # (exactly 81 coefficients)
-    odf_sh = sf_to_sh(odf, sphere, 7, "tournier07_full")
-    odf2 = sh_to_sf(odf_sh, sphere, 7, "tournier07_full")
-    assert_array_almost_equal(odf, odf2, 2)
+    # Try out full bases with order 10 (121 coefficients)
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, "tournier07_full")
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, "tournier07_full")
+    assert_array_almost_equal(odf_reconst, asym_odf, 2)
 
-    odf_sh = sf_to_sh(odf, sphere, 7, "descoteaux07_full")
-    odf2 = sh_to_sf(odf_sh, sphere, 7, "descoteaux07_full")
-    assert_array_almost_equal(odf, odf2, 2)
-
-    odf_sh = sf_to_sh(odf, sphere, 8)
-    odf2 = sh_to_sf(odf_sh, sphere, 8)
-    assert_array_almost_equal(odf, odf2, 2)
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, "descoteaux07_full")
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, "descoteaux07_full")
+    assert_array_almost_equal(odf_reconst, asym_odf, 2)
 
     # An invalid basis name should raise an error
-    assert_raises(ValueError, sh_to_sf, odf, sphere, basis_type="")
-    assert_raises(ValueError, sf_to_sh, odf_sh, sphere, basis_type="")
+    assert_raises(ValueError, sh_to_sf, odf, hemisphere, basis_type="")
+    assert_raises(ValueError, sf_to_sh, odf_sh, hemisphere, basis_type="")
 
     # 2D case
-    odf2d = np.vstack((odf2, odf))
-    odf2d_sh = sf_to_sh(odf2d, sphere, 8)
-    odf2d_sf = sh_to_sf(odf2d_sh, sphere, 8)
+    odf2d = np.vstack((odf, odf))
+    odf2d_sh = sf_to_sh(odf2d, hemisphere, 8)
+    odf2d_sf = sh_to_sf(odf2d_sh, hemisphere, 8)
     assert_array_almost_equal(odf2d, odf2d_sf, 2)
 
 
