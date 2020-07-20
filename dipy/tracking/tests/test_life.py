@@ -95,13 +95,13 @@ def test_voxel2streamline():
 
 
 @pytest.mark.parametrize("streamline", [[[[1, 2, 3], [4, 5, 3], [5, 6, 3],
-                                   [6, 7, 3]], [[1, 2, 3], [4, 5, 3],
-                                                [5, 6, 3]]],
-                                 pytest.param([[[[1, 2, 3]], [[1, 2, 3],
-                                                              [4, 5, 3],
-                                                              [5, 6, 3]]]],
-                                              marks=pytest.mark.xfail(
-                                     raises=ValueError))],
+                                          [6, 7, 3]], [[1, 2, 3], [4, 5, 3],
+                                                       [5, 6, 3]]],
+                                        pytest.param([[[[1, 2, 3]],
+                                                       [[1, 2, 3], [4, 5, 3],
+                                                        [5, 6, 3]]]],
+                                                     marks=pytest.mark.xfail(
+                                                         raises=ValueError))],
                          "affine", [np.eye(4), pytest.param(
                                                 None, marks=pytest.mark.xfail(
                                                     raises=ValueError))])
