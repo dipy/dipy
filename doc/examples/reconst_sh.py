@@ -1,12 +1,11 @@
 """
 ==========================================================
-Spherical function approximation using spherical harmonics
+Signal Reconstruction Using Spherical Harmonics
 ==========================================================
 
-This example shows how you can use spherical harmonics function to reconstruct
-any spherical function using DIPY_. Before we can reconstruct a signal, we need
-to generate one. To do so, we will use the sphere created in
-:ref:`example_gradients_spheres`.
+This example shows how you can use a spherical harmonics (SH) function to
+reconstruct any spherical function using DIPY_. In order to generate a
+signal, we will use the sphere created in :ref:`example_gradients_spheres`.
 """
 
 import numpy as np
@@ -14,9 +13,9 @@ from gradients_spheres import sph
 
 """
 We now need to create our initial signal. To do so, we will use our sphere's
-vertices as the points on which our spherical function (SF) is sampled. We will
+vertices as the sampled points of our spherical function (SF). We will
 use ``multi_tensor_odf`` to simulate an ODF. For more information on how to use
-DIPY_ to simulate a signal and a ODF, see :ref:`example_simulate_multi_tensor`.
+DIPY_ to simulate a signal and ODF, see :ref:`example_simulate_multi_tensor`.
 """
 
 from dipy.sims.voxel import multi_tensor_odf
@@ -48,14 +47,14 @@ if interactive:
 .. figure:: symm_signal.png
    :align: center
 
-   Illustration of the simulated signal on a sphere of 64 points
+   Illustration of the simulated signal sampled on a sphere of 64 points
    per hemisphere
 
-We can now express this signal in term of spherical harmonics (SH) coefficients
-using ``sf_to_sh``. This function converts a spherical function (SF) on the
-sphere in a series of SH coefficients. For more information on SH, see
-:ref:`sh_basis`. For this example, we will use the ``descoteaux07`` basis up to
-maximum order 8.
+We can now express this signal as a series of SH coefficients using
+``sf_to_sh``. This function converts a series of SF coefficients in a series of
+SH coefficients. For more information on SH basis, see :ref:`sh-basis`. For
+this example, we will use the ``descoteaux07`` basis up to a maximum SH order
+of 8.
 """
 
 from dipy.reconst.shm import sf_to_sh
@@ -68,12 +67,10 @@ sh_order = 8
 sh_coeffs = sf_to_sh(odf, sph, sh_order, sh_basis)
 
 """
-``sh_coeffs`` is an array containing the SH coefficients defining our initial
-ODF. We can use it as input of ``sh_to_sf`` to reconstruct our original signal.
-From the SH coefficients, it is possible to project our SF on a sphere of
-higher resolution than our original signal. We will now reproject our signal
-expressed in terms of SH coefficients on a high resolution sphere using
-``sh_to_sf``.
+``sh_coeffs`` is an array containing the SH coefficients multiplying the SH
+functions of the chosen basis. We can use it as input of ``sh_to_sf`` to
+reconstruct our original signal. We will now reproject our signal on a high
+resolution sphere using ``sh_to_sf``.
 """
 
 from dipy.data import get_sphere
@@ -96,7 +93,8 @@ if interactive:
 .. figure:: symm_reconst.png
    :align: center
 
-   Reconstruction of a symmetric simulated signal on a high resolution sphere
+   Reconstruction of a symmetric signal on a high resolution sphere using a
+   symmetric basis
 
 While a symmetric SH basis works well for reconstructing symmetric SF, it fails
 to do so on asymmetric signals. We will now create such a signal by using a
@@ -124,7 +122,7 @@ if interactive:
 .. figure:: asym_signal.png
    :align: center
 
-   Illustration of an asymmetric simulated signal on a sphere of 64
+   Illustration of an asymmetric signal sampled on a sphere of 64
    points per hemisphere
 
 Let's try to reconstruct this SF using a symmetric SH basis.

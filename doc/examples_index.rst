@@ -143,8 +143,8 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
-Spherical harmonics reconstruction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Intra-Voxel Signal Reconstruction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_sh`
 
