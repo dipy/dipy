@@ -361,8 +361,12 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     S = np.zeros(len(gradients))
     D = dot(dot(R, np.diag(evals)), R.T)
 
-    for (i, g) in enumerate(gradients):
-        S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
+    if gtab.btens is None:
+        for (i, g) in enumerate(gradients):
+            S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
+    else:
+        for (i, b) in enumerate(gtab.btens):
+            S[i] = S0 * np.exp(- np.sum(b * D))
 
     S = add_noise(S, snr, S0)
 
