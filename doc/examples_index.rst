@@ -143,6 +143,11 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
+Spherical harmonics reconstruction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_sh`
+
 ----------------------
 Contextual enhancement
 ----------------------
