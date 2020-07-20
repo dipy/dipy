@@ -467,6 +467,9 @@ class FiberModel(ReconstModel):
         """
         if affine is None:
             affine = np.eye(4)
+        streamline = [s for s in streamline if len(s) >= 1]
+        if len(streamline) == 0:
+            raise ValueError('Streamlines have no nodes.')
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
