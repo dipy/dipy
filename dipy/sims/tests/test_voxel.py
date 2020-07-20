@@ -313,6 +313,28 @@ def test_DKI_crossing_fibers_simulations():
                               decimal=5)
 
 
+def test_single_tensor_btens():
+    """ Testing single tensor simulations when a btensor is given
+    """
+    gtab_lte = gradient_table(gtab.bvals, gtab.bvecs, btens='LTE')
+    gtab_ste = gradient_table(gtab.bvals, gtab.bvecs, btens='STE')
+
+    # Check if Signals producted with LTE btensor gives same results as
+    # previous simulations not specifying b-tensor
+    evecs = np.eye(3)
+    evals = np.array([1.4, .35, .35]) * 10 ** (-3)
+    S_ref = single_tensor(gtab, 100, evals, evecs, snr=None)
+    S_btens = single_tensor(gtab_lte, 100, evals, evecs, snr=None)
+    assert_array_almost_equal(S_ref, S_btens)
+
+    # Check if Signals producted with STE btensor gives signals that matches
+    # the signal decay for mean diffusivity
+    md = np.sum(evals)/3
+    S_ref = 100 * np.exp(-gtab.bvals * md)
+    S_btens = single_tensor(gtab_ste, 100, evals, evecs, snr=None)
+    assert_array_almost_equal(S_ref, S_btens)
+
+
 if __name__ == "__main__":
 
     test_multi_tensor()
