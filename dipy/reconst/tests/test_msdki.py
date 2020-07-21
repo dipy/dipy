@@ -2,13 +2,15 @@
 
 import numpy as np
 import random
-from numpy.testing import assert_array_almost_equal, assert_raises
+from numpy.testing import (assert_array_almost_equal, assert_raises,
+                           assert_almost_equal)
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
                                  round_bvals)
 from dipy.data import get_fnames
 import dipy.reconst.msdki as msdki
+from dipy.reconst.msdki import msk_from_awf
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -200,3 +202,18 @@ def test_msdki_statistics():
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(S0gt_multi, mdkiF.S0_hat)
     assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
+
+
+def test_smt2_convertion():
+    # 1. Check convertion of smt2 awf to kurtosis
+    # When awf = 0 kurtosis was to be 0
+    awf0 = 0
+    kexp0 = 0
+    kest0 = msk_from_awf(awf0)
+    assert_almost_equal(kest0, kexp0)
+    
+    f1 = 1
+    kexp1 = 2.4
+    
+    
+    kest1 = msk_from_awf(f1)
