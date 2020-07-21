@@ -211,9 +211,9 @@ def test_smt2_convertion():
     kexp0 = 0
     kest0 = msk_from_awf(awf0)
     assert_almost_equal(kest0, kexp0)
-    
-    f1 = 1
+
+    # When awf = 1 kurtosis was to be 2.4
+    awf1 = 1
     kexp1 = 2.4
-    
-    
-    kest1 = msk_from_awf(f1)
+    kest1 = msk_from_awf(awf1)
+    assert_almost_equal(kest1, kexp1)
