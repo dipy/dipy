@@ -57,6 +57,39 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     return msignal, ng
 
 
+def msk_from_awf(f):
+    """
+    Computes mean signal kurtosis from axonal water fraction estimates of the
+    SMT2 model
+
+    Parameters
+    ----------
+    f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Returns
+    -------
+    msk : ndarray(nub)
+        Mean signal kurtosis (msk)
+
+    Notes
+    -----
+    Computes mean signal kurtosis using equations 17 of [1]_
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    """
+    msk_num = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4
+    msk_den = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4
+    msk = msk_num / msk_den
+
+    return msk
+
+
 def msdki_prediction(msdki_params, gtab, S0=1.0):
     """
     Predict the mean signal given the parameters of the mean signal DKI, an
