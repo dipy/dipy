@@ -4,6 +4,10 @@ from dipy.tracking.streamline import transform_streamlines
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
 
+if have_fury:
+    import fury.utils
+    import fury.io
+
 
 def load_polydata(file_name):
     """Load a vtk polydata to a supported format file.
