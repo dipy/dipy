@@ -90,7 +90,7 @@ def msk_from_awf(f):
     return msk
 
 
-def _msk_smt2_error(f, msk):
+def _msk_from_awf_error(f, msk):
     """ Helper function that calculates the error of a predicted mean signal
     kurtosis from the axonal water fraction of SMT2 model and a measured
     mean signal kurtosis
@@ -113,6 +113,43 @@ def _msk_smt2_error(f, msk):
     This function corresponds to the differential of equations 17 of [1]_
     """
     return msk_from_awf(f) - msk
+
+
+def _diff_msk_from_awf(f, msk):
+    """
+    Helper function that calculates differential of function msk_from_awf
+
+    Parameters
+    ----------
+    f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Returns
+    -------
+    dkdf : ndarray(nub)
+        Mean signal kurtosis differential
+    msk : float
+        Measured mean signal kurtosis.
+
+    Notes
+    -----
+    This function corresponds to the differential of equations 17 of [1]_.
+    This function is applicable to both _msk_from_awf and _msk_from_awf_error.
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    """
+    F = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4  # Numerator
+    G = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4  # Denominator
+
+    dF = 216 - 1008 * f + 1512 * f**2 - 720 * f**3  # Num. differential
+    dG = -360 + 840 * f - 720 * f**2 + 240 * f**3  # Den. differential
+
+    return (G * dF - F * dG) / (G ** 2)
 
 
 def msdki_prediction(msdki_params, gtab, S0=1.0):
