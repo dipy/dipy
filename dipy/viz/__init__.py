@@ -22,7 +22,7 @@ if has_fury:
     if HAVE_VTK_9_PLUS and HAVE_FURY_0_6_LESS:
         msg = "You are using VTK 9+ and FURY {}. ".format(fury.__version__)
         msg += "Some functions might not work. To have a better experience, "
-        msg += "we recommend you to upgrade FURY version (0.6.0+). "
+        msg += "please upgrade to FURY version 0.6.0+. "
         msg += "pip install -U fury"
         warnings.warn(msg)
 
