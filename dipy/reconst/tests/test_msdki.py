@@ -10,7 +10,7 @@ from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
                                  round_bvals)
 from dipy.data import get_fnames
 import dipy.reconst.msdki as msdki
-from dipy.reconst.msdki import msk_from_awf
+from dipy.reconst.msdki import (msk_from_awf, awf_from_msk)
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -204,7 +204,7 @@ def test_msdki_statistics():
     assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
 
 
-def test_smt2_convertion():
+def test_kurtosis_to_smt2_convertion():
     # 1. Check convertion of smt2 awf to kurtosis
     # When awf = 0 kurtosis was to be 0
     awf0 = 0
@@ -217,3 +217,9 @@ def test_smt2_convertion():
     kexp1 = 2.4
     kest1 = msk_from_awf(awf1)
     assert_almost_equal(kest1, kexp1)
+
+    # Check the invertion of msk_from_awf
+    awf_test_array = np.linspace(0, 1, 100)
+    k_exp = msk_from_awf(awf_test_array)
+    awf_from_k = awf_from_msk(k_exp)
+    assert_array_almost_equal(awf_from_k, awf_test_array)
