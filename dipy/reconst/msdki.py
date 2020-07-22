@@ -90,6 +90,31 @@ def msk_from_awf(f):
     return msk
 
 
+def _msk_smt2_error(f, msk):
+    """ Helper function that calculates the error of a predicted mean signal
+    kurtosis from the axonal water fraction of SMT2 model and a measured
+    mean signal kurtosis
+
+    Parameters
+    ----------
+    f : float
+        Axonal volume fraction estimate.
+    msk : float
+        Measured mean signal kurtosis.
+
+    Return
+    ------
+    error : float
+       Error computed by subtracting msk with fun(f), where fun is the function
+       described in equation 17 of [1]_
+
+    Notes
+    -----
+    This function corresponds to the differential of equations 17 of [1]_
+    """
+    return msk_from_awf(f) - msk
+
+
 def msdki_prediction(msdki_params, gtab, S0=1.0):
     """
     Predict the mean signal given the parameters of the mean signal DKI, an
