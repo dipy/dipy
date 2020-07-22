@@ -3,6 +3,7 @@
 model """
 
 import numpy as np
+import scipy.optimize as opt
 
 from dipy.core.gradients import (check_multi_b, unique_bvals_magnitude,
                                  round_bvals)
@@ -150,6 +151,66 @@ def _diff_msk_from_awf(f, msk):
     dG = -360 + 840 * f - 720 * f**2 + 240 * f**3  # Den. differential
 
     return (G * dF - F * dG) / (G ** 2)
+
+
+def awf_from_msk(msk, mask=None):
+    """
+    Computes the axonal water fraction from the mean signal kurtosis
+    assuming the 2-compartmental spherical mean technique model [1]_
+
+    Parameters
+    ----------
+    msk : ndarray ([X, Y, Z, ...])
+        Mean signal kurtosis (msk)
+    mask : ndarray, optional
+        A boolean array used to mark the coordinates in the data that should be
+        analyzed that has the same shape of the msdki parameters
+
+    Returns
+    -------
+    smt2f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Notes
+    -----
+    Computes the axonal water fraction from the mean signal kurtosis
+    K equations 16 and 17 of [1]_
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    """
+    awf = np.zeros(msk.shape)
+
+    # Prepare mask
+    if mask is None:
+        mask = np.ones(msk.shape, dtype=bool)
+    else:
+        if mask.shape != msk.shape:
+            raise ValueError("Mask is not the same shape as data.")
+        mask = np.array(mask, dtype=bool, copy=False)
+
+    # looping voxels
+    index = ndindex(mask.shape)
+    for v in index:
+        # Skip if out of mask
+        if not mask[v]:
+            continue
+
+        if msk[v] > 2.4:
+            awf[v] = 1
+        elif msk[v] < 0:
+            awf[v] = 0
+        else:
+            mski = msk[v]
+            fini = mski / 2.4  # Initial guess based on linear assumption
+            awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
+                                fprime=_diff_msk_from_awf, col_deriv=True)
+
+    return awf
 
 
 def msdki_prediction(msdki_params, gtab, S0=1.0):
