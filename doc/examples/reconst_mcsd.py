@@ -335,7 +335,7 @@ print(mcsd_odf[40, 40, 0])
 fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
                                 norm=False, colormap='plasma')
 
-interactive = True
+interactive = False
 ren = window.Renderer()
 ren.add(fodf_spheres)
 ren.reset_camera_tight()
