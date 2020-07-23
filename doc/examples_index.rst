@@ -143,6 +143,11 @@ Statistical evaluation
 
 - :ref:`example_kfold_xval`
 
+Intra-Voxel Signal Reconstruction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_sh`
+
 ----------------------
 Contextual enhancement
 ----------------------

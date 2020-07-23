@@ -1,4 +1,4 @@
-.. _BUAN_flow:
+.. _buan_flow:
 
 =================================
 BUndle ANalytics (BUAN) framework

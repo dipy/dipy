@@ -65,9 +65,15 @@ literature for the computation of the ODF. DIPY implements two of these in the
 In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
 $\Im$ denotes the imaginary part.
 
-In practice, a maximum even order $k$ is chosen such that $k \leq l$. The
-choice of an even order is motivated by the symmetry of the diffusion process
-around the origin.
+In practice, a maximum even order $k$ is chosen such that $k \leq l$. By only
+taking into account even order SH functions, the above bases can be used to
+reconstruct symmetric spherical functions. The choice of an even order is
+motivated by the symmetry of the diffusion process around the origin.
+
+Both bases are also available as full SH bases, where odd order SH functions are
+also taken into account when reconstructing a spherical function. These full
+bases can successfully reconstruct asymmetric signals as well as symmetric
+signals.
 
 Descoteaux *et al.* [1]_ use the Q-Ball Imaging (QBI) formalization to recover
 the ODF, while Tournier *et al.* [2]_ use the Spherical Deconvolution (SD)
