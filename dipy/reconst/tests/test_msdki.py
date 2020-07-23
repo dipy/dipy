@@ -223,3 +223,13 @@ def test_kurtosis_to_smt2_convertion():
     k_exp = msk_from_awf(awf_test_array)
     awf_from_k = awf_from_msk(k_exp)
     assert_array_almost_equal(awf_from_k, awf_test_array)
+
+
+def test_smt2_metrics():
+    # Based on the multi-voxel simulations above
+    AWFgt = awf_from_msk(MKgt_multi)  # computes ground truths for awf
+
+    # Just checking if parameters can be retrived from MSDKI's fit class obj
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
+    mdkiF = mdkiM.fit(DWI)
+    assert_array_almost_equal(mdkiF.smt2f, AWFgt)

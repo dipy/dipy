@@ -156,7 +156,7 @@ def _diff_msk_from_awf(f, msk):
 def awf_from_msk(msk, mask=None):
     """
     Computes the axonal water fraction from the mean signal kurtosis
-    assuming the 2-compartmental spherical mean technique model [1]_
+    assuming the 2-compartmental spherical mean technique model [1]_, [2]_
 
     Parameters
     ----------
@@ -174,7 +174,7 @@ def awf_from_msk(msk, mask=None):
     Notes
     -----
     Computes the axonal water fraction from the mean signal kurtosis
-    K equations 16 and 17 of [1]_
+    MSK using equation 17 of [1]_
 
     References
     ----------
@@ -182,6 +182,8 @@ def awf_from_msk(msk, mask=None):
            anisotropy misestimation in spherical‐mean single diffusion
            encoding MRI. Magnetic Resonance in Medicine (In press).
            doi: 10.1002/mrm.27606
+    .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+           microscopic diffusion imaging. Neuroimage 139:346–359.
     """
     awf = np.zeros(msk.shape)
 
@@ -439,6 +441,33 @@ class MeanDiffusionKurtosisFit(object):
                https://doi.org/10.17863/CAM.29356
         """
         return self.model_params[..., 1]
+
+    @auto_attr
+    def smt2f(self):
+        r"""
+        Computes the axonal water fraction from the mean signal kurtosis
+        assuming the 2-compartmental spherical mean technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2f : ndarray
+            Axonal volume fraction calculated from MSK.
+
+        Notes
+        -----
+        Computes the axonal water fraction from the mean signal kurtosis
+        MSK using equation 17 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        return awf_from_msk(self.msk)
 
     def predict(self, gtab, S0=1.):
         r"""
