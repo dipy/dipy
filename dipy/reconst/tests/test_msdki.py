@@ -135,6 +135,9 @@ def test_errors():
     met = aux_test_fun(mdkiF, (0, 0, 0))
     assert_array_almost_equal(MKgt_multi[0, 0, 0], met)
 
+    # Fifth error rises if wrong mask is given to awf_from_msk
+    assert_raises(ValueError, awf_from_msk, MKgt_multi, mask=mask_wrong)
+
 
 def test_design_matrix():
     ub = unique_bvals_magnitude(bvals_3s)
@@ -224,6 +227,15 @@ def test_kurtosis_to_smt2_convertion():
     awf_from_k = awf_from_msk(k_exp)
     assert_array_almost_equal(awf_from_k, awf_test_array)
 
+    # Check the awf_from_msk estimates when kurtosis is out of expected
+    # interval ranges - note that under SMT2 assumption MSK is never lower
+    # than 0 and never higher than 2.4. Since SMT2 assumptions are commonly not
+    # met kurtosis can be out of this expected range. So, if MSK is lower than
+    # 0, f is set to 0 (avoiding negative f). On the other hand, if MSK is
+    # higher than 2.4, f is set to the maxumum value of 1.
+    assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])),
+                              np.array([0., 1.]))
+
 
 def test_smt2_metrics():
     # Based on the multi-voxel simulations above
@@ -233,3 +245,8 @@ def test_smt2_metrics():
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(mdkiF.smt2f, AWFgt)
+
+    # Check if awf_from_msk when mask is given
+    mask = MKgt_multi > 0
+    AWF = awf_from_msk(MKgt_multi, mask)
+    assert_array_almost_equal(AWF, AWFgt)
