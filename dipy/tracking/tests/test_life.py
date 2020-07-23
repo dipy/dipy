@@ -94,32 +94,30 @@ def test_voxel2streamline():
                             1: {0: [0], 1: [1], 2: [2]}})
 
 
-@pytest.mark.parametrize("streamline", [[[[1, 2, 3], [4, 5, 3], [5, 6, 3],
-                                          [6, 7, 3]], [[1, 2, 3], [4, 5, 3],
-                                                       [5, 6, 3]]],
-                                        pytest.param([[[[1, 2, 3]],
-                                                       [[1, 2, 3], [4, 5, 3],
-                                                        [5, 6, 3]]]],
-                                                     marks=pytest.mark.xfail(
-                                                         raises=ValueError))],
-                         "affine", [np.eye(4), pytest.param(
-                                                None, marks=pytest.mark.xfail(
-                                                    raises=ValueError))])
-def test_FiberModel_init(streamline, affine):
+def test_FiberModel_init():
     # Get some small amount of data:
     data_file, bval_file, bvec_file = dpd.get_fnames('small_64D')
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
+    streamline_cases = [[[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
+                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]], [[[1, 2, 3]],
+                                [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]]
+
+    affine = np.eye(4)
 
     for sphere in [None, False, dpd.get_sphere('symmetric362')]:
-        fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
-        npt.assert_array_equal(np.array(vox_coords),
-                               np.array([[1, 2, 3], [4, 5, 3],
-                                         [5, 6, 3], [6, 7, 3]]))
+        for streamline in streamline_cases:
+            if streamline == [[[1, 2, 3]], [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]:
+                pytest.xfail("Too few nodes in streamline")
+            fiber_matrix, vox_coords = FM.setup(streamline, affine,
+            sphere=sphere)
+            npt.assert_array_equal(np.array(vox_coords),
+                                   np.array([[1, 2, 3], [4, 5, 3],
+                                             [5, 6, 3], [6, 7, 3]]))
 
-        npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
-                                              len(streamline)))
+            npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
+                                                  len(streamline)))
 
 
 def test_FiberFit():
