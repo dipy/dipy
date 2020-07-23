@@ -698,25 +698,24 @@ def unique_bvals_tolerance(bvals, tol=20):
     """
     b = np.unique(bvals)
     ubvals = []
-    i = 0
-    lower_part = np.where(b <= b[i] + tol)[0]
+    lower_part = np.where(b <= b[0] + tol)[0]
     upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
                                          b > b[lower_part[-1]]))[0]
     ubvals.append(b[lower_part[-1]])
     if len(upper_part) != 0:
-        i = upper_part[-1] + 1
+        b_index = upper_part[-1] + 1
     else:
-        i = lower_part[-1] + 1
-    while i != len(b):
-        lower_part = np.where(np.logical_and(b <= b[i] + tol,
-                                             b > b[i-1]))[0]
+        b_index = lower_part[-1] + 1
+    while b_index != len(b):
+        lower_part = np.where(np.logical_and(b <= b[b_index] + tol,
+                                             b > b[b_index-1]))[0]
         upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
                                              b > b[lower_part[-1]]))[0]
         ubvals.append(b[lower_part[-1]])
         if len(upper_part) != 0:
-            i = upper_part[-1] + 1
+            b_index = upper_part[-1] + 1
         else:
-            i = lower_part[-1] + 1
+            b_index = lower_part[-1] + 1
 
     # Checking for overlap with get_bval_indices
     for i in range(len(ubvals)-1):
