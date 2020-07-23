@@ -8,6 +8,14 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
+
+def is_platform_mac():
+    return sys.platform == "darwin"
+
+
+def is_platform_windows():
+    return sys.platform == "win32" or sys.platform == "cygwin"
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if exists('MANIFEST'):
@@ -30,6 +38,7 @@ if force_setuptools:
 # removing MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
+from distutils.version import LooseVersion
 
 from cythexts import cyproc_exts, get_pyx_sdist
 from setup_helpers import (install_scripts_bat, add_flag_checking,
@@ -60,6 +69,28 @@ if using_setuptools:
 
 # Define extensions
 EXTS = []
+
+if is_platform_windows():
+    extra_compile_args = []
+else:
+    extra_compile_args = ["-Werror"]
+
+# In numpy>=1.16.0, silence build warnings about deprecated API usage. We
+# cannot do anything about these warnings because they stem from Cython+NumPy
+# version mismatches.
+macros = [("NPY_NO_DEPRECATED_API", "0")]
+if "-Werror" in extra_compile_args:
+    try:
+        import numpy as np
+    except ImportError:
+        pass
+    else:
+        if np.__version__ < LooseVersion("1.16.0"):
+            extra_compile_args.remove("-Werror")
+
+# Silence Cython `tp_print` deprecation warnings
+if sys.version_info[:2] == (3, 8):
+    extra_compile_args.append("-Wno-error=missing-field-initializers")
 
 # We use some defs from npymath, but we don't want to link against npymath lib
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
@@ -105,6 +136,8 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
+                          extra_compile_args=extra_compile_args,
+                          macros=macros,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
 # Do our own build and install time dependency checking. setup.py gets called
