@@ -145,7 +145,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
         return self.get_exclude_c(&point[0])
 
-    cdef double get_exclude_c(self, double* point):
+    cdef get_exclude_c(self, double* point):
         exclude_err = trilinear_interpolate4d_c(self.exclude_map[..., None],
                                                 point, self.interp_out_view)
         if exclude_err != 0:
@@ -158,7 +158,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
 
         return self.get_include_c(&point[0])
 
-    cdef double get_include_c(self, double* point):
+    cdef get_include_c(self, double* point):
         exclude_err = trilinear_interpolate4d_c(self.include_map[..., None],
                                                 point, self.interp_out_view)
         if exclude_err != 0:
