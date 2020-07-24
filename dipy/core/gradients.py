@@ -855,6 +855,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
+
 def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
     """Compute anisotropy of a single b-tensor
 
@@ -915,6 +916,7 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
             bdelta = 0
 
     return float(bdelta), float(bval)
+
 
 def btensor_to_bdelta(btens):
     r"""Compute anisotropy of b-tensor(s)

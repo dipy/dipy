@@ -20,7 +20,7 @@ from dipy.core.geometry import vec2vec_rotmat
 def test_unique_bvals_deprecated():
     with warnings.catch_warnings(record=True) as cw:
         warnings.simplefilter("always", DeprecationWarning)
-        _ = unique_bvals(np.array([0,800,1400,1401,1405]))
+        _ = unique_bvals(np.array([0, 800, 1400, 1401, 1405]))
         npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
