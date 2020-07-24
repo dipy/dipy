@@ -718,8 +718,8 @@ def unique_bvals_tolerance(bvals, tol=20):
             b_index = lower_part[-1] + 1
 
     # Checking for overlap with get_bval_indices
-    for i in range(len(ubvals)-1):
-        indices_1 = get_bval_indices(bvals, ubvals[i], tol)
+    for i, ubval in enumerate(ubvals[:-1]):
+        indices_1 = get_bval_indices(bvals, ubval, tol)
         indices_2 = get_bval_indices(bvals, ubvals[i+1], tol)
         if len(np.intersect1d(indices_1, indices_2)) != 0:
             msg = '''There is overlap in clustering of b-values.
