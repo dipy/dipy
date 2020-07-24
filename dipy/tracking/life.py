@@ -467,6 +467,10 @@ class FiberModel(ReconstModel):
         """
         if affine is None:
             affine = np.eye(4)
+        sl_len = np.array([len(s) for s in streamline])
+        if np.any(sl_len < 2):
+            raise ValueError("Input contains streamlines with only one node."
+            " The LiFE model cannot be fit with these streamlines included.")
         life_matrix, vox_coords = \
             self.setup(streamline, affine, evals=evals, sphere=sphere)
         (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,

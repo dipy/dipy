@@ -1,5 +1,5 @@
 import os.path as op
-
+import pytest
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.data as dpd
@@ -100,20 +100,24 @@ def test_FiberModel_init():
     bvals, bvecs = read_bvals_bvecs(bval_file, bvec_file)
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
-
-    streamline = [[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]
+    streamline_cases = [[[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
+                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]], [[[1, 2, 3]],
+                                [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]]
 
     affine = np.eye(4)
 
     for sphere in [None, False, dpd.get_sphere('symmetric362')]:
-        fiber_matrix, vox_coords = FM.setup(streamline, affine, sphere=sphere)
-        npt.assert_array_equal(np.array(vox_coords),
-                               np.array([[1, 2, 3], [4, 5, 3],
-                                         [5, 6, 3], [6, 7, 3]]))
+        for streamline in streamline_cases:
+            if streamline == [[[1, 2, 3]], [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]:
+                pytest.xfail("Too few nodes in streamline")
+            fiber_matrix, vox_coords = FM.setup(streamline, affine,
+            sphere=sphere)
+            npt.assert_array_equal(np.array(vox_coords),
+                                   np.array([[1, 2, 3], [4, 5, 3],
+                                             [5, 6, 3], [6, 7, 3]]))
 
-        npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
-                                              len(streamline)))
+            npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
+                                                  len(streamline)))
 
 
 def test_FiberFit():
