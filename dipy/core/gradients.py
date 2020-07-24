@@ -9,9 +9,46 @@ from dipy.core.onetime import auto_attr
 from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
+from dipy.utils.deprecator import deprecate_with_version
+
+
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
 
 logger = logging.getLogger(__name__)
+
+
+@deprecate_with_version("dipy.core.gradients.unique_bvals is deprecated, "
+                        "Please use "
+                        "dipy.core.gradients.unique_bvals_magnitude instead",
+                        since='1.2', until='1.4')
+def unique_bvals(bvals, bmag=None, rbvals=False):
+    """ This function gives the unique rounded b-values of the data
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    bmag : int
+        The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. B-values are also rounded up to
+        this order of magnitude. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+
+    rbvals : bool, optional
+        If True function also returns all individual rounded b-values.
+        Default: False
+
+    Returns
+    ------
+    ubvals : ndarray
+        Array containing the rounded unique b-values
+    """
+    b = round_bvals(bvals, bmag)
+    if rbvals:
+        return np.unique(b), b
+
+    return np.unique(b)
 
 
 class GradientTable(object):

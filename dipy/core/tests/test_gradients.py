@@ -12,9 +12,16 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
                                  unique_bvals_magnitude, unique_bvals_tolerance,
-                                 btensor_to_bdelta)
+                                 unique_bvals, btensor_to_bdelta)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.geometry import vec2vec_rotmat
+
+
+def test_unique_bvals_deprecated():
+    with warnings.catch_warnings(record=True) as cw:
+        warnings.simplefilter("always", DeprecationWarning)
+        _ = unique_bvals(np.array([0,800,1400,1401,1405]))
+        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
 def test_btable_prepare():
