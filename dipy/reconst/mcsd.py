@@ -59,7 +59,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
 
 class MultiShellResponse(object):
 
-    def __init__(self, S0, response, sh_order, shells):
+    def __init__(self, response, sh_order, shells, S0=None):
         """ Estimate Multi Shell response function for multiple tissues and
         multiple shells.
 
@@ -69,8 +69,6 @@ class MultiShellResponse(object):
 
         Parameters
         ----------
-        S0 : array (3,)
-            Signal with no diffusion weighting for each tissue compartments.
         response : ndarray
             Multi-shell fiber response. The ordering of the responses should
             follow the same logic as S0.
@@ -78,6 +76,8 @@ class MultiShellResponse(object):
             Maximal spherical harmonics order.
         shells : int
             Number of shells in the data
+        S0 : array (3,)
+            Signal with no diffusion weighting for each tissue compartments.
         """
         self.S0 = S0
         self.response = response
@@ -419,7 +419,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     MultiShellResponse
         MultiShellResponse object.
     """
-    NUMPY_1_12_PLUS = LooseVersion(np.__version__) >= LooseVersion('1.2.0')
+    NUMPY_1_12_PLUS = LooseVersion(np.__version__) > LooseVersion('1.12.0')
     rcond_value = None if NUMPY_1_12_PLUS else -1
 
     bvals = np.array(bvals, copy=True)
@@ -477,7 +477,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
 
         S0 = [csf_rf[0, 3], gm_rf[0, 3], wm_rf[0, 3]]
 
-    return MultiShellResponse(S0, response, sh_order, bvals)
+    return MultiShellResponse(response, sh_order, bvals, S0=S0)
 
 
 def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
