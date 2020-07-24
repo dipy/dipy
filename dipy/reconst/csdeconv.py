@@ -31,7 +31,8 @@ from dipy.utils.deprecator import deprecate_with_version
                         "Please use "
                         "dipy.reconst.csdeconv.auto_response_ssst instead",
                         since='1.2', until='1.4')
-def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
+def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
+                  fa_callable=None, return_number_of_voxels=None):
     """ Automatic estimation of ssst response function using FA.
 
     Parameters
@@ -42,10 +43,17 @@ def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     roi_center : array-like, (3,)
         Center of ROI in data. If center is None, it is assumed that it is
         the center of the volume with shape `data.shape[:3]`.
-    roi_radii : int or array-like, (3,)
-        radii of cuboid ROI
+    roi_radius : int
+        radius of cubic ROI
     fa_thr : float
         FA threshold
+    fa_callable : callable
+        A callable that defines an operation that compares FA with the fa_thr.
+        The operator should have two positional arguments
+        (e.g., `fa_operator(FA, fa_thr)`) and it should return a bool array.
+    return_number_of_voxels : bool
+        If True, returns the number of voxels used for estimating the response
+        function
 
     Returns
     -------
@@ -66,7 +74,11 @@ def auto_response(gtab, data, roi_center=None, roi_radii=10, fa_thr=0.7):
     csdeconv.response_from_mask_ssst(), which returns the `response` and the
     `ratio` (more details are available in the description of the function).
     """
-    return auto_response_ssst(gtab, data, roi_center, roi_radii, fa_thr)
+    msg = """Parameter `roi_radius` is now called `roi_radii` and can be an
+    array-like (3,). Parameters `fa_callable` and `return_number_of_voxels`
+    are not used anymore."""
+    warnings.warn(msg, UserWarning)
+    return auto_response_ssst(gtab, data, roi_center, roi_radius, fa_thr)
 
 
 class AxSymShResponse(object):
