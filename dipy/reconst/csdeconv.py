@@ -81,6 +81,57 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     return auto_response_ssst(gtab, data, roi_center, roi_radius, fa_thr)
 
 
+@deprecate_with_version("dipy.reconst.csdeconv.response_from_mask is"
+                        "deprecated, Please use "
+                        "dipy.reconst.csdeconv.response_from_mask_ssst instead",
+                        since='1.2', until='1.4')
+def response_from_mask(gtab, data, mask):
+    """ Computation of single-shell single-tissue (ssst) response
+        function from a given mask.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask : ndarray
+        mask from where to compute the response function
+
+    Returns
+    -------
+    response : tuple, (2,)
+        (`evals`, `S0`)
+    ratio : float
+        The ratio between smallest versus largest eigenvalue of the response.
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. In order to do this, we look for voxels with very
+    anisotropic configurations. This information can be obtained by using
+    csdeconv.mask_for_response_ssst() through a mask of selected voxels
+    (see[1]_). The present function uses such a mask to compute the ssst
+    response function.
+
+    For the response we also need to find the average S0 in the ROI. This is
+    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
+    correspond to b-values equal 0) in the dataset.
+
+    The `response` consists always of a prolate tensor created by averaging
+    the highest and second highest eigenvalues in the ROI with FA higher than
+    threshold. We also include the average S0s.
+
+    We also return the `ratio` which is used for the SDT models.
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
+    fiber orientation density function from diffusion-weighted MRI
+    data using spherical deconvolution
+    """
+    return response_from_mask_ssst(gtab, data, mask)
+
+
 class AxSymShResponse(object):
     """A simple wrapper for response functions represented using only axially
     symmetric, even spherical harmonic functions (ie, m == 0 and n even).

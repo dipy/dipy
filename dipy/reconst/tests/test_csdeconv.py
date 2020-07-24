@@ -18,6 +18,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_sh_to_sharp,
                                    mask_for_response_ssst,
                                    response_from_mask_ssst,
+                                   response_from_mask,
                                    auto_response_ssst,
                                    auto_response,
                                    recursive_response)
@@ -57,11 +58,19 @@ def test_auto_response_deprecated():
     with warnings.catch_warnings(record=True) as cw:
         warnings.simplefilter("always", DeprecationWarning)
         gtab, data, _, _, _ = get_test_data()
-        response_auto, ratio_auto = auto_response(gtab,
-                                                  data,
-                                                  roi_center=None,
-                                                  roi_radii=(1, 1, 0),
-                                                  fa_thr=0.7)
+        _, _ = auto_response(gtab,
+                             data,
+                             roi_center=None,
+                             roi_radius=1,
+                             fa_thr=0.7)
+        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+
+
+def test_response_from_mask_deprecated():
+    with warnings.catch_warnings(record=True) as cw:
+        warnings.simplefilter("always", DeprecationWarning)
+        gtab, data, mask, _, _ = get_test_data()
+        _ = response_from_mask(gtab, data, mask)
         npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
