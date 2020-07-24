@@ -34,9 +34,15 @@ def multi_median(input, median_radius, numpass):
     # Array representing the size of the median window in each dimension.
     medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
 
+    if numpass > 1:
+        # ensure the input array is not modified
+        input = input.copy()
+
     # Multi pass
+    output = np.empty_like(input)
     for i in range(0, numpass):
-        median_filter(input, medarr, output=input)
+        median_filter(input, medarr, output=output)
+        input, output = output, input
     return input
 
 
@@ -194,7 +200,7 @@ def median_otsu(input_volume, vol_idx=None, median_radius=4, numpass=4,
         else:
             raise ValueError("For 4D images, must provide vol_idx input")
     else:
-        b0vol = input_volume.copy()
+        b0vol = input_volume
     # Make a mask using a multiple pass median filter and histogram
     # thresholding.
     mask = multi_median(b0vol, median_radius, numpass)

@@ -8,6 +8,15 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.2.0 changes
 ------------------
 
+**Segmentation**
+
+In prior releases, for users with SciPy < 1.5, a memory overlap bug occurs in
+``multi_median``, causing an overly smooth output. This has now been fixed,
+regardless of the user's installed SciPy version. Users of this function via
+``median_otsu`` thresholding should check the output of their image processing
+pipelines after the 1.2.0 release to make sure thresholding is still operating
+as expected (if not, try readjusting the ``median_radius`` parameter).
+
 **Tracking**
 
 The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
