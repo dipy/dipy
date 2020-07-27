@@ -81,7 +81,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     return auto_response_ssst(gtab, data, roi_center, roi_radius, fa_thr)
 
 
-@deprecate_with_version("dipy.reconst.csdeconv.response_from_mask is"
+@deprecate_with_version("dipy.reconst.csdeconv.response_from_mask is "
                         "deprecated, Please use "
                         "dipy.reconst.csdeconv.response_from_mask_ssst instead",
                         since='1.2', until='1.4')
