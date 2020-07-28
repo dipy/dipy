@@ -469,6 +469,33 @@ class MeanDiffusionKurtosisFit(object):
         """
         return awf_from_msk(self.msk)
 
+    @auto_attr
+    def smt2di(self):
+        r"""
+        Computes the intrisic diffusivity from the mean signal diffusional
+        kurtosis parameters assuming the 2-compartmental spherical mean
+        technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2di : ndarray
+            Intrisic diffusivity computed by converting MSDKI to SMT2.
+
+        Notes
+        -----
+        Computes the intrinsic diffusivity using equation 16 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        return 3 * self.msd / (1 + 2 * (1 - self.smt2f)**2)
+
     def predict(self, gtab, S0=1.):
         r"""
         Given a mean signal diffusion kurtosis model fit, predict the signal
