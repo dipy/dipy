@@ -4,7 +4,7 @@ import numpy as np
 import random
 from numpy.testing import (assert_array_almost_equal, assert_raises,
                            assert_almost_equal)
-from dipy.sims.voxel import multi_tensor_dki
+from dipy.sims.voxel import (single_tensor, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
                                  round_bvals)
@@ -238,15 +238,49 @@ def test_kurtosis_to_smt2_convertion():
 
 
 def test_smt2_metrics():
-    # Based on the multi-voxel simulations above
-    AWFgt = awf_from_msk(MKgt_multi)  # computes ground truths for awf
-
     # Just checking if parameters can be retrived from MSDKI's fit class obj
+
+    # Based on the multi-voxel simulations above (computes gt for SMT2 params)
+    AWFgt = awf_from_msk(MKgt_multi)
+    DIgt = 3 * MDgt_multi / (1 + 2 * (1 - AWFgt) ** 2)
+
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(mdkiF.smt2f, AWFgt)
+    assert_array_almost_equal(mdkiF.smt2di, DIgt)
 
     # Check if awf_from_msk when mask is given
     mask = MKgt_multi > 0
     AWF = awf_from_msk(MKgt_multi, mask)
     assert_array_almost_equal(AWF, AWFgt)
+
+
+def test_smt2_specific_cases():
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
+
+    # Check smt2 is sepecific cases with knowm g.t:
+    # 1) Intrisic diffusion is equal MSD for single Gaussian isotropic
+    #     diffusion (i.e. awf=0)
+    sig_gaussian = single_tensor(gtab_3s, evals=np.array([2e-3, 2e-3, 2e-3]))
+    mdkiF = mdkiM.fit(sig_gaussian)
+    assert_almost_equal(mdkiF.msk, 0.0)
+    assert_almost_equal(mdkiF.msd, 2.0e-3)
+    assert_almost_equal(mdkiF.smt2f, 0)
+    assert_almost_equal(mdkiF.smt2di, 2.0e-3)
+
+    # 2) Intrisic diffusion is equal to MSD/3 for single powder-averaged stick
+    #    compartment
+    Da = 2.0e-3
+    mevals = np.zeros((64, 3))
+    mevals[:, 0] = Da
+    fracs = np.ones(64) * 100 / 64
+    signal_pa, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals,
+                                                 angles=bvecs[1:, :],
+                                                 fractions=fracs, snr=None)
+    mdkiF = mdkiM.fit(signal_pa)
+    # decimal is set to 1 because of finite number of directions for powder
+    # average calculation
+    assert_almost_equal(mdkiF.msk, 2.4, decimal=1)
+    assert_almost_equal(mdkiF.msd * 1000, Da/3 * 1000, decimal=1)
+    assert_almost_equal(mdkiF.smt2f, 1, decimal=1)
+    assert_almost_equal(mdkiF.smt2di, mdkiF.msd * 3, decimal=1)
