@@ -8,6 +8,11 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
+
+def is_platform_mac():
+    return sys.platform == "darwin"
+
+
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if exists('MANIFEST'):
@@ -61,6 +66,12 @@ if using_setuptools:
 # Define extensions
 EXTS = []
 
+extra_compile_args = []
+
+# Silence Cython `tp_print` deprecation warnings
+if sys.version_info[:2] == (3, 8) and is_platform_mac:
+    extra_compile_args.append("-Wno-error=missing-field-initializers")
+
 # We use some defs from npymath, but we don't want to link against npymath lib
 ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
 
@@ -105,6 +116,7 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
+                          extra_compile_args=extra_compile_args,
                           **deepcopy(ext_kwargs)))  # deepcopy lists
 
 # Do our own build and install time dependency checking. setup.py gets called
