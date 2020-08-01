@@ -842,7 +842,7 @@ def btens_to_params(btens, ztol=1e-10):
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
     >>> bval, bdelta, b_eta = btens_to_params(lte)
     >>> print("bval={}; bdelta={}; b_eta={}".format(bdelta, bval, b_eta))
-    bval=[1.]; bdelta=[1.]; b_eta=[0.]
+    bval=[ 1.]; bdelta=[ 1.]; b_eta=[ 0.]
 
     """
     # Bad input checks
