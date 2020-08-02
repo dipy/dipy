@@ -11,7 +11,7 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, unique_bvals,
-                                 btensor_to_bdelta)
+                                 params_to_btens, btens_to_params)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.geometry import vec2vec_rotmat
 
@@ -504,20 +504,21 @@ def test_check_multi_b():
     npt.assert_(check_multi_b(gtab, 2, non_zero=False))
 
 
-def test_btensor_to_bdelta():
+def test_btens_to_params():
     """
-    Checks if bdeltas and bvals are as expected for 4 b-tensor shapes
+    Checks if bvals, bdeltas and b_etas are as expected for 4 b-tensor shapes
     (LTE, PTE, STE, CTE) as well as scaled and rotated versions of them
 
-    This function intrinsically tests the function `_btensor_to_bdelta_2d` as
-    `_btensor_to_bdelta_2d` is only meant to be called by `btensor_to_bdelta`
+    This function intrinsically tests the function `_btens_to_params_2d` as
+    `_btens_to_params_2d` is only meant to be called by `btens_to_params`
 
     """
     n_rotations = 30
     n_scales = 3
 
-    expected_bdeltas = np.array([1, -0.5, 0, 0.5])
     expected_bvals = np.array([1, 1, 1, 1])
+    expected_bdeltas = np.array([1, -0.5, 0, 0.5])
+    expected_b_etas = np.array([0, 0, 0, 0])
 
     # Baseline tensors to test
     linear_tensor = np.array([[1, 0, 0],
@@ -535,25 +536,19 @@ def test_btensor_to_bdelta():
 
     base_tensors = [linear_tensor, planar_tensor,
                     spherical_tensor, cigar_tensor]
-    n_base_tensors = len(base_tensors)
 
     # ---------------------------------
     # Test function on baseline tensors
     # ---------------------------------
 
-    # Pre-allocate
-    bdeltas = np.empty(n_base_tensors)
-    bvals = np.empty(n_base_tensors)
-
     # Loop through each tensor type and check results
     for i, tensor in enumerate(base_tensors):
-        i_bdelta, i_bval = btensor_to_bdelta(tensor)
+        i_bval, i_bdelta, i_b_eta = btens_to_params(tensor)
 
-        bdeltas[i] = i_bdelta
-        bvals[i] = i_bval
+        npt.assert_array_almost_equal(i_bval, expected_bvals[i])
+        npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
+        npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
 
-    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
-    npt.assert_array_almost_equal(bvals, expected_bvals)
 
     # Test function on a 3D input
     base_tensors_array = np.empty((4, 3, 3))
@@ -562,10 +557,11 @@ def test_btensor_to_bdelta():
     base_tensors_array[2, :, :] = spherical_tensor
     base_tensors_array[3, :, :] = cigar_tensor
 
-    bdeltas, bvals = btensor_to_bdelta(base_tensors_array)
+    bvals, bdeltas, b_etas = btens_to_params(base_tensors_array)
 
-    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
     npt.assert_array_almost_equal(bvals, expected_bvals)
+    npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
+    npt.assert_array_almost_equal(b_etas, expected_b_etas)
 
     # -----------------------------------------------------
     # Test function after rotating+scaling baseline tensors
@@ -587,36 +583,83 @@ def test_btensor_to_bdelta():
             u_i = u[rot_idx, :]
             R_i = vec2vec_rotmat(np.array([1, 0, 0]), u_i)
 
-            # Pre-allocate
-            bdeltas = np.empty(n_base_tensors)
-            bvals = np.empty(n_base_tensors)
-
             # Rotate each of the baseline test tensors and check results
             for i, tensor in enumerate(base_tensors):
 
                 tensor_rot_i = np.matmul(np.matmul(R_i, tensor), R_i.T)
-                i_bdelta, i_bval = btensor_to_bdelta(tensor_rot_i*scale)
+                i_bval, i_bdelta, i_b_eta = btens_to_params(tensor_rot_i*scale)
 
-                bdeltas[i] = i_bdelta
-                bvals[i] = i_bval
-
-            npt.assert_array_almost_equal(bdeltas, expected_bdeltas)
-            npt.assert_array_almost_equal(bvals, ebs)
+                npt.assert_array_almost_equal(i_bval, ebs[i])
+                npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
+                npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
 
     # Input can't be string
-    npt.assert_raises(ValueError, btensor_to_bdelta, 'LTE')
+    npt.assert_raises(ValueError, btens_to_params, 'LTE')
 
     # Input can't be list of strings
-    npt.assert_raises(ValueError, btensor_to_bdelta, ['LTE', 'LTE'])
+    npt.assert_raises(ValueError, btens_to_params, ['LTE', 'LTE'])
 
     # Input can't be 1D nor 4D
-    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((3,)))
-    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((3, 3, 3, 3)))
+    npt.assert_raises(ValueError, btens_to_params, np.zeros((3,)))
+    npt.assert_raises(ValueError, btens_to_params, np.zeros((3, 3, 3, 3)))
 
     # Input shape must be (3, 3) OR (N, 3, 3)
-    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((4, 4)))
-    npt.assert_raises(ValueError, btensor_to_bdelta, np.zeros((2, 2, 2)))
+    npt.assert_raises(ValueError, btens_to_params, np.zeros((4, 4)))
+    npt.assert_raises(ValueError, btens_to_params, np.zeros((2, 2, 2)))
 
+
+def test_params_to_btens():
+    """
+    Checks if `params_to_btens` generates the expected b-tensors from provided
+    `bvals`, `bdeltas`, `b_etas`.
+
+    """
+    # Test parameters that should generate "baseline" b-tensors
+    bvals = [1, 1, 1, 1]
+    bdeltas = [0, -0.5, 0.5, 1]
+    b_etas = [0, 0, 0, 0]
+
+    expected_btens = []
+    expected_btens.append(np.eye(3) / 3)
+    expected_btens.append(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]]) / 2)
+    expected_btens.append(np.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 2]]) / 3)
+    expected_btens.append(np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]]))
+
+    for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
+        btens = params_to_btens(bval, bdelta, b_eta)
+        npt.assert_array_almost_equal(btens, expected_btens[i])
+
+    # Additional tests
+    bvals = [1.7, 0.4, 2.3]
+    bdeltas = [0.6, -0.2, 0]
+    b_etas = [0.3, 0.8, 0.7]
+
+    expected_btens = []
+    expected_btens.append(np.array([[0.12466667, 0, 0],
+                                    [0, 0.32866667, 0],
+                                    [0, 0, 1.24666667]]))
+    expected_btens.append(np.array([[0.18133333, 0, 0],
+                                    [0, 0.13866667, 0],
+                                    [0, 0, 0.08]]))
+    expected_btens.append(np.array([[0.76666667, 0, 0],
+                                    [0, 0.76666667, 0],
+                                    [0, 0, 0.76666667]]))
+
+    for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
+        btens = params_to_btens(bval, bdelta, b_eta)
+        npt.assert_array_almost_equal(btens, expected_btens[i])
+
+    # Tests to trigger value errors
+    # 1: wrong input type
+    # 2: bval out of valid range
+    # 3: bdelta out of valid range
+    # 4: b_eta out of valid range
+    bvals = [np.array([1]), -1, 1, 1]
+    bdeltas = [0, 0, -1, 1]
+    b_etas = [0, 0, 0, -1]
+
+    for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
+        npt.assert_raises(ValueError, params_to_btens, bval, bdelta, b_eta)
 
 if __name__ == "__main__":
     from numpy.testing import run_module_suite
