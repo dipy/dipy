@@ -12,7 +12,7 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
                                  unique_bvals_magnitude, unique_bvals_tolerance,
-                                 unique_bvals, btensor_to_bdelta,
+                                 unique_bvals, 
                                  params_to_btens, btens_to_params)
 
 
