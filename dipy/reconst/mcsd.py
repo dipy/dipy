@@ -77,7 +77,9 @@ class MultiShellResponse(object):
         shells : int
             Number of shells in the data
         S0 : array (3,)
-            Signal with no diffusion weighting for each tissue compartments.
+            Signal with no diffusion weighting for each tissue compartments, in
+            the same tissue order as `response`. This S0 can be used for
+            predicting from a fit model later on.
         """
         self.S0 = S0
         self.response = response
