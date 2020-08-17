@@ -36,14 +36,14 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 
     _, extension = os.path.splitext(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
-        raise TypeError('Output filename is not one of the supported format')
+        raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
-                         'load a valid file if some coordinates are '
-                         'invalid. Please use the function '
-                         'remove_invalid_streamlines to discard invalid '
-                         'streamlines or set bbox_valid_check to False')
+                         'load a valid file if some coordinates are invalid.\n'
+                         'Please set bbox_valid_check to False and then use '
+                         'the function remove_invalid_streamlines to discard '
+                         'invalid streamlines.')
 
     old_space = deepcopy(sft.space)
     old_origin = deepcopy(sft.origin)
@@ -73,7 +73,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         dpy_obj.write_tracks(sft.streamlines)
         dpy_obj.close()
 
-    logging.debug('Save %s with %s streamlines in %s seconds',
+    logging.debug('Save %s with %s streamlines in %s seconds.',
                   filename, len(sft), round(time.time() - timer, 3))
 
     sft.to_space(old_space)
@@ -116,11 +116,11 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     """
     _, extension = os.path.splitext(filename)
     if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
-        logging.error('Output filename is not one of the supported format')
+        logging.error('Output filename is not one of the supported format.')
         return False
 
     if to_space not in Space:
-        logging.error('Space MUST be one of the 3 choices (Enum)')
+        logging.error('Space MUST be one of the 3 choices (Enum).')
         return False
 
     if reference == 'same':
@@ -134,7 +134,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
     if trk_header_check and extension == '.trk':
         if not is_header_compatible(filename, reference):
             logging.error('Trk file header does not match the provided '
-                          'reference')
+                          'reference.')
             return False
 
     timer = time.time()
@@ -153,7 +153,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         dpy_obj = Dpy(filename, mode='r')
         streamlines = list(dpy_obj.read_tracks())
         dpy_obj.close()
-    logging.debug('Load %s with %s streamlines in %s seconds',
+    logging.debug('Load %s with %s streamlines in %s seconds.',
                   filename, len(streamlines), round(time.time() - timer, 3))
 
     sft = StatefulTractogram(streamlines, reference, Space.RASMM,
@@ -166,9 +166,9 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
-                         'load a valid file if some coordinates are invalid.'
-                         'Please set bbox_valid_check to False and then use'
-                         'the function remove_invalid_streamlines to discard'
+                         'load a valid file if some coordinates are invalid.\n'
+                         'Please set bbox_valid_check to False and then use '
+                         'the function remove_invalid_streamlines to discard '
                          'invalid streamlines.')
 
     return sft
