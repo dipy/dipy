@@ -83,20 +83,20 @@ surface_color = [0, 1, 1]
 seedroi_actor = actor.contour_from_roi(seed_mask, affine,
                                        surface_color, surface_opacity)
 
-ren = window.Renderer()
-ren.add(streamlines_actor)
-ren.add(seedroi_actor)
+scene = window.Scene()
+scene.add(streamlines_actor)
+scene.add(seedroi_actor)
 
 """
-If you set interactive to True (below), the rendering will pop up in an
+If you set interactive to True (below), the scene will pop up in an
 interactive window.
 """
 
 interactive = False
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
-window.record(ren, n_frames=1, out_path='plm_roi_sls.png',
+window.record(scene, n_frames=1, out_path='plm_roi_sls.png',
               size=(800, 800))
 
 

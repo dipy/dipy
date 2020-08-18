@@ -410,14 +410,14 @@ Display the ODFs.
 # Enables/disables interactive visualization
 interactive = False
 
-r = window.Renderer()
+scene = window.Scene()
 sfu = actor.odf_slicer(odf, sphere=sphere, colormap='plasma', scale=0.5)
 sfu.display(y=0)
 sfu.RotateX(-90)
-r.add(sfu)
-window.record(r, out_path='odfs.png', size=(600, 600))
+scene.add(sfu)
+window.record(scene, out_path='odfs.png', size=(600, 600))
 if interactive:
-    window.show(r)
+    window.show(scene)
 
 """
 .. figure:: odfs.png

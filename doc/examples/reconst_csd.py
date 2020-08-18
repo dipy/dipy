@@ -99,7 +99,7 @@ from dipy.sims.voxel import single_tensor_odf
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
+scene = window.Scene()
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
@@ -109,11 +109,11 @@ response_odf = single_tensor_odf(default_sphere.vertices, evals, evecs)
 response_odf = response_odf[None, None, None, :]
 response_actor = actor.odf_slicer(response_odf, sphere=default_sphere,
                                   colormap='plasma')
-ren.add(response_actor)
+scene.add(response_actor)
 print('Saving illustration as csd_response.png')
-window.record(ren, out_path='csd_response.png', size=(200, 200))
+window.record(scene, out_path='csd_response.png', size=(200, 200))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csd_response.png
@@ -123,7 +123,7 @@ if interactive:
 
 """
 
-ren.rm(response_actor)
+scene.rm(response_actor)
 
 """
 **Strategy 2 - data-driven calibration of response function** Depending
@@ -174,13 +174,13 @@ response_signal = response_signal[None, None, None, :]
 response_actor = actor.odf_slicer(response_signal, sphere=default_sphere,
                                   colormap='plasma')
 
-ren = window.Renderer()
+scene = window.Scene()
 
-ren.add(response_actor)
+scene.add(response_actor)
 print('Saving illustration as csd_recursive_response.png')
-window.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
+window.record(scene, out_path='csd_recursive_response.png', size=(200, 200))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csd_recursive_response.png
@@ -190,7 +190,7 @@ if interactive:
 
 """
 
-ren.rm(response_actor)
+scene.rm(response_actor)
 
 """
 ## Step 2. fODF reconstruction
@@ -223,12 +223,12 @@ Here we visualize only a 30x30 region.
 fodf_spheres = actor.odf_slicer(csd_odf, sphere=default_sphere, scale=0.9,
                                 norm=False, colormap='plasma')
 
-ren.add(fodf_spheres)
+scene.add(fodf_spheres)
 
 print('Saving illustration as csd_odfs.png')
-window.record(ren, out_path='csd_odfs.png', size=(600, 600))
+window.record(scene, out_path='csd_odfs.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csd_odfs.png
@@ -249,14 +249,14 @@ csd_peaks = peaks_from_model(model=csd_model,
                              min_separation_angle=25,
                              parallel=True)
 
-window.clear(ren)
+scene.clear()
 fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values)
-ren.add(fodf_peaks)
+scene.add(fodf_peaks)
 
 print('Saving illustration as csd_peaks.png')
-window.record(ren, out_path='csd_peaks.png', size=(600, 600))
+window.record(scene, out_path='csd_peaks.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csd_peaks.png
@@ -269,12 +269,12 @@ We can finally visualize both the ODFs and peaks in the same space.
 
 fodf_spheres.GetProperty().SetOpacity(0.4)
 
-ren.add(fodf_spheres)
+scene.add(fodf_spheres)
 
 print('Saving illustration as csd_both.png')
-window.record(ren, out_path='csd_both.png', size=(600, 600))
+window.record(scene, out_path='csd_both.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csd_both.png

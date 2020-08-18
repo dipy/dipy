@@ -121,9 +121,9 @@ odf_actor = actor.odf_slicer(odf[16:36, :, 30:45], sphere=sphere,
                              colormap='plasma', scale=0.6)
 odf_actor.display(y=0)
 odf_actor.RotateX(-90)
-ren = window.Renderer()
-ren.add(odf_actor)
-window.record(ren, out_path='fODFs.png', size=(600, 600), magnification=4)
+scene = window.Scene()
+scene.add(odf_actor)
+window.record(scene, out_path='fODFs.png', size=(600, 600), magnification=4)
 
 """
 .. figure:: fODFs.png

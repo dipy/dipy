@@ -83,15 +83,15 @@ be done using the ``fury`` python package
 from dipy.viz import window, actor, has_fury
 
 if has_fury:
-    ren = window.Renderer()
-    ren.add(actor.peak_slicer(csa_peaks.peak_dirs,
-                              csa_peaks.peak_values,
-                              colors=None))
+    scene = window.Scene()
+    scene.add(actor.peak_slicer(csa_peaks.peak_dirs,
+                                csa_peaks.peak_values,
+                                colors=None))
 
-    window.record(ren, out_path='csa_direction_field.png', size=(900, 900))
+    window.record(scene, out_path='csa_direction_field.png', size=(900, 900))
 
     if interactive:
-        window.show(ren, size=(800, 800))
+        window.show(scene, size=(800, 800))
 
 """
 .. figure:: csa_direction_field.png
@@ -183,13 +183,13 @@ if has_fury:
                                    colormap.line_colors(streamlines))
 
     # Create the 3D display.
-    r = window.Renderer()
-    r.add(streamlines_actor)
+    scene = window.Scene()
+    scene.add(streamlines_actor)
 
     # Save still images for this static example. Or for interactivity use
-    window.record(r, out_path='tractogram_EuDX.png', size=(800, 800))
+    window.record(scene, out_path='tractogram_EuDX.png', size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_EuDX.png

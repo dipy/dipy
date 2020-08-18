@@ -1560,12 +1560,12 @@ def local_skeleton_clustering(tracks, d_thr=10):
     above using the dipy.viz module::
 
         from dipy.viz import window, actor
-        r=window.Renderer()
+        scene = window.Scene()
         for c in C:
             color=np.random.rand(3)
             for i in C[c]['indices']:
-                r.add(actor.line(tracks[i],color))
-        window.show(r)
+                scene.add(actor.line(tracks[i],color))
+        window.show(scene)
 
     See Also
     --------
@@ -1864,17 +1864,18 @@ def larch_3split(tracks, indices=None, thr=10.):
     Here is an example of how to visualize the clustering above::
 
         from dipy.viz import window, actor
-        r=window.Renderer()
-        r.add(actor.line(tracks,fvtk.red))
-        window.show(r)
+        scene = window.Scene()
+        scene.add(actor.line(tracks,window.colors.red))
+        window.show(scene)
         for c in C:
             color=np.random.rand(3)
             for i in C[c]['indices']:
-                r.add(actor.line(tracks[i],color))
-        window.show(r)
+                scene.add(actor.line(tracks[i],color))
+        window.show(scene)
         for c in C:
-            r.add(actor.line(C[c]['rep3']/C[c]['N'],fos.white))
-        window.show(r)
+            scene.add(actor.line(C[c]['rep3']/C[c]['N'],
+                                 window.colors.white))
+        window.show(scene)
     """
 
     cdef:

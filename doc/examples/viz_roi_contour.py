@@ -75,13 +75,13 @@ seedroi_actor = actor.contour_from_roi(seed_mask, affine,
                                        surface_color, surface_opacity)
 
 """
-Next, we initialize a ''Renderer'' object and add both actors
+Next, we initialize a ''Scene'' object and add both actors
 to the rendering.
 """
 
-ren = window.ren()
-ren.add(streamlines_actor)
-ren.add(seedroi_actor)
+scene = window.Scene()
+scene.add(streamlines_actor)
+scene.add(seedroi_actor)
 
 """
 If you uncomment the following line, the rendering will pop up in an
@@ -90,9 +90,9 @@ interactive window.
 
 interactive = False
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
-window.record(ren, out_path='contour_from_roi_tutorial.png', size=(1200, 900))
+window.record(scene, out_path='contour_from_roi_tutorial.png', size=(1200, 900))
 
 """
 .. figure:: contour_from_roi_tutorial.png
