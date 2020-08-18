@@ -53,7 +53,7 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
-def slicer_panel(renderer, iren,
+def slicer_panel(scene, iren,
                  data=None, affine=None,
                  world_coords=False,
                  pam=None, mask=None, mem=GlobalHorizon()):
@@ -61,7 +61,7 @@ def slicer_panel(renderer, iren,
 
     Parameters
     ----------
-    renderer : Renderer
+    scene : Scene
     iren : Interactor
     data : 3d ndarray
     affine : 4x4 ndarray
@@ -137,12 +137,12 @@ def slicer_panel(renderer, iren,
                                  0,
                                  shape[2] - 1)
 
-    renderer.add(image_actor_z)
-    renderer.add(image_actor_x)
-    renderer.add(image_actor_y)
+    scene.add(image_actor_z)
+    scene.add(image_actor_x)
+    scene.add(image_actor_y)
 
     if pam is not None:
-        renderer.add(peaks_actor_z)
+        scene.add(peaks_actor_z)
 
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1,
@@ -160,7 +160,7 @@ def slicer_panel(renderer, iren,
             mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
                                                     0, shape[1] - 1, z, z)
         mem.slicer_curr_z = z
-        renderer.reset_clipping_range()
+        scene.reset_clipping_range()
 
     line_slider_x = ui.LineSlider2D(min_value=0,
                                     max_value=shape[0] - 1,
@@ -174,7 +174,7 @@ def slicer_panel(renderer, iren,
         x = int(np.round(slider.value))
         mem.slicer_curr_actor_x.display_extent(x, x, 0, shape[1] - 1, 0,
                                                shape[2] - 1)
-        renderer.reset_clipping_range()
+        scene.reset_clipping_range()
         mem.slicer_curr_x = x
         mem.window_timer_cnt += 100
 
@@ -191,7 +191,7 @@ def slicer_panel(renderer, iren,
 
         mem.slicer_curr_actor_y.display_extent(0, shape[0] - 1, y, y,
                                                0, shape[2] - 1)
-        renderer.reset_clipping_range()
+        scene.reset_clipping_range()
         mem.slicer_curr_y = y
 
     # TODO there is some small bug when starting the app the handles
@@ -274,9 +274,9 @@ def slicer_panel(renderer, iren,
         vol_idx = int(np.round(slider.value))
         mem.slicer_vol_idx = vol_idx
 
-        renderer.rm(mem.slicer_curr_actor_x)
-        renderer.rm(mem.slicer_curr_actor_y)
-        renderer.rm(mem.slicer_curr_actor_z)
+        scene.rm(mem.slicer_curr_actor_x)
+        scene.rm(mem.slicer_curr_actor_y)
+        scene.rm(mem.slicer_curr_actor_z)
 
         tmp = data[..., vol_idx]
         image_actor_z = actor.slicer(tmp,
@@ -322,12 +322,12 @@ def slicer_panel(renderer, iren,
         mem.slicer_curr_actor_y.AddObserver('LeftButtonPressEvent',
                                             left_click_picker_callback,
                                             1.0)
-        renderer.add(mem.slicer_curr_actor_z)
-        renderer.add(mem.slicer_curr_actor_x)
-        renderer.add(mem.slicer_curr_actor_y)
+        scene.add(mem.slicer_curr_actor_z)
+        scene.add(mem.slicer_curr_actor_x)
+        scene.add(mem.slicer_curr_actor_y)
 
         if pam is not None:
-            renderer.add(mem.slicer_peaks_actor_z)
+            scene.add(mem.slicer_peaks_actor_z)
 
         r1, r2 = double_slider._values
         apply_colormap(r1, r2)
@@ -339,10 +339,7 @@ def slicer_panel(renderer, iren,
 
         event_pos = iren.GetEventPosition()
 
-        obj.picker.Pick(event_pos[0],
-                        event_pos[1],
-                        0,
-                        renderer)
+        obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
 
         i, j, k = obj.picker.GetPointIJK()
         res = mem.slicer_vol[i, j, k]
@@ -402,9 +399,9 @@ def slicer_panel(renderer, iren,
         line_slider_x.set_visibility(line_slider_label_x.visibility)
         cnt = next(x_counter)
         if line_slider_label_x.visibility and cnt > 0:
-            renderer.add(mem.slicer_curr_actor_x)
+            scene.add(mem.slicer_curr_actor_x)
         else:
-            renderer.rm(mem.slicer_curr_actor_x)
+            scene.rm(mem.slicer_curr_actor_x)
         iren.Render()
 
     line_slider_label_x.actor.AddObserver('LeftButtonPressEvent',
@@ -420,9 +417,9 @@ def slicer_panel(renderer, iren,
         line_slider_y.set_visibility(line_slider_label_y.visibility)
         cnt = next(y_counter)
         if line_slider_label_y.visibility and cnt > 0:
-            renderer.add(mem.slicer_curr_actor_y)
+            scene.add(mem.slicer_curr_actor_y)
         else:
-            renderer.rm(mem.slicer_curr_actor_y)
+            scene.rm(mem.slicer_curr_actor_y)
         iren.Render()
 
     line_slider_label_y.actor.AddObserver('LeftButtonPressEvent',
@@ -438,9 +435,9 @@ def slicer_panel(renderer, iren,
         line_slider_z.set_visibility(line_slider_label_z.visibility)
         cnt = next(z_counter)
         if line_slider_label_z.visibility and cnt > 0:
-            renderer.add(mem.slicer_curr_actor_z)
+            scene.add(mem.slicer_curr_actor_z)
         else:
-            renderer.rm(mem.slicer_curr_actor_z)
+            scene.rm(mem.slicer_curr_actor_z)
 
         iren.Render()
 
@@ -527,7 +524,7 @@ def slicer_panel(renderer, iren,
 
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
-    renderer.add(panel)
+    scene.add(panel)
 
     # initialize colormap
     r1, r2 = value_range
