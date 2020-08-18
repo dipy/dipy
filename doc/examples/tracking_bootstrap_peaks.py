@@ -82,11 +82,11 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_bootstrap_dg.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_bootstrap_dg.png', size=(800, 800))
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_bootstrap_dg.png', size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_bootstrap_dg.png
@@ -115,12 +115,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "closest_peak_dg_CSD.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_closest_peak_dg.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_closest_peak_dg.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_closest_peak_dg.png

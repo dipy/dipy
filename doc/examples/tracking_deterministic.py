@@ -85,12 +85,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_deterministic_dg.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_deterministic_dg.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_deterministic_dg.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_deterministic_dg.png

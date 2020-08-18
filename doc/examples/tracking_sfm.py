@@ -147,14 +147,14 @@ if has_fury:
     vol_actor2 = vol_actor.copy()
     vol_actor2.display(None, None, 35)
 
-    ren = window.Renderer()
-    ren.add(streamlines_actor)
-    ren.add(vol_actor)
-    ren.add(vol_actor2)
+    scene = window.Scene()
+    scene.add(streamlines_actor)
+    scene.add(vol_actor)
+    scene.add(vol_actor2)
 
-    window.record(ren, out_path='tractogram_sfm.png', size=(800, 800))
+    window.record(scene, out_path='tractogram_sfm.png', size=(800, 800))
     if interactive:
-        window.show(ren)
+        window.show(scene)
 
 """
 .. figure:: tractogram_sfm.png

@@ -125,13 +125,13 @@ sf_odf = sf_fit.odf(sphere)
 fodf_spheres = actor.odf_slicer(sf_odf, sphere=sphere, scale=0.8,
                                 colormap='plasma')
 
-ren = window.Renderer()
-ren.add(fodf_spheres)
+scene = window.Scene()
+scene.add(fodf_spheres)
 
 print('Saving illustration as sf_odfs.png')
-window.record(ren, out_path='sf_odfs.png', size=(1000, 1000))
+window.record(scene, out_path='sf_odfs.png', size=(1000, 1000))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 We can extract the peaks from the ODF, and plot these as well
@@ -145,26 +145,26 @@ sf_peaks = dpp.peaks_from_model(sf_model,
                                 return_sh=False)
 
 
-window.clear(ren)
+scene.clear()
 fodf_peaks = actor.peak_slicer(sf_peaks.peak_dirs, sf_peaks.peak_values)
-ren.add(fodf_peaks)
+scene.add(fodf_peaks)
 
 print('Saving illustration as sf_peaks.png')
-window.record(ren, out_path='sf_peaks.png', size=(1000, 1000))
+window.record(scene, out_path='sf_peaks.png', size=(1000, 1000))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 Finally, we plot both the peaks and the ODFs, overlayed:
 """
 
 fodf_spheres.GetProperty().SetOpacity(0.4)
-ren.add(fodf_spheres)
+scene.add(fodf_spheres)
 
 print('Saving illustration as sf_both.png')
-window.record(ren, out_path='sf_both.png', size=(1000, 1000))
+window.record(scene, out_path='sf_both.png', size=(1000, 1000))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: sf_both.png

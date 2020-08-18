@@ -107,18 +107,18 @@ bundle_downsampled2 = [approx_polygon_track(s, 0.25) for s in bundle]
 n_pts_ds2 = [len(streamline) for streamline in bundle_downsampled2]
 
 """
-Both, ``set_number_of_points`` and ``approx_polygon_track`` can be thought as 
+Both, ``set_number_of_points`` and ``approx_polygon_track`` can be thought as
 methods for lossy compression of streamlines.
 """
 
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(*window.colors.white)
+scene = window.Scene()
+scene.SetBackground(*window.colors.white)
 bundle_actor = actor.streamtube(bundle, window.colors.red, linewidth=0.3)
 
-ren.add(bundle_actor)
+scene.add(bundle_actor)
 
 bundle_actor2 = actor.streamtube(bundle_downsampled, window.colors.red, linewidth=0.3)
 bundle_actor2.SetPosition(0, 40, 0)
@@ -126,13 +126,13 @@ bundle_actor2.SetPosition(0, 40, 0)
 bundle_actor3 = actor.streamtube(bundle_downsampled2, window.colors.red, linewidth=0.3)
 bundle_actor3.SetPosition(0, 80, 0)
 
-ren.add(bundle_actor2)
-ren.add(bundle_actor3)
+scene.add(bundle_actor2)
+scene.add(bundle_actor3)
 
-ren.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
-window.record(ren, out_path='simulated_cosine_bundle.png', size=(900, 900))
+scene.set_camera(position=(0, 0, 0), focal_point=(30, 0, 0))
+window.record(scene, out_path='simulated_cosine_bundle.png', size=(900, 900))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: simulated_cosine_bundle.png

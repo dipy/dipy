@@ -122,7 +122,7 @@ image_actor_y.display_extent(0,
                              shape[2] - 1)
 
 """
-Connect the actors with the Renderer.
+Connect the actors with the Scene.
 """
 
 scene.add(stream_actor)

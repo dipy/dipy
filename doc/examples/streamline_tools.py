@@ -125,22 +125,22 @@ vol_actor2 = vol_actor.copy()
 vol_actor2.display(z=35)
 
 # Add display objects to canvas
-r = window.Renderer()
-r.add(vol_actor)
-r.add(vol_actor2)
-r.add(cc_streamlines_actor)
-r.add(cc_ROI_actor)
+scene = window.Scene()
+scene.add(vol_actor)
+scene.add(vol_actor2)
+scene.add(cc_streamlines_actor)
+scene.add(cc_ROI_actor)
 
 # Save figures
-window.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
+window.record(scene, n_frames=1, out_path='corpuscallosum_axial.png',
               size=(800, 800))
 if interactive:
-    window.show(r)
-r.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
-window.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
+    window.show(scene)
+scene.set_camera(position=[-1, 0, 0], focal_point=[0, 0, 0], view_up=[0, 0, 1])
+window.record(scene, n_frames=1, out_path='corpuscallosum_sagittal.png',
               size=(800, 800))
 if interactive:
-    window.show(r)
+    window.show(scene)
 
 """
 .. figure:: corpuscallosum_axial.png

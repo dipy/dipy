@@ -133,15 +133,15 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.streamtube(streamlines, colormap_full))
-window.record(ren, out_path='fornix_clusters_arclength.png', size=(600, 600))
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, colormap_full))
+window.record(scene, out_path='fornix_clusters_arclength.png', size=(600, 600))
 
 # Enables/disables interactive visualization
 interactive = False
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: fornix_clusters_arclength.png
@@ -172,6 +172,7 @@ redefined: ``are_compatible`` and ``dist``. Moreover, when implementing the
 (i.e. `dist(A, B) == dist(B, A)`).
 """
 
+
 class CosineMetric(Metric):
     """ Computes the cosine distance between two streamlines. """
     def __init__(self):
@@ -195,6 +196,7 @@ class CosineMetric(Metric):
         cos_theta = np.minimum(cos_theta, 1.)
         cos_theta = np.maximum(cos_theta, -1.)
         return np.arccos(cos_theta) / np.pi  # Normalized cosine distance
+
 
 """
 The new distance ``CosineMetric`` is ready to be used. Let's use
@@ -227,12 +229,12 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.streamtube(streamlines, colormap_full))
-window.record(ren, out_path='fornix_clusters_cosine.png', size=(600, 600))
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, colormap_full))
+window.record(scene, out_path='fornix_clusters_cosine.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: fornix_clusters_cosine.png

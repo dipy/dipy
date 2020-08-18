@@ -94,12 +94,12 @@ Lets first show the initial dataset.
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.streamtube(streamlines, window.colors.white))
-window.record(ren, out_path='fornix_initial.png', size=(600, 600))
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, window.colors.white))
+window.record(scene, out_path='fornix_initial.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: fornix_initial.png
@@ -112,13 +112,13 @@ Show the centroids of the fornix after clustering (with random colors):
 
 colormap = actor.create_colormap(np.arange(len(clusters)))
 
-window.clear(ren)
-ren.SetBackground(1, 1, 1)
-ren.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
-ren.add(actor.streamtube(clusters.centroids, colormap, linewidth=0.4))
-window.record(ren, out_path='fornix_centroids.png', size=(600, 600))
+scene.clear()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, window.colors.white, opacity=0.05))
+scene.add(actor.streamtube(clusters.centroids, colormap, linewidth=0.4))
+window.record(scene, out_path='fornix_centroids.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: fornix_centroids.png
@@ -133,12 +133,12 @@ colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
 
-window.clear(ren)
-ren.SetBackground(1, 1, 1)
-ren.add(actor.streamtube(streamlines, colormap_full))
-window.record(ren, out_path='fornix_clusters.png', size=(600, 600))
+scene.clear()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.streamtube(streamlines, colormap_full))
+window.record(scene, out_path='fornix_clusters.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: fornix_clusters.png
