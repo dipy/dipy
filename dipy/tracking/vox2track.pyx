@@ -295,11 +295,12 @@ cdef cnp.npy_intp _streamline_in_mask(
             # Find the coordinates of voxel containing current point, to
             # tag it in the map
             half_ratio = 0.5 * length_ratio
-            x = <cnp.npy_intp>(current_pt[0] + half_ratio * direction[0])
-            y = <cnp.npy_intp>(current_pt[1] + half_ratio * direction[1])
-            z = <cnp.npy_intp>(current_pt[2] + half_ratio * direction[2])
-            if mask[x, y, z]:
-                return 1
+            x = <cnp.npy_intp>floor(current_pt[0] + half_ratio * direction[0])
+            y = <cnp.npy_intp>floor(current_pt[1] + half_ratio * direction[1])
+            z = <cnp.npy_intp>floor(current_pt[2] + half_ratio * direction[2])
+            if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+                if mask[x, y, z]:
+                    return 1
 
             # current_pt is moved to the closest edge
             for dim_idx in range(3):
@@ -313,10 +314,13 @@ cdef cnp.npy_intp _streamline_in_mask(
             c_get_closest_edge(current_pt, direction, current_edge)
 
     # Check last point
-    x = <cnp.npy_intp>next_pt[0]
-    y = <cnp.npy_intp>next_pt[1]
-    z = <cnp.npy_intp>next_pt[2]
-    return mask[x, y, z]
+    x = <cnp.npy_intp>floor(next_pt[0])
+    y = <cnp.npy_intp>floor(next_pt[1])
+    z = <cnp.npy_intp>floor(next_pt[2])
+    if 0 <= x < mask.shape[0] and 0 <= y < mask.shape[1] and 0 <= z < mask.shape[2]:
+        if mask[x, y, z]:
+            return 1
+    return 0
 
 
 @cython.boundscheck(False)

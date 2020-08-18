@@ -22,7 +22,8 @@ MIN_POSITIVE_SIGNAL = 0.0001
 
 
 def _roll_evals(evals, axis=-1):
-    """
+    """Check evals shape.
+
     Helper function to check that the evals provided to functions calculating
     tensor statistics have the right shape
 
@@ -39,6 +40,7 @@ def _roll_evals(evals, axis=-1):
     evals : array-like
         Eigenvalues of a diffusion tensor, rolled so that the 3 eigenvals are
         the last axis.
+
     """
     if evals.shape[-1] != 3:
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[-1])
@@ -50,8 +52,7 @@ def _roll_evals(evals, axis=-1):
 
 
 def fractional_anisotropy(evals, axis=-1):
-    r"""
-    Fractional anisotropy (FA) of a diffusion tensor.
+    r"""Return Fractional anisotropy (FA) of a diffusion tensor.
 
     Parameters
     ----------
@@ -291,7 +292,7 @@ def trace(evals, axis=-1):
 
 
 def color_fa(fa, evecs):
-    """ Color fractional anisotropy of diffusion tensor
+    r""" Color fractional anisotropy of diffusion tensor
 
     Parameters
     ----------
@@ -353,7 +354,7 @@ def determinant(q_form):
 
 
 def isotropic(q_form):
-    """
+    r"""
     Calculate the isotropic part of the tensor [1]_.
 
     Parameters
@@ -604,7 +605,7 @@ def sphericity(evals, axis=-1):
 
 
 def apparent_diffusion_coef(q_form, sphere):
-    """
+    r"""
     Calculate the apparent diffusion coefficient (ADC) in each direction of a
     sphere.
 

@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -12,6 +13,7 @@ from dipy.io.image import load_nifti_data
 
 needs_sklearn = pytest.mark.skipif(not sfm.has_sklearn,
                                    reason="Requires Scikit-Learn")
+
 
 def test_design_matrix():
     data, gtab = dpd.dsi_voxels()
@@ -75,7 +77,9 @@ def test_predict():
     npt.assert_(xval.coeff_of_determination(new_pred, S[::2]) > 97)
 
     # Should be possible to predict for a single direction:
-    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
 
     # Fitting and predicting with a volume of data:
@@ -92,7 +96,9 @@ def test_predict():
     npt.assert_equal(new_pred.shape, data.shape[:-1] + bvals[::2].shape, )
 
     # Should be possible to predict for a single direction:
-    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
 
@@ -110,7 +116,9 @@ def test_predict():
     npt.assert_equal(new_pred[0, 0, 0], 0)
 
     # Should be possible to predict for a single direction:
-    new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        new_gtab = grad.gradient_table(bvals[1][None], bvecs[1][None, :])
     new_pred = sffit.predict(new_gtab)
     npt.assert_equal(new_pred.shape, data.shape[:-1])
     npt.assert_equal(new_pred[0, 0, 0], 0)
@@ -188,9 +196,9 @@ def test_exponential_iso():
         sphere = dpd.get_sphere()
         odf = sffit1.odf(sphere)
         pred = sffit1.predict(gtab)
-        npt.assert_equal(pred.shape, data[0,0,0].shape)
+        npt.assert_equal(pred.shape, data[0, 0, 0].shape)
         npt.assert_equal(odf.shape,
-                         data[0,0,0].shape[:-1] + (sphere.x.shape[0],))
+                         data[0, 0, 0].shape[:-1] + (sphere.x.shape[0],))
 
         sffit2 = sfmodel.fit(data)
         sphere = dpd.get_sphere()
@@ -219,4 +227,3 @@ def test_exponential_iso():
         sffit = sfmodel.fit(S)
         pred = sffit.predict()
         npt.assert_(xval.coeff_of_determination(pred, S) > 96)
-

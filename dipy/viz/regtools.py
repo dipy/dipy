@@ -49,7 +49,7 @@ def simple_plot(file_name, title, x, y, xlabel, ylabel):
     plt.clf()
 
 
-def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
+def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None, **fig_kwargs):
     r""" Plot two images one on top of the other using red and green channels.
 
     Creates a figure containing three images: the first image to the left
@@ -79,6 +79,7 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     fname : string (optional)
         the file name to write the resulting figure. If None (default), the
         image is not saved.
+    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
     """
     # Normalize the input images to [0,255]
     img0 = 255 * ((img0 - img0.min()) / (img0.max() - img0.min()))
@@ -101,7 +102,7 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
 
     # If a file name was given, save the figure
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
 
     return fig
 
@@ -152,7 +153,7 @@ def draw_lattice_2d(nrows, ncols, delta):
 def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
                               direct_grid_shape=None, direct_grid2world=-1,
                               inverse_grid_shape=None, inverse_grid2world=-1,
-                              show_figure=True):
+                              show_figure=True, **fig_kwargs):
     r"""Draw the effect of warping a regular lattice by a diffeomorphic map.
 
     Draws a diffeomorphic map by showing the effect of the deformation on a
@@ -200,6 +201,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
     show_figure : bool, optional
         if True (default), the deformed grids will be plotted using matplotlib,
         else the grids are just returned
+    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
 
     Returns
     -------
@@ -224,25 +226,25 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
         # By default, direct_grid_shape is the codomain grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.codomain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.codomain_grid2world
 
         # By default, the inverse grid is the domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.domain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.domain_grid2world
     else:
         # Now by default, direct_grid_shape is the mapping's input grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.domain_shape
-        if direct_grid2world is -1:
+        if direct_grid2world == -1:
             direct_grid2world = mapping.domain_grid2world
 
         # By default, the output grid is the mapping's domain grid
         if inverse_grid_shape is None:
             inverse_grid_shape = mapping.codomain_shape
-        if inverse_grid2world is -1:
+        if inverse_grid2world == -1:
             inverse_grid2world = mapping.codomain_grid2world
 
     # The world-to-image (image = drawn lattice on the output grid)
@@ -293,13 +295,13 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
 
         # Finally, save the figure to disk
         if fname is not None:
-            plt.savefig(fname, bbox_inches='tight')
+            plt.savefig(fname, bbox_inches='tight', **fig_kwargs)
 
     # Return the deformed grids
     return warped_forward, warped_backward
 
 
-def plot_slices(V, slice_indices=None, fname=None):
+def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     r"""Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial
 
     Creates a figure showing the axial, coronal and sagittal slices at the
@@ -318,6 +320,7 @@ def plot_slices(V, slice_indices=None, fname=None):
     fname : string (optional)
         the name of the file to save the figure to. If None (default), the
         figure is not saved to disk.
+    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
     """
     if slice_indices is None:
         slice_indices = np.array(V.shape) // 2
@@ -337,13 +340,13 @@ def plot_slices(V, slice_indices=None, fname=None):
 
     # Save the figure if requested
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
 
     return fig
 
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
-                   rtitle='Right', fname=None):
+                   rtitle='Right', fname=None, **fig_kwargs):
     r"""Plot three overlaid slices from the given volumes.
 
     Creates a figure containing three images: the gray scale k-th slice of
@@ -375,6 +378,7 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
     fname : string (optional)
         the name of the file to write the image to. If None (default), the
         figure is not saved to disk.
+    fig_kwargs: extra parameters for saving figure, e.g. `dpi=300`.
     """
 
     # Normalize the intensities to [0,255]
@@ -386,19 +390,19 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
 
     # Create the color image to draw the overlapped slices into, and extract
     # the slices (note the transpositions)
-    if slice_type is 0:
+    if slice_type == 0:
         if slice_index is None:
             slice_index = sh[0] // 2
         colorImage = np.zeros(shape=(sh[2], sh[1], 3), dtype=np.uint8)
         ll = np.asarray(L[slice_index, :, :]).astype(np.uint8).T
         rr = np.asarray(R[slice_index, :, :]).astype(np.uint8).T
-    elif slice_type is 1:
+    elif slice_type == 1:
         if slice_index is None:
             slice_index = sh[1] // 2
         colorImage = np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
         ll = np.asarray(L[:, slice_index, :]).astype(np.uint8).T
         rr = np.asarray(R[:, slice_index, :]).astype(np.uint8).T
-    elif slice_type is 2:
+    elif slice_type == 2:
         if slice_index is None:
             slice_index = sh[2] // 2
         colorImage = np.zeros(shape=(sh[1], sh[0], 3), dtype=np.uint8)
@@ -421,6 +425,6 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
 
     # Save the figure to disk, if requested
     if fname is not None:
-        fig.savefig(fname, bbox_inches='tight')
+        fig.savefig(fname, bbox_inches='tight', **fig_kwargs)
 
     return fig

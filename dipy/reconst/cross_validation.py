@@ -1,15 +1,12 @@
-"""
-Cross-validation analysis of diffusion models
-"""
+"""Cross-validation analysis of diffusion models."""
 
 import numpy as np
 import dipy.core.gradients as gt
 
 
 def coeff_of_determination(data, model, axis=-1):
-    """
-    Calculate the coefficient of determination for a model prediction, relative
-    to data.
+    """Calculate the coefficient of determination for a model prediction,
+    relative to data.
 
     Parameters
     ----------
@@ -25,10 +22,8 @@ def coeff_of_determination(data, model, axis=-1):
     COD : ndarray
        The coefficient of determination. This has shape `data.shape[:-1]`
 
-
     Notes
     -----
-
     See: http://en.wikipedia.org/wiki/Coefficient_of_determination
 
     The coefficient of determination is calculated as:
@@ -40,8 +35,8 @@ def coeff_of_determination(data, model, axis=-1):
     where SSE is the sum of the squared error between the model and the data
     (sum of the squared residuals) and SSD is the sum of the squares of the
     deviations of the data from the mean of the data (variance * N).
-    """
 
+    """
     residuals = data - model
     ss_err = np.sum(residuals ** 2, axis=axis)
 
@@ -56,9 +51,9 @@ def coeff_of_determination(data, model, axis=-1):
 
 
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
-    """
-    Perform k-fold cross-validation to generate out-of-sample predictions for
-    each measurement.
+    """Perform k-fold cross-validation.
+
+    It generate out-of-sample predictions for each measurement.
 
     Parameters
     ----------
@@ -97,6 +92,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     .. [1] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
        Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
        multiple b-values with cross-validation. ISMRM 2014.
+
     """
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:

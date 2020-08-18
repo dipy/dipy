@@ -550,7 +550,8 @@ def test_deform_streamlines():
                                                   stream2world)
 
     # Subtract disps from new_streamlines in world space
-    orig_streamlines_world = list(np.subtract(new_streamlines_world, disps))
+    orig_streamlines_world = list(np.subtract(new_streamlines_world, disps,
+                                              dtype=object))
 
     # Put orig_streamlines_world into voxmm
     orig_streamlines = transform_streamlines(orig_streamlines_world,

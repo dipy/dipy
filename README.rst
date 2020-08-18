@@ -5,8 +5,8 @@
 
 |
 
-.. image:: https://travis-ci.org/dipy/dipy.svg?branch=master
-  :target: https://travis-ci.org/dipy/dipy
+.. image:: https://travis-ci.com/dipy/dipy.svg?branch=master
+  :target: https://travis-ci.com/dipy/dipy
 
 .. image:: https://dev.azure.com/dipy/dipy/_apis/build/status/dipy.dipy?branchName=master
   :target: https://dev.azure.com/dipy/dipy/_build
@@ -46,7 +46,7 @@ https://mail.python.org/mailman/listinfo/neuroimaging
 Please see the users' forum at
 https://neurostars.org/tags/dipy
 
-Please join the gitter chatroom `here <https://gitter.im/nipy/dipy>`_.
+Please join the gitter chatroom `here <https://gitter.im/dipy/dipy>`_.
 
 Code
 ====

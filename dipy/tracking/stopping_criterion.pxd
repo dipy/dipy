@@ -32,9 +32,9 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
     cdef:
         double[:, :, :] include_map, exclude_map
     cpdef double get_exclude(self, double[::1] point)
-    cdef double get_exclude_c(self, double* point)
+    cdef get_exclude_c(self, double* point)
     cpdef double get_include(self, double[::1] point)
-    cdef double get_include_c(self, double* point)
+    cdef get_include_c(self, double* point)
     pass
 
 

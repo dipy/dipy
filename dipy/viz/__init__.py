@@ -1,6 +1,7 @@
 # Init file for visualization package
 import warnings
 
+from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(
@@ -15,6 +16,16 @@ if has_fury:
     from fury.window import vtk
     from fury.data import (fetch_viz_icons, read_viz_icons,
                            DATA_DIR as FURY_DATA_DIR)
+
+    HAVE_VTK_9_PLUS = vtk.vtkVersion.GetVTKMajorVersion() >= 9
+    HAVE_FURY_0_6_LESS = LooseVersion(fury.__version__) < LooseVersion('0.6.0')
+    if HAVE_VTK_9_PLUS and HAVE_FURY_0_6_LESS:
+        msg = "You are using VTK 9+ and FURY {}. ".format(fury.__version__)
+        msg += "Some functions might not work. To have a better experience, "
+        msg += "please upgrade to FURY version 0.6.0+. "
+        msg += "pip install -U fury"
+        warnings.warn(msg)
+
 
 else:
     warnings.warn(

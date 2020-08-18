@@ -38,6 +38,7 @@ if have_smf:
 
 if have_matplotlib:
     import matplotlib as matplt
+    import matplotlib.pyplot as plt
 
 
 class SNRinCCFlow(Workflow):
@@ -119,10 +120,17 @@ class SNRinCCFlow(Workflow):
                                                  bbox_threshold,
                                                  return_cfa=True)
 
+            if not np.count_nonzero(mask_cc_part.astype(np.uint8)):
+                logging.warning("Empty mask: corpus callosum not found."
+                                " Update your data or your threshold")
+
             save_nifti(cc_mask_path, mask_cc_part.astype(np.uint8), affine)
             logging.info('CC mask saved as {0}'.format(cc_mask_path))
 
-            mean_signal = np.mean(data[mask_cc_part], axis=0)
+            masked_data = data[mask_cc_part]
+            mean_signal = 0
+            if masked_data.size:
+                mean_signal = np.mean(masked_data, axis=0)
             mask_noise = binary_dilation(mask, iterations=10)
             mask_noise[..., :mask_noise.shape[-1]//2] = 1
             mask_noise = ~mask_noise
@@ -130,7 +138,10 @@ class SNRinCCFlow(Workflow):
             save_nifti(mask_noise_path, mask_noise.astype(np.uint8), affine)
             logging.info('Mask noise saved as {0}'.format(mask_noise_path))
 
-            noise_std = np.std(data[mask_noise, :])
+            noise_std = 0
+            if np.count_nonzero(mask_noise.astype(np.uint8)):
+                noise_std = np.std(data[mask_noise, :])
+
             logging.info('Noise standard deviation sigma= ' + str(noise_std))
 
             idx = np.sum(gtab.bvecs, axis=-1) == 0
@@ -146,14 +157,14 @@ class SNRinCCFlow(Workflow):
             SNR_directions = []
             for direction in ['b0', axis_X, axis_Y, axis_Z]:
                 if direction == 'b0':
-                    SNR = mean_signal[0]/noise_std
+                    SNR = mean_signal[0]/noise_std if noise_std else 0
                     logging.info("SNR for the b=0 image is :" + str(SNR))
                 else:
                     logging.info("SNR for direction " + str(direction) +
                                  " " + str(gtab.bvecs[direction]) + "is :" +
                                  str(SNR))
                     SNR_directions.append(direction)
-                    SNR = mean_signal[direction]/noise_std
+                    SNR = mean_signal[direction]/noise_std if noise_std else 0
                 SNR_output.append(SNR)
 
             data = []
@@ -420,29 +431,29 @@ class LinearMixedModelsFlow(Workflow):
 
         y_pos = np.arange(n)
 
-        l1, = matplt.pyplot.plot(y_pos, dotted, color='red', marker='.',
-                                 linestyle='solid', linewidth=0.6,
-                                 markersize=0.7, label="p-value < 0.01")
+        l1, = plt.plot(y_pos, dotted, color='red', marker='.',
+                       linestyle='solid', linewidth=0.6,
+                       markersize=0.7, label="p-value < 0.01")
 
-        l2, = matplt.pyplot.plot(y_pos, dotted+1, color='black', marker='.',
-                                 linestyle='solid', linewidth=0.4,
-                                 markersize=0.4, label="p-value < 0.001")
+        l2, = plt.plot(y_pos, dotted+1, color='black', marker='.',
+                       linestyle='solid', linewidth=0.4,
+                       markersize=0.4, label="p-value < 0.001")
 
-        first_legend = matplt.pyplot.legend(handles=[l1, l2],
-                                            loc='upper right')
+        first_legend = plt.legend(handles=[l1, l2],
+                                  loc='upper right')
 
-        axes = matplt.pyplot.gca()
+        axes = plt.gca()
         axes.add_artist(first_legend)
         axes.set_ylim([0, 6])
 
-        l3 = matplt.pyplot.bar(y_pos, y, color=c1, alpha=0.5,
+        l3 = plt.bar(y_pos, y, color=c1, alpha=0.5,
                                label=bundle_name)
-        matplt.pyplot.legend(handles=[l3], loc='upper left')
-        matplt.pyplot.title(title.upper())
-        matplt.pyplot.xlabel("Segment Number")
-        matplt.pyplot.ylabel("-log10(Pvalues)")
-        matplt.pyplot.savefig(plot_file)
-        matplt.pyplot.clf()
+        plt.legend(handles=[l3], loc='upper left')
+        plt.title(title.upper())
+        plt.xlabel("Segment Number")
+        plt.ylabel("-log10(Pvalues)")
+        plt.savefig(plot_file)
+        plt.clf()
 
     def run(self, h5_files, no_disks=100, out_dir=''):
         """Workflow of linear Mixed Models.
@@ -514,7 +525,8 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, threshold=6, out_dir=''):
+    def run(self, subject_folder, clust_thr=[5, 3, 1.5], threshold=6,
+            out_dir=''):
         """Workflow of bundle analytics.
 
         Applies bundle shape similarity analysis on bundles of subjects and
@@ -526,6 +538,9 @@ class BundleShapeAnalysis(Workflow):
         subject_folder : string
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
+
+        clust_thr : variable float (default [5,3,1.5]), optional
+            list of bundle clustering thresholds used in quickbundlesX
 
         threshold : float (default 6), optional
             Bundle shape similarity threshold.
@@ -543,6 +558,7 @@ class BundleShapeAnalysis(Workflow):
 
         """
         rng = np.random.RandomState()
+
         all_subjects = []
         if os.path.isdir(subject_folder):
             groups = os.listdir(subject_folder)
@@ -588,7 +604,7 @@ class BundleShapeAnalysis(Workflow):
                                               bbox_valid_check=False).streamlines
 
                     ba_value = bundle_shape_similarity(bundle1, bundle2, rng,
-                                                       threshold)
+                                                       clust_thr, threshold)
 
                     ba_matrix[i][j] = ba_value
 
@@ -598,8 +614,9 @@ class BundleShapeAnalysis(Workflow):
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
             cmap = matplt.cm.get_cmap('Blues')
-            matplt.pyplot.title(bun[:-4])
-            matplt.pyplot.imshow(ba_matrix, cmap=cmap)
-            matplt.pyplot.colorbar()
-            matplt.pyplot.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
-            matplt.pyplot.clf()
+            plt.title(bun[:-4])
+            plt.imshow(ba_matrix, cmap=cmap)
+            plt.colorbar()
+            plt.clim(0, 1)
+            plt.savefig(os.path.join(out_dir, "SM_"+bun[:-4]))
+            plt.clf()

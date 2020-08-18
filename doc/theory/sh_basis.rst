@@ -12,7 +12,7 @@ Spherical harmonics are ortho-normal functions defined by:
 
 ..  math::
 
-    Y_l^m(\theta, \phi) = (-1)^m \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
+    Y_l^m(\theta, \phi) = \sqrt{\frac{2l + 1}{4 \pi} \frac{(l - m)!}{(l + m)!}} P_l^m( cos \theta) e^{i m \phi}
 
 where $l$ is the band index, $m$ is the order, $P_l^m$ is an associated
 $l$-th degree, $m$-th order Legendre polynomial, and $(\theta, \phi)$ is the
@@ -46,7 +46,7 @@ literature for the computation of the ODF. DIPY implements two of these in the
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \sqrt{2} \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
+     \sqrt{2} \Re(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
      Y_l^0(\theta, \phi) & m = 0, \\
      \sqrt{2} \Im(Y_l^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
@@ -57,17 +57,23 @@ literature for the computation of the ODF. DIPY implements two of these in the
 
     Y_i(\theta, \phi) =
      \begin{cases}
-     \Re(Y_l^m(\theta, \phi)) & -l \leq m < 0, \\
-     Y_k^0(\theta, \phi) & m = 0, \\
-     \Im(Y_{|l|}^m(\theta, \phi)) & 0 < m \leq l
+     \Im(Y_l^{|m|}(\theta, \phi)) & -l \leq m < 0, \\
+     Y_l^0(\theta, \phi) & m = 0, \\
+     \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
 In both cases, $\Re$ denotes the real part of the spherical harmonic basis, and
 $\Im$ denotes the imaginary part.
 
-In practice, a maximum even order $k$ is chosen such that $k \leq l$. The
-choice of an even order is motivated by the symmetry of the diffusion process
-around the origin.
+In practice, a maximum even order $k$ is chosen such that $k \leq l$. By only
+taking into account even order SH functions, the above bases can be used to
+reconstruct symmetric spherical functions. The choice of an even order is
+motivated by the symmetry of the diffusion process around the origin.
+
+Both bases are also available as full SH bases, where odd order SH functions are
+also taken into account when reconstructing a spherical function. These full
+bases can successfully reconstruct asymmetric signals as well as symmetric
+signals.
 
 Descoteaux *et al.* [1]_ use the Q-Ball Imaging (QBI) formalization to recover
 the ODF, while Tournier *et al.* [2]_ use the Spherical Deconvolution (SD)

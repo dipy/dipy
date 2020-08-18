@@ -69,8 +69,7 @@ def _add_rician(sig, noise1, noise2):
 
 
 def _add_rayleigh(sig, noise1, noise2):
-    """
-    Helper function to add_noise
+    r"""Helper function to add_noise.
 
     The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
 
@@ -217,9 +216,10 @@ def callaghan_perpendicular(q, radius):
            117.1 (1995): 94-97.
     """
     # Eq. [6] in the paper
-    E = ((2 * jn(1, 2 * np.pi * q * radius)) ** 2 /
-         (2 * np.pi * q * radius) ** 2
-         )
+    numerator = (2 * jn(1, 2 * np.pi * q * radius)) ** 2
+    denom = (2 * np.pi * q * radius) ** 2
+
+    E = np.divide(numerator, denom, out=np.zeros_like(q), where=denom != 0)
     return E
 
 
@@ -1047,7 +1047,7 @@ def multi_shell_fiber_response(sh_order, bvals, evals, csf_md, gm_md,
     for i, bvalue in enumerate(bvals):
         gtab = GradientTable(big_sphere.vertices * bvalue)
         wm_response = single_tensor(gtab, 1., evals, evecs, snr=None)
-        response[i, 2:] = np.linalg.lstsq(B, wm_response)[0]
+        response[i, 2:] = np.linalg.lstsq(B, wm_response, rcond=-1)[0]
 
         response[i, 0] = np.exp(-bvalue * csf_md) / A
         response[i, 1] = np.exp(-bvalue * gm_md) / A

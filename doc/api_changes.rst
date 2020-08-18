@@ -6,16 +6,27 @@ Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
 DIPY 1.2.0 changes
-----------------
+------------------
+
+**Segmentation**
+
+In prior releases, for users with SciPy < 1.5, a memory overlap bug occurs in
+``multi_median``, causing an overly smooth output. This has now been fixed,
+regardless of the user's installed SciPy version. Users of this function via
+``median_otsu`` thresholding should check the output of their image processing
+pipelines after the 1.2.0 release to make sure thresholding is still operating
+as expected (if not, try readjusting the ``median_radius`` parameter).
 
 **Tracking**
 
 The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
 been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
 
+The command line ``dipy_track_local`` has been renamed ``dipy_track``.
+
 
 DIPY 1.1.1 changes
-----------------
+------------------
 
 **IO**
 
@@ -36,7 +47,7 @@ applied to all the codebase. The default datatype is now float64.
 
 
 DIPY 1.0.0 changes
-----------------
+------------------
 Some of the changes introduced in the 1.0 release will break backward
 compatibility with previous versions. This release is compatible with Python 3.5+
 
@@ -164,7 +175,7 @@ DIPY 0.15 Changes
 
 **IO**
 
-``load_tck`` and ``save_tck`` from ``dipy.io.streamline``have been added. They are highly recommended for managing streamlines.
+``load_tck`` and ``save_tck`` from ``dipy.io.streamline`` have been added. They are highly recommended for managing streamlines.
 
 **Gradient Table**
 

@@ -739,26 +739,30 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     else:
         return True
 
-def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
-    """Compute anisotropy of a single b-tensor
 
-    Auxiliary function where calculation of `bdelta` from a (3,3) b-tensor takes
-    place. The main function `btensor_to_bdelta` then wraps around this to
-    enable support of input (N, 3, 3) arrays, where N = number of b-tensors
+def _btens_to_params_2d(btens_2d, ztol):
+    """Compute trace, anisotropy and assymetry parameters from a single b-tensor
+
+    Auxiliary function where calculation of `bval`, bdelta` and `b_eta` from a
+    (3,3) b-tensor takes place. The main function `btens_to_params` then wraps
+    around this to enable support of input (N, 3, 3) arrays, where N = number of
+    b-tensors
 
     Parameters
     ----------
     btens_2d : (3, 3) numpy.ndarray
         input b-tensor
     ztol : float
-        bvals or bdeltas smaller than this value are considered to be 0.
+        Any parameters smaller than this value are considered to be 0
 
     Returns
     -------
+    bval: float
+        b-value (trace)
     bdelta: float
         normalized tensor anisotropy
-    bval: float
-        b-value
+    bdelta: float
+        tensor assymetry
 
     Notes
     -----
@@ -772,14 +776,16 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
     Chemistry, Cambridge, UK, 2016.
 
     """
+    btens_2d[abs(btens_2d) <= ztol] = 0
+
     evals = np.real(np.linalg.eig(btens_2d)[0])
     bval = np.sum(evals)
-
-    bval_is_zero = bval < ztol
+    bval_is_zero = np.abs(bval) <= ztol
 
     if bval_is_zero:
-        bdelta = 0
         bval = 0
+        bdelta = 0
+        b_eta = 0
     else:
         lambda_iso = (1/3)*bval
 
@@ -787,45 +793,56 @@ def _btensor_to_bdelta_2d(btens_2d, ztol=1e-10):
         evals_zzxxyy = evals[np.argsort(diff_lambdas)[::-1]]
 
         lambda_zz = evals_zzxxyy[0]
-        lambda_xx = evals_zzxxyy[2]
-        lambda_yy = evals_zzxxyy[1]
+        lambda_xx = evals_zzxxyy[1]
+        lambda_yy = evals_zzxxyy[2]
 
         bdelta = (1/(3*lambda_iso))*(lambda_zz-((lambda_yy+lambda_xx)/2))
 
-        if np.abs(bval) < ztol:
-            bval = 0
-
-        if np.abs(bdelta) < ztol:
+        if np.abs(bdelta) <= ztol:
             bdelta = 0
 
-    return float(bdelta), float(bval)
+        yyxx_diff = lambda_yy-lambda_xx
+        if abs(yyxx_diff) <= np.spacing(1):
+            yyxx_diff = 0
 
-def btensor_to_bdelta(btens):
-    r"""Compute anisotropy of b-tensor(s)
+        b_eta = yyxx_diff/(2*lambda_iso*bdelta+np.spacing(1))
+
+        if np.abs(b_eta) <= b_eta:
+            b_eta = 0
+
+    return float(bval), float(bdelta), float(b_eta)
+
+
+def btens_to_params(btens, ztol=1e-10):
+    r"""Compute trace, anisotropy and assymetry parameters from b-tensors
 
     Parameters
     ----------
     btens : (3, 3) OR (N, 3, 3) numpy.ndarray
         input b-tensor, or b-tensors, where N = number of b-tensors
+    ztol : float
+        Any parameters smaller than this value are considered to be 0
 
     Returns
     -------
+    bval: numpy.ndarray
+        b-value(s) (trace(s))
     bdelta: numpy.ndarray
         normalized tensor anisotropy(s)
-    bval: numpy.ndarray
-        b-value(s)
+    b_eta: numpy.ndarray
+        tensor assymetry(s)
 
     Notes
     -----
-    This function can be used to get bdeltas from the GradientTable btens
-    attribute.
+    This function can be used to get b-tensor parameters directly from the
+    GradientTable `btens` attribute.
 
     Examples
     --------
     >>> lte = np.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
-    >>> bdelta, bval = btensor_to_bdelta(lte)
-    >>> print("bdelta={}; bval={}".format(bdelta[0], bval[0]))
-    bdelta=1.0; bval=1.0
+    >>> bval, bdelta, b_eta = btens_to_params(lte)
+    >>> print("bval={}; bdelta={}; b_eta={}".format(bdelta, bval, b_eta))
+    bval=[ 1.]; bdelta=[ 1.]; b_eta=[ 0.]
 
     """
     # Bad input checks
@@ -852,16 +869,74 @@ def btensor_to_bdelta(btens):
 
     # Pre-allocate
     n_btens = btens.shape[0]
-    bdelta = np.empty(n_btens)
     bval = np.empty(n_btens)
+    bdelta = np.empty(n_btens)
+    b_eta = np.empty(n_btens)
 
     # Loop over b-tensor(s)
     for i in range(btens.shape[0]):
         i_btens = btens[i, :, :]
-        i_bdelta, i_bval = _btensor_to_bdelta_2d(i_btens)
-        bdelta[i] = i_bdelta
+        i_bval, i_bdelta, i_b_eta = _btens_to_params_2d(i_btens, ztol)
         bval[i] = i_bval
+        bdelta[i] = i_bdelta
+        b_eta[i] = i_b_eta
 
-    bdelta = bdelta.round(decimals=6)
+    return bval, bdelta, b_eta
 
-    return bdelta, bval
+
+def params_to_btens(bval, bdelta, b_eta):
+    """Compute b-tensor from trace, anisotropy and assymetry parameters
+
+    Parameters
+    ----------
+    bval: int or float
+        b-value (>= 0)
+    bdelta: int or float
+        normalized tensor anisotropy (>= -0.5 and <= 1)
+    b_eta: int or float
+        tensor assymetry (>= 0 and <= 1)
+
+    Returns
+    -------
+    (3, 3) numpy.ndarray
+        output b-tensor
+
+    Notes
+    -----
+    Implements eq. 7.11. p. 231 in [1].
+
+    References
+    ----------
+    .. [1] D. Topgaard, NMR methods for studying microscopic diffusion
+    anisotropy, in: R. Valiullin (Ed.), Diffusion NMR of Confined Systems: Fluid
+    Transport in Porous Solids and Heterogeneous Materials, Royal Society of
+    Chemistry, Cambridge, UK, 2016.
+
+    """
+
+    # Check input times are OK
+    expected_input_types = (float, int)
+    input_types_all_ok = (isinstance(bval, expected_input_types) and
+                          isinstance(bdelta, expected_input_types) and
+                          isinstance(b_eta, expected_input_types))
+
+    if not input_types_all_ok:
+        s = [x.__name__ for x in expected_input_types]
+        it_msg = "All input types should any of: {}".format(s)
+        raise ValueError(it_msg)
+
+    # Check input values within expected ranges
+    if bval < 0:
+        raise ValueError("`bval` must be >= 0")
+
+    if not (bdelta >= -0.5 and bdelta <= 1):
+        raise ValueError("`delta` must be >= -0.5 and <= 1")
+
+    if not (b_eta >= 0 and b_eta <= 1):
+        raise ValueError("`b_eta` must be >= 0 and <= 1")
+
+    m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
+    m2 = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, 0]])
+    btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
+
+    return btens

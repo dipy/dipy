@@ -73,26 +73,29 @@ def test_orthogonality_basis_functions():
     # we already know the spherical harmonics are orthonormal
     # only check j>0, l=0 basis functions
 
-    int1 = integrate.quad(lambda q:
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              1, 0, diffusivity, q) *
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              2, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
-    int2 = integrate.quad(lambda q:
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              2, 0, diffusivity, q) *
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              3, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
-    int3 = integrate.quad(lambda q:
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              3, 0, diffusivity, q) *
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              4, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
-    int4 = integrate.quad(lambda q:
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              4, 0, diffusivity, q) *
-                          mapmri.mapmri_isotropic_radial_signal_basis(
-                              5, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore",
+                                category=integrate.IntegrationWarning)
+        int1 = integrate.quad(
+            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(
+                1, 0, diffusivity, q) *
+            mapmri.mapmri_isotropic_radial_signal_basis(
+                2, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
+        int2 = integrate.quad(
+            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(
+                2, 0, diffusivity, q) *
+            mapmri.mapmri_isotropic_radial_signal_basis(
+                3, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
+        int3 = integrate.quad(
+            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(
+                3, 0, diffusivity, q) *
+            mapmri.mapmri_isotropic_radial_signal_basis(
+                4, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
+        int4 = integrate.quad(
+            lambda q: mapmri.mapmri_isotropic_radial_signal_basis(
+                4, 0, diffusivity, q) *
+            mapmri.mapmri_isotropic_radial_signal_basis(
+                5, 0, diffusivity, q) * q ** 2, qmin, qmax)[0]
 
     # checking for first 5 basis functions if they are indeed orthogonal
     assert_almost_equal(int1, 0.)
