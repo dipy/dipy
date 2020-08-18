@@ -24,6 +24,12 @@ been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
 
 The command line ``dipy_track_local`` has been renamed ``dipy_track``.
 
+**Visualization**
+
+- Use ``window.Scene()`` instead of ``window.Renderer()``.
+- Use ``scene.clear()`` instead of ``window.rm_all(scene)``.
+- Use ``scene.clear()`` instead of ``window.clear(scene)``.
+
 
 DIPY 1.1.1 changes
 ------------------

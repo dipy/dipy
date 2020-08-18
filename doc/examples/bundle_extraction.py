@@ -50,13 +50,13 @@ let's visualize atlas tractogram and target tractogram before registration
 
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.line(atlas, colors=(1, 0, 1)))
-ren.add(actor.line(target, colors=(1, 1, 0)))
-window.record(ren, out_path='tractograms_initial.png', size=(600, 600))
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(atlas, colors=(1, 0, 1)))
+scene.add(actor.line(target, colors=(1, 1, 0)))
+window.record(scene, out_path='tractograms_initial.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: tractograms_initial.png
@@ -90,14 +90,14 @@ let's visualize atlas tractogram and target tractogram after registration
 
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.line(atlas, colors=(1, 0, 1)))
-ren.add(actor.line(moved, colors=(1, 1, 0)))
-window.record(ren, out_path='tractograms_after_registration.png',
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(atlas, colors=(1, 0, 1)))
+scene.add(actor.line(moved, colors=(1, 1, 0)))
+window.record(scene, out_path='tractograms_after_registration.png',
               size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: tractograms_after_registration.png
@@ -138,16 +138,16 @@ together
 
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.line(model_af_l, colors=(.1, .7, .26)))
-ren.add(actor.line(recognized_af_l, colors=(.1, .1, 6)))
-ren.set_camera(focal_point=(320.21296692, 21.28884506,  17.2174015),
-               position=(2.11, 200.46, 250.44), view_up=(0.1, -1.028, 0.18))
-window.record(ren, out_path='AF_L_recognized_bundle.png',
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(model_af_l, colors=(.1, .7, .26)))
+scene.add(actor.line(recognized_af_l, colors=(.1, .1, 6)))
+scene.set_camera(focal_point=(320.21296692, 21.28884506,  17.2174015),
+                 position=(2.11, 200.46, 250.44), view_up=(0.1, -1.028, 0.18))
+window.record(scene, out_path='AF_L_recognized_bundle.png',
               size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: AF_L_recognized_bundle.png
@@ -187,17 +187,17 @@ bundle together
 
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
-ren.add(actor.line(model_cst_l, colors=(.1, .7, .26)))
-ren.add(actor.line(recognized_cst_l, colors=(.1, .1, 6)))
-ren.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-               position=(-360.11, -340.46, -40.44),
-               view_up=(-0.03, 0.028, 0.89))
-window.record(ren, out_path='CST_L_recognized_bundle.png',
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(model_cst_l, colors=(.1, .7, .26)))
+scene.add(actor.line(recognized_cst_l, colors=(.1, .1, 6)))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -340.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_recognized_bundle.png',
               size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 
 """

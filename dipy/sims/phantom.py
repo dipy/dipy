@@ -246,7 +246,7 @@ if __name__ == "__main__":
     # """
 
     # from dipy.viz import window, actor
-    # ren = window.Renderer()
-    # ren.add(actor.volume(vol234[...,0]))
-    # window.show(r)
+    # scene = window.Scene()
+    # scene.add(actor.volume(vol234[...,0]))
+    # window.show(scene)
     # vol234n=add_rician_noise(vol234,20)

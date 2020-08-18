@@ -79,15 +79,15 @@ def test_LSCv2():
     except ImportError as e:
         raise pytest.skip('Fails to import dipy.viz due to %s' % str(e))
 
-    r = window.Renderer()
+    scene = window.Scene()
     colors = np.zeros((len(C), 3))
     for c in C:
         color = np.random.rand(3)
         for i in C[c]['indices']:
-            r.add(actor.line(T3[i], color))
+            scene.add(actor.line(T3[i], color))
         colors[c] = color
-    window.show(r)
-    window.clear(r)
+    window.show(scene)
+    scene.clear()
     skeleton = []
 
     def width(w):
@@ -103,10 +103,10 @@ def test_LSCv2():
         skeleton.append(bundle[si])
         actor.label(r,text = str(len(bundle)), pos=(bundle[si][-1]),
                     scale=(2, 2, 2))
-        r.add(actor.line(skeleton, colors, opacity=1,
+        scene.add(actor.line(skeleton, colors, opacity=1,
                          linewidth = width(len(bundle)/10.)))
 
-    window.show(r)
+    window.show(scene)
 
     """
 

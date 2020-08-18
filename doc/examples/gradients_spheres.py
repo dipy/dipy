@@ -51,18 +51,18 @@ from dipy.viz import window, actor
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
 
-ren.add(actor.point(hsph_initial.vertices, window.colors.red,
-                    point_radius=0.05))
-ren.add(actor.point(hsph_updated.vertices, window.colors.green,
-                    point_radius=0.05))
+scene.add(actor.point(hsph_initial.vertices, window.colors.red,
+                      point_radius=0.05))
+scene.add(actor.point(hsph_updated.vertices, window.colors.green,
+                      point_radius=0.05))
 
 print('Saving illustration as initial_vs_updated.png')
-window.record(ren, out_path='initial_vs_updated.png', size=(300, 300))
+window.record(scene, out_path='initial_vs_updated.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: initial_vs_updated.png
@@ -78,13 +78,13 @@ following way.
 
 sph = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 
-window.rm_all(ren)
-ren.add(actor.point(sph.vertices, window.colors.green, point_radius=0.05))
+scene.clear()
+scene.add(actor.point(sph.vertices, window.colors.green, point_radius=0.05))
 
 print('Saving illustration as full_sphere.png')
-window.record(ren, out_path='full_sphere.png', size=(300, 300))
+window.record(scene, out_path='full_sphere.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: full_sphere.png
@@ -93,7 +93,7 @@ if interactive:
    Full sphere.
 
 It is time to create the Gradients. For this purpose we will use the
-function ``gradient_table`` and fill it with the ``hsph_updated`` vectors that 
+function ``gradient_table`` and fill it with the ``hsph_updated`` vectors that
 we created above.
 """
 
@@ -170,7 +170,7 @@ Both b-values and b-vectors look correct. Let's now create the
 
 gtab = gradient_table(bvals, bvecs)
 
-window.rm_all(ren)
+scene.clear()
 
 """
 We can also visualize the gradients. Let's color the first shell blue and
@@ -183,12 +183,12 @@ colors = np.vstack((colors_b1000, colors_b2500))
 colors = np.insert(colors, (0, colors.shape[0]), np.array([0, 0, 0]), axis=0)
 colors = np.ascontiguousarray(colors)
 
-ren.add(actor.point(gtab.gradients, colors, point_radius=100))
+scene.add(actor.point(gtab.gradients, colors, point_radius=100))
 
 print('Saving illustration as gradients.png')
-window.record(ren, out_path='gradients.png', size=(300, 300))
+window.record(scene, out_path='gradients.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: gradients.png
