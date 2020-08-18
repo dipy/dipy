@@ -109,12 +109,12 @@ REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "h5py (>=%s)" % H5PY_MIN_VERSION,
                        "packaging (>=%s)" % PACKAGING_MIN_VERSION]
 EXTRAS_REQUIRE = {
-    "test":[
+    "test": [
         "pytest",
         "coverage",
         "coveralls",
-        "codecov"
-    ]
+        "codecov",
+    ],
     "doc": [
         "cython",
         "numpy",
