@@ -49,19 +49,19 @@ Show every streamline with an orientation color
 This is the default option when you are using ``line`` or ``streamtube``.
 """
 
-renderer = window.Renderer()
+scene = window.Scene()
 
 stream_actor = actor.line(bundle_native)
 
-renderer.set_camera(position=(-176.42, 118.52, 128.20),
-                    focal_point=(113.30, 128.31, 76.56),
-                    view_up=(0.18, 0.00, 0.98))
+scene.set_camera(position=(-176.42, 118.52, 128.20),
+                 focal_point=(113.30, 128.31, 76.56),
+                 view_up=(0.18, 0.00, 0.98))
 
-renderer.add(stream_actor)
+scene.add(stream_actor)
 
 # Uncomment the line below to show to display the window
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle1.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle1.png', size=(600, 600))
 
 """
 .. figure:: bundle1.png
@@ -75,7 +75,7 @@ close the window and call the ``camera_info`` method which prints the position,
 focal point and view up vectors of the camera.
 """
 
-renderer.camera_info()
+scene.camera_info()
 
 """
 Show every point with a value from a volume with default colormap
@@ -84,7 +84,7 @@ Show every point with a value from a volume with default colormap
 Here we will need to input the ``fa`` map in ``streamtube`` or ``line``.
 """
 
-renderer.clear()
+scene.clear()
 stream_actor2 = actor.line(bundle_native, fa, linewidth=0.1)
 
 """
@@ -93,11 +93,11 @@ We can also show the scalar bar.
 
 bar = actor.scalar_bar()
 
-renderer.add(stream_actor2)
-renderer.add(bar)
+scene.add(stream_actor2)
+scene.add(bar)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle2.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle2.png', size=(600, 600))
 
 """
 .. figure:: bundle2.png
@@ -111,7 +111,7 @@ Show every point with a value from a volume with your colormap
 Here we will need to input the ``fa`` map in ``streamtube``
 """
 
-renderer.clear()
+scene.clear()
 
 hue = (0.0, 0.0)  # red only
 saturation = (0.0, 1.0)  # white to red
@@ -123,11 +123,11 @@ stream_actor3 = actor.line(bundle_native, fa, linewidth=0.1,
                            lookup_colormap=lut_cmap)
 bar2 = actor.scalar_bar(lut_cmap)
 
-renderer.add(stream_actor3)
-renderer.add(bar2)
+scene.add(stream_actor3)
+scene.add(bar2)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle3.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle3.png', size=(600, 600))
 
 """
 .. figure:: bundle3.png
@@ -143,13 +143,13 @@ You can have a bundle with a specific color. In this example, we are chosing
 orange.
 """
 
-renderer.clear()
+scene.clear()
 stream_actor4 = actor.line(bundle_native, (1., 0.5, 0), linewidth=0.1)
 
-renderer.add(stream_actor4)
+scene.add(stream_actor4)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle4.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle4.png', size=(600, 600))
 
 """
 .. figure:: bundle4.png
@@ -164,7 +164,7 @@ Let's make a colormap where every streamline of the bundle is colored by its
 length.
 """
 
-renderer.clear()
+scene.clear()
 
 from dipy.tracking.streamline import length
 
@@ -181,13 +181,13 @@ lut_cmap = actor.colormap_lookup_table(
 stream_actor5 = actor.line(bundle_native, lengths, linewidth=0.1,
                            lookup_colormap=lut_cmap)
 
-renderer.add(stream_actor5)
+scene.add(stream_actor5)
 bar3 = actor.scalar_bar(lut_cmap)
 
-renderer.add(bar3)
+scene.add(bar3)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle5.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle5.png', size=(600, 600))
 
 """
 .. figure:: bundle5.png
@@ -204,16 +204,16 @@ we can create a list of the colors to correspond to the list of streamlines
 (bundles). Here in ``colors`` we will insert some random RGB colors.
 """
 
-renderer.clear()
+scene.clear()
 
 colors = [np.random.rand(*streamline.shape) for streamline in bundle_native]
 
 stream_actor6 = actor.line(bundle_native, colors, linewidth=0.2)
 
-renderer.add(stream_actor6)
+scene.add(stream_actor6)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
-window.record(renderer, out_path='bundle6.png', size=(600, 600))
+# window.show(scene, size=(600, 600), reset_camera=False)
+window.record(scene, out_path='bundle6.png', size=(600, 600))
 
 """
 .. figure:: bundle6.png

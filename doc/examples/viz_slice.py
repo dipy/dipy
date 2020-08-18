@@ -27,11 +27,11 @@ fname_t1 = os.path.join(os.path.expanduser('~'), '.dipy',
 data, affine = load_nifti(fname_t1)
 
 """
-Create a Renderer object which holds all the actors which we want to visualize.
+Create a Scene object which holds all the actors which we want to visualize.
 """
 
-renderer = window.Renderer()
-renderer.background((0.5, 0.5, 0.5))
+scene = window.Scene()
+scene.background((0.5, 0.5, 0.5))
 
 """
 Render slices from T1 with a specific value range
@@ -56,7 +56,7 @@ slice_actor = actor.slicer(data, affine, value_range)
 The ``slice_actor`` contains an axial slice.
 """
 
-renderer.add(slice_actor)
+scene.add(slice_actor)
 
 """
 The same actor can show any different slice from the given data using its
@@ -73,22 +73,22 @@ plane.
 
 slice_actor2.display(slice_actor2.shape[0]//2, None, None)
 
-renderer.add(slice_actor2)
+scene.add(slice_actor2)
 
-renderer.reset_camera()
-renderer.zoom(1.4)
+scene.reset_camera()
+scene.zoom(1.4)
 
 """
 In order to interact with the data you will need to uncomment the line below.
 """
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
+# window.show(scene, size=(600, 600), reset_camera=False)
 
 """
 Otherwise, you can save a screenshot using the following command.
 """
 
-window.record(renderer, out_path='slices.png', size=(600, 600),
+window.record(scene, out_path='slices.png', size=(600, 600),
               reset_camera=False)
 
 """
@@ -127,15 +127,15 @@ to (0, 255).
 
 fa_actor = actor.slicer(fa, affine, lookup_colormap=lut)
 
-renderer.clear()
-renderer.add(fa_actor)
+scene.clear()
+scene.add(fa_actor)
 
-renderer.reset_camera()
-renderer.zoom(1.4)
+scene.reset_camera()
+scene.zoom(1.4)
 
-# window.show(renderer, size=(600, 600), reset_camera=False)
+# window.show(scene, size=(600, 600), reset_camera=False)
 
-window.record(renderer, out_path='slices_lut.png', size=(600, 600),
+window.record(scene, out_path='slices_lut.png', size=(600, 600),
               reset_camera=False)
 
 """
@@ -153,7 +153,7 @@ using it with ``window.show``. The more appropriate way is to use the
 ``ShowManager`` object, which allows accessing the pipeline in different areas.
 """
 
-show_m = window.ShowManager(renderer, size=(1200, 900))
+show_m = window.ShowManager(scene, size=(1200, 900))
 show_m.initialize()
 
 """
@@ -178,7 +178,7 @@ panel_picking.add_element(label_value, (0.1, 0.25))
 panel_picking.add_element(result_position, (0.45, 0.55))
 panel_picking.add_element(result_value, (0.45, 0.25))
 
-renderer.add(panel_picking)
+scene.add(panel_picking)
 
 """
 Add a left-click callback to the slicer. Also disable interpolation so you can
@@ -190,10 +190,7 @@ def left_click_callback(obj, ev):
     """Get the value of the clicked voxel and show it in the panel."""
     event_pos = show_m.iren.GetEventPosition()
 
-    obj.picker.Pick(event_pos[0],
-                    event_pos[1],
-                    0,
-                    renderer)
+    obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
 
     i, j, k = obj.picker.GetPointIJK()
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
@@ -212,17 +209,17 @@ Create a mosaic
 By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
 easy and efficient to create a mosaic of all the slices.
 
-So, let's clear the renderer and change the projection from perspective to
+So, let's clear the scene and change the projection from perspective to
 parallel. We'll also need a new show manager and an associated callback.
 """
 
-renderer.clear()
-renderer.projection('parallel')
+scene.clear()
+scene.projection('parallel')
 
 result_position.message = ''
 result_value.message = ''
 
-show_m_mosaic = window.ShowManager(renderer, size=(1200, 900))
+show_m_mosaic = window.ShowManager(scene, size=(1200, 900))
 show_m_mosaic.initialize()
 
 
@@ -230,10 +227,7 @@ def left_click_callback_mosaic(obj, ev):
     """Get the value of the clicked voxel and show it in the panel."""
     event_pos = show_m_mosaic.iren.GetEventPosition()
 
-    obj.picker.Pick(event_pos[0],
-                    event_pos[1],
-                    0,
-                    renderer)
+    obj.picker.Pick(event_pos[0], event_pos[1], 0, scene)
 
     i, j, k = obj.picker.GetPointIJK()
     result_position.message = '({}, {}, {})'.format(str(i), str(j), str(k))
@@ -242,7 +236,7 @@ def left_click_callback_mosaic(obj, ev):
 
 """
 Now we need to create two nested for loops which will set the positions of
-the grid of the mosaic and add the new actors to the renderer. We are going
+the grid of the mosaic and add the new actors to the scene. We are going
 to use 15 columns and 10 rows but you can adjust those with your datasets.
 """
 
@@ -265,15 +259,15 @@ for j in range(rows):
         slice_mosaic.AddObserver('LeftButtonPressEvent',
                                  left_click_callback_mosaic,
                                  1.0)
-        renderer.add(slice_mosaic)
+        scene.add(slice_mosaic)
         cnt += 1
         if cnt > Z:
             break
     if cnt > Z:
         break
 
-renderer.reset_camera()
-renderer.zoom(1.0)
+scene.reset_camera()
+scene.zoom(1.0)
 
 # show_m_mosaic.ren.add(panel_picking)
 # show_m_mosaic.start()
@@ -284,7 +278,7 @@ the mosaic up/down and left/right using the middle mouse button drag,
 zoom in/out using the scroll wheel, and pick voxels with left click.
 """
 
-window.record(renderer, out_path='mosaic.png', size=(900, 600),
+window.record(scene, out_path='mosaic.png', size=(900, 600),
               reset_camera=False)
 
 """

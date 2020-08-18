@@ -16,9 +16,9 @@ from dipy.viz import actor, window, ui
 """
 In ``window`` we have all the objects that connect what needs to be rendered
 to the display or the disk e.g., for saving screenshots. So, there you will
-find key objects and functions like the ``Renderer`` class which holds and
+find key objects and functions like the ``Scene`` class which holds and
 provides access to all the actors and the ``show`` function which displays what
-is in the renderer on a window. Also, this module provides access to functions
+is in the scene on a window. Also, this module provides access to functions
 for opening/saving dialogs and printing screenshots (see ``snapshot``).
 
 In the ``actor`` module we can find all the different primitives e.g.,
@@ -80,11 +80,11 @@ if not world_coords:
     streamlines = transform_streamlines(streamlines, np.linalg.inv(affine))
 
 """
-Now we create, a ``Renderer`` object and add the streamlines using the ``line``
+Now we create, a ``Scene`` object and add the streamlines using the ``line``
 function and an image plane using the ``slice`` function.
 """
 
-ren = window.Renderer()
+scene = window.Scene()
 stream_actor = actor.line(streamlines)
 
 if not world_coords:
@@ -125,10 +125,10 @@ image_actor_y.display_extent(0,
 Connect the actors with the Renderer.
 """
 
-ren.add(stream_actor)
-ren.add(image_actor_z)
-ren.add(image_actor_x)
-ren.add(image_actor_y)
+scene.add(stream_actor)
+scene.add(image_actor_z)
+scene.add(image_actor_x)
+scene.add(image_actor_y)
 
 """
 Now we would like to change the position of each ``image_actor`` using a
@@ -138,7 +138,7 @@ visualization pipeline and therefore we don't recommend using them with
 object which allows accessing the pipeline in different areas. Here is how:
 """
 
-show_m = window.ShowManager(ren, size=(1200, 900))
+show_m = window.ShowManager(scene, size=(1200, 900))
 show_m.initialize()
 
 """
@@ -215,7 +215,7 @@ def build_label(text):
     label.bold = False
     label.italic = False
     label.shadow = False
-    label.background = (0, 0, 0)
+    label.background_color = (0, 0, 0)
     label.color = (1, 1, 1)
 
     return label
@@ -246,7 +246,7 @@ panel.add_element(line_slider_z, (0.38, 0.35))
 panel.add_element(opacity_slider_label, (0.1, 0.15))
 panel.add_element(opacity_slider, (0.38, 0.15))
 
-ren.add(panel)
+scene.add(panel)
 
 """
 Then, we can render all the widgets and everything else in the screen and
@@ -260,7 +260,7 @@ using its ``re_align`` method every time the window size changes.
 
 
 global size
-size = ren.GetSize()
+size = scene.GetSize()
 
 
 def win_callback(obj, event):
@@ -281,8 +281,8 @@ datasets in 3D.
 
 interactive = False
 
-ren.zoom(1.5)
-ren.reset_clipping_range()
+scene.zoom(1.5)
+scene.reset_clipping_range()
 
 if interactive:
 
@@ -292,7 +292,7 @@ if interactive:
 
 else:
 
-    window.record(ren, out_path='bundles_and_3_slices.png', size=(1200, 900),
+    window.record(scene, out_path='bundles_and_3_slices.png', size=(1200, 900),
                   reset_camera=False)
 
 """
