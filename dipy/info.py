@@ -108,3 +108,23 @@ REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
                        "h5py (>=%s)" % H5PY_MIN_VERSION,
                        "packaging (>=%s)" % PACKAGING_MIN_VERSION]
+EXTRAS_REQUIRE = {
+    "doc": [
+        "fury>=0.6",
+        "sphinx",
+    ],
+    "viz": [
+        "fury>=0.6"
+    ],
+    "ml": [
+        "scikit_learn",
+        "pandas",
+        "statsmodels"
+        "tables",
+        "tensorflow"
+    ]
+
+}
+
+EXTRAS_REQUIRE["all"] = list(set([a[i] for a in list(EXTRAS_REQUIRE.values())
+                                  for i in range(len(a))]))

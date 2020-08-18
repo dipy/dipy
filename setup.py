@@ -181,6 +181,7 @@ def main(**extra_args):
           platforms=info.PLATFORMS,
           version=info.VERSION,
           requires=info.REQUIRES,
+          extras_require=info.EXTRAS_REQUIRE,
           provides=info.PROVIDES,
           packages=['dipy',
                     'dipy.tests',
