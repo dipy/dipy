@@ -53,10 +53,8 @@ if using_setuptools:
     extra_setuptools_args = dict(
         tests_require=['pytest'],
         zip_safe=False,
-        extras_require=dict(
-            doc=['Sphinx>=1.0'],
-            test=['pytest']),
-        python_requires=">= 3.5")
+        extras_require=info.EXTRAS_REQUIRE,
+        )
 
 # Define extensions
 EXTS = []
