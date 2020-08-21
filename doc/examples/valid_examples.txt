@@ -18,7 +18,6 @@
  reconst_mapmri.py
  reconst_mcsd.py
  reconst_qtdmri.py
- reconst_sh.py
  reconst_shore.py
  reconst_shore_metrics.py
  kfold_xval.py
@@ -69,3 +68,4 @@
  cluster_confidence.py
  path_length_map.py
  afq_tract_profiles.py
+ nn_deformable_registration_2d.py
