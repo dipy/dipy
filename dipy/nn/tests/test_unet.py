@@ -5,14 +5,14 @@ from distutils.version import LooseVersion
 from numpy.testing import assert_equal
 from dipy.utils.optpkg import optional_package
 
-from dipy.nn.registration import UNet2d, RegistrationDataLoader
-from dipy.nn.metrics import normalized_cross_correlation_loss
-
 tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
+
+    from dipy.nn.registration import UNet2d, RegistrationDataLoader
+    from dipy.nn.metrics import normalized_cross_correlation_loss
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
