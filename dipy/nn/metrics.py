@@ -55,24 +55,20 @@ def normalized_cross_correlation_loss():
                <https://en.wikipedia.org/wiki/Cross-correlation>`_
 
         """
-        eps = tf.constant(1e-7, 'float32')
-        ndim = len(tf.keras.backend.int_shape(y_true))-2
+        ndim = tf.keras.backend.ndim(y_true)-2
 
+        # shape (N, 1, 1, C)
         y_true_mean = tf.reduce_mean(y_true, axis=range(1, ndim+1),
                                      keepdims=True)
         y_pred_mean = tf.reduce_mean(y_pred, axis=range(1, ndim+1),
                                      keepdims=True)
-        # shape (N, 1, 1, C)
 
-        y_true_std = tf.math.reduce_std(y_true, axis=range(1, ndim+1),
-                                        keepdims=True)
-        y_pred_std = tf.math.reduce_std(y_pred, axis=range(1, ndim+1),
-                                        keepdims=True)
-        # shape (N, 1, 1, C)
+        y_true_hat = tf.math.l2_normalize(y_true-y_true_mean,
+                                          axis=range(1, ndim+1))
 
-        y_true_hat = (y_true - y_true_mean) / (y_true_std + eps)
-        y_pred_hat = (y_pred - y_pred_mean) / (y_pred_std + eps)
-        # shape (N, H, W, C)
+        y_pred_hat = tf.math.l2_normalize(y_pred-y_pred_mean,
+                                          axis=range(1, ndim+1))
 
-        return -tf.reduce_mean(y_true_hat * y_pred_hat)  # shape ()
+        return -tf.reduce_mean(tf.reduce_sum(y_true_hat * y_pred_hat,
+                                             axis=range(1, ndim+1)))
     return ncc

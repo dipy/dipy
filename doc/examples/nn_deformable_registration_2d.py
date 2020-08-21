@@ -28,8 +28,9 @@ In this example, we will show how to
 import numpy as np
 import scipy.ndimage
 import math
-from dipy.nn.registration import FCN2d
+from dipy.nn.registration import UNet2d
 from dipy.nn.metrics import normalized_cross_correlation_loss
+from dipy.nn.registration import RegistrationDataLoader
 from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 plt, _, _ = optional_package("matplotlib.pyplot")
@@ -48,7 +49,7 @@ change the ``label`` variable to select a different class.
 (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
 # Discard other digits.
-label = 7  # Which digit images to keep.
+label = 1  # Which digit images to keep.
 x_train = x_train[y_train == label].copy()  # shape (n_train, 28, 28)
 x_test = x_test[y_test == label].copy()  # shape (n_test, 28, 28)
 
@@ -65,65 +66,40 @@ idx = np.random.randint(x_test.shape[0])
 static = x_test[idx].copy()
 
 num_samples = 2  # Number of sample images to visualize.
-# Sample images to show results.
 idxs = np.random.choice(x_test.shape[0], replace=False,
                         size=num_samples)
 x_sample = x_test[idxs].copy()  # shape (num_samples, 32, 32)
 
-"""
-Implement a data loader that fetches and preprocesses batches of images for 
-real-time data feeding to our model. 
-"""
+# Reshape to (N, H, W, C) format.
+x_train = x_train[..., np.newaxis]
+x_test = x_test[..., np.newaxis]
+x_sample = x_sample[..., np.newaxis]
+static = static[np.newaxis, ..., np.newaxis]
 
-
-class DataLoader(tf.keras.utils.Sequence):
-    def __init__(self, x, static, batch_size=8, shuffle=False):
-        self.x = x
-        self.static = static
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-
-        if self.shuffle:
-            np.random.shuffle(self.x)
-
-    def __len__(self):
-        return math.ceil(len(self.x) / self.batch_size)
-
-    def __getitem__(self, idx):
-        moving = self.x[idx * self.batch_size: (idx + 1) * self.batch_size]
-        moving = moving[..., np.newaxis]
-        static = self.static[np.newaxis, ..., np.newaxis]
-        static = np.repeat(static, repeats=moving.shape[0], axis=0)
-
-        # Rescale to [0, 1].
-        moving = moving.astype(np.float32)  # (N, 32, 32, 1)
-        static = static.astype(np.float32)  # (N, 32, 32, 1)
-        moving = moving / 255.0
-        static = static / 255.0
-
-        return {'moving': moving, 'static': static}, static
-
-    def on_epoch_end(self):
-        if self.shuffle:
-            np.random.shuffle(self.x)
-
+# Scale to [0, 1] range.
+x_train = x_train.astype(np.float32) / 255.0
+x_test = x_test.astype(np.float32) / 255.0
+x_sample = x_sample.astype(np.float32) / 255.0
+static = static.astype(np.float32) / 255.0
 
 """
 Let's define some hyperparameters used for training the network.
 """
 
 batch_size = 32
-epochs = 100
-lr = 0.004  # learning rate
+epochs = 30
+lr = 0.007  # learning rate
 
 """
-Create the data loader objects for the training, testing and the 
-sample sets.
+Create the data loader objects that fetch and preprocess batches of images 
+for real-time data feeding to our model. 
 """
 
-train_loader = DataLoader(x_train, static, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(x_test, static, batch_size=batch_size, shuffle=True)
-sample_loader = DataLoader(x_sample, static, shuffle=True)
+train_loader = RegistrationDataLoader(x_train, static, batch_size=batch_size,
+                                      shuffle=True)
+test_loader = RegistrationDataLoader(x_test, static, batch_size=batch_size,
+                                     shuffle=True)
+sample_loader = RegistrationDataLoader(x_sample, static, shuffle=True)
 
 """
 After completing the data processing, we will instantiate and compile our 
@@ -137,7 +113,8 @@ loss = normalized_cross_correlation_loss()
 optimizer = tf.keras.optimizers.SGD(learning_rate=lr)
 
 # Compile the model with the loss and the optimizer.
-model = FCN2d(input_shape=(32, 32, 1), optimizer=optimizer, loss=loss)
+model = UNet2d(input_shape=(32, 32, 1), optimizer=optimizer, loss=loss,
+               in_filters=4)
 # model.compile(loss=loss, optimizer=optimizer)  # this works too
 
 """
@@ -205,10 +182,14 @@ moved = moved.squeeze(axis=-1)  # Remove the channel dim.
 moved = moved * 255.0  # Rescale to [0, 255].
 moved = moved.astype(np.uint8)  # Convert back to 8-bit images.
 
-moving = x_sample.copy()  # shape (num_samples, 32, 32)
+moving = x_sample.copy().squeeze(axis=-1)  # shape (num_samples, 32, 32)
+moving = moving * 255.0
+moving = moving.astype(np.uint8)
 
-static_ = static[np.newaxis, ...]  # shape (1, 32, 32)
+static_ = static.squeeze(axis=-1)  # shape (1, 32, 32)
 static_ = np.repeat(static_, repeats=moving.shape[0], axis=0)
+static_ = static_*255.0
+static_ = static_.astype(np.uint8)
 
 # Plot images.
 nb = moved.shape[0]
@@ -239,7 +220,7 @@ simply calling the ```save_weights``` method and specifying the path to the
 file that we want to save the weights to. 
 """
 
-model.save_weights('fcn2d.h5')
+model.save_weights('unet2d.h5')
 
 """
 Restoring the model is also very easy. We first need to create an instance 
@@ -248,8 +229,8 @@ simply calling the ```load_weights``` method providing the path to the saved
 weights file.
 """
 
-model_new = FCN2d(input_shape=(32, 32, 1))
-model_new.load_weights('fcn2d.h5')
+model_new = UNet2d(input_shape=(32, 32, 1), in_filters=4)
+model_new.load_weights('unet2d.h5')
 
 """
 To evaluate or fine-tune the model, we need to compile it with the
@@ -268,5 +249,6 @@ and the sample sets match with the values we got earlier.
 test_loss_new = model_new.evaluate(test_loader)
 sample_loss_new = model_new.evaluate(sample_loader)
 
-print('Diff: ', abs(test_loss_new-test_loss))
-print('Diff: ', abs(sample_loss_new-sample_loss))
+print('Diff: ', round(test_loss_new-test_loss, 3))
+print('Diff: ', round(sample_loss_new-sample_loss, 3))
+
