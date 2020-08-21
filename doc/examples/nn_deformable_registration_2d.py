@@ -27,7 +27,6 @@ In this example, we will show how to
 
 import numpy as np
 import scipy.ndimage
-import math
 from dipy.nn.registration import UNet2d
 from dipy.nn.metrics import normalized_cross_correlation_loss
 from dipy.nn.registration import RegistrationDataLoader
@@ -40,8 +39,8 @@ if have_tf:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 """
-To get started, we will load the MNIST dataset into the memory and filter 
-the training and testing sets to keep just one class of digits. We can 
+To get started, we will load the MNIST dataset into the memory and filter
+the training and testing sets to keep just one class of digits. We can
 change the ``label`` variable to select a different class.
 """
 
@@ -91,8 +90,8 @@ epochs = 30
 lr = 0.007  # learning rate
 
 """
-Create the data loader objects that fetch and preprocess batches of images 
-for real-time data feeding to our model. 
+Create the data loader objects that fetch and preprocess batches of images
+for real-time data feeding to our model.
 """
 
 train_loader = RegistrationDataLoader(x_train, static, batch_size=batch_size,
@@ -102,10 +101,10 @@ test_loader = RegistrationDataLoader(x_test, static, batch_size=batch_size,
 sample_loader = RegistrationDataLoader(x_sample, static, shuffle=True)
 
 """
-After completing the data processing, we will instantiate and compile our 
-deep learning model with the loss and the optimizer. In this example, 
-we will use the normalized cross-correlation (NCC) loss and the stochastic 
-gradient descent (SGD) as the optimizer. We also need to specify the input 
+After completing the data processing, we will instantiate and compile our
+deep learning model with the loss and the optimizer. In this example,
+we will use the normalized cross-correlation (NCC) loss and the stochastic
+gradient descent (SGD) as the optimizer. We also need to specify the input
 shape in the form of (height, width, channels). Here, it is equal (32, 32, 1).
 """
 
@@ -118,17 +117,17 @@ model = UNet2d(input_shape=(32, 32, 1), optimizer=optimizer, loss=loss,
 # model.compile(loss=loss, optimizer=optimizer)  # this works too
 
 """
-Now that everything is set up, we can go ahead and train our model by 
-passing the training and testing data loaders to the ``fit`` method along 
-with the number of epochs we want to train the model for. After the 
-optimization is done, a history object is returned which records the 
+Now that everything is set up, we can go ahead and train our model by
+passing the training and testing data loaders to the ``fit`` method along
+with the number of epochs we want to train the model for. After the
+optimization is done, a history object is returned which records the
 training and validation losses for every epoch.
 """
 
 hist = model.fit(train_loader, epochs=epochs, validation_data=test_loader)
 
 """
-Let's plot the losses to see if the model converged. 
+Let's plot the losses to see if the model converged.
 """
 
 plt.plot(hist.history['loss'], color='royalblue', label='Train')
@@ -144,14 +143,14 @@ plt.savefig('loss_plot.png')
 .. figure:: loss_plot.png
    :align: center
 
-    Training loss and testing loss w.r.t. epochs.   
+    Training loss and testing loss w.r.t. epochs.
 """
 
 """
-Now let's evaluate the trained model on the testing and sample sets. And 
-also compute the average NCC values for these sets. The NCC is just the 
-negative of the NCC loss. The NCC values range from -1 to 1. For a perfect 
-match, it is equal to 1 and for complete dissimilarity, it is -1. 
+Now let's evaluate the trained model on the testing and sample sets. And
+also compute the average NCC values for these sets. The NCC is just the
+negative of the NCC loss. The NCC values range from -1 to 1. For a perfect
+match, it is equal to 1 and for complete dissimilarity, it is -1.
 """
 
 test_loss = model.evaluate(test_loader)
@@ -164,9 +163,9 @@ print('Test NCC: ', test_ncc)
 print('Sample NCC: ', sample_ncc)
 
 """
-Now let's warp the sample images and see if they get similar to the static 
-image. The returned registered images by the model are currently in the [0, 
-1] range. So we need to perform some post-processing to convert them to the 
+Now let's warp the sample images and see if they get similar to the static
+image. The returned registered images by the model are currently in the [0,
+1] range. So we need to perform some post-processing to convert them to the
 normal 8-bit images.
 """
 
@@ -174,7 +173,7 @@ moved = model.predict(sample_loader)  # shape (num_samples, 32, 32, 1)
 # Note: 'predict' returns outputs as numpy arrays.
 
 """
-Finally, let's visualize the transformed image together with the static and 
+Finally, let's visualize the transformed image together with the static and
 the moving images.
 """
 
@@ -215,17 +214,17 @@ plt.savefig('sample_results.png')
 """
 
 """
-After the training is finished we can save the parameters of the model by 
+After the training is finished we can save the parameters of the model by
 simply calling the ```save_weights``` method and specifying the path to the 
-file that we want to save the weights to. 
+file that we want to save the weights to.
 """
 
 model.save_weights('unet2d.h5')
 
 """
-Restoring the model is also very easy. We first need to create an instance 
+Restoring the model is also very easy. We first need to create an instance
 of the model class that we want to restore and then we can load the weights by 
-simply calling the ```load_weights``` method providing the path to the saved 
+simply calling the ```load_weights``` method providing the path to the saved
 weights file.
 """
 
@@ -234,7 +233,7 @@ model_new.load_weights('unet2d.h5')
 
 """
 To evaluate or fine-tune the model, we need to compile it with the
-same loss function that was used earlier to train. This can also be done by 
+same loss function that was used earlier to train. This can also be done by
 simply passing the loss function during the instantiation of the model.
 """
 
@@ -242,7 +241,7 @@ loss = normalized_cross_correlation_loss()
 model_new.compile(loss=loss)
 
 """
-Now let's evaluate our restored model and check if the losses for the test 
+Now let's evaluate our restored model and check if the losses for the test
 and the sample sets match with the values we got earlier.
 """
 
@@ -251,4 +250,3 @@ sample_loss_new = model_new.evaluate(sample_loader)
 
 print('Diff: ', round(test_loss_new-test_loss, 3))
 print('Diff: ', round(sample_loss_new-sample_loss, 3))
-
