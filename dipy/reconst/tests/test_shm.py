@@ -21,15 +21,17 @@ from dipy.reconst import odf
 
 
 from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
-                              real_sym_sh_mrtrix, real_full_sh_basis,
-                              real_full_sh_mrtrix, sph_harm_ind_list,
+                              real_sym_sh_mrtrix, real_sh_descoteaux,
+                              real_sh_tournier, sph_harm_ind_list,
                               sph_harm_full_ind_list, order_from_ncoef,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit,
                               spherical_harmonics, anisotropic_power,
-                              calculate_max_order, sh_to_sf_matrix, gen_dirac)
+                              calculate_max_order, sh_to_sf_matrix, gen_dirac,
+                              convert_sh_to_full_basis, convert_sh_from_legacy,
+                              convert_sh_to_legacy)
 
 
 def test_order_from_ncoeff():
@@ -138,7 +140,7 @@ def test_real_sym_sh_basis():
     assert_array_almost_equal(descoteaux07_basis, expected)
 
 
-def test_real_full_sh_mrtrix():
+def test_real_sh_tournier():
     vertices = hemi_icosahedron.subdivide(2).vertices
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
@@ -154,7 +156,8 @@ def test_real_full_sh_mrtrix():
 
     # In order for our approximation to be precise enough, we
     # will use a SH basis of orders up to 10 (121 coefficients)
-    B, m, n = real_full_sh_mrtrix(10, sphere.theta, sphere.phi)
+    B, m, n = real_sh_tournier(10, sphere.theta, sphere.phi,
+                               is_full_basis=True)
     invB = smooth_pinv(B, L=np.zeros_like(n))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
@@ -162,7 +165,7 @@ def test_real_full_sh_mrtrix():
     assert_array_almost_equal(sf_approx, sf, 2)
 
 
-def test_real_full_sh_basis():
+def test_real_sh_descoteaux():
     vertices = hemi_icosahedron.subdivide(2).vertices
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
@@ -178,7 +181,8 @@ def test_real_full_sh_basis():
 
     # In order for our approximation to be precise enough, we
     # will use a SH basis of orders up to 10 (121 coefficients)
-    B, m, n = real_full_sh_basis(10, sphere.theta, sphere.phi)
+    B, m, n = real_sh_descoteaux(10, sphere.theta, sphere.phi,
+                                 is_full_basis=True)
     invB = smooth_pinv(B, L=np.zeros_like(n))
     sh_coefs = np.dot(invB, sf)
     sf_approx = np.dot(B, sh_coefs)
@@ -189,7 +193,7 @@ def test_real_full_sh_basis():
 def test_sh_to_sf_matrix():
     sphere = Sphere(xyz=hemi_icosahedron.vertices)
     B1, invB1 = sh_to_sf_matrix(sphere)
-    B2, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
+    B2, m, n = real_sh_descoteaux(4, sphere.theta, sphere.phi)
     invB2 = smooth_pinv(B2, L=np.zeros_like(n))
     B3 = sh_to_sf_matrix(sphere, return_inv=False)
 
@@ -443,12 +447,28 @@ def test_sf_to_sh():
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
 
     # 1D case with the 2 symmetric bases functions
+    # Tournier basis
     odf_sh = sf_to_sh(odf, hemisphere, 8, "tournier07")
     odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "tournier07")
     assert_array_almost_equal(odf, odf_reconst, 2)
 
+    # Legacy definition
+    odf_sh = sf_to_sh(odf, hemisphere, 8, "tournier07",
+                      use_legacy_definition=True)
+    odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "tournier07",
+                           use_legacy_definition=True)
+    assert_array_almost_equal(odf, odf_reconst, 2)
+
+    # Descoteaux basis
     odf_sh = sf_to_sh(odf, hemisphere, 8, "descoteaux07")
     odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "descoteaux07")
+    assert_array_almost_equal(odf, odf_reconst, 2)
+
+    # Legacy definition
+    odf_sh = sf_to_sh(odf, hemisphere, 8, "descoteaux07",
+                      use_legacy_definition=True)
+    odf_reconst = sh_to_sf(odf_sh, hemisphere, 8, "descoteaux07",
+                           use_legacy_definition=True)
     assert_array_almost_equal(odf, odf_reconst, 2)
 
     # We now create an asymmetric signal
@@ -464,12 +484,32 @@ def test_sf_to_sh():
     asym_odf = np.append(odf, odf2)
 
     # Try out full bases with order 10 (121 coefficients)
-    odf_sh = sf_to_sh(asym_odf, sphere, 10, "tournier07_full")
-    odf_reconst = sh_to_sf(odf_sh, sphere, 10, "tournier07_full")
+    # Tournier basis
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, 'tournier07',
+                      use_full_basis=True)
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, 'tournier07',
+                           use_full_basis=True)
     assert_array_almost_equal(odf_reconst, asym_odf, 2)
 
-    odf_sh = sf_to_sh(asym_odf, sphere, 10, "descoteaux07_full")
-    odf_reconst = sh_to_sf(odf_sh, sphere, 10, "descoteaux07_full")
+    # Legacy definition
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, 'tournier07',
+                      use_full_basis=True, use_legacy_definition=True)
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, 'tournier07',
+                           use_full_basis=True, use_legacy_definition=True)
+    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+
+    # Descoteaux basis
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, 'descoteaux07',
+                      use_full_basis=True)
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, 'descoteaux07',
+                           use_full_basis=True)
+    assert_array_almost_equal(odf_reconst, asym_odf, 2)
+
+    # Legacy definition
+    odf_sh = sf_to_sh(asym_odf, sphere, 10, 'descoteaux07',
+                      use_full_basis=True, use_legacy_definition=True)
+    odf_reconst = sh_to_sf(odf_sh, sphere, 10, 'descoteaux07',
+                           use_full_basis=True, use_legacy_definition=True)
     assert_array_almost_equal(odf_reconst, asym_odf, 2)
 
     # An invalid basis name should raise an error
@@ -564,11 +604,92 @@ def test_calculate_max_order():
     http://jdtournier.github.io/mrtrix-0.2/tractography/preprocess.html
     """
     orders = [2, 4, 6, 8, 10, 12]
-    n_coeffs = [6, 15, 28, 45, 66, 91]
-    for o, n in zip(orders, n_coeffs):
-        assert_equal(calculate_max_order(n), o)
+    n_coeffs_sym = [6, 15, 28, 45, 66, 91]
+    # n = (R + 1)^2 for a full basis
+    n_coeffs_full = [9, 25, 49, 81, 121, 169]
+    for o, n_sym, n_full in zip(orders, n_coeffs_sym, n_coeffs_full):
+        assert_equal(calculate_max_order(n_sym), o)
+        assert_equal(calculate_max_order(n_full, True), o)
 
     assert_raises(ValueError, calculate_max_order, 29)
+    assert_raises(ValueError, calculate_max_order, 29, True)
+
+
+def test_convert_sh_to_full_basis():
+    hemisphere = hemi_icosahedron.subdivide(2)
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
+
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8)
+    full_sh_coeffs = convert_sh_to_full_basis(sh_coeffs)
+    odf_reconst = sh_to_sf(full_sh_coeffs, hemisphere, 8, use_full_basis=True)
+
+    assert_array_almost_equal(odf, odf_reconst, 2)
+
+
+def test_convert_sh_from_legacy():
+    hemisphere = hemi_icosahedron.subdivide(2)
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
+
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8, use_legacy_definition=True)
+    converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'descoteaux07')
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8)
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07',
+                         use_legacy_definition=True)
+    converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'tournier07')
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07')
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+
+    # 2D case
+    odfs = np.array([odf, odf])
+    sh_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
+                         use_legacy_definition=True, use_full_basis=True)
+    converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'tournier07',
+                                              is_full_basis=True)
+    expected_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
+                               use_full_basis=True)
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_raises(ValueError, convert_sh_from_legacy, sh_coeffs, '', True)
+
+
+def test_convert_sh_to_legacy():
+    hemisphere = hemi_icosahedron.subdivide(2)
+    mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
+    angles = [(0, 0), (60, 0)]
+    odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
+
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8)
+    converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'descoteaux07')
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8, use_legacy_definition=True)
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07')
+    converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'tournier07')
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07',
+                               use_legacy_definition=True)
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+
+    # 2D case
+    odfs = np.array([odf, odf])
+    sh_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
+                         use_full_basis=True)
+    converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'tournier07',
+                                            is_full_basis=True)
+    expected_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
+                               use_legacy_definition=True, use_full_basis=True)
+
+    assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
+    assert_raises(ValueError, convert_sh_to_legacy, sh_coeffs, '', True)
 
 
 if __name__ == "__main__":
