@@ -835,7 +835,8 @@ def test_mapmri_odf(radial_order=6):
     mapfit = mapmod.fit(data)
     odf = mapfit.odf(sphere)
     odf_sh = mapfit.odf_sh()
-    odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None)
+    odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None,
+                           use_legacy_definition=True)
     assert_almost_equal(odf, odf_from_sh, 10)
 
 
