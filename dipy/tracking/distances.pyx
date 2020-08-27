@@ -256,6 +256,7 @@ def cut_plane(tracks, ref):
         float hit[3]
         float hitMp[3]
         float *delta
+    normal[:] = [0, 0, 0]
     # List used for storage of hits.  We will fill this with lots of
     # small numpy arrays, and reuse them over the reference track point
     # loops.
@@ -638,7 +639,7 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
                   min_t1t2)
     cdef:
         size_t t1_pi, t2_pi
-        cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0, dist_val
+        cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0, dist_val = 0
     for t1_pi from 0<= t1_pi < t1_len:
         mean_t1t2+=min_t1t2[t1_pi]
     mean_t1t2=mean_t1t2/t1_len
