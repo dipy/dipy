@@ -1141,7 +1141,7 @@ def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
         Default: False
     use_legacy_definition: bool, optional
         True to use a legacy basis definition for backward compatibility
-        with previous tournier07 and descoteaux07 implementations. 
+        with previous tournier07 and descoteaux07 implementations.
         Default: False
 
     Returns
