@@ -165,8 +165,8 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
         The polar (colatitudinal) coordinate.
-    use_scipy : bool
-        if True, use scipy implementation. default(True)
+    use_scipy : bool, optional
+        if True, use scipy implementation. Default: True
 
     Returns
     -------
@@ -254,11 +254,11 @@ def real_sh_tournier(sh_order, theta, phi,
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-    is_full_basis: bool
+    is_full_basis: bool, optional
         If true, returns a basis including odd order SH functions as well as
         even order SH functions. Otherwise returns only even order SH
-        functions. default(False)
-    is_legacy: bool
+        functions. Default: False
+    is_legacy: bool, optional
         If true, uses MRtrix 0.2 SH basis definition, where the sqrt(2) factor
         is omitted. Else, uses MRtrix 3 definition presented above.
 
@@ -327,14 +327,14 @@ def real_sh_descoteaux(sh_order, theta, phi,
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-    is_full_basis: bool
+    is_full_basis: bool, optional
         If true, returns a basis including odd order SH functions as well as
         even order SH functions. Otherwise returns only even order SH
-        functions. default(False)
-    is_legacy: bool
+        functions. Default: False
+    is_legacy: bool, optional
         If true, uses DIPY's legacy descoteaux07 implementation (where |m|
         for m < 0). Else, implements the basis as defined in Descoteaux et al.
-        2007. default(False)
+        2007. Default: False
 
     Returns
     -------
@@ -566,7 +566,8 @@ def order_from_ncoef(ncoef, is_full_basis=False):
     ncoef: int
         number of coefficients
     is_full_basis: bool, optional
-        True when coefficients are for a full SH basis
+        True when coefficients are for a full SH basis.
+        Default: False
 
     Returns
     -------
@@ -641,8 +642,9 @@ def _gfa_sh(coef, sh0_index=0):
     ----------
     coef : array
         The coefficients, using a normalized sh basis, that represent each odf.
-    sh0_index : int
+    sh0_index : int, optional
         The index of the coefficient associated with the 0th order sh harmonic.
+        Default: 0
 
     Returns
     -------
@@ -1065,21 +1067,21 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, use_full_basis=False,
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
         basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis (default 4).
-    basis_type : {None, 'tournier07', 'descoteaux07'}
+        SH basis. Default: 4
+    basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the symmetric Tournier 2007 [2]_ basis,
         ``descoteaux07`` for the symmetric Descoteaux 2007 [1]_ basis,
         (``None`` defaults to ``descoteaux07``).
-    use_full_basis: bool
+    use_full_basis: bool, optional
         True for using a SH basis containing even and odd order SH functions.
         False for using a SH basis consisting only of even order SH functions.
-        default(false)
-    use_legacy_definition: bool
+        Default: False
+    use_legacy_definition: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous tournier07 and descoteaux07 implementations.
     smooth : float, optional
-        Lambda-regularization in the SH fit (default 0.0).
+        Lambda-regularization in the SH fit. Default: 0.0
 
     Returns
     -------
@@ -1127,19 +1129,20 @@ def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
         basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis (default 4).
-    basis_type : {None, 'tournier07', 'descoteaux07'}
+        SH basis. Default: 4
+    basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis,
         (``None`` defaults to ``descoteaux07``).
-    use_full_basis: bool
+    use_full_basis: bool, optional
         True for using a SH basis containing even and odd order SH functions.
         False for using a SH basis consisting only of even order SH functions.
-        default(false)
-    use_legacy_definition: bool
+        Default: False
+    use_legacy_definition: bool, optional
         True to use a legacy basis definition for backward compatibility
-        with previous tournier07 and descoteaux07 implementations.
+        with previous tournier07 and descoteaux07 implementations. 
+        Default: False
 
     Returns
     -------
@@ -1187,23 +1190,24 @@ def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, use_full_basis=False,
         Maximum SH order in the SH fit.  For `sh_order`, there will be
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a symmetric
         basis and ``(sh_order + 1) * (sh_order + 1)`` coefficients for a full
-        SH basis (default 4).
-    basis_type : {None, 'tournier07', 'descoteaux07'}
+        SH basis. Default: 4
+    basis_type : {None, 'tournier07', 'descoteaux07'}, optional
         ``None`` for the default DIPY basis,
         ``tournier07`` for the symmetric Tournier 2007 [2]_[3]_ basis,
         ``descoteaux07`` for the symmetric Descoteaux 2007 [1]_ basis,
         (``None`` defaults to ``descoteaux07``).
-    use_full_basis: bool
+    use_full_basis: bool, optional
         True for using a SH basis containing even and odd order SH functions.
         False for using a SH basis consisting only of even order SH functions.
-        default(false)
-    use_legacy_definition: bool
+        Default: False
+    use_legacy_definition: bool, optional
         True to use a legacy basis definition for backward compatibility
         with previous tournier07 and descoteaux07 implementations.
-    return_inv : bool
-        If True then the inverse of the matrix is also returned
+        Default: False
+    return_inv : bool, optional
+        If True then the inverse of the matrix is also returned. Default: True
     smooth : float, optional
-        Lambda-regularization in the SH fit (default 0.0).
+        Lambda-regularization in the SH fit. Default: 0.0
 
     Returns
     -------
@@ -1253,9 +1257,10 @@ def calculate_max_order(n_coeffs, is_full_basis=False):
     ----------
     n_coeffs : int
         The number of SH coefficients
-    is_full_basis: bool
+    is_full_basis: bool, optional
         True if the used SH basis contains even and odd order SH functions.
         False if the SH basis consists only of even order SH functions.
+        Default: False
 
     Returns
     -------
@@ -1426,9 +1431,9 @@ def convert_sh_from_legacy(sh_coeffs, sh_basis, is_full_basis=False):
     sh_basis: {'descoteaux07', 'tournier07'}
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
-    is_full_basis: bool
+    is_full_basis: bool, optional
         True if the input SH basis includes both even and odd
-        order SH functions, else False.
+        order SH functions, else False. Default: False
 
     Returns
     -------
@@ -1479,9 +1484,9 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, is_full_basis=False):
     sh_basis: {'descoteaux07', 'tournier07'}
         ``tournier07`` for the Tournier 2007 [2]_[3]_ basis,
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
-    is_full_basis: bool
+    is_full_basis: bool, optional
         True if the input SH basis includes both even and odd
-        order SH functions, else False.
+        order SH functions. Default: False
 
     Returns
     -------
