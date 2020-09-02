@@ -54,6 +54,7 @@ if using_setuptools:
         tests_require=['pytest'],
         zip_safe=False,
         extras_require=info.EXTRAS_REQUIRE,
+        python_requires=">= 3.6",
         )
 
 # Define extensions

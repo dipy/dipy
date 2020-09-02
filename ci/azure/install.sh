@@ -28,7 +28,6 @@ else
     python --version
 
     if [ "$AGENT_OS" == "Linux" ]; then
-        # Needed for Python 3.5 wheel fetching
         $PIPI --upgrade pip setuptools
     fi
 

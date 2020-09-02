@@ -12,16 +12,14 @@ jobs:
     name: Linux
     vmImage: ubuntu-16.04
     matrix:
-      Python35-64bit:
-        python.version: '3.5'
       Python36-64bit:
         python.version: '3.6'
       Python38-64bit:
         python.version: '3.8'
       Python37-64bit:
         python.version: '3.7'
-      Python35-64bit + MIN_DEPS:
-        python.version: '3.5'
+      Python36-64bit + MIN_DEPS:
+        python.version: '3.6'
         DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose"
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
@@ -107,8 +105,6 @@ jobs:
         python.version: '3.7'
       Python36-64bit:
         python.version: '3.6'
-      # Python35-64bit:
-      #   python.version: '3.5'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy"
