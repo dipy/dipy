@@ -28,7 +28,7 @@ else
     python --version
 
     if [ "$AGENT_OS" == "Linux" ]; then
-        $PIPI --upgrade pip setuptools
+        $PIPI --upgrade pip setuptools<50.0
     fi
 
     $PIPI pytest

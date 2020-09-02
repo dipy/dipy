@@ -113,7 +113,7 @@ before_install:
     - virtualenv $VENV_ARGS venv
     - source venv/bin/activate
     - python --version # just to check
-    - $PIPI --upgrade pip setuptools
+    - $PIPI --upgrade pip setuptools<50.0
     - $PIPI pytest
     - $PIPI numpy
     - if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS; fi
