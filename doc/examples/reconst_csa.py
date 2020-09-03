@@ -95,7 +95,7 @@ from dipy.viz import window, actor
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
+scene = window.Scene()
 
 csaodfs = csamodel.fit(data_small).odf(default_sphere)
 
@@ -109,11 +109,11 @@ csa_odfs_actor = actor.odf_slicer(csaodfs, sphere=default_sphere,
                                   colormap='plasma', scale=0.4)
 csa_odfs_actor.display(z=0)
 
-ren.add(csa_odfs_actor)
+scene.add(csa_odfs_actor)
 print('Saving illustration as csa_odfs.png')
-window.record(ren, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+window.record(scene, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: csa_odfs.png

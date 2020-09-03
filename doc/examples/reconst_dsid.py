@@ -71,7 +71,7 @@ from dipy.viz import window, actor
 interactive = False
 
 
-ren = window.Renderer()
+scene = window.Scene()
 
 # concatenate data as 4D array
 odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
@@ -79,10 +79,10 @@ odf_actor = actor.odf_slicer(odfs, sphere=sphere, scale=0.5, colormap='plasma')
 
 odf_actor.display(y=0)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
-window.record(ren, out_path='dsid.png', size=(300, 300))
+scene.add(odf_actor)
+window.record(scene, out_path='dsid.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: dsid.png

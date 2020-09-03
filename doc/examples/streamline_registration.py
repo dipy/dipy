@@ -289,18 +289,18 @@ from dipy.viz import has_fury
 
 def show_template_bundles(bundles, show=True, fname=None):
 
-    renderer = window.Renderer()
+    scene = window.Scene()
     template_actor = actor.slicer(static)
-    renderer.add(template_actor)
+    scene.add(template_actor)
 
     lines_actor = actor.streamtube(bundles, window.colors.orange,
                                    linewidth=0.3)
-    renderer.add(lines_actor)
+    scene.add(lines_actor)
 
     if show:
-        window.show(renderer)
+        window.show(scene)
     if fname is not None:
-        window.record(renderer, n_frames=1, out_path=fname, size=(900, 900))
+        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
 if has_fury:

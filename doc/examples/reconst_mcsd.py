@@ -336,15 +336,15 @@ fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
                                 norm=False, colormap='plasma')
 
 interactive = False
-ren = window.Renderer()
-ren.add(fodf_spheres)
-ren.reset_camera_tight()
+scene = window.Scene()
+scene.add(fodf_spheres)
+scene.reset_camera_tight()
 
 print('Saving illustration as msdodf.png')
-window.record(ren, out_path='msdodf.png', size=(600, 600))
+window.record(scene, out_path='msdodf.png', size=(600, 600))
 
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: msdodf.png

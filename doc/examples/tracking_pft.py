@@ -110,12 +110,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_pft.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_pft.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_pft.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_pft.png
@@ -138,12 +138,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_cmc.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_probabilistic_cmc.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_probabilistic_cmc.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 
 """
 .. figure:: tractogram_probabilistic_cmc.png

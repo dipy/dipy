@@ -86,16 +86,16 @@ vol_actor2 = vol_actor.copy()
 vol_actor2.display(z=35)
 
 # Add display objects to canvas
-ren = window.Renderer()
-ren.add(candidate_streamlines_actor)
-ren.add(cc_ROI_actor)
-ren.add(vol_actor)
-ren.add(vol_actor2)
-window.record(ren, n_frames=1,
+scene = window.Scene()
+scene.add(candidate_streamlines_actor)
+scene.add(cc_ROI_actor)
+scene.add(vol_actor)
+scene.add(vol_actor2)
+window.record(scene, n_frames=1,
               out_path='life_candidates.png',
               size=(800, 800))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 
@@ -187,14 +187,14 @@ optimized group of streamlines:
 """
 
 optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
-ren = window.Renderer()
-ren.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
-ren.add(cc_ROI_actor)
-ren.add(vol_actor)
-window.record(ren, n_frames=1, out_path='life_optimized.png',
+scene = window.Scene()
+scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
+scene.add(cc_ROI_actor)
+scene.add(vol_actor)
+window.record(scene, n_frames=1, out_path='life_optimized.png',
               size=(800, 800))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 

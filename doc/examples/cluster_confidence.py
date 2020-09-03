@@ -84,7 +84,7 @@ streamline bundle and visualize them.
 cci = cluster_confidence(long_streamlines)
 
 # Visualize the streamlines, colored by cci
-ren = window.Renderer()
+scene = window.Scene()
 
 hue = [0.5, 1]
 saturation = [0.0, 1.0]
@@ -94,23 +94,23 @@ lut_cmap = actor.colormap_lookup_table(scale_range=(cci.min(), cci.max()/4),
                                        saturation_range=saturation)
 
 bar3 = actor.scalar_bar(lut_cmap)
-ren.add(bar3)
+scene.add(bar3)
 
 stream_actor = actor.line(long_streamlines, cci, linewidth=0.1,
                           lookup_colormap=lut_cmap)
-ren.add(stream_actor)
+scene.add(stream_actor)
 
 
 """
-If you set interactive to True (below), the rendering will pop up in an
+If you set interactive to True (below), the scene will pop up in an
 interactive window.
 """
 
 
 interactive = False
 if interactive:
-    window.show(ren)
-window.record(ren, n_frames=1, out_path='cci_streamlines.png',
+    window.show(scene)
+window.record(scene, n_frames=1, out_path='cci_streamlines.png',
               size=(800, 800))
 
 """
@@ -157,17 +157,17 @@ for i, sl in enumerate(long_streamlines):
         keep_streamlines.append(sl)
 
 # Visualize the streamlines we kept
-ren = window.Renderer()
+scene = window.Scene()
 
 keep_streamlines_actor = actor.line(keep_streamlines, linewidth=0.1)
 
-ren.add(keep_streamlines_actor)
+scene.add(keep_streamlines_actor)
 
 
 interactive = False
 if interactive:
-    window.show(ren)
-window.record(ren, n_frames=1, out_path='filtered_cci_streamlines.png',
+    window.show(scene)
+window.record(scene, n_frames=1, out_path='filtered_cci_streamlines.png',
               size=(800, 800))
 
 """

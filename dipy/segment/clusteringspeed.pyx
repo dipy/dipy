@@ -527,7 +527,7 @@ cdef class QuickBundles(object):
 
         nearest_cluster.id = -1
         nearest_cluster.dist = BIGGEST_DOUBLE
-
+        nearest_cluster.flip = 0
 
         for k in range(self.clusters.c_size()):
 

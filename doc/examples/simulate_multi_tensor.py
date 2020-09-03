@@ -87,17 +87,17 @@ from dipy.viz import window, actor
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
+scene = window.Scene()
 
 odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere, colormap='plasma')
 odf_actor.RotateX(90)
 
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving illustration as multi_tensor_simulation')
-window.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
+window.record(scene, out_path='multi_tensor_simulation.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 
 """

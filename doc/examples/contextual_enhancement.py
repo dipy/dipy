@@ -154,7 +154,7 @@ Visualize the kernel
 
 from dipy.viz import window, actor
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
-ren = window.Renderer()
+scene = window.Scene()
 
 # convolve kernel with delta spike
 spike = np.zeros((7, 7, 7, k.get_orientations().shape[0]), dtype=np.float64)
@@ -168,11 +168,11 @@ model_kernel = actor.odf_slicer(spike_sf_conv * 6,
                                 norm=False,
                                 scale=0.4)
 model_kernel.display(x=3)
-ren.add(model_kernel)
-ren.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
-window.record(ren, out_path='kernel.png', size=(900, 900))
+scene.add(model_kernel)
+scene.set_camera(position=(30, 0, 0), focal_point=(0, 0, 0), view_up=(0, 0, 1))
+window.record(scene, out_path='kernel.png', size=(900, 900))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: kernel.png
@@ -212,7 +212,7 @@ The end results are visualized. It can be observed that the end result after
 diffusion and sharpening is closer to the original noiseless dataset.
 """
 
-ren = window.Renderer()
+scene = window.Scene()
 
 # original ODF field
 fodf_spheres_org = actor.odf_slicer(csd_sf_orig,
@@ -221,7 +221,7 @@ fodf_spheres_org = actor.odf_slicer(csd_sf_orig,
                                     norm=False)
 fodf_spheres_org.display(z=3)
 fodf_spheres_org.SetPosition(0, 25, 0)
-ren.add(fodf_spheres_org)
+scene.add(fodf_spheres_org)
 
 # ODF field with added noise
 fodf_spheres = actor.odf_slicer(csd_sf_noisy,
@@ -229,7 +229,7 @@ fodf_spheres = actor.odf_slicer(csd_sf_noisy,
                                 scale=0.4,
                                 norm=False,)
 fodf_spheres.SetPosition(0, 0, 0)
-ren.add(fodf_spheres)
+scene.add(fodf_spheres)
 
 # Enhancement of noisy ODF field
 fodf_spheres_enh = actor.odf_slicer(csd_sf_enh,
@@ -237,7 +237,7 @@ fodf_spheres_enh = actor.odf_slicer(csd_sf_enh,
                                     scale=0.4,
                                     norm=False)
 fodf_spheres_enh.SetPosition(25, 0, 0)
-ren.add(fodf_spheres_enh)
+scene.add(fodf_spheres_enh)
 
 # Additional sharpening
 fodf_spheres_enh_sharp = actor.odf_slicer(csd_sf_enh_sharp,
@@ -245,11 +245,11 @@ fodf_spheres_enh_sharp = actor.odf_slicer(csd_sf_enh_sharp,
                                           scale=0.4,
                                           norm=False)
 fodf_spheres_enh_sharp.SetPosition(25, 25, 0)
-ren.add(fodf_spheres_enh_sharp)
+scene.add(fodf_spheres_enh_sharp)
 
-window.record(ren, out_path='enhancements.png', size=(900, 900))
+window.record(scene, out_path='enhancements.png', size=(900, 900))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 

@@ -88,12 +88,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_pmf.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_probabilistic_dg_pmf.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_probabilistic_dg_pmf.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 """
 .. figure:: tractogram_probabilistic_dg_pmf.png
    :align: center
@@ -125,12 +125,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_sh.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_probabilistic_dg_sh.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_probabilistic_dg_sh.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 """
 .. figure:: tractogram_probabilistic_dg_sh.png
    :align: center
@@ -158,12 +158,12 @@ sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_probabilistic_dg_sh_pfm.trk")
 
 if has_fury:
-    r = window.Renderer()
-    r.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(r, out_path='tractogram_probabilistic_dg_sh_pfm.png',
+    scene = window.Scene()
+    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
+    window.record(scene, out_path='tractogram_probabilistic_dg_sh_pfm.png',
                   size=(800, 800))
     if interactive:
-        window.show(r)
+        window.show(scene)
 """
 .. figure:: tractogram_probabilistic_dg_sh_pfm.png
    :align: center

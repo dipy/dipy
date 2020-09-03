@@ -31,17 +31,17 @@ from dipy.viz import window, actor
 # Enables/disables interactive visualization
 interactive = False
 
-ren = window.Renderer()
-ren.SetBackground(1, 1, 1)
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
 
 odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sph)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving illustration as symm_signal.png')
-window.record(ren, out_path='symm_signal.png', size=(300, 300))
+window.record(scene, out_path='symm_signal.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: symm_signal.png
@@ -79,15 +79,15 @@ from dipy.reconst.shm import sh_to_sf
 high_res_sph = get_sphere('symmetric724').subdivide(2)
 reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
 
-window.rm_all(ren)
+scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving output as symm_reconst.png')
-window.record(ren, out_path='symm_reconst.png', size=(300, 300))
+window.record(scene, out_path='symm_reconst.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: symm_reconst.png
@@ -108,15 +108,15 @@ odf2 = multi_tensor_odf(sph.vertices, mevals, angles, [100])
 n_pts_hemisphere = int(sph.vertices.shape[0] / 2)
 asym_odf = np.append(odf[:n_pts_hemisphere], odf2[n_pts_hemisphere:])
 
-window.rm_all(ren)
+scene.clear()
 odf_actor = actor.odf_slicer(asym_odf[None, None, None, :], sphere=sph)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving output as asym_signal.png')
-window.record(ren, out_path='asym_signal.png', size=(300, 300))
+window.record(scene, out_path='asym_signal.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: asym_signal.png
@@ -131,15 +131,15 @@ Let's try to reconstruct this SF using a symmetric SH basis.
 sh_coeffs = sf_to_sh(asym_odf, sph, sh_order, sh_basis)
 reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
 
-window.rm_all(ren)
+scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving output as asym_reconst.png')
-window.record(ren, out_path='asym_reconst.png', size=(300, 300))
+window.record(scene, out_path='asym_reconst.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: asym_reconst.png
@@ -159,15 +159,15 @@ sh_basis = 'descoteaux07_full'
 sh_coeffs = sf_to_sh(asym_odf, sph, sh_order, sh_basis)
 reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
 
-window.rm_all(ren)
+scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
 odf_actor.RotateX(90)
-ren.add(odf_actor)
+scene.add(odf_actor)
 
 print('Saving output as asym_reconst_full.png')
-window.record(ren, out_path='asym_reconst_full.png', size=(300, 300))
+window.record(scene, out_path='asym_reconst_full.png', size=(300, 300))
 if interactive:
-    window.show(ren)
+    window.show(scene)
 
 """
 .. figure:: asym_reconst_full.png
