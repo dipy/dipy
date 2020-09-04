@@ -196,9 +196,15 @@ class HorizonFlow(Workflow):
 
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
+<<<<<<< HEAD
                 npy_files=numpy_files, cluster=cluster,
                 cluster_thr=cluster_thr, random_colors=random_colors,
                 bg_color=bg_color, order_transparent=order_transparent,
+=======
+                np_files=numpy_files, cluster=cluster, cluster_thr=cluster_thr,
+                random_colors=random_colors, bg_color=bg_color,
+                order_transparent=order_transparent,
+>>>>>>> 9771d2a2b4c0e9f44655e623486566ce653b798c
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
