@@ -242,7 +242,7 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
         out[new_N-1, dim] = streamline[N-1, dim]
 
     free(arclengths)
-
+    arclengths = NULL
 
 cdef void c_set_number_of_points_from_arraysequence(Streamline points,
                                                     np.npy_intp[:] offsets,
