@@ -6,9 +6,9 @@ Diffusion Imaging In Python
 
 DIPY_ is the paragon 3D/4D+ imaging library in Python. Contains generic methods for
 spatial normalization, signal processing, machine learning, statistical analysis
-and visualization of medical images. Additionally, it contains 
-specialized methods for computational anatomy including diffusion, 
-perfusion and structural imaging. 
+and visualization of medical images. Additionally, it contains
+specialized methods for computational anatomy including diffusion,
+perfusion and structural imaging.
 
 
 
@@ -16,22 +16,18 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.1.1** is now available. New features include:
+**DIPY 1.2.0** is now available. New features include:
 
-- New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
-- Improved DKI performance and increased utilities.
-- Non-linear and RESTORE fits from DTI compatible now with DKI.
-- Numerical solutions for estimating axial, radial and mean kurtosis.
-- Added Kurtosis Fractional Anisotropy by Glenn et al. 2015.
-- Added Mean Kurtosis Tensor by Hansen et al. 2013.
-- Nibabel minimum version is 3.0.0.
-- Azure CI added and Appveyor CI removed.
-- New command line interfaces for LPCA, MPPCA and Gibbs Unringing.
-- New MTMS CSD tutorial added.
-- Horizon refactored and updated to support StatefulTractograms.
-- Speeded up all cython modules by using a smarter configuration setting.
-- All tutorials updated to API changes and 2 new tutorials added.
-- Large documentation update.
+- New command line interfaces for Group Analysis: BUAN.
+- Added b-tensor encoding for gradient table.
+- Stats module refactored.
+- Numpy minimum version is 1.2.0.
+- Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
+- Added multiple tutorials for DIPY command line interfaces.
+- Updated SH basis convention.
+- Improved performance of tissue classification.
+- Fixed a memory overlap bug (multi_median).
+- Large documentation update (typography / references).
 - Closed 126 issues and merged 50 pull requests.
 
 
@@ -41,10 +37,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
-- DIPY Workshop - Titanium Edition (March 16-20, 2020) is now open for registration:
+- :doc:`DIPY 1.2.0 <release_notes/release1.2>` released September 9, 2020.
 - :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
 - :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
-- :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 
 
 See some of our :ref:`Past Announcements <old_news>`
