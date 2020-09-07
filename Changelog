@@ -24,6 +24,20 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.2.0 (Tuesday, September 9, 2020)
+
+- New command line interfaces for Group Analysis: BUAN.
+- Added b-tensor encoding for gradient table.
+- Stats module refactored.
+- Numpy minimum version is 1.2.0.
+- Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
+- Added multiple tutorials for DIPY command line interfaces.
+- Updated SH basis convention.
+- Improved performance of tissue classification.
+- Fixed a memory overlap bug (multi_median).
+- Large documentation update (typography / references).
+- Closed 126 issues and merged 50 pull requests.
+
 * 1.1.1 (Friday, January 10, 2020)
 
 - New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
