@@ -1,7 +1,7 @@
 """
-===============================
-Direct Streamline Normalization
-===============================
+================================================
+Applying image-based deformations to streamlines
+================================================
 
 This example shows how to register streamlines into a template space by
 applying non-rigid deformations.
