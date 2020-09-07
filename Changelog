@@ -24,6 +24,24 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.1.1 (Friday, January 10, 2020)
+
+- New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
+- Improved DKI performance and increased utilities.
+- Non-linear and RESTORE fits from DTI compatible now with DKI.
+- Numerical solutions for estimating axial, radial and mean kurtosis.
+- Added Kurtosis Fractional Anisotropy by Glenn et al. 2015.
+- Added Mean Kurtosis Tensor by Hansen et al. 2013.
+- Nibabel minimum version is 3.0.0.
+- Azure CI added and Appveyor CI removed.
+- New command line interfaces for LPCA, MPPCA and Gibbs Unringing.
+- New MTMS CSD tutorial added.
+- Horizon refactored and updated to support StatefulTractograms.
+- Speeded up all cython modules by using a smarter configuration setting.
+- All tutorials updated to API changes and 2 new tutorials added.
+- Large documentation update.
+- Closed 126 issues and merged 50 pull requests.
+
 * 1.0.0 (Monday, 5 August 2019)
 
 - Critical :doc:`API changes <api_changes>`
