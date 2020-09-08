@@ -8,6 +8,17 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.2.0 changes
 ------------------
 
+**Reconstruction**
+
+The ``dipy.reconst.csdeconv.auto_response`` has been renamed
+``dipy.reconst.csdeconv.auto_response_ssst``.
+
+The ``dipy.reconst.csdeconv.response_from_mask`` has been renamed
+``dipy.reconst.csdeconv.response_from_mask_ssst``.
+
+The ``dipy.sims.voxel.multi_shell_fiber_response`` has been moved to
+``dipy.reconst.mcsd.multi_shell_fiber_response``.
+
 **Segmentation**
 
 In prior releases, for users with SciPy < 1.5, a memory overlap bug occurs in
@@ -23,6 +34,13 @@ The ``dipy.reconst.peak_direction_getter.EuDXDirectionGetter`` has
 been renamed ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
 
 The command line ``dipy_track_local`` has been renamed ``dipy_track``.
+
+
+**Others**
+
+The ``dipy.core.gradients.unique_bvals`` has been renamed
+``dipy.core.gradients.unique_bvals_magnitude``.
+
 
 **Visualization**
 

@@ -4,7 +4,8 @@ model """
 
 import numpy as np
 
-from dipy.core.gradients import (check_multi_b, unique_bvals, round_bvals)
+from dipy.core.gradients import (check_multi_b, unique_bvals_magnitude,
+                                 round_bvals)
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.dti import MIN_POSITIVE_SIGNAL
 from dipy.core.ndindex import ndindex
@@ -44,7 +45,7 @@ def mean_signal_bvalue(data, gtab, bmag=None):
     bvals = gtab.bvals.copy()
 
     # Compute unique and rounded bvals
-    ub, rb = unique_bvals(bvals, bmag=bmag, rbvals=True)
+    ub, rb = unique_bvals_magnitude(bvals, bmag=bmag, rbvals=True)
 
     # Initialize msignal and ng
     nub = ub.size
@@ -136,7 +137,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
         self.return_S0_hat = return_S0_hat
-        self.ubvals = unique_bvals(gtab.bvals, bmag=bmag)
+        self.ubvals = unique_bvals_magnitude(gtab.bvals, bmag=bmag)
         self.design_matrix = design_matrix(self.ubvals)
         self.bmag = bmag
         self.args = args

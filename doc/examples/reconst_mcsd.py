@@ -36,15 +36,19 @@ import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
 
 from dipy.denoise.localpca import mppca
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
-from dipy.reconst.csdeconv import auto_response
+from dipy.reconst.csdeconv import auto_response_ssst
+from dipy.reconst.mcsd import (auto_response_msmt,
+                               mask_for_response_msmt,
+                               response_from_mask_msmt)
 from dipy.segment.tissue import TissueClassifierHMRF
-from dipy.sims.voxel import multi_shell_fiber_response
-from dipy.reconst.mcsd import MultiShellDeconvModel
+from dipy.reconst.mcsd import MultiShellDeconvModel, multi_shell_fiber_response
 from dipy.viz import window, actor
+
+from dipy.direction.peaks import peaks_from_model
 
 from dipy.data import get_sphere, get_fnames
 sphere = get_sphere('symmetric724')
@@ -135,7 +139,8 @@ print(ap.shape)
 """
 The above figure is a visualization of the axial slice of the Anisotropic
 Power Map. It can be treated as a pseudo-T1 for classification purposes
-using the Hidden Markov Random Fields (HMRF) classifier, if the T1 image is not available.
+using the Hidden Markov Random Fields (HMRF) classifier, if the T1 image
+is not available.
 
 As we can see from the shape of the Anisotropic Power Map, it is 3D and can be
 used for tissue classification using HMRF. The
@@ -162,68 +167,130 @@ above:
 
 hmrf = TissueClassifierHMRF()
 initial_segmentation, final_segmentation, PVE = hmrf.classify(ap, nclass, beta)
-print(PVE.shape)
+
 
 """
-Now that we have the segmentation step, we would like to classify the tissues
-into ``wm``, ``gm`` and ``csf`` We do
-so using the Fractional Anisotropy (FA) and Mean Diffusivity (MD) metrics
-obtained from the Diffusion Tensor Imaging Model (DTI) fit as follows:
+Then, we get the tissues segmentation from the final_segmentation.
 """
 
-# Construct the  DTI model
-tenmodel = dti.TensorModel(gtab)
+csf = np.where(final_segmentation == 1, 1, 0)
+gm = np.where(final_segmentation == 2, 1, 0)
+wm = np.where(final_segmentation == 3, 1, 0)
 
-# fit the denoised data with DTI model
-tenfit = tenmodel.fit(denoised_arr)
-
-# obtain the FA and MD metrics
-FA = tenfit.fa
-MD = tenfit.md
 
 """
-Now that we have the FA and the MD obtained from DTI, we use it to distinguish
-between the ``wm``, ``gm`` and ``csf``. As we can see
-from the shape of the PVE, the last dimension refers to the classification. We
-will now index them as: 0 -> ``csf``, 1 -> ``gm`` and 2 -> ``wm`` as per their
-FA values and the confidence of prediction obtained from
-``TissueClassifierHMRF``.
+Now, we want the response function for each of the three tissues and for each
+bvalues. This can be achieved in two different ways. If the case that tissue
+segmentation is available or that one wants to see the tissue masks used to
+compute the response functions, a combination of the functions
+``mask_for_response_msmt`` and ``response_from_mask`` is needed.
+
+The ``mask_for_response_msmt`` function will return a mask of voxels within a
+cuboid ROI and that meet some threshold constraints, for each tissue and bvalue.
+More precisely, the WM mask must have a FA value above a given threshold. The GM
+mask and CSF mask must have a FA below given thresholds and a MD below other
+thresholds.
+
+Note that for ``mask_for_response_msmt``, the gtab and data should be for
+bvalues under 1200, for optimal tensor fit.
 """
 
-csf = PVE[..., 0]
-gm = PVE[..., 1]
-wm = PVE[..., 2]
-
-indices_csf = np.where(((FA < 0.2) & (csf > 0.95)))
-indices_gm = np.where(((FA < 0.2) & (gm > 0.95)))
-
-selected_csf = np.zeros(FA.shape, dtype='bool')
-selected_gm = np.zeros(FA.shape, dtype='bool')
-
-selected_csf[indices_csf] = True
-selected_gm[indices_gm] = True
-
-csf_md = np.mean(MD[selected_csf])
-gm_md = np.mean(MD[selected_gm])
+mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data, roi_radii=10,
+                                                    wm_fa_thr=0.7,
+                                                    gm_fa_thr=0.3,
+                                                    csf_fa_thr=0.15,
+                                                    gm_md_thr=0.001,
+                                                    csf_md_thr=0.0032)
 
 """
-The ``auto_response`` function will calculate FA for an ROI of radius equal to
-``roi_radius`` in the center of the volume and return the response function
-estimated in that region for the voxels with FA higher than 0.7.
+If one wants to use the previously computed tissue segmentation in addition to
+the threshold method, it is possible by simply multiplying both masks together.
 """
 
-response, ratio = auto_response(gtab, denoised_arr, roi_radius=10, fa_thr=0.7)
-evals_d = response[0]
+mask_wm *= wm
+mask_gm *= gm
+mask_csf *= csf
 
 """
-We will now use the evals obtained from the ``auto_response`` to generate the
-``multi_shell_fiber_response`` rquired by the MSMT-CSD model. Note that we
-mead diffusivities of ``csf`` and ``gm`` as inputs to generate th response.
+The masks can also be used to calculate the number of voxels for each tissue.
 """
 
-response_mcsd = multi_shell_fiber_response(sh_order=8, bvals=bvals,
-                                           evals=evals_d, csf_md=csf_md,
-                                           gm_md=gm_md)
+nvoxels_wm = np.sum(mask_wm)
+nvoxels_gm = np.sum(mask_gm)
+nvoxels_csf = np.sum(mask_csf)
+
+print(nvoxels_wm)
+
+"""
+Then, the ``response_from_mask`` function will return the msmt response
+functions using precalculated tissue masks.
+"""
+
+response_wm, response_gm, response_csf = response_from_mask_msmt(gtab, data,
+                                                                 mask_wm,
+                                                                 mask_gm,
+                                                                 mask_csf)
+
+"""
+Note that we can also get directly the response functions by calling the
+``auto_response_msmt`` function, which internally calls
+``mask_for_response_msmt`` followed by ``response_from_mask``. By doing so, we
+don't have access to the masks and we might have problems with high bvalues
+tensor fit.
+"""
+
+auto_response_wm, auto_response_gm, auto_response_csf = \
+    auto_response_msmt(gtab, data, roi_radii=10)
+
+"""
+As we can see below, adding the tissue segmentation can change the results
+of the response functions.
+"""
+
+print("Responses")
+print(response_wm)
+print(response_gm)
+print(response_csf)
+print("Auto responses")
+print(auto_response_wm)
+print(auto_response_gm)
+print(auto_response_csf)
+
+
+"""
+At this point, there are two options on how to use those response functions. We
+want to create a MultiShellDeconvModel, which takes a response function as
+input. This response function can either be directly in the current format, or
+it can be a MultiShellResponse format, as produced by the
+``multi_shell_fiber_response`` method. This function assumes a 3 compartments
+model (wm, gm, csf) and takes one response function per tissue per bvalue. It is
+important to note that the bvalues must be unique for this function.
+"""
+
+ubvals = unique_bvals_tolerance(gtab.bvals)
+response_mcsd = multi_shell_fiber_response(sh_order=8,
+                                           bvals=ubvals,
+                                           wm_rf=response_wm,
+                                           gm_rf=response_gm,
+                                           csf_rf=response_csf)
+
+"""
+As mentionned, we can also build the model directly and it will call
+``multi_shell_fiber_response`` internally. Important note here, the function
+``unique_bvals_tolerance`` is used to keep only unique bvalues from the gtab
+given to the model, as input for ``multi_shell_fiber_response``. This may
+introduce differences between the calculted response of each method, depending
+on the bvalues given to ``multi_shell_fiber_response`` externally.
+"""
+
+response = np.array([response_wm, response_gm, response_csf])
+mcsd_model_simple_response = MultiShellDeconvModel(gtab, response, sh_order=8)
+
+"""
+Note that this technique only works for a 3 compartments model (wm, gm, csf). If
+one wants more compartments, a custom MultiShellResponse object must be used. It
+can be inspired by the ``multi_shell_fiber_response`` method.
+"""
 
 """
 Now we build the MSMT-CSD model with the ``response_mcsd`` as input. We then
@@ -234,12 +301,38 @@ mcsd_model = MultiShellDeconvModel(gtab, response_mcsd)
 mcsd_fit = mcsd_model.fit(denoised_arr[:, :, 10:11])
 
 """
+The volume fractions of tissues for each voxel are also accessible, as well as
+the sh coefficients for all tissues. One can also get each sh tissue separately
+using ``all_shm_coeff`` for each compartment (isotropic) and
+``shm_coeff`` for white matter.
+"""
+
+vf = mcsd_fit.volume_fractions
+sh_coeff = mcsd_fit.all_shm_coeff
+csf_sh_coeff = sh_coeff[..., 0]
+gm_sh_coeff = sh_coeff[..., 1]
+wm_sh_coeff = mcsd_fit.shm_coeff
+
+"""
+The model allows to predict a signal from sh coefficients. There are two ways of
+doing this.
+"""
+
+mcsd_pred = mcsd_fit.predict()
+mcsd_pred = mcsd_model.predict(mcsd_fit.all_shm_coeff)
+
+"""
 From the fit obtained in the previous step, we generate the ODFs which can be
 visualized as follows:
 """
 
 mcsd_odf = mcsd_fit.odf(sphere)
-fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=0.01,
+
+print("ODF")
+print(mcsd_odf.shape)
+print(mcsd_odf[40, 40, 0])
+
+fodf_spheres = actor.odf_slicer(mcsd_odf, sphere=sphere, scale=1,
                                 norm=False, colormap='plasma')
 
 interactive = False

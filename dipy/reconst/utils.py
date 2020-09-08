@@ -48,3 +48,68 @@ def dki_design_matrix(gtab):
     B[:, 21] = -np.ones(len(b))
 
     return B
+
+
+def _roi_in_volume(data_shape, roi_center, roi_radii):
+    """Ensures that a cuboid ROI is in a data volume.
+
+    Parameters
+    ----------
+    data_shape : ndarray
+        Shape of the data
+    roi_center : ndarray, (3,)
+        Center of ROI in data.
+    roi_radii : ndarray, (3,)
+        Radii of cuboid ROI
+
+    Returns
+    -------
+    roi_radii : ndarray, (3,)
+        Truncated radii of cuboid ROI. It remains unchanged if
+        the ROI was already contained inside the data volume.
+    """
+
+    for i in range(len(roi_center)):
+        inf_lim = int(roi_center[i] - roi_radii[i])
+        sup_lim = int(roi_center[i] + roi_radii[i])
+        if inf_lim < 0 or sup_lim >= data_shape[i]:
+            roi_radii[i] = min(int(roi_center[i]),
+                               int(data_shape[i] - roi_center[i]))
+    return roi_radii
+
+
+def _mask_from_roi(data_shape, roi_center, roi_radii):
+    """Produces a mask from a cuboid ROI defined by center and radii.
+
+    Parameters
+    ----------
+    data_shape : array-like, (3,)
+        Shape of the data from which the ROI is taken.
+    roi_center : array-like, (3,)
+        Center of ROI in data.
+    roi_radii : array-like, (3,)
+        Radii of cuboid ROI.
+
+    Returns
+    -------
+    mask : ndarray
+        Mask of the cuboid ROI.
+    """
+
+    ci, cj, ck = roi_center
+    wi, wj, wk = roi_radii
+    interval_i = slice(int(ci - wi), int(ci + wi) + 1)
+    interval_j = slice(int(cj - wj), int(cj + wj) + 1)
+    interval_k = slice(int(ck - wk), int(ck + wk) + 1)
+
+    if wi == 0:
+        interval_i = ci
+    elif wj == 0:
+        interval_j = cj
+    elif wk == 0:
+        interval_k = ck
+
+    mask = np.zeros(data_shape, dtype=np.int64)
+    mask[interval_i, interval_j, interval_k] = 1
+
+    return mask

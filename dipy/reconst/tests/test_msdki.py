@@ -5,7 +5,8 @@ import random
 from numpy.testing import assert_array_almost_equal, assert_raises
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import (gradient_table, unique_bvals, round_bvals)
+from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
+                                 round_bvals)
 from dipy.data import get_fnames
 import dipy.reconst.msdki as msdki
 
@@ -134,7 +135,7 @@ def test_errors():
 
 
 def test_design_matrix():
-    ub = unique_bvals(bvals_3s)
+    ub = unique_bvals_magnitude(bvals_3s)
     D = msdki.design_matrix(ub)
     Dgt = np.ones((4, 3))
     Dgt[:, 0] = -ub
@@ -159,7 +160,7 @@ def test_msdki_statistics():
     # tensors
 
     # Multi-tensors
-    ub = unique_bvals(bvals_3s)
+    ub = unique_bvals_magnitude(bvals_3s)
     design_matrix = msdki.design_matrix(ub)
     msignal, ng = msdki.mean_signal_bvalue(DWI, gtab_3s, bmag=None)
     params = msdki.wls_fit_msdki(design_matrix, msignal, ng)

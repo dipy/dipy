@@ -16,11 +16,12 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
+                                   mask_for_response_ssst,
+                                   response_from_mask_ssst,
+                                   response_from_mask,
+                                   auto_response_ssst,
                                    auto_response,
-                                   fa_superior,
-                                   fa_inferior,
-                                   recursive_response,
-                                   response_from_mask)
+                                   recursive_response)
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere import HemiSphere
 from dipy.core.sphere_stats import angular_similarity
@@ -28,10 +29,49 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-import dipy.reconst.dti as dti
 from dipy.core.sphere import Sphere
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti_data
+
+
+def get_test_data():
+    _, fbvals, fbvecs = get_fnames('small_64D')
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+    evals_list = [np.array([1.7E-3, 0.4E-3, 0.4E-3]),
+                  np.array([4.0E-4, 4.0E-4, 4.0E-4]),
+                  np.array([3.0E-3, 3.0E-3, 3.0E-3])]
+    s0 = [0.8, 1, 4]
+    signals = [single_tensor(gtab, x[0], x[1]) for x in zip(s0, evals_list)]
+    tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]
+    data = [signals[tissue] for tissue in tissues]
+    data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
+    evals = [evals_list[tissue] for tissue in tissues]
+    evals = np.asarray(evals).reshape((3, 3, 1, 3))
+    tissues = np.asarray(tissues).reshape((3, 3, 1))
+    mask = np.where(tissues == 0, 1, 0)
+    response = (evals_list[0], s0[0])
+    fa = fractional_anisotropy(evals)
+    return (gtab, data, mask, response, fa)
+
+
+def test_auto_response_deprecated():
+    with warnings.catch_warnings(record=True) as cw:
+        warnings.simplefilter("always", DeprecationWarning)
+        gtab, data, _, _, _ = get_test_data()
+        _, _ = auto_response(gtab,
+                             data,
+                             roi_center=None,
+                             roi_radius=1,
+                             fa_thr=0.7)
+        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+
+
+def test_response_from_mask_deprecated():
+    with warnings.catch_warnings(record=True) as cw:
+        warnings.simplefilter("always", DeprecationWarning)
+        gtab, data, mask, _, _ = get_test_data()
+        _ = response_from_mask(gtab, data, mask)
+        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
 
 
 def test_recursive_response_calibration():
@@ -104,7 +144,7 @@ def test_recursive_response_calibration():
     sf = response.on_sphere(sphere)
     S = np.concatenate(([response.S0], sf))
 
-    tenmodel = dti.TensorModel(gtab, min_signal=0.001)
+    tenmodel = TensorModel(gtab, min_signal=0.001)
 
     tenfit = tenmodel.fit(S)
     FA = fractional_anisotropy(tenfit.evals)
@@ -112,85 +152,75 @@ def test_recursive_response_calibration():
     assert_almost_equal(FA, FA_gt, 1)
 
 
-def test_auto_response():
-    fdata, fbvals, fbvecs = get_fnames('small_64D')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
+def test_mask_for_response_ssst():
+    gtab, data, mask_gt, _, _ = get_test_data()
 
-    gtab = gradient_table(bvals, bvecs)
-    radius = 3
+    mask = mask_for_response_ssst(gtab, data,
+                                  roi_center=None,
+                                  roi_radii=(1, 1, 0),
+                                  fa_thr=0.7)
 
-    def test_fa_superior(FA, fa_thr):
-        return FA > fa_thr
+    # Verifies that mask is not empty:
+    assert_equal(int(np.sum(mask)) != 0, True)
 
-    def test_fa_inferior(FA, fa_thr):
-        return FA < fa_thr
-
-    predefined_functions = [fa_superior, fa_inferior]
-    defined_functions = [test_fa_superior, test_fa_inferior]
-
-    for fa_thr in np.arange(0.1, 1, 0.1):
-        for predefined, defined in \
-          zip(predefined_functions, defined_functions):
-            response_predefined, ratio_predefined, nvoxels_predefined = \
-                auto_response(gtab,
-                              data,
-                              roi_center=None,
-                              roi_radius=radius,
-                              fa_callable=predefined,
-                              fa_thr=fa_thr,
-                              return_number_of_voxels=True)
-
-            response_defined, ratio_defined, nvoxels_defined = \
-                auto_response(gtab,
-                              data,
-                              roi_center=None,
-                              roi_radius=radius,
-                              fa_callable=defined,
-                              fa_thr=fa_thr,
-                              return_number_of_voxels=True)
-
-            assert_equal(nvoxels_predefined, nvoxels_defined)
-            assert_array_almost_equal(response_predefined[0],
-                                      response_defined[0])
-            assert_almost_equal(response_predefined[1], response_defined[1])
-            assert_almost_equal(ratio_predefined, ratio_defined)
+    assert_array_almost_equal(mask_gt, mask)
 
 
-def test_response_from_mask():
-    fdata, fbvals, fbvecs = get_fnames('small_64D')
-    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    data = load_nifti_data(fdata)
+def test_mask_for_response_ssst_nvoxels():
+    gtab, data, _, _, _ = get_test_data()
 
-    gtab = gradient_table(bvals, bvecs)
-    ten = TensorModel(gtab)
-    tenfit = ten.fit(data)
-    FA = fractional_anisotropy(tenfit.evals)
-    FA[np.isnan(FA)] = 0
-    radius = 3
+    mask = mask_for_response_ssst(gtab, data,
+                                  roi_center=None,
+                                  roi_radii=(1, 1, 0),
+                                  fa_thr=0.7)
 
-    for fa_thr in np.arange(0, 1, 0.1):
-        response_auto, ratio_auto, nvoxels = auto_response(
-            gtab,
-            data,
-            roi_center=None,
-            roi_radius=radius,
-            fa_thr=fa_thr,
-            return_number_of_voxels=True)
+    nvoxels = np.sum(mask)
+    assert_equal(nvoxels, 5)
 
-        ci, cj, ck = np.array(data.shape[:3]) // 2
-        mask = np.zeros(data.shape[:3])
-        mask[ci - radius: ci + radius,
-             cj - radius: cj + radius,
-             ck - radius: ck + radius] = 1
+    with warnings.catch_warnings(record=True) as w:
+        mask = mask_for_response_ssst(gtab, data,
+                                      roi_center=None,
+                                      roi_radii=(1, 1, 0),
+                                      fa_thr=1)
+        npt.assert_equal(len(w), 1)
+        npt.assert_(issubclass(w[0].category, UserWarning))
+        npt.assert_("No voxel with a FA higher than 1 were found" in
+                    str(w[0].message))
 
-        mask[FA <= fa_thr] = 0
-        response_mask, ratio_mask = response_from_mask(gtab, data, mask)
+    nvoxels = np.sum(mask)
+    assert_equal(nvoxels, 0)
 
-        assert_equal(int(np.sum(mask)), nvoxels)
-        assert_array_almost_equal(response_mask[0], response_auto[0])
-        assert_almost_equal(response_mask[1], response_auto[1])
-        assert_almost_equal(ratio_mask, ratio_auto)
+
+def test_response_from_mask_ssst():
+    gtab, data, mask_gt, response_gt, _ = get_test_data()
+
+    response, _ = response_from_mask_ssst(gtab, data, mask_gt)
+
+    assert_array_almost_equal(response[0], response_gt[0])
+    assert_equal(response[1], response_gt[1])
+
+
+def test_auto_response_ssst():
+    gtab, data, _, _, _ = get_test_data()
+
+    response_auto, ratio_auto = auto_response_ssst(gtab,
+                                                   data,
+                                                   roi_center=None,
+                                                   roi_radii=(1, 1, 0),
+                                                   fa_thr=0.7)
+
+    mask = mask_for_response_ssst(gtab, data,
+                                  roi_center=None,
+                                  roi_radii=(1, 1, 0),
+                                  fa_thr=0.7)
+
+    response_from_mask, ratio_from_mask = response_from_mask_ssst(gtab,
+                                                                  data,
+                                                                  mask)
+
+    assert_array_equal(response_auto[0], response_from_mask[0])
+    assert_equal(response_auto[1], response_from_mask[1])
+    assert_array_equal(ratio_auto, ratio_from_mask)
 
 
 def test_csdeconv():
@@ -246,29 +276,14 @@ def test_csdeconv():
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 
-    aresponse, aratio = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                      roi_radius=3, fa_thr=0.5)
+    aresponse, aratio = auto_response_ssst(gtab, big_S, roi_center=(5, 5, 4),
+                                           roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
     assert_almost_equal(aratio, response[0][1] / response[0][0])
 
-    auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
+    auto_response_ssst(gtab, big_S, roi_radii=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
-
-    _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                  roi_radius=30, fa_thr=0.5,
-                                  return_number_of_voxels=True)
-    assert_equal(nvoxels, 1000)
-    with warnings.catch_warnings(record=True) as w:
-        _, _, nvoxels = auto_response(gtab, big_S, roi_center=(5, 5, 4),
-                                      roi_radius=30, fa_thr=1,
-                                      return_number_of_voxels=True)
-        npt.assert_equal(len(w), 1)
-        npt.assert_(issubclass(w[0].category, UserWarning))
-        npt.assert_("No voxel with a FA higher than 1 were found" in
-                    str(w[0].message))
-
-    assert_equal(nvoxels, 0)
 
 
 def test_odfdeconv():

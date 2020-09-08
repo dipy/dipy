@@ -9,9 +9,46 @@ from dipy.core.onetime import auto_attr
 from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
+from dipy.utils.deprecator import deprecate_with_version
+
+
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
 
 logger = logging.getLogger(__name__)
+
+
+@deprecate_with_version("dipy.core.gradients.unique_bvals is deprecated, "
+                        "Please use "
+                        "dipy.core.gradients.unique_bvals_magnitude instead",
+                        since='1.2', until='1.4')
+def unique_bvals(bvals, bmag=None, rbvals=False):
+    """ This function gives the unique rounded b-values of the data
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    bmag : int
+        The order of magnitude that the bvalues have to differ to be
+        considered an unique b-value. B-values are also rounded up to
+        this order of magnitude. Default: derive this value from the
+        maximal b-value provided: $bmag=log_{10}(max(bvals)) - 1$.
+
+    rbvals : bool, optional
+        If True function also returns all individual rounded b-values.
+        Default: False
+
+    Returns
+    ------
+    ubvals : ndarray
+        Array containing the rounded unique b-values
+    """
+    b = round_bvals(bvals, bmag)
+    if rbvals:
+        return np.unique(b), b
+
+    return np.unique(b)
 
 
 class GradientTable(object):
@@ -674,7 +711,86 @@ def round_bvals(bvals, bmag=None):
     return b.round() * (10 ** bmag)
 
 
-def unique_bvals(bvals, bmag=None, rbvals=False):
+def unique_bvals_tolerance(bvals, tol=20):
+    """ Gives the unique b-values of the data, within a tolerance gap
+
+    The b-values must be regrouped in clusters easily separated by a
+    distance greater than the tolerance gap. If all the b-values of a
+    cluster fit within the tolerance gap, the highest b-value is kept.
+
+    Parameters
+    ----------
+    bvals : ndarray
+        Array containing the b-values
+
+    tol : int
+        The tolerated gap between the b-values to extract
+        and the actual b-values.
+
+    Returns
+    ------
+    ubvals : ndarray
+        Array containing the unique b-values using the median value
+        for each cluster
+    """
+    b = np.unique(bvals)
+    ubvals = []
+    lower_part = np.where(b <= b[0] + tol)[0]
+    upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
+                                         b > b[lower_part[-1]]))[0]
+    ubvals.append(b[lower_part[-1]])
+    if len(upper_part) != 0:
+        b_index = upper_part[-1] + 1
+    else:
+        b_index = lower_part[-1] + 1
+    while b_index != len(b):
+        lower_part = np.where(np.logical_and(b <= b[b_index] + tol,
+                                             b > b[b_index-1]))[0]
+        upper_part = np.where(np.logical_and(b <= b[lower_part[-1]] + tol,
+                                             b > b[lower_part[-1]]))[0]
+        ubvals.append(b[lower_part[-1]])
+        if len(upper_part) != 0:
+            b_index = upper_part[-1] + 1
+        else:
+            b_index = lower_part[-1] + 1
+
+    # Checking for overlap with get_bval_indices
+    for i, ubval in enumerate(ubvals[:-1]):
+        indices_1 = get_bval_indices(bvals, ubval, tol)
+        indices_2 = get_bval_indices(bvals, ubvals[i+1], tol)
+        if len(np.intersect1d(indices_1, indices_2)) != 0:
+            msg = '''There is overlap in clustering of b-values.
+            The tolerance factor might be too high.'''
+            warn(msg, UserWarning)
+
+    return np.asarray(ubvals)
+
+
+def get_bval_indices(bvals, bval, tol=20):
+    """
+    Get indices where the b-value is `bval`
+
+    Parameters
+    ----------
+    bvals: ndarray
+        Array containing the b-values
+
+    bval: float or int
+        b-value to extract indices
+
+    tol: int
+        The tolerated gap between the b-values to extract
+        and the actual b-values.
+
+    Returns
+    ------
+    Array of indices where the b-value is `bval`
+    """
+    return np.where(np.logical_and(bvals <= bval + tol,
+                                   bvals >= bval - tol))[0]
+
+
+def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
     """ This function gives the unique rounded b-values of the data
 
     Parameters
@@ -700,8 +816,8 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
     b = round_bvals(bvals, bmag)
     if rbvals:
         return np.unique(b), b
-    else:
-        return np.unique(b)
+
+    return np.unique(b)
 
 
 def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
@@ -733,7 +849,7 @@ def check_multi_b(gtab, n_bvals, non_zero=True, bmag=None):
     if non_zero:
         bvals = bvals[~gtab.b0s_mask]
 
-    uniqueb = unique_bvals(bvals, bmag=bmag)
+    uniqueb = unique_bvals_magnitude(bvals, bmag=bmag)
     if uniqueb.shape[0] < n_bvals:
         return False
     else:
