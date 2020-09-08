@@ -5,6 +5,7 @@
 Past Announcements
 **********************
 
+- :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 - :doc:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.
 - :doc:`DIPY 0.14 <release_notes/release0.14>` released May 1, 2018.
 - :doc:`DIPY 0.13 <release_notes/release0.13>` released October 24, 2017.

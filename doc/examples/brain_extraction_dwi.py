@@ -35,6 +35,7 @@ brain. It is possible to fine tune the parameters of ``median_otsu``
 but the default parameters work well on most volumes. For this example,
 we used 2 as ``median_radius`` and 1 as ``num_pass``
 """
+
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1)
 
 """
