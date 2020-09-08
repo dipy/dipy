@@ -20,6 +20,8 @@ Highlights
 
 - New command line interfaces for group analysis: BUAN.
 - Added b-tensor encoding for gradient table.
+- Better support for single shell or multi-shell response functions.
+- CSD response functions
 - Stats module refactored.
 - Numpy minimum version is 1.2.0.
 - Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
