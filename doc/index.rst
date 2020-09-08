@@ -28,7 +28,7 @@ Highlights
 - Improved performance of tissue classification.
 - Fixed a memory overlap bug (multi_median).
 - Large documentation update (typography / references).
-- Closed 126 issues and merged 50 pull requests.
+- Closed 255 issues and merged 92 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
