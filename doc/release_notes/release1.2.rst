@@ -8,7 +8,7 @@ GitHub stats for 2020/01/10 - 2020/09/08 (tag: 1.1.1)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 26 authors contributed 491 commits.
+The following 27 authors contributed 491 commits.
 
 * Ariel Rokem
 * Aryansh Omray
@@ -36,14 +36,15 @@ The following 26 authors contributed 491 commits.
 * Kunal Mehta
 * svabhishek29
 * Areesha Tariq
+* Philippe Karan
 
-
-We closed a total of 256 issues, 93 pull requests and 163 regular issues;
+We closed a total of 256 issues, 94 pull requests and 163 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (93):
+Pull Requests (94):
 
+* :ghpull:`2191`: Multi-shell multi-tissue constrained spherical deconvolution
 * :ghpull:`2212`: [FIX] renamed Direct Streamline Normalization tutorial title
 * :ghpull:`2207`: [FIX] Horizon shader warning
 * :ghpull:`2208`: Removing Python 3.5 from Travis and Azure due to its end of life (2020-09-13)

@@ -36,7 +36,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - Improved performance of tissue classification.
 - Fixed a memory overlap bug (multi_median).
 - Large documentation update (typography / references).
-- Closed 256 issues and merged 93 pull requests.
+- Closed 256 issues and merged 94 pull requests.
 
 * 1.1.1 (Friday, January 10, 2020)
 
