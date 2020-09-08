@@ -8,7 +8,7 @@ GitHub stats for 2020/01/10 - 2020/09/08 (tag: 1.1.1)
 
 These lists are automatically generated, and may be incomplete or contain duplicates.
 
-The following 25 authors contributed 491 commits.
+The following 26 authors contributed 491 commits.
 
 * Ariel Rokem
 * Aryansh Omray
@@ -35,14 +35,16 @@ The following 25 authors contributed 491 commits.
 * Tashrif Billah
 * Kunal Mehta
 * svabhishek29
+* Areesha Tariq
 
 
-We closed a total of 255 issues, 92 pull requests and 163 regular issues;
+We closed a total of 256 issues, 93 pull requests and 163 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (92):
+Pull Requests (93):
 
+* :ghpull:`2212`: [FIX] renamed Direct Streamline Normalization tutorial title
 * :ghpull:`2207`: [FIX] Horizon shader warning
 * :ghpull:`2208`: Removing Python 3.5 from Travis and Azure due to its end of life (2020-09-13)
 * :ghpull:`2157`: BF: Fix variable may be used uninitialized warning
@@ -136,8 +138,9 @@ Pull Requests (92):
 * :ghpull:`2028`: Adapted for patch_radius with radii differing xyz direction.
 * :ghpull:`2035`: DOC: Update DKI documentation according to the new get data functions
 
-Issues (163):
+Issues (164):
 
+* :ghissue:`2114`: Tutorial title in Streamline-based registration section is misleading
 * :ghissue:`2207`: [FIX] Horizon shader warning
 * :ghissue:`2208`: Removing Python 3.5 from Travis and Azure due to its end of life (2020-09-13)
 * :ghissue:`1793`: ENH: Improving Command Line and WF Docs

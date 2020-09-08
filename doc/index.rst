@@ -18,7 +18,7 @@ Highlights
 
 **DIPY 1.2.0** is now available. New features include:
 
-- New command line interfaces for Group Analysis: BUAN.
+- New command line interfaces for group analysis: BUAN.
 - Added b-tensor encoding for gradient table.
 - Stats module refactored.
 - Numpy minimum version is 1.2.0.
@@ -28,7 +28,7 @@ Highlights
 - Improved performance of tissue classification.
 - Fixed a memory overlap bug (multi_median).
 - Large documentation update (typography / references).
-- Closed 255 issues and merged 92 pull requests.
+- Closed 256 issues and merged 93 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.

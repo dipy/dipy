@@ -26,7 +26,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 
 * 1.2.0 (Tuesday, September 9, 2020)
 
-- New command line interfaces for Group Analysis: BUAN.
+- New command line interfaces for group analysis: BUAN.
 - Added b-tensor encoding for gradient table.
 - Stats module refactored.
 - Numpy minimum version is 1.2.0.
@@ -36,11 +36,11 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - Improved performance of tissue classification.
 - Fixed a memory overlap bug (multi_median).
 - Large documentation update (typography / references).
-- Closed 255 issues and merged 92 pull requests.
+- Closed 256 issues and merged 93 pull requests.
 
 * 1.1.1 (Friday, January 10, 2020)
 
-- New module for deep learning ``DIPY.NN`` (uses TensorFlow 2.0).
+- New module for deep learning ``dipy.nn`` (uses TensorFlow 2.0).
 - Improved DKI performance and increased utilities.
 - Non-linear and RESTORE fits from DTI compatible now with DKI.
 - Numerical solutions for estimating axial, radial and mean kurtosis.
@@ -48,8 +48,8 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 - Added Mean Kurtosis Tensor by Hansen et al. 2013.
 - Nibabel minimum version is 3.0.0.
 - Azure CI added and Appveyor CI removed.
-- New command line interfaces for LPCA, MPPCA and Gibbs Unringing.
-- New MTMS CSD tutorial added.
+- New command line interfaces for LPCA, MPPCA and Gibbs unringing.
+- New MSMT CSD tutorial added.
 - Horizon refactored and updated to support StatefulTractograms.
 - Speeded up all cython modules by using a smarter configuration setting.
 - All tutorials updated to API changes and 2 new tutorials added.
