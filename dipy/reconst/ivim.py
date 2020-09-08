@@ -1,5 +1,6 @@
 """ Classes and functions for fitting ivim model """
 
+from distutils.version import LooseVersion
 import numpy as np
 from scipy.optimize import least_squares, differential_evolution
 import warnings
@@ -33,6 +34,7 @@ def ivim_prediction(params, gtab):
     -------
     S : array
         An array containing the IVIM signal estimated using given parameters.
+
     """
     b = gtab.bvals
     S0, f, D_star, D = params
@@ -60,6 +62,7 @@ def _ivim_error(params, gtab, signal):
     -------
     residual : array
         An array containing the difference between actual and estimated signal.
+
     """
     residual = signal - ivim_prediction(params, gtab)
     return residual
@@ -87,6 +90,7 @@ def f_D_star_prediction(params, gtab, S0, D):
     -------
     S : array
         An array containing the IVIM signal estimated using given parameters.
+
     """
     f, D_star = params
     b = gtab.bvals
@@ -118,6 +122,7 @@ def f_D_star_error(params, gtab, signal, S0, D):
     -------
     residual : array
         An array containing the difference of actual and estimated signal.
+
     """
     f, D_star = params
     return signal - f_D_star_prediction([f, D_star], gtab, S0, D)
@@ -731,7 +736,10 @@ class IvimModelVP(ReconstModel):
                        f[1] <= 0.89]
 
         # Form objective.
-        obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
+        if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
+        else:
+            obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi @ f - signal)))
 
         # Form and solve problem.
         prob = cvxpy.Problem(obj, constraints)
