@@ -288,8 +288,12 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, error_fill_value=0):
         coeff = self.fitter(data)
+
+        nan_count = np.argwhere(np.isnan(coeff)) # Must divide by n or m!!!
+        np.where(np.isnan(coeff), error_fill_value, coeff)
+
         return MSDeconvFit(self, coeff, None)
 
 
@@ -360,8 +364,14 @@ def solve_qp(P, Q, G, H):
 
     # setting up the problem
     prob = cvx.Problem(objective, constraints)
-    prob.solve()
-    opt = np.array(x.value).reshape((Q.shape[0],))
+    try:
+        prob.solve()
+        opt = np.array(x.value).reshape((Q.shape[0],))
+    except cvx.error.SolverError:
+        prob.solve()
+        opt = np.empty((Q.shape[0],))
+        opt[:] = np.NaN
+
     return opt
 
 
