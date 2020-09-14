@@ -526,10 +526,10 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         for WM.
     mask_gm : ndarray
         Mask of voxels within the ROI and with FA below the FA threshold
-        for GM and with MD above the MD threshold for GM.
+        for GM and with MD below the MD threshold for GM.
     mask_csf : ndarray
         Mask of voxels within the ROI and with FA below the FA threshold
-        for CSF and with MD above the MD threshold for CSF.
+        for CSF and with MD below the MD threshold for CSF.
 
     Notes
     -----
