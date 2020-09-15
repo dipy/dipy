@@ -421,8 +421,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     MultiShellResponse
         MultiShellResponse object.
     """
-    NUMPY_1_12_PLUS = LooseVersion(np.__version__) > LooseVersion('1.12.0')
-    rcond_value = None if NUMPY_1_12_PLUS else -1
+    NUMPY_1_13_PLUS = LooseVersion(np.__version__) >= LooseVersion('1.14.0')
+    rcond_value = None if NUMPY_1_13_PLUS else -1
 
     bvals = np.array(bvals, copy=True)
     evecs = np.zeros((3, 3))
