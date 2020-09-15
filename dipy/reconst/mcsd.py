@@ -361,10 +361,10 @@ def solve_qp(P, Q, G, H):
     # setting up the problem
     prob = cvx.Problem(objective, constraints)
     try:
-        prob.solve()
+        prob.solve(solver=cvx.ECOS)
         opt = np.array(x.value).reshape((Q.shape[0],))
     except cvx.error.SolverError:
-        prob.solve()
+        prob.solve(solver=cvx.ECOS)
         print("Error")
         opt = np.empty((Q.shape[0],))
         opt[:] = np.NaN
