@@ -288,25 +288,8 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data, error_fill_value=0):
+    def fit(self, data):
         coeff = self.fitter(data)
-
-        nan_count = len(np.argwhere(np.isnan(coeff[..., 0])))
-        coeff = np.where(np.isnan(coeff), error_fill_value, coeff)
-        n_vox = coeff.shape[0] * coeff.shape[1] * coeff.shape[2]
-
-        if nan_count / n_vox > 0.05:
-            msg = """More than 5 percent of the voxels did not complete
-            FODF calculation. Something went wrong in the solver. Please be
-            sure that the response functions are well constructed.
-            """
-            raise ValueError(msg)
-        elif nan_count / n_vox > 0.01:
-            msg = """Bwtween 1 and 5 percent of the voxels did not complete
-            FODF calculation.
-            """
-            warnings.warn(msg, UserWarning)
-
         return MSDeconvFit(self, coeff, None)
 
 
@@ -382,6 +365,7 @@ def solve_qp(P, Q, G, H):
         opt = np.array(x.value).reshape((Q.shape[0],))
     except cvx.error.SolverError:
         prob.solve()
+        print("Error")
         opt = np.empty((Q.shape[0],))
         opt[:] = np.NaN
 
