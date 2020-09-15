@@ -364,8 +364,6 @@ def solve_qp(P, Q, G, H):
         prob.solve()
         opt = np.array(x.value).reshape((Q.shape[0],))
     except cvx.error.SolverError:
-        prob.solve()
-        print("Error")
         opt = np.empty((Q.shape[0],))
         opt[:] = np.NaN
 
