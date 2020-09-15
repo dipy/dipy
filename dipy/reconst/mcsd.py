@@ -292,8 +292,11 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         coeff = self.fitter(data)
 
         nan_count = len(np.argwhere(np.isnan(coeff[..., 0])))
+        print(coeff.shape)
         coeff = np.where(np.isnan(coeff), error_fill_value, coeff)
-        n_vox = coeff.shape[0] * coeff.shape[1] * coeff.shape[2]
+        print(data.shape)
+        print(n_vox)
+        n_vox = data.shape[0] * data.shape[1] * data.shape[2]
 
         if nan_count / n_vox > 0.05:
             msg = """More than 5 percent of the voxels did not complete
