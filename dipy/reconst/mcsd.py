@@ -292,23 +292,23 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         coeff = self.fitter(data)
 
         nan_count = len(np.argwhere(np.isnan(coeff[..., 0])))
-        print(coeff.shape)
+        print("coeff", coeff.shape)
         coeff = np.where(np.isnan(coeff), error_fill_value, coeff)
-        print(data.shape)
-        n_vox = data.shape[0] * data.shape[1] * data.shape[2]
-        print(n_vox)
+        print("data", data.shape)
+        # n_vox = data.shape[0] * data.shape[1] * data.shape[2]
+        # print(n_vox)
 
-        if nan_count / n_vox > 0.05:
-            msg = """More than 5 percent of the voxels did not complete
-            FODF calculation. Something went wrong in the solver. Please be
-            sure that the response functions are well constructed.
-            """
-            raise ValueError(msg)
-        elif nan_count / n_vox > 0.01:
-            msg = """Bwtween 1 and 5 percent of the voxels did not complete
-            FODF calculation.
-            """
-            warnings.warn(msg, UserWarning)
+        # if nan_count / n_vox > 0.05:
+        #     msg = """More than 5 percent of the voxels did not complete
+        #     FODF calculation. Something went wrong in the solver. Please be
+        #     sure that the response functions are well constructed.
+        #     """
+        #     raise ValueError(msg)
+        # elif nan_count / n_vox > 0.01:
+        #     msg = """Bwtween 1 and 5 percent of the voxels did not complete
+        #     FODF calculation.
+        #     """
+        #     warnings.warn(msg, UserWarning)
 
         return MSDeconvFit(self, coeff, None)
 
@@ -330,7 +330,7 @@ class MSDeconvFit(shm.SphHarmFit):
         mask: ndarray
             Mask for fitting
         """
-        print(coeff.shape)
+        print("fit", coeff.shape)
         self._shm_coef = coeff
         self.mask = mask
         self.model = model
