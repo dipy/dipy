@@ -290,7 +290,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
     @multi_voxel_fit
     def fit(self, data):
         coeff = self.fitter(data)
-
         return MSDeconvFit(self, coeff, None)
 
 
