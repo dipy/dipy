@@ -31,7 +31,7 @@ def test_shore_odf():
     odf = asmfit.odf(sphere)
     odf_sh = asmfit.odf_sh()
     odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None,
-                           use_legacy_definition=True)
+                           legacy=True)
     assert_almost_equal(odf, odf_from_sh, 10)
 
     directions, _, _ = peak_directions(odf, sphere, .35, 25)

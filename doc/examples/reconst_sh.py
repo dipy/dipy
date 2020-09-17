@@ -150,12 +150,13 @@ if interactive:
 As we can see, a symmetric basis fails to properly represent asymmetric SF.
 Fortunately, DIPY_ also implements full SH bases, which can deal with symmetric
 as well as asymmetric signals. For this tutorial, we will demonstrate it using
-the ``descoteaux07`` full SH basis by setting ``use_full_basis=true``.
+the ``descoteaux07`` full SH basis by setting ``full_basis=true``.
 """
 
-sh_coeffs = sf_to_sh(asym_odf, sph, sh_order, sh_basis, use_full_basis=True)
-reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis,
-                   use_full_basis=True)
+sh_coeffs = sf_to_sh(asym_odf, sph, sh_order,
+                     sh_basis, full_basis=True)
+reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order,
+                   sh_basis, full_basis=True)
 
 scene.clear()
 odf_actor = actor.odf_slicer(reconst[None, None, None, :], sphere=high_res_sph)
