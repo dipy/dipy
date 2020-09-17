@@ -39,18 +39,19 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
+Reslice
+~~~~~~~
+
+- :ref:`example_reslice_datasets`
+
+---------
 Denoising
-~~~~~~~~~
+---------
 
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
 - :ref:`example_denoise_mppca`
 - :ref:`example_denoise_gibbs`
-
-Reslice
-~~~~~~~
-
-- :ref:`example_reslice_datasets`
 
 --------------
 Reconstruction
