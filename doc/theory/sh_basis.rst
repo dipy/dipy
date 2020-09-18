@@ -16,7 +16,7 @@ Spherical harmonics are orthonormal functions defined by:
 
 where $l$ is the order, $m$ is the degree, $P_l^m$ is an associated
 $l$-th order, $m$-th degree Legendre polynomial, and $(\theta, \phi)$ is the
-representation of the direction vector in the spherical coordinate. The relation
+representation of the direction vector in spherical coordinates. The relation
 between $Y_l^{m}$ and $Y_l^{-m}$ is given by:
 
 ..  math::
