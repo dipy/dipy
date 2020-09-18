@@ -198,6 +198,7 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     val = val * np.exp(1j * m * theta)
     return val
 
+
 @deprecate_with_version('dipy.reconst.shm.real_sph_harm is deprecated, '
                         'Please use '
                         'dipy.reconst.shm.real_sh_descoteaux_from_index '
