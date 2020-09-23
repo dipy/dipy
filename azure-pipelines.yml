@@ -90,6 +90,11 @@ jobs:
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "
 
 - template: ci/azure/windows.yml
   parameters:
@@ -121,3 +126,8 @@ jobs:
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         EXTRA_DEPENDS: "scikit_learn vtk fury scipy"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "
