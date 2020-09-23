@@ -52,7 +52,8 @@ gtab = gradient_table(bvals, bvecs)
 print("Input Volume", data.shape)
 
 """
-## Estimate the noise standard deviation
+Estimate the noise standard deviation
+=====================================
 
 We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
 used in local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
@@ -71,7 +72,8 @@ sigma = pca_noise_estimate(data, gtab, correct_bias=True, smooth=3)
 print("Sigma estimation time", time() - t)
 
 """
-## Perform the localPCA using the function localpca.
+Perform the localPCA using the function `localpca`
+==================================================
 
 The localpca algorithm takes into account the multi-dimensional information of
 the diffusion MR data. It performs PCA on local 4D patch and
