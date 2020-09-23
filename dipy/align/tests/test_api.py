@@ -11,8 +11,8 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        affine_registration, streamline_registration, write_mapping,
-                        read_mapping, register_dwi_to_template)
+                        affine_registration, streamline_registration,
+                        write_mapping, read_mapping, register_dwi_to_template)
 
 from dipy.align.imwarp import DiffeomorphicMap
 
@@ -36,7 +36,7 @@ def setup_module():
     # We select some arbitrary chunk of data so this goes quicker:
     subset_b0 = mean_b0[40:50, 40:50, 40:50]
     subset_dwi_data = nib.Nifti1Image(hardi_data[40:50, 40:50, 40:50],
-                                    hardi_affine)
+                                      hardi_affine)
     subset_t2 = MNI_T2_data[40:60, 40:60, 40:60]
     subset_b0_img = nib.Nifti1Image(subset_b0, hardi_affine)
     subset_t2_img = nib.Nifti1Image(subset_t2, MNI_T2_affine)
