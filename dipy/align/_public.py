@@ -23,7 +23,6 @@ from dipy.align.transforms import (TranslationTransform3D,
                                    AffineTransform3D)
 
 
-
 import dipy.core.gradients as dpg
 import dipy.data as dpd
 from dipy.align.streamlinear import StreamlineLinearRegistration
@@ -324,7 +323,7 @@ def resample(moving, static, moving_affine=None, static_affine=None,
 
 
 def center_of_mass(moving, static, static_affine=None, moving_affine=None,
-              starting_affine=None, reg=None):
+                   starting_affine=None, reg=None):
     """
     Implements a center of mass transform
 
@@ -678,7 +677,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     pipeline = pipeline or [center_of_mass, translation, rigid, affine]
 
     series, series_affine = read_img_arr_or_path(series,
-                                                      affine=series_affine)
+                                                 affine=series_affine)
     if isinstance(ref, numbers.Number):
         ref_as_idx = ref
         idxer = np.zeros(series.shape[-1]).astype(bool)
