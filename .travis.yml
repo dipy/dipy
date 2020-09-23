@@ -95,7 +95,7 @@ matrix:
       # Check against latest available pre-release version of all packages
       env:
         - USE_PRE=1
-        - DEPENDS="$DEPENDS scipy"
+        - DEPENDS="$DEPENDS scipy statsmodels pandas scikit_learn"
   allow_failures:
     - python: 3.7
       dist: xenial
