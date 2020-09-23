@@ -288,8 +288,33 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, verbose=True):
+        """Fits the model to diffusion data and returns the model fit.
+
+        Sometimes the solving process of some voxels can end in a SolverError
+        from cvxpy. This might be attributed to the response functions not
+        being tuned properly, as the solving process is very sensitive to it.
+        The method will fill the problematic voxels with a NaN value, so that
+        it is traceable. The user should check for the number of NaN values and
+        could then fill the problematic voxels with zeros, for example.
+        Running a fit again only on those problematic voxels can also work.
+
+        Parameters
+        ----------
+        data : ndarray
+            The diffusion data to fit the model on.
+        verbose : bool (optional)
+            Whether to show warnings when a SolverError appears or not.
+            Default: True
+        """
         coeff = self.fitter(data)
+        if verbose:
+            if np.isnan(coeff[..., 0]):
+                msg = """Voxel could not be solved properly and ended up with a
+                SolverError. Prceeding to fill it with NaN values.
+                """
+                warnings.warn(msg, UserWarning)
+
         return MSDeconvFit(self, coeff, None)
 
 
@@ -426,8 +451,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     MultiShellResponse
         MultiShellResponse object.
     """
-    NUMPY_1_12_PLUS = LooseVersion(np.__version__) > LooseVersion('1.12.0')
-    rcond_value = None if NUMPY_1_12_PLUS else -1
+    NUMPY_1_14_PLUS = LooseVersion(np.__version__) >= LooseVersion('1.14.0')
+    rcond_value = None if NUMPY_1_14_PLUS else -1
 
     bvals = np.array(bvals, copy=True)
     evecs = np.zeros((3, 3))
