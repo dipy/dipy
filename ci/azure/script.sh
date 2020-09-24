@@ -7,10 +7,10 @@ else
     source venv/bin/activate
 fi
 
-PIPI="pip install --timeout=60 --find-links=$EXTRA_WHEELS"
+PIPI="pip install --timeout=60"
 
 if [ -n "$USE_PRE" ]; then
-    PIPI="$PIPI --find-links=$PRE_WHEELS --pre";
+    PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
 fi
 
 #---------- DIPY Installation -----------------
