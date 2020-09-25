@@ -44,7 +44,8 @@ You can verify the b-values of the dataset by looking at the attribute
 ``gtab.bvals``. Now that a datasets with multiple gradient directions is
 loaded, we can proceed with the two steps of CSD.
 
-## Step 1. Estimation of the fiber response function.
+Step 1. Estimation of the fiber response function
+=================================================
 
 There are many strategies to estimate the fiber response function. Here two
 different strategies are presented.
@@ -212,7 +213,8 @@ if interactive:
 scene.rm(response_actor)
 
 """
-## Step 2. fODF reconstruction
+Step 2. fODF reconstruction
+===========================
 
 After estimating a response function for one of the strategies shown above,
 we are ready to start the deconvolution process. Let's import the CSD model
