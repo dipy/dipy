@@ -311,7 +311,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         if verbose:
             if np.isnan(coeff[..., 0]):
                 msg = """Voxel could not be solved properly and ended up with a
-                SolverError. Prceeding to fill it with NaN values.
+                SolverError. Proceeding to fill it with NaN values.
                 """
                 warnings.warn(msg, UserWarning)
 
