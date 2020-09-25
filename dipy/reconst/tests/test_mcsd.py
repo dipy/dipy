@@ -302,6 +302,8 @@ def test_auto_response_msmt():
         with bvalues lower than 1200, followed by response_from_mask_msmt
         to overcome this.""" in str(w[0].message))
 
+        npt.assert_equal(response_auto_wm.shape, (len(gtab.bvals)-1, 4))
+
         mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                             roi_center=None,
                                                             roi_radii=(1, 1, 0),
