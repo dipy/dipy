@@ -301,7 +301,7 @@ def test_auto_response_msmt():
         The DTI fit might be affected. It is adviced to use
         mask_for_response_msmt with bvalues lower than 1200, followed by
         response_from_mask_msmt with all bvalues to overcome this."""
-        in str(w[0].message))
+                    in str(w[0].message))
 
         mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                             roi_center=None,
