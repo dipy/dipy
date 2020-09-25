@@ -656,12 +656,12 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
     Returns
     -------
-    response_wm : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for WM for each bvalues (except b0).
-    response_gm : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for GM for each bvalues (except b0).
-    response_csf : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for CSF for each bvalues (except b0).
+    response_wm : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for WM for each unique bvalues (except b0).
+    response_gm : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for GM for each unique bvalues (except b0).
+    response_csf : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for CSF for each unique bvalues (except b0).
 
     Notes
     -----
@@ -743,12 +743,12 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
 
     Returns
     -------
-    response_wm : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for WM for each bvalues (except b0).
-    response_gm : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for GM for each bvalues (except b0).
-    response_csf : ndarray, (len(gtab.bvals)-1, 4)
-        (`evals`, `S0`) for CSF for each bvalues (except b0).
+    response_wm : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for WM for each unique bvalues (except b0).
+    response_gm : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for GM for each unique bvalues (except b0).
+    response_csf : ndarray, (len(unique_bvals_tolerance(gtab.bvals))-1, 4)
+        (`evals`, `S0`) for CSF for each unique bvalues (except b0).
 
     Notes
     -----
@@ -766,9 +766,9 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     list_bvals = unique_bvals_tolerance(gtab.bvals)
     if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200.
-        The DTI fit might be affected. It is adviced use mask_for_response_msmt
-        with bvalues lower than 1200, followed by response_from_mask_msmt
-        to overcome this."""
+        The DTI fit might be affected. It is adviced to use
+        mask_for_response_msmt with bvalues lower than 1200, followed by
+        response_from_mask_msmt with all bvalues to overcome this."""
         warnings.warn(msg_bvals, UserWarning)
     mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                         roi_center,
