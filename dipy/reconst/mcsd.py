@@ -288,8 +288,33 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         return pred_sig
 
     @multi_voxel_fit
-    def fit(self, data):
+    def fit(self, data, verbose=True):
+        """Fits the model to diffusion data and returns the model fit.
+
+        Sometimes the solving process of some voxels can end in a SolverError
+        from cvxpy. This might be attributed to the response functions not
+        being tuned properly, as the solving process is very sensitive to it.
+        The method will fill the problematic voxels with a NaN value, so that
+        it is traceable. The user should check for the number of NaN values and
+        could then fill the problematic voxels with zeros, for example.
+        Running a fit again only on those problematic voxels can also work.
+
+        Parameters
+        ----------
+        data : ndarray
+            The diffusion data to fit the model on.
+        verbose : bool (optional)
+            Whether to show warnings when a SolverError appears or not.
+            Default: True
+        """
         coeff = self.fitter(data)
+        if verbose:
+            if np.isnan(coeff[..., 0]):
+                msg = """Voxel could not be solved properly and ended up with a
+                SolverError. Proceeding to fill it with NaN values.
+                """
+                warnings.warn(msg, UserWarning)
+
         return MSDeconvFit(self, coeff, None)
 
 
@@ -360,8 +385,13 @@ def solve_qp(P, Q, G, H):
 
     # setting up the problem
     prob = cvx.Problem(objective, constraints)
-    prob.solve()
-    opt = np.array(x.value).reshape((Q.shape[0],))
+    try:
+        prob.solve()
+        opt = np.array(x.value).reshape((Q.shape[0],))
+    except cvx.error.SolverError:
+        opt = np.empty((Q.shape[0],))
+        opt[:] = np.NaN
+
     return opt
 
 
@@ -516,10 +546,10 @@ def mask_for_response_msmt(gtab, data, roi_center=None, roi_radii=10,
         for WM.
     mask_gm : ndarray
         Mask of voxels within the ROI and with FA below the FA threshold
-        for GM and with MD above the MD threshold for GM.
+        for GM and with MD below the MD threshold for GM.
     mask_csf : ndarray
         Mask of voxels within the ROI and with FA below the FA threshold
-        for CSF and with MD above the MD threshold for CSF.
+        for CSF and with MD below the MD threshold for CSF.
 
     Notes
     -----
