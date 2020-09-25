@@ -766,7 +766,7 @@ def auto_response_msmt(gtab, data, tol=20, roi_center=None, roi_radii=10,
     list_bvals = unique_bvals_tolerance(gtab.bvals)
     if not np.all(list_bvals <= 1200):
         msg_bvals = """Some b-values are higher than 1200.
-        The DTI fit might be affected. It is adviced to use
+        The DTI fit might be affected. It is advised to use
         mask_for_response_msmt with bvalues lower than 1200, followed by
         response_from_mask_msmt with all bvalues to overcome this."""
         warnings.warn(msg_bvals, UserWarning)
