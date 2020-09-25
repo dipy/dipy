@@ -107,7 +107,8 @@ REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "scipy (>=%s)" % SCIPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
                        "h5py (>=%s)" % H5PY_MIN_VERSION,
-                       "packaging (>=%s)" % PACKAGING_MIN_VERSION]
+                       "packaging (>=%s)" % PACKAGING_MIN_VERSION,
+                       "tqdm"]
 EXTRAS_REQUIRE = {
     "test": [
         "pytest",
