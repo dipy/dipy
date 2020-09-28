@@ -458,8 +458,8 @@ def test_affine_map():
                                             dom_shape[:dim], domain_grid2world,
                                             cod_shape[:dim],
                                             codomain_grid2world)
-            actual_linear = affine_map.transform(img, interp='linear')
-            actual_nn = affine_map.transform(img, interp='nearest')
+            actual_linear = affine_map.transform(img, interpolation='linear')
+            actual_nn = affine_map.transform(img, interpolation='nearest')
             assert_array_almost_equal(actual_linear, expected_linear)
             assert_array_almost_equal(actual_nn, expected_nn)
 
@@ -498,8 +498,8 @@ def test_affine_map():
                                             cod_shape[:dim],
                                             codomain_grid2world,
                                             dom_shape[:dim], domain_grid2world)
-            actual_linear = affine_map.transform_inverse(img, interp='linear')
-            actual_nn = affine_map.transform_inverse(img, interp='nearest')
+            actual_linear = affine_map.transform_inverse(img, interpolation='linear')
+            actual_nn = affine_map.transform_inverse(img, interpolation='nearest')
             assert_array_almost_equal(actual_linear, expected_linear)
             assert_array_almost_equal(actual_nn, expected_nn)
 

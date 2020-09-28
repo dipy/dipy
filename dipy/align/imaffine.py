@@ -56,7 +56,7 @@ from dipy.align.parzenhist import (ParzenJointHistogram,
                                    compute_parzen_mi)
 from dipy.align.imwarp import (get_direction_and_spacings, ScaleSpace)
 from dipy.align.scalespace import IsotropicScaleSpace
-from warnings import warn
+from dipy.utils.deprecator import deprecated_params
 
 _interp_options = ['nearest', 'linear']
 _transform_method = {}
@@ -245,9 +245,11 @@ class AffineMap(object):
                                           .format(format_spec,
                                                   allowed_formats_print_map))
 
-    def _apply_transform(self, image, interp='linear', image_grid2world=None,
-                         sampling_grid_shape=None, sampling_grid2world=None,
-                         resample_only=False, apply_inverse=False):
+    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
+    def _apply_transform(self, image, interpolation='linear',
+                         image_grid2world=None, sampling_grid_shape=None,
+                         sampling_grid2world=None, resample_only=False,
+                         apply_inverse=False):
         """Transform the input image applying this affine transform.
 
         This is a generic function to transform images using either this
@@ -267,7 +269,7 @@ class AffineMap(object):
         ----------
         image :  2D or 3D array
             the image to be transformed
-        interp : string, either 'linear' or 'nearest'
+        interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
         image_grid2world : array, shape (dim + 1, dim + 1), optional
@@ -302,8 +304,9 @@ class AffineMap(object):
 
         """
         # Verify valid interpolation requested
-        if interp not in _interp_options:
-            raise ValueError('Unknown interpolation method: %s' % (interp,))
+        if interpolation not in _interp_options:
+            msg = 'Unknown interpolation method: %s' % (interpolation,)
+            raise ValueError(msg)
 
         # Obtain sampling grid
         if sampling_grid_shape is None:
@@ -354,12 +357,14 @@ class AffineMap(object):
             comp = image_world2grid.dot(aff.dot(sampling_grid2world))
 
         # Transform the input image
-        if interp == 'linear':
+        if interpolation == 'linear':
             image = image.astype(np.float64)
-        transformed = _transform_method[(dim, interp)](image, shape, comp)
+        transformed = _transform_method[(dim, interpolation)](image, shape,
+                                                              comp)
         return transformed
 
-    def transform(self, image, interp='linear', image_grid2world=None,
+    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
+    def transform(self, image, interpolation='linear', image_grid2world=None,
                   sampling_grid_shape=None, sampling_grid2world=None,
                   resample_only=False):
         """Transform the input image from co-domain to domain space.
@@ -372,7 +377,7 @@ class AffineMap(object):
         ----------
         image :  2D or 3D array
             the image to be transformed
-        interp : string, either 'linear' or 'nearest'
+        interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
         image_grid2world : array, shape (dim + 1, dim + 1), optional
@@ -401,16 +406,18 @@ class AffineMap(object):
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interp, image_grid2world,
+        transformed = self._apply_transform(image, interpolation,
+                                            image_grid2world,
                                             sampling_grid_shape,
                                             sampling_grid2world,
                                             resample_only,
                                             apply_inverse=False)
         return np.array(transformed)
 
-    def transform_inverse(self, image, interp='linear', image_grid2world=None,
-                          sampling_grid_shape=None, sampling_grid2world=None,
-                          resample_only=False):
+    @deprecated_params('interp', 'interpolation', since='1.13', until='1.15')
+    def transform_inverse(self, image, interpolation='linear',
+                          image_grid2world=None, sampling_grid_shape=None,
+                          sampling_grid2world=None, resample_only=False):
         """Transform the input image from domain to co-domain space.
 
         By default, the transformed image is sampled at a grid defined by
@@ -421,7 +428,7 @@ class AffineMap(object):
         ----------
         image :  2D or 3D array
             the image to be transformed
-        interp : string, either 'linear' or 'nearest'
+        interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used, either 'linear'
             (for k-linear interpolation) or 'nearest' for nearest neighbor
         image_grid2world : array, shape (dim + 1, dim + 1), optional
@@ -450,7 +457,8 @@ class AffineMap(object):
             the transformed image, sampled at the requested grid
 
         """
-        transformed = self._apply_transform(image, interp, image_grid2world,
+        transformed = self._apply_transform(image, interpolation,
+                                            image_grid2world,
                                             sampling_grid_shape,
                                             sampling_grid2world,
                                             resample_only,
