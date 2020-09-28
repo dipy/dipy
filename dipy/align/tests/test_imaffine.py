@@ -498,14 +498,16 @@ def test_affine_map():
                                             cod_shape[:dim],
                                             codomain_grid2world,
                                             dom_shape[:dim], domain_grid2world)
-            actual_linear = affine_map.transform_inverse(img, interpolation='linear')
-            actual_nn = affine_map.transform_inverse(img, interpolation='nearest')
+            actual_linear = affine_map.transform_inverse(
+                img, interpolation='linear')
+            actual_nn = affine_map.transform_inverse(img,
+                                                     interpolation='nearest')
             assert_array_almost_equal(actual_linear, expected_linear)
             assert_array_almost_equal(actual_nn, expected_nn)
 
         # Verify AffineMap can not be created with non-square matrix
-        non_square_shapes = [ np.zeros((dim, dim + 1), dtype=np.float64),
-                           np.zeros((dim + 1, dim), dtype=np.float64) ]
+        non_square_shapes = [np.zeros((dim, dim + 1), dtype=np.float64),
+                             np.zeros((dim + 1, dim), dtype=np.float64)]
         for nsq in non_square_shapes:
             assert_raises(AffineInversionError, AffineMap, nsq)
 
@@ -516,7 +518,7 @@ def test_affine_map():
                 continue
             bad_aug = aff_map.affine
             # no zeros in the first n-1 columns on last row
-            bad_aug[-1,:] = 1
+            bad_aug[-1, :] = 1
             assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
 
             bad_aug = aff_map.affine
@@ -575,8 +577,10 @@ def test_affine_map():
                 AffineInvalidValuesError,
                 affine_map.set_affine,
                 aff_sing)
-            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_nan)
-            assert_raises(AffineInvalidValuesError, affine_map.set_affine, aff_inf)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine,
+                          aff_nan)
+            assert_raises(AffineInvalidValuesError, affine_map.set_affine,
+                          aff_inf)
 
     # Verify AffineMap can not be created with non-2D matrices : len(shape) != 2
     for dim_not_2 in range(10):
