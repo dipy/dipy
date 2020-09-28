@@ -46,21 +46,27 @@ def test_inplace():
 
     # Test 2d cases
     output_2d = gibbs_removal(input_2d, inplace=False)
-    assert_raises(AssertionError, assert_array_almost_equal, input_2d, output_2d)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_2d, output_2d
+    )
 
     output_2d = gibbs_removal(input_2d, inplace=True)
     assert_array_almost_equal(input_2d, output_2d)
 
     # Test 3d case
     output_3d = gibbs_removal(input_3d, inplace=False)
-    assert_raises(AssertionError, assert_array_almost_equal, input_3d, output_3d)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_3d, output_3d
+    )
 
     output_3d = gibbs_removal(input_3d, inplace=True)
     assert_array_almost_equal(input_3d, output_3d)
 
     # Test 4d case
     output_4d = gibbs_removal(input_4d, inplace=False)
-    assert_raises(AssertionError, assert_array_almost_equal, input_4d, output_4d)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_4d, output_4d
+    )
 
     output_4d = gibbs_removal(input_4d, inplace=True)
     assert_array_almost_equal(input_4d, output_4d)
