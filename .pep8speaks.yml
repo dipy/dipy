@@ -21,5 +21,6 @@ pycodestyle:
     #    - E203
     exclude:
         - doc/examples
+        - dipy/info.py
 only_mention_files_with_errors: True  # If False, a separate status comment for each file is made.
 descending_issues_order: False # If True, PEP8 issues in message will be displayed in descending order of line numbers in the file
