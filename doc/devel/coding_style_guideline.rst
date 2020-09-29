@@ -44,7 +44,7 @@ and readability across the library::
   import numpy.testing as npt
   import scipy as sp
 
-No alias should be used for `h5py`::
+No alias should be used for ``h5py``::
 
   import h5py
 
@@ -58,22 +58,22 @@ Cython-specific syntax should follow these additional rules:
 
 Imports
 -------
-The `cimport`s should add the `c` prefix to the usual Python import package
+The ``cimport``s should add the ``c`` prefix to the usual Python import package
 shorthand, e.g.::
 
   cimport numpy as cnp
 
-Adding the `c` prefix to the import line makes it clear that the Cython/C
+Adding the ``c`` prefix to the import line makes it clear that the Cython/C
 symbols are being referred to as compared to the Python symbols.
 
 Variable declaration
 --------------------
-Separate `cdef`, `cpdef`, and `ctypedef` statements from the following type by
-exactly one space. In turn, separate the type from the variable name by exactly
-one space. Declare only one `ctypedef` variable per line. You may `cdef` or
-`cpdef` multiple variables per line as long as these are simple declarations;
-note that multiple assignment, references, or pointers are not allowed on the
-same line. Grouping `cdef` statements is allowed. For example::
+Separate ``cdef``, ``cpdef``, and ``ctypedef`` statements from the following
+type by exactly one space. In turn, separate the type from the variable name by
+exactly one space. Declare only one ``ctypedef`` variable per line. You may
+``cdef`` or ``cpdef`` multiple variables per line as long as these are simple
+declarations; note that multiple assignment, references, or pointers are not
+allowed on the same line. Grouping ``cdef`` statements is allowed. For example::
 
   # Good
   cdef int n
@@ -100,7 +100,7 @@ same line. Grouping `cdef` statements is allowed. For example::
   cdef   int   get_direction_c(self, double* point, double* direction):
       return 0
 
-Inside of a function, place all `cdef` statements at the top of the function
+Inside of a function, place all ``cdef`` statements at the top of the function
 body::
 
   # Good
@@ -118,22 +118,22 @@ body::
 
 Using C libraries
 -----------------
-The `cimport`s should follow the same rules defined in PEP8 for `import`
-statements. If a module is both *imported* and *cimported*, the `cimport`
+The ``cimport``s should follow the same rules defined in PEP8 for ``import``
+statements. If a module is both *imported* and *cimported*, the ``cimport``
 should come before the `import`.
 
 An example of an imported C library::
 
   from libc.stdlib cimport calloc, realloc, free
 
-Do not use `include` statements.
+Do not use ``include`` statements.
 
 Error return values
 -------------------
-When declaring an error return value with the `except` keyword, use one space on
-both sides of the `except`. If in a function definition, there should be no
-spaces between the error return value and the colon `:`. Avoid `except *`
-unless it is needed for functions returning `void`::
+When declaring an error return value with the ``except`` keyword, use one space
+on both sides of the ``except``. If in a function definition, there should be no
+spaces between the error return value and the colon ``:``. Avoid ``except *``
+unless it is needed for functions returning ``void``::
 
   # Good
   cdef void bar() except *
@@ -150,8 +150,8 @@ Pointers and references
 -----------------------
 Pointers and references may be either zero or one space away from the type name.
 If followed by a variable name, they must be one space away from the variable
-name. Do not put any spaces between the reference operator `&` and the variable
-name::
+name. Do not put any spaces between the reference operator ``&`` and the
+variable name::
 
   # Good
   cdef int& i
@@ -165,8 +165,8 @@ name::
 
 Casting
 -------
-When casting a variable there must be no whitespace between the opening `<` and
-the type. There must one space between the closing `>` and the variable::
+When casting a variable there must be no whitespace between the opening ``<``
+and the type. There must one space between the closing ``>`` and the variable::
 
   # Good
   <float> i
@@ -183,7 +183,7 @@ Use Python loop syntax::
   for i in range(nrows):
     ...
 
-Other `for`-loop constructs are deprecated and must be avoided.
+Other ``for``-loop constructs are deprecated and must be avoided.
 
 -------------
 Documentation
