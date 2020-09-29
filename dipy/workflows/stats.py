@@ -558,7 +558,6 @@ class BundleShapeAnalysis(Workflow):
 
         """
         rng = np.random.RandomState()
-
         all_subjects = []
         if os.path.isdir(subject_folder):
             groups = os.listdir(subject_folder)

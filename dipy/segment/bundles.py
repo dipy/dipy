@@ -193,8 +193,9 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
     bundle1_centroids = Streamlines(bundle1_centroids)
     bundle2_centroids = Streamlines(bundle2_centroids)
 
-    ba_value = ba_analysis(bundle1_centroids, bundle2_centroids,
-                           threshold)
+    ba_value = ba_analysis(recognized_bundle=bundle1_centroids,
+                           expert_bundle=bundle2_centroids,
+                           threshold=threshold)
 
     return ba_value
 
