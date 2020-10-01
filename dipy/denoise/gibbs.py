@@ -220,7 +220,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3):
+def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -233,6 +233,10 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     n_points : int, optional
         Number of neighbour points to access local TV (see note).
         Default is set to 3.
+    inplace : bool, optional
+        If True, the input data is replaced with results. Otherwise, returns
+        a new array.
+        Default is set to True.
 
     Returns
     -------
@@ -257,6 +261,9 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
 
     """
     nd = vol.ndim
+
+    if not isinstance(inplace, bool):
+        raise TypeError("inplace must be a boolean.")
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
@@ -283,9 +290,13 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     shap = vol.shape
     G0, G1 = _weights(shap[:2])
 
+    # Copy data if not inplace
+    if not inplace:
+        vol = vol.copy()
+
     # Run Gibbs removal of 2D images
     if nd == 2:
-        vol = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
+        vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
         for vi in range(shap[2]):
             vol[:, :, vi] = _gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
