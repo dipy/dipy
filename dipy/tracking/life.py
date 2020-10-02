@@ -433,6 +433,7 @@ class FiberModel(ReconstModel):
         # The mean of the relative signal across directions in each voxel:
         mean_sig = np.mean(relative_signal, -1)
         to_fit = (relative_signal - mean_sig[:, None]).ravel()
+        to_fit[np.isnan(to_fit)] = 0
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
 
