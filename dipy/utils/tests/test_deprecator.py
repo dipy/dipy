@@ -223,6 +223,12 @@ def test_deprecated_argument():
         # One positional, one keyword
         npt.assert_raises(TypeError, method, 1, scale=2)
 
+    with pytest.warns(None) as w_record:
+        res = CustomActor().test5(4)
+
+    npt.assert_equal(len(w_record), 0)
+    npt.assert_equal(res, 4)
+
 
 def test_deprecated_argument_in_kwargs():
     # To rename an argument that is consumed by "kwargs" the "arg_in_kwargs"
