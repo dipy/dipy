@@ -105,7 +105,6 @@ def slicer_panel(scene, iren,
     if not world_coords:
         affine = np.eye(4)
 
-    # import ipdb; ipdb.set_trace()
     image_actor_z = actor.slicer(tmp, affine=affine, value_range=value_range,
                                  interpolation='nearest', picking_tol=0.025)
 
