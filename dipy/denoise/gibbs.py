@@ -89,16 +89,16 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     sn = np.zeros(xs.shape)
     N = xs.shape[1]
     c = np.fft.fftshift(np.fft.fft2(xs))
-    k = np.linspace(-N/2, N/2-1, num=N)
-    k = (2.0j * np.pi * k) / N
+    k = np.fft.fftfreq(N, 1 / (2.0j * np.pi))
+    k = k.astype(c.dtype, copy=False)
     for s in ssamp:
         # Access positive shift for given s
-        img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
+        img_p = abs(np.fft.ifft2(c * np.exp(k*s)))
         tvsr, tvsl = _image_tv(img_p, axis=1, n_points=n_points)
         tvs_p = np.minimum(tvsr, tvsl)
 
         # Access negative shift for given s
-        img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
+        img_n = abs(np.fft.ifft2(c * np.exp(-k*s)))
         tvsr, tvsl = _image_tv(img_n, axis=1, n_points=n_points)
         tvs_n = np.minimum(tvsr, tvsl)
 
