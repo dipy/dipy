@@ -315,7 +315,7 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
            doi: 10.1016/j.neuroimage.2016.08.016
     """
     return genpca(arr, sigma=sigma, mask=mask, patch_radius=patch_radius,
-                  pca_method=pca_method, tau_factor=2.3,
+                  pca_method=pca_method, tau_factor=tau_factor,
                   return_sigma=False, out_dtype=out_dtype)
 
 
