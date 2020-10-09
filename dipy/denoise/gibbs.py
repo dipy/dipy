@@ -241,9 +241,9 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
         a new array.
         Default is set to True.
     workers : int, optional
-        Computation is subdivided into ``workers`` sections and evaluated in 
-        parallel (uses ``multiprocessing.Pool <multiprocessing>``). Supply 
-        ``-1`` to use all cores available to the Process. 
+        Computation is subdivided into ``workers`` sections and evaluated in
+        parallel (uses ``multiprocessing.Pool <multiprocessing>``). Supply
+        ``-1`` to use all cores available to the Process.
         Default is set to 1.
 
     Returns
@@ -311,7 +311,9 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
         mapwrapper = MapWrapper(workers)
-        partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
+        partial_func = partial(
+            _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
+        )
         vol[:, :, :] = list(mapwrapper(partial_func, vol))
 
     # Reshape data to original format
