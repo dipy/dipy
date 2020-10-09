@@ -1,8 +1,8 @@
 
 from functools import partial
+from multiprocessing import Pool
 
 import numpy as np
-from scipy._lib._util import MapWrapper
 
 
 def _image_tv(x, axis=0, n_points=3):
@@ -223,7 +223,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
+def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -240,11 +240,12 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
         If True, the input data is replaced with results. Otherwise, returns
         a new array.
         Default is set to True.
-    workers : int, optional
-        Computation is subdivided into ``workers`` sections and evaluated in
-        parallel (uses ``multiprocessing.Pool <multiprocessing>``). Supply
-        ``-1`` to use all cores available to the Process.
-        Default is set to 1.
+    num_processes : int, optional
+        Split the calculation to a pool of children processes. This only
+        applies to 3D or 4D `data` arrays. If a positive integer then it
+        defines the size of the multiprocessing pool that will be used. If 0,
+        then the size of the pool will equal the number of cores available.
+        Default is set to 1. 
 
     Returns
     -------
@@ -279,8 +280,11 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
     if not isinstance(inplace, bool):
         raise TypeError("inplace must be a boolean.")
 
-    if not isinstance(workers, int):
-        raise TypeError("workers must be an int.")
+    if not isinstance(num_processes, int):
+        raise TypeError("num_processes must be an int.")
+    else:
+        if num_processes < 0:
+            raise ValueError("num_processes must be >= 0.")
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
@@ -310,11 +314,17 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        mapwrapper = MapWrapper(workers)
+        if num_processes == 0:
+            pool = Pool()
+        else:
+            pool = Pool(num_processes)
+        
         partial_func = partial(
             _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
         )
-        vol[:, :, :] = list(mapwrapper(partial_func, vol))
+        vol[:, :, :] = pool.map(partial_func, vol)
+        pool.close()
+        pool.join()
 
     # Reshape data to original format
     if nd == 3:
