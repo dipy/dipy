@@ -245,7 +245,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
         applies to 3D or 4D `data` arrays. If a positive integer then it
         defines the size of the multiprocessing pool that will be used. If 0,
         then the size of the pool will equal the number of cores available.
-        Default is set to 1. 
+        Default is set to 1.
 
     Returns
     -------
@@ -318,7 +318,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_processes=1):
             pool = Pool()
         else:
             pool = Pool(num_processes)
-        
+
         partial_func = partial(
             _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
         )
