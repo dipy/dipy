@@ -1,5 +1,8 @@
 
+from functools import partial
+
 import numpy as np
+from scipy._lib._util import MapWrapper
 
 
 def _image_tv(x, axis=0, n_points=3):
@@ -220,7 +223,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
+def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, workers=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -237,6 +240,11 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
         If True, the input data is replaced with results. Otherwise, returns
         a new array.
         Default is set to True.
+    workers : int, optional
+        Computation is subdivided into ``workers`` sections and evaluated in 
+        parallel (uses ``multiprocessing.Pool <multiprocessing>``). Supply 
+        ``-1`` to use all cores available to the Process. 
+        Default is set to 1.
 
     Returns
     -------
@@ -262,8 +270,17 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
     """
     nd = vol.ndim
 
+    # check matrix dimension
+    if nd > 4:
+        raise ValueError("Data have to be a 4D, 3D or 2D matrix")
+    elif nd < 2:
+        raise ValueError("Data is not an image")
+
     if not isinstance(inplace, bool):
         raise TypeError("inplace must be a boolean.")
+
+    if not isinstance(workers, int):
+        raise TypeError("workers must be an int.")
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
@@ -271,24 +288,19 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
         raise ValueError("Different slices have to be organized along" +
                          "one of the 3 first matrix dimensions")
 
-    # 2) If this is not 2, swap axes so that different slices are ordered
-    # along axis 2. Note that swapping is not required if data is already a
-    # single image
-    elif slice_axis < 2 and nd > 2:
-        vol = np.swapaxes(vol, slice_axis, 2)
+    # 2) Reorder axis to allow iteration over the first axis
+    elif nd == 3:
+        vol = np.moveaxis(vol, slice_axis, 0)
+    elif nd == 4:
+        vol = np.moveaxis(vol, (slice_axis, 3), (0, 1))
 
-    # check matrix dimension
     if nd == 4:
         inishap = vol.shape
-        vol = vol.reshape((inishap[0], inishap[1], inishap[2] * inishap[3]))
-    elif nd > 4:
-        raise ValueError("Data have to be a 4D, 3D or 2D matrix")
-    elif nd < 2:
-        raise ValueError("Data is not an image")
+        vol = vol.reshape((inishap[0] * inishap[1], inishap[2], inishap[3]))
 
-    # Produce weigthing functions for 2D Gibbs removal
+    # Produce weighting functions for 2D Gibbs removal
     shap = vol.shape
-    G0, G1 = _weights(shap[:2])
+    G0, G1 = _weights(shap[-2:])
 
     # Copy data if not inplace
     if not inplace:
@@ -298,14 +310,15 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True):
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        for vi in range(shap[2]):
-            vol[:, :, vi] = _gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
-                                              G0=G0, G1=G1)
+        mapwrapper = MapWrapper(workers)
+        partial_func = partial(_gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1)
+        vol[:, :, :] = list(mapwrapper(partial_func, vol))
 
     # Reshape data to original format
+    if nd == 3:
+        vol = np.moveaxis(vol, 0, slice_axis)
     if nd == 4:
         vol = vol.reshape(inishap)
-    if slice_axis < 2 and nd > 2:
-        vol = np.swapaxes(vol, slice_axis, 2)
+        vol = np.moveaxis(vol, (0, 1), (slice_axis, 3))
 
     return vol
