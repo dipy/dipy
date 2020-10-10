@@ -283,7 +283,7 @@ class GibbsRingingFlow(Workflow):
             data, affine, image = load_nifti(dwi, return_img=True)
 
             unring_data = gibbs_removal(data, slice_axis=slice_axis,
-                                        n_points=n_points, 
+                                        n_points=n_points,
                                         num_threads=num_threads)
 
             save_nifti(ounring, unring_data, affine, image.header)
