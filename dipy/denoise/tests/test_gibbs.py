@@ -47,16 +47,16 @@ def test_parallel():
     input_4d = np.stack([input_3d, input_3d], axis=3)
 
     # Test 3d case
-    output_3d_parallel = gibbs_removal(input_3d, inplace=False, num_processes=2)
+    output_3d_parallel = gibbs_removal(input_3d, inplace=False, num_threads=2)
     output_3d_no_parallel = gibbs_removal(
-        input_3d, inplace=False, num_processes=1
+        input_3d, inplace=False, num_threads=1
     )
     assert_array_almost_equal(output_3d_parallel, output_3d_no_parallel)
 
     # Test 4d case
-    output_4d_parallel = gibbs_removal(input_4d, inplace=False, num_processes=2)
+    output_4d_parallel = gibbs_removal(input_4d, inplace=False, num_threads=2)
     output_4d_no_parallel = gibbs_removal(
-        input_4d, inplace=False, num_processes=1
+        input_4d, inplace=False, num_threads=1
     )
     assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
 
@@ -182,12 +182,16 @@ def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2)))
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
+    # Test for valid num_threads
     assert_raises(
-        TypeError, gibbs_removal, image_gibbs.copy(), num_processes="1"
+        TypeError, gibbs_removal, image_gibbs.copy(), num_threads="1"
     )
     assert_raises(
-        ValueError, gibbs_removal, image_gibbs.copy(), num_processes=-1
+        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=-1
     )
+    # Test for valid input dimensionality
+    assert_raises(ValueError, gibbs_removal, np.ones(2)) # 1D
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2))) # 5D
 
 
 def test_gibbs_subfunction():
