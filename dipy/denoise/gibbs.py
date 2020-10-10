@@ -241,11 +241,9 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
         a new array.
         Default is set to True.
     num_threads : int or None, optional
-        Split the calculation to a pool of children processes. This only
-        applies to 3D or 4D `data` arrays. If a positive integer then it
-        defines the size of the multiprocessing pool that will be used. If
-        None, then the size of the pool will equal the number of cores 
-        available.
+        Number of threads. Only applies to 3D or 4D `data` arrays. If None then
+        all available threads will be used. Otherwise, must be a positive
+        integer.
         Default is set to 1.
 
     Returns
@@ -281,7 +279,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     if not isinstance(inplace, bool):
         raise TypeError("inplace must be a boolean.")
 
-    if not isinstance(num_threads, int) or None:
+    if (not isinstance(num_threads, int)) and (num_threads is not None):
         raise TypeError("num_processes must be an int or None.")
     else:
         if isinstance(num_threads, int):

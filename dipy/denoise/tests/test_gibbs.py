@@ -60,6 +60,12 @@ def test_parallel():
     )
     assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
 
+    # Test num_threads=None case
+    output_4d_all_cpu = gibbs_removal(
+        input_4d, inplace=False, num_threads=None
+    )
+    assert_array_almost_equal(output_4d_all_cpu, output_4d_no_parallel)
+
 
 def test_inplace():
     # Make input data
