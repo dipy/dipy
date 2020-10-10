@@ -241,7 +241,7 @@ class GibbsRingingFlow(Workflow):
     def get_short_name(cls):
         return 'gibbs_ringing'
 
-    def run(self, input_files, slice_axis=2, n_points=3, out_dir='',
+    def run(self, input_files, slice_axis=2, n_points=3, num_threads=1, out_dir='',
             out_unring='dwi_unrig.nii.gz'):
         r"""Workflow for applying Gibbs Ringing method.
 
@@ -256,6 +256,11 @@ class GibbsRingingFlow(Workflow):
         n_points : int, optional
             Number of neighbour points to access local TV (see note).
             Default is set to 3.
+        num_threads : int or None, optional
+            Number of threads. Only applies to 3D or 4D `data` arrays. If None then
+            all available threads will be used. Otherwise, must be a positive
+            integer.
+            Default is set to 1.
         out_dir : string, optional
             Output directory (default input file directory)
         out_unrig : string, optional
@@ -278,7 +283,7 @@ class GibbsRingingFlow(Workflow):
             data, affine, image = load_nifti(dwi, return_img=True)
 
             unring_data = gibbs_removal(data, slice_axis=slice_axis,
-                                        n_points=n_points)
+                                        n_points=n_points, num_threads=num_threads)
 
             save_nifti(ounring, unring_data, affine, image.header)
             logging.info('Denoised volume saved as %s', ounring)
