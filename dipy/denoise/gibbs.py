@@ -284,8 +284,9 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     if not isinstance(num_threads, int) or None:
         raise TypeError("num_processes must be an int or None.")
     else:
-        if isinstance(num_threads, int) <= 0:
-            raise ValueError("num_processes must be > 0.")
+        if isinstance(num_threads, int):
+            if num_threads <= 0:
+                raise ValueError("num_processes must be > 0.")
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
