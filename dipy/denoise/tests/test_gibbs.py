@@ -196,8 +196,8 @@ def test_gibbs_errors():
         ValueError, gibbs_removal, image_gibbs.copy(), num_threads=-1
     )
     # Test for valid input dimensionality
-    assert_raises(ValueError, gibbs_removal, np.ones(2)) # 1D
-    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2))) # 5D
+    assert_raises(ValueError, gibbs_removal, np.ones(2))  # 1D
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))  # 5D
 
 
 def test_gibbs_subfunction():
