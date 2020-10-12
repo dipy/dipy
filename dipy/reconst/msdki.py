@@ -496,6 +496,37 @@ class MeanDiffusionKurtosisFit(object):
         """
         return 3 * self.msd / (1 + 2 * (1 - self.smt2f)**2)
 
+    @auto_attr
+    def smt2uFA(self):
+        r"""
+        Computes the microscopic fractional anisotropy from the mean signal
+        diffusional kurtosis parameters assuming the 2-compartmental spherical
+        mean technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2uFA : ndarray
+            Microscopic fractional anisotropy computed by converting MSDKI to
+            SMT2.
+
+        Notes
+        -----
+        Computes the intrinsic diffusivity using equation 10 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        fe = (1 - self.smt2f)
+        num = 3 * (1 -  2 * fe ** 2 + fe ** 3)
+        den = 3 + 2 * fe ** 2 + 4 * fe ** 4
+        return np.sqrt(num/den)
+
     def predict(self, gtab, S0=1.):
         r"""
         Given a mean signal diffusion kurtosis model fit, predict the signal
