@@ -207,10 +207,13 @@ def awf_from_msk(msk, mask=None):
         elif msk[v] < 0:
             awf[v] = 0
         else:
-            mski = msk[v]
-            fini = mski / 2.4  # Initial guess based on linear assumption
-            awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
-                                fprime=_diff_msk_from_awf, col_deriv=True)
+            if np.isnan(msk[v]):
+                awf[v] = np.nan
+            else:
+                mski = msk[v]
+                fini = mski / 2.4  # Initial guess based on linear assumption
+                awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
+                                    fprime=_diff_msk_from_awf, col_deriv=True)
 
     return awf
 

@@ -3,7 +3,7 @@
 import numpy as np
 import random
 from numpy.testing import (assert_array_almost_equal, assert_raises,
-                           assert_almost_equal)
+                           assert_almost_equal, assert_)
 from dipy.sims.voxel import (single_tensor, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
@@ -225,7 +225,7 @@ def test_kurtosis_to_smt2_convertion():
     awf_test_array = np.linspace(0, 1, 100)
     k_exp = msk_from_awf(awf_test_array)
     awf_from_k = awf_from_msk(k_exp)
-    assert_array_almost_equal(awf_from_k, awf_test_array)
+    assert_array_almost_equal(awf_from_k, awf_test_array)    
 
     # Check the awf_from_msk estimates when kurtosis is out of expected
     # interval ranges - note that under SMT2 assumption MSK is never lower
@@ -235,6 +235,9 @@ def test_kurtosis_to_smt2_convertion():
     # higher than 2.4, f is set to the maxumum value of 1.
     assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])),
                               np.array([0., 1.]))
+
+    # if msk = np.nan, function outputs awf=np.nan
+    assert_(np.isnan(awf_from_msk(np.array(np.nan))))
 
 
 def test_smt2_metrics():
