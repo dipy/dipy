@@ -288,19 +288,26 @@ fig2, ax = plt.subplots(2, 2, figsize=(6, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MSD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+im0 = ax.flat[0].imshow(MSD[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[0].set_title('MSD (MSDKI)')
-ax.flat[1].imshow(MSK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2,
-                  origin='lower')
+
+im1 = ax.flat[1].imshow(MSK[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[1].set_title('MSK (MSDKI)')
-ax.flat[2].imshow(MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+
+im2 = ax.flat[2].imshow(MD[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[2].set_title('MD (DKI)')
-ax.flat[3].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2,
-                  origin='lower')
+
+im3 = ax.flat[3].imshow(MK[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[3].set_title('MK (DKI)')
 
+fig2.colorbar(im0, ax=ax.flat[0])
+fig2.colorbar(im1, ax=ax.flat[1])
+fig2.colorbar(im2, ax=ax.flat[2])
+fig2.colorbar(im3, ax=ax.flat[3])
 
 plt.show()
 fig2.savefig('MSDKI_invivo.png')
@@ -323,42 +330,62 @@ present in the MK maps in the same regions.
 Relationship between MSDKI and SMT2
 ===================================
 As showed in [NetoHe2019]_, MSDKI captures the same information than the
-spherical mean technique (SMT) microstructural models [Kaden2016b]_. Therefore,
-the SMT model parameters can be directly computed from MSDKI. For instance,
-the axonal volume fraction (f), intrisic diffusivity (di), and microscopic
-anisotropy of the SMT 2-compartmental model NetoHe2019]_ can be extracted using
-the following lines of code:
+spherical mean technique (SMT) microstructural models [Kaden2016b]_. In this
+way, the SMT model parameters can be directly computed from MSDKI.
+For instance, the axonal volume fraction (f), the intrisic diffusivity (di),
+and the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_
+can be extracted using the following lines of code:
 """
 
 F = msdki_fit.smt2f
 DI = msdki_fit.smt2di
 uFA2 = msdki_fit.smt2uFA
 
-fig3, ax = plt.subplots(1, 3, figsize=(6, 6),
+"""
+The SMT2 model parameters extracted from MSDKI are displayed bellow: """
+
+fig3, ax = plt.subplots(1, 3, figsize=(9, 2.5),
                         subplot_kw={'xticks': [], 'yticks': []})
 
-fig3.subplots_adjust(hspace=0.3, wspace=0.05)
+fig3.subplots_adjust(hspace=0.4, wspace=0.1)
 
-ax.flat[0].imshow(F[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=1,
-                  origin='lower')
-ax.flat[0].set_title('SMT2 F (MSDKI)')
-ax.flat[1].imshow(DI[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
-ax.flat[1].set_title('SMT2 Di (MSDKI)')
-ax.flat[1].imshow(uFA[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
-ax.flat[1].set_title('SMT2 uFA (MSDKI)')
+im0 = ax.flat[0].imshow(F[:, :, axial_slice].T,
+                        cmap='gray', vmin=0, vmax=1, origin='lower')
+ax.flat[0].set_title('SMT2 f (MSDKI)')
+
+im1 = ax.flat[1].imshow(DI[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
+ax.flat[1].set_title('SMT2 di (MSDKI)')
+
+im2 = ax.flat[2].imshow(uFA2[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=1, origin='lower')
+ax.flat[2].set_title('SMT2 uFA (MSDKI)')
+
+fig3.colorbar(im0, ax=ax.flat[0])
+fig3.colorbar(im1, ax=ax.flat[1])
+fig3.colorbar(im2, ax=ax.flat[2])
 
 
 plt.show()
 fig3.savefig('MSDKI_SMT2_invivo.png')
 
-""" It is, however, important to note that SMT model parameters estimates
-should be used with care. Since SMT model assumptions are known to be invalid,
-the biophysical interpretation of SMT2 parameters does not hold. For instance,
-SMT2 parameter f and uFA may be a useful normalization of the quantification of
-the non-Gaussian diffusion degree as their values are ranged from 0 to 1,
-however f cannot be interpreted as a real axonal water fraction.
+"""
+.. figure::MSDKI_SMT2_invivo.png
+   :align: center
+
+   SMT2 model quantities extracted from MSDKI. From left to right, the figure
+   shows the axonal volume fraction (f), the intrisic diffusivity (di), and
+   the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_ 
+
+The similar contrast of SMT2 f-parameter maps in comparison to MSK (first panel
+of Figure 3 vs second panel of Figure 2) confirms than MSK and F captures the
+same tissue information but on different scales (but rescaled to values between
+0 and 1).  It is important to note that SMT model parameters estimates should
+be used with care, because the SMT model was shown to be invalid NetoHe2019]_.
+For instance, although SMT2 parameter f and uFA may be a useful normalization
+of the degree of non-Gaussian diffusion (note than both metrics have a range
+between 0 and 1), these cannot be interpreted as a real biophysical estimates
+of axonal water fraction and tissue microscopic anisotropy.
 
 
 References
