@@ -524,7 +524,7 @@ class MeanDiffusionKurtosisFit(object):
         """
         fe = (1 - self.smt2f)
         num = 3 * (1 -  2 * fe ** 2 + fe ** 3)
-        den = 3 + 2 * fe ** 2 + 4 * fe ** 4
+        den = 3 + 2 * fe ** 3 + 4 * fe ** 4
         return np.sqrt(num/den)
 
     def predict(self, gtab, S0=1.):

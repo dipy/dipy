@@ -54,7 +54,7 @@ params_multi = np.zeros((2, 2, 2, 2))
 for i in range(2):
     for j in range(2):
         for k in range(1):  # Only one k to have some zero voxels
-            f = random.uniform(0.0, 0.1)
+            f = random.uniform(0.0, 1)
             frac = [f * 100, (1.0 - f) * 100]
             signal_i, dt_i, kt_i = multi_tensor_dki(gtab_3s, mevals_sph,
                                                     S0=100, fractions=frac,
@@ -243,11 +243,17 @@ def test_smt2_metrics():
     # Based on the multi-voxel simulations above (computes gt for SMT2 params)
     AWFgt = awf_from_msk(MKgt_multi)
     DIgt = 3 * MDgt_multi / (1 + 2 * (1 - AWFgt) ** 2)
+    # General microscopic anisotropy estimation (Eq 8 Henriques et al MRM 2019)
+    RDe = DIgt * (1 - AWFgt)  # tortuosity assumption
+    VarD = 2/9 * (AWFgt * DIgt ** 2 + (1 - AWFgt) * (DIgt - RDe) ** 2)
+    MD = (AWFgt * DIgt + (1 - AWFgt) * (DIgt + 2 * RDe)) / 3
+    uFAgt = np.sqrt(3 / 2 * VarD[MD > 0] / (VarD[MD > 0] + MD[MD > 0] ** 2))
 
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(mdkiF.smt2f, AWFgt)
     assert_array_almost_equal(mdkiF.smt2di, DIgt)
+    assert_array_almost_equal(mdkiF.smt2uFA[MD > 0], uFAgt)
 
     # Check if awf_from_msk when mask is given
     mask = MKgt_multi > 0
