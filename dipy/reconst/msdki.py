@@ -526,7 +526,7 @@ class MeanDiffusionKurtosisFit(object):
                microscopic diffusion imaging. Neuroimage 139:346–359.
         """
         fe = (1 - self.smt2f)
-        num = 3 * (1 -  2 * fe ** 2 + fe ** 3)
+        num = 3 * (1 - 2 * fe ** 2 + fe ** 3)
         den = 3 + 2 * fe ** 3 + 4 * fe ** 4
         return np.sqrt(num/den)
 

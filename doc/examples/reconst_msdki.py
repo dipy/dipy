@@ -375,7 +375,7 @@ fig3.savefig('MSDKI_SMT2_invivo.png')
 
    SMT2 model quantities extracted from MSDKI. From left to right, the figure
    shows the axonal volume fraction (f), the intrisic diffusivity (di), and
-   the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_ 
+   the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
 
 The similar contrast of SMT2 f-parameter maps in comparison to MSK (first panel
 of Figure 3 vs second panel of Figure 2) confirms than MSK and F captures the
