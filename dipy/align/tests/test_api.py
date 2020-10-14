@@ -34,10 +34,10 @@ def setup_module():
     mean_b0 = np.mean(b0, -1)
 
     # We select some arbitrary chunk of data so this goes quicker:
-    subset_b0 = mean_b0[40:50, 40:50, 40:50]
-    subset_dwi_data = nib.Nifti1Image(hardi_data[40:50, 40:50, 40:50],
+    subset_b0 = mean_b0[40:45, 40:45, 40:45]
+    subset_dwi_data = nib.Nifti1Image(hardi_data[40:45, 40:45, 40:45],
                                       hardi_affine)
-    subset_t2 = MNI_T2_data[40:60, 40:60, 40:60]
+    subset_t2 = MNI_T2_data[40:50, 40:50, 40:50]
     subset_b0_img = nib.Nifti1Image(subset_b0, hardi_affine)
     subset_t2_img = nib.Nifti1Image(subset_t2, MNI_T2_affine)
 
@@ -101,7 +101,11 @@ def test_affine_registration():
     moving_affine = static_affine = np.eye(4)
     xformed, affine = affine_registration(moving, static,
                                           moving_affine=moving_affine,
-                                          static_affine=static_affine)
+                                          static_affine=static_affine,
+                                          level_iters=[5, 5],
+                                          sigmas=[3, 1],
+                                          factors=[2, 1])
+
     # We don't ask for much:
     npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
 
