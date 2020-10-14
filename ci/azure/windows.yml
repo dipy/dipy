@@ -9,7 +9,7 @@ jobs:
     vmIMage: ${{ parameters.vmImage }}
   variables:
     AZURE_CI_WINDOWS: 'true'
-    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy"
+    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy tqdm"
     VENV_ARGS: "--python=python"
     INSTALL_TYPE: "setup"
     PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
