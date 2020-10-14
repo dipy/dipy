@@ -4,33 +4,33 @@
 Mean signal diffusion kurtosis imaging (MSDKI)
 ==============================================
 
-Several microstructural models have been proposed to increase the specificity
-of diffusion-weighted data; however, improper model assumptions are known to
-compromise the validity of the model's estimates [NetoHe2019]_. To avoid
-misleading interpretation, it might be enough to characterize
-diffusion-weighted data using signal representation techniques. For example,
-assuming that the degree of non-Gaussian diffusion decreases with tissue
-degeneration, this can be sensitive to general microstructural alterations.
-Although this cannot be used to distinguish different mechanisms of
-microstructural changes (e.g. axonal loss vs demyelination), the degree of
-non-Gaussian diffusion can provide insights on the general condition of tissue
-microstructure and provide useful markers to understanding, for instance, the
-relationship between brain microstructure changes and alterations in behaviour
-(e.g. [Price2017]_).
+Diffusion Kurtosis Imaging (DKI) is one of the conventional ways to estimate
+the degree of non-Gaussian diffusion (see :ref:`example_reconst_dki`)
+[Jensen2005]_. However, a limitation of DKI is that its measures are highly
+sensitive to noise and image artefacts. For instance, due to the low radial
+diffusivities, standard kurtosis estimates in regions of well-aligned voxel may
+be corrupted by implausible low or even negative values.
 
-Diffusion Kurtosis Imaging is one of the conventional ways to estimate the
-degree of non-Gaussian diffusion (see :ref:`example_reconst_dki`). However,
-as previously pointed [NetoHe2015]_, standard kurtosis measures do not only
-depend on microstructural properties but also on mesoscopic properties such as
-fiber dispersion or the intersection angle of crossing fibers.
+A way to overcome this issue is to characterize kurtosis from average signals
+across all directions acquired for each data b-value (also known as
+powder-averaged signals). Moreover, as previously pointed [NetoHe2015]_,
+standard kurtosis measures (e.g. radial, axial and standard mean kurtosis)
+do not only depend on microstructural properties but also on mesoscopic
+properties such as fiber dispersion or the intersection angle of crossing
+fibers. In contrary, the kurtosis from powder-average signals has the advantage
+of not depending on the fiber distribution functions [NetoHe2018]_,
+[NetoHe2019]_.
 
-In the following example, we show how one can process the diffusion kurtosis
-from mean signals (also known as powder-averaged signals) and obtain a
-characterization of non-Gaussian diffusion independently to the degree of fiber
-organization [NetoHe2018]_. In the first part of this example, the properties
-of the measures obtained from the mean signal diffusion kurtosis imaging
-[NetoHe2018]_ are illustrated using synthetic data. Secondly, the mean signal
-diffusion kurtosis imaging will be applied to in-vivo MRI data.
+In short, in this tutoral we show how to characterize non-Gaussian diffusion
+in a more precise way and decoupled from confounding effects of tissue
+dispersion and crossing.
+
+In the first part of this example, we illustrate the properties of the measures
+obtained from the mean signal diffusion kurtosis imaging (MSDKI)[NetoHe2018]_
+using synthetic data. Secondly, the mean signal diffusion kurtosis imaging will
+be applied to in-vivo MRI data. Finally, we show how MSDKI provides the same
+information than common microstructural models such as the spherical mean
+technique [NetoHe2019]_, [Kaden2016b]_.
 
 Let's import all relevant modules:
 """
@@ -288,19 +288,26 @@ fig2, ax = plt.subplots(2, 2, figsize=(6, 6),
 
 fig2.subplots_adjust(hspace=0.3, wspace=0.05)
 
-ax.flat[0].imshow(MSD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+im0 = ax.flat[0].imshow(MSD[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[0].set_title('MSD (MSDKI)')
-ax.flat[1].imshow(MSK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2,
-                  origin='lower')
+
+im1 = ax.flat[1].imshow(MSK[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[1].set_title('MSK (MSDKI)')
-ax.flat[2].imshow(MD[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2.0e-3,
-                  origin='lower')
+
+im2 = ax.flat[2].imshow(MD[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[2].set_title('MD (DKI)')
-ax.flat[3].imshow(MK[:, :, axial_slice].T, cmap='gray', vmin=0, vmax=2,
-                  origin='lower')
+
+im3 = ax.flat[3].imshow(MK[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
 ax.flat[3].set_title('MK (DKI)')
 
+fig2.colorbar(im0, ax=ax.flat[0])
+fig2.colorbar(im1, ax=ax.flat[1])
+fig2.colorbar(im2, ax=ax.flat[2])
+fig2.colorbar(im3, ax=ax.flat[3])
 
 plt.show()
 fig2.savefig('MSDKI_invivo.png')
@@ -320,17 +327,69 @@ particularly one can appriciate that MSK maps always present positive values
 in brain white matter regions, while implausible negative kurtosis values are
 present in the MK maps in the same regions.
 
+Relationship between MSDKI and SMT2
+===================================
+As showed in [NetoHe2019]_, MSDKI captures the same information than the
+spherical mean technique (SMT) microstructural models [Kaden2016b]_. In this
+way, the SMT model parameters can be directly computed from MSDKI.
+For instance, the axonal volume fraction (f), the intrisic diffusivity (di),
+and the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_
+can be extracted using the following lines of code:
+"""
+
+F = msdki_fit.smt2f
+DI = msdki_fit.smt2di
+uFA2 = msdki_fit.smt2uFA
+
+"""
+The SMT2 model parameters extracted from MSDKI are displayed bellow: """
+
+fig3, ax = plt.subplots(1, 3, figsize=(9, 2.5),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig3.subplots_adjust(hspace=0.4, wspace=0.1)
+
+im0 = ax.flat[0].imshow(F[:, :, axial_slice].T,
+                        cmap='gray', vmin=0, vmax=1, origin='lower')
+ax.flat[0].set_title('SMT2 f (MSDKI)')
+
+im1 = ax.flat[1].imshow(DI[:, :, axial_slice].T * 1000, cmap='gray',
+                        vmin=0, vmax=2, origin='lower')
+ax.flat[1].set_title('SMT2 di (MSDKI)')
+
+im2 = ax.flat[2].imshow(uFA2[:, :, axial_slice].T, cmap='gray',
+                        vmin=0, vmax=1, origin='lower')
+ax.flat[2].set_title('SMT2 uFA (MSDKI)')
+
+fig3.colorbar(im0, ax=ax.flat[0])
+fig3.colorbar(im1, ax=ax.flat[1])
+fig3.colorbar(im2, ax=ax.flat[2])
+
+
+plt.show()
+fig3.savefig('MSDKI_SMT2_invivo.png')
+
+"""
+.. figure::MSDKI_SMT2_invivo.png
+   :align: center
+
+   SMT2 model quantities extracted from MSDKI. From left to right, the figure
+   shows the axonal volume fraction (f), the intrisic diffusivity (di), and
+   the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
+
+The similar contrast of SMT2 f-parameter maps in comparison to MSK (first panel
+of Figure 3 vs second panel of Figure 2) confirms than MSK and F captures the
+same tissue information but on different scales (but rescaled to values between
+0 and 1).  It is important to note that SMT model parameters estimates should
+be used with care, because the SMT model was shown to be invalid NetoHe2019]_.
+For instance, although SMT2 parameter f and uFA may be a useful normalization
+of the degree of non-Gaussian diffusion (note than both metrics have a range
+between 0 and 1), these cannot be interpreted as a real biophysical estimates
+of axonal water fraction and tissue microscopic anisotropy.
+
+
 References
 ----------
-.. [NetoHe2019] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
-                anisotropy misestimation in spherical‐mean single diffusion
-                encoding MRI. Magnetic Resonance in Medicine (In press).
-                doi: 10.1002/mrm.27606
-.. [Price2017]  Price D, Tyler LK, Neto Henriques R, Campbell KR, Williams N,
-                Treder M, Taylor J, Cam-CAN, Henson R (2017). Age-Related
-                Delay in Visual and Auditory Evoked Responses is Mediated by
-                White- and Gray-matter Differences. Nature Communications 8,
-                15671. doi: 10.1038/ncomms15671.
 .. [Jensen2005] Jensen JH, Helpern JA, Ramani A, Lu H, Kaczynski K (2005).
                 Diffusional Kurtosis Imaging: The Quantification of
                 Non_Gaussian Water Diffusion by Means of Magnetic Resonance
@@ -343,6 +402,13 @@ References
                 Analysis and their Application to the Healthy Ageing Brain
                 (Doctoral thesis). Downing College, University of Cambridge.
                 https://doi.org/10.17863/CAM.29356
+.. [NetoHe2019] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+                anisotropy misestimation in spherical‐mean single diffusion
+                encoding MRI. Magnetic Resonance in Medicine (In press).
+                doi: 10.1002/mrm.27606
+.. [Kaden2016b] Kaden E, Kelm ND, Carson RP, Does MD, Alexander DC (2016)
+                Multi-compartment microscopic diffusion imaging. NeuroImage
+                139: 346-359.
 .. [Hansen2016] Hansen, B, Jespersen, SN (2016). Data for evaluation of fast
                 kurtosis strategies, b-value optimization and exploration of
                 diffusion MRI contrast. Scientific Data 3: 160072
