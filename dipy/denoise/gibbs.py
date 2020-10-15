@@ -3,6 +3,16 @@ from functools import partial
 from multiprocessing import Pool
 
 import numpy as np
+from numpy.lib import NumpyVersion as Version
+import scipy
+
+
+if Version(scipy.__version__) >= Version('1.4.0'):
+    import scipy.fft
+    _fft = scipy.fft
+else:
+    import scipy.fftpack
+    _fft = scipy.fftpack
 
 
 def _image_tv(x, axis=0, n_points=3):
@@ -76,7 +86,9 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     considered in TV calculation can be adjusted using the parameter n_points.
 
     """
-    ssamp = np.linspace(0.02, 0.9, num=45)
+    dtype_float = np.promote_types(x.real.dtype, np.float32)
+
+    ssamp = np.linspace(0.02, 0.9, num=45, dtype=dtype_float)
 
     xs = x.copy() if axis else x.T.copy()
 
@@ -88,20 +100,22 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     # Find optimal shift for gibbs removal
     isp = xs.copy()
     isn = xs.copy()
-    sp = np.zeros(xs.shape)
-    sn = np.zeros(xs.shape)
+    sp = np.zeros(xs.shape, dtype=dtype_float)
+    sn = np.zeros(xs.shape, dtype=dtype_float)
     N = xs.shape[1]
-    c = np.fft.fftshift(np.fft.fft2(xs))
-    k = np.linspace(-N/2, N/2-1, num=N)
-    k = (2.0j * np.pi * k) / N
+    c = _fft.fft2(xs)
+    k = _fft.fftfreq(N, 1 / (2.0j * np.pi))
+    k = k.astype(c.dtype, copy=False)
     for s in ssamp:
+        ks = k * s
         # Access positive shift for given s
-        img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
+        img_p = abs(_fft.ifft2(c * np.exp(ks)))
+
         tvsr, tvsl = _image_tv(img_p, axis=1, n_points=n_points)
         tvs_p = np.minimum(tvsr, tvsl)
 
         # Access negative shift for given s
-        img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
+        img_n = abs(_fft.ifft2(c * np.exp(-ks)))
         tvsr, tvsl = _image_tv(img_n, axis=1, n_points=n_points)
         tvs_n = np.minimum(tvsr, tvsl)
 
@@ -216,9 +230,9 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
     img_c0 = _gibbs_removal_1d(image, axis=0, n_points=n_points)
 
-    C1 = np.fft.fft2(img_c1)
-    C0 = np.fft.fft2(img_c0)
-    imagec = abs(np.fft.ifft2(np.fft.fftshift(C1)*G1 + np.fft.fftshift(C0)*G0))
+    C1 = _fft.fft2(img_c1)
+    C0 = _fft.fft2(img_c0)
+    imagec = abs(_fft.ifft2(_fft.fftshift(C1)*G1 + _fft.fftshift(C0)*G0))
 
     return imagec
 
