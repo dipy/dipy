@@ -207,7 +207,8 @@ class RecoBundlesFlow(Workflow):
 
         t = time()
         logging.info(streamline_files)
-        input_obj = load_tractogram(streamline_files, 'same', bbox_valid_check=False)
+        input_obj = load_tractogram(streamline_files, 'same',
+                                    bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
@@ -218,8 +219,8 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = load_tractogram(mb, 'same', 
-            	                           bbox_valid_check=False).streamlines
+            model_bundle = load_tractogram(mb, 'same',
+                                           bbox_valid_check=False).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -274,7 +275,7 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle adjacency Metric {0}".format(ba))
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
-            new_tractogram = StatefulTractogram(recognized_bundle, 
+            new_tractogram = StatefulTractogram(recognized_bundle,
                                                 streamline_files, Space.RASMM)
             save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
             logging.info('Saving output files ...')
@@ -315,21 +316,21 @@ class LabelsBundlesFlow(Workflow):
         logging.info('### Labels to Bundles ###')
 
         io_it = self.get_io_iterator()
-        for sf, lb, out_bundle in io_it:
+        for f_steamlines, f_labels, out_bundle in io_it:
 
-            logging.info(sf)
-            tractogram_obj = load_tractogram(sf)
-            streamlines = tractogram_obj.streamlines
+            logging.info(f_steamlines)
+            sft = load_tractogram(f_steamlines)
+            streamlines = sft.streamlines
 
-            logging.info(lb)
-            location = np.load(lb)
+            logging.info(f_labels)
+            location = np.load(f_labels)
             if len(location) < 1 :
                 bundle = Streamlines([])
             else:
                 bundle = streamlines[location]
 
             logging.info('Saving output files ...')
-            new_tractogram = StatefulTractogram(streamlines[location], 
-                                                tractogram_obj, Space.RASMM)
-            save_tractogram(new_tractogram, out_bundle)
+            new_sft = StatefulTractogram(streamlines[location],
+                                         sft, Space.RASMM)
+            save_tractogram(new_sft, out_bundle)
             logging.info(out_bundle)
