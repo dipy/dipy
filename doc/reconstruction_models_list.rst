@@ -195,7 +195,7 @@
             <a href=''>Tournier 2007</a></td>
     </tr>
     <tr>
-        <td>MS/MT CSD</td>
+        <td><a href='#reconst-mcsd'>SMS/MT CSD</a></td>
         <td class='red'>No</td>
         <td class='green'>Yes</td>
         <td class='red'>No</td>
@@ -225,5 +225,23 @@
         <td class='red'>No</td>
         <td></td>
         <td><a href=''>Fick 2017</a></td>
+    </tr>
+    </tr>
+        <tr>
+        <td>Power Map</td>
+        <td class='green'>Yes</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='http://archive.ismrm.org/2014/0730.html'>DellAcqua2014</a></td>
+    </tr>
+    </tr>
+        <tr>
+        <td><a href='#reconst-msdki'>SMT / SMT2</a></td>
+        <td class='red'>No</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='https://doi.org/10.1002/mrm.27606'>NetoHe2019</a>, <a href='https://www.nature.com/articles/sdata201672'>Kaden2016b</a></td>
     </tr>
     </table>
