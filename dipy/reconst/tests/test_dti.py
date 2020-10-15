@@ -793,3 +793,12 @@ def test_decompose_tensor_nan():
                                            from_lower_triangular(D_alter))
     npt.assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
     npt.assert_array_almost_equal(valter, vref)
+
+def test_design_matrix_lte():
+    _, fbval, fbvec = get_fnames('small_25')
+    gtab_btens_none = grad.gradient_table(fbval, fbvec)
+    gtab_btens_lte = grad.gradient_table(fbval, fbvec, btens="LTE")
+
+    B_btens_none = dti.design_matrix(gtab_btens_none)
+    B_btens_lte = dti.design_matrix(gtab_btens_lte)
+    npt.assert_array_almost_equal(B_btens_none, B_btens_lte, decimal=1)
