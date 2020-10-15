@@ -763,7 +763,6 @@ def test_eig_from_lo_tri():
                                   dmfit.model_params)
 
 
-
 def test_min_signal_alone():
     fdata, fbvals, fbvecs = get_fnames()
     data = load_nifti_data(fdata)
@@ -793,6 +792,7 @@ def test_decompose_tensor_nan():
                                            from_lower_triangular(D_alter))
     npt.assert_array_almost_equal(lalter, np.array([1.6e-3, 0.4e-3, 0.3e-3]))
     npt.assert_array_almost_equal(valter, vref)
+
 
 def test_design_matrix_lte():
     _, fbval, fbvec = get_fnames('small_25')
