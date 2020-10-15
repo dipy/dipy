@@ -7,7 +7,7 @@ import logging
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
-
+from tqdm.auto import tqdm
 import numpy as np
 import nibabel as nib
 
@@ -42,32 +42,12 @@ def _log(msg):
     logger.info(msg)
 
 
-def update_progressbar(progress, total_length):
-    """Show progressbar
-
-    Takes a number between 0 and 1 to indicate progress from 0 to 100%.
-
-    """
-    # TODO: To improve bar management, https://gist.github.com/jtriley/1108174
-    bar_length = 40
-    block = int(round(bar_length * progress))
-    size_string = "{0:.2f} MB".format(float(total_length) / (1024 * 1024))
-    text = "\rDownload Progress: [{0}] {1:.2f}%  of {2}".format(
-        "#" * block + "-" * (bar_length - block), progress * 100, size_string)
-    sys.stdout.write(text)
-    sys.stdout.flush()
-
-
 def copyfileobj_withprogress(fsrc, fdst, total_length, length=16 * 1024):
-    copied = 0
-    while True:
+    for ii in tqdm(range(0, int(total_length), length), unit=" MB"):
         buf = fsrc.read(length)
         if not buf:
             break
         fdst.write(buf)
-        copied += len(buf)
-        progress = float(copied) / float(total_length)
-        update_progressbar(progress, total_length)
 
 
 def _already_there_msg(folder):

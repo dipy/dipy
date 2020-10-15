@@ -1,11 +1,15 @@
 import os
+import tempfile
+import pytest
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.utils import (create_nifti_header,
                            decfa, decfa_to_float,
                            get_reference_info,
-                           is_reference_info_valid)
-from nibabel import Nifti1Image
+                           is_reference_info_valid,
+                           read_img_arr_or_path)
+
+from nibabel import Nifti1Image, save
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal, assert_
 
@@ -134,3 +138,25 @@ def test_reference_info_identical():
 def test_all_zeros_affine():
     assert_(not reference_info_zero_affine(),
             msg='An all zeros affine should not be valid')
+
+
+def test_read_img_arr_or_path():
+    data = np.random.rand(4, 4, 4, 3)
+    aff = np.eye(4)
+    aff[:3, :] = np.random.randn(3, 4)
+    img = Nifti1Image(data, aff)
+    path = tempfile.NamedTemporaryFile().name + '.nii.gz'
+    save(img, path)
+    for this in [data, img, path]:
+        dd, aa = read_img_arr_or_path(this, affine=aff)
+        assert np.allclose(dd, data)
+        assert np.allclose(aa, aff)
+
+    # Tests that if an array is provided, but no affine, an error is raised:
+    with pytest.raises(ValueError):
+        read_img_arr_or_path(data)
+
+    # Tests that the affine is recovered correctly from path:
+    dd, aa = read_img_arr_or_path(path)
+    assert np.allclose(dd, data)
+    assert np.allclose(aa, aff)

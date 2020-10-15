@@ -405,5 +405,38 @@ Then change directory to ``<dipy root>`` and::
     make clean
     make html
 
+Tip
+---
+
+Building the entire ``DIPY`` documentation takes a few hours. You may want to
+skip building the documentation for the examples, which will reduce the
+documentation build time to a few minutes. You can do so by executing::
+
+    make -C . html-after-examples
+
+Troubleshooting
+---------------
+
+If you encounter the following error when trying to build the documentation::
+
+    tools/build_modref_templates.py dipy reference
+    *WARNING* API documentation not generated: Can not import dipy
+    tools/docgen_cmd.py dipy reference_cmd
+    *WARNING* Command line API documentation not generated: Cannot import dipy
+    Build API docs...done.
+    cd examples_built && ../../tools/make_examples.py
+    Traceback (most recent call last):
+      File "../../tools/make_examples.py", line 33, in <module>
+        import dipy
+    ModuleNotFoundError: No module named 'dipy'
+
+it is probably due to a conflict between the picked ``Sphinx`` version: this
+happens when the system's ``Sphinx`` package is used instead of the virtual
+environment's ``Sphinx`` package, and the former trying to import a ``DIPY``
+version in the system: the ``Sphinx`` package used should correspond to that of
+the virtual environment where ``DIPY`` lives. This can be solved by specifying
+the path to the ``Sphinx`` package in the virtual environment::
+
+    make html SPHINXBUILD='python <path_to_sphinx>/sphinx-build'
 
 .. include:: links_names.inc

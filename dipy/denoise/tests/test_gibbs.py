@@ -38,6 +38,68 @@ def setup_module():
     image_cor = _gibbs_removal_2d(image_gibbs)
 
 
+def test_parallel():
+    # Only relevant for 3d or 4d inputs
+
+    # Make input data
+    input_2d = image_gibbs.copy()
+    input_3d = np.stack([input_2d, input_2d], axis=2)
+    input_4d = np.stack([input_3d, input_3d], axis=3)
+
+    # Test 3d case
+    output_3d_parallel = gibbs_removal(input_3d, inplace=False, num_threads=2)
+    output_3d_no_parallel = gibbs_removal(
+        input_3d, inplace=False, num_threads=1
+    )
+    assert_array_almost_equal(output_3d_parallel, output_3d_no_parallel)
+
+    # Test 4d case
+    output_4d_parallel = gibbs_removal(input_4d, inplace=False, num_threads=2)
+    output_4d_no_parallel = gibbs_removal(
+        input_4d, inplace=False, num_threads=1
+    )
+    assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
+
+    # Test num_threads=None case
+    output_4d_all_cpu = gibbs_removal(
+        input_4d, inplace=False, num_threads=None
+    )
+    assert_array_almost_equal(output_4d_all_cpu, output_4d_no_parallel)
+
+
+def test_inplace():
+    # Make input data
+    input_2d = image_gibbs.copy()
+    input_3d = np.stack([input_2d, input_2d], axis=2)
+    input_4d = np.stack([input_3d, input_3d], axis=3)
+
+    # Test 2d cases
+    output_2d = gibbs_removal(input_2d, inplace=False)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_2d, output_2d
+    )
+
+    output_2d = gibbs_removal(input_2d, inplace=True)
+    assert_array_almost_equal(input_2d, output_2d)
+
+    # Test 3d case
+    output_3d = gibbs_removal(input_3d, inplace=False)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_3d, output_3d
+    )
+
+    output_3d = gibbs_removal(input_3d, inplace=True)
+    assert_array_almost_equal(input_3d, output_3d)
+
+    # Test 4d case
+    output_4d = gibbs_removal(input_4d, inplace=False)
+    assert_raises(
+        AssertionError, assert_array_almost_equal, input_4d, output_4d
+    )
+
+    output_4d = gibbs_removal(input_4d, inplace=True)
+    assert_array_almost_equal(input_4d, output_4d)
+
 def test_gibbs_2d():
 
     # Correction of gibbs ringing have to be closer to gt than denoised image
@@ -46,7 +108,7 @@ def test_gibbs_2d():
     assert_(diff_raw > diff_cor)
 
     # Test if gibbs_removal works for 2D data
-    image_cor2 = gibbs_removal(image_gibbs)
+    image_cor2 = gibbs_removal(image_gibbs, inplace=False)
     assert_array_almost_equal(image_cor2, image_cor)
 
 
@@ -79,13 +141,13 @@ def test_gibbs_4d():
 def test_swapped_gibbs_2d():
     # 2D case: In this case slice_axis is a dummy variable. Since data is
     # already a single 2D image, to axis swapping is required
-    image_cor0 = gibbs_removal(image_gibbs, slice_axis=0)
+    image_cor0 = gibbs_removal(image_gibbs, slice_axis=0, inplace=False)
     assert_array_almost_equal(image_cor0, image_cor)
 
-    image_cor1 = gibbs_removal(image_gibbs, slice_axis=1)
+    image_cor1 = gibbs_removal(image_gibbs, slice_axis=1, inplace=False)
     assert_array_almost_equal(image_cor1, image_cor)
 
-    image_cor2 = gibbs_removal(image_gibbs, slice_axis=2)
+    image_cor2 = gibbs_removal(image_gibbs, slice_axis=2, inplace=False)
     assert_array_almost_equal(image_cor2, image_cor)
 
 
@@ -125,6 +187,17 @@ def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))
     assert_raises(ValueError, gibbs_removal, np.ones((2)))
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
+    assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
+    # Test for valid num_threads
+    assert_raises(
+        TypeError, gibbs_removal, image_gibbs.copy(), num_threads="1"
+    )
+    assert_raises(
+        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=-1
+    )
+    # Test for valid input dimensionality
+    assert_raises(ValueError, gibbs_removal, np.ones(2))  # 1D
+    assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))  # 5D
 
 
 def test_gibbs_subfunction():
@@ -182,7 +255,7 @@ def test_non_square_image():
     img_gt[4 * Nre: 5 * Nre, 3 * Nori: 5 * Nori] = 3
 
     # Suppressing gibbs artefacts
-    img_cor = gibbs_removal(img_gibbs)
+    img_cor = gibbs_removal(img_gibbs, inplace=False)
 
     # Correction of gibbs ringing have to be closer to gt than denoised image
     diff_raw = np.mean(abs(img_gibbs - img_gt))

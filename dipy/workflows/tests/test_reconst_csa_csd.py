@@ -113,7 +113,7 @@ def reconst_flow_core(flow):
                 reconst_flow2._force_overwrite = True
                 reconst_flow2.run(data_path, bval_path, bvec_path, mask_path,
                                   out_dir=out_dir, frf=None,
-                                  roi_center=[10, 10, 10])
+                                  roi_center=[5, 5, 5])
             else:
                 with npt.assert_raises(BaseException):
                     npt.assert_warns(UserWarning, reconst_flow.run, data_path,

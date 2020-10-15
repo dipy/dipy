@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from dipy.utils.optpkg import optional_package
 import itertools
@@ -77,21 +78,29 @@ def slicer_panel(scene, iren,
     panel : Panel
 
     """
-
     orig_shape = data.shape
     print('Original shape', orig_shape)
     ndim = data.ndim
     tmp = data
     if ndim == 4:
         if orig_shape[-1] > 3:
-            tmp = data[..., 0]
             orig_shape = orig_shape[:3]
-            value_range = np.percentile(data[..., 0], q=[2, 98])
+            # Sometimes, first volume is null, so we try the next one.
+            for i in range(orig_shape[-1]):
+                tmp = data[..., i]
+                value_range = np.percentile(data[..., i], q=[2, 98])
+                if np.sum(np.diff(value_range)) != 0:
+                    break
         if orig_shape[-1] == 3:
             value_range = (0, 1.)
             mem.slicer_rgb = True
     if ndim == 3:
         value_range = np.percentile(tmp, q=[2, 98])
+
+    if np.sum(np.diff(value_range)) == 0:
+        msg = "Your data does not have any contrast. "
+        msg += "Please, check the value range of your data."
+        warnings.warn(msg)
 
     if not world_coords:
         affine = np.eye(4)

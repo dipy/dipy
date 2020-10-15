@@ -77,7 +77,7 @@
     </tr>
     <tr>
         <td>HCP tractogram</td>
-        <td>Human/td>
+        <td>Human</td>
         <td>Whole brain tractogram</td>
         <td>Human Connectome Project (HCP) scanner</td>
         <td>target_tractogram_hcp</td>

@@ -853,13 +853,14 @@ def transform_tracking_output(tracking_output, affine, save_seeds=False):
     affine : array (4, 4)
         The mapping between voxel indices and the point space for seeds.
         The voxel_to_rasmm matrix, typically from a NIFTI file.
-    seeding_activated : bool, optional
+    save_seeds : bool, optional
         If set, seeds associated to streamlines will be also moved and returned
     Returns
     -------
     streamlines : generator
-        A sequence of transformed streamlines.
-        If return_seeds is True, also return seeds
+        A generator for the sequence of transformed streamlines.
+        If save_seeds is True, also return a generator for the
+        transformed seeds.
     """
     if save_seeds:
         streamlines, seeds = zip(*tracking_output)

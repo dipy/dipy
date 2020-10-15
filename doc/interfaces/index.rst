@@ -9,3 +9,4 @@ DIPY Workflows Interfaces
     basic_flow.rst
     buan_flow.rst
     bundle_segmentation_flow.rst
+    data_fetch.rst

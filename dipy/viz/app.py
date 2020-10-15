@@ -11,23 +11,24 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from dipy.viz import actor, window, ui
-    from dipy.viz import vtk
+    from dipy.viz import vtk, HAVE_VTK_9_PLUS
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
 
 
 def apply_shader(hz, actor):
-
+    # Todo:  Use fury.shaders API.
+    sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
     gl_mapper = actor.GetMapper()
 
-    gl_mapper.AddShaderReplacement(
+    sp.AddShaderReplacement(
         vtk.vtkShader.Vertex,
         "//VTK::ValuePass::Impl",  # replace the normal block
         False,
         "//VTK::ValuePass::Impl\n",  # we still want the default
         False)
 
-    gl_mapper.AddShaderReplacement(
+    sp.AddShaderReplacement(
         vtk.vtkShader.Fragment,
         "//VTK::Light::Impl",
         True,
@@ -37,7 +38,7 @@ def apply_shader(hz, actor):
         "}\n",
         False)
 
-    gl_mapper.AddShaderReplacement(
+    sp.AddShaderReplacement(
         vtk.vtkShader.Fragment,
         "//VTK::Coincident::Dec",
         True,

@@ -22,7 +22,7 @@ from dipy.io.image import load_nifti, load_nifti_data
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
+                                   auto_response_ssst)
 from dipy.reconst.shm import CsaOdfModel
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
@@ -50,7 +50,7 @@ seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
 Next, we fit the CSD model.
 """
 
-response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 csd_fit = csd_model.fit(data, mask=white_matter)
 

@@ -20,10 +20,10 @@ jobs:
         python.version: '3.7'
       Python36-64bit + MIN_DEPS:
         python.version: '3.6'
-        DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose"
+        DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose tqdm"
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
-        DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0"
+        DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm"
       Python37-64bit + OPTIONAL_DEPS + COVERAGE:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
@@ -90,6 +90,11 @@ jobs:
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         EXTRA_DEPENDS: "scikit_learn vtk fury scipy xvfbwrapper"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "
 
 - template: ci/azure/windows.yml
   parameters:
@@ -121,3 +126,8 @@ jobs:
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
         EXTRA_DEPENDS: "scikit_learn vtk fury scipy"
+      # TODO: Need to figure out how to allow failure before any activation
+      # Python37-64bit - PRE:
+      #   USE_PRE: 1
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas "
