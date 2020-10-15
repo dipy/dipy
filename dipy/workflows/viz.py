@@ -7,7 +7,7 @@ from dipy.io.peaks import load_peaks
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
-
+from fury.colormap import distinguishable_colormap
 
 class HorizonFlow(Workflow):
 
@@ -66,8 +66,8 @@ class HorizonFlow(Workflow):
         buan : bool
             Enables BUAN framework visualization.
         buan_thr : float, optional
-            Default 2. Uses the threshold value to highlight segments on the
-            bundle which have pvalues higher than this threshold.
+            Default 0.5. Uses the threshold value to highlight segments on the
+            bundle which have pvalues less than this threshold.
         out_dir : str, optional
             Output directory. Default current directory.
         out_stealth_png : str, optional
@@ -169,6 +169,7 @@ class HorizonFlow(Workflow):
 
         if buan:
             bundle_colors = []
+
             for i in range(len(numpy_files)):
 
                 n = len(numpy_files[i])
@@ -178,14 +179,11 @@ class HorizonFlow(Workflow):
                 indx = assignment_map(bundle, bundle, n)
                 ind = np.array(indx)
 
-                colors = []
-                for i in range(len(ind)):
+                colors = np.ones((len(ind),3))
+                for i in range(n):
 
-                    if pvalues[ind[i]] < buan_thr:
-                        colors.append([0, 1, 0])
-                    else:
-                        #colors.append([1, 0, 0])
-                        colors.append([None])
+                    if pvalues[i] < buan_thr:
+                        colors[ind==i]=[1,0,0]
 
                 bundle_colors.append(colors)
 
