@@ -168,11 +168,11 @@ class RecoBundlesFlow(Workflow):
          bundles using local and global streamline-based registration and
          clustering, Neuroimage, 2017.
 
-        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.. Bullock, D.,
-        Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., Garyfallidis, E.
-        Bundle analytics, a computational framework for investigating the
-        shapes and profiles of brain pathways across populations.
-        Sci Rep 10, 17149 (2020)
+        .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
+        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and
+        Garyfallidis, E. Bundle analytics, a computational framework for
+        investigating the shapes and profiles of brain pathways across
+        populations. Sci Rep 10, 17149 (2020)
 
         """
         slr = not no_slr
