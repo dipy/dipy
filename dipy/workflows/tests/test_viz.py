@@ -69,7 +69,6 @@ def test_horizon_flow():
 
     buan_colors = np.ones(streamlines.get_data().shape)
 
-    print(buan_colors)
     horizon(tractograms, buan=True, buan_colors=buan_colors,
             world_coords=True, interactive=False)
 

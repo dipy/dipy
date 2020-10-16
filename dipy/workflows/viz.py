@@ -14,7 +14,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from fury.colormap import line_colors
-from fury.utils import numpy_to_vtk_colors
+    from fury.utils import numpy_to_vtk_colors
 
 class HorizonFlow(Workflow):
 
@@ -70,8 +70,8 @@ class HorizonFlow(Workflow):
         disable_order_transparency : bool, optional
             Default False. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
-        buan : bool
-            Enables BUAN framework visualization.
+        buan : bool, optional
+            Enables BUAN framework visualization. Default is False.
         buan_thr : float, optional
             Default 0.5. Uses the threshold value to highlight segments on the
             bundle which have pvalues less than this threshold.
@@ -195,7 +195,6 @@ class HorizonFlow(Workflow):
                 points_per_line = [len(bundle[i]) for i in lines_range]
                 points_per_line = np.array(points_per_line, np.intp)
 
-
                 cols_arr = line_colors(bundle)
                 colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
                 vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
@@ -205,7 +204,7 @@ class HorizonFlow(Workflow):
                 for i in range(n):
 
                     if pvalues[i] < buan_thr:
-                        colors[ind==i]=buan_highlight
+                        colors[ind==i] = buan_highlight
 
                 bundle_colors.append(colors)
 

@@ -142,8 +142,8 @@ class Horizon(object):
         order_transparent : bool
             Default True. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
-        buan : bool
-            Enables BUAN framework visualization.
+        buan : bool, optional
+            Enables BUAN framework visualization. Default is False.
         buan_colors : list, optional
             List of colors for bundles.
 
@@ -291,11 +291,9 @@ class Horizon(object):
                     apply_shader(self, centroid_actor)
 
             else:
-                if self.buan:
-                    streamline_actor = actor.line(streamlines,
-                                                  self.buan_colors[color_ind])
-                else:
-                    streamline_actor = actor.line(streamlines, colors=colors)
+
+                s_colors = self.buan_colors[color_ind] if self.buan else colors
+                streamline_actor = actor.line(streamlines, colors=s_colors)
 
                 streamline_actor.GetProperty().SetEdgeVisibility(1)
                 streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
@@ -823,8 +821,8 @@ def horizon(tractograms=None, images=None, pams=None,
     interactive : bool
         Allow user interaction. If False then Horizon goes on stealth mode
         and just saves pictures.
-    buan : bool
-        Enables BUAN framework visualization.
+    buan : bool, optional
+        Enables BUAN framework visualization. Default is False.
     buan_colors : list, optional
         List of colors for bundles.
     out_png : string
