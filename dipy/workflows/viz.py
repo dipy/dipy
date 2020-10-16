@@ -27,7 +27,7 @@ class HorizonFlow(Workflow):
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
             disable_order_transparency=False, buan=False, buan_thr=0.5,
-            buan_highlight=(1,0,0), out_dir='', out_stealth_png='tmp.png'):
+            buan_highlight=(1, 0, 0), out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -204,7 +204,7 @@ class HorizonFlow(Workflow):
                 for i in range(n):
 
                     if pvalues[i] < buan_thr:
-                        colors[ind==i] = buan_highlight
+                        colors[ind == i] = buan_highlight
 
                 bundle_colors.append(colors)
 
