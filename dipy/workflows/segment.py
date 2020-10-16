@@ -319,7 +319,8 @@ class LabelsBundlesFlow(Workflow):
         for f_steamlines, f_labels, out_bundle in io_it:
 
             logging.info(f_steamlines)
-            sft = load_tractogram(f_steamlines)
+            sft = load_tractogram(f_steamlines, 'same',
+                                  bbox_valid_check=False)
             streamlines = sft.streamlines
 
             logging.info(f_labels)
