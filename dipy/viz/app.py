@@ -83,7 +83,7 @@ class Horizon(object):
 
 
     def __init__(self, tractograms=None, images=None, pams=None,
-                 npy_files=None, cluster=False, cluster_thr=15.0,
+                 cluster=False, cluster_thr=15.0,
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
@@ -102,10 +102,6 @@ class Horizon(object):
             Each tuple contains data and affine
         pams : sequence of PeakAndMetrics
             Contains peak directions and spherical harmonic coefficients
-        npy_files : sequence of arrays
-
-            Contains numpy array with pvalues along the length of bundles
-            extracted from BUAN framework.
         cluster : bool
             Enable QuickBundlesX clustering
         cluster_thr : float
@@ -778,7 +774,7 @@ class Horizon(object):
 
 
 
-def horizon(tractograms=None, images=None, pams=None, npy_files=None,
+def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
             random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
@@ -796,9 +792,6 @@ def horizon(tractograms=None, images=None, pams=None, npy_files=None,
         Each tuple contains data and affine
     pams : sequence of PeakAndMetrics
         Contains peak directions and spherical harmonic coefficients
-    npy_files : sequence of arrays
-        Contains numpy array with pvalues along the length of bundles
-        extracted from BUAN framework.
     cluster : bool
         Enable QuickBundlesX clustering
     cluster_thr : float
@@ -852,7 +845,7 @@ def horizon(tractograms=None, images=None, pams=None, npy_files=None,
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
 
-    hz = Horizon(tractograms, images, pams, npy_files, cluster, cluster_thr,
+    hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
