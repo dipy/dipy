@@ -333,5 +333,5 @@ class LabelsBundlesFlow(Workflow):
             logging.info('Saving output files ...')
             new_sft = StatefulTractogram(streamlines[location],
                                          sft, Space.RASMM)
-            save_tractogram(new_sft, out_bundle)
+            save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)
