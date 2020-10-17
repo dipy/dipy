@@ -12,6 +12,7 @@ from libc.string cimport memcpy
 
 import time
 import numpy as np
+from warnings import warn
 cimport numpy as cnp
 
 
@@ -482,6 +483,10 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     DM : array, shape (len(tracksA), len(tracksB))
         distances between tracksA and tracksB according to metric
 
+    See Also
+    ---------
+    dipy.tracking.streamline.set_number_of_points
+
     """
     cdef:
         size_t i, j, lentA, lentB
@@ -503,6 +508,12 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
+    if lentA != lentB:
+        w_s = "Streamlines do not have the same number of points. "
+        w_s += "All streamlines need to have the same number of points. "
+        w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
+        w_s += "your streamlines"
+        warn(w_s)
     tracksA32 = np.zeros((lentA,), dtype=object)
     tracksB32 = np.zeros((lentB,), dtype=object)
     DM = np.zeros((lentA,lentB), dtype=np.double)
@@ -565,7 +576,7 @@ def bundles_distances_mdf(tracksA, tracksB):
 
     See Also
     ---------
-    dipy.metrics.downsample
+    dipy.tracking.streamline.set_number_of_points
 
     """
     cdef:
@@ -579,6 +590,12 @@ def bundles_distances_mdf(tracksA, tracksB):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
+    if lentA != lentB:
+        w_s = "Streamlines do not have the same number of points. "
+        w_s += "All streamlines need to have the same number of points. "
+        w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
+        w_s += "your streamlines"
+        warn(w_s)
     tracksA32 = np.zeros((lentA,), dtype=object)
     tracksB32 = np.zeros((lentB,), dtype=object)
     DM = np.zeros((lentA,lentB), dtype=np.double)
