@@ -1,9 +1,8 @@
 
 import warnings
 import numpy as np
-from numpy.testing._private.utils import assert_warns
 from dipy.testing import assert_true
-from numpy.testing import (assert_array_almost_equal,
+from numpy.testing import (assert_array_almost_equal, assert_warns,
                            assert_equal, assert_almost_equal)
 from dipy.tracking import distances as pf
 from dipy.tracking.streamline import set_number_of_points
