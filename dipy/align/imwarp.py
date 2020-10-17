@@ -997,6 +997,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Returns the DiffeomorphicMap registering the moving image towards
         the static image.
         """
+        if not hasattr(self, 'static_to_ref'):
+            msg = 'Diffeormorphic map can not be obtain without running '
+            msg += 'the optimizer. Please call first '
+            msg += 'SymmetricDiffeomorphicRegistration.optimize()'
+            raise ValueError(msg)
         return self.static_to_ref
 
     def _connect_functions(self):
