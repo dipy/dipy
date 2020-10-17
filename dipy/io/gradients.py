@@ -69,11 +69,11 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if bvecs.ndim != 2:
         bvecs = bvecs[None, ...]
         bvals = bvals[None, ...]
-        msg = "Only 1 direction detected on your bvec file. For diffusion "
-        msg += "dataset, it is recommended to have minimum 3 directions."
-        msg += "You may have problem during the reconstruction step."
+        msg = "Detected only 1 direction on your bvec file. For diffusion "
+        msg += "dataset, it is recommended to have at least 3 directions."
+        msg += "You may have problems during the reconstruction step."
         warnings.warn(msg)
-    if bvecs.shape[1] !=3 and bvecs.shape[1] > bvecs.shape[0]:
+    if bvecs.shape[1] != 3 and bvecs.shape[1] > bvecs.shape[0]:
         bvecs = bvecs.T
 
     # If bvals is None, you don't need to check that they have the same shape:
