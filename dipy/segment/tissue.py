@@ -118,19 +118,15 @@ class TissueClassifierHMRF(object):
                     self.energies.append(energy)
                     self.energies_sum.append(energy[energy > -np.inf].sum())
 
+                if allow_break and i > 5:
 
-                if i % 10 == 0 and i != 0:
+                    e_sum = np.asarray(energy_sum)
+                    tol = tolerance * (np.amax(e_sum) - np.amin(e_sum))
 
-                    tol = tolerance * (np.amax(energy_sum) -
-                                       np.amin(energy_sum))
-
-                    test_dist = np.absolute(np.amax(
-                                energy_sum[np.size(energy_sum) - 5: i]) -
-                                np.amin(energy_sum[np.size(energy_sum) - 5: i])
-                                )
+                    e_end = e_sum[e_sum.size - 5:]
+                    test_dist = np.abs(np.amax(e_end) - np.amin(e_end))
 
                     if test_dist < tol:
-
                         break
 
                 seg_init = final_segmentation
