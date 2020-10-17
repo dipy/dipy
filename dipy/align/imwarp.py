@@ -993,9 +993,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         return np.array(current_displacement), np.array(mean_norm)
 
     def get_map(self):
-        """Returns the resulting diffeomorphic map
+        """Return the resulting diffeomorphic map.
+
         Returns the DiffeomorphicMap registering the moving image towards
         the static image.
+
         """
         if not hasattr(self, 'static_to_ref'):
             msg = 'Diffeormorphic map can not be obtain without running '
