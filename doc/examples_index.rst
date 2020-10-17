@@ -173,11 +173,6 @@ Fiber tracking
 - :ref:`example_tracking_stopping_criterion`
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
-
--------------------------
-Fiber tracking evaluation
--------------------------
-
 - :ref:`example_linear_fascicle_evaluation`
 
 ------------------------------------
