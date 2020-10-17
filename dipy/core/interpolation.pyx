@@ -64,7 +64,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
     if norm == "angle":
         norm = angle
     elif norm == "euclidean_norm":
-        w_s = "The Euclidian norm used for interpolation is inaccurate "
+        w_s = "The Euclidean norm used for interpolation is inaccurate "
         w_s += "and will be deprecated in future versions. Please consider "
         w_s += "using the 'angle' norm instead"
         warnings.warn(w_s, PendingDeprecationWarning)
