@@ -81,7 +81,7 @@ class TissueClassifierHMRF(object):
         image_gauss = np.where(image == 0, zero_noise, image)
 
         final_segmentation = np.empty_like(image)
-        initial_segmentation = seg_init.copy()
+        initial_segmentation = seg_init
 
         if max_iter is not None and tolerance is None:
 
@@ -110,9 +110,9 @@ class TissueClassifierHMRF(object):
                     self.energies.append(energy)
                     self.energies_sum.append(energy[energy > -np.inf].sum())
 
-                seg_init = final_segmentation.copy()
-                mu = mu_upd.copy()
-                sigmasq = sigmasq_upd.copy()
+                seg_init = final_segmentation
+                mu = mu_upd
+                sigmasq = sigmasq_upd
 
         else:
             max_iter = 100
@@ -160,9 +160,9 @@ class TissueClassifierHMRF(object):
 
                         break
 
-                seg_init = final_segmentation.copy()
-                mu = mu_upd.copy()
-                sigmasq = sigmasq_upd.copy()
+                seg_init = final_segmentation
+                mu = mu_upd
+                sigmasq = sigmasq_upd
 
         PVE = PVE[..., 1:]
 
