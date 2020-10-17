@@ -1,13 +1,13 @@
 
 from os.path import splitext
 import re
+import warnings
 import numpy as np
 from nibabel.tmpdirs import InTemporaryDirectory
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
-    """
-    Read b-values and b-vectors from disk
+    """Read b-values and b-vectors from disk.
 
     Parameters
     ----------
@@ -25,8 +25,8 @@ def read_bvals_bvecs(fbvals, fbvecs):
     -----
     Files can be either '.bvals'/'.bvecs' or '.txt' or '.npy' (containing
     arrays stored with the appropriate values).
-    """
 
+    """
     # Loop over the provided inputs, reading each one in turn and adding them
     # to this list:
     vals = []
@@ -35,25 +35,27 @@ def read_bvals_bvecs(fbvals, fbvecs):
         # move on:
         if this_fname is None or not this_fname:
             vals.append(None)
+            continue
+
+        if not isinstance(this_fname, str):
+            raise ValueError('String with full path to file is required')
+
+        base, ext = splitext(this_fname)
+        if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt',
+                   '.eddy_rotated_bvecs', '']:
+            with open(this_fname, 'r') as f:
+                content = f.read()
+            # We replace coma and tab delimiter by space
+            with InTemporaryDirectory():
+                tmp_fname = "tmp_bvals_bvecs.txt"
+                with open(tmp_fname, 'w') as f:
+                    f.write(re.sub(r'(\t|,)', ' ', content))
+                vals.append(np.squeeze(np.loadtxt(tmp_fname)))
+        elif ext == '.npy':
+            vals.append(np.squeeze(np.load(this_fname)))
         else:
-            if isinstance(this_fname, str):
-                base, ext = splitext(this_fname)
-                if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '.eddy_rotated_bvecs', '']:
-                    with open(this_fname, 'r') as f:
-                        content = f.read()
-                    # We replace coma and tab delimiter by space
-                    with InTemporaryDirectory():
-                        tmp_fname = "tmp_bvals_bvecs.txt"
-                        with open(tmp_fname, 'w') as f:
-                            f.write(re.sub(r'(\t|,)', ' ', content))
-                        vals.append(np.squeeze(np.loadtxt(tmp_fname)))
-                elif ext == '.npy':
-                    vals.append(np.squeeze(np.load(this_fname)))
-                else:
-                    e_s = "File type %s is not recognized" % ext
-                    raise ValueError(e_s)
-            else:
-                raise ValueError('String with full path to file is required')
+            e_s = "File type %s is not recognized" % ext
+            raise ValueError(e_s)
 
     # Once out of the loop, unpack them:
     bvals, bvecs = vals[0], vals[1]
@@ -62,11 +64,16 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if bvecs is None:
         return bvals, bvecs
 
-    if min(bvecs.shape) != 3:
+    if 3 not in bvecs.shape:
         raise IOError('bvec file should have three rows')
     if bvecs.ndim != 2:
-        raise IOError('bvec file should be saved as a two dimensional array')
-    if bvecs.shape[1] > bvecs.shape[0]:
+        bvecs = bvecs[None, ...]
+        bvals = bvals[None, ...]
+        msg = "Only 1 direction detected on your bvec file. For diffusion "
+        msg += "dataset, it is recommended to have minimum 3 directions."
+        msg += "You may have problem during the reconstruction step."
+        warnings.warn(msg)
+    if bvecs.shape[1] !=3 and bvecs.shape[1] > bvecs.shape[0]:
         bvecs = bvecs.T
 
     # If bvals is None, you don't need to check that they have the same shape:
@@ -76,7 +83,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if len(bvals.shape) > 1:
         raise IOError('bval file should have one row')
 
-    if max(bvals.shape) != max(bvecs.shape):
-            raise IOError('b-values and b-vectors shapes do not correspond')
+    if bvals.shape[0] != bvecs.shape[0]:
+        raise IOError('b-values and b-vectors shapes do not correspond')
 
     return bvals, bvecs
