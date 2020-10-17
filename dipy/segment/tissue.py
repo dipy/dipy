@@ -83,42 +83,15 @@ class TissueClassifierHMRF(object):
         final_segmentation = np.empty_like(image)
         initial_segmentation = seg_init
 
-        if max_iter is not None and tolerance is None:
+        allow_break = max_iter is None or tolerance is not None
 
-            for i in range(max_iter):
-
-                if self.verbose:
-                    print('>> Iteration: ' + str(i))
-
-                PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
-                PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-
-                mu_upd, sigmasq_upd = com.update_param(image_gauss,
-                                                       PVE, mu, nclasses)
-                ind = np.argsort(mu_upd)
-                mu_upd = mu_upd[ind]
-                sigmasq_upd = sigmasq_upd[ind]
-
-                negll = com.negloglikelihood(image_gauss,
-                                             mu_upd, sigmasq_upd, nclasses)
-                final_segmentation, energy = icm.icm_ising(negll,
-                                                           beta, seg_init)
-
-                if self.save_history:
-                    self.segmentations.append(final_segmentation)
-                    self.pves.append(PVE)
-                    self.energies.append(energy)
-                    self.energies_sum.append(energy[energy > -np.inf].sum())
-
-                seg_init = final_segmentation
-                mu = mu_upd
-                sigmasq = sigmasq_upd
-
-        else:
+        if max_iter is None:
             max_iter = 100
 
-            if tolerance is None:
-                tolerance = 1e-05
+        if tolerance is None:
+            tolerance = 1e-05
+
+        if max_iter is not None and tolerance is None:
             for i in range(max_iter):
 
                 if self.verbose:
