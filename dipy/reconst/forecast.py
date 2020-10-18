@@ -1,6 +1,7 @@
 
 from warnings import warn
 import numpy as np
+from distutils.version import LooseVersion
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.csdeconv import csdeconv
@@ -249,12 +250,18 @@ class ForecastModel(OdfModel, Cache):
 
             if self.pos:
                 c = cvxpy.Variable(M.shape[1])
-                design_matrix = cvxpy.Constant(M)
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    design_matrix = cvxpy.Constant(M) * c
+                else:
+                    design_matrix = cvxpy.Constant(M) @ c
                 objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix * c - data_single_b0) +
+                    cvxpy.sum_squares(design_matrix - data_single_b0) +
                     self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
 
-                constraints = [c[0] == c0, self.fod * c >= 0]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [c[0] == c0, self.fod * c >= 0]
+                else:
+                    constraints = [c[0] == c0, self.fod @ c >= 0]
                 prob = cvxpy.Problem(objective, constraints)
                 try:
                     prob.solve(solver=cvxpy.OSQP, eps_abs=1e-05, eps_rel=1e-05)
