@@ -129,4 +129,4 @@ def test_read_bvals_bvecs():
             npt.assert_array_equal(bval_5, np.zeros(1))
             assert_true(len(w) == 1)
             assert_true(issubclass(w[0].category, UserWarning))
-            assert_true("Only 1 direction detected on" in str(w[0].message))
+            assert_true("Detected only 1 direction on" in str(w[0].message))
