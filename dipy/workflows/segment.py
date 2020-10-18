@@ -7,7 +7,9 @@ import numpy as np
 from time import time
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
-from dipy.tracking.streamline import Streamlines
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import load_tractogram, save_tractogram
+
 
 class MedianOtsuFlow(Workflow):
     @classmethod
@@ -212,7 +214,8 @@ class RecoBundlesFlow(Workflow):
 
         t = time()
         logging.info(streamline_files)
-        input_obj = nib.streamlines.load(streamline_files)
+        input_obj = load_tractogram(streamline_files, 'same',
+                                    bbox_valid_check=False)
         streamlines = input_obj.streamlines
 
         logging.info(' Loading time %0.3f sec' % (time() - t,))
@@ -223,7 +226,8 @@ class RecoBundlesFlow(Workflow):
         for _, mb, out_rec, out_labels in io_it:
             t = time()
             logging.info(mb)
-            model_bundle = nib.streamlines.load(mb).streamlines
+            model_bundle = load_tractogram(mb, 'same',
+                                           bbox_valid_check=False).streamlines
             logging.info(' Loading time %0.3f sec' % (time() - t,))
             logging.info("model file = ")
             logging.info(mb)
@@ -278,10 +282,9 @@ class RecoBundlesFlow(Workflow):
                 logging.info("Bundle adjacency Metric {0}".format(ba))
                 logging.info("Bundle Min Distance Metric {0}".format(bmd))
 
-            new_tractogram = nib.streamlines.Tractogram(recognized_bundle,
-                                                        affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, out_rec,
-                                 header=input_obj.header)
+            new_tractogram = StatefulTractogram(recognized_bundle,
+                                                streamline_files, Space.RASMM)
+            save_tractogram(new_tractogram, out_rec, bbox_valid_check=False)
             logging.info('Saving output files ...')
             np.save(out_labels, np.array(labels))
             logging.info(out_rec)
@@ -320,21 +323,22 @@ class LabelsBundlesFlow(Workflow):
         logging.info('### Labels to Bundles ###')
 
         io_it = self.get_io_iterator()
-        for sf, lb, out_bundle in io_it:
+        for f_steamlines, f_labels, out_bundle in io_it:
 
-            logging.info(sf)
-            tractogram_obj = nib.streamlines.load(sf)
-            streamlines = tractogram_obj.streamlines
+            logging.info(f_steamlines)
+            sft = load_tractogram(f_steamlines, 'same',
+                                  bbox_valid_check=False)
+            streamlines = sft.streamlines
 
-            logging.info(lb)
-            location = np.load(lb)
+            logging.info(f_labels)
+            location = np.load(f_labels)
             if len(location) < 1 :
                 bundle = Streamlines([])
             else:
                 bundle = streamlines[location]
 
             logging.info('Saving output files ...')
-            new_tractogram = nib.streamlines.Tractogram(bundle, affine_to_rasmm=np.eye(4))
-            nib.streamlines.save(new_tractogram, out_bundle,
-                                 header=tractogram_obj.header)
+            new_sft = StatefulTractogram(streamlines[location],
+                                         sft, Space.RASMM)
+            save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)
