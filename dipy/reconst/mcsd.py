@@ -16,7 +16,7 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.sims.voxel import single_tensor
 
 from dipy.utils.optpkg import optional_package
-cvx, have_cvxpy, _ = optional_package("cvxpy")
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 SH_CONST = .5 / np.sqrt(np.pi)
 
@@ -378,17 +378,21 @@ def solve_qp(P, Q, G, H):
     x : array
         Optimal solution to the QP problem.
     """
-    x = cvx.Variable(Q.shape[0])
-    P = cvx.Constant(P)
-    objective = cvx.Minimize(0.5 * cvx.quad_form(x, P) + Q * x)
-    constraints = [G*x <= H]
+    x = cvxpy.Variable(Q.shape[0])
+    P = cvxpy.Constant(P)
+    if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P) + Q * x)
+        constraints = [G * x <= H]
+    else:
+        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P) + Q @ x)
+        constraints = [G @ x <= H]
 
     # setting up the problem
-    prob = cvx.Problem(objective, constraints)
+    prob = cvxpy.Problem(objective, constraints)
     try:
         prob.solve()
         opt = np.array(x.value).reshape((Q.shape[0],))
-    except cvx.error.SolverError:
+    except cvxpy.error.SolverError:
         opt = np.empty((Q.shape[0],))
         opt[:] = np.NaN
 
