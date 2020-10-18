@@ -412,7 +412,8 @@ def test_cluster_map_getitem():
 
     # Test slicing and negative indexing
     assert_equal(cluster_map[-1], clusters[-1])
-    assert_array_equal(cluster_map[::2], clusters[::2])
+    assert_array_equal(np.array(cluster_map[::2], dtype=object),
+                       np.array(clusters[::2], dtype=object))
     assert_arrays_equal(cluster_map[::-1], clusters[::-1])
     assert_arrays_equal(cluster_map[:-1], clusters[:-1])
     assert_arrays_equal(cluster_map[1:], clusters[1:])
@@ -540,7 +541,8 @@ def test_cluster_map_comparison_with_object():
 
     # Comparison with another ClusterMap object
     other_cluster_map = copy.deepcopy(cluster_map)
-    assert_equal(cluster_map, other_cluster_map)
+    assert_equal(np.array(cluster_map, dtype=object),
+                 np.array(other_cluster_map, dtype=object))
 
     other_cluster_map = copy.deepcopy(cluster_map)
     assert_false(cluster_map != other_cluster_map)
@@ -754,7 +756,3 @@ def test_subclassing_clustering():
     assert_raises(NotImplementedError,
                   super(SubClustering, clustering_algo).cluster,
                   None)
-
-
-if __name__ == '__main__':
-    run_module_suite()
