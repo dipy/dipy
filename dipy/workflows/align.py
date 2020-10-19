@@ -733,7 +733,7 @@ class SynRegistrationFlow(Workflow):
     def run(self, static_image_files, moving_image_files, prealign_file='',
             inv_static=False, level_iters=[10, 10, 5], metric="cc",
             mopt_sigma_diff=2.0, mopt_radius=4, mopt_smooth=0.0,
-            mopt_inner_iter=0.0, mopt_q_levels=256, mopt_double_gradient=True,
+            mopt_inner_iter=0, mopt_q_levels=256, mopt_double_gradient=True,
             mopt_step_type='', step_length=0.25,
             ss_sigma_factor=0.2, opt_tol=1e-5, inv_iter=20,
             inv_tol=1e-3, out_dir='', out_warped='warped_moved.nii.gz',
@@ -864,11 +864,20 @@ class SynRegistrationFlow(Workflow):
                              'mopt_step_type': 'gauss_newton'
                              }
                       }
-        mopt_smooth = mopt_smooth or init_param[metric]['mopt_smooth']
-        mopt_inner_iter = mopt_inner_iter or  \
-            init_param[metric]['mopt_inner_iter']
-        mopt_step_type = mopt_step_type or \
-            init_param[metric]['mopt_step_type']
+
+        mopt_smooth = mopt_smooth \
+            if mopt_smooth or metric == 'cc' \
+            else init_param[metric]['mopt_smooth']
+        mopt_inner_iter = mopt_inner_iter \
+            if mopt_inner_iter or metric == 'cc' \
+            else init_param[metric]['mopt_inner_iter']
+
+        # If using the 'cc' metric, force the `mopt_step_type` parameter to an
+        # empty value since the 'cc' metric does not use it; for the rest of
+        # the metrics, the `step_type` parameter will be initialized to their
+        # corresponding default values in `init_param`.
+        if metric == 'cc':
+            mopt_step_type = ''
 
         for (static_file, moving_file, owarped_file, oinv_static_file,
              omap_file) in io_it:
@@ -886,21 +895,31 @@ class SynRegistrationFlow(Workflow):
             # Loading the affine matrix.
             prealign = np.loadtxt(prealign_file) if prealign_file else None
 
-            l_metric = {"ssd": SSDMetric(static_image.ndim,
-                                         smooth=mopt_smooth,
-                                         inner_iter=mopt_inner_iter,
-                                         step_type=mopt_step_type
-                                         ),
-                        "cc": CCMetric(static_image.ndim,
-                                       sigma_diff=mopt_sigma_diff,
-                                       radius=mopt_radius),
-                        "em": EMMetric(static_image.ndim,
-                                       smooth=mopt_smooth,
-                                       inner_iter=mopt_inner_iter,
-                                       step_type=mopt_step_type,
-                                       q_levels=mopt_q_levels,
-                                       double_gradient=mopt_double_gradient)
-                        }
+            # Note that `step_type` is initialized to the default value in
+            # `init_param` for the metric that was not specified as a
+            # parameter or if the `mopt_step_type` is empty.
+            l_metric = {
+                "ssd": SSDMetric(
+                    static_image.ndim, smooth=mopt_smooth,
+                    inner_iter=mopt_inner_iter,
+                    step_type=mopt_step_type
+                    if(mopt_step_type and mopt_step_type.strip())
+                    and metric == 'ssd'
+                    else init_param['ssd']['mopt_step_type']
+                ),
+                "cc": CCMetric(
+                    static_image.ndim, sigma_diff=mopt_sigma_diff,
+                    radius=mopt_radius),
+                "em": EMMetric(
+                    static_image.ndim, smooth=mopt_smooth,
+                    inner_iter=mopt_inner_iter,
+                    step_type=mopt_step_type
+                    if (mopt_step_type and mopt_step_type.strip())
+                    and metric == 'em'
+                    else init_param['em']['mopt_step_type'],
+                    q_levels=mopt_q_levels,
+                    double_gradient=mopt_double_gradient)
+            }
 
             current_metric = l_metric.get(metric.lower())
 
