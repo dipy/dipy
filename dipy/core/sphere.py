@@ -212,7 +212,7 @@ class Sphere(object):
         return unique_edges(self.faces)
 
     def subdivide(self, n=1):
-        """Subdivides each face of the sphere into four new faces.
+        r"""Subdivides each face of the sphere into four new faces.
 
         New vertices are created at a, b, and c. Then each face [x, y, z] is
         divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
