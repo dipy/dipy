@@ -518,7 +518,7 @@ def _equality_constraints(vects):
     return (vects ** 2).sum(1) - 1.0
 
 def _grad_equality_constraints(vects):
-    """Return normals to the surface constraint (which corresponds to
+    r"""Return normals to the surface constraint (which corresponds to
     the gradient of the implicit function).
 
     Parameters
