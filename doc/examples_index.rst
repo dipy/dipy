@@ -39,22 +39,29 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
+Reslice
+~~~~~~~
+
+- :ref:`example_reslice_datasets`
+
+---------
 Denoising
-~~~~~~~~~
+---------
 
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
 - :ref:`example_denoise_mppca`
 - :ref:`example_denoise_gibbs`
 
-Reslice
-~~~~~~~
-
-- :ref:`example_reslice_datasets`
-
 --------------
 Reconstruction
 --------------
+
+Below, an overview of all reconstruction models available on DIPY.
+
+Note: Some reconstruction models do not have a tutorial yet
+
+.. include:: reconstruction_models_list.rst
 
 Constrained Spherical Deconvolution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,11 +173,6 @@ Fiber tracking
 - :ref:`example_tracking_stopping_criterion`
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
-
--------------------------
-Fiber tracking evaluation
--------------------------
-
 - :ref:`example_linear_fascicle_evaluation`
 
 ------------------------------------

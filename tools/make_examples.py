@@ -106,7 +106,8 @@ for example in validated_examples:
         print(msg)
 
 # Run the conversion from .py to rst file
-check_call('{} ../../tools/ex2rst --project dipy --outdir . .'.format(sys.executable), shell=True)
+check_call('{} ../../tools/ex2rst'.format(sys.executable) +
+           ' --project dipy --outdir . .', shell=True)
 
 # added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())

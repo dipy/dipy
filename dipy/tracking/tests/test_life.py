@@ -1,5 +1,4 @@
 import os.path as op
-import pytest
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.data as dpd
@@ -101,23 +100,23 @@ def test_FiberModel_init():
     gtab = grad.gradient_table(bvals, bvecs)
     FM = life.FiberModel(gtab)
     streamline_cases = [[[[1, 2, 3], [4, 5, 3], [5, 6, 3], [6, 7, 3]],
-                  [[1, 2, 3], [4, 5, 3], [5, 6, 3]]], [[[1, 2, 3]],
-                                [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]]
+                         [[1, 2, 3], [4, 5, 3], [5, 6, 3]]],
+                        [[[1, 2, 3]], [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]]
 
     affine = np.eye(4)
 
     for sphere in [None, False, dpd.get_sphere('symmetric362')]:
-        for streamline in streamline_cases:
-            if streamline == [[[1, 2, 3]], [[1, 2, 3], [4, 5, 3], [5, 6, 3]]]:
-                pytest.xfail("Too few nodes in streamline")
-            fiber_matrix, vox_coords = FM.setup(streamline, affine,
-            sphere=sphere)
-            npt.assert_array_equal(np.array(vox_coords),
-                                   np.array([[1, 2, 3], [4, 5, 3],
-                                             [5, 6, 3], [6, 7, 3]]))
+        fiber_matrix, vox_coords = FM.setup(streamline_cases[0], affine,
+                                            sphere=sphere)
+        npt.assert_array_equal(np.array(vox_coords), np.array([[1, 2, 3],
+                                                               [4, 5, 3],
+                                                               [5, 6, 3],
+                                                               [6, 7, 3]]))
 
-            npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
-                                                  len(streamline)))
+        npt.assert_equal(fiber_matrix.shape, (len(vox_coords) * 64,
+                                              len(streamline_cases[0])))
+        npt.assert_raises(IndexError, FM.setup, streamline_cases[1], affine,
+                          sphere=sphere)
 
 
 def test_FiberFit():

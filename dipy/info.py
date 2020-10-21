@@ -83,6 +83,7 @@ SCIPY_MIN_VERSION = '1.0'
 NIBABEL_MIN_VERSION = '3.0.0'
 H5PY_MIN_VERSION = '2.5.0'
 PACKAGING_MIN_VERSION = '19.0'
+TQDM_MIN_VERSION = '4.30.0'
 
 # Main setup parameters
 NAME                = 'dipy'
@@ -90,8 +91,8 @@ MAINTAINER          = "Eleftherios Garyfallidis"
 MAINTAINER_EMAIL    = "neuroimaging@python.org"
 DESCRIPTION         = description
 LONG_DESCRIPTION    = long_description
-URL                 = "http://dipy.org"
-DOWNLOAD_URL        = "http://github.com/dipy/dipy/archives/master"
+URL                 = "https://dipy.org"
+DOWNLOAD_URL        = "https://github.com/dipy/dipy/releases"
 LICENSE             = "BSD license"
 CLASSIFIERS         = CLASSIFIERS
 AUTHOR              = "dipy developers"
@@ -107,7 +108,8 @@ REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "scipy (>=%s)" % SCIPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
                        "h5py (>=%s)" % H5PY_MIN_VERSION,
-                       "packaging (>=%s)" % PACKAGING_MIN_VERSION]
+                       "packaging (>=%s)" % PACKAGING_MIN_VERSION,
+                       "tqdm"]
 EXTRAS_REQUIRE = {
     "test": [
         "pytest",

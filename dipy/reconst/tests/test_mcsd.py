@@ -303,9 +303,10 @@ def test_auto_response_msmt():
 
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("""Some b-values are higher than 1200.
-        The DTI fit might be affected. It is adviced use mask_for_response_msmt
-        with bvalues lower than 1200, followed by response_from_mask_msmt
-        to overcome this.""" in str(w[0].message))
+        The DTI fit might be affected. It is advised to use
+        mask_for_response_msmt with bvalues lower than 1200, followed by
+        response_from_mask_msmt with all bvalues to overcome this."""
+                    in str(w[0].message))
 
         mask_wm, mask_gm, mask_csf = mask_for_response_msmt(gtab, data,
                                                             roi_center=None,

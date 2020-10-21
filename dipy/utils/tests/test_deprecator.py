@@ -16,6 +16,7 @@ import dipy
 from dipy.testing import clear_and_catch_warnings, assert_true
 from dipy.utils.deprecator import (cmp_pkg_version, _add_dep_doc,
                                    _ensure_cr, deprecate_with_version,
+                                   deprecated_params, ArgsDeprecationWarning,
                                    ExpiredDeprecationError)
 
 
@@ -167,3 +168,185 @@ def test_deprecate_with_version():
 
     func = dec('foo', until='0.3', error_class=CustomError)(func_no_doc)
     npt.assert_raises(CustomError, func)
+
+
+def test_deprecated_argument():
+    # Tests the decorator with function, method, staticmethod and classmethod.
+    class CustomActor:
+
+        @classmethod
+        @deprecated_params('height', 'scale', '0.3')
+        def test1(cls, scale):
+            return scale
+
+        @staticmethod
+        @deprecated_params('height', 'scale', '0.3')
+        def test2(scale):
+            return scale
+
+        @deprecated_params('height', 'scale', '0.3')
+        def test3(self, scale):
+            return scale
+
+        @deprecated_params('height', 'scale', '0.3', '0.5')
+        def test4(self, scale):
+            return scale
+
+        @deprecated_params('height', 'scale', '0.3', '10.0.0')
+        def test5(self, scale):
+            return scale
+
+    @deprecated_params('height', 'scale', '0.3')
+    def custom_actor(scale):
+        return scale
+
+    @deprecated_params('height', 'scale', '0.3', '0.5')
+    def custom_actor_2(scale):
+        return scale
+
+    for method in [CustomActor().test1, CustomActor().test2,
+                   CustomActor().test3, CustomActor().test4, custom_actor,
+                   custom_actor_2]:
+        # As positional argument only
+        npt.assert_equal(method(1), 1)
+        # As new keyword argument
+        npt.assert_equal(method(scale=1), 1)
+        # As old keyword argument
+        if method.__name__ not in ['test4', 'custom_actor_2']:
+            res = npt.assert_warns(ArgsDeprecationWarning, method, height=1)
+            npt.assert_equal(res, 1)
+        else:
+            npt.assert_raises(ExpiredDeprecationError, method, height=1)
+
+        # Using both. Both keyword
+        npt.assert_raises(TypeError, method, height=2, scale=1)
+        # One positional, one keyword
+        npt.assert_raises(TypeError, method, 1, scale=2)
+
+    with pytest.warns(None) as w_record:
+        res = CustomActor().test5(4)
+
+    npt.assert_equal(len(w_record), 0)
+    npt.assert_equal(res, 4)
+
+
+def test_deprecated_argument_in_kwargs():
+    # To rename an argument that is consumed by "kwargs" the "arg_in_kwargs"
+    # parameter is used.
+    @deprecated_params('height', 'scale', '0.3', arg_in_kwargs=True)
+    def test(**kwargs):
+        return kwargs['scale']
+
+    @deprecated_params('height', 'scale', '0.3', '0.5', arg_in_kwargs=True)
+    def test2(**kwargs):
+        return kwargs['scale']
+
+    # As positional argument only
+    npt.assert_raises(TypeError, test, 1)
+
+    # As new keyword argument
+    npt.assert_equal(test(scale=1), 1)
+
+    # Using the deprecated name
+    res = npt.assert_warns(ArgsDeprecationWarning, test, height=1)
+    npt.assert_equal(res, 1)
+
+    npt.assert_raises(ExpiredDeprecationError, test2, height=1)
+
+    # Using both. Both keyword
+    npt.assert_raises(TypeError, test, height=2, scale=1)
+    # One positional, one keyword
+    npt.assert_raises(TypeError, test, 1, scale=2)
+
+
+def test_deprecated_argument_multi_deprecation():
+
+    @deprecated_params(['x', 'y', 'z'], ['a', 'b', 'c'],
+                       [0.3, 0.2, 0.4])
+    def test(a, b, c):
+        return a, b, c
+
+    @deprecated_params(['x', 'y', 'z'], ['a', 'b', 'c'],
+                       '0.3')
+    def test2(a, b, c):
+        return a, b, c
+
+    with pytest.warns(ArgsDeprecationWarning) as w:
+        npt.assert_equal(test(x=1, y=2, z=3), (1, 2, 3))
+        npt.assert_equal(test2(x=1, y=2, z=3), (1, 2, 3))
+    npt.assert_equal(len(w), 6)
+
+    npt.assert_raises(TypeError, test, x=1, y=2, z=3, b=3)
+    npt.assert_raises(TypeError, test, x=1, y=2, z=3, a=3)
+
+
+def test_deprecated_argument_not_allowed_use():
+    # If the argument is supposed to be inside the kwargs one needs to set the
+    # arg_in_kwargs parameter. Without it it raises a TypeError.
+    with pytest.raises(TypeError):
+        @deprecated_params('height', 'scale', '0.3')
+        def test1(**kwargs):
+            return kwargs['scale']
+
+    # Cannot replace "*args".
+    with pytest.raises(TypeError):
+        @deprecated_params('scale', 'args', '0.3')
+        def test2(*args):
+            return args
+
+    # Cannot replace "**kwargs".
+    with pytest.raises(TypeError):
+        @deprecated_params('scale', 'kwargs', '0.3')
+        def test3(**kwargs):
+            return kwargs
+
+    # wrong number of arguments
+    with pytest.raises(ValueError):
+        @deprecated_params(['a', 'b', 'c'], ['x', 'y'], '0.3')
+        def test4(**kwargs):
+            return kwargs
+
+
+def test_deprecated_argument_remove():
+    @deprecated_params('x', None, '0.3', alternative='test2.y')
+    def test(dummy=11, x=3):
+        return dummy, x
+
+    @deprecated_params('x', None, '0.3', '0.5', alternative='test2.y')
+    def test2(dummy=11, x=3):
+        return dummy, x
+
+    @deprecated_params(['dummy', 'x'], None, '0.3', alternative='test2.y')
+    def test3(dummy=11, x=3):
+        return dummy, x
+
+    @deprecated_params(['dummy', 'x'], None, '0.3', '0.5',
+                       alternative='test2.y')
+    def test4(dummy=11, x=3):
+        return dummy, x
+
+    with pytest.warns(ArgsDeprecationWarning,
+                      match=r'Use test2\.y instead') as w:
+        npt.assert_equal(test(x=1), (11, 1))
+    npt.assert_equal(len(w), 1)
+
+    with pytest.warns(ArgsDeprecationWarning,
+                      match=r'Use test2\.y instead') as w:
+        npt.assert_equal(test(x=1, dummy=10), (10, 1))
+    npt.assert_equal(len(w), 1)
+
+    with pytest.warns(ArgsDeprecationWarning,
+                      match=r'Use test2\.y instead'):
+        npt.assert_equal(test(121, 1), (121, 1))
+
+    with pytest.warns(ArgsDeprecationWarning,
+                      match=r'Use test2\.y instead') as w:
+        npt.assert_equal(test3(121, 1), (121, 1))
+
+    npt.assert_raises(ExpiredDeprecationError, test4, 121, 1)
+    npt.assert_raises(ExpiredDeprecationError, test4, dummy=121, x=1)
+    npt.assert_raises(ExpiredDeprecationError, test4, 121, x=1)
+    npt.assert_raises(ExpiredDeprecationError, test2, x=1)
+    npt.assert_equal(test(), (11, 3))
+    npt.assert_equal(test(121), (121, 3))
+    npt.assert_equal(test(dummy=121), (121, 3))

@@ -326,6 +326,7 @@ def test_optimizer_exceptions():
     # Verify exception thrown when attempting to fit the energy profile without
     # enough data
     assert_raises(ValueError, optimizer._get_energy_derivative)
+    assert_raises(ValueError, optimizer.get_map)
 
 
 def test_get_direction_and_spacings():

@@ -280,10 +280,61 @@ def test_syn_registration_flow():
         nib.save(moving_img, fname_moving)
 
         positional_args = [fname_static, fname_moving]
+
+        # Test the cc metric
+        metric_optional_args = {'metric': 'cc',
+                                'mopt_sigma_diff': 2.0,
+                                'mopt_radius': 4
+                                }
+        optimizer_optional_args = {'level_iters': [10, 10, 5],
+                                   'step_length': 0.25,
+                                   'opt_tol': 1e-5,
+                                   'inv_iter': 20,
+                                   'inv_tol': 1e-3,
+                                   'ss_sigma_factor': 0.2
+                                   }
+
+        all_args = dict(metric_optional_args, **optimizer_optional_args)
+        syn_flow.run(*positional_args,
+                     out_dir=out_dir,
+                     **all_args
+                     )
+
+        warped_path = syn_flow.last_generated_outputs['out_warped']
+        npt.assert_equal(os.path.isfile(warped_path), True)
+        warped_map_path = syn_flow.last_generated_outputs['out_field']
+        npt.assert_equal(os.path.isfile(warped_map_path), True)
+
+        # Test the ssd metric
         metric_optional_args = {'metric': 'ssd',
                                 'mopt_smooth': 4.0,
                                 'mopt_inner_iter': 5,
                                 'mopt_step_type': 'demons',
+                                }
+        optimizer_optional_args = {'level_iters': [200, 100, 50, 25],
+                                   'step_length': 0.5,
+                                   'opt_tol': 1e-4,
+                                   'inv_iter': 40,
+                                   'inv_tol': 1e-3,
+                                   'ss_sigma_factor': 0.2
+                                   }
+
+        all_args = dict(metric_optional_args, **optimizer_optional_args)
+        syn_flow.run(*positional_args,
+                     out_dir=out_dir,
+                     **all_args
+                     )
+
+        warped_path = syn_flow.last_generated_outputs['out_warped']
+        npt.assert_equal(os.path.isfile(warped_path), True)
+        warped_map_path = syn_flow.last_generated_outputs['out_field']
+        npt.assert_equal(os.path.isfile(warped_map_path), True)
+
+        # Test the em metric
+        metric_optional_args = {'metric': 'em',
+                                'mopt_smooth': 1.0,
+                                'mopt_inner_iter': 5,
+                                'mopt_step_type': 'gauss_newton',
                                 }
         optimizer_optional_args = {'level_iters': [200, 100, 50, 25],
                                    'step_length': 0.5,

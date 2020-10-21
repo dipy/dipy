@@ -207,7 +207,8 @@ the upper panels, while the DKI maps from the denoised data are shown in the
 lower panels. Substantial improvements on measurements robustness can be
 visually appreciated, particularly for the FA and MK estimates.
 
-## noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
+Noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
+===========================================================================
 
 As mentioned above, the Marcenko-Pastur PCA algorithm can also be used to
 estimate the image's noise standard deviation (std). The noise std

@@ -2,13 +2,15 @@
 
 import numpy as np
 import random
-from numpy.testing import assert_array_almost_equal, assert_raises
-from dipy.sims.voxel import multi_tensor_dki
+from numpy.testing import (assert_array_almost_equal, assert_raises,
+                           assert_almost_equal, assert_)
+from dipy.sims.voxel import (single_tensor, multi_tensor_dki)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import (gradient_table, unique_bvals_magnitude,
                                  round_bvals)
 from dipy.data import get_fnames
 import dipy.reconst.msdki as msdki
+from dipy.reconst.msdki import (msk_from_awf, awf_from_msk)
 
 fimg, fbvals, fbvecs = get_fnames('small_64D')
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
@@ -52,7 +54,7 @@ params_multi = np.zeros((2, 2, 2, 2))
 for i in range(2):
     for j in range(2):
         for k in range(1):  # Only one k to have some zero voxels
-            f = random.uniform(0.0, 0.1)
+            f = random.uniform(0.0, 1)
             frac = [f * 100, (1.0 - f) * 100]
             signal_i, dt_i, kt_i = multi_tensor_dki(gtab_3s, mevals_sph,
                                                     S0=100, fractions=frac,
@@ -133,6 +135,9 @@ def test_errors():
     met = aux_test_fun(mdkiF, (0, 0, 0))
     assert_array_almost_equal(MKgt_multi[0, 0, 0], met)
 
+    # Fifth error rises if wrong mask is given to awf_from_msk
+    assert_raises(ValueError, awf_from_msk, MKgt_multi, mask=mask_wrong)
+
 
 def test_design_matrix():
     ub = unique_bvals_magnitude(bvals_3s)
@@ -200,3 +205,91 @@ def test_msdki_statistics():
     mdkiF = mdkiM.fit(DWI)
     assert_array_almost_equal(S0gt_multi, mdkiF.S0_hat)
     assert_array_almost_equal(MKgt_multi[v], mdkiF[v].msk)
+
+
+def test_kurtosis_to_smt2_convertion():
+    # 1. Check convertion of smt2 awf to kurtosis
+    # When awf = 0 kurtosis was to be 0
+    awf0 = 0
+    kexp0 = 0
+    kest0 = msk_from_awf(awf0)
+    assert_almost_equal(kest0, kexp0)
+
+    # When awf = 1 kurtosis was to be 2.4
+    awf1 = 1
+    kexp1 = 2.4
+    kest1 = msk_from_awf(awf1)
+    assert_almost_equal(kest1, kexp1)
+
+    # Check the invertion of msk_from_awf
+    awf_test_array = np.linspace(0, 1, 100)
+    k_exp = msk_from_awf(awf_test_array)
+    awf_from_k = awf_from_msk(k_exp)
+    assert_array_almost_equal(awf_from_k, awf_test_array)
+
+    # Check the awf_from_msk estimates when kurtosis is out of expected
+    # interval ranges - note that under SMT2 assumption MSK is never lower
+    # than 0 and never higher than 2.4. Since SMT2 assumptions are commonly not
+    # met kurtosis can be out of this expected range. So, if MSK is lower than
+    # 0, f is set to 0 (avoiding negative f). On the other hand, if MSK is
+    # higher than 2.4, f is set to the maxumum value of 1.
+    assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])),
+                              np.array([0., 1.]))
+
+    # if msk = np.nan, function outputs awf=np.nan
+    assert_(np.isnan(awf_from_msk(np.array(np.nan))))
+
+
+def test_smt2_metrics():
+    # Just checking if parameters can be retrived from MSDKI's fit class obj
+
+    # Based on the multi-voxel simulations above (computes gt for SMT2 params)
+    AWFgt = awf_from_msk(MKgt_multi)
+    DIgt = 3 * MDgt_multi / (1 + 2 * (1 - AWFgt) ** 2)
+    # General microscopic anisotropy estimation (Eq 8 Henriques et al MRM 2019)
+    RDe = DIgt * (1 - AWFgt)  # tortuosity assumption
+    VarD = 2/9 * (AWFgt * DIgt ** 2 + (1 - AWFgt) * (DIgt - RDe) ** 2)
+    MD = (AWFgt * DIgt + (1 - AWFgt) * (DIgt + 2 * RDe)) / 3
+    uFAgt = np.sqrt(3 / 2 * VarD[MD > 0] / (VarD[MD > 0] + MD[MD > 0] ** 2))
+
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
+    mdkiF = mdkiM.fit(DWI)
+    assert_array_almost_equal(mdkiF.smt2f, AWFgt)
+    assert_array_almost_equal(mdkiF.smt2di, DIgt)
+    assert_array_almost_equal(mdkiF.smt2uFA[MD > 0], uFAgt)
+
+    # Check if awf_from_msk when mask is given
+    mask = MKgt_multi > 0
+    AWF = awf_from_msk(MKgt_multi, mask)
+    assert_array_almost_equal(AWF, AWFgt)
+
+
+def test_smt2_specific_cases():
+    mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
+
+    # Check smt2 is sepecific cases with knowm g.t:
+    # 1) Intrisic diffusion is equal MSD for single Gaussian isotropic
+    #     diffusion (i.e. awf=0)
+    sig_gaussian = single_tensor(gtab_3s, evals=np.array([2e-3, 2e-3, 2e-3]))
+    mdkiF = mdkiM.fit(sig_gaussian)
+    assert_almost_equal(mdkiF.msk, 0.0)
+    assert_almost_equal(mdkiF.msd, 2.0e-3)
+    assert_almost_equal(mdkiF.smt2f, 0)
+    assert_almost_equal(mdkiF.smt2di, 2.0e-3)
+
+    # 2) Intrisic diffusion is equal to MSD/3 for single powder-averaged stick
+    #    compartment
+    Da = 2.0e-3
+    mevals = np.zeros((64, 3))
+    mevals[:, 0] = Da
+    fracs = np.ones(64) * 100 / 64
+    signal_pa, dt_sph, kt_sph = multi_tensor_dki(gtab_3s, mevals,
+                                                 angles=bvecs[1:, :],
+                                                 fractions=fracs, snr=None)
+    mdkiF = mdkiM.fit(signal_pa)
+    # decimal is set to 1 because of finite number of directions for powder
+    # average calculation
+    assert_almost_equal(mdkiF.msk, 2.4, decimal=1)
+    assert_almost_equal(mdkiF.msd * 1000, Da/3 * 1000, decimal=1)
+    assert_almost_equal(mdkiF.smt2f, 1, decimal=1)
+    assert_almost_equal(mdkiF.smt2di, mdkiF.msd * 3, decimal=1)

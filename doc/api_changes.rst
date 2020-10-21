@@ -5,6 +5,15 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.3.0 changes
+------------------
+
+**Registration**
+
+- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform`  has been renamed `interpolation`.
+- The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform_inverse`  has been renamed `interpolation`.
+
+
 DIPY 1.2.0 changes
 ------------------
 

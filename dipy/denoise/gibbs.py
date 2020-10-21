@@ -1,5 +1,18 @@
 
+from functools import partial
+from multiprocessing import Pool
+
 import numpy as np
+from numpy.lib import NumpyVersion as Version
+import scipy
+
+
+if Version(scipy.__version__) >= Version('1.4.0'):
+    import scipy.fft
+    _fft = scipy.fft
+else:
+    import scipy.fftpack
+    _fft = scipy.fftpack
 
 
 def _image_tv(x, axis=0, n_points=3):
@@ -73,7 +86,9 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     considered in TV calculation can be adjusted using the parameter n_points.
 
     """
-    ssamp = np.linspace(0.02, 0.9, num=45)
+    dtype_float = np.promote_types(x.real.dtype, np.float32)
+
+    ssamp = np.linspace(0.02, 0.9, num=45, dtype=dtype_float)
 
     xs = x.copy() if axis else x.T.copy()
 
@@ -85,20 +100,22 @@ def _gibbs_removal_1d(x, axis=0, n_points=3):
     # Find optimal shift for gibbs removal
     isp = xs.copy()
     isn = xs.copy()
-    sp = np.zeros(xs.shape)
-    sn = np.zeros(xs.shape)
+    sp = np.zeros(xs.shape, dtype=dtype_float)
+    sn = np.zeros(xs.shape, dtype=dtype_float)
     N = xs.shape[1]
-    c = np.fft.fftshift(np.fft.fft2(xs))
-    k = np.linspace(-N/2, N/2-1, num=N)
-    k = (2.0j * np.pi * k) / N
+    c = _fft.fft2(xs)
+    k = _fft.fftfreq(N, 1 / (2.0j * np.pi))
+    k = k.astype(c.dtype, copy=False)
     for s in ssamp:
+        ks = k * s
         # Access positive shift for given s
-        img_p = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(k*s))))
+        img_p = abs(_fft.ifft2(c * np.exp(ks)))
+
         tvsr, tvsl = _image_tv(img_p, axis=1, n_points=n_points)
         tvs_p = np.minimum(tvsr, tvsl)
 
         # Access negative shift for given s
-        img_n = abs(np.fft.ifft2(np.fft.fftshift(c * np.exp(-k*s))))
+        img_n = abs(_fft.ifft2(c * np.exp(-ks)))
         tvsr, tvsl = _image_tv(img_n, axis=1, n_points=n_points)
         tvs_n = np.minimum(tvsr, tvsl)
 
@@ -213,14 +230,14 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
     img_c1 = _gibbs_removal_1d(image, axis=1, n_points=n_points)
     img_c0 = _gibbs_removal_1d(image, axis=0, n_points=n_points)
 
-    C1 = np.fft.fft2(img_c1)
-    C0 = np.fft.fft2(img_c0)
-    imagec = abs(np.fft.ifft2(np.fft.fftshift(C1)*G1 + np.fft.fftshift(C0)*G0))
+    C1 = _fft.fft2(img_c1)
+    C0 = _fft.fft2(img_c0)
+    imagec = abs(_fft.ifft2(_fft.fftshift(C1)*G1 + _fft.fftshift(C0)*G0))
 
     return imagec
 
 
-def gibbs_removal(vol, slice_axis=2, n_points=3):
+def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -233,6 +250,15 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     n_points : int, optional
         Number of neighbour points to access local TV (see note).
         Default is set to 3.
+    inplace : bool, optional
+        If True, the input data is replaced with results. Otherwise, returns
+        a new array.
+        Default is set to True.
+    num_threads : int or None, optional
+        Number of threads. Only applies to 3D or 4D `data` arrays. If None then
+        all available threads will be used. Otherwise, must be a positive
+        integer.
+        Default is set to 1.
 
     Returns
     -------
@@ -258,43 +284,67 @@ def gibbs_removal(vol, slice_axis=2, n_points=3):
     """
     nd = vol.ndim
 
+    # check matrix dimension
+    if nd > 4:
+        raise ValueError("Data have to be a 4D, 3D or 2D matrix")
+    elif nd < 2:
+        raise ValueError("Data is not an image")
+
+    if not isinstance(inplace, bool):
+        raise TypeError("inplace must be a boolean.")
+
+    if (not isinstance(num_threads, int)) and (num_threads is not None):
+        raise TypeError("num_processes must be an int or None.")
+    else:
+        if isinstance(num_threads, int):
+            if num_threads <= 0:
+                raise ValueError("num_processes must be > 0.")
+
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
     if slice_axis > 2:
         raise ValueError("Different slices have to be organized along" +
                          "one of the 3 first matrix dimensions")
 
-    # 2) If this is not 2, swap axes so that different slices are ordered
-    # along axis 2. Note that swapping is not required if data is already a
-    # single image
-    elif slice_axis < 2 and nd > 2:
-        vol = np.swapaxes(vol, slice_axis, 2)
+    # 2) Reorder axis to allow iteration over the first axis
+    elif nd == 3:
+        vol = np.moveaxis(vol, slice_axis, 0)
+    elif nd == 4:
+        vol = np.moveaxis(vol, (slice_axis, 3), (0, 1))
 
-    # check matrix dimension
     if nd == 4:
         inishap = vol.shape
-        vol = vol.reshape((inishap[0], inishap[1], inishap[2] * inishap[3]))
-    elif nd > 4:
-        raise ValueError("Data have to be a 4D, 3D or 2D matrix")
-    elif nd < 2:
-        raise ValueError("Data is not an image")
+        vol = vol.reshape((inishap[0] * inishap[1], inishap[2], inishap[3]))
 
-    # Produce weigthing functions for 2D Gibbs removal
+    # Produce weighting functions for 2D Gibbs removal
     shap = vol.shape
-    G0, G1 = _weights(shap[:2])
+    G0, G1 = _weights(shap[-2:])
+
+    # Copy data if not inplace
+    if not inplace:
+        vol = vol.copy()
 
     # Run Gibbs removal of 2D images
     if nd == 2:
-        vol = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
+        vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        for vi in range(shap[2]):
-            vol[:, :, vi] = _gibbs_removal_2d(vol[:, :, vi], n_points=n_points,
-                                              G0=G0, G1=G1)
+        if num_threads is None:
+            pool = Pool()
+        else:
+            pool = Pool(num_threads)
+
+        partial_func = partial(
+            _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1
+        )
+        vol[:, :, :] = pool.map(partial_func, vol)
+        pool.close()
+        pool.join()
 
     # Reshape data to original format
+    if nd == 3:
+        vol = np.moveaxis(vol, 0, slice_axis)
     if nd == 4:
         vol = vol.reshape(inishap)
-    if slice_axis < 2 and nd > 2:
-        vol = np.swapaxes(vol, slice_axis, 2)
+        vol = np.moveaxis(vol, (0, 1), (slice_axis, 3))
 
     return vol

@@ -314,12 +314,14 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
 
 
 def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
-    """ Simulated Q-space signal with a single tensor.
+    """ Simulate diffusion-weighted signals with a single tensor.
 
     Parameters
     -----------
     gtab : GradientTable
-        Measurement directions.
+        Table with information of b-values and gradient directions g.
+        Note that if gtab has a btens attribute, simulations will be performed
+        according to the given b-tensor B information.
     S0 : double,
         Strength of signal in the presence of no diffusion gradient (also
         called the ``b=0`` value).
@@ -336,7 +338,9 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     Returns
     --------
     S : (N,) ndarray
-        Simulated signal: ``S(q, tau) = S_0 e^(-b g^T R D R.T g)``.
+        Simulated signal:
+            ``S(b, g) = S_0 e^(-b g^T R D R.T g)``, if gtab.tens=None
+            ``S(B) = S_0 e^(-B:D)``, if gtab.tens information is given
 
     References
     ----------
@@ -361,8 +365,12 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     S = np.zeros(len(gradients))
     D = dot(dot(R, np.diag(evals)), R.T)
 
-    for (i, g) in enumerate(gradients):
-        S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
+    if gtab.btens is None:
+        for (i, g) in enumerate(gradients):
+            S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
+    else:
+        for (i, b) in enumerate(gtab.btens):
+            S[i] = S0 * np.exp(- np.sum(b * D))
 
     S = add_noise(S, snr, S0)
 
@@ -376,6 +384,9 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     Parameters
     -----------
     gtab : GradientTable
+        Table with information of b-values and gradient directions.
+        Note that if gtab has a btens attribute, simulations will be performed
+        according to the given b-tensor information.
     mevals : array (K, 3)
         each tensor's eigenvalues in each row
     S0 : float

@@ -8,7 +8,7 @@ jobs:
   pool:
     vmIMage: ${{ parameters.vmImage }}
   variables:
-    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy"
+    DEPENDS: "cython numpy matplotlib h5py nibabel cvxpy tqdm"
     VENV_ARGS: "--python=python"
     INSTALL_TYPE: "setup"
     EXTRA_WHEELS: "https://5cf40426d9f06eb7461d-6fe47d9331aba7cd62fc36c7196769e4.ssl.cf2.rackcdn.com"

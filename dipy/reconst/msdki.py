@@ -3,6 +3,7 @@
 model """
 
 import numpy as np
+import scipy.optimize as opt
 
 from dipy.core.gradients import (check_multi_b, unique_bvals_magnitude,
                                  round_bvals)
@@ -55,6 +56,166 @@ def mean_signal_bvalue(data, gtab, bmag=None):
         msignal[..., bi] = np.mean(data[..., rb == ub[bi]], axis=-1)
         ng[bi] = np.sum(rb == ub[bi])
     return msignal, ng
+
+
+def msk_from_awf(f):
+    """
+    Computes mean signal kurtosis from axonal water fraction estimates of the
+    SMT2 model
+
+    Parameters
+    ----------
+    f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Returns
+    -------
+    msk : ndarray(nub)
+        Mean signal kurtosis (msk)
+
+    Notes
+    -----
+    Computes mean signal kurtosis using equations 17 of [1]_
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    """
+    msk_num = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4
+    msk_den = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4
+    msk = msk_num / msk_den
+
+    return msk
+
+
+def _msk_from_awf_error(f, msk):
+    """ Helper function that calculates the error of a predicted mean signal
+    kurtosis from the axonal water fraction of SMT2 model and a measured
+    mean signal kurtosis
+
+    Parameters
+    ----------
+    f : float
+        Axonal volume fraction estimate.
+    msk : float
+        Measured mean signal kurtosis.
+
+    Return
+    ------
+    error : float
+       Error computed by subtracting msk with fun(f), where fun is the function
+       described in equation 17 of [1]_
+
+    Notes
+    -----
+    This function corresponds to the differential of equations 17 of [1]_
+    """
+    return msk_from_awf(f) - msk
+
+
+def _diff_msk_from_awf(f, msk):
+    """
+    Helper function that calculates differential of function msk_from_awf
+
+    Parameters
+    ----------
+    f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Returns
+    -------
+    dkdf : ndarray(nub)
+        Mean signal kurtosis differential
+    msk : float
+        Measured mean signal kurtosis.
+
+    Notes
+    -----
+    This function corresponds to the differential of equations 17 of [1]_.
+    This function is applicable to both _msk_from_awf and _msk_from_awf_error.
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    """
+    F = 216*f - 504 * f**2 + 504 * f**3 - 180 * f**4  # Numerator
+    G = 135 - 360*f + 420 * f**2 - 240 * f**3 + 60 * f**4  # Denominator
+
+    dF = 216 - 1008 * f + 1512 * f**2 - 720 * f**3  # Num. differential
+    dG = -360 + 840 * f - 720 * f**2 + 240 * f**3  # Den. differential
+
+    return (G * dF - F * dG) / (G ** 2)
+
+
+def awf_from_msk(msk, mask=None):
+    """
+    Computes the axonal water fraction from the mean signal kurtosis
+    assuming the 2-compartmental spherical mean technique model [1]_, [2]_
+
+    Parameters
+    ----------
+    msk : ndarray ([X, Y, Z, ...])
+        Mean signal kurtosis (msk)
+    mask : ndarray, optional
+        A boolean array used to mark the coordinates in the data that should be
+        analyzed that has the same shape of the msdki parameters
+
+    Returns
+    -------
+    smt2f : ndarray ([X, Y, Z, ...])
+        ndarray containing the axonal volume fraction estimate.
+
+    Notes
+    -----
+    Computes the axonal water fraction from the mean signal kurtosis
+    MSK using equation 17 of [1]_
+
+    References
+    ----------
+    .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+           anisotropy misestimation in spherical‐mean single diffusion
+           encoding MRI. Magnetic Resonance in Medicine (In press).
+           doi: 10.1002/mrm.27606
+    .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+           microscopic diffusion imaging. Neuroimage 139:346–359.
+    """
+    awf = np.zeros(msk.shape)
+
+    # Prepare mask
+    if mask is None:
+        mask = np.ones(msk.shape, dtype=bool)
+    else:
+        if mask.shape != msk.shape:
+            raise ValueError("Mask is not the same shape as data.")
+        mask = np.array(mask, dtype=bool, copy=False)
+
+    # looping voxels
+    index = ndindex(mask.shape)
+    for v in index:
+        # Skip if out of mask
+        if not mask[v]:
+            continue
+
+        if msk[v] > 2.4:
+            awf[v] = 1
+        elif msk[v] < 0:
+            awf[v] = 0
+        else:
+            if np.isnan(msk[v]):
+                awf[v] = np.nan
+            else:
+                mski = msk[v]
+                fini = mski / 2.4  # Initial guess based on linear assumption
+                awf[v] = opt.fsolve(_msk_from_awf_error, fini, args=(mski,),
+                                    fprime=_diff_msk_from_awf, col_deriv=True)
+
+    return awf
 
 
 def msdki_prediction(msdki_params, gtab, S0=1.0):
@@ -283,6 +444,91 @@ class MeanDiffusionKurtosisFit(object):
                https://doi.org/10.17863/CAM.29356
         """
         return self.model_params[..., 1]
+
+    @auto_attr
+    def smt2f(self):
+        r"""
+        Computes the axonal water fraction from the mean signal kurtosis
+        assuming the 2-compartmental spherical mean technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2f : ndarray
+            Axonal volume fraction calculated from MSK.
+
+        Notes
+        -----
+        Computes the axonal water fraction from the mean signal kurtosis
+        MSK using equation 17 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        return awf_from_msk(self.msk)
+
+    @auto_attr
+    def smt2di(self):
+        r"""
+        Computes the intrisic diffusivity from the mean signal diffusional
+        kurtosis parameters assuming the 2-compartmental spherical mean
+        technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2di : ndarray
+            Intrisic diffusivity computed by converting MSDKI to SMT2.
+
+        Notes
+        -----
+        Computes the intrinsic diffusivity using equation 16 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        return 3 * self.msd / (1 + 2 * (1 - self.smt2f)**2)
+
+    @auto_attr
+    def smt2uFA(self):
+        r"""
+        Computes the microscopic fractional anisotropy from the mean signal
+        diffusional kurtosis parameters assuming the 2-compartmental spherical
+        mean technique model [1]_, [2]_
+
+        Returns
+        ---------
+        smt2uFA : ndarray
+            Microscopic fractional anisotropy computed by converting MSDKI to
+            SMT2.
+
+        Notes
+        -----
+        Computes the intrinsic diffusivity using equation 10 of [1]_
+
+        References
+        ----------
+        .. [1] Neto Henriques R, Jespersen SN, Shemesh N (2019). Microscopic
+               anisotropy misestimation in spherical‐mean single diffusion
+               encoding MRI. Magnetic Resonance in Medicine (In press).
+               doi: 10.1002/mrm.27606
+        .. [2] Kaden E, Kelm ND, Carson RP, et al. (2016) Multi‐compartment
+               microscopic diffusion imaging. Neuroimage 139:346–359.
+        """
+        fe = (1 - self.smt2f)
+        num = 3 * (1 - 2 * fe ** 2 + fe ** 3)
+        den = 3 + 2 * fe ** 3 + 4 * fe ** 4
+        return np.sqrt(num/den)
 
     def predict(self, gtab, S0=1.):
         r"""

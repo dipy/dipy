@@ -304,7 +304,8 @@ diffusion-weighted signals. The details on how to compute
 the kurtosis from powder-average signals in dipy are described in follow the
 tutorial (:ref:`example-reconst-msdki`).
 
-## Mean kurtosis tensor and kurtosis fractional anisotropy
+Mean kurtosis tensor and kurtosis fractional anisotropy
+=======================================================
 
 As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
 depends on the information of both diffusion and kurtosis tensor. DKI measures
