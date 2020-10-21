@@ -115,12 +115,12 @@ def sh_to_rh(r_sh, m, n):
     return r_rh
 
 
-def gen_dirac(m, n, theta, phi):
+def gen_dirac(m, n, theta, phi, legacy=True):
     """ Generate Dirac delta function orientated in (theta, phi) on the sphere
 
     The spherical harmonics (SH) representation of this Dirac is returned as
-    coefficients to spherical harmonic functions produced by
-    `shm.real_sph_harm`.
+    coefficients to spherical harmonic functions produced from ``descoteaux07``
+    basis.
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def gen_dirac(m, n, theta, phi):
 
     See Also
     --------
-    shm.real_sph_harm, shm.real_sym_sh_basis
+    shm.real_sh_descoteaux_from_index, shm.real_sh_descoteaux
 
     Returns
     -------
@@ -146,7 +146,7 @@ def gen_dirac(m, n, theta, phi):
         `(m + 2) * (m + 1) / 2`.
 
     """
-    return real_sph_harm(m, n, theta, phi)
+    return real_sh_descoteaux_from_index(m, n, theta, phi, legacy=legacy)
 
 
 def spherical_harmonics(m, n, theta, phi, use_scipy=True):
@@ -202,7 +202,7 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
 @deprecate_with_version('dipy.reconst.shm.real_sph_harm is deprecated, '
                         'Please use '
                         'dipy.reconst.shm.real_sh_descoteaux_from_index '
-                        'instead')
+                        'instead', since='1.3', until='2.0')
 def real_sph_harm(m, n, theta, phi):
     """ Compute real spherical harmonics.
 
@@ -238,7 +238,7 @@ def real_sph_harm(m, n, theta, phi):
     return real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True)
 
 
-def real_sh_tournier_from_index(m, n, theta, phi, legacy=False):
+def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_n$
     is defined to be:
@@ -295,7 +295,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=False):
     return real_sh
 
 
-def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=False):
+def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_n$ is defined to be:
 
@@ -350,7 +350,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=False):
 
 def real_sh_tournier(sh_order, theta, phi,
                      full_basis=False,
-                     legacy=False):
+                     legacy=True):
     """ Compute real spherical harmonics as initially defined in Tournier
     2007 [1]_ then updated in MRtrix3 [2]_, where the real harmonic $Y^m_n$
     is defined to be:
@@ -409,7 +409,7 @@ def real_sh_tournier(sh_order, theta, phi,
 
 def real_sh_descoteaux(sh_order, theta, phi,
                        full_basis=False,
-                       legacy=False):
+                       legacy=True):
     """ Compute real spherical harmonics as in Descoteaux et al. 2007 [1]_,
     where the real harmonic $Y^m_n$ is defined to be:
 
@@ -463,7 +463,8 @@ def real_sh_descoteaux(sh_order, theta, phi,
 
 
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtix is deprecated, '
-                        'Please use dipy.reconst.shm.real_sh_tournier instead')
+                        'Please use dipy.reconst.shm.real_sh_tournier instead',
+                        since='1.3', until='2.0')
 def real_sym_sh_mrtrix(sh_order, theta, phi):
     """
     Compute real symmetric spherical harmonics as in Tournier 2007 [2]_, where
@@ -513,7 +514,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
 
 @deprecate_with_version('dipy.reconst.shm.real_sym_sh_basis is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_descoteaux '
-                        'instead')
+                        'instead', since='1.3', until='2.0')
 def real_sym_sh_basis(sh_order, theta, phi):
     """Samples a real symmetric spherical harmonic basis at point on the sphere
 
@@ -1104,7 +1105,7 @@ class ResidualBootstrapWrapper(object):
 
 
 def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, full_basis=False,
-             legacy=False, smooth=0.0):
+             legacy=True, smooth=0.0):
     """Spherical function to spherical harmonics (SH).
 
     Parameters
@@ -1168,7 +1169,7 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, full_basis=False,
 
 
 def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
-             full_basis=False, legacy=False):
+             full_basis=False, legacy=True):
     """Spherical harmonics (SH) to spherical function (SF).
 
     Parameters
@@ -1228,7 +1229,7 @@ def sh_to_sf(sh, sphere, sh_order=4, basis_type=None,
 
 
 def sh_to_sf_matrix(sphere, sh_order=4, basis_type=None, full_basis=False,
-                    legacy=False, return_inv=True, smooth=0):
+                    legacy=True, return_inv=True, smooth=0):
     """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 

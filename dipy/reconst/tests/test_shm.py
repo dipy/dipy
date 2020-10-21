@@ -624,14 +624,15 @@ def test_convert_sh_from_legacy():
 
     sh_coeffs = sf_to_sh(odf, hemisphere, 8, legacy=True)
     converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'descoteaux07')
-    expected_coeffs = sf_to_sh(odf, hemisphere, 8)
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8, legacy=False)
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
 
     sh_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07',
                          legacy=True)
     converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'tournier07')
-    expected_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07')
+    expected_coeffs = sf_to_sh(odf, hemisphere, 8,
+                               basis_type='tournier07', legacy=False)
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
 
@@ -642,7 +643,7 @@ def test_convert_sh_from_legacy():
     converted_coeffs = convert_sh_from_legacy(sh_coeffs, 'tournier07',
                                               full_basis=True)
     expected_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
-                               full_basis=True)
+                               full_basis=True, legacy=False)
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
     assert_raises(ValueError, convert_sh_from_legacy, sh_coeffs, '', True)
@@ -654,13 +655,14 @@ def test_convert_sh_to_legacy():
     angles = [(0, 0), (60, 0)]
     odf = multi_tensor_odf(hemisphere.vertices, mevals, angles, [50, 50])
 
-    sh_coeffs = sf_to_sh(odf, hemisphere, 8)
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8, legacy=False)
     converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'descoteaux07')
     expected_coeffs = sf_to_sh(odf, hemisphere, 8, legacy=True)
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
 
-    sh_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07')
+    sh_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07',
+                         legacy=False)
     converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'tournier07')
     expected_coeffs = sf_to_sh(odf, hemisphere, 8, basis_type='tournier07',
                                legacy=True)
@@ -670,7 +672,7 @@ def test_convert_sh_to_legacy():
     # 2D case
     odfs = np.array([odf, odf])
     sh_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
-                         full_basis=True)
+                         full_basis=True, legacy=False)
     converted_coeffs = convert_sh_to_legacy(sh_coeffs, 'tournier07',
                                             full_basis=True)
     expected_coeffs = sf_to_sh(odfs, hemisphere, 8, basis_type='tournier07',
