@@ -16,20 +16,8 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.2.0** is now available. New features include:
+**DIPY 1.3.0** is now available. New features include:
 
-- New command line interfaces for group analysis: BUAN.
-- Added b-tensor encoding for gradient table.
-- Better support for single shell or multi-shell response functions.
-- Stats module refactored.
-- Numpy minimum version is 1.2.0.
-- Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
-- Added multiple tutorials for DIPY command line interfaces.
-- Updated SH basis convention.
-- Improved performance of tissue classification.
-- Fixed a memory overlap bug (multi_median).
-- Large documentation update (typography / references).
-- Closed 256 issues and merged 94 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -38,9 +26,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.3.0 <release_notes/release1.3>` released October , 2020.
 - :doc:`DIPY 1.2.0 <release_notes/release1.2>` released September 9, 2020.
 - :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
-- :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
 
 
 See some of our :ref:`Past Announcements <old_news>`
