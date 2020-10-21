@@ -1,10 +1,10 @@
-
+import warnings
 import os.path as osp
 from nibabel.tmpdirs import InTemporaryDirectory
 
 import numpy as np
 import numpy.testing as npt
-
+from dipy.testing import assert_true
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -26,6 +26,8 @@ def test_read_bvals_bvecs():
     # Test for error raising with unknown file formats:
     nan_fbvecs = osp.splitext(fbvecs)[0] + '.nan'  # Nonsense extension
     npt.assert_raises(ValueError, read_bvals_bvecs, fbvals, nan_fbvecs)
+    npt.assert_raises(ValueError, read_bvals_bvecs, bvals, nan_fbvecs)
+    npt.assert_raises(ValueError, read_bvals_bvecs, fbvals, bvecs)
 
     # Test for error raising with incorrect file-contents:
 
@@ -43,7 +45,6 @@ def test_read_bvals_bvecs():
         # These bvecs are saved as one long array:
         new_bvecs2 = np.ravel(bvecs)
         with open('test_bv_file2.npy', 'w') as bv_file2:
-            print('FILENAME:', bv_file2.name)
             np.save(bv_file2.name, new_bvecs2)
         npt.assert_raises(IOError, read_bvals_bvecs, fbvals, 'test_bv_file2.npy')
 
@@ -103,7 +104,29 @@ def test_read_bvals_bvecs():
         npt.assert_array_equal(ans, bvecs_3)
         npt.assert_array_equal(ans, bvecs_4)
 
+        bv_two_volume = 'bv_two_volume.txt'
+        with open(bv_two_volume, 'w') as f:
+            f.write("0 0 0\n0 0 0\n")
+        bval_two_volume = 'bval_two_volume.txt'
+        with open(bval_two_volume, 'w') as f:
+            f.write("0\n0\n")
+        bval_5, bvecs_5 = read_bvals_bvecs(bval_two_volume,
+                                           bv_two_volume)
+        npt.assert_array_equal(bvecs_5, np.zeros((2, 3)))
+        npt.assert_array_equal(bval_5, np.zeros(2))
 
-if __name__ == '__main__':
-    from numpy.testing import run_module_suite
-    run_module_suite()
+        bv_single_volume = 'test_single_volume.txt'
+        with open(bv_single_volume, 'w') as f:
+            f.write("0 0 0\n")
+        bval_single_volume = 'test_single_volume_2.txt'
+        with open(bval_single_volume, 'w') as f:
+            f.write("0\n")
+
+        with warnings.catch_warnings(record=True) as w:
+            bval_5, bvecs_5 = read_bvals_bvecs(bval_single_volume,
+                                               bv_single_volume)
+            npt.assert_array_equal(bvecs_5, np.zeros((1, 3)))
+            npt.assert_array_equal(bval_5, np.zeros(1))
+            assert_true(len(w) == 1)
+            assert_true(issubclass(w[0].category, UserWarning))
+            assert_true("Detected only 1 direction on" in str(w[0].message))
