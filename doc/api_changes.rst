@@ -13,6 +13,9 @@ DIPY 1.3.0 changes
 - The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform`  has been renamed `interpolation`.
 - The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform_inverse`  has been renamed `interpolation`.
 
+**Segmentation**
+
+- The tissue segmentation method ``dipy.segment.TissueClassifierHMRF`` now checks the tolerance-based stopping criterion at every iteration (previously it was only checked every 10th iteration). This may result in earlier termination of iterations than with previous releases.
 
 DIPY 1.2.0 changes
 ------------------
