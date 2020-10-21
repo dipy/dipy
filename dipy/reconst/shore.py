@@ -1,6 +1,7 @@
 
 from warnings import warn
 from math import factorial
+from distutils.version import LooseVersion
 
 import numpy as np
 
@@ -208,7 +209,6 @@ class ShoreModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-
         Lshore = l_shore(self.radial_order)
         Nshore = n_shore(self.radial_order)
         # Generate the SHORE basis
@@ -245,29 +245,36 @@ class ShoreModel(Cache):
             M0 = M[self.gtab.b0s_mask, :]
 
             c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
+            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                design_matrix = cvxpy.Constant(M) * c
+            else:
+                design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                cvxpy.sum_squares(design_matrix - data_norm) +
                 self.lambdaN * cvxpy.quad_form(c, Nshore) +
                 self.lambdaL * cvxpy.quad_form(c, Lshore)
             )
 
             if not self.positive_constraint:
-                constraints = [M0[0] * c == 1]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [M0[0] * c == 1]
+                else:
+                    constraints = [M0[0] @ c == 1]
             else:
                 lg = int(np.floor(self.pos_grid ** 3 / 2))
                 v, t = create_rspace(self.pos_grid, self.pos_radius)
-                psi = self.cache_get(
-                    'shore_matrix_positive_constraint',
-                    key=(self.pos_grid, self.pos_radius)
-                )
+                psi = self.cache_get('shore_matrix_positive_constraint',
+                                     key=(self.pos_grid, self.pos_radius))
                 if psi is None:
                     psi = shore_matrix_pdf(
                         self.radial_order, self.zeta, t[:lg])
                     self.cache_set(
                         'shore_matrix_positive_constraint',
                         (self.pos_grid, self.pos_radius), psi)
-                constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
+                else:
+                    constraints = [(M0[0] @ c) == 1., (psi @ c) >= 1e-3]
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver)

@@ -575,7 +575,3 @@ def test_visualise_gradient_table_G_Delta_rainbow():
     gtab_4d.small_delta[4] += 0.001  # so now the gtab has multiple small_delta
     assert_raises(ValueError,
                   qtdmri.visualise_gradient_table_G_Delta_rainbow, gtab_4d)
-
-
-if __name__ == '__main__':
-    run_module_suite()

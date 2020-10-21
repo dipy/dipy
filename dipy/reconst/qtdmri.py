@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+from distutils.version import LooseVersion
 from dipy.reconst.cache import Cache
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -349,15 +350,20 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
+            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                design_matrix = cvxpy.Constant(M) * c
+            else:
+                design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                cvxpy.sum_squares(design_matrix - data_norm) +
                 lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                constraints = [M0[0] * c == 1,
-                               M0[-1] * c == 1]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
+                else:
+                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -374,15 +380,20 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
+            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                design_matrix = cvxpy.Constant(M) * c
+            else:
+                design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                cvxpy.sum_squares(design_matrix - data_norm) +
                 alpha * cvxpy.norm1(c)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                constraints = [M0[0] * c == 1,
-                               M0[-1] * c == 1]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
+                else:
+                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -420,16 +431,21 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M)
+            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                design_matrix = cvxpy.Constant(M) * c
+            else:
+                design_matrix = cvxpy.Constant(M) @ c
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data_norm) +
+                cvxpy.sum_squares(design_matrix - data_norm) +
                 alpha * cvxpy.norm1(c) +
                 lopt * cvxpy.quad_form(c, laplacian_matrix)
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                constraints = [M0[0] * c == 1,
-                               M0[-1] * c == 1]
+                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                    constraints = [M0[0] * c == 1, M0[-1] * c == 1]
+                else:
+                    constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
             else:
                 constraints = []
             prob = cvxpy.Problem(objective, constraints)
@@ -1964,17 +1980,20 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
         while cv_old >= cv_new and counter < weight_array.shape[0]:
             alpha = weight_array[counter]
             c = cvxpy.Variable(M.shape[1])
-            design_matrix = cvxpy.Constant(M[test])
-            design_matrix_to_recover = cvxpy.Constant(M[sub])
+            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                design_matrix = cvxpy.Constant(M[test]) * c
+                recovered_signal = cvxpy.Constant(M[sub]) * c
+            else:
+                design_matrix = cvxpy.Constant(M[test]) @ c
+                recovered_signal = cvxpy.Constant(M[sub]) @ c
             data = cvxpy.Constant(E[test])
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data) +
+                cvxpy.sum_squares(design_matrix - data) +
                 alpha * cvxpy.norm1(c)
             )
             constraints = []
             prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="ECOS", verbose=False)
-            recovered_signal = design_matrix_to_recover * c
             errorlist[i, counter] = np.mean(
                 (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
             cv_old = errorlist[i, counter - 1]
@@ -2023,20 +2042,24 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         cv_old = errorlist[i, 0]
         cv_new = errorlist[i, 0]
         c = cvxpy.Variable(M.shape[1])
-        design_matrix = cvxpy.Constant(M[test])
-        design_matrix_to_recover = cvxpy.Constant(M[sub])
+        if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            design_matrix = cvxpy.Constant(M[test]) * c
+            recovered_signal = cvxpy.Constant(M[sub]) * c
+        else:
+            design_matrix = cvxpy.Constant(M[test]) @ c
+            recovered_signal = cvxpy.Constant(M[sub]) @ c
+
         data = cvxpy.Constant(E[test])
         constraints = []
         while cv_old >= cv_new and counter < weight_array.shape[0]:
             alpha = weight_array[counter]
             objective = cvxpy.Minimize(
-                cvxpy.sum_squares(design_matrix * c - data) +
+                cvxpy.sum_squares(design_matrix - data) +
                 alpha * cvxpy.norm1(c) +
                 lopt * cvxpy.quad_form(c, L)
             )
             prob = cvxpy.Problem(objective, constraints)
             prob.solve(solver="ECOS", verbose=False)
-            recovered_signal = design_matrix_to_recover * c
             errorlist[i, counter] = np.mean(
                 (E[sub] - np.asarray(recovered_signal.value).squeeze()) ** 2)
             cv_old = errorlist[i, counter - 1]

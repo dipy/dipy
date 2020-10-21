@@ -320,7 +320,3 @@ def test_auto_response_msmt():
         npt.assert_array_equal(response_auto_wm, response_from_mask_wm)
         npt.assert_array_equal(response_auto_gm, response_from_mask_gm)
         npt.assert_array_equal(response_auto_csf, response_from_mask_csf)
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()
