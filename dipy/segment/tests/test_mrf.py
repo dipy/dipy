@@ -154,7 +154,7 @@ def test_grayscale_iter():
         image_gauss = image
 
     final_segmentation = np.empty_like(image)
-    seg_init = initial_segmentation.copy()
+    seg_init = initial_segmentation
     energies = []
 
     for i in range(max_iter):
@@ -215,9 +215,9 @@ def test_grayscale_iter():
         print(energy[energy > -np.inf].sum())
         energies.append(energy[energy > -np.inf].sum())
 
-        initial_segmentation = final_segmentation.copy()
-        mu = mu_upd.copy()
-        sigmasq = sigmasq_upd.copy()
+        initial_segmentation = final_segmentation
+        mu = mu_upd
+        sigmasq = sigmasq_upd
 
     npt.assert_(energies[-1] < energies[0])
 
@@ -244,7 +244,7 @@ def test_square_iter():
     npt.assert_(sigmasq[3] >= 0.0)
 
     final_segmentation = np.empty_like(square_gauss)
-    seg_init = initial_segmentation.copy()
+    seg_init = initial_segmentation
     energies = []
 
     for i in range(max_iter):
@@ -309,9 +309,9 @@ def test_square_iter():
 
         energies.append(energy[energy > -np.inf].sum())
 
-        initial_segmentation = final_segmentation.copy()
-        mu = mu_upd.copy()
-        sigmasq = sigmasq_upd.copy()
+        initial_segmentation = final_segmentation
+        mu = mu_upd
+        sigmasq = sigmasq_upd
 
     difference_map = np.abs(seg_init - final_segmentation)
     npt.assert_(np.abs(np.sum(difference_map)) == 0.0)
@@ -322,7 +322,7 @@ def test_icm_square():
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    initial_segmentation = square.copy()
+    initial_segmentation = square
 
     mu, sigma = com.seg_stats(square_1, initial_segmentation,
                               nclasses)
@@ -351,10 +351,10 @@ def test_icm_square():
 
         final_segmentation_1, energy_1 = icm.icm_ising(negll, beta,
                                                        initial_segmentation)
-        initial_segmentation = final_segmentation_1.copy()
+        initial_segmentation = final_segmentation_1
 
     beta = 2
-    initial_segmentation = square.copy()
+    initial_segmentation = square
 
     for j in range(max_iter):
 
@@ -364,7 +364,7 @@ def test_icm_square():
 
         final_segmentation_2, energy_2 = icm.icm_ising(negll, beta,
                                                        initial_segmentation)
-        initial_segmentation = final_segmentation_2.copy()
+        initial_segmentation = final_segmentation_2
 
     difference_map = np.abs(final_segmentation_1 - final_segmentation_2)
     npt.assert_(np.abs(np.sum(difference_map)) != 0)
