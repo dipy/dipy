@@ -49,7 +49,7 @@ to recover the ODF, while Tournier *et al.* [2]_ use the Spherical Deconvolution
 
 Several modified SH bases have been proposed in the diffusion imaging literature
 for the computation of the ODF. DIPY implements two of these in the 
-:mod:`~dipy.reconst.shm` module set. Below are the formal definitions taken
+:mod:`~dipy.reconst.shm` module. Below are the formal definitions taken
 directly from the literature.
 
 - The basis proposed by Descoteaux *et al.* [1]_:
@@ -123,7 +123,7 @@ However, the omission of the $\sqrt{2}$ factor seen in the basis from Descoteaux
 basis uses a new basis including the normalization factor.
 
 Since DIPY 1.3, the ``descoteaux07`` and ``tournier07`` SH bases have been
-updated in order to agree with the litterature and the latest MRtrix3
+updated in order to agree with the literature and the latest MRtrix3
 implementation. While previous bases are still available as *legacy* bases, 
 the ``descoteaux07`` and ``tournier07`` bases now default to:
 
@@ -147,7 +147,9 @@ for the ``descoteaux07`` basis and
      \sqrt{2} \Re(Y_{l}^m(\theta, \phi)) & 0 < m \leq l
      \end{cases}
 
-for the ``tournier07`` basis.
+for the ``tournier07`` basis. Both bases are very similar, with their only
+difference being the sign of $m$ for which the imaginary and real parts of
+the spherical harmonic $Y_{l}^m$ are used.
 
 In practice, a maximum order $k$ is used to truncate the SH series. By
 only taking into account even order SH functions, the above bases can be used
