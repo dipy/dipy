@@ -183,9 +183,14 @@ def test_multi_shell_fiber_response():
                                               wm_response,
                                               gm_response,
                                               csf_response)
-        npt.assert_(issubclass(w[0].category, UserWarning))
+        # Test that the number of warnings raised is greater than 1, with
+        # deprecation warnings being raised from using legacy SH bases as well
+        # as a warning from multi_shell_fiber_response
+        npt.assert_(len(w) > 1)
+        # The last warning in list is the one from multi_shell_fiber_response
+        npt.assert_(issubclass(w[-1].category, UserWarning))
         npt.assert_("""No b0 given. Proceeding either way.""" in
-                    str(w[0].message))
+                    str(w[-1].message))
         npt.assert_equal(response.response.shape, (3, 7))
 
 
