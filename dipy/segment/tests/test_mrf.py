@@ -61,10 +61,8 @@ def test_grayscale_image():
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    mu, sigma = com.initialize_param_uniform(image, nclasses)
-    sigmasq = sigma ** 2
+    mu, sigmasq = com.initialize_param_uniform(image, nclasses)
     npt.assert_array_almost_equal(mu, np.array([0., 0.25, 0.5, 0.75]))
-    npt.assert_array_almost_equal(sigma, np.array([1.0, 1.0, 1.0, 1.0]))
     npt.assert_array_almost_equal(sigmasq, np.array([1.0, 1.0, 1.0, 1.0]))
 
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
@@ -132,15 +130,13 @@ def test_grayscale_iter():
     com = ConstantObservationModel()
     icm = IteratedConditionalModes()
 
-    mu, sigma = com.initialize_param_uniform(image, nclasses)
-    sigmasq = sigma ** 2
+    mu, sigmasq = com.initialize_param_uniform(image, nclasses)
     neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
     initial_segmentation = icm.initialize_maximum_likelihood(neglogl)
     npt.assert_(initial_segmentation.max() == nclasses - 1)
     npt.assert_(initial_segmentation.min() == 0)
 
-    mu, sigma = com.seg_stats(image, initial_segmentation, nclasses)
-    sigmasq = sigma ** 2
+    mu, sigmasq = com.seg_stats(image, initial_segmentation, nclasses)
     npt.assert_(mu[0] >= 0.0)
     npt.assert_(mu[1] >= 0.0)
     npt.assert_(mu[2] >= 0.0)
@@ -236,9 +232,8 @@ def test_square_iter():
 
     initial_segmentation = square
 
-    mu, sigma = com.seg_stats(square_gauss, initial_segmentation,
-                              nclasses)
-    sigmasq = sigma ** 2
+    mu, sigmasq = com.seg_stats(square_gauss, initial_segmentation,
+                                nclasses)
     npt.assert_(mu[0] >= 0.0)
     npt.assert_(mu[1] >= 0.0)
     npt.assert_(mu[2] >= 0.0)
