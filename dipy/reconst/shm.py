@@ -280,7 +280,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
            framework for medical image processing and visualisation.
            NeuroImage. 2019 Nov 15;202:116-137.
     """
-    # In the case where m < 0, Tournier basis consider |m|
+    # In the m < 0 case, Tournier basis considers |m|
     sh = spherical_harmonics(np.abs(m), n, phi, theta)
     real_sh = np.where(m < 0, sh.imag, sh.real)
 
