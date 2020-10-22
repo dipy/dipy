@@ -83,7 +83,3 @@ def compute_e0(shorefit):
                       gamma(n + 1.5))) ** 0.5))
 
     return signal_0
-
-
-if __name__ == '__main__':
-    run_module_suite()
