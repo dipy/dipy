@@ -695,7 +695,6 @@ def _gfa_sh(coef, sh0_index=0):
         The coefficients, using a normalized sh basis, that represent each odf.
     sh0_index : int, optional
         The index of the coefficient associated with the 0th order sh harmonic.
-        Default: 0
 
     Returns
     -------
@@ -881,7 +880,6 @@ class SphHarmFit(OdfFit):
 
         S0 : float array
            The mean non-diffusion-weighted signal in each voxel.
-           Default: 1.0 in all voxels
         """
         if not hasattr(self.model, 'predict'):
             msg = "This model does not have prediction implemented yet"
@@ -1363,12 +1361,11 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
         A ndarray where the last dimension is the
         SH coefficients estimates for that voxel.
     norm_factor: float, optional
-        The value to normalize the ap values. Default is 10^-5.
+        The value to normalize the ap values.
     power : int, optional
-        The degree to which power maps are calculated. Default: 2.
+        The degree to which power maps are calculated.
     non_negative: bool, optional
         Whether to rectify the resulting map to be non-negative.
-        Default: True.
 
     Returns
     -------
@@ -1531,7 +1528,7 @@ def convert_sh_to_legacy(sh_coeffs, sh_basis, full_basis=False):
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis.
     full_basis: bool, optional
         True if the input SH basis includes both even and odd
-        order SH functions. Default: False
+        order SH functions.
 
     Returns
     -------
