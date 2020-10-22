@@ -2029,14 +2029,24 @@ def design_matrix(gtab, dtype=None):
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
-    B = np.zeros((gtab.gradients.shape[0], 7))
-    B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
-    B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
-    B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
-    B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
-    B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
-    B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
-    B[:, 6] = np.ones(gtab.gradients.shape[0])
+    if gtab.btens is None:
+        B = np.zeros((gtab.gradients.shape[0], 7))
+        B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
+        B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
+        B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
+        B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
+        B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
+        B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
+        B[:, 6] = np.ones(gtab.gradients.shape[0])
+    else:
+        B = np.zeros((gtab.gradients.shape[0], 7))
+        B[:, 0] = gtab.btens[:, 0, 0]   # Bxx
+        B[:, 1] = gtab.btens[:, 0, 1] * 2  # Bxy
+        B[:, 2] = gtab.btens[:, 1, 1]   # Byy
+        B[:, 3] = gtab.btens[:, 0, 2] * 2  # Bxz
+        B[:, 4] = gtab.btens[:, 1, 2] * 2  # Byz
+        B[:, 5] = gtab.btens[:, 2, 2]   # Bzz
+        B[:, 6] = np.ones(gtab.gradients.shape[0])
 
     return -B
 
