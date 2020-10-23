@@ -64,105 +64,76 @@ class TissueClassifierHMRF(object):
         if image.max() > 1:
             image = np.interp(image, [0, image.max()], [0.0, 1.0])
 
-        mu, sigma = com.initialize_param_uniform(image, nclasses)
+        mu, sigmasq = com.initialize_param_uniform(image, nclasses)
         p = np.argsort(mu)
         mu = mu[p]
-        sigma = sigma[p]
-        sigmasq = sigma ** 2
+        sigma = sigmasq[p]
 
         neglogl = com.negloglikelihood(image, mu, sigmasq, nclasses)
         seg_init = icm.initialize_maximum_likelihood(neglogl)
 
-        mu, sigma = com.seg_stats(image, seg_init, nclasses)
-        sigmasq = sigma ** 2
+        mu, sigmasq = com.seg_stats(image, seg_init, nclasses)
 
         zero = np.zeros_like(image) + 0.001
         zero_noise = add_noise(zero, 10000, 1, noise_type='gaussian')
         image_gauss = np.where(image == 0, zero_noise, image)
 
         final_segmentation = np.empty_like(image)
-        initial_segmentation = seg_init.copy()
+        initial_segmentation = seg_init
 
-        if max_iter is not None and tolerance is None:
+        allow_break = max_iter is None or tolerance is not None
 
-            for i in range(max_iter):
-
-                if self.verbose:
-                    print('>> Iteration: ' + str(i))
-
-                PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
-                PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
-
-                mu_upd, sigmasq_upd = com.update_param(image_gauss,
-                                                       PVE, mu, nclasses)
-                ind = np.argsort(mu_upd)
-                mu_upd = mu_upd[ind]
-                sigmasq_upd = sigmasq_upd[ind]
-
-                negll = com.negloglikelihood(image_gauss,
-                                             mu_upd, sigmasq_upd, nclasses)
-                final_segmentation, energy = icm.icm_ising(negll,
-                                                           beta, seg_init)
-
-                if self.save_history:
-                    self.segmentations.append(final_segmentation)
-                    self.pves.append(PVE)
-                    self.energies.append(energy)
-                    self.energies_sum.append(energy[energy > -np.inf].sum())
-
-                seg_init = final_segmentation.copy()
-                mu = mu_upd.copy()
-                sigmasq = sigmasq_upd.copy()
-
-        else:
+        if max_iter is None:
             max_iter = 100
 
-            if tolerance is None:
-                tolerance = 1e-05
-            for i in range(max_iter):
+        if tolerance is None:
+            tolerance = 1e-05
 
-                if self.verbose:
-                    print('>> Iteration: ' + str(i))
+        for i in range(max_iter):
 
-                PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
-                PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
+            if self.verbose:
+                print('>> Iteration: ' + str(i))
 
-                mu_upd, sigmasq_upd = com.update_param(image_gauss,
-                                                       PVE, mu, nclasses)
-                ind = np.argsort(mu_upd)
-                mu_upd = mu_upd[ind]
-                sigmasq_upd = sigmasq_upd[ind]
+            PLN = icm.prob_neighborhood(seg_init, beta, nclasses)
+            PVE = com.prob_image(image_gauss, nclasses, mu, sigmasq, PLN)
 
-                negll = com.negloglikelihood(image_gauss,
-                                             mu_upd, sigmasq_upd, nclasses)
-                final_segmentation, energy = icm.icm_ising(negll,
-                                                           beta, seg_init)
+            mu_upd, sigmasq_upd = com.update_param(image_gauss,
+                                                   PVE, mu, nclasses)
+            ind = np.argsort(mu_upd)
+            mu_upd = mu_upd[ind]
+            sigmasq_upd = sigmasq_upd[ind]
+
+            negll = com.negloglikelihood(image_gauss,
+                                         mu_upd, sigmasq_upd, nclasses)
+            final_segmentation, energy = icm.icm_ising(negll,
+                                                       beta, seg_init)
+
+            if allow_break:
                 energy_sum.append(energy[energy > -np.inf].sum())
 
-                if self.save_history:
-                    self.segmentations.append(final_segmentation)
-                    self.pves.append(PVE)
-                    self.energies.append(energy)
+            if self.save_history:
+                self.segmentations.append(final_segmentation)
+                self.pves.append(PVE)
+                self.energies.append(energy)
+                if allow_break:
+                    self.energies_sum.append(energy_sum[-1])
+                else:
                     self.energies_sum.append(energy[energy > -np.inf].sum())
 
+            if allow_break and i > 5:
 
-                if i % 10 == 0 and i != 0:
+                e_sum = np.asarray(energy_sum)
+                tol = tolerance * (np.amax(e_sum) - np.amin(e_sum))
 
-                    tol = tolerance * (np.amax(energy_sum) -
-                                       np.amin(energy_sum))
+                e_end = e_sum[e_sum.size - 5:]
+                test_dist = np.abs(np.amax(e_end) - np.amin(e_end))
 
-                    test_dist = np.absolute(np.amax(
-                                energy_sum[np.size(energy_sum) - 5: i]) -
-                                np.amin(energy_sum[np.size(energy_sum) - 5: i])
-                                )
+                if test_dist < tol:
+                    break
 
-                    if test_dist < tol:
-
-                        break
-
-                seg_init = final_segmentation.copy()
-                mu = mu_upd.copy()
-                sigmasq = sigmasq_upd.copy()
+            seg_init = final_segmentation
+            mu = mu_upd
+            sigmasq = sigmasq_upd
 
         PVE = PVE[..., 1:]
 

@@ -80,9 +80,9 @@ class ConstantObservationModel(object):
 
         Returns
         -------
-        mu, std : ndarrays
+        mu, var : ndarrays
             1 x nclasses dimension
-            Mean and standard deviation for each class
+            Mean and variance for each class
 
         """
         cdef:
@@ -93,7 +93,7 @@ class ConstantObservationModel(object):
             double [::1] input_view
             short [::1] seg_view
             double [::1] mu_view
-            double [::1] std_view
+            double [::1] var_view
             cnp.npy_intp [::1] num_vox_view
 
         # ravel C-contiguous array so we can use 1D indexing in the loop below
@@ -101,11 +101,11 @@ class ConstantObservationModel(object):
         seg_view = np.ascontiguousarray(seg_image, dtype=np.int16).ravel()
 
         mu = np.zeros(nclass, dtype=np.float64)
-        std = np.zeros(nclass, dtype=np.float64)
+        var = np.zeros(nclass, dtype=np.float64)
         num_vox = np.zeros(nclass, dtype=np.intp)
 
         mu_view = mu
-        std_view = std
+        var_view = var
         num_vox_view = num_vox
 
         for j in range(size):
@@ -117,13 +117,13 @@ class ConstantObservationModel(object):
 
                 if s == i:
                     mu_view[i] += v
-                    std_view[i] += v * v
+                    var_view[i] += v * v
                     num_vox_view[i] += 1
 
         mu = mu / num_vox
-        std = np.sqrt(std/num_vox - mu*mu)
+        var = var / num_vox - mu * mu
 
-        return mu, std
+        return mu, var
 
 
     def negloglikelihood(self, image, mu, sigmasq, cnp.npy_intp nclasses):
@@ -240,7 +240,7 @@ class ConstantObservationModel(object):
 
 
 cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
-                                    double[:] sigma) nogil:
+                                    double[:] var) nogil:
     r""" Initializes the means and standard deviations uniformly
 
     The means are initialized uniformly along the dynamic range of `image`.
@@ -252,15 +252,15 @@ cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
         3D structural gray-scale image
     mu : array
         buffer array for the mean of each tissue class
-    sigma : array
+    var : array
         buffer array for the variance of each tissue class
 
     Returns
     -------
     mu : array
         1 x nclasses, mean of each class
-    sigma : array
-        1 x nclasses, standard deviation of each class
+    var : array
+        1 x nclasses, variance of each class
     """
     cdef:
         cnp.npy_intp nx = image.shape[0]
@@ -280,7 +280,7 @@ cdef void _initialize_param_uniform(double[:, :, :] image, double[:] mu,
                 if image[x, y, z] > max_val:
                     max_val = image[x, y, z]
     for i in range(nclasses):
-        sigma[i] = 1.0
+        var[i] = 1.0
         mu[i] = min_val + i * (max_val - min_val)/nclasses
 
 
