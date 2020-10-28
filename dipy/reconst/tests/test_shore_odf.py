@@ -30,7 +30,8 @@ def test_shore_odf():
     asmfit = asm.fit(data)
     odf = asmfit.odf(sphere)
     odf_sh = asmfit.odf_sh()
-    odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None)
+    odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None,
+                           legacy=True)
     assert_almost_equal(odf, odf_from_sh, 10)
 
     directions, _, _ = peak_directions(odf, sphere, .35, 25)
@@ -50,7 +51,7 @@ def test_shore_odf():
         data, golden_directions = sb_dummies[sbd]
         asmfit = asm.fit(data)
         odf = asmfit.odf(sphere2)
-        directions, _ , _ = peak_directions(odf, sphere2, .35, 25)
+        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:

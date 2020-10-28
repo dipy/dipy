@@ -326,12 +326,18 @@ def test_odfdeconv():
     with warnings.catch_warnings(record=True) as w:
 
         ConstrainedSDTModel(gtab, ratio, sh_order=10)
-        assert_equal(len(w) > 0, True)
+        w_count = len(w)
+        # A warning is expected from the ConstrainedSDTModel constructor
+        # and additionnal warnings should be raised where legacy SH bases
+        # are used
+        assert_equal(w_count > 1, True)
 
     with warnings.catch_warnings(record=True) as w:
 
         ConstrainedSDTModel(gtab, ratio, sh_order=8)
-        assert_equal(len(w) > 0, False)
+        # Test that the warning from ConstrainedSDTModel
+        # constructor is no more raised
+        assert_equal(len(w) == w_count - 1, True)
 
     csd_fit = csd.fit(np.zeros_like(S))
     fodf = csd_fit.odf(sphere)
@@ -553,7 +559,8 @@ def test_default_lambda_csdmodel():
     and changes to this default value should be discussed with the dipy team.
     """
     expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
-    expected_warnings = {4: 0, 8: 0, 16: 1}
+    expected_csdmodel_warnings = {4: 0, 8: 0, 16: 1}
+    expected_sh_basis_deprecation_warnings = 5
     sphere = default_sphere
 
     # Create gradient table
@@ -566,12 +573,13 @@ def test_default_lambda_csdmodel():
 
     for sh_order, expected, e_warn in zip(expected_lambda.keys(),
                                           expected_lambda.values(),
-                                          expected_warnings.values()):
+                                          expected_csdmodel_warnings.values()):
         with warnings.catch_warnings(record=True) as w:
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
                                                          sh_order=sh_order,
                                                          reg_sphere=sphere)
-            npt.assert_equal(len(w), e_warn)
+            npt.assert_equal(len(w) - expected_sh_basis_deprecation_warnings,
+                             e_warn)
             if e_warn:
                 npt.assert_(issubclass(w[0].category, UserWarning))
                 npt.assert_("Number of parameters required " in str(w[0].
@@ -598,7 +606,7 @@ def test_csd_superres():
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
                                                   sh_order=16)
         assert_greater_equal(len(w), 1)
-        npt.assert_(issubclass(w[-1].category, UserWarning))
+        npt.assert_(issubclass(w[0].category, UserWarning))
 
     fit16 = model16.fit(S)
 

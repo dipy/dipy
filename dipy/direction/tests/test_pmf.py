@@ -73,9 +73,12 @@ def test_boot_pmf():
         warnings.simplefilter("always", category=UserWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                     sh_order=6)
-        npt.assert_(len(w) == 1)
+        # Tests that the first catched warning comes from
+        # the CSD model  constructor
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("Number of parameters required " in str(w[0].message))
+        # Tests that additionnal warnings are raised for outdated SH basis
+        npt.assert_(len(w) > 1)
 
     boot_pmf_gen_sh4 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
                                   sh_order=4)

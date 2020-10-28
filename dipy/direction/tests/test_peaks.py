@@ -556,11 +556,18 @@ def test_peaksFromModelParallel():
                                               return_odf=True,
                                               return_sh=True, parallel=True,
                                               nbr_processes=-2)
-            assert_(len(w) == 2)
-            assert_(issubclass(w[0].category, UserWarning))
+
+            # Both previous calls to peaks_from_model raise a
+            # PendingDeprecationWarning when sh_to_sf_basis is called, then a
+            # UserWarning when _peaks_from_model_parallel is called with an
+            # invalid number of processes, and finally another
+            # PendingDeprecationWarning when peaks_from_model is called a
+            # second time with parallel=False
+            assert_(len(w) == 6)
             assert_(issubclass(w[1].category, UserWarning))
-            assert_("Invalid number of processes " in str(w[0].message))
+            assert_(issubclass(w[4].category, UserWarning))
             assert_("Invalid number of processes " in str(w[1].message))
+            assert_("Invalid number of processes " in str(w[4].message))
 
             for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
                 assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
