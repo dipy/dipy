@@ -14,39 +14,48 @@ You can check how to :ref:`fetch the DIPY data<data_fetch>`.
 Denoising using Local PCA
 -------------------------
 
-PCA-based denoising algorithms are effective denoising methods because they explore 
-the redundancy of the multi-dimensional information of diffusion-weighted datasets.
+Denoising algorithms based on principal components analysis (PCA) are effective
+denoising methods because they explore the redundancy of the multi-dimensional
+information of diffusion-weighted datasets. The basic idea behind the PCA-based
+denoising algorithms is to perform a low-rank approximation by thresholding the
+eigenspectrum of the noisy signal matrix.
 
-The algorithm to perform the PCA-based denoising involves the following steps:
+The algorithm to perform a local PCA-based (LPCA) denoising involves the following
+steps:
 
-* First, we estimate the local noise variance at each voxel.
+* Estimating the local noise variance at each voxel.
+* Applying a PCA in local patches around each voxel over the gradient
+directions.
+* Thresholding the eigenvalues based on the local estimate of the noise
+variance, and then doing a PCA reconstruction.
 
-* Then, we apply PCA in local patches around each voxel over the gradient directions.
+The local PCA algorithm turns out to work well on diffusion MRI owing to the 4D
+structure of DWI acquisitions where the q-space is typically oversampled giving
+highly correlated 3D volumes of the same subject.
 
-* Finally, we threshold the eigenvalues based on the local estimate of sigma and then do a PCA reconstruction
+For illustrative purposes of the local PCA denoising method, we will be using
+the ``stanford_hardi`` dataset, but you can also use your own data.
 
-We are using ``stanford_hardi`` dataset. You can also use your own data.
+The workflow for the LPCA denoising requires the paths to the diffusion input
+file, as well as the b-values and b-vectors files.
 
-The workflow for the LPCA denoising requires the paths to the diffusion input file,
-as well as the b-values and b-vectors files.
-
-You may want to create an output directory to save the denoised data::
+You may want to create an output directory to save the denoised data, e.g.::
 
     mkdir denoise_lpca_output
 
-Run the following command::
+To run the local PCA denoising on the data it suffices to execute the
+``dipy_denoise_lpca`` command, e.g.::
 
     dipy_denoise_lpca data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval data/stanford_hardi/HARDI150.bvec --out_dir "denoise_lpca_output"
 
-This command will denoise the diffusion image and save it to the directory
-``denoise_lpca_output``.
+This command will denoise the diffusion image and save it to the
+``denoise_lpca_output`` directory, defaulting the resulting image file name to
+``dwi_lpca.nii.gz``. In case the output directory (``out_dir``) parameter is not
+specified, the denoised diffusion image will be saved to the current directory
+by default.
 
-In case, you did not specify ``out_dir``, the denoised diffusion image will 
-be saved to a file named ``dwi_lpca.nii.gz`` by default, located in the 
-input directory also by default.
-
-Note: Depending on the parameters' values, the effect of the denoising can 
-be subtle or even hardly noticeable, apparent or visible, depending on the 
+Note: Depending on the parameters' values, the effect of the denoising can
+be subtle or even hardly noticeable, apparent or visible, depending on the
 choice. Users are encouraged to carefully choose the parameters.
 
 .. |image1| image:: https://github.com/dipy/dipy_data/blob/master/stanford_hardi_original.png?raw=true
@@ -66,34 +75,30 @@ choice. Users are encouraged to carefully choose the parameters.
 Denoising using Marcenko-Pastur PCA
 -----------------------------------
 
-The PCA-based denoising algorithm exploits the redundancy across the diffusion-
-weighted images. This algorithm has been shown to provide an optimal compromise
-between noise suppression and loss of anatomical information for different 
-techniques such as DTI, spherical deconvolution and DKI.
+The Principal Components classification can be performed based on prior noise
+variance estimates or automatically based on the Marcenko-Pastur distribution.
+In addition to noise suppression, the Marcenko-Pastur PCA (MPPCA) algorithm can
+be used to get the standard deviation of the noise.
 
-The basic idea behind the PCA-based denoising algorithms is to remove the components 
-of the data that are classified as noise. The Principal Components classification
-can be performed based on prior noise variance estimates or automatically based 
-on the Marcenko-Pastur distribution. In addition to noise suppression, the PCA
-algorithm can be used to get the standard deviation of the noise.
+We will use the ``sherbrooke_3shell`` dataset in DIPY to showcase this denoising
+method. As with any other workflow in DIPY, you can also use your own data!
 
-We will use the ``sherbrooke_3shell`` dataset in DIPY to showcase this denoising method.
-As with any other workflow in DIPY, you can also use your own data!
-
-Create a directory where to save the denoised image (e.g.:
+We will create a directory where to save the denoised image (e.g.:
 ``denoise_mppca_output``)::
 
     mkdir denoise_mppca_output
 
-In order to run the MPPCA denoising method, we need to specify the location of the 
-diffusion data file, followed by the optional arguments. In this case, we will be 
-specifying the ``patch radius`` value and ``output directory``.
+In order to run the MPPCA denoising method, we need to specify the location of
+the diffusion data file, followed by the optional arguments. In this case, we
+will be specifying the patch radius value and the output directory.
 
-So, we will run the command as::
+The MMPPCA denoising method is run using the ``dipy_denoise_mppca`` command,
+e.g.::
 
     dipy_denoise_mppca data/sherbrooke_3shell/HRADI193.nii.gz --patch_radius 10 --out_dir "denoise_mppca_output"
 
-This command will denoise the diffusion image and save it to the specified output directory.
+This command will denoise the diffusion image and save it to the specified
+output directory.
 
 .. |image3| image:: https://github.com/dipy/dipy_data/blob/master/sherbrooke_3shell_original.png?raw=true
    :scale: 70%
@@ -112,25 +117,34 @@ This command will denoise the diffusion image and save it to the specified outpu
 Denoising using NLMEANS
 -----------------------
 
-Using the non-local means filter [Coupe08]_ and [Coupe11]_, you can denoise 3D or 4D
-images and boost the SNR of your datasets.
+In the Non-Local Means algorithm (NLMEANS) [Coupe08]_ and [Coupe11]_, the value
+of a pixel is replaced by an average of a set of other pixel values: the
+specific patches centered on the other pixels are contrasted to the patch
+centered on the pixel of interest, and the average only applies to pixels with
+patches close to the current patch. This algorithm can also restore good
+textures, which are distorted by other denoising algorithms.
 
-We will use the ``cfin_multib`` dataset in DIPY to showcase this denoising method.
-As with any other workflow in DIPY, you can also use your own data!
+The Non-Local Means method can be used to denoise $N$-D image data (i.e. 2D, 3D,
+4D, etc.), and thus enhance their SNR.
 
-In order to run the NLMEANS denoising method, we need to specify the location of the 
-diffusion data file, followed by the optional arguments. In this case, we will be 
-specifying the ``sigma`` and ``patch radius`` values and ``output directory``.
+We will use the ``cfin_multib`` dataset in DIPY to showcase this denoising
+method. As with any other workflow in DIPY, you can also use your own data!
 
-Create a directory where to save the denoised image (e.g.:
+In order to run the NLMEANS denoising method, we need to specify the location of the
+diffusion data file, followed by the optional arguments. In this case, we will be
+specifying the noise standard deviation estimate (``sigma``) and patch radius
+values, and the output directory.
+
+We will create a directory where to save the denoised image (e.g.:
 ``denoise_nlmeans_output``)::
 
-Then, we will run the command as::
+The NLMEANS denoising is performed using the ``dipy_denoise_nlmeans`` command,
+e.g.::
 
     dipy_denoise_nlmeans data/cfin_multib/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii --sigma 2 --patch_radius 2 --out_dir "denoise_nlmeans_output"
 
-The command will denoise the input diffusion volume and write the result to the specified
-output directory.
+The command will denoise the input diffusion volume and write the result to the
+specified output directory.
 
 .. |image5| image:: https://github.com/dipy/dipy_data/blob/master/cfin_multib_original.png?raw=true
    :scale: 20%
