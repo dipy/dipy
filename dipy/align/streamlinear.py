@@ -693,8 +693,8 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
     moving = np.ascontiguousarray(moving, dtype=np.float64)
 
-    rows = static.shape[0] / block_size
-    cols = moving.shape[0] / block_size
+    rows = static.shape[0] // block_size
+    cols = moving.shape[0] // block_size
 
     return _bundle_minimum_distance_asymmetric(static, moving,
                                                rows,
