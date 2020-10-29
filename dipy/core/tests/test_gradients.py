@@ -11,8 +11,8 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  WATER_GYROMAGNETIC_RATIO,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
-                                 unique_bvals_magnitude, unique_bvals_tolerance,
-                                 unique_bvals, 
+                                 unique_bvals_magnitude,
+                                 unique_bvals_tolerance, unique_bvals,
                                  params_to_btens, btens_to_params)
 
 
@@ -88,10 +88,16 @@ def test_GradientTable():
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))
 
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as l_warns:
         bad_gt = gradient_table(expected_bvals, expected_bvecs,
                                 b0_threshold=200)
-        assert len(w) == 1
+
+        # Select only UserWarning
+        selected_w = [w for w in l_warns
+                      if issubclass(w.category, UserWarning)]
+        assert len(selected_w) >= 1
+        msg = [str(m.message) for m in selected_w]
+        npt.assert_equal('b0_threshold has a value > 199' in msg, True)
 
 
 def test_GradientTable_btensor_calculation():
@@ -416,9 +422,12 @@ def test_nan_bvecs():
     of these vectors. This checks that it doesn't happen.
     """
     fdata, fbvals, fbvecs = get_fnames()
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as l_warns:
         gradient_table(fbvals, fbvecs)
-        npt.assert_(len(w) == 0)
+        # Select only UserWarning
+        selected_w = [w for w in l_warns
+                      if issubclass(w.category, UserWarning)]
+        npt.assert_(len(selected_w) == 0)
 
 
 def test_generate_bvecs():
