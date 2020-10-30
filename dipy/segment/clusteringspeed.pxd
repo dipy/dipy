@@ -1,5 +1,6 @@
 from dipy.segment.cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
 from dipy.segment.metricspeed cimport Metric
+cimport numpy as cnp
 
 
 cdef struct QuickBundlesStats:
@@ -70,7 +71,7 @@ cdef class ClustersCentroid(Clusters):
     cdef float eps
     cdef void c_assign(ClustersCentroid self, int id_cluster, int id_element, Data2D element) nogil except *
     cdef int c_create_cluster(ClustersCentroid self) nogil except -1
-    cdef int c_update(ClustersCentroid self, int id_cluster) nogil except -1
+    cdef int c_update(ClustersCentroid self, cnp.npy_intp id_cluster) nogil except -1
 
 
 cdef class QuickBundles(object):

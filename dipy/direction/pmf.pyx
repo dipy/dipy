@@ -43,7 +43,7 @@ cdef class SimplePmfGen(PmfGen):
 
     cdef double[:] get_pmf_c(self, double* point):
         if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
-            self.__clear_pmf()
+            PmfGen.__clear_pmf(self)
         return self.pmf
 
 
@@ -76,7 +76,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             double _sum
 
         if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
-            self.__clear_pmf()
+            PmfGen.__clear_pmf(self)
         else:
             for i in range(len_pmf):
                 _sum = 0

@@ -37,6 +37,7 @@ jobs:
     condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - powershell: |
       Invoke-WebRequest -Uri https://zenodo.org/record/2651349/files/gs.trk -UseDefaultCredentials
+      Invoke-WebRequest -Uri https://stacks.stanford.edu/file/druid:yx282xq2090/label_info.txt -UseDefaultCredentials
     displayName: Add/Verify whether the certificate has been installed correctly
   - powershell: |
       Set-StrictMode -Version Latest

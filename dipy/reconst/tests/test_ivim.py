@@ -186,7 +186,7 @@ def test_mask():
     """
     mask_correct = data_multi[..., 0] > 0.2
     mask_not_correct = np.array([[False, True, False], [True, False]],
-                                dtype=np.bool)
+                                dtype=object)
 
     ivim_fit = ivim_model_trr.fit(data_multi, mask_correct)
     est_signal = ivim_fit.predict(gtab, S0=1.)
