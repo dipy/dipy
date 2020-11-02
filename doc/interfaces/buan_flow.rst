@@ -82,7 +82,7 @@ Plots will look like the following example:
 We can also visualize and highlight the specific location of group differences on the bundle by providing
 output pvalues file from dipy_buan_lmm workflow. User can specify at what level of
 significance they want to see group differences by providing threshold value of pvalue to ``buan_thr`` (default 0.05).
-The color of the highlighted area can be specified by providing RGB color values to ``buan_colors`` (Default Red)
+The color of the highlighted area can be specified by providing RGB color values to ``buan_highlight`` (Default Red)
 
 Run the following commandline for visualizing group differences on the model bundle::
 
@@ -101,7 +101,17 @@ Output of this commandline is interactive visualization window. Example snapshot
     Result plot for left arcuate fasciculus (AF_L) with highlighted group differences
     area in red color on the bundle where pvalues < 0.05.
 
+Let's use a different highlight color this time on ``CST_L`` bundle::
 
+     dipy_horizon bundles/CST_L.trk lmm_plots/CST_L_fa_pvalues.npy --buan --buan_thr 0.05 --buan_highlight 1 1 0
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/CST_L_highlighted.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Result plot for left corticospinal tract left (CST_L) with highlighted group differences
+    area in yellow color on the bundle where pvalues < 0.05.
 -----------------------------------------------------------
 Shape similarity of specific bundles across the populations
 -----------------------------------------------------------
