@@ -39,11 +39,11 @@ model_af_l = sft_af_l.streamlines
 let's visualize Arcuate Fasiculus Left (AF_L) bundle before assignment maps
 """
 
-interactive = False
+interactive = True
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l))
+scene.add(actor.streamtube(model_af_l))
 window.record(scene, out_path='af_l_before_assignment_maps.png',
               size=(600, 600))
 if interactive:
@@ -64,7 +64,7 @@ n = 100
 indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
 
-colors  = [np.random.rand(3) for si in range(n)]
+colors = [np.random.rand(3) for si in range(n)]
 
 disks_color = []
 for i in range(len(indx)):
@@ -74,11 +74,11 @@ for i in range(len(indx)):
 let's visualize Arcuate Fasiculus Left (AF_L) bundle after assignment maps
 """
 
-interactive = False
+interactive = True
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, colors=disks_color))
+scene.add(actor.streamtube(model_af_l, colors=disks_color))
 window.record(scene, out_path='af_l_after_assignment_maps.png',
               size=(600, 600))
 if interactive:
