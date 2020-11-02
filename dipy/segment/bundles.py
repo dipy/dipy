@@ -179,7 +179,7 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and Garyfallidis, E.
+    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
     Bundle analytics, a computational framework for investigating the
     shapes and profiles of brain pathways across populations.
     Sci Rep 10, 17149 (2020)
@@ -467,7 +467,7 @@ class RecoBundles(object):
             clustering, Neuroimage, 2017.
 
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and
+        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
         Garyfallidis, E. Bundle analytics, a computational framework for
         investigating the shapes and profiles of brain pathways across
         populations. Sci Rep 10, 17149 (2020)
