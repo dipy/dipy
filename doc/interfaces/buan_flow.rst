@@ -84,7 +84,7 @@ output pvalues file from dipy_buan_lmm workflow. User can specify at what level 
 significance they want to see group differences by providing threshold value of pvalue to ``buan_thr`` (default 0.05).
 The color of the highlighted area can be specified by providing RGB color values to ``buan_colors`` (Default Red)
 
-Run following commandline for visualizing group differences on model bundle::
+Run the following commandline for visualizing group differences on the model bundle::
 
     dipy_horizon bundles/AF_L.trk lmm_plots/AF_L_fa_pvalues.npy --buan --buan_thr 0.05
 
@@ -98,8 +98,8 @@ Output of this commandline is interactive visualization window. Example snapshot
     :alt: alternate text
     :align: center
 
-    Result plot for left arcuate fasciculus (AF_L) on with highlighted group differences
-    area in red color on the bundle where pvalues < 0.05
+    Result plot for left arcuate fasciculus (AF_L) with highlighted group differences
+    area in red color on the bundle where pvalues < 0.05.
 
 
 -----------------------------------------------------------
