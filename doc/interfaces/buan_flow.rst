@@ -124,8 +124,8 @@ For more information about each command line, you can go to
 
 If you are using any of these commands do cite the relevant papers.
 
-.. [Chandio20] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and Garyfallidis, E.
+.. [1] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
+    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
     Bundle analytics, a computational framework for investigating the
     shapes and profiles of brain pathways across populations.
     Sci Rep 10, 17149 (2020)
@@ -146,8 +146,3 @@ If you are using any of these commands do cite the relevant papers.
     Population-averaged atlas of the macroscale human structural
     connectome and its network topology.
     Neuroimage, 2018.
-
-
-
-
-
