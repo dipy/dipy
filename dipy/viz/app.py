@@ -81,13 +81,15 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
+
     def __init__(self, tractograms=None, images=None, pams=None,
                  cluster=False, cluster_thr=15.0,
                  random_colors=False, length_gt=0, length_lt=1000,
                  clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True,
                  out_png='tmp.png', recorded_events=None, return_showm=False,
-                 bg_color=(0, 0, 0), order_transparent=True):
+                 bg_color=(0, 0, 0), order_transparent=True, buan=False,
+                 buan_colors=None):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -140,6 +142,10 @@ class Horizon(object):
         order_transparent : bool
             Default True. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
+        buan : bool, optional
+            Enables BUAN framework visualization. Default is False.
+        buan_colors : list, optional
+            List of colors for bundles.
 
 
         References
@@ -174,6 +180,8 @@ class Horizon(object):
         self.return_showm = return_showm
         self.bg_color = bg_color
         self.order_transparent = order_transparent
+        self.buan = buan
+        self.buan_colors = buan_colors
 
     def build_scene(self):
 
@@ -211,6 +219,7 @@ class Horizon(object):
             Enable callbacks for selecting clusters
         """
         color_gen = distinguishable_colormap()
+        color_ind = 0
         for (t, sft) in enumerate(tractograms):
             streamlines = sft.streamlines
 
@@ -283,13 +292,17 @@ class Horizon(object):
 
             else:
 
-                streamline_actor = actor.line(streamlines, colors=colors)
+                s_colors = self.buan_colors[color_ind] if self.buan else colors
+                streamline_actor = actor.line(streamlines, colors=s_colors)
+
                 streamline_actor.GetProperty().SetEdgeVisibility(1)
                 streamline_actor.GetProperty().SetRenderLinesAsTubes(1)
                 streamline_actor.GetProperty().SetLineWidth(6)
                 streamline_actor.GetProperty().SetOpacity(1)
                 scene.add(streamline_actor)
                 self.mem.streamline_actors.append(streamline_actor)
+
+            color_ind += 1
 
         if not enable_callbacks:
             return
@@ -758,12 +771,13 @@ class Horizon(object):
                           reset_camera=False)
 
 
+
 def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
             random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
-            world_coords=True, interactive=True, out_png='tmp.png',
-            recorded_events=None, return_showm=False):
+            world_coords=True, interactive=True, buan=False, buan_colors=None,
+            out_png='tmp.png', recorded_events=None, return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
 
 
@@ -807,6 +821,10 @@ def horizon(tractograms=None, images=None, pams=None,
     interactive : bool
         Allow user interaction. If False then Horizon goes on stealth mode
         and just saves pictures.
+    buan : bool, optional
+        Enables BUAN framework visualization. Default is False.
+    buan_colors : list, optional
+        List of colors for bundles.
     out_png : string
         Filename of saved picture.
     recorded_events : string
@@ -824,12 +842,14 @@ def horizon(tractograms=None, images=None, pams=None,
         adaptive visualization, Proceedings of: International Society of
         Magnetic Resonance in Medicine (ISMRM), Montreal, Canada, 2019.
     """
+
     hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
                  random_colors, length_gt, length_lt,
                  clusters_gt, clusters_lt,
                  world_coords, interactive,
                  out_png, recorded_events, return_showm, bg_color=bg_color,
-                 order_transparent=order_transparent)
+                 order_transparent=order_transparent, buan=buan,
+                 buan_colors=buan_colors)
 
     scene = hz.build_scene()
 

@@ -6,7 +6,18 @@ from dipy.viz.app import horizon
 from dipy.io.peaks import load_peaks
 from dipy.io.streamline import load_tractogram
 from dipy.io.utils import create_nifti_header
+from dipy.stats.analysis import assignment_map
+from dipy.utils.optpkg import optional_package
 
+fury, has_fury, setup_module = optional_package('fury')
+vtk, has_vtk, _ = optional_package('vtk')
+
+if has_fury:
+    from fury.colormap import line_colors
+    from fury.utils import numpy_to_vtk_colors
+
+if has_vtk:
+    from vtk.util import numpy_support
 
 class HorizonFlow(Workflow):
 
@@ -18,8 +29,8 @@ class HorizonFlow(Workflow):
             random_colors=False, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
-            disable_order_transparency=False, out_dir='',
-            out_stealth_png='tmp.png'):
+            disable_order_transparency=False, buan=False, buan_thr=0.5,
+            buan_highlight=(1, 0, 0), out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -62,6 +73,15 @@ class HorizonFlow(Workflow):
         disable_order_transparency : bool, optional
             Default False. Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
+        buan : bool, optional
+            Enables BUAN framework visualization. Default is False.
+        buan_thr : float, optional
+            Default 0.5. Uses the threshold value to highlight segments on the
+            bundle which have pvalues less than this threshold.
+        buan_highlight : variable float, optional
+            Define the bundle highlight area color. Colors can be defined
+            with 1 or 3 values and should be between [0-1].
+            Default is red (e.g --buan_highlight 1 0 0)
         out_dir : str, optional
             Output directory. Default current directory.
         out_stealth_png : str, optional
@@ -79,8 +99,10 @@ class HorizonFlow(Workflow):
         tractograms = []
         images = []
         pams = []
+        numpy_files = []
         interactive = not stealth
         world_coords = not native_coords
+        bundle_colors = None
 
         mni_2009a = {}
         mni_2009a['affine'] = np.array([[1., 0., 0., -98.],
@@ -150,6 +172,45 @@ class HorizonFlow(Workflow):
                     print('Peak_dirs shape')
                     print(pam.peak_dirs.shape)
 
+            if ends(".npy"):
+
+                data = np.load(fname)
+                numpy_files.append(data)
+
+                if verbose:
+                    print('numpy array length')
+                    print(len(data))
+
+        if buan:
+            bundle_colors = []
+
+            for i in range(len(numpy_files)):
+
+                n = len(numpy_files[i])
+                pvalues = numpy_files[i]
+                bundle = tractograms[i].streamlines
+
+                indx = assignment_map(bundle, bundle, n)
+                ind = np.array(indx)
+
+                nb_lines = len(bundle)
+                lines_range = range(nb_lines)
+                points_per_line = [len(bundle[i]) for i in lines_range]
+                points_per_line = np.array(points_per_line, np.intp)
+
+                cols_arr = line_colors(bundle)
+                colors_mapper = np.repeat(lines_range, points_per_line, axis=0)
+                vtk_colors = numpy_to_vtk_colors(255 * cols_arr[colors_mapper])
+                colors = numpy_support.vtk_to_numpy(vtk_colors)
+                colors = (colors - np.min(colors))/np.ptp(colors)
+
+                for i in range(n):
+
+                    if pvalues[i] < buan_thr:
+                        colors[ind == i] = buan_highlight
+
+                bundle_colors.append(colors)
+
         if len(bg_color) == 1:
             bg_color *= 3
         elif len(bg_color) != 3:
@@ -164,5 +225,5 @@ class HorizonFlow(Workflow):
                 length_gt=length_gt, length_lt=length_lt,
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
-                interactive=interactive,
+                interactive=interactive, buan=buan, buan_colors=bundle_colors,
                 out_png=pjoin(out_dir, out_stealth_png))
