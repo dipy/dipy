@@ -79,6 +79,29 @@ Plots will look like the following example:
 
     Result plot for left arcuate fasciculus (AF_L) on FA measure
 
+We can also visualize and highlight the specific location of group differences on the bundle by providing
+output pvalues file from dipy_buan_lmm workflow. User can specify at what level of
+significance they want to see group differences by providing threshold value of pvalue to ``buan_thr`` (default 0.05).
+The color of the highlighted area can be specified by providing RGB color values to ``buan_colors`` (Default Red)
+
+Run following commandline for visualizing group differences on model bundle::
+
+    dipy_horizon bundles/AF_L.trk lmm_plots/AF_L_fa_pvalues.npy --buan --buan_thr 0.05
+
+Where, ``AF_L.trk `` is located in your model bundle folder ``bundles`` and
+``AF_L_fa_pvalues.npy`` is saved in output folder ``lmm_plots`` of dipy_buan_lmm workflow
+
+Output of this commandline is interactive visualization window. Example snapshot:
+
+.. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_highlighted.png?raw=true
+    :width: 70 %
+    :alt: alternate text
+    :align: center
+
+    Result plot for left arcuate fasciculus (AF_L) on with highlighted group differences
+    area in red color on the bundle where pvalues < 0.05
+
+
 -----------------------------------------------------------
 Shape similarity of specific bundles across the populations
 -----------------------------------------------------------
