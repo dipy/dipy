@@ -335,15 +335,20 @@ class RecoBundles(object):
         Parameters
         ----------
         model_bundle : Streamlines
+            model bundle streamlines used as a reference to extract similar
+            streamlines from input tractogram
         model_clust_thr : float
+            MDF distance threshold for the model bundles
         reduction_thr : float
+            Reduce search space in the target tractogram by (mm) (default 10)
         reduction_distance : string
-            mdf or mam (default mdf)
+            Reduction distance type can be mdf or mam (default mdf)
         slr : bool
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array
+            Transformation allowed. translation, rigid, similarity or scaling
             (default None)
         slr_bounds : array
             (default None)
@@ -353,8 +358,9 @@ class RecoBundles(object):
         slr_method : string
             Optimization method (default 'L-BFGS-B')
         pruning_thr : float
+            Pruning after reducing the search space (default 5).
         pruning_distance : string
-            MDF ('mdf') and MAM ('mam')
+            Pruning distance type can be mdf or mam (default mdf)
 
         Returns
         -------
@@ -427,20 +433,28 @@ class RecoBundles(object):
         first ouput of recobundle by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
+        This time, search space is created using pruned bundle and not model
+        bundle.
 
         Parameters
         ----------
         model_bundle : Streamlines
+            model bundle streamlines used as a reference to extract similar
+            streamlines from input tractogram
         pruned_streamlines : Streamlines
+            Recognized bundle from target tractogram by RecoBundles.
         model_clust_thr : float
+            MDF distance threshold for the model bundles
         reduction_thr : float
+            Reduce search space by (mm) (default 14)
         reduction_distance : string
-            mdf or mam (default mam)
+            Reduction distance type can be mdf or mam (default mdf)
         slr : bool
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array
+            Transformation allowed. translation, rigid, similarity or scaling
             (default None)
         slr_bounds : array
             (default None)
@@ -450,8 +464,9 @@ class RecoBundles(object):
         slr_method : string
             Optimization method (default 'L-BFGS-B')
         pruning_thr : float
+            Pruning after reducing the search space (default 6).
         pruning_distance : string
-            MDF ('mdf') and MAM ('mam')
+            Pruning distance type can be mdf or mam (default mdf)
 
         Returns
         -------

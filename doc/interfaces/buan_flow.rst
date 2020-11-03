@@ -106,7 +106,7 @@ Let's use a different highlight color this time on ``CST_L`` bundle::
      dipy_horizon bundles/CST_L.trk lmm_plots/CST_L_fa_pvalues.npy --buan --buan_thr 0.05 --buan_highlight 1 1 0
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/CST_L_highlighted.png?raw=true
-    :width: 70 %
+    :width: 50 %
     :alt: alternate text
     :align: center
 
@@ -129,7 +129,7 @@ score ranges between 0-1, where 1 being highest similarity and 0 being lowest.
 Plots will look like the following example:
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/SM_moved_UF_R__recognized.png?raw=true
-    :width: 70 %
+    :width: 50 %
     :alt: alternate text
     :align: center
 
