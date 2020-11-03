@@ -295,15 +295,15 @@ regtools.overlay_slices(static, transformed, None, 2,
 Now, let's repeat this process with a simplified functional interface:
 """
 
-from dipy.align import (affine_registration, c_of_mass, translation, rigid,
-                        affine, dwi_to_template)
+from dipy.align import (affine_registration, center_of_mass, translation,
+                        rigid, affine, register_dwi_to_template)
 
 """
 This interface constructs a pipeline of operations as a sequence of functions
 that each implement one of the transforms.
 """
 
-pipeline = [c_of_mass, translation, rigid, affine]
+pipeline = [center_of_mass, translation, rigid, affine]
 
 """
 And then applies the functions in the pipeline on the input (from left to
@@ -345,15 +345,15 @@ regtools.overlay_slices(static, xformed_img, None, 2,
 """
 
 """
-Alternatively, you can also use the `dwi_to_template` function that needs to
-also know about the gradient table of the DWI data, provided as a tuple of
-(bvals_file, bvecs_file). In this case, we are going to move the diffusion
-data to the B0 image (the opposite of the previous examples), which
+Alternatively, you can also use the `register_dwi_to_template` function that
+needs to also know about the gradient table of the DWI data, provided as a
+tuple of (bvals_file, bvecs_file). In this case, we are going to move the
+diffusion data to the B0 image (the opposite of the previous examples), which
 reverses what is the "moving" image and what is "static".
 
 """
 
-xformed_dwi, reg_affine = dwi_to_template(
+xformed_dwi, reg_affine = register_dwi_to_template(
     dwi=static_img,
     gtab=(pjoin(folder, 'HARDI150.bval'),
           pjoin(folder, 'HARDI150.bvec')),
