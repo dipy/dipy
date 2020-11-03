@@ -18,15 +18,16 @@ Highlights
 
 **DIPY 1.3.0** is now available. New features include:
 
-- Gibbs ringing correction speedup increased by 10x.
-- Spherical harmonics basis definition updated.
-- Added SMT2 metrics from mean signal kurtosis.
-- New interface functions to registration module.
-- New Linear transform for registration module
+- Gibbs Ringing correction 10X faster.
+- Spherical harmonics basis definitions updated.
+- Added SMT2 metrics from mean signal diffusion kurtosis.
+- New interface functions added to the registration module.
+- New Linear transform added to the registration module.
 - New tutorials for DIPY command line interfaces.
-- Fixed compatibilities with our dependencies.
-- New progress bar for data downloading, with new dependency added: tqdm
+- Fixed compatibility issues with different dependencies.
+- Tqdm (multiplatform progress bar for data downloading) dependency added.
 - Large documentation update.
+- Bundle section highlight from BUAN added in Horizon.
 - Closed 134 issues and merged 49 pull requests.
 
 
