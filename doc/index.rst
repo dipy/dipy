@@ -22,7 +22,7 @@ Highlights
 - Spherical harmonics basis definitions updated.
 - Added SMT2 metrics from mean signal diffusion kurtosis.
 - New interface functions added to the registration module.
-- New Linear transform added to the registration module.
+- New linear transform added to the registration module.
 - New tutorials for DIPY command line interfaces.
 - Fixed compatibility issues with different dependencies.
 - Tqdm (multiplatform progress bar for data downloading) dependency added.
