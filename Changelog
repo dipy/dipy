@@ -26,7 +26,7 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 
 * 1.3.0 (Tuesday, November 3, 2020)
 
-- Gibbs Ringing correction 10X faster.
+- Gibbs ringing correction 10X faster.
 - Spherical harmonics basis definitions updated.
 - Added SMT2 metrics from mean signal diffusion kurtosis.
 - New interface functions added to the registration module.

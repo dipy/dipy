@@ -6,7 +6,6 @@
 
 GitHub stats for 2020/09/09 - 2020/11/02 (tag: 1.2.0)
 
-These lists are automatically generated, and may be incomplete or contain duplicates.
 
 The following 14 authors contributed 284 commits.
 
