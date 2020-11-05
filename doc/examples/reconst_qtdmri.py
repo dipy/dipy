@@ -107,8 +107,8 @@ for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
     # produce the FA images with corpus callosum masks.
     plt.subplot(2, 2, 1 + i)
     plt.title(subplot_titles[i], fontsize=15)
-    plt.imshow(fa, cmap='Greys_r', origin=True, interpolation='nearest')
-    plt.imshow(mask_template, origin=True, interpolation='nearest')
+    plt.imshow(fa, cmap='Greys_r', origin='lower', interpolation='nearest')
+    plt.imshow(mask_template, origin='lower', interpolation='nearest')
     plt.axis('off')
 plt.tight_layout()
 plt.savefig('qt-dMRI_datasets_fa_with_ccmasks.png')

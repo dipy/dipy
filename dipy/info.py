@@ -123,6 +123,7 @@ EXTRAS_REQUIRE = {
         "scipy",
         "nibabel>=3.0.0",
         "h5py",
+        "h5py<3.0.0; sys_platform == 'win32'",
         "cvxpy",
         "pandas",
         "tables",
