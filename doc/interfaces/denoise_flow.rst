@@ -10,9 +10,9 @@ Multiple denoising methods are available in DIPY.
 You can try these methods using your own data; we will be using the data in DIPY.
 You can check how to :ref:`fetch the DIPY data<data_fetch>`.
 
--------------------------
-Denoising using Local PCA
--------------------------
+--------------------------------------
+Denoising using Overcomplete Local PCA
+--------------------------------------
 
 Denoising algorithms based on principal components analysis (PCA) are effective
 denoising methods because they explore the redundancy of the multi-dimensional
@@ -20,21 +20,22 @@ information of diffusion-weighted datasets. The basic idea behind the PCA-based
 denoising algorithms is to perform a low-rank approximation by thresholding the
 eigenspectrum of the noisy signal matrix.
 
-The algorithm to perform a local PCA-based (LPCA) denoising involves the following
-steps:
+The algorithm to perform an Overcomplete Local PCA-based (LPCA) denoising
+involves the following steps:
 
 * Estimating the local noise variance at each voxel.
 * Applying a PCA in local patches around each voxel over the gradient
-directions.
+  directions.
 * Thresholding the eigenvalues based on the local estimate of the noise
-variance, and then doing a PCA reconstruction.
+  variance, and then doing a PCA reconstruction.
 
-The local PCA algorithm turns out to work well on diffusion MRI owing to the 4D
-structure of DWI acquisitions where the q-space is typically oversampled giving
-highly correlated 3D volumes of the same subject.
+The Overcomplete Local PCA algorithm turns out to work well on diffusion MRI
+owing to the 4D structure of DWI acquisitions where the q-space is typically
+oversampled giving highly correlated 3D volumes of the same subject.
 
-For illustrative purposes of the local PCA denoising method, we will be using
-the ``stanford_hardi`` dataset, but you can also use your own data.
+For illustrative purposes of the Overcomplete Local PCA denoising method, we
+will be using the ``stanford_hardi`` dataset, but you can also use your own
+data.
 
 The workflow for the LPCA denoising requires the paths to the diffusion input
 file, as well as the b-values and b-vectors files.
@@ -43,8 +44,8 @@ You may want to create an output directory to save the denoised data, e.g.::
 
     mkdir denoise_lpca_output
 
-To run the local PCA denoising on the data it suffices to execute the
-``dipy_denoise_lpca`` command, e.g.::
+To run the Overcomplete Local PCA denoising on the data it suffices to execute
+the ``dipy_denoise_lpca`` command, e.g.::
 
     dipy_denoise_lpca data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval data/stanford_hardi/HARDI150.bvec --out_dir "denoise_lpca_output"
 
@@ -75,7 +76,7 @@ choice. Users are encouraged to carefully choose the parameters.
 Denoising using Marcenko-Pastur PCA
 -----------------------------------
 
-The Principal Components classification can be performed based on prior noise
+The principal components classification can be performed based on prior noise
 variance estimates or automatically based on the Marcenko-Pastur distribution.
 In addition to noise suppression, the Marcenko-Pastur PCA (MPPCA) algorithm can
 be used to get the standard deviation of the noise.
