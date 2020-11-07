@@ -92,7 +92,7 @@ class ReconstMAPMRIFlow(Workflow):
             Even value used to set the order of the basis
             (default: 6)
         out_dir : string, optional
-            Output directory (default: input file directory)
+            Output directory (default: current directory)
         out_rtop : string, optional
             Name of the rtop to be saved
         out_lapnorm : string, optional
@@ -259,7 +259,7 @@ class ReconstDtiFlow(Workflow):
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
             (default [] (all))
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_tensor : string, optional
             Name of the tensors volume to be saved (default 'tensors.nii.gz').
             Per default, this will be saved following the nifti standard:
@@ -471,7 +471,7 @@ class ReconstCSDFlow(Workflow):
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
@@ -637,7 +637,7 @@ class ReconstCSAFlow(Workflow):
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_pam : string, optional
             Name of the peaks volume to be saved (default 'peaks.pam5')
         out_shm : string, optional
@@ -754,7 +754,7 @@ class ReconstDkiFlow(Workflow):
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
             (default [] (all))
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_dt_tensor : string, optional
             Name of the tensors volume to be saved
             (default: 'dti_tensors.nii.gz')
@@ -946,7 +946,7 @@ class ReconstIvimFlow(Workflow):
             Possible values: S0_predicted, perfusion_fraction, D_star, D
             (default [] (all))
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_S0_predicted : string, optional
             Name of the S0 signal estimated to be saved
             (default: 'S0_predicted.nii.gz')
