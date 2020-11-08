@@ -26,7 +26,7 @@ class MaskFlow(Workflow):
         ub : float, optional
             Upper bound value (default Inf)
         out_dir : string, optional
-           Output directory (default input file directory)
+           Output directory (default current directory)
         out_mask : string, optional
            Name of the masked file (default 'mask.nii.gz')
         """
