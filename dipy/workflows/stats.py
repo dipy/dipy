@@ -208,7 +208,7 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
     no_disks : integer, optional
         Number of disks used for dividing bundle into disks. (Default 100)
     out_dir : string, optional
-        Output directory (default input file directory)
+        Output directory (default current directory)
 
     References
     ----------
@@ -329,7 +329,7 @@ class BundleAnalysisTractometryFlow(Workflow):
             Number of disks used for dividing bundle into disks. (Default 100)
 
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
 
         References
         ----------
@@ -472,7 +472,7 @@ class LinearMixedModelsFlow(Workflow):
             Number of disks used for dividing bundle into disks. (Default 100)
 
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
 
         """
 
@@ -546,7 +546,7 @@ class BundleShapeAnalysis(Workflow):
             Bundle shape similarity threshold.
 
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
 
         References
         ----------

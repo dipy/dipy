@@ -168,7 +168,7 @@ class LocalFiberTrackingPAMFlow(Workflow):
             Maximum angle between streamline segments (range [0, 90],
             default 30).
         out_dir : string, optional
-           Output directory (default input file directory).
+           Output directory (default current directory).
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk').
         save_seeds : bool, optional
@@ -258,7 +258,7 @@ class PFTrackingPAMFlow(Workflow):
         pft_count : int, optional
             Number of particles to use in the particle filter (default 15).
         out_dir : string, optional
-           Output directory (default input file directory)
+           Output directory (default current directory)
         out_tractogram : string, optional
            Name of the tractogram file to be saved (default 'tractogram.trk')
         save_seeds : bool, optional
