@@ -44,6 +44,9 @@ interactive = True
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(model_af_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -340.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
 window.record(scene, out_path='af_l_before_assignment_maps.png',
               size=(600, 600))
 if interactive:
@@ -79,6 +82,9 @@ interactive = True
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.streamtube(model_af_l, colors=disks_color))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -340.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
 window.record(scene, out_path='af_l_after_assignment_maps.png',
               size=(600, 600))
 if interactive:
