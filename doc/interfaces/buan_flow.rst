@@ -45,7 +45,41 @@ as data you downloaded is already in the required format. We will be using ``bun
 folder you downloaded from streamline atlas link and ``subjects_small`` folder
 downloaded from test data link.
 
-Where, ``subjects_small`` directory has following structure::
+Where, ``bundles`` folder had following nodel bundles::
+
+    bundles/
+    ├── AF_L.trk
+    ├── AF_R.trk
+    ├── CCMid.trk
+    ├── CC_ForcepsMajor.trk
+    ├── CC_ForcepsMinor.trk
+    ├── CST_L.trk
+    ├── CST_R.trk
+    ├── EMC_L.trk
+    ├── EMC_R.trk
+    ├── FPT_L.trk
+    ├── FPT_R.trk
+    ├── IFOF_L.trk
+    ├── IFOF_R.trk
+    ├── ILF_L.trk
+    ├── ILF_R.trk
+    ├── MLF_L.trk
+    ├── MLF_R.trk
+    ├── ML_L.trk
+    ├── ML_R.trk
+    ├── MdLF_L.trk
+    ├── MdLF_R.trk
+    ├── OPT_L.trk
+    ├── OPT_R.trk
+    ├── OR_L.trk
+    ├── OR_R.trk
+    ├── STT_L.trk
+    ├── STT_R.trk
+    ├── UF_L.trk
+    ├── UF_R.trk
+    └── V.trk
+
+The ``subjects_small`` directory has following structure::
 
     subjects_small
     ├── control
@@ -93,7 +127,6 @@ Where, ``subjects_small`` directory has following structure::
 
 And each subject has following directory structure::
 
-
     ├── anatomical_measures
     │   ├── ad.nii.gz
     │   ├── csa_peaks.pam5
@@ -104,30 +137,9 @@ And each subject has following directory structure::
     │   ├── streamlines_moved_AF_L__labels__recognized_orig.trk
     │   ├── streamlines_moved_AF_R__labels__recognized_orig.trk
     │   ├── streamlines_moved_CCMid__labels__recognized_orig.trk
-    │   ├── streamlines_moved_CC_ForcepsMajor__labels__recognized_orig.trk
-    │   ├── streamlines_moved_CC_ForcepsMinor__labels__recognized_orig.trk
-    │   ├── streamlines_moved_CST_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_CST_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_EMC_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_EMC_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_FPT_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_FPT_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_IFOF_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_IFOF_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_ILF_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_ILF_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_MLF_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_MLF_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_ML_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_ML_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_MdLF_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_MdLF_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_OPT_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_OPT_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_OR_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_OR_R__labels__recognized_orig.trk
-    │   ├── streamlines_moved_STT_L__labels__recognized_orig.trk
-    │   ├── streamlines_moved_STT_R__labels__recognized_orig.trk
+    │   . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    │   . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+    │   . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
     │   ├── streamlines_moved_UF_L__labels__recognized_orig.trk
     │   ├── streamlines_moved_UF_R__labels__recognized_orig.trk
     │   └── streamlines_moved_V__labels__recognized_orig.trk
@@ -135,30 +147,9 @@ And each subject has following directory structure::
         ├── moved_AF_L__recognized.trk
         ├── moved_AF_R__recognized.trk
         ├── moved_CCMid__recognized.trk
-        ├── moved_CC_ForcepsMajor__recognized.trk
-        ├── moved_CC_ForcepsMinor__recognized.trk
-        ├── moved_CST_L__recognized.trk
-        ├── moved_CST_R__recognized.trk
-        ├── moved_EMC_L__recognized.trk
-        ├── moved_EMC_R__recognized.trk
-        ├── moved_FPT_L__recognized.trk
-        ├── moved_FPT_R__recognized.trk
-        ├── moved_IFOF_L__recognized.trk
-        ├── moved_IFOF_R__recognized.trk
-        ├── moved_ILF_L__recognized.trk
-        ├── moved_ILF_R__recognized.trk
-        ├── moved_MLF_L__recognized.trk
-        ├── moved_MLF_R__recognized.trk
-        ├── moved_ML_L__recognized.trk
-        ├── moved_ML_R__recognized.trk
-        ├── moved_MdLF_L__recognized.trk
-        ├── moved_MdLF_R__recognized.trk
-        ├── moved_OPT_L__recognized.trk
-        ├── moved_OPT_R__recognized.trk
-        ├── moved_OR_L__recognized.trk
-        ├── moved_OR_R__recognized.trk
-        ├── moved_STT_L__recognized.trk
-        ├── moved_STT_R__recognized.trk
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
+        . . . . . . . . . . . . . . . .
         ├── moved_UF_L__recognized.trk
         ├── moved_UF_R__recognized.trk
         └── moved_V__recognized.trk
