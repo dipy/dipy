@@ -45,6 +45,124 @@ as data you downloaded is already in the required format. We will be using ``bun
 folder you downloaded from streamline atlas link and ``subjects_small`` folder
 downloaded from test data link.
 
+Where, ``subjects_small`` directory has following structure:
+
+subjects_small
+├── control
+│   ├── 3805
+│   │   ├── anatomical_measures
+│   │   ├── org_bundles
+│   │   └── rec_bundles
+│   ├── 3806
+│   │   ├── anatomical_measures
+│   │   ├── org_bundles
+│   │   └── rec_bundles
+│   ├── 3809
+│   │   ├── anatomical_measures
+│   │   ├── org_bundles
+│   │   └── rec_bundles
+│   ├── 3850
+│   │   ├── anatomical_measures
+│   │   ├── org_bundles
+│   │   └── rec_bundles
+│   └── 3851
+│       ├── anatomical_measures
+│       ├── org_bundles
+│       └── rec_bundles
+└── patient
+    ├── 3383
+    │   ├── anatomical_measures
+    │   ├── org_bundles
+    │   └── rec_bundles
+    ├── 3385
+    │   ├── anatomical_measures
+    │   ├── org_bundles
+    │   └── rec_bundles
+    ├── 3387
+    │   ├── anatomical_measures
+    │   ├── org_bundles
+    │   └── rec_bundles
+    ├── 3392
+    │   ├── anatomical_measures
+    │   ├── org_bundles
+    │   └── rec_bundles
+    └── 3552
+        ├── anatomical_measures
+        ├── org_bundles
+        └── rec_bundles
+
+And each subject has following directory structure:
+
+
+├── anatomical_measures
+│   ├── ad.nii.gz
+│   ├── csa_peaks.pam5
+│   ├── fa.nii.gz
+│   ├── md.nii.gz
+│   └── rd.nii.gz
+├── org_bundles
+│   ├── streamlines_moved_AF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_AF_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_CCMid__labels__recognized_orig.trk
+│   ├── streamlines_moved_CC_ForcepsMajor__labels__recognized_orig.trk
+│   ├── streamlines_moved_CC_ForcepsMinor__labels__recognized_orig.trk
+│   ├── streamlines_moved_CST_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_CST_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_EMC_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_EMC_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_FPT_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_FPT_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_IFOF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_IFOF_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_ILF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_ILF_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_MLF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_MLF_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_ML_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_ML_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_MdLF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_MdLF_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_OPT_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_OPT_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_OR_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_OR_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_STT_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_STT_R__labels__recognized_orig.trk
+│   ├── streamlines_moved_UF_L__labels__recognized_orig.trk
+│   ├── streamlines_moved_UF_R__labels__recognized_orig.trk
+│   └── streamlines_moved_V__labels__recognized_orig.trk
+└── rec_bundles
+    ├── moved_AF_L__recognized.trk
+    ├── moved_AF_R__recognized.trk
+    ├── moved_CCMid__recognized.trk
+    ├── moved_CC_ForcepsMajor__recognized.trk
+    ├── moved_CC_ForcepsMinor__recognized.trk
+    ├── moved_CST_L__recognized.trk
+    ├── moved_CST_R__recognized.trk
+    ├── moved_EMC_L__recognized.trk
+    ├── moved_EMC_R__recognized.trk
+    ├── moved_FPT_L__recognized.trk
+    ├── moved_FPT_R__recognized.trk
+    ├── moved_IFOF_L__recognized.trk
+    ├── moved_IFOF_R__recognized.trk
+    ├── moved_ILF_L__recognized.trk
+    ├── moved_ILF_R__recognized.trk
+    ├── moved_MLF_L__recognized.trk
+    ├── moved_MLF_R__recognized.trk
+    ├── moved_ML_L__recognized.trk
+    ├── moved_ML_R__recognized.trk
+    ├── moved_MdLF_L__recognized.trk
+    ├── moved_MdLF_R__recognized.trk
+    ├── moved_OPT_L__recognized.trk
+    ├── moved_OPT_R__recognized.trk
+    ├── moved_OR_L__recognized.trk
+    ├── moved_OR_R__recognized.trk
+    ├── moved_STT_L__recognized.trk
+    ├── moved_STT_R__recognized.trk
+    ├── moved_UF_L__recognized.trk
+    ├── moved_UF_R__recognized.trk
+    └── moved_V__recognized.trk
+
 .. note::
 
     Make sure all the output folders are empty and do not get overridden.
