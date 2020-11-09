@@ -3,9 +3,10 @@
 BUAN Bundle Shape Similarity Score
 ==================================
 
-This example explains how we can use BUAN [Chandio2020]_ to calculate shape similarity
-between two given bundle. Where, shape similarity score of 1 means two bundles
-are extremely close in shape and 0 implies no shape similarity whatsoever.
+This example explains how we can use BUAN [Chandio2020]_ to calculate shape
+similarity between two given bundle. Where, shape similarity score of 1 means
+two bundles are extremely close in shape and 0 implies no shape similarity
+whatsoever.
 
 Shape similarity score can be used as a quality assurance metric as well.
 
@@ -41,6 +42,8 @@ bundle2 = select_random_set_of_streamlines(cb_subj1, 60, rng=None)
 """
 Now, let's visualize two bundles.
 """
+
+
 def show_both_bundles(bundles, colors=None, show=True, fname=None):
 
     scene = window.Scene()
@@ -57,23 +60,26 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
         sleep(1)
         window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
-show_both_bundles([bundle1,bundle2], colors=[(1,0,0),(0,1,0)], show=False,
-                  fname="two_bundles.png")
+
+show_both_bundles([bundle1, bundle2], colors=[(1, 0, 0), (0, 1, 0)],
+                  show=False, fname="two_bundles.png")
 
 """
 Calculate shape similarity score between two bundles.
 """
 
 """
-0 cluster_thr becasue we want to use all streamlines and not the centroids of clusters.
+0 cluster_thr becasue we want to use all streamlines and not the centroids of
+clusters.
 """
-clust_thr=[0]
+
+clust_thr = [0]
 
 """
 threshold indicates how strictly we want two bundles to be similar in shape.
 """
 
-threshold=5
+threshold = 5
 
 bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
 
@@ -81,12 +87,13 @@ bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
 Let's change the value of threshold to 10.
 """
 
-threshold=10
+threshold = 10
 
 bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
 
 """
-Higher value of threshold give sus higher shape similarity score as it is linient.
+Higher value of threshold give sus higher shape similarity score as it is
+linient.
 """
 
 """
