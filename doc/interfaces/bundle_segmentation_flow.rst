@@ -4,12 +4,12 @@
 White Matter Bundle Segmentation with RecoBundles
 =================================================
 
-This tutorial explains how we can use RecoBundles [1]_ to extract
+This tutorial explains how we can use RecoBundles [Garyfallidis17]_ to extract
 bundles from input tractograms.
 
 
 First, we need to download a reference streamline atlas. Here, we downloaded an atlas with
-30 bundles in MNI space [2]_ from:
+30 bundles in MNI space [Yeh18]_ from:
 
     `<https://figshare.com/articles/Atlas_of_30_Human_Brain_Bundles_in_MNI_space/12089652>`_
 
@@ -38,7 +38,7 @@ Streamline-Based Linear Registration
 
 To extract the bundles from the tractogram, we first need move our target tractogram to
 be in the same space as the atlas (MNI, in this case). We can directly register the target tractogram to
-the space of the atlas, using streamline-based linear registration (SLR) [3]_.
+the space of the atlas, using streamline-based linear registration (SLR) [Garyfallidis15]_.
 
 The following workflows require two positional input arguments; ``static`` and
 ``moving`` .trk files. In our case, the ``static`` input is the atlas and the ``moving`` is
@@ -106,26 +106,26 @@ original space, run following commands::
 For more information about each command line, please visit DIPY website `<https://dipy.org/>`_ .
 
 If you are using any of these commands please be sure to cite the relevant papers and
-DIPY [4]_.
+DIPY [Garyfallidis14]_.
 
 ----------
 References
 ----------
 
-.. [1] Garyfallidis et al. Recognition of white matter bundles using local and
+.. [Garyfallidis17] Garyfallidis et al. Recognition of white matter bundles using local and
     global streamline-based registration and clustering, Neuroimage, 2017
 
-.. [2] Yeh F.C., Panesar S., Fernandes D., Meola A., Yoshino M.,
+.. [Yeh18] Yeh F.C., Panesar S., Fernandes D., Meola A., Yoshino M.,
     Fernandez-Miranda J.C., Vettel J.M., Verstynen T.
     Population-averaged atlas of the macroscale human structural
     connectome and its network topology.
     Neuroimage, 2018.
 
-.. [3] Garyfallidis et al., “Robust and efficient linear registration of
+.. [Garyfallidis15] Garyfallidis et al., “Robust and efficient linear registration of
     white-matter fascicles in the space of streamlines”, Neuroimage,
     117:124-140, 2015.
 
-.. [4] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
+.. [Garyfallidis14] Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,
     S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith.
     "DIPY, a library for the analysis of diffusion MRI data".
     Frontiers in Neuroinformatics, 1-18, 2014.

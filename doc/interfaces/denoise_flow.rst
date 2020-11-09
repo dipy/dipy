@@ -220,8 +220,8 @@ Structural
 References
 ----------
 .. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C. Barillot,
-   "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
-   Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
+    "An Optimized Blockwise Non Local Means Denoising Filter for 3D Magnetic
+    Resonance Images", IEEE Transactions on Medical Imaging, 27(4):425-441, 2008
 .. [Coupe11] Pierrick Coupe, Jose Manjon, Montserrat Robles, Louis Collins.
     "Adaptive Multiresolution Non-Local Means Filter for 3D MR Image Denoising"
     IET Image Processing, Institution of Engineering and Technology, 2011
