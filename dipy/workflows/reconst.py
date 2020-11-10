@@ -68,29 +68,26 @@ class ReconstMAPMRIFlow(Workflow):
             Big delta value used in generation of gradient table of provided
             bval and bvec.
         b0_threshold : float, optional
-            Threshold used to find b=0 directions (default 0.0)
+            Threshold used to find b=0 directions
         laplacian : bool, optional
-            Regularize using the Laplacian of the MAP-MRI basis (default True)
+            Regularize using the Laplacian of the MAP-MRI basis
         positivity : bool, optional
-            Constrain the propagator to be positive. (default True)
+            Constrain the propagator to be positive.
         bval_threshold : float, optional
             Sets the b-value threshold to be used in the scale factor
             estimation. In order for the estimated non-Gaussianity to have
             meaning this value should set to a lower value (b<2000 s/mm^2)
             such that the scale factors are estimated on signal points that
             reasonably represent the spins at Gaussian diffusion.
-            (default: 2000)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: rtop, laplacian_signal, msd, qiv, rtap, rtpp,
             ng, perng, parng
-            (default: [] (all))
         laplacian_weighting : float, optional
             Weighting value used in fitting the MAPMRI model in the Laplacian
-            and both model types. (default: 0.05)
+            and both model types.
         radial_order : unsigned int, optional
             Even value used to set the order of the basis
-            (default: 6)
         out_dir : string, optional
             Output directory (default: current directory)
         out_rtop : string, optional
@@ -250,18 +247,17 @@ class ReconstDtiFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
         b0_threshold : float, optional
-            Threshold used to find b=0 directions (default 0.0)
+            Threshold used to find b=0 directions
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
-            b-vectors are unit vectors (default 0.01)
+            b-vectors are unit vectors
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
-            (default [] (all))
         out_dir : string, optional
             Output directory (default current directory)
         out_tensor : string, optional
-            Name of the tensors volume to be saved (default 'tensors.nii.gz').
+            Name of the tensors volume to be saved.
             Per default, this will be saved following the nifti standard:
             with the tensor elements as Dxx, Dxy, Dyy, Dxz, Dyz, Dzz on the
             last (5th) dimension of the volume (shape: (i, j, k, 1, 6)). If
@@ -271,34 +267,28 @@ class ReconstDtiFlow(Workflow):
             Dyz, Dzz on the last dimension.
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved
-            (default 'fa.nii.gz')
         out_ga : string, optional
             Name of the geodesic anisotropy volume to be saved
-            (default 'ga.nii.gz')
         out_rgb : string, optional
-            Name of the color fa volume to be saved (default 'rgb.nii.gz')
+            Name of the color fa volume to be saved
         out_md : string, optional
             Name of the mean diffusivity volume to be saved
-            (default 'md.nii.gz')
         out_ad : string, optional
             Name of the axial diffusivity volume to be saved
-            (default 'ad.nii.gz')
         out_rd : string, optional
             Name of the radial diffusivity volume to be saved
-            (default 'rd.nii.gz')
         out_mode : string, optional
-            Name of the mode volume to be saved (default 'mode.nii.gz')
+            Name of the mode volume to be saved
         out_evec : string, optional
             Name of the eigenvectors volume to be saved
-            (default 'evecs.nii.gz')
         out_eval : string, optional
-            Name of the eigenvalues to be saved (default 'evals.nii.gz')
+            Name of the eigenvalues to be saved
         nifti_tensor : bool, optional
             Whether the tensor is saved in the standard Nifti format or in an
             alternate format
             that is used by other software (e.g., FSL): a
             4-dimensional volume (shape (i, j, k, 6)) with
-            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension. Default: True
+            Dxx, Dxy, Dxz, Dyy, Dyz, Dzz on the last dimension.
 
         References
         ----------
@@ -443,51 +433,46 @@ class ReconstCSDFlow(Workflow):
         b0_threshold : float, optional
             Threshold used to find b=0 directions
         bvecs_tol : float, optional
-            Bvecs should be unit vectors. (default:0.01)
+            Bvecs should be unit vectors.
         roi_center : variable int, optional
             Center of ROI in data. If center is None, it is assumed that it is
-            the center of the volume with shape `data.shape[:3]` (default None)
+            the center of the volume with shape `data.shape[:3]`
         roi_radii : int or array-like, optional
-            radii of cuboid ROI in voxels (default 10)
+            radii of cuboid ROI in voxels
         fa_thr : float, optional
-            FA threshold for calculating the response function (default 0.7)
+            FA threshold for calculating the response function
         frf : variable float, optional
             Fiber response function can be for example inputed as 15 4 4
             (from the command line) or [15, 4, 4] from a Python script to be
             converted to float and multiplied by 10**-4 . If None
-            the fiber response function will be computed automatically
-            (default: None).
+            the fiber response function will be computed automatically.
         extract_pam_values : bool, optional
             Save or not to save pam volumes as single nifti files.
         sh_order : int, optional
-            Spherical harmonics order (default 6) used in the CSA fit.
+            Spherical harmonics order used in the CSA fit.
         odf_to_sh_order : int, optional
             Spherical harmonics order used for peak_from_model to compress
-            the ODF to spherical harmonics coefficients (default 8)
+            the ODF to spherical harmonics coefficients
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
-            calibration procedure. Default: False
+            calibration procedure.
         nbr_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
         out_dir : string, optional
             Output directory (default current directory)
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.pam5')
+            Name of the peaks volume to be saved
         out_shm : string, optional
             Name of the spherical harmonics volume to be saved
-            (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
-            (default 'peaks_dirs.nii.gz')
         out_peaks_values : string, optional
             Name of the peaks values volume to be saved
-            (default 'peaks_values.nii.gz')
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved
-            (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved
 
 
         References
@@ -620,40 +605,36 @@ class ReconstCSAFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         sh_order : int, optional
-            Spherical harmonics order (default 6) used in the CSA fit.
+            Spherical harmonics order used in the CSA fit.
         odf_to_sh_order : int, optional
             Spherical harmonics order used for peak_from_model to compress
-            the ODF to spherical harmonics coefficients (default 8)
+            the ODF to spherical harmonics coefficients
         b0_threshold : float, optional
             Threshold used to find b=0 directions
         bvecs_tol : float, optional
-            Threshold used so that norm(bvec)=1 (default 0.01)
+            Threshold used so that norm(bvec)=1
         extract_pam_values : bool, optional
             Wheter or not to save pam volumes as single nifti files.
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
-            calibration procedure. Default: False
+            calibration procedure.
         nbr_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()).
         out_dir : string, optional
             Output directory (default current directory)
         out_pam : string, optional
-            Name of the peaks volume to be saved (default 'peaks.pam5')
+            Name of the peaks volume to be saved
         out_shm : string, optional
             Name of the spherical harmonics volume to be saved
-            (default 'shm.nii.gz')
         out_peaks_dir : string, optional
             Name of the peaks directions volume to be saved
-            (default 'peaks_dirs.nii.gz')
         out_peaks_values : string, optional
             Name of the peaks values volume to be saved
-            (default 'peaks_values.nii.gz')
         out_peaks_indices : string, optional
             Name of the peaks indices volume to be saved
-            (default 'peaks_indices.nii.gz')
         out_gfa : string, optional
-            Name of the generalized FA volume to be saved (default 'gfa.nii.gz')
+            Name of the generalized FA volume to be saved
 
         References
         ----------
@@ -748,49 +729,40 @@ class ReconstDkiFlow(Workflow):
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
         b0_threshold : float, optional
-            Threshold used to find b=0 directions (default 0.0)
+            Threshold used to find b=0 directions
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
-            (default [] (all))
         out_dir : string, optional
             Output directory (default current directory)
         out_dt_tensor : string, optional
             Name of the tensors volume to be saved
-            (default: 'dti_tensors.nii.gz')
         out_dk_tensor : string, optional
             Name of the tensors volume to be saved
-            (default 'dki_tensors.nii.gz')
         out_fa : string, optional
             Name of the fractional anisotropy volume to be saved
-            (default 'fa.nii.gz')
         out_ga : string, optional
             Name of the geodesic anisotropy volume to be saved
-            (default 'ga.nii.gz')
         out_rgb : string, optional
-            Name of the color fa volume to be saved (default 'rgb.nii.gz')
+            Name of the color fa volume to be saved
         out_md : string, optional
             Name of the mean diffusivity volume to be saved
-            (default 'md.nii.gz')
         out_ad : string, optional
             Name of the axial diffusivity volume to be saved
-            (default 'ad.nii.gz')
         out_rd : string, optional
             Name of the radial diffusivity volume to be saved
-            (default 'rd.nii.gz')
         out_mode : string, optional
-            Name of the mode volume to be saved (default 'mode.nii.gz')
+            Name of the mode volume to be saved
         out_evec : string, optional
             Name of the eigenvectors volume to be saved
-            (default 'evecs.nii.gz')
         out_eval : string, optional
-            Name of the eigenvalues to be saved (default 'evals.nii.gz')
+            Name of the eigenvalues to be saved
         out_mk : string, optional
-            Name of the mean kurtosis to be saved (default: 'mk.nii.gz')
+            Name of the mean kurtosis to be saved
         out_ak : string, optional
-            Name of the axial kurtosis to be saved (default: 'ak.nii.gz')
+            Name of the axial kurtosis to be saved
         out_rk : string, optional
-            Name of the radial kurtosis to be saved (default: 'rk.nii.gz')
+            Name of the radial kurtosis to be saved
 
         References
         ----------
@@ -933,32 +905,24 @@ class ReconstIvimFlow(Workflow):
         split_b_D : int, optional
             Value to split the bvals to estimate D for the two-stage process of
             fitting
-            (default 400)
         split_b_S0 : int, optional
             Value to split the bvals to estimate S0 for the two-stage process
             of fitting.
-            (default 200)
         b0_threshold : int, optional
             Threshold value for the b0 bval.
-            (default 0)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: S0_predicted, perfusion_fraction, D_star, D
-            (default [] (all))
         out_dir : string, optional
             Output directory (default current directory)
         out_S0_predicted : string, optional
             Name of the S0 signal estimated to be saved
-            (default: 'S0_predicted.nii.gz')
         out_perfusion_fraction : string, optional
             Name of the estimated volume fractions to be saved
-            (default 'perfusion_fraction.nii.gz')
         out_D_star : string, optional
             Name of the estimated pseudo-diffusion parameter to be saved
-            (default 'D_star.nii.gz')
         out_D : string, optional
             Name of the estimated diffusion parameter to be saved
-            (default 'D.nii.gz')
 
         References
         ----------
