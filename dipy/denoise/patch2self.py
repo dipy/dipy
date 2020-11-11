@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from dipy.utils.optpkg import optional_package
 sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
@@ -79,7 +80,7 @@ def _vol_denoise(train, f, model, data):
         model = linear_model.Lasso(max_iter=50)
 
     else:
-        print('Model not supported. Choose from: ols, ridge, lasso or mlp')
+        warnings.warn('Model not supported. Choose from: ols, ridge or lasso')
 
     cur_X, Y = _vol_split(train, f)
     model.fit(cur_X.T, Y.T)
@@ -154,7 +155,7 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
         voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
 
     model: string
-        Corresponds to the Sklearn object of the regressor being used for
+        Corresponds to the object of the regressor being used for
         performing the denoising. Options: 'ols', 'ridge' qnd 'lasso'
         default: 'ridge'.
 
@@ -164,16 +165,18 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
         The 4D denoised DWI data.
 
     """
+    idx_max = np.argmax([np.mean(data[..., i]) for i in range(0,
+                                                              data.shape[3])])
+    data_ap = np.insert(data, -1, data[..., idx_max], axis=3)
 
-    train = _extract_3d_patches(np.pad(data, ((patch_radius[0],
-                                               patch_radius[0]),
-                                              (patch_radius[1],
-                                               patch_radius[1]),
-                                              (patch_radius[2],
-                                               patch_radius[2]),
-                                              (0, 0)), mode='constant'),
+    train = _extract_3d_patches(np.pad(data_ap, ((patch_radius[0],
+                                                  patch_radius[0]),
+                                                 (patch_radius[1],
+                                                  patch_radius[1]),
+                                                 (patch_radius[2],
+                                                  patch_radius[2]),
+                                                 (0, 0)), mode='constant'),
                                 patch_radius=patch_radius)
-    print(train.shape)
 
     patch_radius = np.asarray(patch_radius).astype(int)
     denoised_array = np.zeros((data.shape))
@@ -181,4 +184,7 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
     for f in range(0, data.shape[3]):
         denoised_array[..., f] = _vol_denoise(train, f, model, data)
 
-    return denoised_array
+    denoised_arr = np.delete(denoised_array,
+                             np.s_[denoised_array.shape[3]-1], axis=3)
+
+    return denoised_arr
