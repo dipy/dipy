@@ -8,6 +8,8 @@ renamed or are deprecated (not recommended) during different release circles.
 DIPY 1.3.0 changes
 ------------------
 
+- new dependency added: tqdm
+
 **Registration**
 
 - The argument `interp` of the method `dipy.align.imaffine.AffineMap.transform`  has been renamed `interpolation`.

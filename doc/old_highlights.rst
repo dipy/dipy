@@ -4,6 +4,22 @@
 Older Highlights
 ****************
 
+**DIPY 1.2.0** is now available. New features include:
+
+- New command line interfaces for group analysis: BUAN.
+- Added b-tensor encoding for gradient table.
+- Better support for single shell or multi-shell response functions.
+- Stats module refactored.
+- Numpy minimum version is 1.2.0.
+- Fixed compatibilities with FURY 0.6+, VTK9+, CVXPY 1.1+.
+- Added multiple tutorials for DIPY command line interfaces.
+- Updated SH basis convention.
+- Improved performance of tissue classification.
+- Fixed a memory overlap bug (multi_median).
+- Large documentation update (typography / references).
+- Closed 256 issues and merged 94 pull requests.
+
+
 **DIPY 1.1.1** is now available. New features include:
 
 - New module for deep learning ``dipy.nn`` (uses TensorFlow 2.0).
