@@ -142,7 +142,7 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
     return np.array(all_patches).T
 
 
-def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
+def p2s(data, patch_radius=[0, 0, 0], model='ridge'):
     """ Patch2Self Denoiser.
 
     Parameters
@@ -167,7 +167,7 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
     """
     idx_max = np.argmax([np.mean(data[..., i]) for i in range(0,
                                                               data.shape[3])])
-    data_ap = np.insert(data, -1, data[..., idx_max], axis=3)
+    data_ap = np.insert(data, 0, data[..., idx_max], axis=3)
 
     train = _extract_3d_patches(np.pad(data_ap, ((patch_radius[0],
                                                   patch_radius[0]),
@@ -179,12 +179,11 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
                                 patch_radius=patch_radius)
 
     patch_radius = np.asarray(patch_radius).astype(int)
-    denoised_array = np.zeros((data.shape))
+    denoised_array = np.zeros((data_ap.shape))
 
-    for f in range(0, data.shape[3]):
-        denoised_array[..., f] = _vol_denoise(train, f, model, data)
+    for f in range(0, data_ap.shape[3]):
+        denoised_array[..., f] = _vol_denoise(train, f, model, data_ap)
 
-    denoised_arr = np.delete(denoised_array,
-                             np.s_[denoised_array.shape[3]-1], axis=3)
+    denoised_arr = np.delete(denoised_array, 0, axis=3)
 
     return denoised_arr
