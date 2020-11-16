@@ -3,12 +3,16 @@ from numpy.testing import (run_module_suite, assert_,
                            assert_equal,
                            assert_array_almost_equal,
                            assert_raises)
-
+import pytest
 from dipy.denoise.patch2self import patch2self
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
+needs_sklearn = pytest.mark.skipif(not patch2self.has_sklearn,
+                                   reason="Requires Scikit-Learn")
 
+
+@needs_sklearn
 def test_patch2self_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((12, 13, 10, 10))
 
@@ -25,6 +29,7 @@ def test_patch2self_random_noise():
     assert_equal(np.round(S0nb.mean()), 100)
 
 
+@needs_sklearn
 def test_patch2self_boundary():
     # patch2self preserves boundaries
     S0 = 100 + np.zeros((20, 20, 20, 20))
@@ -36,6 +41,7 @@ def test_patch2self_boundary():
     assert_(S0[10, 10, 10, 10] < 110)
 
 
+@needs_sklearn
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
     # define voxel index
@@ -100,6 +106,7 @@ def rfiw_phantom(gtab, snr=None):
                         (DWI / np.sqrt(2) + n2)**2), sigma]
 
 
+@needs_sklearn
 def test_phantom():
 
     # generate a gradient table for phantom data
