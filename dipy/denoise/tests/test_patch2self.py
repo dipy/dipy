@@ -12,20 +12,17 @@ from dipy.core.gradients import gradient_table, generate_bvecs
 def test_patch2self_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((12, 13, 10, 10))
 
-    masker = np.zeros(S0.shape[:4]).astype(bool)
-    masker[8:15, 8:15, 8:15] = 1
-    for mask in [None, masker]:
-        S0nb = patch2self(S0, mask=mask)
+    S0nb = patch2self(S0)
 
-        assert_(S0nb[mask].min() > S0[mask].min())
-        assert_(S0nb[mask].max() < S0[mask].max())
-        assert_equal(np.round(S0nb[mask].mean()), 100)
+    assert_(S0nb.min() > S0.min())
+    assert_(S0nb.max() < S0.max())
+    assert_equal(np.round(S0nb.mean()), 100)
 
-        S0nb = patch2self(S0, mask=mask)
+    S0nb = patch2self(S0)
 
-        assert_(S0nb[mask].min() > S0[mask].min())
-        assert_(S0nb[mask].max() < S0[mask].max())
-        assert_equal(np.round(S0nb[mask].mean()), 100)
+    assert_(S0nb.min() > S0.min())
+    assert_(S0nb.max() < S0.max())
+    assert_equal(np.round(S0nb.mean()), 100)
 
 
 def test_patch2self_boundary():
@@ -37,16 +34,6 @@ def test_patch2self_boundary():
     patch2self(S0)
     assert_(S0[9, 9, 9, 9] > 290)
     assert_(S0[10, 10, 10, 10] < 110)
-
-
-def test_patch2self_4D_and_mask():
-    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f8')
-    mask = np.zeros((20, 20, 20))
-    mask[10, 10, 10] = 1
-    S0n = patch2self(S0, mask=mask)
-    assert_equal(S0.shape, S0n.shape)
-    assert_equal(np.round(S0n[10, 10, 10]), 200)
-    assert_equal(S0n[8, 8, 8], 0)
 
 
 def rfiw_phantom(gtab, snr=None):
@@ -134,16 +121,14 @@ def test_phantom():
     DWI_den1 = patch2self(DWI, patch_radius=[1, 1, 1], model='ridge')
 
     assert_(np.max(DWI_den1) / sigma < np.max(DWI) / sigma)
-    DWI_den2 = patch2self(DWI, patch_radius=[1, 1, 1], model='ols')
+    DWI_den2 = patch2self(DWI, patch_radius=[1, 2, 1], model='ridge')
 
     assert_(np.max(DWI_den2) / sigma < np.max(DWI) / sigma)
-    assert_array_almost_equal(DWI_den1, DWI_den2)
+    assert_array_almost_equal(DWI_den1, DWI_den2, decimal=1)
 
     assert_raises(AttributeError, patch2self, DWI, model='empty')
 
     # Try this with a sigma volume, instead of a scalar
-    mask = np.zeros_like(DWI, dtype=bool)[..., 0]
-    mask[2:-2, 2:-2, 2:-2] = True
     DWI_den = patch2self(DWI, patch_radius=[1, 1, 1])
 
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
