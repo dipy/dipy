@@ -143,8 +143,7 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
     return np.array(all_patches).T
 
 
-def patch2self(data, patch_radius=[0, 0, 0], model='ridge', mask=False,
-               b0_mode=True):
+def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
     """ Patch2Self Denoiser.
 
     Parameters
@@ -161,10 +160,6 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge', mask=False,
         performing the denoising. Options: 'ols', 'ridge' qnd 'lasso'
         default: 'ridge'.
 
-    b0_mode: bool (optional)
-        Makes a copy of the b0 to ensure smooth working with data having only
-        a single b0.
-
     Returns
     --------
     denoised array : ndarray
@@ -178,10 +173,9 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge', mask=False,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
 
-    if b0_mode is True:
-        idx_max = np.argmax([np.mean(data[..., i])
-                             for i in range(0, data.shape[3])])
-        data = np.insert(data, 0, data[..., idx_max], axis=3)
+    idx_max = np.argmax([np.mean(data[..., i])
+                         for i in range(0, data.shape[3])])
+    data = np.insert(data, 0, data[..., idx_max], axis=3)
 
     train = _extract_3d_patches(np.pad(data, ((patch_radius[0],
                                                patch_radius[0]),
@@ -198,9 +192,6 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge', mask=False,
     for f in range(0, data.shape[3]):
         denoised_array[..., f] = _vol_denoise(train, f, model, data)
 
-    if b0_mode is True:
-        denoised_array = np.delete(denoised_array, 0, axis=3)
-
-    denoised_array[mask == 0] = 0
+    denoised_array = np.delete(denoised_array, 0, axis=3)
 
     return denoised_array
