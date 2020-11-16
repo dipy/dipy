@@ -7,7 +7,7 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 1
-_version_minor = 3
+_version_minor = 4
 _version_micro = 0
 _version_extra = 'dev'
 # _version_extra = ''
@@ -123,6 +123,7 @@ EXTRAS_REQUIRE = {
         "scipy",
         "nibabel>=3.0.0",
         "h5py",
+        "h5py<3.0.0; sys_platform == 'win32'",
         "cvxpy",
         "pandas",
         "tables",

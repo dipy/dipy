@@ -42,7 +42,7 @@ class NLMeansFlow(Workflow):
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_denoised : string, optional
             Name of the resulting denoised volume (default: dwi_nlmeans.nii.gz)
 
@@ -129,7 +129,7 @@ class LPCAFlow(Workflow):
             Marcenko-Pastur distribution [2]_.
             Default: 2.3 (according to [1]_)
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_denoised : string, optional
             Name of the resulting denoised volume (default: dwi_lpca.nii.gz)
 
@@ -202,7 +202,7 @@ class MPPCAFlow(Workflow):
             Marcenko-Pastur distribution is returned [2]_.
             Default: False.
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_denoised : string, optional
             Name of the resulting denoised volume (default: dwi_mppca.nii.gz)
         out_sigma : string, optional
@@ -262,7 +262,7 @@ class GibbsRingingFlow(Workflow):
             positive integer.
             Default is set to 1.
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_unrig : string, optional
             Name of the resulting denoised volume (default: dwi_unrig.nii.gz)
 

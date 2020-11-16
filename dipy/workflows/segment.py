@@ -50,7 +50,7 @@ class MedianOtsuFlow(Workflow):
         dilate : int, optional
             number of iterations for binary dilation (default 'None')
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_mask : string, optional
             Name of the mask volume to be saved (default 'brain_mask.nii.gz')
         out_masked : string, optional
@@ -156,7 +156,7 @@ class RecoBundlesFlow(Workflow):
             Don't enable Refine local Streamline-based Linear
             Registration (default False).
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_recognized_transf : string, optional
             Recognized bundle in the space of the model bundle
             (default 'recognized.trk')
@@ -308,7 +308,7 @@ class LabelsBundlesFlow(Workflow):
         labels_files : string
             The path of model bundle files
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_bundle : string, optional
             Recognized bundle in the space of the model bundle
             (default 'recognized_orig.trk')

@@ -78,7 +78,7 @@ class ResliceFlow(Workflow):
             the size of the pool will equal the number of cores available.
             (default 1)
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_resliced : string, optional
             Name of the resliced dataset to be saved
             (default 'resliced.nii.gz')
@@ -146,7 +146,7 @@ class SlrWithQbxFlow(Workflow):
         progressive : boolean, optional
             (default True)
         out_dir : string, optional
-            Output directory (default input file directory)
+            Output directory (default current directory)
         out_moved : string, optional
             Filename of moved tractogram (default 'moved.trk')
         out_affine : string, optional
