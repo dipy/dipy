@@ -145,14 +145,14 @@ class LocalFiberTrackingPAMFlow(Workflow):
             binarize the images.
         stopping_thr : float, optional
             Threshold applied to stopping volume's data to identify where
-            tracking has to stop (default 0.2).
+            tracking has to stop.
         seed_density : int, optional
-            Number of seeds per dimension inside voxel (default 1).
+            Number of seeds per dimension inside voxel.
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
         step_size : float, optional
-            Step size used for tracking (default 0.5mm).
+            Step size (in mm) used for tracking.
         tracking_method : string, optional
             Select direction getter strategy :
              - "eudx" (Uses the peaks saved in the pam_files)
@@ -163,14 +163,13 @@ class LocalFiberTrackingPAMFlow(Workflow):
              - "closestpeaks" or "cp" for a ClosestPeaks tracking
                (Uses the sh saved in the pam_files)
         pmf_threshold : float, optional
-            Threshold for ODF functions (default 0.1).
+            Threshold for ODF functions.
         max_angle : float, optional
-            Maximum angle between streamline segments (range [0, 90],
-            default 30).
+            Maximum angle between streamline segments (range [0, 90]).
         out_dir : string, optional
-           Output directory (default current directory).
+           Output directory. (default current directory)
         out_tractogram : string, optional
-           Name of the tractogram file to be saved (default 'tractogram.trk').
+           Name of the tractogram file to be saved.
         save_seeds : bool, optional
             If true, save the seeds associated to their streamline
             in the 'data_per_streamline' Tractogram dictionary using
@@ -234,37 +233,36 @@ class PFTrackingPAMFlow(Workflow):
         seeding_files : string
             A binary image showing where we need to seed for tracking.
         step_size : float, optional
-            Step size used for tracking (default 0.2mm).
+            Step size (in mm) used for tracking.
         seed_density : int, optional
-            Number of seeds per dimension inside voxel (default 1).
+            Number of seeds per dimension inside voxel.
              For example, seed_density of 2 means 8 regularly distributed
              points in the voxel. And seed density of 1 means 1 point at the
              center of the voxel.
         pmf_threshold : float, optional
-            Threshold for ODF functions (default 0.1).
+            Threshold for ODF functions.
         max_angle : float, optional
-            Maximum angle between streamline segments (range [0, 90],
-            default 20).
+            Maximum angle between streamline segments (range [0, 90]).
         pft_back : float, optional
             Distance in mm to back track before starting the particle filtering
-            tractography (default 2mm). The total particle filtering
+            tractography. The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
         pft_front : float, optional
             Distance in mm to run the particle filtering tractography after the
-            the back track distance (default 1mm). The total particle filtering
+            the back track distance. The total particle filtering
             tractography distance is equal to back_tracking_dist +
             front_tracking_dist.
         pft_count : int, optional
-            Number of particles to use in the particle filter (default 15).
+            Number of particles to use in the particle filter.
         out_dir : string, optional
-           Output directory (default current directory)
+           Output directory. (default current directory)
         out_tractogram : string, optional
-           Name of the tractogram file to be saved (default 'tractogram.trk')
+           Name of the tractogram file to be saved.
         save_seeds : bool, optional
             If true, save the seeds associated to their streamline
             in the 'data_per_streamline' Tractogram dictionary using
-            'seeds' as the key
+            'seeds' as the key.
 
         References
         ----------
