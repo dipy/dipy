@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import (assert_,
+from numpy.testing import (run_module_suite, assert_,
                            assert_equal,
                            assert_array_almost_equal,
                            assert_raises)
@@ -147,3 +147,7 @@ def test_phantom():
     DWI_den = patch2self(DWI, patch_radius=[1, 1, 1])
 
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
+
+
+if __name__ == '__main__':
+    run_module_suite()

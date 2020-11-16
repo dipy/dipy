@@ -170,6 +170,12 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge', mask=False,
     denoised array : ndarray
         The 4D denoised DWI data.
 
+    References
+    ----------
+
+    .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                    Denoising Diffusion MRI with Self-supervised Learning,
+                    Advances in Neural Information Processing Systems 33 (2020)
     """
 
     if b0_mode is True:
