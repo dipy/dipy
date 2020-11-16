@@ -489,7 +489,7 @@ class ImageRegistrationFlow(Workflow):
                                            affreg, params0, transform,
                                            affine)
 
-    def run(self, static_img_files, moving_img_files, transform='affine',
+    def run(self, static_image_files, moving_image_files, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
             level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
             factors=[4, 2, 1], progressive=True, save_metric=False,
@@ -498,10 +498,10 @@ class ImageRegistrationFlow(Workflow):
         """
         Parameters
         ----------
-        static_img_files : string
+        static_image_files : string
             Path to the static image file.
 
-        moving_img_files : string
+        moving_image_files : string
             Path to the moving image file.
 
         transform : string, optional
