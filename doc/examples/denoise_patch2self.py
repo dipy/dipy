@@ -3,16 +3,18 @@
 Patch2Self: Self-Supervised Denoising via Statistical Independence
 ==================================================================
 
-Patch2Self a self-supervised learning method for denoising DWI data which uses
-the entire volume to learn a full-rank locally linear denoiser for that volume.
-By taking advantage of the oversampled q-space of DWI data, Patch2Self can
-separate structure from noise without requiring an explicit model for either.
+Patch2Self [Fadnavis20]_ a self-supervised learning method for denoising DWI
+data which uses the entire volume to learn a full-rank locally linear denoiser
+for that volume. By taking advantage of the oversampled q-space of DWI data,
+Patch2Self can separate structure from noise without requiring an explicit
+model for either.
 
-Classical denoising algorithms such as Local PCA, Non-local Means, Total
-Variation Norm, etc. which assume certain properties on the signal structure.
-Patch2Self *does not* make any such assumption on the signal but only
-leverages the fact that the noise across different 3D volumes of the DWI
-signal originates from random fluctuations in the acquired signal.
+Classical denoising algorithms such as Local PCA [Manjon2013]_, [Veraa2016a]_,
+Non-local Means [Coupe08]_, Total Variation Norm [Knoll11]_, etc. which assume
+certain properties on the signal structure. Patch2Self *does not* make any such
+assumption on the signal but only leverages the fact that the noise across
+different 3D volumes of the DWI signal originates from random fluctuations in
+the acquired signal.
 
 Since Patch2Self only relies on the randomness of the noise, it can be applied
 at any step in the pre-processing pipeline. The design of Patch2Self is such
@@ -117,3 +119,32 @@ Below we show how the denoised data can be saved.
 save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
 
 print("Entire denoised data saved in denoised_patch2self.nii.gz")
+
+"""
+
+References
+----------
+
+.. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                Denoising Diffusion MRI with Self-supervised Learning,
+                Advances in Neural Information Processing Systems 33 (2020)
+
+.. [Manjon2013] Manjon JV, Coupe P, Concha L, Buades A, Collins DL "Diffusion
+                Weighted Image Denoising Using Overcomplete Local PCA" (2013).
+                PLoS ONE 8(9): e73021. doi:10.1371/journal.pone.0073021.
+
+.. [Veraa2016a] Veraart J, Fieremans E, Novikov DS. 2016. Diffusion MRI noise
+                mapping using random matrix theory. Magnetic Resonance in
+                Medicine. doi: 10.1002/mrm.26059.
+
+.. [Coupe08] P. Coupe, P. Yger, S. Prima, P. Hellier, C. Kervrann, C.
+             Barillot, An Optimized Blockwise Non Local Means Denoising
+             Filter for 3D Magnetic Resonance Images, IEEE Transactions on
+             Medical Imaging, 27(4):425-441, 2008
+
+.. [Knoll11] F. Knoll, K. Bredies, T. Pock, R. Stollberger, Second order total
+             generalized variation (TGV) for MRI. Magnetic resonance in
+             medicine, 65(2), pp.480-491.
+
+.. include:: ../links_names.inc
+"""
