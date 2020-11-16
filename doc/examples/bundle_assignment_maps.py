@@ -15,9 +15,7 @@ from dipy.data.fetcher import fetch_bundle_atlas_hcp842
 import numpy as np
 from fury import actor, window
 from dipy.stats.analysis import assignment_map
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_trk, save_trk
-from dipy.io.utils import create_tractogram_header
+from dipy.io.streamline import load_trk
 
 """
 Download and read data for this tutorial
@@ -39,7 +37,7 @@ model_af_l = sft_af_l.streamlines
 let's visualize Arcuate Fasiculus Left (AF_L) bundle before assignment maps
 """
 
-interactive = True
+interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
@@ -63,6 +61,7 @@ if interactive:
 """
 Creating 100 bundle assignment maps on AF_L using BUAN [Chandio2020]_
 """
+
 n = 100
 indx = assignment_map(model_af_l, model_af_l, n)
 indx = np.array(indx)
@@ -77,7 +76,7 @@ for i in range(len(indx)):
 let's visualize Arcuate Fasiculus Left (AF_L) bundle after assignment maps
 """
 
-interactive = True
+interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)

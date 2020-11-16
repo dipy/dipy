@@ -45,7 +45,7 @@ as data you downloaded is already in the required format. We will be using ``bun
 folder you downloaded from streamline atlas link and ``subjects_small`` folder
 downloaded from test data link.
 
-Where, ``bundles`` folder had following nodel bundles::
+Where, ``bundles`` folder has following nodel bundles::
 
     bundles/
     ├── AF_L.trk
@@ -125,7 +125,7 @@ The ``subjects_small`` directory has following structure::
             ├── org_bundles
             └── rec_bundles
 
-And each subject has following directory structure::
+And each subject folder has the following structure::
 
     ├── anatomical_measures
     │   ├── ad.nii.gz
@@ -154,8 +154,8 @@ And each subject has following directory structure::
         ├── moved_UF_R__recognized.trk
         └── moved_V__recognized.trk
 
-If you want to run this tutorial on your data, make sure that directory structure is
-same as shown above. Where, ``anatomical_measures`` folder has nifti files for dti measures such as
+If you want to run this tutorial on your data, make sure that the directory structure is
+The same as shown above. Where, ``anatomical_measures`` folder has nifti files for DTI measures such as
 FA, MD, and CSA/CSD pam5 files. The ``org_bundles`` folder has extracted bundles in common space.
 The ``rec_bundles`` folder has extracted bundles in native space.
 
@@ -212,8 +212,9 @@ Output of this commandline is interactive visualization window. Example snapshot
     :alt: alternate text
     :align: center
 
-    Result plot for left arcuate fasciculus (AF_L) with highlighted group differences
-    area in red color on the bundle where pvalues < 0.05.
+    Result plot for left arcuate fasciculus (AF_L) with a highlighted area on the bundle in red color.
+    The highlighted area represents the segments on bundles with significant group differences
+    that have pvalues < 0.05.
 
 Let's use a different highlight color this time on ``CST_L`` bundle::
 
@@ -224,8 +225,11 @@ Let's use a different highlight color this time on ``CST_L`` bundle::
     :alt: alternate text
     :align: center
 
-    Result plot for left corticospinal tract left (CST_L) with highlighted group differences
-    area in yellow color on the bundle where pvalues < 0.05.
+    Result plot for left corticospinal tract left (CST_L) with a highlighted area on the bundle
+    in yellow color. The highlighted area represents the segments on bundles with significant
+    group differences that have pvalues < 0.05.
+
+
 -----------------------------------------------------------
 Shape similarity of specific bundles across the populations
 -----------------------------------------------------------

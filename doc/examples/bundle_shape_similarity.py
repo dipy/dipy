@@ -4,14 +4,15 @@ BUAN Bundle Shape Similarity Score
 ==================================
 
 This example explains how we can use BUAN [Chandio2020]_ to calculate shape
-similarity between two given bundle. Where, shape similarity score of 1 means
+similarity between two given bundles. Where, shape similarity score of 1 means
 two bundles are extremely close in shape and 0 implies no shape similarity
 whatsoever.
 
-Shape similarity score can be used as a quality assurance metric as well.
+Shape similarity score can be used as a quality assurance metric.
 
-It can be used to validate streamline registration quality or bundle extraction
-quality by calculating output with a reference bundle.
+It can be used to validate streamline registration quality, bundle extraction
+quality by calculating output with a reference bundle or other issues with
+pre-processing by calculating shape dissimilarity with a reference bundle.
 
 First import the necessary modules.
 """
@@ -69,14 +70,14 @@ Calculate shape similarity score between two bundles.
 """
 
 """
-0 cluster_thr becasue we want to use all streamlines and not the centroids of
+0 cluster_thr because we want to use all streamlines and not the centroids of
 clusters.
 """
 
 clust_thr = [0]
 
 """
-threshold indicates how strictly we want two bundles to be similar in shape.
+Threshold indicates how strictly we want two bundles to be similar in shape.
 """
 
 threshold = 5
@@ -92,7 +93,7 @@ threshold = 10
 bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
 
 """
-Higher value of threshold give sus higher shape similarity score as it is
+Higher value of threshold gives us higher shape similarity score as it is
 linient.
 """
 
