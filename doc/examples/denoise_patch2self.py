@@ -26,4 +26,94 @@ The Patch2Self Framework:
 .. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
    :scale: 60 %
    :align: center
+
+The above figure demonstrates the working of Patch2Self. The idea is to build
+a new regressor for denoising each 3D volume of the 4D diffusion data. This is
+done in the following 2 phases:
+
+(A) Self-supervised training: First, we extract 3D Patches from all the ‘n’
+volumes and hold out the target volume to denoise. Each patch from the rest of
+the ‘(n-1)’ volumes predicts the center voxel of the corresponding patch in the
+target volume.
+
+This is done by using the self-supervised loss:
+:math:`\mathcal{L}\left(\Phi_{J}\right)=\mathbb{E}\left\|\Phi_{J}\left(Y_{*, *,-j}\right)-Y_{*, 0, j}\right\|^{2}`
+
+(B) Prediction: The same 'n-1' volumes which were used in the training are now
+fed into the regressor :math:`\Phi` built in phase (A). The prediction is a
+denoised version of hed-out volume.
+
+*Note: The volume to be denoised is merely used as the target in the training
+phase. But is not used in the training set for (A) nor is used to predict the
+denoised output in (B).*
+
+Let's load the necessary modules:
 """
+
+import numpy as np
+from dipy.data import get_fnames
+from dipy.io.image import load_nifti, save_nifti
+import matplotlib.pyplot as plt
+
+from dipy.denoise.patch2self import patch2self
+
+"""
+Now let's load an example dataset and denoise it with Patch2Self. As one can
+note, Patch2Self does not require noise estimation and should work with any
+kind of diffusion data.
+"""
+
+hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
+data, affine = load_nifti(hardi_fname)
+
+denoised_arr = patch2self(data)
+
+"""
+The array `denoised_arr` contains the denoised output obtained from Patch2Self.
+Now lets visualize the output and the residuals obtained from the denoising.
+"""
+
+# Gets the center slice and the middle volume of the 4D diffusion data.
+sli = data.shape[2] // 2
+gra = 60  # pick out a random volume for a particular gradient direction
+
+orig = data[:, :, sli, gra]
+den = denoised_arr[:, :, sli, gra]
+
+# computes the residuals
+rms_diff = np.sqrt((orig - den) ** 2)
+
+fig1, ax = plt.subplots(1, 3, figsize=(12, 6),
+                        subplot_kw={'xticks': [], 'yticks': []})
+
+fig1.subplots_adjust(hspace=0.3, wspace=0.05)
+
+ax.flat[0].imshow(orig.T, cmap='gray', interpolation='none',
+                  origin='lower')
+ax.flat[0].set_title('Original')
+ax.flat[1].imshow(den.T, cmap='gray', interpolation='none',
+                  origin='lower')
+ax.flat[1].set_title('Denoised Output')
+ax.flat[2].imshow(rms_diff.T, cmap='gray', interpolation='none',
+                  origin='lower')
+ax.flat[2].set_title('Residuals')
+
+fig1.savefig('denoised_patch2self.png')
+
+print("The result saved in denoised_patch2self.png")
+
+"""
+.. figure:: denoised_patch2self.png
+   :align: center
+
+Patch2Self preserved anatomical detail. This can be visually verified by
+inspecting the residuals obtained above. Since we do not see any structure in
+the difference residuals, it is clear that it preserved the underlying signal
+structure and got rid of the stochastic noise.
+
+Below we show how the denoised data can be saved.
+"""
+
+save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
+
+print("Entire denoised data saved in denoised_patch2self.nii.gz")
