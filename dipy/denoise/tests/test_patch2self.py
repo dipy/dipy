@@ -1,14 +1,14 @@
 import numpy as np
+from dipy.denoise import patch2self as p2s
 from numpy.testing import (run_module_suite, assert_,
                            assert_equal,
                            assert_array_almost_equal,
                            assert_raises)
 import pytest
-from dipy.denoise.patch2self import patch2self
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
-needs_sklearn = pytest.mark.skipif(not patch2self.has_sklearn,
+needs_sklearn = pytest.mark.skipif(not p2s.has_sklearn,
                                    reason="Requires Scikit-Learn")
 
 
@@ -16,13 +16,13 @@ needs_sklearn = pytest.mark.skipif(not patch2self.has_sklearn,
 def test_patch2self_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((12, 13, 10, 10))
 
-    S0nb = patch2self(S0)
+    S0nb = p2s.patch2self(S0)
 
     assert_(S0nb.min() > S0.min())
     assert_(S0nb.max() < S0.max())
     assert_equal(np.round(S0nb.mean()), 100)
 
-    S0nb = patch2self(S0)
+    S0nb = p2s.patch2self(S0)
 
     assert_(S0nb.min() > S0.min())
     assert_(S0nb.max() < S0.max())
@@ -36,7 +36,7 @@ def test_patch2self_boundary():
     noise = 2 * np.random.standard_normal((20, 20, 20, 20))
     S0 += noise
     S0[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
-    patch2self(S0)
+    p2s.patch2self(S0)
     assert_(S0[9, 9, 9, 9] > 290)
     assert_(S0[10, 10, 10, 10] < 110)
 
@@ -125,18 +125,18 @@ def test_phantom():
     gtab = gradient_table(bvals, bvecs)
 
     DWI, sigma = rfiw_phantom(gtab, snr=30)
-    DWI_den1 = patch2self(DWI, patch_radius=[1, 1, 1], model='ridge')
+    DWI_den1 = p2s.patch2self(DWI, patch_radius=[1, 1, 1], model='ridge')
 
     assert_(np.max(DWI_den1) / sigma < np.max(DWI) / sigma)
-    DWI_den2 = patch2self(DWI, patch_radius=[1, 2, 1], model='ridge')
+    DWI_den2 = p2s.patch2self(DWI, patch_radius=[1, 2, 1], model='ridge')
 
     assert_(np.max(DWI_den2) / sigma < np.max(DWI) / sigma)
     assert_array_almost_equal(DWI_den1, DWI_den2, decimal=1)
 
-    assert_raises(AttributeError, patch2self, DWI, model='empty')
+    assert_raises(AttributeError, p2s.patch2self, DWI, model='empty')
 
     # Try this with a sigma volume, instead of a scalar
-    DWI_den = patch2self(DWI, patch_radius=[1, 1, 1])
+    DWI_den = p2s.patch2self(DWI, patch_radius=[1, 1, 1])
 
     assert_(np.max(DWI_den) / sigma < np.max(DWI) / sigma)
 
