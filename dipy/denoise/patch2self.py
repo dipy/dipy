@@ -5,7 +5,7 @@ sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
 
 
-def _vol_split(train, f):
+def _vol_split(train, vol_idx):
     """ Split the 3D volumes into the train and test set.
 
     Parameters
@@ -13,33 +13,33 @@ def _vol_split(train, f):
     train : ndarray
         Array of all 3D patches flattened out to be 2D.
 
-    f: int
+    vol_idx: int
         The volume number that needs to be held out for training.
 
     Returns
     --------
-    cur_X : ndarray
+    cur_x : ndarray
         Array of patches corresponding to all the volumes except from the held
         -out volume.
 
-    Y : ndarray
+    y : ndarray
         Array of patches corresponding to the volume that is used a target for
         denoising.
     """
 
     # Delete the f-th volume
-    X1 = train[:f, :, :]
-    X2 = train[f+1:, :, :]
+    x1 = train[:vol_idx, :, :]
+    x2 = train[vol_idx+1:, :, :]
 
-    cur_X = np.reshape(np.concatenate((X1, X2), axis=0),
+    cur_x = np.reshape(np.concatenate((x1, x2), axis=0),
                        ((train.shape[0]-1)*train.shape[1], train.shape[2]))
 
     # Center voxel of the selected block
-    Y = train[f, train.shape[1]//2, :]
-    return cur_X, Y
+    y = train[vol_idx, train.shape[1]//2, :]
+    return cur_x, y
 
 
-def _vol_denoise(train, f, model, data):
+def _vol_denoise(train, vol_idx, model, data):
     """ Denoise a single 3D volume using a train and test phase.
 
     Parameters
@@ -47,10 +47,10 @@ def _vol_denoise(train, f, model, data):
     train : ndarray
         Array of all 3D patches flattened out to be 2D.
 
-    f: int
+    vol_idx: int
         The volume number that needs to be held out for training.
 
-    model: string (optional)
+    model: str, optional
         Corresponds to the object of the regressor being used for
         performing the denoising. Options: 'ols', 'ridge', 'lasso'
         default: 'ridge'.
@@ -62,7 +62,7 @@ def _vol_denoise(train, f, model, data):
     --------
     model prediction : ndarray
         Denoised array of all 3D patches flattened out to be 2D corresponding
-        to the held out volume `f`.
+        to the held out volume `vol_idx`.
 
     """
 
@@ -82,10 +82,10 @@ def _vol_denoise(train, f, model, data):
     else:
         warnings.warn('Model not supported. Choose from: ols, ridge or lasso')
 
-    cur_X, Y = _vol_split(train, f)
-    model.fit(cur_X.T, Y.T)
+    cur_x, y = _vol_split(train, vol_idx)
+    model.fit(cur_x.T, y.T)
 
-    return model.predict(cur_X.T).reshape(data.shape[0], data.shape[1],
+    return model.predict(cur_x.T).reshape(data.shape[0], data.shape[1],
                                           data.shape[2])
 
 
@@ -155,7 +155,7 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
 
-    model: string (optional)
+    model: str, optional
         Corresponds to the object of the regressor being used for
         performing the denoising. Options: 'ols', 'ridge' qnd 'lasso'
         default: 'ridge'.
@@ -189,8 +189,9 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
     patch_radius = np.asarray(patch_radius).astype(int)
     denoised_array = np.zeros((data.shape))
 
-    for f in range(0, data.shape[3]):
-        denoised_array[..., f] = _vol_denoise(train, f, model, data)
+    for vol_idx in range(0, data.shape[3]):
+        denoised_array[..., vol_idx] = _vol_denoise(train,
+                                                    vol_idx, model, data)
 
     denoised_array = np.delete(denoised_array, 0, axis=3)
 
