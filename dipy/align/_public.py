@@ -32,6 +32,11 @@ from dipy.io.streamline import load_trk
 from dipy.io.utils import read_img_arr_or_path
 from dipy.io.image import load_nifti, save_nifti
 
+__all__ = ["syn_registration", "register_dwi_to_template",
+           "write_mapping", "read_mapping", "resample",
+           "center_of_mass", "translation", "rigid", "affine",
+           "affine_registration", "register_series",
+           "register_dwi_series", "streamline_registration"]
 
 # Global dicts for choosing metrics for registration:
 syn_metric_dict = {'CC': CCMetric,
