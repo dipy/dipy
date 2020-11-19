@@ -31,7 +31,7 @@ def check_dimensions(static, moving):
         lies inside the domain of the deformation fields. This is assumed
         to be accomplished by "pre-aligning" the moving image towards the
         static using an affine transformation given by the
-        'starting_affine' matrix
+        'starting_affine' matrix.
 
     """
     if len(static.shape) != len(moving.shape):
@@ -59,29 +59,26 @@ class ResliceFlow(Workflow):
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         new_vox_size : variable float
-            new voxel size
+            new voxel size.
         order : int, optional
             order of interpolation, from 0 to 5, for resampling/reslicing,
             0 nearest interpolation, 1 trilinear etc.. if you don't want any
-            smoothing 0 is the option you need (default 1)
+            smoothing 0 is the option you need.
         mode : string, optional
             Points outside the boundaries of the input are filled according
-            to the given mode 'constant', 'nearest', 'reflect' or 'wrap'
-            (default 'constant')
+            to the given mode 'constant', 'nearest', 'reflect' or 'wrap'.
         cval : float, optional
             Value used for points outside the boundaries of the input if
-            mode='constant' (default 0)
+            mode='constant'.
         num_processes : int, optional
             Split the calculation to a pool of children processes. This only
             applies to 4D `data` arrays. If a positive integer then it defines
             the size of the multiprocessing pool that will be used. If 0, then
             the size of the pool will equal the number of cores available.
-            (default 1)
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_resliced : string, optional
-            Name of the resliced dataset to be saved
-            (default 'resliced.nii.gz')
+            Name of the resliced dataset to be saved.
         """
 
         io_it = self.get_io_iterator()
@@ -127,36 +124,34 @@ class SlrWithQbxFlow(Workflow):
         static_files : string
         moving_files : string
         x0 : string, optional
-            rigid, similarity or affine transformation model (default affine)
+            rigid, similarity or affine transformation model.
         rm_small_clusters : int, optional
-            Remove clusters that have less than `rm_small_clusters`
-            (default 50)
+            Remove clusters that have less than `rm_small_clusters`.
         qbx_thr : variable int, optional
-            Thresholds for QuickBundlesX (default [40, 30, 20, 15])
+            Thresholds for QuickBundlesX.
         num_threads : int, optional
-            Number of threads. If None (default) then all available threads
+            Number of threads. If 'None' then all available threads
             will be used. Only metrics using OpenMP will use this variable.
         greater_than : int, optional
             Keep streamlines that have length greater than
-            this value (default 50)
+            this value.
         less_than : int, optional
-            Keep streamlines have length less than this value (default 250)
+            Keep streamlines have length less than this value.
         np_pts : int, optional
-            Number of points for discretizing each streamline (default 20)
+            Number of points for discretizing each streamline.
         progressive : boolean, optional
-            (default True)
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_moved : string, optional
-            Filename of moved tractogram (default 'moved.trk')
+            Filename of moved tractogram.
         out_affine : string, optional
-            Filename of affine for SLR transformation (default 'affine.txt')
+            Filename of affine for SLR transformation.
         out_stat_centroids : string, optional
-            Filename of static centroids (default 'static_centroids.trk')
+            Filename of static centroids.
         out_moving_centroids : string, optional
-            Filename of moving centroids (default 'moving_centroids.trk')
+            Filename of moving centroids.
         out_moved_centroids : string, optional
-            Filename of moved centroids (default 'moved_centroids.trk')
+            Filename of moved centroids.
 
         Notes
         -----
@@ -273,7 +268,7 @@ class ImageRegistrationFlow(Workflow):
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the
-            'starting_affine' matrix
+            'starting_affine' matrix.
 
         moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
@@ -289,7 +284,7 @@ class ImageRegistrationFlow(Workflow):
 
         transform : An instance of transform type.
 
-        affine : Affine matrix to be used as starting affine
+        affine : Affine matrix to be used as starting affine.
         """
         img_registration, \
             xopt, fopt = affreg.optimize(static, moving, transform, params0,
@@ -320,7 +315,7 @@ class ImageRegistrationFlow(Workflow):
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the
-            'starting_affine' matrix
+            'starting_affine' matrix.
 
         moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
@@ -357,7 +352,7 @@ class ImageRegistrationFlow(Workflow):
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the
-            'starting_affine' matrix
+            'starting_affine' matrix.
 
         moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
@@ -401,7 +396,7 @@ class ImageRegistrationFlow(Workflow):
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the
-            'starting_affine' matrix
+            'starting_affine' matrix.
 
         moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
@@ -456,7 +451,7 @@ class ImageRegistrationFlow(Workflow):
             lies inside the domain of the deformation fields. This is assumed
             to be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the
-            'starting_affine' matrix
+            'starting_affine' matrix.
 
         moving_grid2world : array, shape (dim+1, dim+1), optional
             the voxel-to-space transformation associated with the moving
@@ -507,58 +502,52 @@ class ImageRegistrationFlow(Workflow):
         transform : string, optional
             com: center of mass, trans: translation, rigid: rigid body
              affine: full affine including translation, rotation, shearing and
-             scaling (default 'affine').
+             scaling.
 
         nbins : int, optional
-            Number of bins to discretize the joint and marginal PDF
-             (default '32').
+            Number of bins to discretize the joint and marginal PDF.
 
         sampling_prop : int, optional
             Number ([0-100]) of voxels for calculating the PDF.
-             'None' implies all voxels (default 'None').
+             'None' implies all voxels.
 
         metric : string, optional
-            Similarity metric for gathering mutual information
-             (default 'mi' , Mutual Information metric).
+            Similarity metric for gathering mutual information).
 
         level_iters : variable int, optional
             The number of iterations at each scale of the scale space.
              `level_iters[0]` corresponds to the coarsest scale,
              `level_iters[-1]` the finest, where n is the length of the
-              sequence. By default, a 3-level scale space with iterations
-              sequence equal to [10000, 1000, 100] will be used.
+              sequence.
 
         sigmas : variable floats, optional
             Custom smoothing parameter to build the scale space (one parameter
-             for each scale). By default, the sequence of sigmas will be
-             [3, 1, 0].
+             for each scale).
 
         factors : variable floats, optional
             Custom scale factors to build the scale space (one factor for each
-             scale). By default, the sequence of factors will be [4, 2, 1].
+             scale).
 
         progressive : boolean, optional
-            Enable/Disable the progressive registration (default 'True').
+            Enable/Disable the progressive registration.
 
         save_metric : boolean, optional
             If true, quality assessment metric are saved in
-            'quality_metric.txt' (default 'False').
+            'quality_metric.txt'.
 
         out_dir : string, optional
             Directory to save the transformed image and the affine matrix
-             (default '').
+             (default current directory).
 
         out_moved : string, optional
-            Name for the saved transformed image
-             (default 'moved.nii.gz').
+            Name for the saved transformed image.
 
         out_affine : string, optional
-            Name for the saved affine matrix
-             (default 'affine.txt').
+            Name for the saved affine matrix.
 
         out_quality : string, optional
             Name of the file containing the saved quality
-             metric (default 'quality_metric.txt').
+             metric.
         """
 
         io_it = self.get_io_iterator()
@@ -661,19 +650,19 @@ class ApplyTransformFlow(Workflow):
             For the affine case, it should be a text(*.txt) file containing
             the affine matrix. For the diffeomorphic case,
             it should be a nifti file containing the mapping displacement
-            field in each voxel with this shape (x, y, z, 3, 2)
+            field in each voxel with this shape (x, y, z, 3, 2).
 
         transform_type : string, optional
             Select the transformation type to apply between 'affine' or
-            'diffeomorphic'. (default affine)
+            'diffeomorphic'.
 
         out_dir : string, optional
-            Directory to save the transformed files (default '').
+            Directory to save the transformed files (default current directory).
 
         out_file : string, optional
-            Name of the transformed file (default 'transformed.nii.gz').
-             It is recommended to use the flag --mix-names to
-              prevent the output files from being overwritten.
+            Name of the transformed file.
+            It is recommended to use the flag --mix-names to
+            prevent the output files from being overwritten.
 
         """
         if transform_type.lower() not in ['affine', 'diffeomorphic']:
@@ -753,28 +742,25 @@ class SynRegistrationFlow(Workflow):
              affine matrix.
 
         inv_static : boolean, optional
-            Apply the inverse mapping to the static image (default 'False').
+            Apply the inverse mapping to the static image.
 
         level_iters : variable int, optional
             The number of iterations at each level of the gaussian pyramid.
-             By default, a 3-level scale space with iterations
-             sequence equal to [10, 10, 5] will be used. The 0-th
-             level corresponds to the finest resolution.
 
         metric : string, optional
-            The metric to be used (Default cc, 'Cross Correlation metric').
+            The metric to be used.
             metric available: cc (Cross Correlation), ssd (Sum Squared
             Difference), em (Expectation-Maximization).
 
         mopt_sigma_diff : float, optional
             Metric option applied on Cross correlation (CC).
             The standard deviation of the Gaussian smoothing kernel to be
-            applied to the update field at each iteration (default 2.0)
+            applied to the update field at each iteration.
 
         mopt_radius : int, optional
             Metric option applied on Cross correlation (CC).
             the radius of the squared (cubic) neighborhood at each voxel to
-            be considered to compute the cross correlation. (default 4)
+            be considered to compute the cross correlation.
 
         mopt_smooth : float, optional
             Metric option applied on Sum Squared Difference (SSD) and
@@ -831,18 +817,17 @@ class SynRegistrationFlow(Workflow):
              when the inversion error falls below this threshold.
 
         out_dir : string, optional
-            Directory to save the transformed files (default '').
+            Directory to save the transformed files (default current directory).
 
         out_warped : string, optional
-            Name of the warped file. (default 'warped_moved.nii.gz').
+            Name of the warped file.
 
         out_inv_static : string, optional
             Name of the file to save the static image after applying the
-             inverse mapping (default 'inv_static.nii.gz').
+             inverse mapping.
 
         out_field : string, optional
             Name of the file to save the diffeomorphic map.
-            (default 'displacement_field.nii.gz')
 
         """
         io_it = self.get_io_iterator()

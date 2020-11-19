@@ -24,11 +24,11 @@ class MaskFlow(Workflow):
         lb : float
             Lower bound value.
         ub : float, optional
-            Upper bound value (default Inf)
+            Upper bound value.
         out_dir : string, optional
-           Output directory (default current directory)
+           Output directory. (default current directory)
         out_mask : string, optional
-           Name of the masked file (default 'mask.nii.gz')
+           Name of the masked file.
         """
         if lb >= ub:
             logging.error('The upper bound(less than) should be greater'

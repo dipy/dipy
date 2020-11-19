@@ -27,13 +27,12 @@ class IoInfoFlow(Workflow):
         input_files : variable string
             Any number of Nifti1, bvals or bvecs files.
         b0_threshold : float, optional
-            (default 50)
+            Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
-            b-vectors are unit vectors (default 0.01)
+            b-vectors are unit vectors.
         bshell_thr : float, optional
-            Threshold for distinguishing b-values in different shells
-            (default 100)
+            Threshold for distinguishing b-values in different shells.
         """
         np.set_printoptions(3, suppress=True)
 
@@ -168,7 +167,7 @@ class FetchFlow(Workflow):
         data_names : variable string
             Any number of Nifti1, bvals or bvecs files.
         out_dir : string, optional
-            Output directory. Default: dipy home folder (~/.dipy)
+            Output directory. (default current directory)
 
         """
         if out_dir:
@@ -239,11 +238,10 @@ class SplitFlow(Workflow):
         input_files : variable string
             Any number of Nifti1 files
         vol_idx : int, optional
-            (default 0)
         out_dir : string, optional
-            Output directory. Default: dipy home folder (~/.dipy)
+            Output directory. (default current directory)
         out_split : string, optional
-            Name of the resulting split volume (default: split.nii.gz)
+            Name of the resulting split volume
 
         """
         io_it = self.get_io_iterator()
