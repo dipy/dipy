@@ -19,14 +19,13 @@ def _vol_split(train, vol_idx):
     Returns
     --------
     cur_x : ndarray
-        Array of patches corresponding to all the volumes except from the held
-        -out volume.
+        Array of patches corresponding to all the volumes except for the
+        held-out volume.
 
     y : ndarray
         Array of patches corresponding to the volume that is used a target for
         denoising.
     """
-
     # Delete the f-th volume
     x1 = train[:vol_idx, :, :]
     x2 = train[vol_idx+1:, :, :]
@@ -50,7 +49,7 @@ def _vol_denoise(train, vol_idx, model, data):
     vol_idx: int
         The volume number that needs to be held out for training.
 
-    model: str, optional
+    model: str
         Corresponds to the object of the regressor being used for
         performing the denoising. Options: 'ols', 'ridge', 'lasso'
         default: 'ridge'.
@@ -69,9 +68,7 @@ def _vol_denoise(train, vol_idx, model, data):
     # to add a new model, use the following API
     # We adhere to the following options as they are used for comparisons
     if model.lower() == 'ols':
-        model = linear_model.LinearRegression(copy_X=False,
-                                              fit_intercept=True,
-                                              n_jobs=-1, normalize=False)
+        model = linear_model.LinearRegression()
 
     elif model.lower() == 'ridge':
         model = linear_model.Ridge()
@@ -168,7 +165,7 @@ def patch2self(data, patch_radius=[0, 0, 0], model='ridge'):
     References
     ----------
 
-    .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+    [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
