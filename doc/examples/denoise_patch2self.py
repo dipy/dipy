@@ -67,8 +67,8 @@ kind of diffusion data.
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
-
-denoised_arr = patch2self(data)
+bvals = np.loadtxt(hardi_bval_fname)
+denoised_arr = patch2self(data, bvals)
 
 """
 The array `denoised_arr` contains the denoised output obtained from Patch2Self.

@@ -45,7 +45,6 @@ def test_patch2self_boundary():
     assert_less(S0[10, 10, 10, 10], 110)
 
 
-@needs_sklearn
 def rfiw_phantom(gtab, snr=None):
     """rectangle fiber immersed in water"""
     # define voxel index
