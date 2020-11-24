@@ -1,16 +1,69 @@
 
 import logging
 import shutil
+import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.denoise.patch2self import patch2self
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.localpca import localpca, mppca
 from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
+
+
+class Patch2SelfFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'patch2self'
+
+    def run(self, input_files, bval_files, patch_radius=0,
+            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+        """Workflow wrapping the patch2self denoising method.
+
+        It applies patch2self denoising on each file found by 'globing'
+        ``input_file`` and ``bval_file``. It saves the results in a directory 
+        specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bval_files : string
+            bval file associated with the diffusion data.
+        patch_radius : int, optional
+            patch size is ``2 x patch_radius + 1``. Default is 0.
+        out_dir : string, optional
+            Output directory (default current directory)
+        out_denoised : string, optional
+            Name of the resulting denoised volume 
+            (default: dwi_patch2self.nii.gz)
+
+        References
+        ----------
+        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                    Denoising Diffusion MRI with Self-supervised Learning,
+                    Advances in Neural Information Processing Systems 33 (2020)
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, bvalpath, odenoised in io_it:
+            if self._skip:
+                shutil.copy(fpath, odenoised)
+                logging.warning('Denoising skipped for now.')
+            else:
+                logging.info('Denoising %s', fpath)
+                data, affine, image = load_nifti(fpath, return_img=True)
+                bvals = np.loadtxt(bvalpath)
+
+                denoised_data = patch2self(data, bvals)
+                save_nifti(odenoised, denoised_data, affine, image.header)
+
+                logging.info('Denoised volumes saved as %s', odenoised)
 
 
 class NLMeansFlow(Workflow):
