@@ -29,7 +29,7 @@ def _vol_split(train, vol_idx):
     mask = np.zeros(train.shape[0])
     mask[vol_idx] = 1
     cur_x = train[mask == 0]
-    cur_x = cur_x.reshape(((train.shape[0]-1)*train.shape[1], 
+    cur_x = cur_x.reshape(((train.shape[0]-1)*train.shape[1],
                            train.shape[2]))
 
     # Center voxel of the selected block
@@ -55,10 +55,10 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
 
     data: ndarray
         The 4D noisy DWI data to be denoised.
-    
+
     alpha: float, optional
         Regularization parameter only for ridge regression model.
-        default: 1.0        
+        default: 1.0
 
     Returns
     --------
@@ -80,7 +80,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
         model = linear_model.Lasso(copy_X=False, max_iter=50)
 
     else:
-        raise ValueError('Model not supported. ', 
+        raise ValueError('Model not supported. ',
                          'Choose from: ols, ridge or lasso',
                          data.shape)
 
@@ -145,7 +145,7 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge', 
+def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                b0_threshold=50, out_dtype=None, alpha=1.0):
     """ Patch2Self Denoiser
 
@@ -153,7 +153,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     ----------
     data : ndarray
         The 4D noisy DWI data to be denoised.
-    
+
     bvals : 1D array
         Array of the bvals from the DWI acquisition
 
@@ -165,18 +165,18 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         Corresponds to the object of the regressor being used for
         performing the denoising. Options: 'ols', 'ridge' and 'lasso'
         default: 'ridge'.
-    
+
     b0_threshold : int, optional
         Threshold for considering volumes as b0.
-    
+
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
-    
+
     alpha: float, optional
         Regularization parameter only for ridge regression model.
-        default: 1.0  
-    
+        default: 1.0
+
     Returns
     --------
     denoised array : ndarray
@@ -190,56 +190,56 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
-    
+
     patch_radius = np.asarray(patch_radius, dtype=np.int)
-    
+
     if not data.ndim == 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.",
                          data.shape)
-    
+
     if out_dtype is None:
         out_dtype = data.dtype
 
     # We retain float64 precision, iff the input is in this precision:
     if data.dtype == np.float64:
         calc_dtype = np.float64
-        
+
     # Otherwise, we'll calculate things in float32 (saving memory)
     else:
         calc_dtype = np.float32
-    
+
     # Segregates volumes by b0 threshold
-    b0_idx = np.argwhere(bvals<=b0_threshold)
-    dwi_idx = np.argwhere(bvals>b0_threshold)
-    
+    b0_idx = np.argwhere(bvals <= b0_threshold)
+    dwi_idx = np.argwhere(bvals > b0_threshold)
+
     data_b0s = np.squeeze(np.take(data, b0_idx, axis=3))
-    data_dwi =  np.squeeze(np.take(data, dwi_idx, axis=3))
-    
+    data_dwi = np.squeeze(np.take(data, dwi_idx, axis=3))
+
     # create empty arrays
     denoised_b0s = np.empty((data_b0s.shape), dtype=calc_dtype)
     denoised_dwi = np.empty((data_dwi.shape), dtype=calc_dtype)
-    
+
     denoised_arr = np.empty((data.shape), dtype=calc_dtype)
-    
+
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3:
         denoised_b0s = data_b0s
-    
+
     else:
         train_b0 = _extract_3d_patches(np.pad(data, ((patch_radius[0],
-                                               patch_radius[0]),
+                                              patch_radius[0]),
                                               (patch_radius[1],
                                                patch_radius[1]),
                                               (patch_radius[2],
                                                patch_radius[2]),
                                               (0, 0)), mode='constant'),
                                        patch_radius=patch_radius)
-        
+
         for vol_idx in range(0, data_b0s.shape[3]):
             denoised_b0s[..., vol_idx] = _vol_denoise(train_b0,
                                                       vol_idx, model, data_b0s,
                                                       alpha=alpha)
-    
+
     # Separate denoising for DWI volumes
     train_dwi = _extract_3d_patches(np.pad(data_dwi, ((patch_radius[0],
                                                        patch_radius[0]),
@@ -247,18 +247,16 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                                                        patch_radius[1]),
                                                       (patch_radius[2],
                                                        patch_radius[2]),
-                                                      (0, 0)), 
+                                                      (0, 0)),
                                            mode='constant'),
                                     patch_radius=patch_radius)
 
-    
-    
     # Insert the separately denoised arrays into the respective empty arrays
     for vol_idx in range(0, data_dwi.shape[3]):
         denoised_dwi[..., vol_idx] = _vol_denoise(train_dwi,
                                                   vol_idx, model, data_dwi,
                                                   alpha=alpha)
-    
+
     if data_b0s.ndim == 3:
         denoised_arr[:, :, :, b0_idx[0][0]] = denoised_b0s
     else:
@@ -267,8 +265,8 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
 
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
-    
+
     # clip out the negative values from the denoised output
     denoised_arr.clip(min=0, out=denoised_arr)
-    
+
     return denoised_arr.astype(out_dtype)
