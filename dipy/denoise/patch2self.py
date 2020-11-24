@@ -1,4 +1,5 @@
 import numpy as np
+from warnings import warn
 from dipy.utils.optpkg import optional_package
 sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
@@ -67,8 +68,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
         to the held out volume `vol_idx`.
 
     """
-
-    # to add a new model, use the following API
+    # To add a new model, use the following API
     # We adhere to the following options as they are used for comparisons
     if model.lower() == 'ols':
         model = linear_model.LinearRegression(copy_X=False)
@@ -110,7 +110,6 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
         volume of the 4D DWI data.
 
     """
-
     if isinstance(patch_radius, int):
         patch_radius = np.ones(3, dtype=int) * patch_radius
     if len(patch_radius) != 3:
@@ -145,7 +144,7 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
+def patch2self(data, bvals, patch_radius=0, model='ridge',
                b0_threshold=50, out_dtype=None, alpha=1.0):
     """ Patch2Self Denoiser
 
@@ -157,7 +156,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     bvals : 1D array
         Array of the bvals from the DWI acquisition
 
-    patch_radius : int or 1D array (optional)
+    patch_radius : int or 1D array, optional
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
 
@@ -169,7 +168,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     b0_threshold : int, optional
         Threshold for considering volumes as b0.
 
-    out_dtype : str or dtype (optional)
+    out_dtype : str or dtype, optional
         The dtype for the output array. Default: output has the same dtype as
         the input.
 
@@ -190,12 +189,15 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
-
     patch_radius = np.asarray(patch_radius, dtype=np.int)
 
     if not data.ndim == 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.",
                          data.shape)
+
+    if data.shape[3] < 10:
+        warn("The intput data has less than 10 3D volumes. Patch2Self may not",
+             "give denoising performance.")
 
     if out_dtype is None:
         out_dtype = data.dtype
@@ -269,4 +271,4 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     # clip out the negative values from the denoised output
     denoised_arr.clip(min=0, out=denoised_arr)
 
-    return denoised_arr.astype(out_dtype)
+    return np.array(denoised_arr, dtype=out_dtype)
