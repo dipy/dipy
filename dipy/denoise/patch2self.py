@@ -91,7 +91,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
                                           data.shape[2])
 
 
-def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
+def _extract_3d_patches(arr, patch_radius=0):
     """ Extract 3D patches from 4D DWI data.
 
     Parameters
@@ -115,7 +115,7 @@ def _extract_3d_patches(arr, patch_radius=[0, 0, 0]):
     if len(patch_radius) != 3:
         raise ValueError("patch_radius should have length 3")
     else:
-        patch_radius = np.asarray(patch_radius).astype(int)
+        patch_radius = np.asarray(patch_radius, dtype=(int))
     patch_size = 2 * patch_radius + 1
 
     dim = arr.shape[-1]
