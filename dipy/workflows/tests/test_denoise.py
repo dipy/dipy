@@ -40,7 +40,8 @@ def test_patch2self_flow():
         patch2self_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)
         assert_true(os.path.isfile(
                     patch2self_flow.last_generated_outputs['out_denoised']))
-    
+
+
 def test_lpca_flow():
     with TemporaryDirectory() as out_dir:
         data_path, fbvals, fbvecs = get_fnames()

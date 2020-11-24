@@ -25,7 +25,7 @@ class Patch2SelfFlow(Workflow):
         """Workflow wrapping the patch2self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
-        ``input_file`` and ``bval_file``. It saves the results in a directory 
+        ``input_file`` and ``bval_file``. It saves the results in a directory
         specified by ``out_dir``.
 
         Parameters
@@ -40,7 +40,7 @@ class Patch2SelfFlow(Workflow):
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
-            Name of the resulting denoised volume 
+            Name of the resulting denoised volume
             (default: dwi_patch2self.nii.gz)
 
         References

@@ -15,7 +15,7 @@ needs_sklearn = pytest.mark.skipif(not p2s.has_sklearn,
 @needs_sklearn
 def test_patch2self_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((50, 50, 50, 100))
-    
+
     bvals = np.repeat(100, 100)
     S0nb = p2s.patch2self(S0, bvals, model='ols')
 
@@ -37,9 +37,9 @@ def test_patch2self_boundary():
     noise = 2 * np.random.standard_normal((20, 20, 20, 20))
     S0 += noise
     S0[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
-    
+
     bvals = np.repeat(100, 20)
-    
+
     p2s.patch2self(S0, bvals)
     assert_greater(S0[9, 9, 9, 9], 290)
     assert_less(S0[10, 10, 10, 10], 110)
@@ -138,7 +138,7 @@ def test_phantom():
     assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
     assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
 
-    assert_raises(ValueError, p2s.patch2self, dwi, model='empty', 
+    assert_raises(ValueError, p2s.patch2self, dwi, model='empty',
                   bvals=bvals)
 
     # Try this with a sigma volume, instead of a scalar
