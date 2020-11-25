@@ -143,7 +143,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, model='ridge',
+def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                b0_threshold=50, out_dtype=None, alpha=1.0):
     """ Patch2Self Denoiser
 
@@ -188,7 +188,6 @@ def patch2self(data, bvals, model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
-    patch_radius = [0, 0, 0]
     patch_radius = np.asarray(patch_radius, dtype=np.int)
 
     if not data.ndim == 4:

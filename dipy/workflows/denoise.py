@@ -20,7 +20,7 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files, patch_radius=0,
+    def run(self, input_files, bval_files,
             out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow wrapping the patch2self denoising method.
 
