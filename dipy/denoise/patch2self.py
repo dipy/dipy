@@ -51,8 +51,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
 
     model: str
         Corresponds to the object of the regressor being used for
-        performing the denoising. Options: 'ols', 'ridge', 'lasso'
-        default: 'ridge'.
+        performing the denoising.
 
     data: ndarray
         The 4D noisy DWI data to be denoised.
@@ -99,9 +98,9 @@ def _extract_3d_patches(arr, patch_radius):
     arr : ndarray
         The 4D noisy DWI data to be denoised.
 
-    patch_radius : int or 1D array, optional
+    patch_radius : int or 1D array
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
+        voxels).
 
     Returns
     --------

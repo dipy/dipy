@@ -1,15 +1,20 @@
 import os
+import pytest
 import numpy as np
 import numpy.testing as npt
-from dipy.testing import (assert_true, assert_false, assert_greater,
-                          assert_less)
-
+from dipy.utils.optpkg import optional_package
 from nibabel.tmpdirs import TemporaryDirectory
-
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti, load_nifti_data
+
+from dipy.testing import (assert_true, assert_false, assert_greater,
+                          assert_less)
 from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow, Patch2SelfFlow)
+
+sklearn, has_sklearn, _ = optional_package('sklearn')
+needs_sklearn = pytest.mark.skipif(not has_sklearn,
+                                   reason="Requires Scikit-Learn")
 
 
 def test_nlmeans_flow():
@@ -32,6 +37,7 @@ def test_nlmeans_flow():
         npt.assert_array_almost_equal(denoised_affine, affine)
 
 
+@needs_sklearn
 def test_patch2self_flow():
     with TemporaryDirectory() as out_dir:
         data_path, fbvals, fbvecs = get_fnames()

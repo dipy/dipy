@@ -35,7 +35,7 @@ class Patch2SelfFlow(Workflow):
             process multiple inputs at once.
         bval_files : string
             bval file associated with the diffusion data.
-        patch_radius : int, optional
+        patch_radius : variable int, optional
             patch size is ``2 x patch_radius + 1``. Default is 0.
         out_dir : string, optional
             Output directory (default current directory)
@@ -242,7 +242,7 @@ class MPPCAFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        patch_radius : int, optional
+        patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel (in
             voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
         pca_method : string, optional
