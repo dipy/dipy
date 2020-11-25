@@ -91,7 +91,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
                                           data.shape[2])
 
 
-def _extract_3d_patches(arr, patch_radius=0):
+def _extract_3d_patches(arr, patch_radius):
     """ Extract 3D patches from 4D DWI data.
 
     Parameters
@@ -144,7 +144,7 @@ def _extract_3d_patches(arr, patch_radius=0):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=0, model='ridge',
+def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                b0_threshold=50, out_dtype=None, alpha=1.0):
     """ Patch2Self Denoiser
 
