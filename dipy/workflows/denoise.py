@@ -35,8 +35,6 @@ class Patch2SelfFlow(Workflow):
             process multiple inputs at once.
         bval_files : string
             bval file associated with the diffusion data.
-        patch_radius : variable int, optional
-            patch size is ``2 x patch_radius + 1``. Default is 0.
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
