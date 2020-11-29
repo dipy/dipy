@@ -43,7 +43,7 @@ This is done by using the self-supervised loss:
 
 (B) Prediction: The same 'n-1' volumes which were used in the training are now
 fed into the regressor :math:`\Phi` built in phase (A). The prediction is a
-denoised version of hed-out volume.
+denoised version of held-out volume.
 
 *Note: The volume to be denoised is merely used as the target in the training
 phase. But is not used in the training set for (A) nor is used to predict the

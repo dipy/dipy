@@ -1,8 +1,15 @@
 import numpy as np
 from warnings import warn
+import time
 from dipy.utils.optpkg import optional_package
+import dipy.core.optimize as opt
+
 sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
+
+if not has_sklearn:
+    w = "Scikit-Learn is required to denoise the data via Patch2Self."
+    warn(w)
 
 
 def _vol_split(train, vol_idx):
@@ -18,11 +25,11 @@ def _vol_split(train, vol_idx):
 
     Returns
     --------
-    cur_x : ndarray
+    cur_x : 2D-array (nvolumes*patch_size) x (nvoxels)
         Array of patches corresponding to all the volumes except for the
         held-out volume.
 
-    y : ndarray
+    y : 1D-array
         Array of patches corresponding to the volume that is used a target for
         denoising.
     """
@@ -38,7 +45,7 @@ def _vol_split(train, vol_idx):
     return cur_x, y
 
 
-def _vol_denoise(train, vol_idx, model, data, alpha):
+def _vol_denoise(train, vol_idx, model, data_shape, alpha):
     """ Denoise a single 3D volume using a train and test phase.
 
     Parameters
@@ -46,17 +53,25 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
     train : ndarray
         Array of all 3D patches flattened out to be 2D.
 
-    vol_idx: int
+    vol_idx : int
         The volume number that needs to be held out for training.
 
-    model: str
-        Corresponds to the object of the regressor being used for
-        performing the denoising.
+    model : string, or initialized linear model object.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+            it can be an object that inherits from
+            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+            interface from Scikit-Learn:
+            `sklearn.linear_model.LinearRegression`,
+            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+            and other objects that inherit from `sklearn.base.RegressorMixin`.
+            Default: 'ridge'.
 
-    data: ndarray
-        The 4D noisy DWI data to be denoised.
+    data_shape : ndarray
+        The 4D shape of noisy DWI data to be denoised.
 
-    alpha: float, optional
+    alpha : float, optional
         Regularization parameter only for ridge and lasso regression models.
         default: 1.0
 
@@ -78,16 +93,21 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
     elif model.lower() == 'lasso':
         model = linear_model.Lasso(copy_X=False, max_iter=50, alpha=alpha)
 
+    elif (isinstance(model, opt.SKLearnLinearSolver) or
+          has_sklearn and isinstance(model, sklearn.base.RegressorMixin)):
+        model = model
+
     else:
-        raise ValueError('Model not supported. ',
-                         'Choose from: ols, ridge or lasso',
-                         data.shape)
+        e_s = "The `solver` key-word argument needs to be: "
+        e_s += "'ols', 'ridge', 'lasso' or a "
+        e_s += "`dipy.optimize.SKLearnLinearSolver` object"
+        raise ValueError(e_s)
 
     cur_x, y = _vol_split(train, vol_idx)
     model.fit(cur_x.T, y.T)
 
-    return model.predict(cur_x.T).reshape(data.shape[0], data.shape[1],
-                                          data.shape[2])
+    return model.predict(cur_x.T).reshape(data_shape[0], data_shape[1],
+                                          data_shape[2])
 
 
 def _extract_3d_patches(arr, patch_radius):
@@ -144,7 +164,7 @@ def _extract_3d_patches(arr, patch_radius):
 
 
 def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
-               b0_threshold=50, out_dtype=None, alpha=1.0):
+               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False):
     """ Patch2Self Denoiser
 
     Parameters
@@ -171,7 +191,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         The dtype for the output array. Default: output has the same dtype as
         the input.
 
-    alpha: float, optional
+    alpha : float, optional
         Regularization parameter only for ridge regression model.
         default: 1.0
 
@@ -222,8 +242,13 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
 
     denoised_arr = np.empty((data.shape), dtype=calc_dtype)
 
+    if verbose is True:
+        t1 = time.time()
+
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3:
+        if verbose is True:
+            print("Only 1 b0 found, b0 denoising skipped...")
         denoised_b0s = data_b0s
 
     else:
@@ -238,8 +263,12 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
 
         for vol_idx in range(0, data_b0s.shape[3]):
             denoised_b0s[..., vol_idx] = _vol_denoise(train_b0,
-                                                      vol_idx, model, data_b0s,
+                                                      vol_idx, model,
+                                                      data_b0s.shape,
                                                       alpha=alpha)
+
+            if verbose is True:
+                print("Denoised b0 Volume: ", vol_idx)
 
     # Separate denoising for DWI volumes
     train_dwi = _extract_3d_patches(np.pad(data_dwi, ((patch_radius[0],
@@ -255,8 +284,16 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     # Insert the separately denoised arrays into the respective empty arrays
     for vol_idx in range(0, data_dwi.shape[3]):
         denoised_dwi[..., vol_idx] = _vol_denoise(train_dwi,
-                                                  vol_idx, model, data_dwi,
+                                                  vol_idx, model,
+                                                  data_dwi.shape,
                                                   alpha=alpha)
+
+        if verbose is True:
+            print("Denoised DWI Volume: ", vol_idx)
+
+    if verbose is True:
+        t2 = time.time()
+        print('Total time taken for Patch2Self: ', t2-t1, " seconds")
 
     if data_b0s.ndim == 3:
         denoised_arr[:, :, :, b0_idx[0][0]] = denoised_b0s
