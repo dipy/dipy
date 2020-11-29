@@ -179,10 +179,17 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 0 (denoise in blocks of 1x1x1 voxels).
 
-    model : str, optional
-        Corresponds to the object of the regressor being used for
-        performing the denoising. Options: 'ols', 'ridge' and 'lasso'
-        default: 'ridge'.
+    model : string, or initialized linear model object.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+            it can be an object that inherits from
+            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+            interface from Scikit-Learn:
+            `sklearn.linear_model.LinearRegression`,
+            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+            and other objects that inherit from `sklearn.base.RegressorMixin`.
+            Default: 'ridge'.
 
     b0_threshold : int, optional
         Threshold for considering volumes as b0.
@@ -194,6 +201,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     alpha : float, optional
         Regularization parameter only for ridge regression model.
         default: 1.0
+
+    verbose : bool, optional
+        Show progress of Patch2Self and time taken.
 
     Returns
     --------

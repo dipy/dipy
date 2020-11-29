@@ -20,7 +20,7 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files,
+    def run(self, input_files, bval_files, model='ridge', verbose=False,
             out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow wrapping the patch2self denoising method.
 
@@ -35,6 +35,19 @@ class Patch2SelfFlow(Workflow):
             process multiple inputs at once.
         bval_files : string
             bval file associated with the diffusion data.
+        model : string, or initialized linear model object.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+            it can be an object that inherits from
+            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+            interface from Scikit-Learn:
+            `sklearn.linear_model.LinearRegression`,
+            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+            and other objects that inherit from `sklearn.base.RegressorMixin`.
+            Default: 'ridge'.
+        verbose : bool, optional
+            Show progress of Patch2Self and time taken.
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -58,7 +71,8 @@ class Patch2SelfFlow(Workflow):
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
 
-                denoised_data = patch2self(data, bvals)
+                denoised_data = patch2self(data, bvals, model='ridge',
+                                           verbose=False)
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info('Denoised volumes saved as %s', odenoised)
