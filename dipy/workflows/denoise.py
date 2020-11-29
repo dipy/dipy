@@ -22,7 +22,7 @@ class Patch2SelfFlow(Workflow):
 
     def run(self, input_files, bval_files, model='ridge', verbose=False,
             out_dir='', out_denoised='dwi_patch2self.nii.gz'):
-        """Workflow wrapping the patch2self denoising method.
+        """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
         ``input_file`` and ``bval_file``. It saves the results in a directory
