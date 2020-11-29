@@ -26,7 +26,7 @@ def _vol_split(train, vol_idx):
         Array of patches corresponding to the volume that is used a target for
         denoising.
     """
-    # Delete the target volume
+    # Hold-out the target volume
     mask = np.zeros(train.shape[0])
     mask[vol_idx] = 1
     cur_x = train[mask == 0]
@@ -57,7 +57,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
         The 4D noisy DWI data to be denoised.
 
     alpha: float, optional
-        Regularization parameter only for ridge regression model.
+        Regularization parameter only for ridge and lasso regression models.
         default: 1.0
 
     Returns
@@ -76,7 +76,7 @@ def _vol_denoise(train, vol_idx, model, data, alpha):
         model = linear_model.Ridge(copy_X=False, alpha=alpha)
 
     elif model.lower() == 'lasso':
-        model = linear_model.Lasso(copy_X=False, max_iter=50)
+        model = linear_model.Lasso(copy_X=False, max_iter=50, alpha=alpha)
 
     else:
         raise ValueError('Model not supported. ',
@@ -114,7 +114,7 @@ def _extract_3d_patches(arr, patch_radius):
     if len(patch_radius) != 3:
         raise ValueError("patch_radius should have length 3")
     else:
-        patch_radius = np.asarray(patch_radius, dtype=(int))
+        patch_radius = np.asarray(patch_radius, dtype=int)
     patch_size = 2 * patch_radius + 1
 
     dim = arr.shape[-1]
@@ -227,7 +227,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         denoised_b0s = data_b0s
 
     else:
-        train_b0 = _extract_3d_patches(np.pad(data, ((patch_radius[0],
+        train_b0 = _extract_3d_patches(np.pad(data_b0s, ((patch_radius[0],
                                               patch_radius[0]),
                                               (patch_radius[1],
                                                patch_radius[1]),

@@ -3,16 +3,16 @@
 Patch2Self: Self-Supervised Denoising via Statistical Independence
 ==================================================================
 
-Patch2Self [Fadnavis20]_ a self-supervised learning method for denoising DWI
-data which uses the entire volume to learn a full-rank locally linear denoiser
-for that volume. By taking advantage of the oversampled q-space of DWI data,
-Patch2Self can separate structure from noise without requiring an explicit
-model for either.
+Patch2Self [Fadnavis20]_ is  a self-supervised learning method for denoising
+DWI data, which uses the entire volume to learn a full-rank locally linear
+denoiser for that volume. By taking advantage of the oversampled q-space of DWI
+data, Patch2Self can separate structure from noise without requiring an
+explicit model for either.
 
 Classical denoising algorithms such as Local PCA [Manjon2013]_, [Veraa2016a]_,
-Non-local Means [Coupe08]_, Total Variation Norm [Knoll11]_, etc. which assume
+Non-local Means [Coupe08]_, Total Variation Norm [Knoll11]_, etc. assume
 certain properties on the signal structure. Patch2Self *does not* make any such
-assumption on the signal but only leverages the fact that the noise across
+assumption on the signal instead using the fact that the noise across
 different 3D volumes of the DWI signal originates from random fluctuations in
 the acquired signal.
 
@@ -24,7 +24,7 @@ distribution).
 
 The Patch2Self Framework:
 
-.. _fiber_to_bundle_coherence:
+.. _patch2self:
 .. figure:: https://github.com/dipy/dipy_data/blob/master/Patch2Self_Framework.PNG?raw=true
    :scale: 60 %
    :align: center
@@ -60,9 +60,9 @@ import matplotlib.pyplot as plt
 from dipy.denoise.patch2self import patch2self
 
 """
-Now let's load an example dataset and denoise it with Patch2Self. As one can
-note, Patch2Self does not require noise estimation and should work with any
-kind of diffusion data.
+Now let's load an example dataset and denoise it with Patch2Self. Patch2Self
+does not require noise estimation and should work with any kind of diffusion
+data.
 """
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')

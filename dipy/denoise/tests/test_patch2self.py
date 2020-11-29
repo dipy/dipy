@@ -14,20 +14,13 @@ needs_sklearn = pytest.mark.skipif(not p2s.has_sklearn,
 
 @needs_sklearn
 def test_patch2self_random_noise():
-    S0 = 100 + 2 * np.random.standard_normal((50, 50, 50, 100))
+    S0 = 30 + 2 * np.random.standard_normal((20, 20, 20, 50))
 
-    bvals = np.repeat(100, 100)
+    bvals = np.repeat(30, 50)
     S0nb = p2s.patch2self(S0, bvals, model='ols')
 
     assert_greater(S0nb.min(), S0.min())
-    assert_less(S0nb.max(), S0.max())
-    assert_equal(np.round(S0nb.mean()), 100)
-
-    S0nb = p2s.patch2self(S0, bvals, model='ols')
-
-    assert_greater(S0nb.min(), S0.min())
-    assert_less(S0nb.max(), S0.max())
-    assert_equal(np.round(S0nb.mean()), 100)
+    assert_equal(np.round(S0nb.mean()), 30)
 
 
 @needs_sklearn
@@ -114,26 +107,26 @@ def test_phantom():
 
     # generate a gradient table for phantom data
     directions8 = generate_bvecs(8)
-    directions30 = generate_bvecs(30)
-    directions60 = generate_bvecs(60)
+    directions30 = generate_bvecs(20)
+    directions60 = generate_bvecs(30)
     # Create full dataset parameters
     # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
     # 1000 and 60 directions for b-value 2000)
     bvals = np.hstack((np.zeros(6),
                        300 * np.ones(8),
-                       1000 * np.ones(30),
-                       2000 * np.ones(60)))
+                       1000 * np.ones(20),
+                       2000 * np.ones(30)))
     bvecs = np.vstack((np.zeros((6, 3)),
                        directions8, directions30, directions60))
     gtab = gradient_table(bvals, bvecs)
 
-    dwi, sigma = rfiw_phantom(gtab, snr=30)
-    dwi_den1 = p2s.patch2self(dwi, patch_radius=[2, 2, 2], model='ridge',
+    dwi, sigma = rfiw_phantom(gtab, snr=10)
+    dwi_den1 = p2s.patch2self(dwi, model='ridge',
                               bvals=bvals, alpha=1.0)
 
     assert_less(np.max(dwi_den1) / sigma, np.max(dwi) / sigma)
-    dwi_den2 = p2s.patch2self(dwi, patch_radius=[2, 2, 2], model='ridge',
-                              bvals=bvals)
+    dwi_den2 = p2s.patch2self(dwi, model='ridge',
+                              bvals=bvals, alpha=0.7)
 
     assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
     assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
@@ -142,7 +135,7 @@ def test_phantom():
                   bvals=bvals)
 
     # Try this with a sigma volume, instead of a scalar
-    dwi_den = p2s.patch2self(dwi, patch_radius=[1, 1, 1], bvals=bvals,
+    dwi_den = p2s.patch2self(dwi, bvals=bvals,
                              model='ols')
 
     assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
