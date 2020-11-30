@@ -356,6 +356,7 @@ class BundleAnalysisTractometryFlow(Workflow):
             elif group.lower() == 'control':
                 group_id = 0  # 0 means control
             else:
+                print(group)
                 raise ValueError("Invalid group. Neither patient nor control")
 
             for sub in all_subjects:
