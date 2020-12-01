@@ -221,6 +221,7 @@ def main(**extra_args):
                     'dipy.workflows',
                     'dipy.workflows.tests',
                     'dipy.nn',
+                    'dipy.nn.registration',
                     'dipy.nn.tests'],
 
           ext_modules=EXTS,
