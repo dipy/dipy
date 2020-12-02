@@ -71,8 +71,8 @@ class Patch2SelfFlow(Workflow):
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
 
-                denoised_data = patch2self(data, bvals, model='ridge',
-                                           verbose=False)
+                denoised_data = patch2self(data, bvals, model=model,
+                                           verbose=verbose)
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info('Denoised volumes saved as %s', odenoised)
