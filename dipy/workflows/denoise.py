@@ -1,16 +1,81 @@
 
 import logging
 import shutil
+import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.denoise.patch2self import patch2self
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.localpca import localpca, mppca
 from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
+
+
+class Patch2SelfFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'patch2self'
+
+    def run(self, input_files, bval_files, model='ridge', verbose=False,
+            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+        """Workflow for Patch2Self denoising method.
+
+        It applies patch2self denoising on each file found by 'globing'
+        ``input_file`` and ``bval_file``. It saves the results in a directory
+        specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bval_files : string
+            bval file associated with the diffusion data.
+        model : string, or initialized linear model object.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+            it can be an object that inherits from
+            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+            interface from Scikit-Learn:
+            `sklearn.linear_model.LinearRegression`,
+            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+            and other objects that inherit from `sklearn.base.RegressorMixin`.
+            Default: 'ridge'.
+        verbose : bool, optional
+            Show progress of Patch2Self and time taken.
+        out_dir : string, optional
+            Output directory (default current directory)
+        out_denoised : string, optional
+            Name of the resulting denoised volume
+            (default: dwi_patch2self.nii.gz)
+
+        References
+        ----------
+        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                    Denoising Diffusion MRI with Self-supervised Learning,
+                    Advances in Neural Information Processing Systems 33 (2020)
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, bvalpath, odenoised in io_it:
+            if self._skip:
+                shutil.copy(fpath, odenoised)
+                logging.warning('Denoising skipped for now.')
+            else:
+                logging.info('Denoising %s', fpath)
+                data, affine, image = load_nifti(fpath, return_img=True)
+                bvals = np.loadtxt(bvalpath)
+
+                denoised_data = patch2self(data, bvals, model=model,
+                                           verbose=verbose)
+                save_nifti(odenoised, denoised_data, affine, image.header)
+
+                logging.info('Denoised volumes saved as %s', odenoised)
 
 
 class NLMeansFlow(Workflow):
@@ -189,7 +254,7 @@ class MPPCAFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        patch_radius : int, optional
+        patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel (in
             voxels) For example, for a patch radius with value 2, and assuming
             the input image is a 3D image, the denoising will take place in
