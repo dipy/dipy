@@ -2,6 +2,8 @@
 
 import numpy as np
 import random
+
+
 import dipy.reconst.dki as dki
 import dipy.reconst.dti as dti
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
@@ -10,6 +12,8 @@ from dipy.sims.voxel import multi_tensor_dki
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
+from dipy.data import get_sphere
+
 from dipy.reconst.dti import (from_lower_triangular, decompose_tensor)
 from dipy.reconst.dki import (mean_kurtosis, carlson_rf,  carlson_rd,
                               axial_kurtosis, radial_kurtosis,
@@ -775,6 +779,7 @@ def test_kurtosis_fa():
     dkiF.kfa
     assert_almost_equal(dkiF.kfa, np.sqrt(13/15))
 
+<<<<<<< HEAD
     # KFA = 0 if MKT = 0
     mevals = np.array([[0.003, 0.001, 0.001], [0.003, 0.001, 0.001]])
     angles = [(40, -10), (40, -10)]
@@ -787,3 +792,125 @@ def test_kurtosis_fa():
     dkiF = dkiM.fit(signal)
     dkiF.kfa
     assert_almost_equal(dkiF.kfa, 0)
+=======
+
+def test_diffusion_kurtosis_odf():
+    # Comparison of our vectorized implementation of the DKI-ODF using the
+    # symmetry of the diffusion kurtosis tensor with the implementation on the
+    # non-vectorized format directly presented in Eq. 5 of the article:
+    #     Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015). Exploring
+    #     the 3D geometry of the diffusion kurtosis tensor - Impact on the
+    #     development of robust tractography procedures and novel biomarkers,
+    #     NeuroImage 111: 85-99
+
+    # define parameters
+    alpha = 4
+    sphere = get_sphere('symmetric362')
+    V = sphere.vertices
+
+    # Compute the dki-odf using the helper function to process single voxel
+    dipy_odf = dki.diffusion_kurtosis_odf(crossing_ref, sphere, alpha=alpha)
+
+    # reference ODF for a single voxel simulate
+    MD = (dt_cross[0] + dt_cross[2] + dt_cross[5]) / 3
+    U = np.linalg.pinv(from_lower_triangular(dt_cross)) * MD
+    W = dki.Wcons(kt_cross)
+    ODFref = np.zeros(len(V))
+    for i in range(len(V)):
+        ODFref[i] = _dki_odf_non_vectorized(V[i], W, U, alpha)
+
+    assert_array_almost_equal(dipy_odf, ODFref)
+
+    # test function for multi-voxel data
+    dipy_odf = dki.diffusion_kurtosis_odf(multi_params, sphere, alpha=alpha)
+    multi_ODFref = np.zeros((2, 2, 1, len(V)))
+    multi_ODFref[0, 0, 0] = multi_ODFref[0, 1, 0] = ODFref
+    multi_ODFref[1, 0, 0] = multi_ODFref[1, 1, 0] = ODFref
+    assert_array_almost_equal(dipy_odf, multi_ODFref)
+
+    # test dki class
+    dkimodel = dki.DiffusionKurtosisModel(gtab_2s)
+    dkifit = dkimodel.fit(DWI)
+    dipy_odf = dkifit.dki_odf(sphere, alpha=alpha)
+    assert_array_almost_equal(dipy_odf, multi_ODFref)
+
+
+def _dki_odf_non_vectorized(n, W, U, a):
+    """ Helper function to test Dipy implementation of diffusion_kurtosis_odf.
+
+    This function is analogous to dipy's helper function _dki_odf_core from
+    module dipy.reconst.dki, however here function is implemented in the format
+    presented in Eq.5 of the article:
+
+        Neto Henriques R, Correia MM, Nunes RG, Ferreira HA (2015). Exploring
+        the 3D geometry of the diffusion kurtosis tensor - Impact on the
+        development of robust tractography procedures and novel biomarkers,
+        NeuroImage 111: 85-99
+
+    To a detailed information of inputs see the helper function_dki_odf_core
+    """
+    # Compute elements of matrix V
+    Un = np.dot(U, n)
+    nUn = np.dot(n, Un)
+    V00 = Un[0]**2 / nUn
+    V11 = Un[1]**2 / nUn
+    V22 = Un[2]**2 / nUn
+    V01 = Un[0]*Un[1] / nUn
+    V02 = Un[0]*Un[2] / nUn
+    V12 = Un[1]*Un[2] / nUn
+    V = from_lower_triangular(np.array([V00, V01, V11, V02, V12, V22]))
+
+    # diffusion ODF
+    ODFg = (1./nUn) ** ((a + 1.)/2.)
+
+    # Compute the summatory term of reference Eq.5
+    SW = 0
+    xyz = [0, 1, 2]
+    for i in xyz:
+        for j in xyz:
+           for k in xyz:
+               for l in xyz:
+                   SW = SW + W[i, j, k, l] * (3*U[i, j]*U[k, l] - \
+                                              6*(a + 1)*U[i, j]*V[k, l] + \
+                                              (a + 1)*(a + 3)*V[i, j]*V[k, l])
+
+    # return the total ODF
+    return ODFg * (1. + 1/24.*SW)
+
+
+def test_dki_directions():
+    # define parameters
+    alpha = 4
+    sphere = get_sphere('symmetric362')
+
+    pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
+                             relative_peak_threshold=0.1,
+                             min_separation_angle=20, mask=None,
+                             return_odf=True, normalize_peaks=False, npeaks=3,
+                             gtol=None)
+
+    # Check if detected two fiber directions
+    Ndetect_peaks = 0.0
+    for ps in pam.peak_dirs:
+        v_norm = np.linalg.norm(ps)
+        Ndetect_peaks = Ndetect_peaks + v_norm
+
+    assert_almost_equal(Ndetect_peaks, 2.)
+
+    # Check if convergence is working propertly
+    pam = dki.dki_directions(crossing_ref, sphere, alpha=alpha,
+                             relative_peak_threshold=0.1,
+                             min_separation_angle=20, mask=None,
+                             return_odf=True, normalize_peaks=False, npeaks=3)
+
+    # Since two fiber have the same weight their values have to be equal.
+    assert_almost_equal(pam.peak_values[0], pam.peak_values[0])
+
+    # Check if dki fiber direction estimate is working on dki class instance
+    dkimodel = dki.DiffusionKurtosisModel(gtab_2s)
+    dkifit = dkimodel.fit(DWI)
+    dirs = dkifit.dki_directions(sphere, alpha=alpha,
+                                 relative_peak_threshold=0.1,
+                                 min_separation_angle=20, mask=None)
+    assert_almost_equal(dirs.peak_values[0, 0, 0, 0], pam.peak_values[0])
+>>>>>>> 9f689ad37 (Reconciling things with master branch.)
