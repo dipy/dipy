@@ -17,8 +17,7 @@ import dipy.reconst.dki as dki
 from dipy.data import read_cenir_multib
 from dipy.sims.voxel import multi_tensor_dki
 from dipy.segment.mask import median_otsu
-from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.denoise.nlmeans import nlmeans
+from dipy.denoise.patch2self import patch2self
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
 # from dipy.viz import fvtk
@@ -190,27 +189,24 @@ maxima. Below we illustrate how this is done the HCP-like brain data.
 
 As mention in :ref:`example_reconst_dki`, for real brain datasets, diffusion
 kurtosis imaging requires some pre-processing to reduce the impact of signal
-artefacts. Above we denoise our data using DIPY's non-local mean filter (see
-:ref:`example-denoise-nlmeans`). Since this procedure can take a couple of
-hours to run, we first check if this data was previously denoised and saved
-from previous examples. If this is te case the load the previous processed
-data.
+artefacts. Here, we'll denoise our data using DIPY's patch2self algorithm (see
+:ref:`example-denoise-patch2self`). Since this procedure takes a little to run,
+we first check if this data was previously denoised and saved from previous
+examples. If this is the case the load the previous processed data.
 """
 
 if op.exists('denoised_cenir_multib.nii.gz'):
     img = nib.load('denoised_cenir_multib.nii.gz')
-    den = img.get_data()
+    den = img.get_fdata()
 else:
-    maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
-    sigma = estimate_sigma(data, N=4)
-    den = nlmeans(data, sigma=sigma, mask=mask)
+    den = patch2self(data, gtab.bvals)
     nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
 
 """
 Now, we mask the data to avoid processing unnecessary background voxels:
 """
 
-maskdata, mask = median_otsu(den, 4, 2, False, vol_idx=[0, 1], dilate=1)
+maskdata, mask = median_otsu(den, [0, 1], 4, 2, False, dilate=1)
 
 """
 To fit the diffusion kurtosis model, we call the ``fit`` function of the DKI
