@@ -8,17 +8,16 @@ similarity between two given bundles. Where, shape similarity score of 1 means
 two bundles are extremely close in shape and 0 implies no shape similarity
 whatsoever.
 
-Shape similarity score can be used to compare populations or individuals. 
-It can also as a quality assurance metric, to validate streamline registration 
-quality, bundle extraction quality by calculating output with a reference bundle 
-or other issues with pre-processing by calculating shape dissimilarity with a 
-reference bundle.
+Shape similarity score can be used to compare populations or individuals.
+It can also serve as a quality assurance metric, to validate streamline
+registration quality, bundle extraction quality by calculating output with a
+reference bundle or other issues with pre-processing by calculating shape
+dissimilarity with a reference bundle.
 
 First import the necessary modules.
 """
 
 import numpy as np
-from time import sleep
 from dipy.viz import window, actor
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.bundles import select_random_set_of_streamlines
@@ -57,9 +56,8 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
         scene.add(streamtube_actor)
     if show:
         window.show(scene)
-    if fname is not None:
-        sleep(1)
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
+    elif fname is not None:
+        window.record(scene, out_path=fname, size=(900, 900))
 
 
 show_both_bundles([bundle1, bundle2], colors=[(1, 0, 0), (0, 1, 0)],
@@ -82,7 +80,8 @@ Threshold indicates how strictly we want two bundles to be similar in shape.
 
 threshold = 5
 
-bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+print("Shape similarity score = ", ba_score)
 
 """
 Let's change the value of threshold to 10.
@@ -90,7 +89,8 @@ Let's change the value of threshold to 10.
 
 threshold = 10
 
-bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+ba_score = bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
+print("Shape similarity score = ", ba_score)
 
 """
 Higher value of threshold gives us higher shape similarity score as it is
