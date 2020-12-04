@@ -36,6 +36,7 @@
  restore_dti.py
  streamline_length.py
  streamline_tools.py
+ surface_seed.py
  linear_fascicle_evaluation.py
  denoise_patch2self.py
  denoise_nlmeans.py
