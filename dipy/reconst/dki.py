@@ -19,7 +19,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
 from dipy.data import get_sphere, get_fnames
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
-from dipy.reconst.peaks import PeaksAndMetrics
+from dipy.direction.peaks import PeaksAndMetrics
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):

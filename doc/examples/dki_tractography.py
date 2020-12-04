@@ -21,11 +21,11 @@ from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.nlmeans import nlmeans
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
-from dipy.viz import fvtk
-from dipy.tracking.local import ThresholdTissueClassifier
+# from dipy.viz import fvtk
+from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
-from dipy.tracking.local import LocalTracking
-from dipy.io.trackvis import save_trk
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.io.streamline import save_trk
 
 """
 This example will be based on the same multi-shell data used in the previous
@@ -33,16 +33,16 @@ DKI usage example :ref:`example_reconst_dki`. This data was collected with
 similar acquisition parameters used on the Human Connectome Project (HCP),
 however we only use the data's b-values up to 2000 $s.mm^{-2}$ to decrease the
 influence of the diffusion signal taylor approximation componets not taken into
-account by the diffusion kurtosis model. 
+account by the diffusion kurtosis model.
 """
 
 bvals = [200, 400, 1000, 2000]
 
-gtab, img = read_cenir_multib(bvals)
+img, gtab = read_cenir_multib(bvals)
 
-data = img.get_data()
+data = img.get_fdata()
 
-affine = img.get_affine()
+affine = img.affine
 
 """
 Having the acquition paramenters of the loaded data, we can define the
@@ -100,12 +100,12 @@ sphere = get_sphere('symmetric724')
 ADC = dkifit.adc(sphere)
 AKC = dkifit.akc(sphere)
 
-# Prepare grafical representation
-ren = fvtk.ren()
-tensors = np.vstack([AKC, ADC])
-tensors = tensors.reshape((5, 2, 1, len(sphere.vertices)), order='F')
-tensors_actor = fvtk.sphere_funcs(tensors, sphere)
-fvtk.add(ren, tensors_actor)
+# # Prepare graphical representation
+# ren = fvtk.ren()
+# tensors = np.vstack([AKC, ADC])
+# tensors = tensors.reshape((5, 2, 1, len(sphere.vertices)), order='F')
+# tensors_actor = fvtk.sphere_funcs(tensors, sphere)
+# fvtk.add(ren, tensors_actor)
 
 """
 Ground truth direction of fibers are added to the graphical presentation of the
@@ -125,18 +125,18 @@ for d in range(5):
 gt_dir_2copies = np.vstack([gt_dir, gt_dir])
 gt_dir_2copies = gt_dir_2copies.reshape((5, 2, 1, 2, 3), order='F')
 
-gt_peaks = fvtk.peaks(gt_dir_2copies, 1.05 * np.ones(gt_dir_2copies.shape))
-fvtk.add(ren, gt_peaks)
+# gt_peaks = fvtk.peaks(gt_dir_2copies, 1.05 * np.ones(gt_dir_2copies.shape))
+# fvtk.add(ren, gt_peaks)
 
 """
 Now we are ready to save and show the figure containing the tensor geometries:
 """
 
-fvtk.record(ren, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
+# fvtk.record(ren, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
 
-fvtk.show(ren, title='Geometry of DKI tensors', size=(500, 500))
+# fvtk.show(ren, title='Geometry of DKI tensors', size=(500, 500))
 
-""" 
+"""
 .. figure:: geometry_of_DKI_tensors.png
    :align: center
    ** Geometrical representation of the diffusion tensor (upper panels) and the
@@ -163,17 +163,17 @@ We plot below the DKI-ODF in the analogous way done for the directional
 diffusivity and kurtosis values:
 """
 
-ren = fvtk.ren()
-ODF = ODF.reshape((5, 1, 1, len(sphere.vertices)), order='F')
-ODF_actor = fvtk.sphere_funcs(ODF, sphere)
-fvtk.add(ren, ODF_actor)
-gt_dir = gt_dir.reshape((5, 1, 1, 2, 3), order='F')
-gt_peaks = fvtk.peaks(gt_dir, 1.05 * np.ones(gt_dir.shape))
-fvtk.add(ren, gt_peaks)
+# ren = fvtk.ren()
+# ODF = ODF.reshape((5, 1, 1, len(sphere.vertices)), order='F')
+# ODF_actor = fvtk.sphere_funcs(ODF, sphere)
+# fvtk.add(ren, ODF_actor)
+# gt_dir = gt_dir.reshape((5, 1, 1, 2, 3), order='F')
+# gt_peaks = fvtk.peaks(gt_dir, 1.05 * np.ones(gt_dir.shape))
+# fvtk.add(ren, gt_peaks)
 
-fvtk.record(ren, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
+# fvtk.record(ren, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
 
-fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
+# fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
 
 """
 .. figure:: DKI_ODF_geometry.png
@@ -190,7 +190,7 @@ maxima. Below we illustrate how this is done the HCP-like brain data.
 
 As mention in :ref:`example_reconst_dki`, for real brain datasets, diffusion
 kurtosis imaging requires some pre-processing to reduce the impact of signal
-artefacts. Above we denoise our data using Dipy's non-local mean filter (see
+artefacts. Above we denoise our data using DIPY's non-local mean filter (see
 :ref:`example-denoise-nlmeans`). Since this procedure can take a couple of
 hours to run, we first check if this data was previously denoised and saved
 from previous examples. If this is te case the load the previous processed
@@ -198,7 +198,7 @@ data.
 """
 
 if op.exists('denoised_cenir_multib.nii.gz'):
-    img = nib.load('denoised_cenir_multib.nii.gz') 
+    img = nib.load('denoised_cenir_multib.nii.gz')
     den = img.get_data()
 else:
     maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)
@@ -229,12 +229,12 @@ the DKI based ODFs using the following:
 
 dkiodf = dkifit.dki_odf(sphere)
 
-ren = fvtk.ren()
-odf_spheres = fvtk.sphere_funcs(dkiodf, sphere)
-odf_spheres.RotateX(-90)
-fvtk.add(ren, odf_spheres)
-fvtk.record(ren, out_path='dki_odfs.png')
-fvtk.show(ren)
+# ren = fvtk.ren()
+# odf_spheres = fvtk.sphere_funcs(dkiodf, sphere)
+# odf_spheres.RotateX(-90)
+# fvtk.add(ren, odf_spheres)
+# fvtk.record(ren, out_path='dki_odfs.png')
+# fvtk.show(ren)
 
 """
 .. figure:: dki_odfs.png
@@ -255,11 +255,11 @@ sphere = get_sphere('repulsion100')
 
 dkidir = dkifit.dki_directions(sphere)
 
-ren = fvtk.ren()
-dki_peaks = fvtk.peaks(dkidir.peak_dirs)
-fvtk.add(ren, dki_peaks)
-fvtk.record(ren, out_path='dki_dirs.png')
-fvtk.show(ren)
+# ren = fvtk.ren()
+# dki_peaks = fvtk.peaks(dkidir.peak_dirs)
+# fvtk.add(ren, dki_peaks)
+# fvtk.record(ren, out_path='dki_dirs.png')
+# fvtk.show(ren)
 
 """
 .. figure:: dki_dirs.png
@@ -282,7 +282,7 @@ dkifit = dkimodel.fit(maskdata)
 dkidir = dkifit.dki_directions(sphere)
 
 # Select region to tract
-classifier = ThresholdTissueClassifier(dkifit.fa, .1)
+classifier = ThresholdStoppingCriterion(dkifit.fa, .1)
 
 # Select regions to seed
 seed_mask = dkifit.fa > 0.1
