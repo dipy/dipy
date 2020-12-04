@@ -37,13 +37,13 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     --------
     >>> mask = np.ones([len(triangles)])
     >>> mask[0] = 0
-    >>> normal = np.cross(vts[triangles[:, 1]] - vts[triangles[:, 0]],
-    ... vts[triangles[:, 2]] - vts[triangles[:, 0]])
+    >>> normal = np.cross(vertices[triangles[:, 1]] - vertices[triangles[:, 0]],
+    ... vertices[triangles[:, 2]] - vertices[triangles[:, 0]])
     >>> triangles_area = 0.5*np.linalg.norm(normal,axis=-1)
     >>> nb_seeds = 100
     >>> idx, coord = random_coordinates_from_surface(len(triangles), nb_seeds,
     ... mask, triangles_weight=triangles_area)
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts, idx,
+    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vertices, idx,
     ... coord)
     """
     # Compute triangles_weight in vts_mask
@@ -93,7 +93,7 @@ def seeds_from_surface_coordinates(triangles, vts_values,
     Returns
     -------
     pts : [s, ...] array
-        Interpolated values of vertices with triangles_idx and trilinear_coord
+        Interpolated values of vertices along triangles_idx and trilinear_coord
 
     See Also
     --------
@@ -101,9 +101,9 @@ def seeds_from_surface_coordinates(triangles, vts_values,
 
     Examples
     --------
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts,
+    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vertices,
     ... triangles_idx, triangles_coord)
-    >>> vts_normal = normals_from_v_f(vts, triangles)  # fury.utils
+    >>> vts_normal = trimeshpy.math.vertices_normal(triangles, vertices)
     >>> seeds_normal = seeds_from_surface_coordinates(triangles, vts_normal,
     ... triangles_idx, triangles_coord)
     >>> seeds_normal /= np.linalg.norm(seeds_normal, axis=-1, keepdims=True)
@@ -136,6 +136,9 @@ def triangles_area(triangles, vts):
     See Also
     --------
     random_coordinates_from_surface
+
+    Examples
+    --------
     """
     e1 = vts[triangles[:, 1]] - vts[triangles[:, 0]]
     e2 = vts[triangles[:, 2]] - vts[triangles[:, 0]]
@@ -166,5 +169,9 @@ def vertices_to_triangles_values(triangles, vts_values):
     See Also
     --------
     random_coordinates_from_surface
+
+    Examples
+    --------
     """
     return np.mean(vts_values[triangles], axis=1)
+
