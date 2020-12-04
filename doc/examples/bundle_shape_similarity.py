@@ -8,11 +8,11 @@ similarity between two given bundles. Where, shape similarity score of 1 means
 two bundles are extremely close in shape and 0 implies no shape similarity
 whatsoever.
 
-Shape similarity score can be used as a quality assurance metric.
-
-It can be used to validate streamline registration quality, bundle extraction
-quality by calculating output with a reference bundle or other issues with
-pre-processing by calculating shape dissimilarity with a reference bundle.
+Shape similarity score can be used to compare populations or individuals. 
+It can also as a quality assurance metric, to validate streamline registration 
+quality, bundle extraction quality by calculating output with a reference bundle 
+or other issues with pre-processing by calculating shape dissimilarity with a 
+reference bundle.
 
 First import the necessary modules.
 """
@@ -94,7 +94,7 @@ bundle_shape_similarity(bundle1, bundle2, rng, clust_thr, threshold)
 
 """
 Higher value of threshold gives us higher shape similarity score as it is
-linient.
+more lenient.
 """
 
 """

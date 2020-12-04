@@ -4,7 +4,7 @@ BUAN Bundle Assignment Maps Creation
 ====================================
 
 This example explains how we can use BUAN [Chandio2020]_ to create assignment
-maps on a bundle. Divide bundle into smaller N segments.
+maps on a bundle. Divide bundle into N smaller segments.
 
 
 First import the necessary modules.

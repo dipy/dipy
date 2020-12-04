@@ -194,8 +194,8 @@ Plots will look like the following example:
     Result plot for left arcuate fasciculus (AF_L) on FA measure
 
 We can also visualize and highlight the specific location of group differences on the bundle by providing
-output pvalues file from dipy_buan_lmm workflow. User can specify at what level of
-significance they want to see group differences by providing threshold value of pvalue to ``buan_thr`` (default 0.05).
+output p-values file from dipy_buan_lmm workflow. The user can specify at what level of
+significance they want to see group differences by providing threshold value of p-value to ``buan_thr`` (default 0.05).
 The color of the highlighted area can be specified by providing RGB color values to ``buan_highlight`` (Default Red)
 
 Run the following commandline for visualizing group differences on the model bundle::
@@ -205,7 +205,7 @@ Run the following commandline for visualizing group differences on the model bun
 Where, ``AF_L.trk `` is located in your model bundle folder ``bundles`` and
 ``AF_L_fa_pvalues.npy`` is saved in output folder ``lmm_plots`` of dipy_buan_lmm workflow
 
-Output of this commandline is interactive visualization window. Example snapshot:
+The output of this commandline is an interactive visualization window. Example snapshot:
 
 .. figure:: https://github.com/dipy/dipy_data/blob/master/AF_L_highlighted.png?raw=true
     :width: 70 %
@@ -297,7 +297,6 @@ If you are using any of these commands do cite the relevant papers.
     Population-averaged atlas of the macroscale human structural
     connectome and its network topology.
     Neuroimage, 2018.
-
 
 
 
