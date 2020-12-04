@@ -33,7 +33,7 @@ DKI usage example :ref:`example_reconst_dki`. This data was collected with
 similar acquisition parameters used on the Human Connectome Project (HCP),
 however we only use the data's b-values up to 2000 $s.mm^{-2}$ to decrease the
 influence of the diffusion signal taylor approximation componets not taken into
-account by the diffusion kurtosis model. 
+account by the diffusion kurtosis model.
 """
 
 bvals = [200, 400, 1000, 2000]
@@ -136,7 +136,7 @@ fvtk.record(ren, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
 
 fvtk.show(ren, title='Geometry of DKI tensors', size=(500, 500))
 
-""" 
+"""
 .. figure:: geometry_of_DKI_tensors.png
    :align: center
    ** Geometrical representation of the diffusion tensor (upper panels) and the
@@ -198,7 +198,7 @@ data.
 """
 
 if op.exists('denoised_cenir_multib.nii.gz'):
-    img = nib.load('denoised_cenir_multib.nii.gz') 
+    img = nib.load('denoised_cenir_multib.nii.gz')
     den = img.get_data()
 else:
     maskdata, mask = median_otsu(data, 4, 2, False, vol_idx=[0, 1], dilate=1)

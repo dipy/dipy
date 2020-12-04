@@ -2506,14 +2506,14 @@ ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
 def Wcons(k_elements):
     r""" Construct the full 4D kurtosis tensors from its 15 independent
     elements
-    
+
     Parameters
     ----------
     k_elements : (15,)
         elements of the kurtosis tensor in the following order:
-        
+
         .. math::
-            
+
     \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
                      & ... \\
                      & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
@@ -2540,8 +2540,8 @@ def Wcons(k_elements):
 
 
 def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
-                     min_separation_angle=20, mask=None, return_odf=False,
-                     normalize_peaks=False, npeaks=3, gtol=1e-5):
+                   min_separation_angle=20, mask=None, return_odf=False,
+                   normalize_peaks=False, npeaks=3, gtol=1e-5):
     """ Estimation of fiber direction based on diffusion kurtosis imaging
     (DKI). Fiber directions are estimated as the maxima of the orientation
     distribution function [Jen2014]. This function is based on the work done by
@@ -2629,12 +2629,12 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-        
+
         # Compute dimensionless tensor U
         dt = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
         MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
         U = np.linalg.pinv(dt) * MD
-        
+
         # First sample of the DKI-ODF
         odf = np.zeros(len(sphere.vertices))
         for i in range(len(sphere.vertices)):
@@ -2649,7 +2649,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
         if n != 0:
             di = sphere.vertices[ind]
 
-            # To remove possible peak duplicates in opposite directions, we 
+            # To remove possible peak duplicates in opposite directions, we
             # first remove all peaks closer than 10% of the selected
             # relative_peak_threshold
             odf_min = odf.min()
@@ -2678,7 +2678,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
             ind = ind[:n]
             di = di[:n]
             pk = pk[:n]
-            
+
             # Remove peaks too close together
             di, uniq = remove_similar_vertices(di, min_separation_angle,
                                                return_index=True)
@@ -2733,12 +2733,12 @@ def _dki_odf_converge(ang, kt, U, alpha=4):
     -------
     dki_odf : float
         The negated DKI-ODF value for the given direction.
-    
+
     Notes
     -----
     This function is used to refine the ODF maxima directions beyond the
     precision of the directions samples in a given sphere object
-    
+
     See also
     --------
     dipy.reconst.dki.dki_directions
