@@ -66,16 +66,15 @@ class SNRinCCFlow(Workflow):
             Path of a brain mask file.
         bbox_threshold : variable float, optional
             Threshold for bounding box, values separated with commas for ex.
-            [0.6,1,0,0.1,0,0.1]. (default (0.6, 1, 0, 0.1, 0, 0.1))
+            [0.6,1,0,0.1,0,0.1].
         out_dir : string, optional
-            Where the resulting file will be saved. (default '')
+            Where the resulting file will be saved. (default current directory)
         out_file : string, optional
-            Name of the result file to be saved. (default 'product.json')
+            Name of the result file to be saved.
         out_mask_cc : string, optional
-            Name of the CC mask volume to be saved (default 'cc.nii.gz')
+            Name of the CC mask volume to be saved.
         out_mask_noise : string, optional
-            Name of the mask noise volume to be saved
-            (default 'mask_noise.nii.gz')
+            Name of the mask noise volume to be saved.
 
         """
         io_it = self.get_io_iterator()
@@ -202,13 +201,13 @@ def buan_bundle_profiles(model_bundle_folder, bundle_folder,
         Path to the input dti metric or/and peak files. It will be used as
         metric for statistical analysis of bundles.
     group_id : integer
-        what group subject belongs to either 0 for control or 1 for patient
+        what group subject belongs to either 0 for control or 1 for patient.
     subject : string
-        subject id e.g. 10001
+        subject id e.g. 10001.
     no_disks : integer, optional
-        Number of disks used for dividing bundle into disks. (Default 100)
+        Number of disks used for dividing bundle into disks.
     out_dir : string, optional
-        Output directory (default current directory)
+        Output directory. (default current directory)
 
     References
     ----------
@@ -326,10 +325,10 @@ class BundleAnalysisTractometryFlow(Workflow):
             wildcards to process multiple inputs at once.
 
         no_disks : integer, optional
-            Number of disks used for dividing bundle into disks. (Default 100)
+            Number of disks used for dividing bundle into disks.
 
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
 
         References
         ----------
@@ -416,12 +415,12 @@ class LinearMixedModelsFlow(Workflow):
             Path to the plot file. This path may
             contain wildcards to process multiple inputs at once.
         title : string
-            Title for the plot
+            Title for the plot.
         bundle_name : string
         x : list
-            list containing segment/disk number for x-axis
+            list containing segment/disk number for x-axis.
         y : list
-            list containing -log10(pvalues) per segment/disk number for y-axis
+            list containing -log10(pvalues) per segment/disk number for y-axis.
 
         """
 
@@ -470,10 +469,10 @@ class LinearMixedModelsFlow(Workflow):
             contain wildcards to process multiple inputs at once.
 
         no_disks : integer, optional
-            Number of disks used for dividing bundle into disks. (Default 100)
+            Number of disks used for dividing bundle into disks.
 
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
 
         """
 
@@ -540,14 +539,14 @@ class BundleShapeAnalysis(Workflow):
             Path to the input subject folder. This path may contain
             wildcards to process multiple inputs at once.
 
-        clust_thr : variable float (default [5,3,1.5]), optional
-            list of bundle clustering thresholds used in quickbundlesX
+        clust_thr : variable float, optional
+            list of bundle clustering thresholds used in QuickBundlesX.
 
-        threshold : float (default 6), optional
+        threshold : float, optional
             Bundle shape similarity threshold.
 
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
 
         References
         ----------

@@ -10,5 +10,8 @@ DIPY Workflows Interfaces
     data_fetch.rst
     denoise_flow.rst
     gibbs_unringing_flow.rst
+    registration_flow.rst
+    reconstruction_flow.rst
+    tracking_flow.rst
     buan_flow.rst
     bundle_segmentation_flow.rst

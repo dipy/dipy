@@ -40,27 +40,27 @@ class HorizonFlow(Workflow):
         ----------
         input_files : variable string
         cluster : bool, optional
-            Enable QuickBundlesX clustering
+            Enable QuickBundlesX clustering.
         cluster_thr : float, optional
             Distance threshold used for clustering. Default value 15.0 for
             small animal brains you may need to use something smaller such
             as 2.0. The distance is in mm. For this parameter to be active
-            ``cluster`` should be enabled
+            ``cluster`` should be enabled.
         random_colors : bool, optional
             Given multiple tractograms have been included then each tractogram
-            will be shown with different color
+            will be shown with different color.
         length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
-            in mm will be shown
+            in mm will be shown.
         length_lt : float, optional
             Clusters with average length less than ``length_lt`` amount in
-            mm will be shown
+            mm will be shown.
         clusters_gt : int, optional
             Clusters with size greater than ``clusters_gt`` will be shown.
         clusters_lt : int, optional
             Clusters with size less than ``clusters_gt`` will be shown.
         native_coords : bool, optional
-            Show results in native coordinates
+            Show results in native coordinates.
         stealth : bool, optional
             Do not use interactive mode just save figure.
         emergency_header : str, optional
@@ -69,21 +69,20 @@ class HorizonFlow(Workflow):
         bg_color : variable float, optional
             Define the background color of the scene. Colors can be defined
             with 1 or 3 values and should be between [0-1].
-            Default is black (e.g --bg_color 0 0 0 or --bg_color 0).
         disable_order_transparency : bool, optional
-            Default False. Use depth peeling to sort transparent objects.
+            Use depth peeling to sort transparent objects.
             If True also enables anti-aliasing.
         buan : bool, optional
-            Enables BUAN framework visualization. Default is False.
+            Enables BUAN framework visualization.
         buan_thr : float, optional
-            Default 0.5. Uses the threshold value to highlight segments on the
+            Uses the threshold value to highlight segments on the
             bundle which have pvalues less than this threshold.
         buan_highlight : variable float, optional
             Define the bundle highlight area color. Colors can be defined
             with 1 or 3 values and should be between [0-1].
-            Default is red (e.g --buan_highlight 1 0 0)
+            For example, a value of (1, 0, 0) would mean the red color.
         out_dir : str, optional
-            Output directory. Default current directory.
+            Output directory. (default current directory)
         out_stealth_png : str, optional
             Filename of saved picture.
 

@@ -1,15 +1,20 @@
 import os
+import pytest
 import numpy as np
 import numpy.testing as npt
-from dipy.testing import (assert_true, assert_false, assert_greater,
-                          assert_less)
-
+from dipy.utils.optpkg import optional_package
 from nibabel.tmpdirs import TemporaryDirectory
-
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti, load_nifti_data
+
+from dipy.testing import (assert_true, assert_false, assert_greater,
+                          assert_less)
 from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
-                                    GibbsRingingFlow)
+                                    GibbsRingingFlow, Patch2SelfFlow)
+
+sklearn, has_sklearn, _ = optional_package('sklearn')
+needs_sklearn = pytest.mark.skipif(not has_sklearn,
+                                   reason="Requires Scikit-Learn")
 
 
 def test_nlmeans_flow():
@@ -32,14 +37,25 @@ def test_nlmeans_flow():
         npt.assert_array_almost_equal(denoised_affine, affine)
 
 
+@needs_sklearn
+def test_patch2self_flow():
+    with TemporaryDirectory() as out_dir:
+        data_path, fbvals, fbvecs = get_fnames()
+
+        patch2self_flow = Patch2SelfFlow()
+        patch2self_flow.run(data_path, fbvals, out_dir=out_dir)
+        assert_true(os.path.isfile(
+                    patch2self_flow.last_generated_outputs['out_denoised']))
+
+
 def test_lpca_flow():
     with TemporaryDirectory() as out_dir:
         data_path, fbvals, fbvecs = get_fnames()
 
-        lpca_flow = LPCAFlow()
-        lpca_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)
-        assert_true(os.path.isfile(
-                lpca_flow.last_generated_outputs['out_denoised']))
+    lpca_flow = LPCAFlow()
+    lpca_flow.run(data_path, fbvals, fbvecs, out_dir=out_dir)
+    assert_true(os.path.isfile(
+            lpca_flow.last_generated_outputs['out_denoised']))
 
 
 def test_mppca_flow():
@@ -106,5 +122,6 @@ def test_gibbs_flow():
 if __name__ == '__main__':
     test_gibbs_flow()
     test_mppca_flow()
+    test_patch2self_flow()
     test_lpca_flow()
     test_nlmeans_flow()

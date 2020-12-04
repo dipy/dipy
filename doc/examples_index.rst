@@ -48,6 +48,7 @@ Reslice
 Denoising
 ---------
 
+- :ref:`example_denoise_patch2self`
 - :ref:`example_denoise_nlmeans`
 - :ref:`example_denoise_localpca`
 - :ref:`example_denoise_mppca`

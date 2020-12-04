@@ -37,6 +37,7 @@
  streamline_length.py
  streamline_tools.py
  linear_fascicle_evaluation.py
+ denoise_patch2self.py
  denoise_nlmeans.py
  denoise_localpca.py
  denoise_mppca.py

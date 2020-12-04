@@ -1,16 +1,81 @@
 
 import logging
 import shutil
+import numpy as np
 
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti
+from dipy.denoise.patch2self import patch2self
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.localpca import localpca, mppca
 from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
+
+
+class Patch2SelfFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'patch2self'
+
+    def run(self, input_files, bval_files, model='ridge', verbose=False,
+            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+        """Workflow for Patch2Self denoising method.
+
+        It applies patch2self denoising on each file found by 'globing'
+        ``input_file`` and ``bval_file``. It saves the results in a directory
+        specified by ``out_dir``.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bval_files : string
+            bval file associated with the diffusion data.
+        model : string, or initialized linear model object.
+            This will determine the algorithm used to solve the set of linear
+            equations underlying this model. If it is a string it needs to be
+            one of the following: {'ols', 'ridge', 'lasso'}. Otherwise,
+            it can be an object that inherits from
+            `dipy.optimize.SKLearnLinearSolver` or an object with a similar
+            interface from Scikit-Learn:
+            `sklearn.linear_model.LinearRegression`,
+            `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
+            and other objects that inherit from `sklearn.base.RegressorMixin`.
+            Default: 'ridge'.
+        verbose : bool, optional
+            Show progress of Patch2Self and time taken.
+        out_dir : string, optional
+            Output directory (default current directory)
+        out_denoised : string, optional
+            Name of the resulting denoised volume
+            (default: dwi_patch2self.nii.gz)
+
+        References
+        ----------
+        .. [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
+                    Denoising Diffusion MRI with Self-supervised Learning,
+                    Advances in Neural Information Processing Systems 33 (2020)
+
+        """
+        io_it = self.get_io_iterator()
+        for fpath, bvalpath, odenoised in io_it:
+            if self._skip:
+                shutil.copy(fpath, odenoised)
+                logging.warning('Denoising skipped for now.')
+            else:
+                logging.info('Denoising %s', fpath)
+                data, affine, image = load_nifti(fpath, return_img=True)
+                bvals = np.loadtxt(bvalpath)
+
+                denoised_data = patch2self(data, bvals, model=model,
+                                           verbose=verbose)
+                save_nifti(odenoised, denoised_data, affine, image.header)
+
+                logging.info('Denoised volumes saved as %s', odenoised)
 
 
 class NLMeansFlow(Workflow):
@@ -32,19 +97,18 @@ class NLMeansFlow(Workflow):
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
         sigma : float, optional
-            Sigma parameter to pass to the nlmeans algorithm
-            (default: auto estimation).
+            Sigma parameter to pass to the nlmeans algorithm.
         patch_radius : int, optional
-            patch size is ``2 x patch_radius + 1``. Default is 1.
+            patch size is ``2 x patch_radius + 1``.
         block_radius : int, optional
-            block size is ``2 x block_radius + 1``. Default is 5.
+            block size is ``2 x block_radius + 1``.
         rician : bool, optional
             If True the noise is estimated as Rician, otherwise Gaussian noise
             is assumed.
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_denoised : string, optional
-            Name of the resulting denoised volume (default: dwi_nlmeans.nii.gz)
+            Name of the resulting denoised volume.
 
         References
         ----------
@@ -103,13 +167,15 @@ class LPCAFlow(Workflow):
             Default 0: it means sigma value estimation with the Manjon2013
             algorithm [3]_.
         b0_threshold : float, optional
-            Threshold used to find b=0 directions (default 0.0)
+            Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
-            b-vectors are unit vectors (default 0.01)
+            b-vectors are unit vectors.
         patch_radius : int, optional
             The radius of the local patch to be taken around each voxel (in
-            voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+            voxels) For example, for a patch radius with value 2, and assuming
+            the input image is a 3D image, the denoising will take place in
+            blocks of 5x5x5 voxels.
         pca_method : string, optional
             Use either eigenvalue decomposition ('eig') or singular value
             decomposition ('svd') for principal component analysis. The default
@@ -127,11 +193,10 @@ class LPCAFlow(Workflow):
             noise standard deviation and the threshold \tau. If \tau_{factor}
             is set to None, it will be automatically calculated using the
             Marcenko-Pastur distribution [2]_.
-            Default: 2.3 (according to [1]_)
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_denoised : string, optional
-            Name of the resulting denoised volume (default: dwi_lpca.nii.gz)
+            Name of the resulting denoised volume.
 
         References
         ----------
@@ -189,9 +254,11 @@ class MPPCAFlow(Workflow):
         input_files : string
             Path to the input volumes. This path may contain wildcards to
             process multiple inputs at once.
-        patch_radius : int, optional
+        patch_radius : variable int, optional
             The radius of the local patch to be taken around each voxel (in
-            voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+            voxels) For example, for a patch radius with value 2, and assuming
+            the input image is a 3D image, the denoising will take place in
+            blocks of 5x5x5 voxels.
         pca_method : string, optional
             Use either eigenvalue decomposition ('eig') or singular value
             decomposition ('svd') for principal component analysis. The default
@@ -200,13 +267,12 @@ class MPPCAFlow(Workflow):
         return_sigma : bool, optional
             If true, a noise standard deviation estimate based on the
             Marcenko-Pastur distribution is returned [2]_.
-            Default: False.
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_denoised : string, optional
-            Name of the resulting denoised volume (default: dwi_mppca.nii.gz)
+            Name of the resulting denoised volume.
         out_sigma : string, optional
-            Name of the resulting sigma volume (default: dwi_sigma.nii.gz)
+            Name of the resulting sigma volume.
 
         References
         ----------
@@ -252,19 +318,18 @@ class GibbsRingingFlow(Workflow):
             process multiple inputs at once.
         slice_axis : int, optional
             Data axis corresponding to the number of acquired slices.
-            Default is set to the third axis(2). Could be (0, 1, or 2).
+            Could be (0, 1, or 2): for example, a value of 2 would mean the
+            third axis.
         n_points : int, optional
             Number of neighbour points to access local TV (see note).
-            Default is set to 3.
         num_threads : int or None, optional
             Number of threads. Only applies to 3D or 4D `data` arrays. If None
             then all available threads will be used. Otherwise, must be a
             positive integer.
-            Default is set to 1.
         out_dir : string, optional
-            Output directory (default current directory)
+            Output directory. (default current directory)
         out_unrig : string, optional
-            Name of the resulting denoised volume (default: dwi_unrig.nii.gz)
+            Name of the resulting denoised volume.
 
         References
         ----------

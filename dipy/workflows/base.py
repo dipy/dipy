@@ -33,27 +33,27 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         Parameters
         -----------
         prog : None
-            The name of the program (default: sys.argv[0])
+            The name of the program. (default: sys.argv[0])
         usage : None
-            A usage message (default: auto-generated from arguments)
+            A usage message. (default: auto-generated from arguments)
         description : str
-            A description of what the program does
+            A description of what the program does.
         epilog : str
-            Text following the argument descriptions
+            Text following the argument descriptions.
         parents : list
-            Parsers whose arguments should be copied into this one
+            Parsers whose arguments should be copied into this one.
         formatter_class : obj
-            HelpFormatter class for printing help messages
+            HelpFormatter class for printing help messages.
         prefix_chars : str
-            Characters that prefix optional arguments
+            Characters that prefix optional arguments.
         fromfile_prefix_chars : None
-            Characters that prefix files containing additional arguments
+            Characters that prefix files containing additional arguments.
         argument_default : None
-            The default value for all arguments
+            The default value for all arguments.
         conflict_handler : str
-            String indicating how to handle conflicts
+            String indicating how to handle conflicts.
         add_help : bool
-            Add a -h/-help option
+            Add a -h/-help option.
         """
 
         iap = IntrospectiveArgumentParser
