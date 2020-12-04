@@ -32,19 +32,6 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     See Also
     --------
     seeds_from_surface_coordinates, random_seeds_from_mask
-
-    Examples
-    --------
-    >>> mask = np.ones([len(triangles)])
-    >>> mask[0] = 0
-    >>> normal = np.cross(vts[triangles[:, 1]] - vts[triangles[:, 0]],
-    ... vts[triangles[:, 2]] - vts[triangles[:, 0]])
-    >>> triangles_area = 0.5*np.linalg.norm(normal,axis=-1)
-    >>> nb_seeds = 100
-    >>> idx, coord = random_coordinates_from_surface(len(triangles), nb_seeds,
-    ... mask, triangles_weight=triangles_area)
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts, idx,
-    ... coord)
     """
     # Compute triangles_weight in vts_mask
     if triangles_mask is not None:
@@ -93,20 +80,11 @@ def seeds_from_surface_coordinates(triangles, vts_values,
     Returns
     -------
     pts : [s, ...] array
-        Interpolated values of vertices with triangles_idx and trilinear_coord
+        Interpolated values of vertices along triangles_idx and trilinear_coord
 
     See Also
     --------
     random_coordinates_from_surface
-
-    Examples
-    --------
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts,
-    ... triangles_idx, triangles_coord)
-    >>> vts_normal = normals_from_v_f(vts, triangles)  # fury.utils
-    >>> seeds_normal = seeds_from_surface_coordinates(triangles, vts_normal,
-    ... triangles_idx, triangles_coord)
-    >>> seeds_normal /= np.linalg.norm(seeds_normal, axis=-1, keepdims=True)
     """
     if vts_values.ndim == 1:
         vts_values = np.reshape(vts_values, (-1, 1))
@@ -168,3 +146,4 @@ def vertices_to_triangles_values(triangles, vts_values):
     random_coordinates_from_surface
     """
     return np.mean(vts_values[triangles], axis=1)
+
