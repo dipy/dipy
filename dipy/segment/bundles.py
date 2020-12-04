@@ -339,15 +339,15 @@ class RecoBundles(object):
             streamlines from input tractogram
         model_clust_thr : float
             MDF distance threshold for the model bundles
-        reduction_thr : float
+        reduction_thr : float, optional
             Reduce search space in the target tractogram by (mm) (default 10)
-        reduction_distance : string
+        reduction_distance : string, optional
             Reduction distance type can be mdf or mam (default mdf)
-        slr : bool
+        slr : bool, optional
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
-        slr_x0 : array or int or str
+        slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
             Initial parametrization for the optimization.
 
@@ -380,17 +380,17 @@ class RecoBundles(object):
                 c) "affine"
                     ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
             (default None)
-        slr_bounds : array
+        slr_bounds : array, optional
             (default None)
-        slr_select : tuple
+        slr_select : tuple, optional
             Select the number of streamlines from model to neirborhood of
             model to perform the local SLR.
-        slr_method : string
+        slr_method : string, optional
             Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
             (default 'L-BFGS-B')
-        pruning_thr : float
+        pruning_thr : float, optional
             Pruning after reducing the search space (default 5).
-        pruning_distance : string
+        pruning_distance : string, optional
             Pruning distance type can be mdf or mam (default mdf)
 
         Returns
