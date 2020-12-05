@@ -24,7 +24,7 @@ from dipy.core.geometry import sphere2cart
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.io.streamline import save_trk
+from dipy.io.streamline import save_trk, StatefulTractogram, Space
 
 """
 This example will be based on the same multi-shell data used in the previous
@@ -285,14 +285,14 @@ seed_mask = dkifit.fa > 0.1
 seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
 
 # Initialize LocalTracking
-streamlines = LocalTracking(dki_peaks, classifier, seeds, affine, step_size=.5)
+streamlines = LocalTracking(dkidir, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines and store as a list.
 streamlines = list(streamlines)
 
+sft = StatefulTractogram(streamlines, img, Space.RASMM)
 # Save tracts in trk format
-save_trk("DKI_tractography_cenir_multib.trk", streamlines, affine,
-         den.shape[:-1])
+save_trk(sft, "DKI_tractography_cenir_multib.trk")
 
 """
 References:
