@@ -20,7 +20,7 @@ from dipy.segment.mask import median_otsu
 from dipy.denoise.patch2self import patch2self
 from dipy.data import get_sphere
 from dipy.core.geometry import sphere2cart
-# from dipy.viz import fvtk
+from dipy.viz import window, actor
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
@@ -99,12 +99,13 @@ sphere = get_sphere('symmetric724')
 ADC = dkifit.adc(sphere)
 AKC = dkifit.akc(sphere)
 
-# # Prepare graphical representation
-# ren = fvtk.ren()
-# tensors = np.vstack([AKC, ADC])
-# tensors = tensors.reshape((5, 2, 1, len(sphere.vertices)), order='F')
-# tensors_actor = fvtk.sphere_funcs(tensors, sphere)
-# fvtk.add(ren, tensors_actor)
+# Prepare graphical representation
+scene = window.Scene()
+tensors = np.vstack([AKC, ADC])
+tensors = tensors.reshape((5, 2, 1, len(sphere.vertices)))
+tensors_actor = actor.odf_slicer(tensors, sphere=sphere, scale=0.5)
+scene.add(tensors_actor)
+window.show(scene)
 
 """
 Ground truth direction of fibers are added to the graphical presentation of the
@@ -122,18 +123,18 @@ for d in range(5):
 # Duplicate directions ground truth to plot the direction reference in both
 # directional diffusivity and kurtosis values
 gt_dir_2copies = np.vstack([gt_dir, gt_dir])
-gt_dir_2copies = gt_dir_2copies.reshape((5, 2, 1, 2, 3), order='F')
+gt_dir_2copies = gt_dir_2copies.reshape((5, 2, 1, 2, 3))
 
-# gt_peaks = fvtk.peaks(gt_dir_2copies, 1.05 * np.ones(gt_dir_2copies.shape))
-# fvtk.add(ren, gt_peaks)
+gt_peaks = actor.peak_slicer(gt_dir_2copies,
+                             1.05 * np.ones(gt_dir_2copies.shape),
+                             linewidth=2)
+scene.add(gt_peaks)
 
 """
 Now we are ready to save and show the figure containing the tensor geometries:
 """
 
-# fvtk.record(ren, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
-
-# fvtk.show(ren, title='Geometry of DKI tensors', size=(500, 500))
+window.record(scene, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
 
 """
 .. figure:: geometry_of_DKI_tensors.png
