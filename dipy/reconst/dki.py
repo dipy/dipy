@@ -2813,8 +2813,8 @@ def Wcons(k_elements):
 
 
 def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
-                     min_separation_angle=20, mask=None, return_odf=False,
-                     normalize_peaks=False, npeaks=3, gtol=1e-5):
+                   min_separation_angle=20, mask=None, return_odf=False,
+                   normalize_peaks=False, npeaks=3, gtol=1e-5):
     """ Estimation of fiber direction based on diffusion kurtosis imaging
     (DKI). Fiber directions are estimated as the maxima of the orientation
     distribution function [Jen2014]. This function is based on the work done by
@@ -2881,12 +2881,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
             raise ValueError("Mask is not the same shape as data.")
     evals, evecs, kt = split_dki_param(dki_params)
     # select non-zero voxels
-    # (when #677 is merged replace this code lines by function _positive_evals)
-    # pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    er = np.finfo(evals.ravel()[0]).eps * 1e3
-    pos_evals = np.logical_and(evals[..., 0] > er,
-                               np.logical_and(evals[..., 1] > er,
-                                              evals[..., 2] > er))
+    pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     mask = np.logical_and(mask, pos_evals)
 
     # initialize parameters for pam
@@ -2929,49 +2924,52 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
             odf_min = odf_min if (odf_min >= 0.) else 0.
             values_norm = (pk - odf_min)
             n = search_descending(values_norm, relative_peak_threshold * 0.1)
-            ind = ind[:n]
-            di = di[:n]
-            pk = pk[:n]
+            if n != 0:
+                ind = ind[:n]
+                di = di[:n]
+                pk = pk[:n]
 
-            # Direction convergence
-            if gtol is not None:
-                for p in range(n):
-                    r, theta, phi = cart2sphere(di[p, 0], di[p, 1], di[p, 2])
-                    ang = np.array([theta, phi])
-                    ang[:] = opt.fmin_bfgs(_dki_odf_converge, ang,
-                                           args=(kt[idx], U, alpha),
-                                           gtol=gtol, disp=False,
-                                           retall=False)
-                    di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
-                    pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
+                # Direction convergence
+                if gtol is not None:
+                    for p in range(n):
+                        r, theta, phi = cart2sphere(di[p, 0],
+                                                    di[p, 1],
+                                                    di[p, 2])
+                        ang = np.array([theta, phi])
+                        ang[:] = opt.fmin_bfgs(_dki_odf_converge, ang,
+                                            args=(kt[idx], U, alpha),
+                                            gtol=gtol, disp=False,
+                                            retall=False)
+                        di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
+                        pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
 
-            # remove small peaks
-            values_norm = (pk - odf_min)
-            n = search_descending(values_norm, relative_peak_threshold)
-            ind = ind[:n]
-            di = di[:n]
-            pk = pk[:n]
+                # remove small peaks
+                values_norm = (pk - odf_min)
+                n = search_descending(values_norm, relative_peak_threshold)
+                ind = ind[:n]
+                di = di[:n]
+                pk = pk[:n]
 
-            # Remove peaks too close together
-            di, uniq = remove_similar_vertices(di, min_separation_angle,
-                                               return_index=True)
-            pk = pk[uniq]
-            ind = ind[uniq]
+                # Remove peaks too close together
+                di, uniq = remove_similar_vertices(di, min_separation_angle,
+                                                return_index=True)
+                pk = pk[uniq]
+                ind = ind[uniq]
 
-            n = min(npeaks, len(pk))
+                n = min(npeaks, len(pk))
 
-            # Saving directions
-            global_max = max(global_max, pk[0])
-            qa_array[idx][:n] = pk[:n] - odf.min()
-            peak_dirs[idx][:n] = di[:n]
-            peak_indices[idx][:n] = ind[:n]
-            peak_values[idx][:n] = pk[:n]
+                # Saving directions
+                global_max = max(global_max, pk[0])
+                qa_array[idx][:n] = pk[:n] - odf.min()
+                peak_dirs[idx][:n] = di[:n]
+                peak_indices[idx][:n] = ind[:n]
+                peak_values[idx][:n] = pk[:n]
 
-            if normalize_peaks:
-                peak_values[idx][:n] /= pk[0]
-                peak_dirs[idx] *= peak_values[idx][:, None]
-        else:
-            global_max = max(global_max, odf.max())
+                if normalize_peaks:
+                    peak_values[idx][:n] /= pk[0]
+                    peak_dirs[idx] *= peak_values[idx][:, None]
+            else:
+                global_max = max(global_max, odf.max())
 
     qa_array /= global_max
     pam = PeaksAndMetrics()
