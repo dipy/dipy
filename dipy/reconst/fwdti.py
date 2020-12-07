@@ -800,6 +800,253 @@ def cholesky_to_lower_triangular(R):
     return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
 
 
+def fernet_iter(design_matrix, sig, S0, St, Sw, non_b0_mask,
+                Diso=3e-3, mdreg=2.7e-3, min_signal=1.0e-6,
+                Dtmin=0.1e-3, Dtmax=2.5e-3, MDt=0.6e-3, method='hy'):
+    r""" Free water ellimination model estimation for single-shell data based
+    on unweighted signal and mean diffusivity information
+    (single voxel signals)
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    sig : array (g, )
+        Diffusion-weighted signal for a single voxel data.
+    S0 : float
+        Non diffusion weighted signal (i.e. signal for b-value=0).
+    St : float
+        Non diffusion weighted signal representative of tissue for the given
+        data (i.e signal for b-value=0 taken from deep White Matter).
+    Sw : float
+        Non diffusion weighted signal representative of water for the given
+        data (i.e. signal for b-value=0 taken from CSF).
+    non_b0_mask : bool (g, )
+        Boolean array that marks the positions in sig that were acquired with
+        a non zero b-value.
+    Diso : float, optional
+        Value of the free water isotropic diffusion. Default is set to 3e-3
+        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
+        units of diffusion.
+    mdreg : float, optimal
+        DTI's mean diffusivity regularization threshold. If standard DTI
+        diffusion tensor's mean diffusivity is almost near the free water
+        diffusion value, the diffusion signal is assumed to be only free water
+        diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
+        parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
+        (corresponding to 90% of the free water diffusion value).
+    min_signal : float
+        The minimum signal value. Needs to be a strictly positive
+        number. Default: minimal signal in the data provided to `fit`.
+    Dtmin : float
+        Minimum diffusivity expected for the tissue compartment signal.
+    Dtmax : float
+        Maximum diffusivity expected for the tissue compartment signal.
+    MDt : float
+        Prior for mean diffusivity expected in healthy tissue.
+    method : str
+        Choice of estimation method, can be one of the following:
+        - 's0' for estimation based on unweighted signal information
+        - 'md' for estimation based on mean diffusivity information
+        - 'hy' for a hybrid approach (both S0 and MD are used)
+
+        see Notes and References for more details.
+
+    Returns
+    -------
+    All parameters estimated from the free water tensor model.
+    Parameters are ordered as follows:
+        1) Three diffusion tensor's eigenvalues
+        2) Three lines of the eigenvector matrix each containing the
+           first, second and third coordinates of the eigenvector
+        3) The volume fraction of the free water compartment
+
+    Notes
+    -----
+    The initial guess estimate for the tissue compartment free water fraction,
+    based on $S_0$ information is given by:
+
+    ..math::
+
+        f_{S0} = 1 - \frac{log(S_0 / S_t)}{log(S_w / S_t)}
+
+    The lower and upper bounds for $f_{S0}$ presented exactly as in [1]
+    resulted in values outside of the interval [0, 1] (possibily due to an
+    error), thus a correction in [2] was used.
+
+    In order to optimize this method, the priors $S_t$ and $S_w$ should be
+    given by the user, by handpicking them directly from the $S_0$ image
+    or performing WM and CSF segmentation and computing the average
+    (or maximum?) unweighted signal in those regions. Perfroming bias
+    correction on the data can also improve results. If no $S_t$ and $S_w$
+    are passed to the function, these values will be chosen based on the 75th
+    and 95th percentiles of the $S_0$ image, respectively.
+
+    The initial guess estimate for the tissue compartment free water fraction,
+    based on MD information is given by:
+
+    ..math::
+
+        f_{MD} = \frac{exp(-b MD) - exp(-b D_{iso})}{exp(-b MD_t) -
+                                                     exp(-b D_{iso})}
+
+    where MD in the numerator is estimated with standard DTI and $MD_t$ is the
+    prior for MD in healthy tissue, set to $0.6 \mu m^2 ms^{-1}$.
+
+    The initial guess estimate for the tissue compartment free water fraction,
+    based on a hybriad approach is given by:
+
+    ..math::
+
+        f_{HY} = f_{S0}^{1 - \alpha} \times f_{MD}^{\alpha}
+
+    where \$alpha$ is $f_{S0}$ constrained to $[0, 1]$, instead of the computed
+    bounds based on signal attenuation (see [1] for more details).
+
+    References
+    ----------
+    .. [1] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander,
+           S., Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
+           iNtErpolated iniTialization (FERNET): Characterizing peritumoral
+           edema using clinically feasible diffusion MRI data. Plos one,
+           15(5), e0233645.
+    .. [2] Golub, M., Henriques, R. N., & Nunes, R. G. (2020).
+           Free water DTI estimates from single b-value data might seem
+           plausible but must be interpreted with care.
+           arXiv preprint arXiv:2007.06359.
+    """
+    W = design_matrix
+
+    # DTI ordinary linear least square solution
+    log_s = np.log(np.maximum(sig, min_signal))
+
+    # Define weights
+    S2 = np.diag(sig**2)
+
+    # DTI weighted linear least square solution
+    WTS2 = np.dot(W.T, S2)
+    inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
+    invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
+    params = np.dot(invWTS2W_WTS2, log_s)
+
+    # Process voxel if it has significant signal from tissue
+    md = (params[0] + params[2] + params[5]) / 3
+    if md < mdreg and np.mean(sig) > min_signal and S0 > min_signal:
+
+        # Estimation based on S0 information
+        masked_design_matrix = design_matrix[non_b0_mask, :]
+
+        # Signal normalized by S0
+        Ahat = sig[non_b0_mask] / S0
+
+        # General free-water signal contribution
+        fwsig = np.exp(np.dot(masked_design_matrix,
+                              np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
+
+        # Min and Max expected tissue signal contribution 
+        Atmin = np.exp(np.dot(masked_design_matrix,
+                              np.array([Dtmax, 0, Dtmax, 0, 0, Dtmax, 0])))
+
+        Atmax = np.exp(np.dot(masked_design_matrix,
+                              np.array([Dtmin, 0, Dtmin, 0, 0, Dtmin, 0])))
+
+        # Lower and upper bounds for tissue fraction
+        fmin = np.min(Ahat - fwsig) / np.max(Atmax - fwsig)
+        fmax = np.max(Ahat - fwsig) / np.min(Atmin - fwsig)
+        fmin = np.clip(fmin, 0, 1)
+        fmax = np.clip(fmax, 0, 1)
+
+        # Estimate for tissue water fraction based on S0
+        fs0 = 1 - np.log(S0 / St) / np.log(Sw / St)
+        fs0_clip = np.clip(fs0, fmin, fmax)
+
+        if method == 's0':
+            # DTI applied to tissue signal contribution
+            fw = 1 - fs0_clip
+            tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+                          np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
+
+            log_s = np.log(np.maximum(tissue_sig, min_signal))
+            S2 = np.diag(tissue_sig**2)
+            WTS2 = np.dot(W.T, S2)
+            inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
+            invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
+            params = np.dot(invWTS2W_WTS2, log_s)
+
+            evals, evecs = decompose_tensor(from_lower_triangular(params))
+            fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                        np.array([fw])), axis=0)
+            return fw_params
+
+        # Estimation based on MD information
+        mdsig = np.exp(np.dot(masked_design_matrix,
+                              np.array([md, 0, md, 0, 0, md, 0])))
+
+        healthy_sig = np.exp(np.dot(masked_design_matrix,
+                                    np.array([MDt, 0, MDt, 0, 0, MDt, 0])))
+
+        fmd = (mdsig - fwsig) / (healthy_sig - fwsig)
+        fmd = np.mean(fmd)
+        fmd = np.clip(fmd, 0, 1)
+
+        if method == 'md':
+            # DTI applied to tissue signal contribution
+            fw = 1 - fmd
+            tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+                          np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
+
+            log_s = np.log(np.maximum(tissue_sig, min_signal))
+            S2 = np.diag(tissue_sig**2)
+            WTS2 = np.dot(W.T, S2)
+            inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
+            invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
+            params = np.dot(invWTS2W_WTS2, log_s)
+
+            evals, evecs = decompose_tensor(from_lower_triangular(params))
+            fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                        np.array([fw])), axis=0)
+            return fw_params
+
+        # Estimation based on hybrid approach (both S0 and MD information)
+        alpha = fs0  # unconstrained by fmin and fmax
+        fhy = (fs0_clip**(1 - alpha)) * fmd**alpha
+
+        # DTI applied to tissue signal contribution
+        fw = 1 - fhy
+        tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+                      np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
+
+        log_s = np.log(np.maximum(tissue_sig, min_signal))
+        S2 = np.diag(tissue_sig**2)
+        WTS2 = np.dot(W.T, S2)
+        inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
+        invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
+        params = np.dot(invWTS2W_WTS2, log_s)
+
+        evals, evecs = decompose_tensor(from_lower_triangular(params))
+        fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                    np.array([fw])), axis=0)
+    else:
+        fw_params = np.zeros(13)
+        if md > mdreg:
+            fw_params[12] = 1.0
+
+    return fw_params
+
+
+single_shell_options = {'S0': 's0',
+                        's0': 's0',
+                        'b0': 's0',
+                        'md': 'md',
+                        'MD': 'md',
+                        'mean_diffusivity': 'md',
+                        'hybrid': 'hy',
+                        'interp': 'hy',
+                        'log_linear': 'hy'
+                        }
+
+
 common_fit_methods = {'WLLS': wls_iter,
                       'WLS': wls_iter,
                       'NLLS': nls_iter,
