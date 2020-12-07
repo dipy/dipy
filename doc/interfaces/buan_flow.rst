@@ -45,7 +45,7 @@ as data you downloaded is already in the required format. We will be using ``bun
 folder you downloaded from streamline atlas link and ``subjects_small`` folder
 downloaded from test data link.
 
-Where, ``bundles`` folder has following nodel bundles::
+Where, ``bundles`` folder has following model bundles::
 
     bundles/
     ├── AF_L.trk
@@ -297,7 +297,6 @@ If you are using any of these commands do cite the relevant papers.
     Population-averaged atlas of the macroscale human structural
     connectome and its network topology.
     Neuroimage, 2018.
-
 
 
 
