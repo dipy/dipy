@@ -132,6 +132,16 @@ class FreeWaterTensorModel(ReconstModel):
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b:
             self.single_shell_flag = True
+            # Check if 'St' and 'Sw' keyword arguments are provided
+            St = self.kwargs.get('St', None)
+            Sw = self.kwargs.get('Sw', None)
+            if St is None or Sw is None:
+                e_s = 'To use the single-shell method, provide "St" anf "Sw" '
+                e_s += 'keyword arguments to FreeWaterTensorModel, these '
+                e_s += 'values should represent typical tissue and CSF '
+                e_s += 'intensities in your S0 image respectively, '
+                e_s += 'see fernet_iter function for more details'
+                raise ValueError(e_s)
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -146,32 +156,12 @@ class FreeWaterTensorModel(ReconstModel):
             should be analyzed that has the shape data.shape[:-1]
         """
         if self.single_shell_flag:
-            # Check if 'St' and 'Sw' keyword arguments are provided
-            St = self.kwargs.pop('St', None)
-            Sw = self.kwargs.pop('Sw', None)
-            if St is None or Sw is None:
-                if data.dim == 1:  # if data is single-voxel
-                    e_s += 'When applying the single-shell method to '
-                    e_s += 'single-voxel signals, "St" and "Sw" keyword '
-                    e_s += 'arguments must be provided to
-                    e_s =+ 'FreeWaterTensorModel class'
-                    raise ValueError(e_s)
-                if mask is not None:
-                    if mask.shape != data.shape[:-1]:
-                        raise ValueError("Mask is not the same shape as data.")
-                    mask = mask.astype(bool, copy=False)
-                else:
-                    mask = np.ones(data.shape[:-1]).astype(bool, copy=False)
-                # to use the percentile method to choose St amd Sw, the S0
-                # image should be masked
-                S0_masked = np.mean(data[self.gtab.b0s_mask], axis=-1)
-                St = np.percentile(S0_masked, 75)
-                Sw = np.percentile(S0_masked, 95)
             # Running single-shell routine
             non_b0s = ~self.gtab.b0s_mask
             S0 = np.mean(data[self.gtab.b0s_mask])
-            fwdti_params = fernet_iter(self.design_matrix, data, S0, St, Sw,
-                                       non_b0s, *self.args, **self.kwargs)
+            fwdti_params = fernet_iter(self.design_matrix, data, S0,
+                                       non_b0_mask=non_b0s,
+                                       *self.args, **self.kwargs)
         else:
             # Running multi-shell routine
             S0 = np.mean(data[self.gtab.b0s_mask])
@@ -828,7 +818,7 @@ def cholesky_to_lower_triangular(R):
     return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
 
 
-def fernet_iter(design_matrix, sig, S0, St, Sw, non_b0_mask,
+def fernet_iter(design_matrix, sig, S0, St=None, Sw=None, non_b0_mask=None,
                 Diso=3e-3, mdreg=2.7e-3, min_signal=1.0e-6,
                 Dtmin=0.1e-3, Dtmax=2.5e-3, MDt=0.6e-3, method='hy'):
     r""" Free water ellimination model estimation for single-shell data based
@@ -991,8 +981,8 @@ def fernet_iter(design_matrix, sig, S0, St, Sw, non_b0_mask,
 
         if method == 's0':
             # DTI applied to tissue signal contribution
-            fw = 1 - fs0_clip
-            tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+            fw = 1 - fs0
+            tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
                           np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
 
             log_s = np.log(np.maximum(tissue_sig, min_signal))
@@ -1021,7 +1011,7 @@ def fernet_iter(design_matrix, sig, S0, St, Sw, non_b0_mask,
         if method == 'md':
             # DTI applied to tissue signal contribution
             fw = 1 - fmd
-            tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+            tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
                           np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
 
             log_s = np.log(np.maximum(tissue_sig, min_signal))
@@ -1037,12 +1027,12 @@ def fernet_iter(design_matrix, sig, S0, St, Sw, non_b0_mask,
             return fw_params
 
         # Estimation based on hybrid approach (both S0 and MD information)
-        alpha = fs0  # unconstrained by fmin and fmax
+        alpha = np.clip(fs0, 0, 1)  # unconstrained by fmin and fmax
         fhy = (fs0_clip**(1 - alpha)) * fmd**alpha
 
         # DTI applied to tissue signal contribution
         fw = 1 - fhy
-        tissue_sig = (sig - fw * np.exp(np.dot(design_matrix,
+        tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
                       np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
 
         log_s = np.log(np.maximum(tissue_sig, min_signal))
