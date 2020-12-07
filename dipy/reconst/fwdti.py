@@ -122,6 +122,7 @@ class FreeWaterTensorModel(ReconstModel):
                 e_s += 'method, the fit method should either be a '
                 e_s += 'function or one of the common fit methods'
                 raise ValueError(e_s)
+        self.single_shell_flag = False
         self.fit_method = fit_method
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
@@ -130,8 +131,7 @@ class FreeWaterTensorModel(ReconstModel):
         # Check if at least three b-values are given
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b:
-            mes = "fwDTI requires at least 3 b-values (which can include b=0)"
-            raise ValueError(mes)
+            self.single_shell_flag = True
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
@@ -145,9 +145,38 @@ class FreeWaterTensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
         """
-        S0 = np.mean(data[self.gtab.b0s_mask])
-        fwdti_params = self.fit_method(self.design_matrix, data, S0,
-                                       *self.args, **self.kwargs)
+        if self.single_shell_flag:
+            # Check if 'St' and 'Sw' keyword arguments are provided
+            St = self.kwargs.pop('St', None)
+            Sw = self.kwargs.pop('Sw', None)
+            if St is None or Sw is None:
+                if data.dim == 1:  # if data is single-voxel
+                    e_s += 'When applying the single-shell method to '
+                    e_s += 'single-voxel signals, "St" and "Sw" keyword '
+                    e_s += 'arguments must be provided to
+                    e_s =+ 'FreeWaterTensorModel class'
+                    raise ValueError(e_s)
+                if mask is not None:
+                    if mask.shape != data.shape[:-1]:
+                        raise ValueError("Mask is not the same shape as data.")
+                    mask = mask.astype(bool, copy=False)
+                else:
+                    mask = np.ones(data.shape[:-1]).astype(bool, copy=False)
+                # to use the percentile method to choose St amd Sw, the S0
+                # image should be masked
+                S0_masked = np.mean(data[self.gtab.b0s_mask], axis=-1)
+                St = np.percentile(S0_masked, 75)
+                Sw = np.percentile(S0_masked, 95)
+            # Running single-shell routine
+            non_b0s = ~self.gtab.b0s_mask
+            S0 = np.mean(data[self.gtab.b0s_mask])
+            fwdti_params = fernet_iter(self.design_matrix, data, S0, St, Sw,
+                                       non_b0s, *self.args, **self.kwargs)
+        else:
+            # Running multi-shell routine
+            S0 = np.mean(data[self.gtab.b0s_mask])
+            fwdti_params = self.fit_method(self.design_matrix, data, S0,
+                                           *self.args, **self.kwargs)
 
         return FreeWaterTensorFit(self, fwdti_params)
 
