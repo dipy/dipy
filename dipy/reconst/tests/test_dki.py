@@ -589,6 +589,9 @@ def test_dki_errors():
     dkiF = dkiM.fit(DWI)
     mask_correct = dkiF.fa > 0
     mask_correct[1, 1] = False
+    # Store this, so we can recover it later:
+    tmp = np.copy(multi_params[1, 1])
+
     multi_params[1, 1] = np.zeros(27)
     mask_not_correct = np.array([[True, True, False], [True, False, False]])
     dkiF = dkiM.fit(DWI, mask=mask_correct)
@@ -598,6 +601,7 @@ def test_dki_errors():
 
     # error if data with only one non zero b-value is given
     assert_raises(ValueError, dki.DiffusionKurtosisModel, gtab)
+    multi_params[1, 1] = tmp
 
 
 def test_kurtosis_maximum():

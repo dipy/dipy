@@ -2663,7 +2663,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
         # loop over all directions
         sampledODF = np.zeros(len(V))
         for i in range(len(V)):
-             sampledODF[i] = _dki_odf_core(V[i], kt[vox], U, alpha)
+            sampledODF[i] = _dki_odf_core(V[i], kt[vox], U, alpha)
 
         kODFi[vox] = sampledODF
 
