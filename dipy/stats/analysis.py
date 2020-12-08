@@ -125,7 +125,7 @@ def assignment_map(target_bundle, model_bundle, no_disks):
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and Garyfallidis, E.
+    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
     Bundle analytics, a computational framework for investigating the
     shapes and profiles of brain pathways across populations.
     Sci Rep 10, 17149 (2020)

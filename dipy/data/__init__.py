@@ -49,6 +49,7 @@ from dipy.data.fetcher import (get_fnames,
                                fetch_bundle_atlas_hcp842,
                                get_bundle_atlas_hcp842,
                                get_target_tractogram_hcp,
+                               get_two_hcp842_bundles,
                                fetch_bundle_fa_hcp,
                                fetch_gold_standard_io)
 

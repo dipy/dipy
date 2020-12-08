@@ -2,9 +2,9 @@
 import logging
 from dipy.workflows.workflow import Workflow
 from dipy.io.image import save_nifti, load_nifti
-import nibabel as nib
 import numpy as np
 from time import time
+from dipy.tracking import Streamlines
 from dipy.segment.mask import median_otsu
 from dipy.segment.bundles import RecoBundles
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -165,7 +165,7 @@ class RecoBundlesFlow(Workflow):
          clustering, Neuroimage, 2017.
 
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and
+        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
         Garyfallidis, E. Bundle analytics, a computational framework for
         investigating the shapes and profiles of brain pathways across
         populations. Sci Rep 10, 17149 (2020)
@@ -331,7 +331,6 @@ class LabelsBundlesFlow(Workflow):
                 bundle = streamlines[location]
 
             logging.info('Saving output files ...')
-            new_sft = StatefulTractogram(streamlines[location],
-                                         sft, Space.RASMM)
+            new_sft = StatefulTractogram(bundle, sft, Space.RASMM)
             save_tractogram(new_sft, out_bundle, bbox_valid_check=False)
             logging.info(out_bundle)

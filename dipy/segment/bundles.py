@@ -179,7 +179,7 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
     References
     ----------
     .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F., Bullock, D.,
-    Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and Garyfallidis, E.
+    Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and Garyfallidis, E.
     Bundle analytics, a computational framework for investigating the
     shapes and profiles of brain pathways across populations.
     Sci Rep 10, 17149 (2020)
@@ -335,26 +335,63 @@ class RecoBundles(object):
         Parameters
         ----------
         model_bundle : Streamlines
+            model bundle streamlines used as a reference to extract similar
+            streamlines from input tractogram
         model_clust_thr : float
-        reduction_thr : float
-        reduction_distance : string
-            mdf or mam (default mdf)
-        slr : bool
+            MDF distance threshold for the model bundles
+        reduction_thr : float, optional
+            Reduce search space in the target tractogram by (mm) (default 10)
+        reduction_distance : string, optional
+            Reduction distance type can be mdf or mam (default mdf)
+        slr : bool, optional
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
-        slr_x0 : array
+        slr_x0 : array or int or str, optional
+            Transformation allowed. translation, rigid, similarity or scaling
+            Initial parametrization for the optimization.
+
+            If 1D array with:
+                a) 6 elements then only rigid registration is performed with
+                the 3 first elements for translation and 3 for rotation.
+                b) 7 elements also isotropic scaling is performed (similarity).
+                c) 12 elements then translation, rotation (in degrees),
+                scaling and shearing are performed (affine).
+
+                Here is an example of x0 with 12 elements:
+                ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
+
+                This has translation (0, 10, 0), rotation (40, 0, 0) in
+                degrees, scaling (2., 1.5, 1) and shearing (0.1, -0.5, 0).
+
+            If int:
+                a) 6
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) 7
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) 12
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
+
+            If str:
+                a) "rigid"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) "similarity"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) "affine"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
             (default None)
-        slr_bounds : array
+        slr_bounds : array, optional
             (default None)
-        slr_select : tuple
+        slr_select : tuple, optional
             Select the number of streamlines from model to neirborhood of
             model to perform the local SLR.
-        slr_method : string
-            Optimization method (default 'L-BFGS-B')
-        pruning_thr : float
-        pruning_distance : string
-            MDF ('mdf') and MAM ('mam')
+        slr_method : string, optional
+            Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
+            (default 'L-BFGS-B')
+        pruning_thr : float, optional
+            Pruning after reducing the search space (default 5).
+        pruning_distance : string, optional
+            Pruning distance type can be mdf or mam (default mdf)
 
         Returns
         -------
@@ -427,20 +464,58 @@ class RecoBundles(object):
         first ouput of recobundle by applying second local slr (optional),
         and second pruning. This method is useful when we are dealing with
         noisy data or when we want to extract small tracks from tractograms.
+        This time, search space is created using pruned bundle and not model
+        bundle.
 
         Parameters
         ----------
         model_bundle : Streamlines
+            model bundle streamlines used as a reference to extract similar
+            streamlines from input tractogram
         pruned_streamlines : Streamlines
+            Recognized bundle from target tractogram by RecoBundles.
         model_clust_thr : float
+            MDF distance threshold for the model bundles
         reduction_thr : float
+            Reduce search space by (mm) (default 14)
         reduction_distance : string
-            mdf or mam (default mam)
+            Reduction distance type can be mdf or mam (default mdf)
         slr : bool
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_metric : BundleMinDistanceMetric
-        slr_x0 : array
+        slr_x0 : array or int or str
+            Transformation allowed. translation, rigid, similarity or scaling
+            Initial parametrization for the optimization.
+
+            If 1D array with:
+                a) 6 elements then only rigid registration is performed with
+                the 3 first elements for translation and 3 for rotation.
+                b) 7 elements also isotropic scaling is performed (similarity).
+                c) 12 elements then translation, rotation (in degrees),
+                scaling and shearing are performed (affine).
+
+                Here is an example of x0 with 12 elements:
+                ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
+
+                This has translation (0, 10, 0), rotation (40, 0, 0) in
+                degrees, scaling (2., 1.5, 1) and shearing (0.1, -0.5, 0).
+
+            If int:
+                a) 6
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) 7
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) 12
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
+
+            If str:
+                a) "rigid"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) "similarity"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) "affine"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])
             (default None)
         slr_bounds : array
             (default None)
@@ -448,10 +523,12 @@ class RecoBundles(object):
             Select the number of streamlines from model to neirborhood of
             model to perform the local SLR.
         slr_method : string
-            Optimization method (default 'L-BFGS-B')
+            Optimization method 'L_BFGS_B' or 'Powell' optimizers can be used.
+            (default 'L-BFGS-B')
         pruning_thr : float
+            Pruning after reducing the search space (default 6).
         pruning_distance : string
-            MDF ('mdf') and MAM ('mam')
+            Pruning distance type can be mdf or mam (default mdf)
 
         Returns
         -------
@@ -467,7 +544,7 @@ class RecoBundles(object):
             clustering, Neuroimage, 2017.
 
         .. [Chandio2020] Chandio, B.Q., Risacher, S.L., Pestilli, F.,
-        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlack, J., and
+        Bullock, D., Yeh, FC., Koudoro, S., Rokem, A., Harezlak, J., and
         Garyfallidis, E. Bundle analytics, a computational framework for
         investigating the shapes and profiles of brain pathways across
         populations. Sci Rep 10, 17149 (2020)

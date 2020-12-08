@@ -185,6 +185,8 @@ Streamline analysis and connectivity
 - :ref:`example_cluster_confidence`
 - :ref:`example_path_length_map`
 - :ref:`example_afq_tract_profiles`
+- :ref:`example_bundle_assignment_maps`
+- :ref:`example_bundle_shape_similarity`
 
 ------------
 Registration
