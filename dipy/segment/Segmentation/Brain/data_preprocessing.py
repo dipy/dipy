@@ -5,8 +5,6 @@ Created on Sun Sep 20 03:53:16 2020
 @author: Siddhesh
 """
 
-#Referred https://gist.github.com/wassname/7793e2058c5c9dacb5212c0ac0b18a8a
-
 #Importing the required libraries
 import numpy as np
 from scipy.ndimage import zoom
