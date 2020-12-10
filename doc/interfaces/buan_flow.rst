@@ -156,8 +156,8 @@ And each subject folder has the following structure::
 
 If you want to run this tutorial on your data, make sure that the directory structure is
 The same as shown above. Where, ``anatomical_measures`` folder has nifti files for DTI measures such as
-FA, MD, and CSA/CSD pam5 files. The ``org_bundles`` folder has extracted bundles in common space.
-The ``rec_bundles`` folder has extracted bundles in native space.
+FA, MD, and CSA/CSD pam5 files. The ``org_bundles`` folder has extracted bundles in native space.
+The ``rec_bundles`` folder has extracted bundles in common space.
 
 .. note::
 
