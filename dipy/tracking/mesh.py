@@ -80,7 +80,7 @@ def seeds_from_surface_coordinates(triangles, vts_values,
     Returns
     -------
     pts : [s, ...] array
-        Interpolated values of vertices along triangles_idx and trilinear_coord
+        Interpolated values of vertices with triangles_idx and trilinear_coord
 
     See Also
     --------
@@ -146,4 +146,3 @@ def vertices_to_triangles_values(triangles, vts_values):
     random_coordinates_from_surface
     """
     return np.mean(vts_values[triangles], axis=1)
-
