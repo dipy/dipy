@@ -15,7 +15,7 @@ from numpy.testing import (assert_almost_equal,
 import pytest
 =======
 from dipy.data import get_gtab_taiwan_dsi
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix, probabilistic_least_squares
+from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
 from dipy.sims.voxel import (MultiTensor,
                              multi_tensor_pdf,
@@ -795,41 +795,6 @@ def test_laplacian_regularization(radial_order=6):
         coef_laplacian, np.dot(coef_laplacian, laplacian_matrix))
 
     assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
-
-
-def test_probabilistic_least_squares():
-
-    # Test case: linear regression,
-    # y = c_1 + c_2 * x
-    # where true values are c_1 = 1, c_2 = 2
-
-    A = np.array([[1, 0], [1, 1], [1, 2]])
-    y = np.array([[1], [3], [5]])
-    coef_ground_truth = np.array([[1], [2]])
-
-    # Noise-less case
-    coef, residual_variance = probabilistic_least_squares(A, y)
-    assert_array_almost_equal(coef, coef_ground_truth)
-    assert_almost_equal(residual_variance, 0)
-
-    # Noisy case
-    y_noisy = y + np.array([[1], [2], [-2]])*1e-4
-    coef, residual_variance = probabilistic_least_squares(A, y_noisy)
-    assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
-    assert(residual_variance > 0)
-
-    regularization_matrix = np.diag([0, np.inf])
-    # This should force the second coefficient to zero
-    coef_expected = np.array([[3], [0]])
-    coef, residual_variance = probabilistic_least_squares(A, y, regularization_matrix=regularization_matrix)
-    assert_array_almost_equal(coef, coef_expected)
-    assert_almost_equal(residual_variance, 4)
-
-    n_samples = 1000
-    np.random.seed(0)
-    samples, residual_variance = probabilistic_least_squares(A, y_noisy, posterior_samples=n_samples)
-    assert_array_almost_equal(samples.shape, np.array([A.shape[-1], n_samples]))
-    assert_array_almost_equal(np.mean(samples, -1, keepdims=True), coef_ground_truth, decimal=3)
 
 
 def test_mapmri_residual_variance(radial_order=6):

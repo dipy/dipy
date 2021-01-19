@@ -3,9 +3,9 @@ import numpy as np
 from distutils.version import LooseVersion
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
+from dipy.reconst.utils import probabilistic_least_squares
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
-from scipy.linalg import cho_factor, cho_solve
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
     from scipy.special import factorial as sfactorial
     from scipy.special import factorial2
@@ -1792,42 +1792,6 @@ def mapmri_isotropic_index_matrix(radial_order):
                 index_matrix.append([j, n + 2 - 2 * j, m])
 
     return np.array(index_matrix)
-
-
-def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, posterior_samples=None):
-    # Solve least-squares problem on the form
-    # design_matrix * coef = y
-
-    if regularization_matrix is None:
-        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix)
-    else:
-        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix) + regularization_matrix
-
-    pseudoInv = np.linalg.solve(unscaled_posterior_precision, design_matrix.T)
-    coef_posterior_mean = np.dot(pseudoInv, y)
-
-    smoother_matrix = design_matrix.dot(pseudoInv)
-    residual_matrix = np.eye(y.shape[0]) - smoother_matrix
-    residual_variance = (np.linalg.norm(residual_matrix.dot(y)) ** 2 /
-                         np.linalg.norm(residual_matrix, 'fro') ** 2)
-
-    if posterior_samples is None:
-        return coef_posterior_mean, residual_variance
-    else:
-        standard_normal_samples = np.random.randn(coef_posterior_mean.shape[0], posterior_samples)
-
-        coef_posterior_precision = unscaled_posterior_precision / residual_variance
-        L = cho_factor(coef_posterior_precision)
-
-        if np.ndim(coef_posterior_mean) == 1:
-            # For correct broadcasting
-            coef_posterior_mean = coef_posterior_mean[:, None]
-
-        samples = coef_posterior_mean + cho_solve(L, standard_normal_samples)
-
-        samples = np.squeeze(samples)
-
-        return samples, residual_variance
 
 
 def create_rspace(gridsize, radius_max):
