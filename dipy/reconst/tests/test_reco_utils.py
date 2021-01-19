@@ -6,9 +6,53 @@ from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
 from dipy.reconst.utils import probabilistic_least_squares
 
+<<<<<<< b6491d1a2381cdc33423c3100be9b72a310e82c4
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises)
+=======
+from nose.tools import assert_true, assert_false, \
+     assert_equal, assert_raises
+
+from numpy.testing import (assert_array_equal,
+                           assert_array_almost_equal,
+                           assert_almost_equal)
+
+
+def test_probabilistic_least_squares():
+
+    # Test case: linear regression,
+    # y = c_1 + c_2 * x
+    # where true values are c_1 = 1, c_2 = 2
+
+    A = np.array([[1, 0], [1, 1], [1, 2]])
+    y = np.array([1, 3, 5])
+    coef_ground_truth = np.array([1, 2])
+
+    # Noise-less case
+    coef, residual_variance = probabilistic_least_squares(A, y)
+    assert_array_almost_equal(coef, coef_ground_truth)
+    assert_almost_equal(residual_variance, 0)
+
+    # Noisy case
+    y_noisy = y + np.array([1, 2, -2])*1e-4
+    coef, residual_variance = probabilistic_least_squares(A, y_noisy)
+    assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
+    assert(residual_variance > 0)
+
+    regularization_matrix = np.diag([0, np.inf])
+    # This should force the second coefficient to zero
+    coef_expected = np.array([3, 0])
+    coef, residual_variance = probabilistic_least_squares(A, y, regularization_matrix=regularization_matrix)
+    assert_array_almost_equal(coef, coef_expected)
+    assert_almost_equal(residual_variance, 4)
+
+    n_samples = 1000
+    np.random.seed(0)
+    samples, residual_variance = probabilistic_least_squares(A, y_noisy, n_posterior_samples=n_samples)
+    assert_array_almost_equal(samples.shape, np.array([A.shape[-1], n_samples]))
+    assert_array_almost_equal(np.mean(samples, -1, keepdims=False), coef_ground_truth, decimal=3)
+>>>>>>> NF: generalized least-squares solver to also work for batches of voxels.
 
 
 def test_adj_countarrs():

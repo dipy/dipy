@@ -51,6 +51,7 @@ def dki_design_matrix(gtab):
     return B
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 def _roi_in_volume(data_shape, roi_center, roi_radii):
     """Ensures that a cuboid ROI is in a data volume.
@@ -117,35 +118,42 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
     return mask
 =======
 def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, posterior_samples=None):
+=======
+def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, n_posterior_samples=None):
+>>>>>>> 2b66ebe93... NF: generalized least-squares solver to also work for batches of voxels.
     # Solve least-squares problem on the form
     # design_matrix * coef = y
 
     if regularization_matrix is None:
-        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix)
+        unscaled_posterior_precision = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
     else:
-        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix) + regularization_matrix
+        unscaled_posterior_precision = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+                                        + regularization_matrix)
 
-    pseudoInv = np.linalg.solve(unscaled_posterior_precision, design_matrix.T)
-    coef_posterior_mean = np.dot(pseudoInv, y)
+    pseudoInv = np.linalg.solve(unscaled_posterior_precision, np.swapaxes(design_matrix, -1, -2))
+    coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudoInv, y)
 
-    smoother_matrix = design_matrix.dot(pseudoInv)
-    residual_matrix = np.eye(y.shape[0]) - smoother_matrix
-    residual_variance = (np.linalg.norm(residual_matrix.dot(y)) ** 2 /
-                         np.linalg.norm(residual_matrix, 'fro') ** 2)
+    smoother_matrix = np.einsum('...ik, ...kj->...ij', design_matrix, pseudoInv)
+    residual_matrix = np.eye(smoother_matrix.shape[-1]) - smoother_matrix
+    residuals = y - np.einsum('...ij, ...j->...i', design_matrix, coef_posterior_mean)
+    residual_variance = (np.sum(residuals ** 2, axis=-1) /
+                         np.sum(residual_matrix ** 2, axis=(-1, -2)))
 
-    if posterior_samples is None:
+    if n_posterior_samples is None:
         return coef_posterior_mean, residual_variance
     else:
-        standard_normal_samples = np.random.randn(coef_posterior_mean.shape[0], posterior_samples)
-
+        coef_posterior_mean = np.atleast_2d(coef_posterior_mean)
+        n_voxels, n_coefs = coef_posterior_mean.shape
         coef_posterior_precision = unscaled_posterior_precision / residual_variance
-        L = cho_factor(coef_posterior_precision)
+        coef_posterior_precision = coef_posterior_precision.reshape(n_voxels, n_coefs, n_coefs)
+        samples = np.zeros((n_voxels, n_coefs, n_posterior_samples))
 
-        if np.ndim(coef_posterior_mean) == 1:
-            # For correct broadcasting
-            coef_posterior_mean = coef_posterior_mean[:, None]
+        # Loop over voxels and draw samples for each
+        for i in range(n_voxels):
+            L = cho_factor(coef_posterior_precision[i, :, :])
 
-        samples = coef_posterior_mean + cho_solve(L, standard_normal_samples)
+            standard_normal_samples = np.random.randn(n_coefs, n_posterior_samples)
+            samples[i, :, :] = coef_posterior_mean[i, :, None] + cho_solve(L, standard_normal_samples)
 
         samples = np.squeeze(samples)
 
