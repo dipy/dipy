@@ -5,6 +5,7 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
+from scipy.linalg import cho_factor, cho_solve
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
     from scipy.special import factorial as sfactorial
     from scipy.special import factorial2
@@ -85,7 +86,8 @@ class MapmriModel(ReconstModel, Cache):
                  bval_threshold=np.inf,
                  dti_scale_estimation=True,
                  static_diffusivity=0.7e-3,
-                 cvxpy_solver=None):
+                 cvxpy_solver=None,
+                 sample_coefficients=False):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -231,6 +233,7 @@ class MapmriModel(ReconstModel, Cache):
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
+        self.sample_coefficients = sample_coefficients
 
         self.laplacian_regularization = laplacian_regularization
         if self.laplacian_regularization:
@@ -434,10 +437,10 @@ class MapmriModel(ReconstModel, Cache):
                     return MapmriFit(self, coef, mu, R, lopt, errorcode)
         else:
             try:
-                pseudoInv = np.dot(
-                    np.linalg.inv(np.dot(M.T, M) + lopt * laplacian_matrix),
-                    M.T)
-                coef = np.dot(pseudoInv, data)
+                coef, residual_variance = probabilistic_least_squares(
+                    M, data, regularization_matrix=lopt * laplacian_matrix,
+                    posterior_samples=1 if self.sample_coefficients else None)
+
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
                 coef = np.zeros(M.shape[1])
@@ -445,12 +448,12 @@ class MapmriModel(ReconstModel, Cache):
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, lopt, errorcode)
+        return MapmriFit(self, coef, mu, R, lopt, errorcode, residual_variance)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0):
+    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0, residual_variance=None):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -481,6 +484,7 @@ class MapmriFit(ReconstFit):
         self.R = R
         self.lopt = lopt
         self.errorcode = errorcode
+        self.residual_variance = residual_variance
 
     @property
     def mapmri_mu(self):
@@ -1788,6 +1792,42 @@ def mapmri_isotropic_index_matrix(radial_order):
                 index_matrix.append([j, n + 2 - 2 * j, m])
 
     return np.array(index_matrix)
+
+
+def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, posterior_samples=None):
+    # Solve least-squares problem on the form
+    # design_matrix * coef = y
+
+    if regularization_matrix is None:
+        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix)
+    else:
+        unscaled_posterior_precision = np.dot(design_matrix.T, design_matrix) + regularization_matrix
+
+    pseudoInv = np.linalg.solve(unscaled_posterior_precision, design_matrix.T)
+    coef_posterior_mean = np.dot(pseudoInv, y)
+
+    smoother_matrix = design_matrix.dot(pseudoInv)
+    residual_matrix = np.eye(y.shape[0]) - smoother_matrix
+    residual_variance = (np.linalg.norm(residual_matrix.dot(y)) ** 2 /
+                         np.linalg.norm(residual_matrix, 'fro') ** 2)
+
+    if posterior_samples is None:
+        return coef_posterior_mean, residual_variance
+    else:
+        standard_normal_samples = np.random.randn(coef_posterior_mean.shape[0], posterior_samples)
+
+        coef_posterior_precision = unscaled_posterior_precision / residual_variance
+        L = cho_factor(coef_posterior_precision)
+
+        if np.ndim(coef_posterior_mean) == 1:
+            # For correct broadcasting
+            coef_posterior_mean = coef_posterior_mean[:, None]
+
+        samples = coef_posterior_mean + cho_solve(L, standard_normal_samples)
+
+        samples = np.squeeze(samples)
+
+        return samples, residual_variance
 
 
 def create_rspace(gridsize, radius_max):
