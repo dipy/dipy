@@ -827,13 +827,13 @@ class TensorModel(ReconstModel):
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
-            uncertainty_params = None  
-              # TODO: make uncertainties work with masking
-              # if uncertainty_quantities is None:
-              #     uncertainty_params = None
-              # else:
-              #     uncertainty_params = np.zeros(data.shape[:-1])
-              #     uncertainty_params[mask] = uncertainty_quantities
+            uncertainty_params = None
+            # TODO: make uncertainties work with masking
+            # if uncertainty_quantities is None:
+            #     uncertainty_params = None
+            # else:
+            #     uncertainty_params = np.zeros(data.shape[:-1])
+            #     uncertainty_params[mask] = uncertainty_quantities
 
         return TensorFit(self, dti_params, model_S0=S0_params,
                          uncertainty_params=uncertainty_params)

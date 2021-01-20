@@ -393,4 +393,3 @@ def sample_multivariate_normal(mean, covariance_or_precision, n_samples,
         samples = np.squeeze(samples)
 
     return samples
-    
