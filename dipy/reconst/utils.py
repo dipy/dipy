@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.linalg import cho_factor, cho_solve
 
 
 def dki_design_matrix(gtab):
@@ -125,8 +124,10 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, n_
     # design_matrix * coef = y
 
     if regularization_matrix is None:
+        # In single voxel case: np.dot(design_matrix.T, design_matrix)
         unscaled_posterior_precision = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
     else:
+        # In single voxel case: np.dot(design_matrix.T, design_matrix) + regularization_matrix
         unscaled_posterior_precision = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
                                         + regularization_matrix)
 
@@ -150,10 +151,11 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, n_
 
         # Loop over voxels and draw samples for each
         for i in range(n_voxels):
-            L = cho_factor(coef_posterior_precision[i, :, :])
-
             standard_normal_samples = np.random.randn(n_coefs, n_posterior_samples)
-            samples[i, :, :] = coef_posterior_mean[i, :, None] + cho_solve(L, standard_normal_samples)
+
+            L = np.linalg.cholesky(coef_posterior_precision[i, :, :])
+            samples[i, :, :] = (coef_posterior_mean[i, :, None] +
+                                np.linalg.solve(L, standard_normal_samples))
 
         samples = np.squeeze(samples)
 
