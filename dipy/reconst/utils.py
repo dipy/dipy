@@ -156,7 +156,6 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None):
 
 
 def get_data_independent_estimation_quantities(design_matrix, regularization_matrix=None):
-
     Q = compute_unscaled_posterior_precision(design_matrix, regularization_matrix)
     unscaled_posterior_covariance = covariance_from_precision(Q)
 
@@ -170,14 +169,13 @@ def get_data_independent_estimation_quantities(design_matrix, regularization_mat
 
 
 def compute_unscaled_posterior_precision(design_matrix, regularization_matrix=None):
-
     if regularization_matrix is None:
         # In single voxel case: np.dot(design_matrix.T, design_matrix)
         S = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
     else:
         # In single voxel case: np.dot(design_matrix.T, design_matrix) + regularization_matrix
         S = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
-                                        + regularization_matrix)
+             + regularization_matrix)
     return S
 
 
@@ -186,7 +184,6 @@ def covariance_from_precision(Q):
 
 
 def compute_degrees_of_freedom(design_matrix, pseudoInv):
-
     smoother_matrix = np.einsum('...ik, ...kj->...ij', design_matrix, pseudoInv)
     residual_matrix = np.eye(smoother_matrix.shape[-1]) - smoother_matrix
     degrees_of_freedom = np.sum(residual_matrix ** 2, axis=(-1, -2))
@@ -204,24 +201,30 @@ def t_quantile_function(mean, scale, degrees_of_freedom, quantile):
     return out
 
 
-def percentiles_of_function(fun, mean, correlation_or_precision, degrees_of_freedom,
-                            probabilities=None, n_samples=1000, use_precision=False):
-    if probabilities is None:
-        probabilities = np.arange(0.05, 0.95, 0.05)
-
+def sample_function(fun, mean, correlation_or_precision, degrees_of_freedom,
+                    n_samples=1000, use_precision=False):
     samples = sample_multivariate_t(mean,
                                     correlation_or_precision,
                                     degrees_of_freedom,
                                     n_samples=n_samples,
                                     use_precision=use_precision)
+    return fun(samples.T)
 
-    empirical_percentiles = np.nanpercentile(fun(samples.T), probabilities * 100)
+
+def percentiles_of_function(fun, mean, correlation_or_precision, degrees_of_freedom,
+                            probabilities=None, n_samples=1000, use_precision=False):
+    if probabilities is None:
+        probabilities = np.arange(0.05, 0.95, 0.05)
+
+    samples = sample_function(fun, mean, correlation_or_precision, degrees_of_freedom,
+                              n_samples=n_samples, use_precision=use_precision)
+
+    empirical_percentiles = np.nanpercentile(samples, probabilities * 100)
     return empirical_percentiles
 
 
 def sample_multivariate_t(mean, correlation_or_precision, degrees_of_freedom,
                           n_samples=1, keepdims=False, use_precision=False):
-
     mean = np.atleast_2d(mean)
     n_voxels, n_coefs = mean.shape
 

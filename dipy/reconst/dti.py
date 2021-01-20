@@ -17,6 +17,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.reconst.utils import (probabilistic_least_squares,
                                 t_confidence_interval,
                                 t_quantile_function,
+                                sample_function,
                                 percentiles_of_function)
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
@@ -91,6 +92,11 @@ def fractional_anisotropy(evals, axis=-1):
                  ((evals * evals).sum(0) + all_zero))
 
     return fa
+
+
+def fa_from_lo_tri(dti_params):
+    evals = eig_from_lo_tri(dti_params)[..., :3]
+    return fractional_anisotropy(evals)
 
 
 def geodesic_anisotropy(evals, axis=-1):
@@ -872,14 +878,14 @@ class TensorFit(object):
     def S0_hat(self):
         return self.model_S0
 
-    @property
+    @auto_attr
     def residual_variance(self):
         out = np.zeros(self.uncertainty_params.shape)
         for (i, val) in np.ndenumerate(self.uncertainty_params):
             out[i] = val.residual_variance
         return out
 
-    @property
+    @auto_attr
     def degrees_of_freedom(self):
         out = np.zeros(self.uncertainty_params.shape)
         for (i, val) in np.ndenumerate(self.uncertainty_params):
@@ -915,10 +921,24 @@ class TensorFit(object):
         return self.md_interval_width(confidence=0.5)
 
     def fa_percentiles(self, probabilities=None, n_samples=1000):
-        def fa(dti_params):
-            evals = eig_from_lo_tri(dti_params)[..., :3]
-            return fractional_anisotropy(evals)
-        return self.percentiles(fa, probabilities=probabilities, n_samples=n_samples)
+        # def fa(dti_params):
+        #     evals = eig_from_lo_tri(dti_params)[..., :3]
+        #     return fractional_anisotropy(evals)
+        return self.percentiles(fa_from_lo_tri, probabilities=probabilities, n_samples=n_samples)
+
+    def fa_samples(self, n_samples=1000):
+        return self.samples_of_scalar_index(fa_from_lo_tri, n_samples=n_samples)
+
+    def samples_of_scalar_index(self, scalar_index_function, n_samples=1000):
+        samples = np.zeros(self.uncertainty_params.shape + (n_samples,))
+
+        # TODO: iterate over chunks instead
+        for (i, _) in np.ndenumerate(self.uncertainty_params):
+            samples[i] = sample_function(scalar_index_function, self.covariates[i],
+                            self.posterior_correlation[i], self.degrees_of_freedom[i],
+                            n_samples=n_samples)
+
+        return samples
 
     def fa_interquartile_range(self, n_samples=1000):
         percentiles = self.fa_percentiles(probabilities=np.array((0.25, 0.75)), n_samples=n_samples)
