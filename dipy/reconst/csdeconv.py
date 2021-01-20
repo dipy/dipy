@@ -292,7 +292,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
                                                     self.B_reg, self.tau,
                                                     convergence=self.convergence
                                                     P=self._P)
-        return SphHarmFit(self, shm_coeff, None, uncertainty_params=uncertainty_params)
+        return SphHarmFit(self, shm_coeff, None,
+                          uncertainty_params=uncertainty_params)
 
     def predict(self, sh_coeff, gtab=None, S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
@@ -699,10 +700,10 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         msg = 'maximum number of iterations exceeded - failed to converge'
         warnings.warn(msg)
 
-    # TODO: smoother integration that doesn't require recomputing the LS solution
-    fodf_sh, uncertainty_params = probabilistic_least_squares(design_matrix=X,
-                                                              y=dwsignal,
-                                                              regularization_matrix=np.dot(H.T, H))
+    # TODO: smoother integration that doesn't require recomputing
+    # the LS solution
+    fodf_sh, uncertainty_params = probabilistic_least_squares(
+        design_matrix=X, y=dwsignal, regularization_matrix=np.dot(H.T, H))
 
     return fodf_sh, num_it, uncertainty_params
 

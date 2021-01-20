@@ -27,6 +27,7 @@ from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
                              single_tensor, cylinders_and_ball_soderman)
 
 
+
 def int_func(n):
     f = np.sqrt(2) * factorial(n) / float(((gamma(1 + n / 2.0)) *
                                           np.sqrt(2**(n + 1) * factorial(n))))
@@ -468,7 +469,9 @@ def test_mapmri_metrics_isotropic(radial_order=6):
     assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
     assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
     assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
-    assert_almost_equal(np.dot(mapfit.rtop_matrix, mapfit.mapmri_coeff), rtop_gt, 4)
+    assert_almost_equal(np.dot(mapfit.rtop_matrix, mapfit.mapmri_coeff),
+                        rtop_gt,
+                        4)
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
 
@@ -836,7 +839,8 @@ def test_mapmri_residual_variance(radial_order=6):
                            laplacian_weighting=0.02,
                            anisotropic_scaling=anisotropic)
         mapfit = mapm.fit(S)
-        assert(np.isscalar(mapfit.residual_variance) or len(mapfit.residual_variance) == 1)
+        assert(np.isscalar(mapfit.residual_variance) or
+               len(mapfit.residual_variance) == 1)
 
 
 def test_mapmri_odf(radial_order=6):

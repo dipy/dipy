@@ -457,7 +457,8 @@ class MapmriModel(ReconstModel, Cache):
                 uncertainty_params.degrees_of_freedom,
                 uncertainty_params.unscaled_posterior_covariance)
 
-        return MapmriFit(self, coef, mu, R, lopt, errorcode, uncertainty_params)
+        return MapmriFit(self, coef, mu, R, lopt, errorcode,
+                         uncertainty_params)
 
 
 class MapmriFit(ReconstFit):
@@ -541,25 +542,32 @@ class MapmriFit(ReconstFit):
     def interval_width(self, A, confidence=0.95):
         mean = self.location(A)
         scale = self.scale(A)
-        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom, confidence=confidence)
+        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom,
+                                         confidence=confidence)
         width = interval[1] - interval[0]
         return width[0]
 
     def location(self, A):
-        mean = np.einsum('...i,...i',A, self.mapmri_coeff) # Essentially np.dot() on the last indices
+        # Essentially np.dot() on the last indices
+        mean = np.einsum('...i,...i', A, self.mapmri_coeff)
         return mean
-    
+
     def scale(self, A):
-        t_scale = np.sqrt(np.einsum('...i, ...ij, ...j->...', A, self.posterior_correlation, A))
+        t_scale = np.sqrt(np.einsum('...i, ...ij, ...j->...',
+                                    A, self.posterior_correlation, A))
         return t_scale
 
     def quantile_function(self, A, probability):
         mean = self.location(A)
         scale = self.scale(A)
-        percentile = t_quantile_function(mean, scale, self.degrees_of_freedom, probability)
+        percentile = t_quantile_function(mean,
+                                         scale,
+                                         self.degrees_of_freedom,
+                                         probability)
         return percentile
 
-    def percentiles(self, function_of_mapmri_coeff, probabilities, n_samples=1000):
+    def percentiles(self, function_of_mapmri_coeff,
+                    probabilities, n_samples=1000):
         return percentiles_of_function(function_of_mapmri_coeff,
                                        self.mapmri_coeff,
                                        self.posterior_correlation,

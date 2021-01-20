@@ -763,7 +763,7 @@ class TensorModel(ReconstModel):
                 raise ValueError(e_s)
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
-        #self.least_squares_quantities = None
+        # self.least_squares_quantities = None
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -821,7 +821,8 @@ class TensorModel(ReconstModel):
             if uncertainty_quantities is None:
                 uncertainty_params = None
             else:
-                uncertainty_params = uncertainty_quantities.reshape(out_shape[:-1])
+                uncertainty_params = \
+                    uncertainty_quantities.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
@@ -904,7 +905,8 @@ class TensorFit(object):
                         + (7, 7)))
         for (i, val) in np.ndenumerate(self.uncertainty_params):
             out[i] = ((val.degrees_of_freedom - 2) / val.degrees_of_freedom
-                      * val.residual_variance * val.unscaled_posterior_covariance)
+                      * val.residual_variance
+                      * val.unscaled_posterior_covariance)
         return out
 
     @auto_attr
@@ -926,44 +928,60 @@ class TensorFit(object):
         return self.md_interval_width(confidence=0.5)
 
     def fa_percentiles(self, probabilities=None, n_samples=1000):
-        return self.percentiles(fa_from_lo_tri, probabilities=probabilities, n_samples=n_samples)
+        return self.percentiles(fa_from_lo_tri,
+                                probabilities=probabilities,
+                                n_samples=n_samples)
 
     def fa_samples(self, n_samples=1000):
-        return self.samples_of_scalar_index(fa_from_lo_tri, n_samples=n_samples)
+        return self.samples_of_scalar_index(fa_from_lo_tri,
+                                            n_samples=n_samples)
 
     def samples_of_scalar_index(self, scalar_index_function, n_samples=1000):
         samples = np.zeros(self.uncertainty_params.shape + (n_samples,))
 
         # TODO: iterate over chunks instead
         for (i, _) in np.ndenumerate(self.uncertainty_params):
-            samples[i] = sample_function(scalar_index_function, self.covariates[i],
-                            self.posterior_correlation[i], self.degrees_of_freedom[i],
-                            n_samples=n_samples)
+            samples[i] = sample_function(scalar_index_function,
+                                         self.covariates[i],
+                                         self.posterior_correlation[i],
+                                         self.degrees_of_freedom[i],
+                                         n_samples=n_samples)
 
         return samples
 
     def fa_interquartile_range(self, n_samples=1000):
-        percentiles = self.fa_percentiles(probabilities=np.array((0.25, 0.75)), n_samples=n_samples)
+        percentiles = self.fa_percentiles(probabilities=np.array((0.25, 0.75)),
+                                          n_samples=n_samples)
         width = percentiles[..., 1] - percentiles[..., 0]
         return width
 
     def location_scale(self, A):
         mean = np.einsum('...i, i->...', self.covariates, A)
-        t_scale = np.sqrt(np.einsum('i, ...ij, j->...', A, self.posterior_correlation, A))
+        t_scale = np.sqrt(np.einsum('i, ...ij, j->...',
+                                    A,
+                                    self.posterior_correlation,
+                                    A))
         return mean, t_scale
 
     def quantile_function(self, A, probability):
         mean, scale = self.location_scale(A)
-        percentile = t_quantile_function(mean, scale, self.degrees_of_freedom, probability)
+        percentile = t_quantile_function(mean,
+                                         scale,
+                                         self.degrees_of_freedom,
+                                         probability)
         return percentile
 
     def interval_width(self, A, confidence=0.95):
         mean, scale = self.location_scale(A)
-        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom, confidence=confidence)
+        interval = t_confidence_interval(mean,
+                                         scale,
+                                         self.degrees_of_freedom,
+                                         confidence=confidence)
         width = interval[1] - interval[0]
         return width
 
-    def percentiles(self, scalar_index_function, probabilities=None, n_samples=1000):
+    def percentiles(self, scalar_index_function,
+                    probabilities=None, n_samples=1000):
         if probabilities is None:
             probabilities = np.arange(0.05, 0.95, 0.05)
 
@@ -977,7 +995,6 @@ class TensorFit(object):
                 probabilities=probabilities, n_samples=n_samples)
 
         return empirical_percentiles
-
 
     @property
     def shape(self):
@@ -1427,7 +1444,7 @@ def iter_fit_tensor(step=1e4):
             for i in range(0, size, step):
                 if return_S0_hat:
                     dtiparams[i:i + step], \
-                        uncertainty_quantitites[i:i + step],\
+                        uncertainty_quantitites[i:i + step], \
                         S0params[i:i + step] \
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
@@ -1581,7 +1598,8 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result, uncertainty_quantitites = probabilistic_least_squares(design_matrix, np.log(data))
+    fit_result, uncertainty_quantitites = \
+        probabilistic_least_squares(design_matrix, np.log(data))
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),

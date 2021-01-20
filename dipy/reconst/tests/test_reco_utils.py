@@ -41,7 +41,8 @@ def test_probabilistic_least_squares():
     regularization_matrix = np.diag([0, np.inf])
     # This should force the second coefficient to zero
     coef_expected = np.array([3, 0])
-    coef, uncertainty_quantities = probabilistic_least_squares(A, y, regularization_matrix=regularization_matrix)
+    coef, uncertainty_quantities = probabilistic_least_squares(
+        A, y, regularization_matrix=regularization_matrix)
     assert_array_almost_equal(coef, coef_expected)
     assert_almost_equal(uncertainty_quantities.residual_variance, 4)
 
@@ -52,10 +53,14 @@ def test_probabilistic_least_squares():
     x = np.linspace(-3, 3, n_x).reshape(-1, 1)
     A = np.column_stack((x, x ** 2))
     variance_ground_truth = 0.1
-    y_noisy = np.dot(A, coef_ground_truth) + np.sqrt(variance_ground_truth) * np.random.randn(n_x)
+    y_noisy = (np.dot(A, coef_ground_truth)
+               + np.sqrt(variance_ground_truth)
+               * np.random.randn(n_x))
     coef, uncertainty_quantities = probabilistic_least_squares(A, y_noisy)
     assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
-    assert_almost_equal(uncertainty_quantities.residual_variance, variance_ground_truth, decimal=2)
+    assert_almost_equal(uncertainty_quantities.residual_variance,
+                        variance_ground_truth,
+                        decimal=2)
 
 
 def test_unscaled_posterior_precision():
@@ -83,7 +88,8 @@ def test_covariance_from_precision():
     # Multi voxel case
     Q = np.diag([1, 2, 3])
     Q = np.array([1, 2]).reshape(2, 1, 1) * Q[None, :, :]
-    expected_inverse = np.stack((np.diag([1, 1/2, 1/3]), np.diag([1/2, 1/4, 1/6])), axis=0)
+    expected_inverse = np.stack((np.diag([1, 1/2, 1/3]),
+                                 np.diag([1/2, 1/4, 1/6])), axis=0)
     out = covariance_from_precision(Q)
     assert_array_almost_equal(out, expected_inverse)
 
@@ -100,9 +106,15 @@ def test_sample_multivariate_normal():
         # Test that sample mean matches posterior mean
         n_samples = int(1e6)
         if using_precision:
-            samples = sample_multivariate_normal(mean, precision, n_samples, use_precision=using_precision)
+            samples = sample_multivariate_normal(mean,
+                                                 precision,
+                                                 n_samples,
+                                                 use_precision=using_precision)
         else:
-            samples = sample_multivariate_normal(mean, covariance, n_samples, use_precision=using_precision)
+            samples = sample_multivariate_normal(mean,
+                                                 covariance,
+                                                 n_samples,
+                                                 use_precision=using_precision)
         samples_mean = np.mean(samples, -1, keepdims=False)
         assert_array_almost_equal(samples_mean, mean, decimal=3)
 
@@ -110,7 +122,9 @@ def test_sample_multivariate_normal():
         samples_centered = samples - samples_mean[:, None]
         sample_covariance = (1/(n_samples - 1) *
                              np.dot(samples_centered, samples_centered.T))
-        assert (np.linalg.norm(np.dot(sample_covariance, precision) - np.eye(n_coefs)) < 0.005)
+        assert (np.linalg.norm(np.dot(sample_covariance, precision)
+                - np.eye(n_coefs)) < 0.005)
+
 
 def test_sample_multivariate_t():
     np.random.seed(0)
@@ -119,7 +133,7 @@ def test_sample_multivariate_t():
     n_coefs = len(mean)
     precision = np.array([[10, 1], [1, 20]])
     correlation = np.linalg.inv(precision)
-    df = 5 # Note: this is pretty far from a Gaussian
+    df = 5  # Note: this is pretty far from a Gaussian
 
     for using_precision in [True, False]:
         # Test that sample mean matches theoretical mean
@@ -139,8 +153,8 @@ def test_sample_multivariate_t():
         samples_centered = samples - samples_mean[:, None]
         sample_covariance = (1/(n_samples - 1) *
                              np.dot(samples_centered, samples_centered.T))
-        #assert (np.linalg.norm(np.dot(sample_covariance, (df - 2)/df * precision) - np.eye(n_coefs)) < 0.005)
-        assert (np.linalg.norm(sample_covariance - df/(df - 2) * correlation) < 0.001)
+        assert (np.linalg.norm(sample_covariance - df/(df - 2) * correlation)
+                < 0.001)
 
 
 def test_percentiles():
@@ -163,20 +177,27 @@ def test_percentiles():
     function_mean = np.dot(A, mean) + b
     function_scale = np.sqrt(np.dot(np.dot(A, correlation), A.T))
     function_df = df
-    expected_quantiles = t.ppf(probabilities, function_df, loc=function_mean, scale=function_scale)
+    expected_quantiles = t.ppf(probabilities,
+                               function_df,
+                               loc=function_mean,
+                               scale=function_scale)
 
     n_samples = int(1e6)
     for using_precision in [True, False]:
         if using_precision:
             observed_quantiles = percentiles_of_function(
-                affine_function, mean, precision, df, probabilities=probabilities,
-                n_samples=n_samples, use_precision=using_precision)
+                affine_function, mean, precision, df,
+                probabilities=probabilities, n_samples=n_samples,
+                use_precision=using_precision)
         else:
             observed_quantiles = percentiles_of_function(
-                affine_function, mean, correlation, df, probabilities=probabilities,
-                n_samples=n_samples, use_precision=using_precision)
+                affine_function, mean, correlation, df,
+                probabilities=probabilities, n_samples=n_samples,
+                use_precision=using_precision)
 
-        assert_array_almost_equal(observed_quantiles, np.squeeze(expected_quantiles), 2)
+        assert_array_almost_equal(observed_quantiles,
+                                  np.squeeze(expected_quantiles),
+                                  2)
 
 
 def test_adj_countarrs():

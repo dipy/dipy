@@ -93,7 +93,10 @@ def test_tensor_model():
     npt.assert_equal(dtifit.sphericity.shape, data.shape[:3])
 
     # Test for the shape of the mask
-    npt.assert_raises(ValueError, dm.fit, np.ones((10, 10, 3)), np.ones((3, 3)))
+    npt.assert_raises(ValueError,
+                      dm.fit,
+                      np.ones((10, 10, 3)),
+                      np.ones((3, 3)))
 
     # Make some synthetic data
     b0 = 1000.
@@ -474,7 +477,8 @@ def test_all_zeros():
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for _ in fit_methods:
         dm = dti.TensorModel(gtab)
-        npt.assert_array_almost_equal(dm.fit(np.zeros(bvals.shape[0])).evals, 0)
+        npt.assert_array_almost_equal(dm.fit(np.zeros(bvals.shape[0])).evals,
+                                      0)
 
 
 def test_mask():
