@@ -14,6 +14,7 @@ from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.reconst.utils import probabilistic_least_squares
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 
@@ -676,8 +677,10 @@ class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
 
-    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args,
-                 **kwargs):
+    def __init__(self, gtab, fit_method="WLS",
+                 return_S0_hat=False,
+                 return_residual_variance=False,
+                 *args, **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters
@@ -747,6 +750,7 @@ class TensorModel(ReconstModel):
                 raise ValueError(e_s)
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
+        self.return_residual_variance = return_residual_variance
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -792,21 +796,34 @@ class TensorModel(ReconstModel):
                 *self.args,
                 **self.kwargs)
         if self.return_S0_hat:
-            params_in_mask, model_S0 = params_in_mask
+            params_in_mask, residual_variance, model_S0 = params_in_mask
+        else:
+            params_in_mask, residual_variance = params_in_mask
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
+            if residual_variance is None:
+                residual_variance_params = None
+            else:
+                residual_variance_params = \
+                    residual_variance.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
+            if residual_variance is None:
+                residual_variance_params = None
+            else:
+                residual_variance_params = np.zeros(data.shape[:-1])
+                residual_variance_params[mask] = residual_variance
 
-        return TensorFit(self, dti_params, model_S0=S0_params)
+        return TensorFit(self, dti_params, model_S0=S0_params,
+                         model_residual_variance=residual_variance_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -827,12 +844,14 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params, model_S0=None):
+    def __init__(self, model, model_params, model_S0=None,
+                 model_residual_variance=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
         self.model_S0 = model_S0
+        self.model_residual_variance = model_residual_variance
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -850,6 +869,10 @@ class TensorFit(object):
     @property
     def S0_hat(self):
         return self.model_S0
+
+    @property
+    def residual_variance(self):
+        return self.model_residual_variance
 
     @property
     def shape(self):
@@ -1288,24 +1311,31 @@ def iter_fit_tensor(step=1e4):
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
+            residual_variance = np.empty(size, dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
                 if return_S0_hat:
-                    dtiparams[i:i + step], S0params[i:i + step] \
+                    dtiparams[i:i + step], \
+                        residual_variance[i:i + step],\
+                        S0params[i:i + step] \
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      return_S0_hat=return_S0_hat,
                                      *args, **kwargs)
                 else:
-                    dtiparams[i:i + step] = fit_tensor(design_matrix,
-                                                       data[i:i + step],
-                                                       *args, **kwargs)
+                    dtiparams[i:i + step], \
+                        residual_variance[i:i + step]\
+                        = fit_tensor(design_matrix,
+                                     data[i:i + step],
+                                     *args, **kwargs)
             if return_S0_hat:
                 return (dtiparams.reshape(shape + (12, )),
+                        residual_variance.reshape(shape + (1, )),
                         S0params.reshape(shape + (1, )))
             else:
-                return dtiparams.reshape(shape + (12, ))
+                return (dtiparams.reshape(shape + (12, )),
+                        residual_variance.reshape(shape + (1,)))
 
         return wrapped_fit_tensor
 
@@ -1379,16 +1409,18 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    fit_result = np.einsum('...ij,...j',
-                           pinv(design_matrix * w[..., None]),
-                           w * log_s)
+    fit_result, residual_variance = probabilistic_least_squares(
+        design_matrix * w[..., None], w * log_s)
+
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
+                residual_variance,
                 np.exp(-fit_result[:, -1]))
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                residual_variance)
 
 
 @iter_fit_tensor()
@@ -1439,15 +1471,17 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix),
-                           np.log(data))
+    fit_result, residual_variance = probabilistic_least_squares(design_matrix,
+                                                                np.log(data))
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
+                residual_variance,
                 np.exp(-fit_result[:, -1]))
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                residual_variance)
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1729,9 +1763,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return (params, None, model_S0)
     else:
-        return params
+        return (params, None)
 
 
 def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
@@ -1893,9 +1927,9 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return (params, None, model_S0)
     else:
-        return params
+        return (params, None)
 
 
 _lt_indices = np.array([[0, 1, 3],
