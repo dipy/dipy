@@ -1,5 +1,7 @@
 from collections import namedtuple
 import numpy as np
+from scipy.stats import t
+from scipy.linalg import solve_triangular
 
 
 def dki_design_matrix(gtab):
@@ -119,14 +121,14 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
 probabilistic_ls_quantities = namedtuple("probabilistic_ls_quantities",
                                          "residual_variance,\
                                           degrees_of_freedom,\
-                                          unscaled_posterior_precision")
+                                          unscaled_posterior_covariance")
 
 
-def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, return_posterior_precision=False):
+def probabilistic_least_squares(design_matrix, y, regularization_matrix=None):
     # Solve least-squares problem on the form
     # design_matrix * coef = y
 
-    unscaled_posterior_precision, pseudoInv, degrees_of_freedom = \
+    unscaled_posterior_covariance, pseudoInv, degrees_of_freedom = \
         get_data_independent_estimation_quantities(design_matrix, regularization_matrix)
 
     coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudoInv, y)
@@ -137,7 +139,7 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, re
     if y.ndim == 1:
         uncertainty_params = probabilistic_ls_quantities(residual_variance,
                                                          degrees_of_freedom,
-                                                         unscaled_posterior_precision)
+                                                         unscaled_posterior_covariance)
     else:
         uncertainty_params = np.empty(y.shape[0], dtype=object)
         for i in range(y.shape[0]):
@@ -145,52 +147,35 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, re
                 # Ordinary least-squares: identical design matrix for all voxels
                 uncertainty_params[i] = probabilistic_ls_quantities(residual_variance[i],
                                                                     degrees_of_freedom,
-                                                                    unscaled_posterior_precision)
+                                                                    unscaled_posterior_covariance)
             else:
                 uncertainty_params[i] = probabilistic_ls_quantities(residual_variance[i],
                                                                     degrees_of_freedom[i],
-                                                                    unscaled_posterior_precision[i, ...])
-
-    if not return_posterior_precision:
-        return coef_posterior_mean, uncertainty_params
-    else:
-        coef_posterior_mean = np.atleast_2d(coef_posterior_mean)
-        n_voxels, n_coefs = coef_posterior_mean.shape
-        coef_posterior_mean = np.squeeze(coef_posterior_mean)
-
-        coef_posterior_precision = (unscaled_posterior_precision
-                                    / residual_variance)
-        coef_posterior_precision = coef_posterior_precision.reshape(n_voxels,
-                                                                    n_coefs,
-                                                                    n_coefs)
-
-        coef_posterior_precision = np.squeeze(coef_posterior_precision)
-
-        return coef_posterior_mean, uncertainty_params, coef_posterior_precision
+                                                                    unscaled_posterior_covariance[i, ...])
+    return coef_posterior_mean, uncertainty_params
 
 
 def get_data_independent_estimation_quantities(design_matrix, regularization_matrix=None):
 
-    unscaled_posterior_precision = compute_unscaled_posterior_precision(
-        design_matrix, regularization_matrix)
-
-    pseudoInv = np.linalg.solve(unscaled_posterior_precision, np.swapaxes(design_matrix, -1, -2))
-
+    S = compute_S(design_matrix, regularization_matrix)
+    pseudoInv = np.linalg.solve(S, np.swapaxes(design_matrix, -1, -2))
+    unscaled_posterior_covariance = np.einsum('...ik, ...jk->...ij', pseudoInv, pseudoInv)
     degrees_of_freedom = compute_degrees_of_freedom(design_matrix, pseudoInv)
 
-    return unscaled_posterior_precision, pseudoInv, degrees_of_freedom
+    return unscaled_posterior_covariance, pseudoInv, degrees_of_freedom
 
 
-def compute_unscaled_posterior_precision(design_matrix, regularization_matrix=None):
+def compute_S(design_matrix, regularization_matrix=None):
 
     if regularization_matrix is None:
         # In single voxel case: np.dot(design_matrix.T, design_matrix)
-        unscaled_posterior_precision = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+        S = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
     else:
         # In single voxel case: np.dot(design_matrix.T, design_matrix) + regularization_matrix
-        unscaled_posterior_precision = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+        S = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
                                         + regularization_matrix)
-    return unscaled_posterior_precision
+    return S
+
 
 def compute_degrees_of_freedom(design_matrix, pseudoInv):
 
@@ -201,14 +186,42 @@ def compute_degrees_of_freedom(design_matrix, pseudoInv):
     return np.atleast_1d(degrees_of_freedom)
 
 
-def sample_multivariate_t(mean, precision, degrees_of_freedom, n_samples=1, keepdims=False):
+def t_confidence_interval(mean, scale, degrees_of_freedom, confidence=0.95):
+    interval = t.interval(confidence, degrees_of_freedom, loc=mean, scale=scale)
+    return interval
+
+
+def t_quantile_function(mean, scale, degrees_of_freedom, quantile):
+    out = t.ppf(quantile, degrees_of_freedom, loc=mean, scale=scale)
+    return out
+
+
+def percentiles_of_function(fun, mean, correlation_or_precision, degrees_of_freedom,
+                            probabilities=None, n_samples=1000, use_precision=False):
+    if probabilities is None:
+        probabilities = np.arange(0.05, 0.95, 0.05)
+
+    samples = sample_multivariate_t(mean,
+                                    correlation_or_precision,
+                                    degrees_of_freedom,
+                                    n_samples=n_samples,
+                                    use_precision=use_precision)
+
+    empirical_percentiles = np.nanpercentile(fun(samples.T), probabilities * 100)
+    return empirical_percentiles
+
+
+def sample_multivariate_t(mean, correlation_or_precision, degrees_of_freedom,
+                          n_samples=1, keepdims=False, use_precision=False):
+
     mean = np.atleast_2d(mean)
     n_voxels, n_coefs = mean.shape
 
     x = np.random.chisquare(degrees_of_freedom, (n_voxels, n_samples)) / degrees_of_freedom
     x = x[:, None, :]
 
-    z = sample_multivariate_normal(np.zeros_like(mean), precision, n_samples, keepdims=True)
+    z = sample_multivariate_normal(np.zeros_like(mean), correlation_or_precision,
+                                   n_samples, keepdims=True, use_precision=use_precision)
 
     samples = mean[..., None] + z / np.sqrt(x)
 
@@ -218,19 +231,23 @@ def sample_multivariate_t(mean, precision, degrees_of_freedom, n_samples=1, keep
     return samples
 
 
-def sample_multivariate_normal(mean, precision, n_samples, keepdims=False):
+def sample_multivariate_normal(mean, covariance_or_precision, n_samples,
+                               keepdims=False, use_precision=False):
     mean = np.atleast_2d(mean)
     n_voxels, n_coefs = mean.shape
-    precision = precision.reshape(n_voxels, n_coefs, n_coefs)
+    covariance_or_precision = covariance_or_precision.reshape(n_voxels, n_coefs, n_coefs)
     samples = np.zeros((n_voxels, n_coefs, n_samples))
 
     # Loop over voxels and draw samples for each
     for i in range(n_voxels):
-        standard_normal_samples = np.random.randn(n_coefs, n_samples)
-
-        L = np.linalg.cholesky(precision[i, :, :])
-        samples[i, :, :] = (mean[i, :, None] +
-                            np.linalg.solve(L, standard_normal_samples))
+        if use_precision:
+            standard_normal_samples = np.random.randn(n_coefs, n_samples)
+            L = np.linalg.cholesky(covariance_or_precision[i, :, :])
+            samples[i, :, :] = (mean[i, :, None] +
+                                solve_triangular(L.T, standard_normal_samples))
+        else:
+            mvn_samples = np.random.multivariate_normal(mean[i, :], covariance_or_precision[i, :, :], (n_samples,)).T
+            samples[i, :, :] = mvn_samples[None, ...]
 
     if not keepdims:
         samples = np.squeeze(samples)

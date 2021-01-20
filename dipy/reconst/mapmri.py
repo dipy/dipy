@@ -3,7 +3,11 @@ import numpy as np
 from distutils.version import LooseVersion
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
-from dipy.reconst.utils import probabilistic_least_squares
+from dipy.reconst.utils import (probabilistic_least_squares,
+                                probabilistic_ls_quantities,
+                                t_confidence_interval,
+                                percentiles_of_function,
+                                t_quantile_function)
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
@@ -445,7 +449,13 @@ class MapmriModel(ReconstModel, Cache):
                 coef = np.zeros(M.shape[1])
                 return MapmriFit(self, coef, mu, R, lopt, errorcode)
 
-        coef = coef / sum(coef * self.Bm)
+        scale_factor = 1 / sum(coef * self.Bm)
+        coef *= scale_factor
+        if uncertainty_params is not None:
+            uncertainty_params = probabilistic_ls_quantities(
+                scale_factor ** 2 * uncertainty_params.residual_variance,
+                uncertainty_params.degrees_of_freedom,
+                uncertainty_params.unscaled_posterior_covariance)
 
         return MapmriFit(self, coef, mu, R, lopt, errorcode, uncertainty_params)
 
@@ -512,6 +522,46 @@ class MapmriFit(ReconstFit):
     def degrees_of_freedom(self):
         return self.uncertainty_params.degrees_of_freedom
 
+    @property
+    def posterior_correlation(self):
+        return ((self.degrees_of_freedom - 2) / self.degrees_of_freedom
+                * self.residual_variance
+                * self.uncertainty_params.unscaled_posterior_covariance)
+
+    @property
+    def rtop_interquartile_range(self):
+        return self.rtop_interval_width(confidence=0.5)
+
+    def rtop_interval_width(self, confidence=0.95):
+        return self.interval_width(self.rtop_matrix, confidence=confidence)
+
+    def rtop_percentile(self, probabilities):
+        return self.quantile_function(self.rtop_matrix, probabilities)
+
+    def interval_width(self, A, confidence=0.95):
+        mean, scale = self.location_scale(A)
+        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom, confidence=confidence)
+        width = interval[1] - interval[0]
+        return width[0]
+
+    def location_scale(self, A):
+        mean = np.dot(A, self.mapmri_coeff)
+        t_scale = np.sqrt(np.einsum('i, ...ij, j->...', A, self.posterior_correlation, A))
+        return mean, t_scale
+
+    def quantile_function(self, A, probability):
+        mean, scale = self.location_scale(A)
+        percentile = t_quantile_function(mean, scale, self.degrees_of_freedom, probability)
+        return percentile
+
+    def percentiles(self, function_of_mapmri_coeff, probabilities, n_samples=1000):
+        return percentiles_of_function(function_of_mapmri_coeff,
+                                       self.mapmri_coeff,
+                                       self.posterior_correlation,
+                                       self.degrees_of_freedom,
+                                       probabilities=probabilities,
+                                       n_samples=n_samples)
+
     def odf(self, sphere, s=2):
         r""" Calculates the analytical Orientation Distribution Function (ODF)
         from the signal [1]_ Eq. (32).
@@ -543,6 +593,22 @@ class MapmriFit(ReconstFit):
             odf = self.mu[0] ** s * np.dot(I, self._mapmri_coef)
 
         return odf
+
+    def odf_matrix(self, sphere, s=2):
+        if self.model.anisotropic_scaling:
+            v_ = sphere.vertices
+            v = np.dot(v_, self.R)
+            out = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
+        else:
+            I = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            if I is None:
+                I = mapmri_isotropic_odf_matrix(self.radial_order, 1,
+                                                s, sphere.vertices)
+                self.model.cache_set('ODF_matrix', (sphere, s), I)
+
+            out = self.mu[0] ** s * I
+
+        return out
 
     def odf_sh(self, s=2):
         r""" Calculates the real analytical odf for a given discrete sphere.
@@ -706,6 +772,19 @@ class MapmriFit(ReconstFit):
             rtop = (1 / self.mu[0] ** 3) * rtop_vec * self._mapmri_coef
             rtop = rtop.sum()
         return rtop
+
+    @property
+    def rtop_matrix(self):
+        out = np.ones_like(self.mapmri_coeff)
+        if self.model.anisotropic_scaling:
+            const = 1 / (np.sqrt(8 * np.pi ** 3) * np.prod(self.mu))
+            ind_sum = (-1.0) ** (np.sum(self.model.ind_mat, axis=1) / 2)
+            out *= const * ind_sum * self.model.Bm
+        else:
+            const = 1 / (2 * np.sqrt(2.0) * np.pi ** (3 / 2.0))
+            out *= (const * (-1.0) ** (self.model.ind_mat[:, 0] - 1)
+                    * self.model.Bm * (1 / self.mu[0] ** 3))
+        return out
 
     def msd(self):
         r""" Calculates the analytical Mean Squared Displacement (MSD).

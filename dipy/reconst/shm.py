@@ -32,6 +32,7 @@ from numpy.random import randint
 
 from dipy.utils.deprecator import deprecate_with_version
 from dipy.reconst.odf import OdfModel, OdfFit
+from dipy.reconst.utils import percentiles_of_function
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
@@ -811,10 +812,11 @@ class QballBaseModel(SphHarmModel):
 class SphHarmFit(OdfFit):
     """Diffusion data fit to a spherical harmonic model"""
 
-    def __init__(self, model, shm_coef, mask):
+    def __init__(self, model, shm_coef, mask, uncertainty_params=None):
         self.model = model
         self._shm_coef = shm_coef
         self.mask = mask
+        self.uncertainty_params = uncertainty_params
 
     @property
     def shape(self):
@@ -855,6 +857,9 @@ class SphHarmFit(OdfFit):
         B = self.model.sampling_matrix(sphere)
         return np.dot(self.shm_coeff, B.T)
 
+    def odf_matrix(self, sphere):
+        return self.model.sampling_matrix(sphere)
+
     @auto_attr
     def gfa(self):
         return _gfa_sh(self.shm_coeff, 0)
@@ -868,6 +873,28 @@ class SphHarmFit(OdfFit):
         directly
         """
         return self._shm_coef
+
+    @property
+    def residual_variance(self):
+        return self.uncertainty_params.residual_variance
+
+    @property
+    def degrees_of_freedom(self):
+        return self.uncertainty_params.degrees_of_freedom
+
+    @property
+    def posterior_correlation(self):
+        return ((self.degrees_of_freedom - 2) / self.degrees_of_freedom
+                * self.residual_variance
+                * self.uncertainty_params.unscaled_posterior_covariance)
+
+    def percentiles(self, function_of_shm_coeff, probabilities, n_samples=1000):
+        return percentiles_of_function(function_of_shm_coeff,
+                                       self.shm_coeff,
+                                       self.posterior_correlation,
+                                       self.degrees_of_freedom,
+                                       probabilities=probabilities,
+                                       n_samples=n_samples)
 
     def predict(self, gtab=None, S0=1.0):
         """

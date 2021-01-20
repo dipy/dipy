@@ -14,7 +14,10 @@ from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
-from dipy.reconst.utils import probabilistic_least_squares
+from dipy.reconst.utils import (probabilistic_least_squares,
+                                t_confidence_interval,
+                                t_quantile_function,
+                                percentiles_of_function)
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 
@@ -871,11 +874,88 @@ class TensorFit(object):
 
     @property
     def residual_variance(self):
-        return self.uncertainty_params.residual_variance
+        out = np.zeros(self.uncertainty_params.shape)
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = val.residual_variance
+        return out
 
     @property
     def degrees_of_freedom(self):
-        return self.uncertainty_params.degrees_of_freedom
+        out = np.zeros(self.uncertainty_params.shape)
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = val.degrees_of_freedom
+        return out
+
+    @auto_attr
+    def posterior_correlation(self):
+        # TODO: trigger warning if S0_hat is None.
+        out = np.zeros((self.uncertainty_params.shape
+                        + (7, 7)))
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = ((val.degrees_of_freedom - 2) / val.degrees_of_freedom
+                      * val.residual_variance * val.unscaled_posterior_covariance)
+        return out
+
+    @auto_attr
+    def covariates(self):
+        # TODO: trigger warning if S0_hat is None.
+        return self.lower_triangular(b0=self.S0_hat)
+
+    @property
+    def md_probabilistic(self):
+        return self.location_scale(md_matrix())
+
+    def md_interval_width(self, confidence=0.95):
+        return self.interval_width(md_matrix(), confidence=confidence)
+
+    def md_percentile(self, probability):
+        return self.quantile_function(md_matrix(), probability)
+
+    def md_interquartile_range(self):
+        return self.md_interval_width(confidence=0.5)
+
+    def fa_percentiles(self, probabilities=None, n_samples=1000):
+        def fa(dti_params):
+            evals = eig_from_lo_tri(dti_params)[..., :3]
+            return fractional_anisotropy(evals)
+        return self.percentiles(fa, probabilities=probabilities, n_samples=n_samples)
+
+    def fa_interquartile_range(self, n_samples=1000):
+        percentiles = self.fa_percentiles(probabilities=np.array((0.25, 0.75)), n_samples=n_samples)
+        width = percentiles[..., 1] - percentiles[..., 0]
+        return width
+
+    def location_scale(self, A):
+        mean = np.einsum('...i, i->...', self.covariates, A)
+        t_scale = np.sqrt(np.einsum('i, ...ij, j->...', A, self.posterior_correlation, A))
+        return mean, t_scale
+
+    def quantile_function(self, A, probability):
+        mean, scale = self.location_scale(A)
+        percentile = t_quantile_function(mean, scale, self.degrees_of_freedom, probability)
+        return percentile
+
+    def interval_width(self, A, confidence=0.95):
+        mean, scale = self.location_scale(A)
+        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom, confidence=confidence)
+        width = interval[1] - interval[0]
+        return width
+
+    def percentiles(self, scalar_index_function, probabilities=None, n_samples=1000):
+        if probabilities is None:
+            probabilities = np.arange(0.05, 0.95, 0.05)
+
+        empirical_percentiles = np.zeros(self.uncertainty_params.shape
+                                         + probabilities.shape)
+        # TODO: iterate over chunks instead
+        for (i, _) in np.ndenumerate(self.uncertainty_params):
+            empirical_percentiles[i] = percentiles_of_function(
+                scalar_index_function, self.covariates[i],
+                self.posterior_correlation[i], self.degrees_of_freedom[i],
+                probabilities=probabilities, n_samples=n_samples)
+
+        return empirical_percentiles
+
 
     @property
     def shape(self):
@@ -1245,6 +1325,11 @@ class TensorFit(object):
             predict[i:i + step] = tensor_prediction(params[i:i + step], gtab,
                                                     S0=this_S0)
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
+
+
+def md_matrix():
+    A = 1 / 3 * np.array([1, 0, 1, 0, 0, 1, 0])
+    return A
 
 
 def iter_fit_tensor(step=1e4):
