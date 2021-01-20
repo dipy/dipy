@@ -679,7 +679,6 @@ class TensorModel(ReconstModel):
 
     def __init__(self, gtab, fit_method="WLS",
                  return_S0_hat=False,
-                 return_residual_variance=False,
                  *args, **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
@@ -750,7 +749,7 @@ class TensorModel(ReconstModel):
                 raise ValueError(e_s)
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
-        self.return_residual_variance = return_residual_variance
+        self.least_squares_quantities = None
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -796,34 +795,34 @@ class TensorModel(ReconstModel):
                 *self.args,
                 **self.kwargs)
         if self.return_S0_hat:
-            params_in_mask, residual_variance, model_S0 = params_in_mask
+            params_in_mask, uncertainty_quantities, model_S0 = params_in_mask
         else:
-            params_in_mask, residual_variance = params_in_mask
+            params_in_mask, uncertainty_quantities = params_in_mask
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
-            if residual_variance is None:
-                residual_variance_params = None
+            if uncertainty_quantities is None:
+                uncertainty_params = None
             else:
-                residual_variance_params = \
-                    residual_variance.reshape(out_shape[:-1])
+                uncertainty_params = uncertainty_quantities.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
-            if residual_variance is None:
-                residual_variance_params = None
-            else:
-                residual_variance_params = np.zeros(data.shape[:-1])
-                residual_variance_params[mask] = residual_variance
+            uncertainty_params = None # TODO: make uncertainties work with masking
+            # if uncertainty_quantities is None:
+            #     uncertainty_params = None
+            # else:
+            #     uncertainty_params = np.zeros(data.shape[:-1])
+            #     uncertainty_params[mask] = uncertainty_quantities
 
         return TensorFit(self, dti_params, model_S0=S0_params,
-                         model_residual_variance=residual_variance_params)
+                         uncertainty_params=uncertainty_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -845,13 +844,13 @@ class TensorModel(ReconstModel):
 class TensorFit(object):
 
     def __init__(self, model, model_params, model_S0=None,
-                 model_residual_variance=None):
+                 uncertainty_params=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
         self.model_S0 = model_S0
-        self.model_residual_variance = model_residual_variance
+        self.uncertainty_params = uncertainty_params
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -872,7 +871,11 @@ class TensorFit(object):
 
     @property
     def residual_variance(self):
-        return self.model_residual_variance
+        return self.uncertainty_params.residual_variance
+
+    @property
+    def degrees_of_freedom(self):
+        return self.uncertainty_params.degrees_of_freedom
 
     @property
     def shape(self):
@@ -1311,13 +1314,13 @@ def iter_fit_tensor(step=1e4):
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
-            residual_variance = np.empty(size, dtype=np.float64)
+            uncertainty_quantitites = np.empty(size, dtype=object)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
                 if return_S0_hat:
                     dtiparams[i:i + step], \
-                        residual_variance[i:i + step],\
+                        uncertainty_quantitites[i:i + step],\
                         S0params[i:i + step] \
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
@@ -1325,17 +1328,17 @@ def iter_fit_tensor(step=1e4):
                                      *args, **kwargs)
                 else:
                     dtiparams[i:i + step], \
-                        residual_variance[i:i + step]\
+                        uncertainty_quantitites[i:i + step]\
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      *args, **kwargs)
             if return_S0_hat:
                 return (dtiparams.reshape(shape + (12, )),
-                        residual_variance.reshape(shape + (1, )),
+                        uncertainty_quantitites.reshape(shape + (1, )),
                         S0params.reshape(shape + (1, )))
             else:
                 return (dtiparams.reshape(shape + (12, )),
-                        residual_variance.reshape(shape + (1,)))
+                        uncertainty_quantitites.reshape(shape + (1,)))
 
         return wrapped_fit_tensor
 
@@ -1409,18 +1412,18 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    fit_result, residual_variance = probabilistic_least_squares(
+    fit_result, uncertainty_quantitites = probabilistic_least_squares(
         design_matrix * w[..., None], w * log_s)
 
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                residual_variance,
+                uncertainty_quantitites,
                 np.exp(-fit_result[:, -1]))
     else:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                residual_variance)
+                uncertainty_quantitites)
 
 
 @iter_fit_tensor()
@@ -1471,17 +1474,16 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result, residual_variance = probabilistic_least_squares(design_matrix,
-                                                                np.log(data))
+    fit_result, uncertainty_quantitites = probabilistic_least_squares(design_matrix, np.log(data))
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                residual_variance,
+                uncertainty_quantitites,
                 np.exp(-fit_result[:, -1]))
     else:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
-                residual_variance)
+                uncertainty_quantitites)
 
 
 def _ols_fit_matrix(design_matrix):

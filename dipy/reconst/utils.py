@@ -1,3 +1,4 @@
+from collections import namedtuple
 import numpy as np
 
 
@@ -115,36 +116,43 @@ def _mask_from_roi(data_shape, roi_center, roi_radii):
     return mask
 
 
-def probabilistic_least_squares(design_matrix, y, regularization_matrix=None,
-                                return_posterior_precision=False):
+probabilistic_ls_quantities = namedtuple("probabilistic_ls_quantities",
+                                         "residual_variance,\
+                                          degrees_of_freedom,\
+                                          unscaled_posterior_precision")
+
+
+def probabilistic_least_squares(design_matrix, y, regularization_matrix=None, return_posterior_precision=False):
     # Solve least-squares problem on the form
     # design_matrix * coef = y
 
-    if regularization_matrix is None:
-        # In single voxel case: np.dot(design_matrix.T, design_matrix)
-        unscaled_posterior_precision = \
-            np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+    unscaled_posterior_precision, pseudoInv, degrees_of_freedom = \
+        get_data_independent_estimation_quantities(design_matrix, regularization_matrix)
+
+    coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudoInv, y)
+
+    residuals = y - np.einsum('...ij, ...j->...i', design_matrix, coef_posterior_mean)
+    residual_variance = (np.sum(residuals ** 2, axis=-1) / degrees_of_freedom)
+
+    if y.ndim == 1:
+        uncertainty_params = probabilistic_ls_quantities(residual_variance,
+                                                         degrees_of_freedom,
+                                                         unscaled_posterior_precision)
     else:
-        # In single voxel case: 
-        # np.dot(design_matrix.T, design_matrix) + regularization_matrix
-        unscaled_posterior_precision = (
-            np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
-            + regularization_matrix)
-
-    pseudo_inv = np.linalg.solve(unscaled_posterior_precision,
-                                np.swapaxes(design_matrix, -1, -2))
-    coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudo_inv, y)
-
-    smoother_matrix = np.einsum('...ik, ...kj->...ij',
-                                design_matrix, pseudo_inv)
-    residual_matrix = np.eye(smoother_matrix.shape[-1]) - smoother_matrix
-    residuals = y - np.einsum('...ij, ...j->...i',
-                              design_matrix, coef_posterior_mean)
-    residual_variance = (np.sum(residuals ** 2, axis=-1) /
-                         np.sum(residual_matrix ** 2, axis=(-1, -2)))
+        uncertainty_params = np.empty(y.shape[0], dtype=object)
+        for i in range(y.shape[0]):
+            if design_matrix.ndim == 2:
+                # Ordinary least-squares: identical design matrix for all voxels
+                uncertainty_params[i] = probabilistic_ls_quantities(residual_variance[i],
+                                                                    degrees_of_freedom,
+                                                                    unscaled_posterior_precision)
+            else:
+                uncertainty_params[i] = probabilistic_ls_quantities(residual_variance[i],
+                                                                    degrees_of_freedom[i],
+                                                                    unscaled_posterior_precision[i, ...])
 
     if not return_posterior_precision:
-        return coef_posterior_mean, residual_variance
+        return coef_posterior_mean, uncertainty_params
     else:
         coef_posterior_mean = np.atleast_2d(coef_posterior_mean)
         n_voxels, n_coefs = coef_posterior_mean.shape
@@ -158,10 +166,59 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None,
 
         coef_posterior_precision = np.squeeze(coef_posterior_precision)
 
-        return coef_posterior_mean, residual_variance, coef_posterior_precision
+        return coef_posterior_mean, uncertainty_params, coef_posterior_precision
 
 
-def sample_coef_posterior(mean, precision, n_samples):
+def get_data_independent_estimation_quantities(design_matrix, regularization_matrix=None):
+
+    unscaled_posterior_precision = compute_unscaled_posterior_precision(
+        design_matrix, regularization_matrix)
+
+    pseudoInv = np.linalg.solve(unscaled_posterior_precision, np.swapaxes(design_matrix, -1, -2))
+
+    degrees_of_freedom = compute_degrees_of_freedom(design_matrix, pseudoInv)
+
+    return unscaled_posterior_precision, pseudoInv, degrees_of_freedom
+
+
+def compute_unscaled_posterior_precision(design_matrix, regularization_matrix=None):
+
+    if regularization_matrix is None:
+        # In single voxel case: np.dot(design_matrix.T, design_matrix)
+        unscaled_posterior_precision = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+    else:
+        # In single voxel case: np.dot(design_matrix.T, design_matrix) + regularization_matrix
+        unscaled_posterior_precision = (np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
+                                        + regularization_matrix)
+    return unscaled_posterior_precision
+
+def compute_degrees_of_freedom(design_matrix, pseudoInv):
+
+    smoother_matrix = np.einsum('...ik, ...kj->...ij', design_matrix, pseudoInv)
+    residual_matrix = np.eye(smoother_matrix.shape[-1]) - smoother_matrix
+    degrees_of_freedom = np.sum(residual_matrix ** 2, axis=(-1, -2))
+
+    return np.atleast_1d(degrees_of_freedom)
+
+
+def sample_multivariate_t(mean, precision, degrees_of_freedom, n_samples=1, keepdims=False):
+    mean = np.atleast_2d(mean)
+    n_voxels, n_coefs = mean.shape
+
+    x = np.random.chisquare(degrees_of_freedom, (n_voxels, n_samples)) / degrees_of_freedom
+    x = x[:, None, :]
+
+    z = sample_multivariate_normal(np.zeros_like(mean), precision, n_samples, keepdims=True)
+
+    samples = mean[..., None] + z / np.sqrt(x)
+
+    if not keepdims:
+        samples = np.squeeze(samples)
+
+    return samples
+
+
+def sample_multivariate_normal(mean, precision, n_samples, keepdims=False):
     mean = np.atleast_2d(mean)
     n_voxels, n_coefs = mean.shape
     precision = precision.reshape(n_voxels, n_coefs, n_coefs)
@@ -175,6 +232,7 @@ def sample_coef_posterior(mean, precision, n_samples):
         samples[i, :, :] = (mean[i, :, None] +
                             np.linalg.solve(L, standard_normal_samples))
 
-    samples = np.squeeze(samples)
+    if not keepdims:
+        samples = np.squeeze(samples)
 
     return samples

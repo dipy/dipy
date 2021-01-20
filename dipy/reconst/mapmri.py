@@ -87,7 +87,7 @@ class MapmriModel(ReconstModel, Cache):
                  dti_scale_estimation=True,
                  static_diffusivity=0.7e-3,
                  cvxpy_solver=None,
-                 sample_coefficients=False):
+                 return_posterior_precision=False):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the MAPMRI basis [1]_.
 
@@ -233,7 +233,7 @@ class MapmriModel(ReconstModel, Cache):
         self.radial_order = radial_order
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
-        self.sample_coefficients = sample_coefficients
+        self.return_posterior_precision = return_posterior_precision
 
         self.laplacian_regularization = laplacian_regularization
         if self.laplacian_regularization:
@@ -319,6 +319,7 @@ class MapmriModel(ReconstModel, Cache):
 
     @multi_voxel_fit
     def fit(self, data):
+        uncertainty_params = None
         errorcode = 0
         tenfit = self.tenmodel.fit(data[self.cutoff])
         evals = tenfit.evals
@@ -437,10 +438,8 @@ class MapmriModel(ReconstModel, Cache):
                     return MapmriFit(self, coef, mu, R, lopt, errorcode)
         else:
             try:
-                coef, residual_variance = probabilistic_least_squares(
-                    M, data, regularization_matrix=lopt * laplacian_matrix,
-                    n_posterior_samples=1 if self.sample_coefficients else None)
-
+                coef, uncertainty_params = probabilistic_least_squares(
+                    M, data, regularization_matrix=lopt * laplacian_matrix)
             except np.linalg.linalg.LinAlgError:
                 errorcode = 1
                 coef = np.zeros(M.shape[1])
@@ -448,12 +447,13 @@ class MapmriModel(ReconstModel, Cache):
 
         coef = coef / sum(coef * self.Bm)
 
-        return MapmriFit(self, coef, mu, R, lopt, errorcode, residual_variance)
+        return MapmriFit(self, coef, mu, R, lopt, errorcode, uncertainty_params)
 
 
 class MapmriFit(ReconstFit):
 
-    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0, residual_variance=None):
+    def __init__(self, model, mapmri_coef, mu, R, lopt, errorcode=0,
+                 uncertainty_params=None):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -484,7 +484,7 @@ class MapmriFit(ReconstFit):
         self.R = R
         self.lopt = lopt
         self.errorcode = errorcode
-        self.residual_variance = residual_variance
+        self.uncertainty_params = uncertainty_params
 
     @property
     def mapmri_mu(self):
@@ -503,6 +503,14 @@ class MapmriFit(ReconstFit):
         """The MAPMRI coefficients
         """
         return self._mapmri_coef
+
+    @property
+    def residual_variance(self):
+        return self.uncertainty_params.residual_variance
+
+    @property
+    def degrees_of_freedom(self):
+        return self.uncertainty_params.degrees_of_freedom
 
     def odf(self, sphere, s=2):
         r""" Calculates the analytical Orientation Distribution Function (ODF)
