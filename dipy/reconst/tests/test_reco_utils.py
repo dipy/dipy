@@ -4,20 +4,10 @@ import numpy as np
 
 from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
-from dipy.reconst.utils import probabilistic_least_squares
-
-<<<<<<< b6491d1a2381cdc33423c3100be9b72a310e82c4
+from dipy.reconst.utils import probabilistic_least_squares, sample_coef_posterior
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises)
-=======
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_almost_equal)
-
 
 def test_probabilistic_least_squares():
 
@@ -27,7 +17,6 @@ def test_probabilistic_least_squares():
 
     A = np.array([[1, 0], [1, 1], [1, 2]])
     y = np.array([1, 3, 5])
-    n_coefs = int(A.shape[-1])
     coef_ground_truth = np.array([1, 2])
 
     # Noise-less case
@@ -58,35 +47,35 @@ def test_probabilistic_least_squares():
     y_noisy = np.dot(A, coef_ground_truth) + np.sqrt(variance_ground_truth) * np.random.randn(n_x)
     n_samples = 1e4
     samples, residual_variance = probabilistic_least_squares(A, y_noisy, n_posterior_samples=n_samples)
-<<<<<<< a5cafc582f4a50a2d5e5435269412aba9c8b394f
     assert_array_almost_equal(samples.shape, np.array([A.shape[-1], n_samples]))
     assert_array_almost_equal(np.mean(samples, -1, keepdims=False), coef_ground_truth, decimal=3)
->>>>>>> NF: generalized least-squares solver to also work for batches of voxels.
-=======
-    assert_almost_equal(residual_variance, variance_ground_truth, decimal=2)
 
-    assert_array_almost_equal(samples.shape, np.array([n_coefs, n_samples]))
+    posterior_mean, residual_variance, posterior_precision = \
+        probabilistic_least_squares(A, y_noisy, return_posterior_precision=True)
+    assert_almost_equal(residual_variance, variance_ground_truth, decimal=2)
+    assert_array_almost_equal(posterior_precision, np.dot(A.T, A) / residual_variance)
+
+def test_sample_posterior():
+    np.random.seed(0)
+
+    mean = np.array([1, 2])
+    n_coefs = len(mean)
+    precision = np.array([[10, 1], [1, 20]])
+
+    # Test that sample mean matches posterior mean
+    n_samples = 1e5
+    samples = sample_coef_posterior(mean, precision, n_samples)
     samples_mean = np.mean(samples, -1, keepdims=False)
-    assert_array_almost_equal(samples_mean, coef_ground_truth, decimal=3)
+    assert_array_almost_equal(samples_mean, mean, decimal=3)
 
     # Test that sample covariance matches posterior variance
-    np.random.seed(0)
-    n_x = 1e2
-    x = np.linspace(-3, 3, n_x).reshape(-1, 1)
-    A = np.column_stack((x, x ** 2))
-    variance_ground_truth = 0.1
-    y_noisy = np.dot(A, coef_ground_truth) + np.sqrt(variance_ground_truth) * np.random.randn(n_x)
-    n_samples = 1e5
-    samples, residual_variance = probabilistic_least_squares(A, y_noisy, n_posterior_samples=n_samples)
-
-    samples_mean = np.mean(samples, -1, keepdims=True)
-    samples_centered = samples - samples_mean
+    samples_centered = samples - samples_mean[:, None]
     sample_covariance = (1/(n_samples - 1) *
                          np.dot(samples_centered, samples_centered.T))
+
     expected_precision = np.dot(A.T, A) / residual_variance
     assert(np.linalg.norm(np.dot(sample_covariance, expected_precision) - np.eye(n_coefs)) < 0.01)
->>>>>>> BF, TEST: added tests on sampling from coefficient posterior. Revealed that the sampling from multivariate normal with given precision matrix was not working as expected. Resolved by changing from scipy.cho_factor/cho_solve to numpy's Cholesky.
-
+    assert (np.linalg.norm(np.dot(sample_covariance, precision) - np.eye(n_coefs)) < 0.05)
 
 def test_adj_countarrs():
     adj = [[0, 1, 2],

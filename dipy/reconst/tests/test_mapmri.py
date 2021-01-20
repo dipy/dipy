@@ -11,24 +11,14 @@ from numpy.testing import (assert_almost_equal,
                            assert_equal, assert_,
                            run_module_suite,
                            assert_raises)
-<<<<<<< HEAD
 import pytest
-=======
-from dipy.data import get_gtab_taiwan_dsi
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
-from dipy.reconst import dti, mapmri
-from dipy.sims.voxel import (MultiTensor,
-                             multi_tensor_pdf,
-                             single_tensor,
-                             cylinders_and_ball_soderman)
-from dipy.data import get_sphere
-from dipy.sims.voxel import add_noise
->>>>>>> 4f184c973... NF - probabilistic interpretation of least-squares problem in map-mri
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.data import get_gtab_taiwan_dsi, default_sphere
 from dipy.direction.peaks import peak_directions
-from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
+from dipy.reconst.mapmri import (MapmriModel,
+                                 mapmri_index_matrix,
+                                 probabilistic_least_squares)
 from dipy.reconst import dti, mapmri
 from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
@@ -797,27 +787,62 @@ def test_laplacian_regularization(radial_order=6):
     assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
 
 
+def test_probabilistic_least_squares():
+
+    # Test case: linear regression,
+    # y = c_1 + c_2 * x
+    # where true values are c_1 = 1, c_2 = 2
+
+    A = np.array([[1, 0], [1, 1], [1, 2]])
+    y = np.array([[1], [3], [5]])
+    coef_ground_truth = np.array([[1], [2]])
+
+    # Noise-less case
+    coef, residual_variance = probabilistic_least_squares(A, y)
+    assert_array_almost_equal(coef, coef_ground_truth)
+    assert_almost_equal(residual_variance, 0)
+
+    # Noisy case
+    y_noisy = y + np.array([[1], [2], [-2]])*1e-4
+    coef, residual_variance = probabilistic_least_squares(A, y_noisy)
+    assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
+    assert(residual_variance > 0)
+
+    regularization_matrix = np.diag([0, np.inf])
+    # This should force the second coefficient to zero
+    coef_expected = np.array([[3], [0]])
+    coef, residual_variance = probabilistic_least_squares(A, y, regularization_matrix=regularization_matrix)
+    assert_array_almost_equal(coef, coef_expected)
+    assert_almost_equal(residual_variance, 4)
+
+    n_samples = 1000
+    np.random.seed(0)
+    samples, residual_variance = probabilistic_least_squares(
+        A, y_noisy, posterior_samples=n_samples)
+    assert_array_almost_equal(samples.shape,
+                              np.array([A.shape[-1], n_samples]))
+    assert_array_almost_equal(np.mean(samples, -1,
+                              keepdims=True), coef_ground_truth, decimal=3)
+
+
 def test_mapmri_residual_variance(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
     S, _ = generate_signal_crossing(gtab, l1, l2, l3)
 
-    for anisotropic in [True, False]:
-        mapm = MapmriModel(gtab, radial_order=radial_order,
-                           laplacian_weighting=0.02,
-                           anisotropic_scaling=anisotropic)
-        mapfit = mapm.fit(S)
-        posterior_mean = mapfit.mapmri_coeff
-        assert(np.isscalar(mapfit.residual_variance))
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                       laplacian_weighting=0.02)
+    mapfit = mapm.fit(S)
+    posterior_mean = mapfit.mapmri_coeff
+    assert(np.isscalar(mapfit.residual_variance))
 
-        mapm = MapmriModel(gtab, radial_order=radial_order,
-                           laplacian_weighting=0.02,
-                           anisotropic_scaling=anisotropic,
-                           sample_coefficients=True)
-        mapfit = mapm.fit(S)
-        assert_array_almost_equal(mapfit.mapmri_coeff.shape, posterior_mean.shape)
-        # Test that the sample from the posterior is not identical to the posterior mean
-        np.testing.assert_raises(AssertionError, assert_array_almost_equal, mapfit.mapmri_coeff, posterior_mean)
+    mapm = MapmriModel(gtab, radial_order=radial_order,
+                       laplacian_weighting=0.02,
+                       sample_coefficients=True)
+    mapfit = mapm.fit(S)
+    assert_array_almost_equal(mapfit.mapmri_coeff.shape, posterior_mean.shape)
+    # Test that the sample from the posterior is not identical to the posterior mean
+    np.testing.assert_raises(AssertionError, assert_array_almost_equal, mapfit.mapmri_coeff, posterior_mean)
 
 
 def test_mapmri_odf(radial_order=6):
