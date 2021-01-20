@@ -4,12 +4,9 @@ import numpy as np
 
 from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
-<<<<<<< e514e2873216283abce600f22f0f4492ef642c62
-from dipy.reconst.utils import probabilistic_least_squares, sample_coef_posterior
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises)
-=======
+                           assert_equal, assert_almost_equal, assert_raises)
 from dipy.reconst.utils import (probabilistic_least_squares,
                                 compute_unscaled_posterior_precision,
                                 covariance_from_precision,
@@ -17,19 +14,8 @@ from dipy.reconst.utils import (probabilistic_least_squares,
                                 sample_multivariate_t,
                                 percentiles_of_function)
 
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
-from numpy.testing import (assert_array_equal,
-                           assert_array_almost_equal,
-                           assert_almost_equal)
-
-<<<<<<< 059bcac8bf540d2123c72b48f4ef46098c756f06
->>>>>>> RF, NF, TEST: WIP - changing to multivariate t as posterior distribution.
-=======
 from scipy.stats import t
 
->>>>>>> NF, RF, TEST: CSD, MAPL with uncertainty. Posterior correlation instead of posterior precision passed around.
 
 def test_probabilistic_least_squares():
 
@@ -62,27 +48,13 @@ def test_probabilistic_least_squares():
     # Test case: y = c_1 * x + c_2 * x^2
     # Test posterior mean and residual variance correct when no model error
     np.random.seed(0)
-    n_x = 1e4
+    n_x = int(1e4)
     x = np.linspace(-3, 3, n_x).reshape(-1, 1)
     A = np.column_stack((x, x ** 2))
     variance_ground_truth = 0.1
     y_noisy = np.dot(A, coef_ground_truth) + np.sqrt(variance_ground_truth) * np.random.randn(n_x)
-<<<<<<< 059bcac8bf540d2123c72b48f4ef46098c756f06
-<<<<<<< e514e2873216283abce600f22f0f4492ef642c62
-    n_samples = 1e4
-    samples, residual_variance = probabilistic_least_squares(A, y_noisy, n_posterior_samples=n_samples)
-    assert_array_almost_equal(samples.shape, np.array([A.shape[-1], n_samples]))
-    assert_array_almost_equal(np.mean(samples, -1, keepdims=False), coef_ground_truth, decimal=3)
-
-    posterior_mean, residual_variance, posterior_precision = \
-=======
-    posterior_mean, uncertainty_quantities, posterior_precision = \
->>>>>>> RF, NF, TEST: WIP - changing to multivariate t as posterior distribution.
-        probabilistic_least_squares(A, y_noisy, return_posterior_precision=True)
-=======
     coef, uncertainty_quantities = probabilistic_least_squares(A, y_noisy)
     assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
->>>>>>> NF, RF, TEST: CSD, MAPL with uncertainty. Posterior correlation instead of posterior precision passed around.
     assert_almost_equal(uncertainty_quantities.residual_variance, variance_ground_truth, decimal=2)
 
 
@@ -126,7 +98,7 @@ def test_sample_multivariate_normal():
 
     for using_precision in [True, False]:
         # Test that sample mean matches posterior mean
-        n_samples = 1e6
+        n_samples = int(1e6)
         if using_precision:
             samples = sample_multivariate_normal(mean, precision, n_samples, use_precision=using_precision)
         else:
@@ -134,22 +106,11 @@ def test_sample_multivariate_normal():
         samples_mean = np.mean(samples, -1, keepdims=False)
         assert_array_almost_equal(samples_mean, mean, decimal=3)
 
-<<<<<<< 059bcac8bf540d2123c72b48f4ef46098c756f06
-    # Test that sample covariance matches posterior variance
-    samples_centered = samples - samples_mean[:, None]
-    sample_covariance = (1/(n_samples - 1) *
-                         np.dot(samples_centered, samples_centered.T))
-=======
         # Test that sample covariance matches posterior variance
         samples_centered = samples - samples_mean[:, None]
         sample_covariance = (1/(n_samples - 1) *
                              np.dot(samples_centered, samples_centered.T))
         assert (np.linalg.norm(np.dot(sample_covariance, precision) - np.eye(n_coefs)) < 0.005)
->>>>>>> NF, RF, TEST: CSD, MAPL with uncertainty. Posterior correlation instead of posterior precision passed around.
-
-    expected_precision = np.dot(A.T, A) / residual_variance
-    assert(np.linalg.norm(np.dot(sample_covariance, expected_precision) - np.eye(n_coefs)) < 0.01)
-    assert (np.linalg.norm(np.dot(sample_covariance, precision) - np.eye(n_coefs)) < 0.05)
 
 def test_sample_multivariate_t():
     np.random.seed(0)
@@ -162,7 +123,7 @@ def test_sample_multivariate_t():
 
     for using_precision in [True, False]:
         # Test that sample mean matches theoretical mean
-        n_samples = 1e6
+        n_samples = int(1e6)
         if using_precision:
             samples = sample_multivariate_t(mean, precision,
                                             df, n_samples=n_samples,
@@ -204,7 +165,7 @@ def test_percentiles():
     function_df = df
     expected_quantiles = t.ppf(probabilities, function_df, loc=function_mean, scale=function_scale)
 
-    n_samples = 1e6
+    n_samples = int(1e6)
     for using_precision in [True, False]:
         if using_precision:
             observed_quantiles = percentiles_of_function(

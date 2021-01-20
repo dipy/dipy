@@ -57,6 +57,10 @@ Denoising
 --------------
 Reconstruction
 --------------
+Uncertainty quantification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_uncertainty`
 
 Below, an overview of all reconstruction models available on DIPY.
 

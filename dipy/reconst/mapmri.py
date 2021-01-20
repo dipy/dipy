@@ -539,18 +539,23 @@ class MapmriFit(ReconstFit):
         return self.quantile_function(self.rtop_matrix, probabilities)
 
     def interval_width(self, A, confidence=0.95):
-        mean, scale = self.location_scale(A)
+        mean = self.location(A)
+        scale = self.scale(A)
         interval = t_confidence_interval(mean, scale, self.degrees_of_freedom, confidence=confidence)
         width = interval[1] - interval[0]
         return width[0]
 
-    def location_scale(self, A):
-        mean = np.dot(A, self.mapmri_coeff)
-        t_scale = np.sqrt(np.einsum('i, ...ij, j->...', A, self.posterior_correlation, A))
-        return mean, t_scale
+    def location(self, A):
+        mean = np.einsum('...i,...i',A, self.mapmri_coeff) # Essentially np.dot() on the last indices
+        return mean
+    
+    def scale(self, A):
+        t_scale = np.sqrt(np.einsum('...i, ...ij, ...j->...', A, self.posterior_correlation, A))
+        return t_scale
 
     def quantile_function(self, A, probability):
-        mean, scale = self.location_scale(A)
+        mean = self.location(A)
+        scale = self.scale(A)
         percentile = t_quantile_function(mean, scale, self.degrees_of_freedom, probability)
         return percentile
 

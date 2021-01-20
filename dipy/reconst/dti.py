@@ -926,9 +926,6 @@ class TensorFit(object):
         return self.md_interval_width(confidence=0.5)
 
     def fa_percentiles(self, probabilities=None, n_samples=1000):
-        # def fa(dti_params):
-        #     evals = eig_from_lo_tri(dti_params)[..., :3]
-        #     return fractional_anisotropy(evals)
         return self.percentiles(fa_from_lo_tri, probabilities=probabilities, n_samples=n_samples)
 
     def fa_samples(self, n_samples=1000):

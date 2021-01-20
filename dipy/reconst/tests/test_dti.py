@@ -357,8 +357,8 @@ def test_wls_and_ls_fit():
     npt.assert_array_almost_equal(tensor_est.S0_hat[0], b0, decimal=3)
 
     md_loc, md_scale = tensor_est.md_probabilistic
-    assert_almost_equal(md_loc[0], md)
-    assert_almost_equal(md_scale[0], 0)
+    npt.assert_almost_equal(md_loc[0], md)
+    npt.assert_almost_equal(md_scale[0], 0)
     perc = tensor_est.fa_percentiles()
 
     # Test that we can fit a single voxel's worth of data (a 1d array)

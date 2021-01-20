@@ -244,7 +244,7 @@ def sample_multivariate_t(mean, correlation_or_precision, degrees_of_freedom,
 
 def sample_multivariate_normal(mean, covariance_or_precision, n_samples,
                                keepdims=False, use_precision=False):
-    mean = np.atleast_2d(mean)
+    mean = np.atleast_2d(mean.astype(int))
     n_voxels, n_coefs = mean.shape
     covariance_or_precision = covariance_or_precision.reshape(n_voxels, n_coefs, n_coefs)
     samples = np.zeros((n_voxels, n_coefs, n_samples))
