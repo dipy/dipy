@@ -815,7 +815,8 @@ def test_probabilistic_least_squares():
     regularization_matrix = np.diag([0, np.inf])
     # This should force the second coefficient to zero
     coef_expected = np.array([[3], [0]])
-    coef, residual_variance = probabilistic_least_squares(A, y, regularization_matrix=regularization_matrix)
+    coef, residual_variance = probabilistic_least_squares(
+        A, y, regularization_matrix=regularization_matrix)
     assert_array_almost_equal(coef, coef_expected)
     assert_almost_equal(residual_variance, 4)
 
