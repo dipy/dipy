@@ -8,6 +8,7 @@ import functools
 import numpy as np
 
 import scipy.optimize as opt
+from scipy.stats import t as tstats
 
 from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
@@ -15,8 +16,6 @@ from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.reconst.utils import (probabilistic_least_squares,
-                                t_confidence_interval,
-                                t_quantile_function,
                                 sample_function,
                                 percentiles_of_function)
 from dipy.core.onetime import auto_attr
@@ -964,18 +963,18 @@ class TensorFit(object):
 
     def quantile_function(self, A, probability):
         mean, scale = self.location_scale(A)
-        percentile = t_quantile_function(mean,
-                                         scale,
-                                         self.degrees_of_freedom,
-                                         probability)
+        percentile = tstats.ppf(probability,
+                                self.degrees_of_freedom,
+                                loc=mean,
+                                scale=scale)
         return percentile
 
     def interval_width(self, A, confidence=0.95):
         mean, scale = self.location_scale(A)
-        interval = t_confidence_interval(mean,
-                                         scale,
-                                         self.degrees_of_freedom,
-                                         confidence=confidence)
+        interval = tstats.interval(confidence,
+                                   self.degrees_of_freedom,
+                                   loc=mean,
+                                   scale=scale)
         width = interval[1] - interval[0]
         return width
 

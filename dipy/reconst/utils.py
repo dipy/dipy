@@ -265,19 +265,6 @@ def compute_degrees_of_freedom(design_matrix, pseudo_inv):
     return np.atleast_1d(degrees_of_freedom)
 
 
-def t_confidence_interval(mean, scale, degrees_of_freedom, confidence=0.95):
-    interval = tstats.interval(confidence,
-                               degrees_of_freedom,
-                               loc=mean,
-                               scale=scale)
-    return interval
-
-
-def t_quantile_function(mean, scale, degrees_of_freedom, quantile):
-    out = tstats.ppf(quantile, degrees_of_freedom, loc=mean, scale=scale)
-    return out
-
-
 def sample_function(fun, mean, correlation_or_precision, degrees_of_freedom,
                     n_samples=1000, use_precision=False):
     """ Draw samples from the posterior distribution and pass them

@@ -5,11 +5,10 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.utils import (probabilistic_least_squares,
                                 probabilistic_ls_quantities,
-                                t_confidence_interval,
-                                percentiles_of_function,
-                                t_quantile_function)
+                                percentiles_of_function)
 from dipy.reconst.cache import Cache
 from scipy.special import hermite, gamma, genlaguerre
+from scipy.stats import t as tstats
 try:  # preferred scipy >= 0.14, required scipy >= 1.0
     from scipy.special import factorial as sfactorial
     from scipy.special import factorial2
@@ -540,10 +539,10 @@ class MapmriFit(ReconstFit):
         return self.quantile_function(self.rtop_matrix, probabilities)
 
     def interval_width(self, A, confidence=0.95):
-        mean = self.location(A)
-        scale = self.scale(A)
-        interval = t_confidence_interval(mean, scale, self.degrees_of_freedom,
-                                         confidence=confidence)
+        interval = tstats.interval(confidence,
+                                   self.degrees_of_freedom,
+                                   loc=self.location(A),
+                                   scale=self.scale(A))
         width = interval[1] - interval[0]
         return width[0]
 
@@ -558,12 +557,10 @@ class MapmriFit(ReconstFit):
         return t_scale
 
     def quantile_function(self, A, probability):
-        mean = self.location(A)
-        scale = self.scale(A)
-        percentile = t_quantile_function(mean,
-                                         scale,
-                                         self.degrees_of_freedom,
-                                         probability)
+        percentile = tstats.ppf(probability,
+                                self.degrees_of_freedom,
+                                loc=self.location(A),
+                                scale=self.scale(A))
         return percentile
 
     def percentiles(self, function_of_mapmri_coeff,
