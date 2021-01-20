@@ -176,6 +176,7 @@ it doesn't work to define external functions like this:
 def rtop_func(coeff):
     return np.dot(mapfit.rtop_matrix, coeff.T)
 
+
 np.random.seed(0)
 rtop_sampled_percentiles = mapfit.percentiles(
     rtop_func, np.array([0.25, 0.75]), n_samples=1000)

@@ -9,12 +9,11 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_almost_equal, assert_raises)
 from dipy.reconst.utils import (probabilistic_least_squares,
                                 compute_unscaled_posterior_precision,
-                                covariance_from_precision,
                                 sample_multivariate_normal,
                                 sample_multivariate_t,
                                 percentiles_of_function)
 
-from scipy.stats import t
+from scipy.stats import t as tstats
 
 
 def test_probabilistic_least_squares():
@@ -38,8 +37,8 @@ def test_probabilistic_least_squares():
     assert_array_almost_equal(coef, coef_ground_truth, decimal=3)
     assert(uncertainty_quantities.residual_variance > 0)
 
-    regularization_matrix = np.diag([0, np.inf])
-    # This should force the second coefficient to zero
+    regularization_matrix = np.diag([0, 1e8])
+    # This should force the second coefficient to (virtually) zero
     coef_expected = np.array([3, 0])
     coef, uncertainty_quantities = probabilistic_least_squares(
         A, y, regularization_matrix=regularization_matrix)
@@ -82,7 +81,7 @@ def test_covariance_from_precision():
     Q = np.diag([1, 2, 3])
     expected_inverse = np.diag([1, 1/2, 1/3])
 
-    out = covariance_from_precision(Q)
+    out = np.linalg.pinv(Q)
     assert_array_almost_equal(out, expected_inverse)
 
     # Multi voxel case
@@ -90,7 +89,7 @@ def test_covariance_from_precision():
     Q = np.array([1, 2]).reshape(2, 1, 1) * Q[None, :, :]
     expected_inverse = np.stack((np.diag([1, 1/2, 1/3]),
                                  np.diag([1/2, 1/4, 1/6])), axis=0)
-    out = covariance_from_precision(Q)
+    out = np.linalg.pinv(Q)
     assert_array_almost_equal(out, expected_inverse)
 
 
@@ -177,10 +176,10 @@ def test_percentiles():
     function_mean = np.dot(A, mean) + b
     function_scale = np.sqrt(np.dot(np.dot(A, correlation), A.T))
     function_df = df
-    expected_quantiles = t.ppf(probabilities,
-                               function_df,
-                               loc=function_mean,
-                               scale=function_scale)
+    expected_quantiles = tstats.ppf(probabilities,
+                                    function_df,
+                                    loc=function_mean,
+                                    scale=function_scale)
 
     n_samples = int(1e6)
     for using_precision in [True, False]:

@@ -691,9 +691,8 @@ class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
 
-    def __init__(self, gtab, fit_method="WLS",
-                 return_S0_hat=False,
-                 *args, **kwargs):
+    def __init__(self, gtab, fit_method="WLS", return_S0_hat=False, *args,
+                 **kwargs):
         """ A Diffusion Tensor Model [1]_, [2]_.
 
         Parameters

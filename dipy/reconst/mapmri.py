@@ -613,13 +613,13 @@ class MapmriFit(ReconstFit):
             v = np.dot(v_, self.R)
             out = mapmri_odf_matrix(self.radial_order, self.mu, s, v)
         else:
-            I = self.model.cache_get('ODF_matrix', key=(sphere, s))
-            if I is None:
-                I = mapmri_isotropic_odf_matrix(self.radial_order, 1,
-                                                s, sphere.vertices)
-                self.model.cache_set('ODF_matrix', (sphere, s), I)
+            I_matrix = self.model.cache_get('ODF_matrix', key=(sphere, s))
+            if I_matrix is None:
+                I_matrix = mapmri_isotropic_odf_matrix(self.radial_order, 1,
+                                                       s, sphere.vertices)
+                self.model.cache_set('ODF_matrix', (sphere, s), I_matrix)
 
-            out = self.mu[0] ** s * I
+            out = self.mu[0] ** s * I_matrix
 
         return out
 

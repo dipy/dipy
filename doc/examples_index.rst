@@ -57,10 +57,6 @@ Denoising
 --------------
 Reconstruction
 --------------
-Uncertainty quantification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- :ref:`example_reconst_uncertainty`
 
 Below, an overview of all reconstruction models available on DIPY.
 
@@ -149,6 +145,10 @@ Intravoxel incoherent motion (IVIM)
 
 - :ref:`example_reconst_ivim`
 
+Uncertainty quantification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_uncertainty`
 
 Statistical evaluation
 ~~~~~~~~~~~~~~~~~~~~~~

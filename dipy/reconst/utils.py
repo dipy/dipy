@@ -1,6 +1,6 @@
 from collections import namedtuple
 import numpy as np
-from scipy.stats import t
+from scipy.stats import t as tstats
 from scipy.linalg import solve_triangular
 
 
@@ -125,14 +125,47 @@ probabilistic_ls_quantities = namedtuple("probabilistic_ls_quantities",
 
 
 def probabilistic_least_squares(design_matrix, y, regularization_matrix=None):
-    # Solve least-squares problem on the form
-    # design_matrix * coef = y
+    """Compute the posterior distribution of a least-squares problem [1]_.
 
-    unscaled_posterior_covariance, pseudoInv, degrees_of_freedom = \
+    The posterior distribution derives from treating the least-squares
+    objective as the likelihood for a normal distribution and the
+    regularization matrix as the prior distribution. The posterior
+    then follows from Bayes' rule. The mean of the posterior is the
+    usual (regularized) least-squares estimate:
+
+    coef = inverse(design_matrix.T * design_matrix + regularization_matrix)
+           * design_matrix.T * y
+
+    Parameters
+    ----------
+    design_matrix : ndarray
+        Tensor with per voxel matrices (last two indices) that map
+        coefficients to measurements.
+    y : ndarray
+        Tensor with per voxel measurements (last index).
+    regularization_matrix : ndarray
+        Matrix that regularizes the estimate of the coefficients.
+
+    Returns
+    -------
+    coef_posterior_mean : ndarray
+        The conventional (regularized) least-squares estimate.
+    uncertainty_params : namedtuple
+        All the other quantities necessary to express the posterior
+        (residual_variance, degrees_of_freedom, unscaled_posterior_covariance)
+
+    References
+    ----------
+    .. [1] Sjölund, Jens, et al. "Bayesian uncertainty quantification
+    in linear models for diffusion MRI", NeuroImage, 2018.
+
+    """
+
+    unscaled_posterior_covariance, pseudo_inv, degrees_of_freedom = \
         get_data_independent_estimation_quantities(design_matrix,
                                                    regularization_matrix)
 
-    coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudoInv, y)
+    coef_posterior_mean = np.einsum('...ij, ...j->...i', pseudo_inv, y)
 
     residuals = y - np.einsum('...ij, ...j->...i',
                               design_matrix,
@@ -163,23 +196,45 @@ def probabilistic_least_squares(design_matrix, y, regularization_matrix=None):
 
 def get_data_independent_estimation_quantities(design_matrix,
                                                regularization_matrix=None):
-    Q = compute_unscaled_posterior_precision(design_matrix,
-                                             regularization_matrix)
-    unscaled_posterior_covariance = covariance_from_precision(Q)
+    """Pre-compute quantities that are independent of the measurements.
 
-    # TODO: check whether using the explicit inverse
-    # causes numerical instability
-    pseudoInv = np.einsum('...ij, ...kj->...ik',
-                          unscaled_posterior_covariance,
-                          design_matrix)
+    Parameters
+    ----------
+    design_matrix : ndarray
+        Tensor with per voxel matrices (last two indices) that map
+        coefficients to measurements.
+    regularization_matrix : ndarray
+        Matrix that regularizes the estimate of the coefficients.
 
-    degrees_of_freedom = compute_degrees_of_freedom(design_matrix, pseudoInv)
+    Returns:
+    unscaled_posterior_covariance : ndarray
+        design_matrix.T * design_matrix + regularization_matrix
+    pseudo_inv : ndarray
+        inverse(unscaled_posterior_covariance) * design_matrix.T
+    degrees_of_freedom : ndarray
+        Per voxel estimates of the degrees of freedom in t-distribution
 
-    return unscaled_posterior_covariance, pseudoInv, degrees_of_freedom
+    """
+    unscaled_posterior_precision = compute_unscaled_posterior_precision(
+        design_matrix, regularization_matrix)
+    unscaled_posterior_covariance = np.linalg.pinv(
+        unscaled_posterior_precision)
+
+    pseudo_inv = np.einsum('...ij, ...kj->...ik',
+                           unscaled_posterior_covariance,
+                           design_matrix)
+
+    degrees_of_freedom = compute_degrees_of_freedom(design_matrix, pseudo_inv)
+
+    return unscaled_posterior_covariance, pseudo_inv, degrees_of_freedom
 
 
 def compute_unscaled_posterior_precision(design_matrix,
                                          regularization_matrix=None):
+    """ Compute the per voxel version of
+        design_matrix.T * design_matrix + regularization_matrix
+
+    """
     if regularization_matrix is None:
         # In single voxel case: np.dot(design_matrix.T, design_matrix)
         S = np.einsum('...ki, ...kj->...ij', design_matrix, design_matrix)
@@ -191,14 +246,19 @@ def compute_unscaled_posterior_precision(design_matrix,
     return S
 
 
-def covariance_from_precision(Q):
-    return np.linalg.inv(Q)
+def compute_degrees_of_freedom(design_matrix, pseudo_inv):
+    """ Estimate the degrees of freedom of the posterior t-distribution
+        according to eq. (15) in [1]_.
 
+    References
+    ----------
+    .. [1] Sjölund, Jens, et al. "Bayesian uncertainty quantification
+    in linear models for diffusion MRI", NeuroImage, 2018.
 
-def compute_degrees_of_freedom(design_matrix, pseudoInv):
+    """
     smoother_matrix = np.einsum('...ik, ...kj->...ij',
                                 design_matrix,
-                                pseudoInv)
+                                pseudo_inv)
     residual_matrix = np.eye(smoother_matrix.shape[-1]) - smoother_matrix
     degrees_of_freedom = np.sum(residual_matrix ** 2, axis=(-1, -2))
 
@@ -206,20 +266,39 @@ def compute_degrees_of_freedom(design_matrix, pseudoInv):
 
 
 def t_confidence_interval(mean, scale, degrees_of_freedom, confidence=0.95):
-    interval = t.interval(confidence,
-                          degrees_of_freedom,
-                          loc=mean,
-                          scale=scale)
+    interval = tstats.interval(confidence,
+                               degrees_of_freedom,
+                               loc=mean,
+                               scale=scale)
     return interval
 
 
 def t_quantile_function(mean, scale, degrees_of_freedom, quantile):
-    out = t.ppf(quantile, degrees_of_freedom, loc=mean, scale=scale)
+    out = tstats.ppf(quantile, degrees_of_freedom, loc=mean, scale=scale)
     return out
 
 
 def sample_function(fun, mean, correlation_or_precision, degrees_of_freedom,
                     n_samples=1000, use_precision=False):
+    """ Draw samples from the posterior distribution and pass them
+        to the provided function.
+
+    Parameters
+    ----------
+    fun : function
+        A function that only requires samples (coefficients) as its input
+    mean : ndarray
+        Vector of means with shape [n_voxels, n_coefs]
+    correlation_or_precision : ndarray
+        Either the correlation matrix or the precision matrix
+    degrees_of_freedom : float or array_like of floats
+        Number of degrees of freedom, should be > 0
+    n_samples : int, optional
+        Number of samples to draw
+    use_precision : bool, optional
+        Whether the correlation_or_precision argument is the precision matrix
+
+    """
     samples = sample_multivariate_t(mean,
                                     correlation_or_precision,
                                     degrees_of_freedom,
@@ -231,6 +310,9 @@ def sample_function(fun, mean, correlation_or_precision, degrees_of_freedom,
 def percentiles_of_function(fun, mean, correlation_or_precision,
                             degrees_of_freedom, probabilities=None,
                             n_samples=1000, use_precision=False):
+    """ Compute specified percentiles of a function of the posterior, while
+        ignoring nan values.
+    """
     if probabilities is None:
         probabilities = np.arange(0.05, 0.95, 0.05)
 
@@ -244,6 +326,24 @@ def percentiles_of_function(fun, mean, correlation_or_precision,
 
 def sample_multivariate_t(mean, correlation_or_precision, degrees_of_freedom,
                           n_samples=1, keepdims=False, use_precision=False):
+    """ Draw samples from the multivariate t-distribution
+
+    Parameters
+    ----------
+    mean : ndarray
+        Vector of means with shape [n_voxels, n_coefs]
+    correlation_or_precision : ndarray
+        Either the correlation matrix or the precision matrix
+    degrees_of_freedom : float or array_like of floats
+        Number of degrees of freedom, should be > 0
+    n_samples : int, optional
+        Number of samples to draw
+    keepdims : bool, optional
+        Whether to keep singleton dimensions in the output
+    use_precision : bool, optional
+        Whether the correlation_or_precision argument is the precision matrix
+
+    """
     mean = np.atleast_2d(mean)
     n_voxels, n_coefs = mean.shape
 
@@ -267,6 +367,22 @@ def sample_multivariate_t(mean, correlation_or_precision, degrees_of_freedom,
 
 def sample_multivariate_normal(mean, covariance_or_precision, n_samples,
                                keepdims=False, use_precision=False):
+    """ Draw samples from the multivariate normal distribution
+
+    Parameters
+    ----------
+    mean : ndarray
+        Vector of means with shape [n_voxels, n_coefs]
+    correlation_or_precision : ndarray
+        Either the correlation matrix or the precision matrix
+    n_samples : int
+        Number of samples to draw
+    keepdims : bool, optional
+        Whether to keep singleton dimensions in the output
+    use_precision : bool, optional
+        Whether the correlation_or_precision argument is the precision matrix
+
+    """
     mean = np.atleast_2d(mean.astype(int))
     n_voxels, n_coefs = mean.shape
     covariance_or_precision = covariance_or_precision.reshape(n_voxels,
