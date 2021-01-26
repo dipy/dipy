@@ -2078,8 +2078,8 @@ class DiffusionKurtosisFit(TensorFit):
 
         .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
             H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
-            tensor - Impact on the development of robust tractography procedures
-            and novel biomarkers. NeuroImage 111: 85-99.
+            tensor - Impact on the development of robust tractography
+            procedures and novel biomarkers. NeuroImage 111: 85-99.
             doi:10.1016/j.neuroimage.2015.02.004
         """
         return diffusion_kurtosis_odf(self.model_params, sphere, alpha)
@@ -2674,7 +2674,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
 
 
 def _dki_odf_core(n, kt, U, alpha=4):
-    """ Helper function thar compute the DKI based ODF estimation of a voxel
+    r""" Helper function thar compute the DKI based ODF estimation of a voxel
     along the given directions n
 
     Parameters
@@ -2709,52 +2709,53 @@ def _dki_odf_core(n, kt, U, alpha=4):
 
     # Estimate ODF
     ODF = \
-        ODFg * (1. + 1/24. * \
-        (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alpha+1)*U[0, 0]*V00 + \
-                  (alpha+1)*(alpha+3)*V00*V00) + \
-         kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alpha+1)*U[1, 1]*V11 + \
-                  (alpha+1) * (alpha + 3)*V11*V11) + \
-         kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alpha+1)*U[2, 2]*V22 + \
-                  (alpha+1)*(alpha+3)*V22*V22) + \
-         kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alpha+1)*U[0, 0]*V01 - \
-                  12*(alpha+1)*U[0, 1]*V00 + 4*(alpha+1)*(alpha+3)*V00*V01) + \
-         kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alpha+1)*U[0, 0]*V02 - \
-                  12*(alpha+1)*U[0, 2]*V00 + 4*(alpha+1)*(alpha+3)*V00*V02) + \
-         kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alpha+1)*U[0, 1]*V11 - \
-                  12*(alpha+1)*U[1, 1]*V01 + 4*(alpha+1)*(alpha+3)*V01*V11) + \
-         kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alpha+1)*U[1, 1]*V12 - \
-                  12*(alpha+1)*U[1, 2]*V11 + 4*(alpha+1)*(alpha+3)*V11*V12) + \
-         kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alpha+1)*U[0, 2]*V22 - \
-                  12*(alpha+1)*U[2, 2]*V02 + 4*(alpha+1)*(alpha+3)*V02*V22) + \
-         kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alpha+1)*U[1,2]*V22 - \
-                  12*(alpha+1)*U[2, 2]*V12 + 4*(alpha+1)*(alpha+3)*V12*V22) + \
-         kt[9] * (6*U[0, 0]*U[1, 1] + 12*U[0, 1]*U[0, 1] - \
-                  6*(alpha+1)*U[0, 0]*V11 - 6*(alpha+1)*U[1, 1]*V00 - \
-                  24*(alpha+1)*U[0, 1]*V01 + 2*(alpha+1)*(alpha+3)*V00*V11 + \
-                  4*(alpha+1)*(alpha+3)*V01*V01) + \
-         kt[10] * (6*U[0, 0]*U[2, 2] + 12*U[0, 2]*U[0, 2] - \
-                   6*(alpha+1)*U[0, 0]*V22 - 6*(alpha+1)*U[2, 2]*V00 - \
-                   24*(alpha+1)*U[0,2]*V02 + 2*(alpha+1)*(alpha+3)*V00*V22 + \
-                   4*(alpha+1)*(alpha+3)*V02*V02) + \
-         kt[11] * (6*U[1, 1]*U[2, 2] + 12*U[1, 2]*U[1, 2] - \
-                   6*(alpha+1)*U[1,1]*V22 - 6*(alpha+1)*U[2, 2]*V11 - \
-                   24*(alpha+1)*U[1,2]*V12 + 2*(alpha+1)*(alpha+3)*V11*V22 + \
-                   4*(alpha+1)*(alpha+3)*V12*V12) + \
-         kt[12] * (12*U[0, 0]*U[1, 2] + 24*U[0, 1]*U[0, 2] - \
-                   12*(alpha+1)*U[0, 0]*V12 - 12*(alpha+1)*U[1, 2]*V00 - \
-                   24*(alpha+1)*U[0, 1]*V02 - 24*(alpha+1)*U[0, 2]*V01 + \
-                   4*(alpha+1)*(alpha+3)*V00*V12 + \
-                   8*(alpha+1)*(alpha+3)*V01*V02) + \
-         kt[13] * (12*U[1, 1]*U[0, 2] + 24*U[1, 0]*U[1, 2] - \
-                   12*(alpha+1)*U[1, 1]*V02 - 12*(alpha+1)*U[0, 2]*V11 - \
-                   24*(alpha+1)*U[0, 1]*V12 - 24*(alpha+1)*U[1, 2]*V01 + \
-                   4*(alpha+1)*(alpha+3)*V11*V02 + \
-                   8*(alpha+1)*(alpha+3)*V01*V12) + \
-         kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] - \
-                   12*(alpha+1)*U[2, 2]*V01 - 12*(alpha+1)*U[0, 1]*V22 - \
-                   24*(alpha+1)*U[0, 2]*V12 - 24*(alpha+1)*U[1, 2]*V02 + \
-                   4*(alpha+1)*(alpha+3)*V22*V01 + \
-                   8*(alpha+1)*(alpha+3)*V02*V12)))
+        (ODFg *
+         (1. + 1/24. *
+          (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alpha+1)*U[0, 0]*V00 +
+                    (alpha+1)*(alpha+3)*V00*V00) +
+           kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alpha+1)*U[1, 1]*V11 +
+                    (alpha+1) * (alpha + 3)*V11*V11) +
+           kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alpha+1)*U[2, 2]*V22 +
+                    (alpha+1)*(alpha+3)*V22*V22) +
+           kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alpha+1)*U[0, 0]*V01 -
+                    12*(alpha+1)*U[0, 1]*V00 + 4*(alpha+1)*(alpha+3)*V00*V01) +
+           kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alpha+1)*U[0, 0]*V02 -
+                    12*(alpha+1)*U[0, 2]*V00 + 4*(alpha+1)*(alpha+3)*V00*V02) +
+           kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alpha+1)*U[0, 1]*V11 -
+                    12*(alpha+1)*U[1, 1]*V01 + 4*(alpha+1)*(alpha+3)*V01*V11) +
+           kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alpha+1)*U[1, 1]*V12 -
+                    12*(alpha+1)*U[1, 2]*V11 + 4*(alpha+1)*(alpha+3)*V11*V12) +
+           kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alpha+1)*U[0, 2]*V22 -
+                    12*(alpha+1)*U[2, 2]*V02 + 4*(alpha+1)*(alpha+3)*V02*V22) +
+           kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alpha+1)*U[1, 2]*V22 -
+                    12*(alpha+1)*U[2, 2]*V12 + 4*(alpha+1)*(alpha+3)*V12*V22) +
+           kt[9] * (6*U[0, 0]*U[1, 1] + 12*U[0, 1]*U[0, 1] -
+                    6*(alpha+1)*U[0, 0]*V11 - 6*(alpha+1)*U[1, 1]*V00 -
+                    24*(alpha+1)*U[0, 1]*V01 + 2*(alpha+1)*(alpha+3)*V00*V11 +
+                    4*(alpha+1)*(alpha+3)*V01*V01) +
+           kt[10] * (6*U[0, 0]*U[2, 2] + 12*U[0, 2]*U[0, 2] -
+                     6*(alpha+1)*U[0, 0]*V22 - 6*(alpha+1)*U[2, 2]*V00 -
+                     24*(alpha+1)*U[0, 2]*V02 + 2*(alpha+1)*(alpha+3)*V00*V22 +
+                     4*(alpha+1)*(alpha+3)*V02*V02) +
+           kt[11] * (6*U[1, 1]*U[2, 2] + 12*U[1, 2]*U[1, 2] -
+                     6*(alpha+1)*U[1, 1]*V22 - 6*(alpha+1)*U[2, 2]*V11 -
+                     24*(alpha+1)*U[1, 2]*V12 + 2*(alpha+1)*(alpha+3)*V11*V22 +
+                     4*(alpha+1)*(alpha+3)*V12*V12) +
+           kt[12] * (12*U[0, 0]*U[1, 2] + 24*U[0, 1]*U[0, 2] -
+                     12*(alpha+1)*U[0, 0]*V12 - 12*(alpha+1)*U[1, 2]*V00 -
+                     24*(alpha+1)*U[0, 1]*V02 - 24*(alpha+1)*U[0, 2]*V01 +
+                     4*(alpha+1)*(alpha+3)*V00*V12 +
+                     8*(alpha+1)*(alpha+3)*V01*V02) +
+           kt[13] * (12*U[1, 1]*U[0, 2] + 24*U[1, 0]*U[1, 2] -
+                     12*(alpha+1)*U[1, 1]*V02 - 12*(alpha+1)*U[0, 2]*V11 -
+                     24*(alpha+1)*U[0, 1]*V12 - 24*(alpha+1)*U[1, 2]*V01 +
+                     4*(alpha+1)*(alpha+3)*V11*V02 +
+                     8*(alpha+1)*(alpha+3)*V01*V12) +
+           kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] -
+                     12*(alpha+1)*U[2, 2]*V01 - 12*(alpha+1)*U[0, 1]*V22 -
+                     24*(alpha+1)*U[0, 2]*V12 - 24*(alpha+1)*U[1, 2]*V02 +
+                     4*(alpha+1)*(alpha+3)*V22*V01 +
+                     8*(alpha+1)*(alpha+3)*V02*V12))))
 
     return ODF
 
@@ -2774,42 +2775,6 @@ common_fit_methods = {'WLS': wls_fit_dki,
 
 ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
            9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
-
-
-def Wcons(k_elements):
-    r""" Construct the full 4D kurtosis tensors from its 15 independent
-    elements
-
-    Parameters
-    ----------
-    k_elements : (15,)
-        elements of the kurtosis tensor in the following order:
-
-        .. math::
-
-    \begin{matrix} ( & W_{xxxx} & W_{yyyy} & W_{zzzz} & W_{xxxy} & W_{xxxz}
-                     & ... \\
-                     & W_{xyyy} & W_{yyyz} & W_{xzzz} & W_{yzzz} & W_{xxyy}
-                     & ... \\
-                     & W_{xxzz} & W_{yyzz} & W_{xxyz} & W_{xyyz} & W_{xyzz}
-                     & & )\end{matrix}
-    Returns
-    -------
-    W : array(3, 3, 3, 3)
-        Full 4D kurtosis tensor
-    """
-
-    W = np.zeros((3, 3, 3, 3))
-
-    xyz = [0, 1, 2]
-    for ind_i in xyz:
-        for ind_j in xyz:
-            for ind_k in xyz:
-                for ind_l in xyz:
-                    key = (ind_i+1) * (ind_j+1) * (ind_k+1) * (ind_l+1)
-                    W[ind_i][ind_j][ind_k][ind_l] = k_elements[ind_ele[key]]
-
-    return W
 
 
 def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
@@ -2937,9 +2902,9 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                                                     di[p, 2])
                         ang = np.array([theta, phi])
                         ang[:] = opt.fmin_bfgs(_dki_odf_converge, ang,
-                                            args=(kt[idx], U, alpha),
-                                            gtol=gtol, disp=False,
-                                            retall=False)
+                                               args=(kt[idx], U, alpha),
+                                               gtol=gtol, disp=False,
+                                               retall=False)
                         di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
                         pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
 
@@ -2952,7 +2917,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
 
                 # Remove peaks too close together
                 di, uniq = remove_similar_vertices(di, min_separation_angle,
-                                                return_index=True)
+                                                   return_index=True)
                 pk = pk[uniq]
                 ind = ind[uniq]
 
@@ -2985,7 +2950,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
 
 
 def _dki_odf_converge(ang, kt, U, alpha=4):
-    """ Helper function that computes the negate of the DKI based ODF
+    r""" Helper function that computes the negate of the DKI based ODF
     estimation of a voxel along a given directions in polar coordinates.
 
     Parameters
