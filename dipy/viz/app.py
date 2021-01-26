@@ -89,7 +89,7 @@ class Horizon(object):
                  world_coords=True, interactive=True,
                  out_png='tmp.png', recorded_events=None, return_showm=False,
                  bg_color=(0, 0, 0), order_transparent=True, buan=False,
-                 buan_colors=None):
+                 buan_colors=None, roi_images=False):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -146,6 +146,8 @@ class Horizon(object):
             Enables BUAN framework visualization. Default is False.
         buan_colors : list, optional
             List of colors for bundles.
+        roi_images : bool, optional
+            Displays binary images as contours. Default is False.
 
 
         References
@@ -182,6 +184,7 @@ class Horizon(object):
         self.order_transparent = order_transparent
         self.buan = buan
         self.buan_colors = buan_colors
+        self.roi_images = roi_images
 
     def build_scene(self):
 
@@ -471,7 +474,8 @@ class Horizon(object):
             scene.add(self.help_panel)
 
         if len(self.images) > 0:
-            # !!Only first image loading supported for now')
+            # Only first non-binary image loading supported for now
+            # TODO: Add support to self.roi_images
             data, affine = self.images[0]
             self.vox2ras = affine
 
@@ -480,8 +484,7 @@ class Horizon(object):
             else:
                 pam = None
             self.panel = slicer_panel(scene, self.show_m.iren, data, affine,
-                                      self.world_coords,
-                                      pam=pam, mem=self.mem)
+                                      self.world_coords, pam=pam, mem=self.mem)
         else:
             data = None
             affine = None
@@ -777,7 +780,8 @@ def horizon(tractograms=None, images=None, pams=None,
             random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
-            out_png='tmp.png', recorded_events=None, return_showm=False):
+            roi_images=False, out_png='tmp.png', recorded_events=None,
+            return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
 
 
@@ -849,7 +853,7 @@ def horizon(tractograms=None, images=None, pams=None,
                  world_coords, interactive,
                  out_png, recorded_events, return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
-                 buan_colors=buan_colors)
+                 buan_colors=buan_colors, roi_images=roi_images)
 
     scene = hz.build_scene()
 

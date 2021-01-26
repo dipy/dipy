@@ -30,7 +30,8 @@ class HorizonFlow(Workflow):
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
             disable_order_transparency=False, buan=False, buan_thr=0.5,
-            buan_highlight=(1, 0, 0), out_dir='', out_stealth_png='tmp.png'):
+            buan_highlight=(1, 0, 0), roi_images=False, out_dir='',
+            out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -81,6 +82,8 @@ class HorizonFlow(Workflow):
             Define the bundle highlight area color. Colors can be defined
             with 1 or 3 values and should be between [0-1].
             For example, a value of (1, 0, 0) would mean the red color.
+        roi_images : bool, optional
+            Displays binary images as contours.
         out_dir : str, optional
             Output directory. (default current directory)
         out_stealth_png : str, optional
@@ -225,4 +228,4 @@ class HorizonFlow(Workflow):
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive, buan=buan, buan_colors=bundle_colors,
-                out_png=pjoin(out_dir, out_stealth_png))
+                roi_images=roi_images, out_png=pjoin(out_dir, out_stealth_png))
