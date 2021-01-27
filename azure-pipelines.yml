@@ -1,3 +1,11 @@
+schedules:
+- cron: "0 0 * * 1,4"  #twice per week
+  displayName: Weekly midnight build
+  branches:
+    include:
+    - master
+
+
 trigger:
 - master
 - maint/*
