@@ -23,10 +23,12 @@ jobs:
     matrix:
       Python36-64bit:
         python.version: '3.6'
-      Python38-64bit:
-        python.version: '3.8'
       Python37-64bit:
         python.version: '3.7'
+      Python38-64bit:
+        python.version: '3.8'
+      Python39-64bit:
+        python.version: '3.9'
       Python36-64bit + MIN_DEPS:
         python.version: '3.6'
         DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose tqdm"
@@ -83,6 +85,8 @@ jobs:
         python.version: '3.7'
       Python38-64bit:
         python.version: '3.8'
+      Python39-64bit:
+        python.version: '3.9'
       CONDA Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
@@ -113,8 +117,10 @@ jobs:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
-      # Python38-64bit:
-      #   python.version: '3.8'
+      Python39-64bit:
+        python.version: '3.9'
+      Python38-64bit:
+        python.version: '3.8'
       Python37-64bit:
         python.version: '3.7'
       Python36-64bit:
