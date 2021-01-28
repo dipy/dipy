@@ -72,6 +72,10 @@ jobs:
       CONDA Python36-64bit:
         python.version: '3.6'
         INSTALL_TYPE: "conda"
+      Python37-64bit - PRE:
+        USE_PRE: 1
+        python.version: '3.7'
+        EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas pytables"
 
 - template: ci/azure/osx.yml
   parameters:
