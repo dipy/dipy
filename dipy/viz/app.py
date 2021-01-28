@@ -475,16 +475,74 @@ class Horizon(object):
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
-            # TODO: Add support to self.roi_images
-            data, affine = self.images[0]
-            self.vox2ras = affine
+            first_img = True
+            first_roi = True
+            if self.roi_images:
+                for img in self.images:
+                    img_data, img_affine = img
+                    dim = np.unique(img_data).shape[0]
+                    if dim == 2:
+                        roi_actor = actor.contour_from_roi(
+                            img_data, affine=img_affine,
+                            color=np.random.rand(3),
+                            opacity=self.mem.roi_opacity)
+                        self.mem.slicer_roi_actor.append(roi_actor)
+                        scene.add(roi_actor)
 
-            if len(self.pams) > 0:
-                pam = self.pams[0]
+                        if first_roi:
+                            self.panel3 = ui.Panel2D(
+                                size=(400, 100), position=(850, 540),
+                                color=(1, 1, 1), opacity=0.1, align="right")
+
+                            slider_label_opacity = build_label(
+                                text="Opacity")
+                            slider_opacity = ui.LineSlider2D(
+                                min_value=0.0, max_value=1.0,
+                                initial_value=self.mem.roi_opacity, length=140,
+                                text_template="{ratio:.0%}")
+                            _color_slider(slider_opacity)
+
+                            def change_opacity(slider):
+                                roi_opacity = slider.value
+                                self.mem.roi_opacity = roi_opacity
+                                for contour in self.mem.slicer_roi_actor:
+                                    contour.GetProperty().SetOpacity(
+                                        roi_opacity)
+
+                            slider_opacity.on_change = change_opacity
+
+                            self.panel3.add_element(slider_label_opacity,
+                                                    coords=(0.1, 0.4))
+                            self.panel3.add_element(slider_opacity,
+                                                    coords=(0.4, 0.4))
+
+                            scene.add(self.panel3)
+
+                            first_roi = False
+                    else:
+                        if first_img:
+                            data, affine = img
+                            self.vox2ras = affine
+
+                            if len(self.pams) > 0:
+                                pam = self.pams[0]
+                            else:
+                                pam = None
+                            self.panel = slicer_panel(
+                                scene, self.show_m.iren, data, affine,
+                                self.world_coords, pam=pam, mem=self.mem)
+                            first_img = False
             else:
-                pam = None
-            self.panel = slicer_panel(scene, self.show_m.iren, data, affine,
-                                      self.world_coords, pam=pam, mem=self.mem)
+                data, affine = self.images[0]
+                self.vox2ras = affine
+
+                if len(self.pams) > 0:
+                    pam = self.pams[0]
+                else:
+                    pam = None
+                self.panel = slicer_panel(scene, self.show_m.iren, data,
+                                          affine, self.world_coords, pam=pam,
+                                          mem=self.mem)
         else:
             data = None
             affine = None
@@ -502,6 +560,8 @@ class Horizon(object):
                 if self.cluster:
                     self.panel2.re_align(size_change)
                     self.help_panel.re_align(size_change)
+                if self.roi_images:
+                    self.panel3.re_align(size_change)
 
         self.show_m.initialize()
 
