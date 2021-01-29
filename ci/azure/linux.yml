@@ -40,6 +40,8 @@ jobs:
   - script: |
       sudo chmod +x ci/azure/install.sh
       if [[ -z "${USE_PRE}" ]]; then
+        echo "we use PRE"
+        echo "${USE_PRE}"
         ./ci/azure/install.sh || echo -e "\043#vso[task.logissue type=warning;] Error during pre-package installation"
       else
         ./ci/azure/install.sh
