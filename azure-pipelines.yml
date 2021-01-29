@@ -75,7 +75,7 @@ jobs:
       Python37-64bit - PRE:
         USE_PRE: 1
         python.version: '3.7'
-        EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas pytables"
+        EXTRA_DEPENDS: "scikit_learn scipy statsmodels pandas tables"
 
 - template: ci/azure/osx.yml
   parameters:
