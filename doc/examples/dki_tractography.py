@@ -134,7 +134,7 @@ scene.add(gt_peaks)
 Now we are ready to save and show the figure containing the tensor geometries:
 """
 
-window.record(scene, out_path='geometry_of_dki_tensors.png', size=(1200, 1200))
+window.record(scene, out_path='geometry_of_DKI_tensors.png', size=(1200, 1200))
 
 """
 .. figure:: geometry_of_DKI_tensors.png
@@ -162,18 +162,13 @@ ODF = dkifit.dki_odf(sphere)
 We plot below the DKI-ODF in the analogous way done for the directional
 diffusivity and kurtosis values:
 """
+scene = window.Scene()
+ODF = ODF.reshape((5, 1, 1, len(sphere.vertices)), order='F')
+odf_actor = actor.odf_slicer(ODF, sphere=sphere, scale=0.5)
+scene.add(tensors_actor)
+window.show(scene)
 
-# ren = fvtk.ren()
-# ODF = ODF.reshape((5, 1, 1, len(sphere.vertices)), order='F')
-# ODF_actor = fvtk.sphere_funcs(ODF, sphere)
-# fvtk.add(ren, ODF_actor)
-# gt_dir = gt_dir.reshape((5, 1, 1, 2, 3), order='F')
-# gt_peaks = fvtk.peaks(gt_dir, 1.05 * np.ones(gt_dir.shape))
-# fvtk.add(ren, gt_peaks)
-
-# fvtk.record(ren, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
-
-# fvtk.show(ren, title='DKI-ODF geometry', size=(500, 500))
+window.record(scene, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
 
 """
 .. figure:: DKI_ODF_geometry.png
