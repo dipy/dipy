@@ -686,6 +686,7 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
 
     bvals = gtab.bvals
     bvecs = gtab.bvecs
+    btens = gtab.btens
 
     list_bvals = unique_bvals_tolerance(bvals, tol)
 
@@ -702,10 +703,11 @@ def response_from_mask_msmt(gtab, data, mask_wm, mask_gm, mask_csf, tol=20):
             bvecs_sub = np.concatenate([[bvecs[b0_indices[0]]],
                                        bvecs[indices]])
             bvals_sub = np.concatenate([[0], bvals[indices]])
+            btens_sub = np.concatenate([btens[b0_indices[0]].reshape((1,3,3)), btens[indices]])
 
             data_conc = np.concatenate([b0_map, data[..., indices]], axis=3)
 
-            gtab = gradient_table(bvals_sub, bvecs_sub)
+            gtab = gradient_table(bvals_sub, bvecs_sub, btens=btens_sub)
             response, _ = response_from_mask_ssst(gtab, data_conc, mask)
 
             responses.append(list(np.concatenate([response[0], [response[1]]])))
