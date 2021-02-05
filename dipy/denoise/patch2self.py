@@ -314,7 +314,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
-    # clip out the negative values from the denoised output
-    denoised_arr.clip(min=0, out=denoised_arr)
+    # shift intensities per volume to handle for negative intensities
+    for i in range(0, denoised_arr.shape[3]):
+        shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
+        denoised_arr[..., i] = denoised_arr[..., i] + shift
 
     return np.array(denoised_arr, dtype=out_dtype)
