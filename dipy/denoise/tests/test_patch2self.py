@@ -1,6 +1,7 @@
 import numpy as np
 from dipy.denoise import patch2self as p2s
-from dipy.testing import assert_greater, assert_less
+from dipy.testing import (assert_greater, assert_less,
+                         assert_greater_equal, assert_less_equal)
 from numpy.testing import (assert_array_almost_equal,
                            assert_raises)
 import pytest
@@ -18,8 +19,8 @@ def test_patch2self_random_noise():
     bvals = np.repeat(30, 50)
     S0nb = p2s.patch2self(S0, bvals, model='ols')
 
-    assert(S0nb.min() >= S0.min())
-    assert(np.round(S0nb.mean()) <= 30)
+    assert_greater_equal(S0nb.min(), S0.min())
+    assert_less_equal(np.round(S0nb.mean()), 30)
 
 
 @needs_sklearn
