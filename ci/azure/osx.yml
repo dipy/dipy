@@ -28,7 +28,7 @@ jobs:
       brew install hdf5
     displayName: 'Install packages'
   - script: |
-      brew cask install xquartz
+      brew install --cask xquartz
     displayName: 'Install Xquartz package'
     condition: eq( variables['TEST_WITH_XVFB'], '1' )
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
