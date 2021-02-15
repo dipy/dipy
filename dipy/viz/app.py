@@ -81,15 +81,13 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-
-    def __init__(self, tractograms=None, images=None, pams=None,
-                 cluster=False, cluster_thr=15.0,
-                 random_colors=False, length_gt=0, length_lt=1000,
-                 clusters_gt=0, clusters_lt=10000,
-                 world_coords=True, interactive=True,
-                 out_png='tmp.png', recorded_events=None, return_showm=False,
-                 bg_color=(0, 0, 0), order_transparent=True, buan=False,
-                 buan_colors=None, roi_images=False):
+    def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
+                 cluster_thr=15.0, random_colors=False, length_gt=0,
+                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
+                 world_coords=True, interactive=True, out_png='tmp.png',
+                 recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
+                 order_transparent=True, buan=False, buan_colors=None,
+                 roi_images=False, roi_color=(1, 0, 0)):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -148,6 +146,8 @@ class Horizon(object):
             List of colors for bundles.
         roi_images : bool, optional
             Displays binary images as contours. Default is False.
+        roi_color : ndarray or list or tuple, optional
+            Define the color of the roi images. Default is red (1, 0, 0)
 
 
         References
@@ -185,6 +185,7 @@ class Horizon(object):
         self.buan = buan
         self.buan_colors = buan_colors
         self.roi_images = roi_images
+        self.roi_color = roi_color
 
     def build_scene(self):
 
@@ -484,7 +485,7 @@ class Horizon(object):
                     if dim == 2:
                         roi_actor = actor.contour_from_roi(
                             img_data, affine=img_affine,
-                            color=np.random.rand(3),
+                            color=self.roi_color,
                             opacity=self.mem.roi_opacity)
                         self.mem.slicer_roi_actor.append(roi_actor)
                         scene.add(roi_actor)
@@ -495,7 +496,7 @@ class Horizon(object):
                                 color=(1, 1, 1), opacity=0.1, align="right")
 
                             slider_label_opacity = build_label(
-                                text="Opacity")
+                                text="Tumor")
                             slider_opacity = ui.LineSlider2D(
                                 min_value=0.0, max_value=1.0,
                                 initial_value=self.mem.roi_opacity, length=140,
@@ -840,8 +841,8 @@ def horizon(tractograms=None, images=None, pams=None,
             random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
-            roi_images=False, out_png='tmp.png', recorded_events=None,
-            return_showm=False):
+            roi_images=False, roi_color=(1, 0, 0), out_png='tmp.png',
+            recorded_events=None, return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
 
 
@@ -889,6 +890,10 @@ def horizon(tractograms=None, images=None, pams=None,
         Enables BUAN framework visualization. Default is False.
     buan_colors : list, optional
         List of colors for bundles.
+    roi_images : bool, optional
+        Displays binary images as contours. Default is False.
+    roi_color : ndarray or list or tuple, optional
+        Define the color of the roi images. Default is red (1, 0, 0)
     out_png : string
         Filename of saved picture.
     recorded_events : string
@@ -908,12 +913,12 @@ def horizon(tractograms=None, images=None, pams=None,
     """
 
     hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
-                 random_colors, length_gt, length_lt,
-                 clusters_gt, clusters_lt,
-                 world_coords, interactive,
-                 out_png, recorded_events, return_showm, bg_color=bg_color,
+                 random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
+                 world_coords, interactive, out_png, recorded_events,
+                 return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
-                 buan_colors=buan_colors, roi_images=roi_images)
+                 buan_colors=buan_colors, roi_images=roi_images,
+                 roi_color=roi_color)
 
     scene = hz.build_scene()
 
