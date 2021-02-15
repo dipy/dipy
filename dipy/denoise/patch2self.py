@@ -164,7 +164,9 @@ def _extract_3d_patches(arr, patch_radius):
 
 
 def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
-               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False):
+               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
+               b0_denoising=True, clip_negative_vals=True,
+               shift_intensity=False):
     """ Patch2Self Denoiser
 
     Parameters
@@ -256,9 +258,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         t1 = time.time()
 
     # if only 1 b0 volume, skip denoising it
-    if data_b0s.ndim == 3:
+    if data_b0s.ndim == 3 or b0_denoising is False:
         if verbose is True:
-            print("Only 1 b0 found, b0 denoising skipped...")
+            print("b0 denoising skipped...")
         denoised_b0s = data_b0s
 
     else:
@@ -315,8 +317,18 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
     # shift intensities per volume to handle for negative intensities
-    for i in range(0, denoised_arr.shape[3]):
-        shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
-        denoised_arr[..., i] = denoised_arr[..., i] + shift
+    if shift_intensity == True and clip_negative_vals == False:
+        for i in range(0, denoised_arr.shape[3]):
+            shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
+            denoised_arr[..., i] = denoised_arr[..., i] + shift
+
+    # clip out the negative values from the denoised output
+    elif clip_negative_vals == True and shift_intensity == False:
+        denoised_arr.clip(min=0, out=denoised_arr)
+
+    elif clip_negative_vals == True and shift_intensity == True:
+        warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
+        warn('Defaulting to `clip_negative_bvals`...')
+        denoised_arr.clip(min=0, out=denoised_arr)
 
     return np.array(denoised_arr, dtype=out_dtype)
