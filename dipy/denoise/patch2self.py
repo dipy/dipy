@@ -317,16 +317,16 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
     # shift intensities per volume to handle for negative intensities
-    if shift_intensity == True and clip_negative_vals == False:
+    if shift_intensity is True and clip_negative_vals is False:
         for i in range(0, denoised_arr.shape[3]):
             shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
             denoised_arr[..., i] = denoised_arr[..., i] + shift
 
     # clip out the negative values from the denoised output
-    elif clip_negative_vals == True and shift_intensity == False:
+    elif clip_negative_vals is True and shift_intensity is False:
         denoised_arr.clip(min=0, out=denoised_arr)
 
-    elif clip_negative_vals == True and shift_intensity == True:
+    elif clip_negative_vals is True and shift_intensity is True:
         warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
         warn('Defaulting to `clip_negative_bvals`...')
         denoised_arr.clip(min=0, out=denoised_arr)
