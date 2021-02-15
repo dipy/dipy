@@ -1,7 +1,7 @@
 import numpy as np
 from dipy.denoise import patch2self as p2s
 from dipy.testing import (assert_greater, assert_less,
-                         assert_greater_equal, assert_less_equal)
+                          assert_greater_equal, assert_less_equal)
 from numpy.testing import (assert_array_almost_equal,
                            assert_raises, assert_equal)
 import pytest
