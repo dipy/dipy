@@ -202,10 +202,24 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
 
     alpha : float, optional
         Regularization parameter only for ridge regression model.
-        default: 1.0
+        Default: 1.0
 
     verbose : bool, optional
         Show progress of Patch2Self and time taken.
+
+    b0_denoising : bool, optional
+        Skips denoising b0 volumes if set to False.
+        Default: True
+
+    clip_negative_vals : bool, optional
+        Sets negative values after denoising to 0 using `np.clip`.
+        Default: True
+
+    shift_intensity : bool, optional
+        Shifts the distribution of intensities per volume to give
+        non-negative values
+        Default: False
+
 
     Returns
     --------
