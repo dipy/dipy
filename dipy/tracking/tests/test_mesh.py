@@ -79,7 +79,3 @@ def test_vertices_to_triangles():
                 tri_w_manual[j] += 1.0
 
         npt.assert_array_equal(tri_w_func, tri_w_manual)
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

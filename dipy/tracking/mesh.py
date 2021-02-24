@@ -35,6 +35,9 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
 
     Examples
     --------
+    >>> mesh_polydata = load_polydata('mesh.vtk') # fury.io
+    >>> vts = get_polydata_vertices(mesh_polydata) # fury.utils
+    >>> triangles = get_polydata_triangles(mesh_polydata) # fury.utils
     >>> mask = np.ones([len(triangles)])
     >>> mask[0] = 0
     >>> normal = np.cross(vts[triangles[:, 1]] - vts[triangles[:, 0]],
@@ -101,6 +104,9 @@ def seeds_from_surface_coordinates(triangles, vts_values,
 
     Examples
     --------
+    >>> mesh_polydata = load_polydata('mesh.vtk') # fury.io
+    >>> vts = get_polydata_vertices(mesh_polydata) # fury.utils
+    >>> triangles = get_polydata_triangles(mesh_polydata) # fury.utils
     >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts,
     ... triangles_idx, triangles_coord)
     >>> vts_normal = normals_from_v_f(vts, triangles)  # fury.utils
