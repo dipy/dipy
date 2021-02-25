@@ -1,6 +1,9 @@
 
 import numpy as np
 
+from dipy.utils.optpkg import optional_package
+
+_, has_fury, _ = optional_package('fury')
 
 def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
                                     triangles_weight=None, rand_gen=None):
