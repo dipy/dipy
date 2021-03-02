@@ -7,7 +7,8 @@ Created on Feb 18, 2021
 import os.path
 
 from dipy.data import Sphere
-from dipy.reconst.shm import CsaOdfModel
+from dipy.reconst.gqi import GeneralizedQSamplingModel
+from dipy.reconst.dsi import DiffusionSpectrumModel
 
 from scipy.io import loadmat
 
@@ -20,7 +21,7 @@ def dsiSphere8Fold():
         x=dsi_sphere['odf_vertices'][0,:],
         y=dsi_sphere['odf_vertices'][1,:],
         z=dsi_sphere['odf_vertices'][2,:],
-        faces=dsi_sphere['odf_faces']
+        faces=dsi_sphere['odf_faces'].T
     )
 
 
@@ -30,12 +31,12 @@ class OdffpModel(object):
         self.gtab = gtab
         
     def fit(self, data):
-        csa_model = CsaOdfModel(self.gtab, sh_order=6)
-        csa_fit = csa_model.fit(data)
-        csa_odf = csa_fit.odf(dsiSphere8Fold())
-        return csa_odf
-        
- 
+        diff_model = GeneralizedQSamplingModel(self.gtab)
+#         diff_model = DiffusionSpectrumModel(self.gtab)
+        diff_fit = diff_model.fit(data)
+        diff_odf = diff_fit.odf(dsiSphere8Fold())
+        return diff_odf
+
         
 class OdffpFit(object):
     
