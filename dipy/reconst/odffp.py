@@ -31,10 +31,20 @@ class OdffpModel(object):
         self.gtab = gtab
         
     def fit(self, data):
+        tessellation = dsiSphere8Fold()
+        
         diff_model = GeneralizedQSamplingModel(self.gtab)
 #         diff_model = DiffusionSpectrumModel(self.gtab)
         diff_fit = diff_model.fit(data)
-        diff_odf = diff_fit.odf(dsiSphere8Fold())
+        diff_odf = diff_fit.odf(tessellation)
+        
+        # This function can return ODFs, checkout at:
+        # https://dipy.org/documentation/1.1.1./reference/dipy.direction/#id23
+        diff_peaks = peaks_from_model(
+            model=diff_model, data=data, sphere=tessellation, 
+            relative_peak_threshold=.5, min_separation_angle=25, npeaks=1
+        )
+        
         return diff_odf
 
         
