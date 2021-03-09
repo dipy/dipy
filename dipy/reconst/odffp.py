@@ -6,23 +6,22 @@ Created on Feb 18, 2021
 
 import os.path
 import numpy as np
+import copy
 
 from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.dsi import DiffusionSpectrumModel
 
-from dipy.direction import peaks_from_model
+from dipy.core.ndindex import ndindex
+from dipy.direction import peak_directions
 from scipy.io import loadmat
-
 
 def dsiSphere8Fold():
     dsi_sphere = loadmat(os.path.join(
         os.path.dirname(__file__), "../data/files/dsi_sphere_8fold.mat"
     ))
     return Sphere(
-        x=dsi_sphere['odf_vertices'][0,:],
-        y=dsi_sphere['odf_vertices'][1,:],
-        z=dsi_sphere['odf_vertices'][2,:],
+        xyz=dsi_sphere['odf_vertices'].T,
         faces=dsi_sphere['odf_faces'].T
     )
 
@@ -44,32 +43,38 @@ class OdffpModel(object):
         return R
     
     
-    def _get_rotations_to_main_peak(self, peak_dirs):
-        rotations = np.zeros(peak_dirs.shape + (3,3))
-        
-        for x in range(peak_dirs.shape[0]):
-            for y in range(peak_dirs.shape[1]):
-                for z in range(peak_dirs.shape[2]):
-
-                    rotations[x,y,z,:,:] = self._get_rotation_of_vector(
-                        peak_dirs[x,y,z,0,:], [0,0,1]
-                    )
-        
-        return rotations
-        
-        
-    def fit(self, data):
-        tessellation = dsiSphere8Fold()
-        
-        diff_model = GeneralizedQSamplingModel(self.gtab)
-        data_peaks = peaks_from_model(
-            model=diff_model, data=data, sphere=tessellation, return_odf=True,
-            relative_peak_threshold=.5, min_separation_angle=25, npeaks=1
+    def _get_rotated_sphere(self, sphere, rotation):
+        return Sphere(
+            xyz=np.dot(sphere.vertices, rotation),
+            faces=sphere.faces
         )
-        
-        self._rotations = self._get_rotations_to_main_peak(data_peaks.peak_dirs)
-                
-        return data_peaks.odf
+    
+    
+    def fit(self, data):
+        diff_model = GeneralizedQSamplingModel(self.gtab)
+
+        data_shape = data.shape[:-1]
+        tessellation = dsiSphere8Fold()
+
+        self._rotations = np.zeros(data_shape + (3,3))
+        rotated_odf = np.zeros(data_shape + (len(tessellation.vertices),))
+
+        for idx in ndindex(data_shape):
+            model_fit = diff_model.fit(data[idx])
+            
+            peak_dirs,_,_ = peak_directions(
+                model_fit.odf(tessellation), tessellation
+            )
+
+            self._rotations[idx] = self._get_rotation_of_vector(
+                np.squeeze(peak_dirs[:1]), [0,0,1]
+            )
+
+            rotated_odf[idx] = model_fit.odf(
+                self._get_rotated_sphere(tessellation, self._rotations[idx])
+            )
+
+        return rotated_odf
 
         
 class OdffpFit(object):
