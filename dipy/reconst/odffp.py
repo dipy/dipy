@@ -4,9 +4,9 @@ Created on Feb 18, 2021
 @author: patrykfi
 '''
 
-import os.path
+import h5py
 import numpy as np
-import copy
+import os.path
 
 from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
@@ -28,8 +28,15 @@ def dsiSphere8Fold():
 
 class OdffpModel(object):
 
-    def __init__(self, gtab):
+    def __init__(self, gtab, dict_file):
         self.gtab = gtab
+        
+        with h5py.File(dict_file, 'r') as mat_file:
+            self.dict_odf = np.array(mat_file['odfrot'])    
+        
+        # normalize the ODF dictionary
+        self.dict_odf -= np.min(self.dict_odf, axis=0)
+        self.dict_odf /= np.sqrt(np.sum(self.dict_odf**2, axis=0))
     
     
     def _get_rotation_of_vector(self, A, B):
@@ -55,9 +62,10 @@ class OdffpModel(object):
 
         data_shape = data.shape[:-1]
         tessellation = dsiSphere8Fold()
+        tessellation_size = int(len(tessellation.vertices) / 2)
 
         self._rotations = np.zeros(data_shape + (3,3))
-        rotated_odf = np.zeros(data_shape + (len(tessellation.vertices),))
+        output_odf = np.zeros(data_shape + (tessellation_size,))
 
         for idx in ndindex(data_shape):
             model_fit = diff_model.fit(data[idx])
@@ -70,11 +78,16 @@ class OdffpModel(object):
                 np.squeeze(peak_dirs[:1]), [0,0,1]
             )
 
-            rotated_odf[idx] = model_fit.odf(
+            rotated_odf = model_fit.odf(
                 self._get_rotated_sphere(tessellation, self._rotations[idx])
-            )
+            )[:tessellation_size]
+            rotated_odf -= np.min(rotated_odf)
+            rotated_odf /= np.sqrt(np.sum(rotated_odf**2))
+            
+            dict_idx = np.argmax(np.dot(rotated_odf, self.dict_odf))
+            output_odf[idx] = self.dict_odf[:,dict_idx]
 
-        return rotated_odf
+        return output_odf
 
         
 class OdffpFit(object):
