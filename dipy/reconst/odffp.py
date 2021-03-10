@@ -14,6 +14,7 @@ from dipy.reconst.dsi import DiffusionSpectrumModel
 
 from dipy.core.ndindex import ndindex
 from dipy.direction import peak_directions
+from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from scipy.io import loadmat
 
 def dsiSphere8Fold():
@@ -78,14 +79,18 @@ class OdffpModel(object):
                 np.squeeze(peak_dirs[:1]), [0,0,1]
             )
 
-            rotated_odf = model_fit.odf(
-                self._get_rotated_sphere(tessellation, self._rotations[idx])
-            )[:tessellation_size]
+            rotated_tessellation = self._get_rotated_sphere(tessellation, self._rotations[idx])
+
+            rotated_odf = model_fit.odf(rotated_tessellation)[:tessellation_size]
             rotated_odf -= np.min(rotated_odf)
             rotated_odf /= np.sqrt(np.sum(rotated_odf**2))
             
             dict_idx = np.argmax(np.dot(rotated_odf, self.dict_odf))
-            output_odf[idx] = self.dict_odf[:,dict_idx]
+            
+            sh = sf_to_sh(np.concatenate((self.dict_odf[:,dict_idx],self.dict_odf[:,dict_idx])), rotated_tessellation, sh_order=14, basis_type='tournier07')
+            sf = sh_to_sf(sh, tessellation, sh_order=14, basis_type='tournier07')
+             
+            output_odf[idx] = sf[:tessellation_size]
 
         return output_odf
 
