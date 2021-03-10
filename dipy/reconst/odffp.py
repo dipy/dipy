@@ -40,22 +40,24 @@ class OdffpModel(object):
         self.dict_odf /= np.sqrt(np.sum(self.dict_odf**2, axis=0))
     
     
-    def _get_rotation_of_vector(self, A, B):
-        cAB = np.cross(A,B)
+    def _rotate_tessellation(self, tessellation, in_direction, out_direction=[0,0,1]):
+        cAB = np.cross(in_direction, out_direction)
         sAB = np.array([[0,-cAB[2],cAB[1]], [cAB[2],0,-cAB[0]], [-cAB[1],cAB[0],0]])
-        R = np.eye(3) + sAB + np.dot(sAB,sAB) * (1-np.dot(A,B)) / np.sum(cAB**2)
+        rotation = np.eye(3) + sAB + np.dot(sAB,sAB) * (1-np.dot(in_direction,out_direction)) / np.sum(cAB**2)
     
-        if np.all(np.isnan(R)):
-            R = np.eye(3)
+        if np.all(np.isnan(rotation)):
+            rotation = np.eye(3)
 
-        return R
-    
-    
-    def _get_rotated_sphere(self, sphere, rotation):
         return Sphere(
-            xyz=np.dot(sphere.vertices, rotation),
-            faces=sphere.faces
+            xyz=np.dot(tessellation.vertices, rotation),
+            faces=tessellation.faces
         )
+
+
+    def _rotate_odf(self, odf, in_tessellation, out_tessellation):
+        sh = sf_to_sh(odf, in_tessellation) # , sh_order=14, basis_type='tournier07')
+        sf = sh_to_sf(sh, out_tessellation) #, sh_order=14, basis_type='tournier07')
+        return sf
     
     
     def fit(self, data):
@@ -63,7 +65,7 @@ class OdffpModel(object):
 
         data_shape = data.shape[:-1]
         tessellation = dsiSphere8Fold()
-        tessellation_size = int(len(tessellation.vertices) / 2)
+        tessellation_size = len(tessellation.vertices)
 
         self._rotations = np.zeros(data_shape + (3,3))
         output_odf = np.zeros(data_shape + (tessellation_size,))
@@ -71,26 +73,22 @@ class OdffpModel(object):
         for idx in ndindex(data_shape):
             model_fit = diff_model.fit(data[idx])
             
-            peak_dirs,_,_ = peak_directions(
-                model_fit.odf(tessellation), tessellation
-            )
+            input_odf = model_fit.odf(tessellation)
+            peak_dirs,_,_ = peak_directions(input_odf, tessellation)
 
-            self._rotations[idx] = self._get_rotation_of_vector(
-                np.squeeze(peak_dirs[:1]), [0,0,1]
-            )
+            rotated_tessellation = self._rotate_tessellation(tessellation, np.squeeze(peak_dirs[:1]))
 
-            rotated_tessellation = self._get_rotated_sphere(tessellation, self._rotations[idx])
-
-            rotated_odf = model_fit.odf(rotated_tessellation)[:tessellation_size]
-            rotated_odf -= np.min(rotated_odf)
-            rotated_odf /= np.sqrt(np.sum(rotated_odf**2))
+            odf_trace = self._rotate_odf(input_odf, tessellation, rotated_tessellation)[:int(tessellation_size/2)]
             
-            dict_idx = np.argmax(np.dot(rotated_odf, self.dict_odf))
+            odf_trace -= np.min(odf_trace)
+            odf_trace /= np.sqrt(np.sum(odf_trace**2))
             
-            sh = sf_to_sh(np.concatenate((self.dict_odf[:,dict_idx],self.dict_odf[:,dict_idx])), rotated_tessellation, sh_order=14, basis_type='tournier07')
-            sf = sh_to_sf(sh, tessellation, sh_order=14, basis_type='tournier07')
-             
-            output_odf[idx] = sf[:tessellation_size]
+            dict_idx = np.argmax(np.dot(odf_trace, self.dict_odf))
+           
+            output_odf[idx] = self._rotate_odf(
+                np.concatenate((self.dict_odf[:,dict_idx],self.dict_odf[:,dict_idx])), 
+                rotated_tessellation, tessellation
+            )
 
         return output_odf
 
