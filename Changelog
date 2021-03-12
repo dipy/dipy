@@ -24,6 +24,11 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.4.0 (Tuesday, March 14, 2021)
+-
+-
+-
+
 * 1.3.0 (Tuesday, November 3, 2020)
 
 - Gibbs ringing correction 10X faster.
