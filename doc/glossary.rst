@@ -33,7 +33,7 @@
       Pure Pythagoras.
 
    Euler angles
-      See: `wikipedia Euler angles`_ and `Mathworld Euler angles`_.  
+      See: `wikipedia Euler angles`_ and `Mathworld Euler angles`_.
 
    Gimbal lock
       See :ref:`gimbal-lock`

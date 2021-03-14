@@ -5,6 +5,11 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.4.0 changes
+------------------
+
+- Migration from Tavis to Azure
+
 DIPY 1.3.0 changes
 ------------------
 
