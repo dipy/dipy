@@ -1,9 +1,6 @@
 
 import numpy as np
 
-from dipy.utils.optpkg import optional_package
-
-_, has_fury, _ = optional_package('fury')
 
 def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
                                     triangles_weight=None, rand_gen=None):
@@ -35,23 +32,6 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     See Also
     --------
     seeds_from_surface_coordinates, random_seeds_from_mask
-
-    Examples
-    --------
-    >>> from fury import io, utils   # skip if not has_fury
-    >>> mesh_polydata = io.load_polydata('mesh.vtk') # skip if not has_fury
-    >>> vts = utils.get_polydata_vertices(mesh_polydata) # skip if not has_fury
-    >>> triangles = utils.get_polydata_triangles(mesh_polydata) # skip if not has_fury
-    >>> mask = np.ones([len(triangles)])
-    >>> mask[0] = 0
-    >>> normal = np.cross(vts[triangles[:, 1]] - vts[triangles[:, 0]],
-    ... vts[triangles[:, 2]] - vts[triangles[:, 0]])
-    >>> triangles_area = 0.5*np.linalg.norm(normal,axis=-1)
-    >>> nb_seeds = 100
-    >>> idx, coord = random_coordinates_from_surface(len(triangles), nb_seeds,
-    ... mask, triangles_weight=triangles_area)
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts, idx,
-    ... coord)
     """
     # Compute triangles_weight in vts_mask
     if triangles_mask is not None:
@@ -105,19 +85,6 @@ def seeds_from_surface_coordinates(triangles, vts_values,
     See Also
     --------
     random_coordinates_from_surface
-
-    Examples
-    --------
-    >>> from fury import io, utils   # skip if not has_fury
-    >>> mesh_polydata = io.load_polydata('mesh.vtk') # skip if not has_fury
-    >>> vts = utils.get_polydata_vertices(mesh_polydata) # skip if not has_fury
-    >>> triangles = utils.get_polydata_triangles(mesh_polydata) # skip if not has_fury
-    >>> seeds_pts = seeds_from_surface_coordinates(triangles, vts,
-    ... triangles_idx, triangles_coord)
-    >>> vts_normal = utils.normals_from_v_f(vts, triangles) # skip if not has_fury
-    >>> seeds_normal = seeds_from_surface_coordinates(triangles, vts_normal,
-    ... triangles_idx, triangles_coord)
-    >>> seeds_normal /= np.linalg.norm(seeds_normal, axis=-1, keepdims=True)
     """
     if vts_values.ndim == 1:
         vts_values = np.reshape(vts_values, (-1, 1))
