@@ -70,6 +70,7 @@ def test_GradientTable():
     expected_bvecs = gradients / (expected_bvals + expected_b0s_mask)[:, None]
 
     gt = GradientTable(gradients, b0_threshold=0)
+    npt.assert_('B-values shape (5,)' in gt.__str__())
     npt.assert_array_almost_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
     npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
