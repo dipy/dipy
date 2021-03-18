@@ -114,7 +114,7 @@ cdef class BootPmfGen(PmfGen):
         b_range = (r.max() - r.min()) / r.min()
         if b_range > tol:
             raise ValueError("BootPmfGen only supports single shell data")
-        B, _, _ = shm.real_sym_sh_basis(self.sh_order, theta, phi)
+        B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
         self.vox_data = np.empty(dwi_array.shape[3])
