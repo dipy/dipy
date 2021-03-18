@@ -212,13 +212,18 @@ class GradientTable(object):
         return self.gradients / denom
 
     @property
-    def info(self):
-        logger.info('B-values shape (%d,)' % self.bvals.shape)
-        logger.info('         min %f ' % self.bvals.min())
-        logger.info('         max %f ' % self.bvals.max())
-        logger.info('B-vectors shape (%d, %d)' % self.bvecs.shape)
-        logger.info('         min %f ' % self.bvecs.min())
-        logger.info('         max %f ' % self.bvecs.max())
+    def info(self, use_logging=False):
+        show = logging.info if use_logging else print
+        show(self.__str__())
+
+    def __str__(self):
+        msg = 'B-values shape {}\n'.format(self.bvals.shape)
+        msg += '         min {:f}\n'.format(self.bvals.min())
+        msg += '         max {:f}\n'.format(self.bvals.max())
+        msg += 'B-vectors shape {}\n'.format(self.bvecs.shape)
+        msg += '          min {:f}\n'.format(self.bvecs.min())
+        msg += '          max {:f}\n'.format(self.bvecs.max())
+        return msg
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
