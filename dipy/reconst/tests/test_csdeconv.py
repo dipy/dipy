@@ -11,6 +11,8 @@ from dipy.sims.voxel import (multi_tensor,
                              multi_tensor_odf,
                              all_tensor_evecs, single_tensor_odf)
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import Sphere, HemiSphere
+from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
@@ -23,13 +25,11 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response,
                                    recursive_response)
 from dipy.direction.peaks import peak_directions
-from dipy.core.sphere import HemiSphere
-from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
-from dipy.core.sphere import Sphere
+from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.io.gradients import read_bvals_bvecs
 
 
@@ -55,23 +55,15 @@ def get_test_data():
 
 
 def test_auto_response_deprecated():
-    with warnings.catch_warnings(record=True) as cw:
-        warnings.simplefilter("always", DeprecationWarning)
-        gtab, data, _, _, _ = get_test_data()
-        _, _ = auto_response(gtab,
-                             data,
-                             roi_center=None,
-                             roi_radius=1,
-                             fa_thr=0.7)
-        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+    gtab, data, _, _, _ = get_test_data()
+    npt.assert_raises(ExpiredDeprecationError, auto_response,
+                      gtab, data, roi_center=None, roi_radius=1, fa_thr=0.7)
 
 
 def test_response_from_mask_deprecated():
-    with warnings.catch_warnings(record=True) as cw:
-        warnings.simplefilter("always", DeprecationWarning)
-        gtab, data, mask, _, _ = get_test_data()
-        _ = response_from_mask(gtab, data, mask)
-        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+    gtab, data, mask, _, _ = get_test_data()
+    npt.assert_raises(ExpiredDeprecationError, response_from_mask,
+                      gtab, data, mask)
 
 
 def test_recursive_response_calibration():
