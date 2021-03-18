@@ -165,8 +165,8 @@ def _extract_3d_patches(arr, patch_radius):
 
 def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
-               b0_denoising=True, clip_negative_vals=True,
-               shift_intensity=False):
+               b0_denoising=True, clip_negative_vals=False,
+               shift_intensity=True):
     """ Patch2Self Denoiser
 
     Parameters
