@@ -219,14 +219,21 @@ Having fitted the diffusion kurtosis model, we are ready to compute and plot
 the DKI based ODFs using the following:
 """
 
+scene = window.Scene()
+
 dkiodf = dkifit.dki_odf(sphere)
 
-# ren = fvtk.ren()
-# odf_spheres = fvtk.sphere_funcs(dkiodf, sphere)
-# odf_spheres.RotateX(-90)
-# fvtk.add(ren, odf_spheres)
-# fvtk.record(ren, out_path='dki_odfs.png')
-# fvtk.show(ren)
+fodf_spheres = actor.odf_slicer(dkiodf, sphere=sphere, scale=0.2,
+                                norm=False, colormap='plasma')
+
+scene.add(fodf_spheres)
+
+interactive = False
+
+if interactive:
+    window.show(scene)
+
+window.record(scene, out_path='dki_odfs.png', size=(1200, 1200))
 
 """
 .. figure:: dki_odfs.png
@@ -247,11 +254,14 @@ sphere = get_sphere('repulsion100')
 
 dkidir = dkifit.dki_directions(sphere)
 
-# ren = fvtk.ren()
-# dki_peaks = fvtk.peaks(dkidir.peak_dirs)
-# fvtk.add(ren, dki_peaks)
-# fvtk.record(ren, out_path='dki_dirs.png')
-# fvtk.show(ren)
+scene.clear()
+fodf_peaks = actor.peak_slicer(dkidir.peak_dirs, dkidir.peak_values)
+scene.add(fodf_peaks)
+
+if interactive:
+    window.show(scene)
+
+window.record(scene, out_path='dki_dirs.png', size=(1200, 1200))
 
 """
 .. figure:: dki_dirs.png
