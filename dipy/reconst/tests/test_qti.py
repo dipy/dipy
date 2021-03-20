@@ -12,7 +12,7 @@ def test_from_3x3_to_6x1():
     V = np.array([[1, 0, 2, np.sqrt(2) * 3, np.sqrt(2) * 2, 0]]).T
     npt.assert_array_almost_equal(qti.from_3x3_to_6x1(T), V)
     npt.assert_raises(ValueError, qti.from_3x3_to_6x1, T[0:1])
-    npt.assert_raises(ValueError, qti.from_3x3_to_6x1, T + np.arange(3))
+    npt.assert_warns(Warning, qti.from_3x3_to_6x1, T + np.arange(3))
     return
 
 
@@ -39,7 +39,7 @@ def test_from_6x6_to_21x1():
     V = V[:, np.newaxis]
     npt.assert_array_almost_equal(qti.from_6x6_to_21x1(T), V)
     npt.assert_raises(ValueError, qti.from_6x6_to_21x1, T[0:1])
-    npt.assert_raises(ValueError, qti.from_6x6_to_21x1, T + np.arange(6))
+    npt.assert_warns(Warning, qti.from_6x6_to_21x1, T + np.arange(6))
     return
 
 

@@ -1,53 +1,55 @@
 """Classes and functions for fitting the covariance tensor model of q-space
 trajectory imaging."""
 
+import warnings
 import numpy as np
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 
 
 def from_3x3_to_6x1(T):
-    """Convert a symmetric 3 x 3 tensor into a 6 x 1 tensor.
+    """Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
 
     Parameters
     ----------
     T : np.ndarray
-        Symmetric 3 x 3 tensor.
+        An array of size (3, 3, ...). 
 
     Returns
     -------    
     V : np.ndarray
-        T converted into a 6 x 1 tensor.
+        Converted vectors of size (6, 1, ...).
     """
-    if T.shape != (3, 3):
-        raise ValueError('The shape of the input array must be (3, 3).')
-    if not np.all(np.isclose(T, T.T)):
-        raise ValueError('The input array must be symmetric.')
+    if T.shape[0:2] != (3, 3):
+        raise ValueError('The shape of the input array must be (3, 3, ...).')
+    if not np.all(np.isclose(T, np.swapaxes(T, 0, 1))):
+        warnings.warn('All input tensors are not symmetric.', Warning)
     C = np.sqrt(2)
     V = np.array([[T[0, 0],
                    T[1, 1],
                    T[2, 2],
                    C * T[1, 2],
                    C * T[0, 2],
-                   C * T[0, 1]]]).T
+                   C * T[0, 1]]])
+    V = np.swapaxes(V, 0, 1)
     return V
 
 
 def from_6x1_to_3x3(V):
-    """Convert a 6 x 1 tensor into a symmetric 3 x 3 tensor.
+    """Convert 6 x 1 vectors into symmetric 3 x 3 matrices.
 
     Parameters
     ----------
     V : np.ndarray
-        6 x 1 tensor.
+        An array of size (6, 1, ...).
 
     Returns
     ------- 
     T : np.ndarray
-        V converted into a symmetric 3 x 3 tensor.
+        Converted matrices of size (3, 3, ...).
     """
-    if V.shape != (6, 1):
-        raise ValueError('The shape of the input array must be (6, 1).')
+    if V.shape[0:2] != (6, 1):
+        raise ValueError('The shape of the input array must be (6, 1, ...).')
     C = 1 / np.sqrt(2)
     T = np.array([[V[0, 0], C * V[5, 0], C * V[4, 0]],
                   [C * V[5, 0], V[1, 0], C * V[3, 0]],
@@ -56,22 +58,22 @@ def from_6x1_to_3x3(V):
 
 
 def from_6x6_to_21x1(T):
-    """Convert a symmetric 6 x 6 tensor into a 21 x 1 tensor.
+    """Convert symmetric 6 x 6 matrices into 21 x 1 vectors.
 
     Parameters
     ----------
     T : np.ndarray
-        Symmetric 6 x 6 tensor.
+        An array of size (6, 6, ...). 
 
     Returns
-    ------- 
+    -------    
     V : np.ndarray
-        T converted into a 21 x 1 tensor.
+        Converted vectors of size (21, 1, ...).
     """
-    if T.shape != (6, 6):
-        raise ValueError('The shape of the input array must be (6, 6).')
-    if not np.all(np.isclose(T, T.T)):
-        raise ValueError('The input array must be symmetric.')
+    if T.shape[0:2] != (6, 6):
+        raise ValueError('The shape of the input array must be (6, 6, ...).')
+    if not np.all(np.isclose(T, np.swapaxes(T, 0, 1))):
+        warnings.warn('All input tensors are not symmetric.', Warning)
     C = np.sqrt(2)
     V = np.array([[T[0, 0], T[1, 1], T[2, 2],
                    C * T[1, 2], C * T[0, 2], C * T[0, 1],
@@ -79,25 +81,26 @@ def from_6x6_to_21x1(T):
                    C * T[1, 3], C * T[1, 4], C * T[1, 5],
                    C * T[2, 3], C * T[2, 4], C * T[2, 5],
                    T[3, 3], T[4, 4], T[5, 5],
-                   C * T[3, 4], C * T[4, 5], C * T[5, 3]]]).T
+                   C * T[3, 4], C * T[4, 5], C * T[5, 3]]])
+    V = np.swapaxes(V, 0, 1)
     return V
 
 
 def from_21x1_to_6x6(V):
-    """Convert a 21 x 1 tensor into a symmetric 6 x 6 tensor.
+    """Convert 21 x 1 vectors into symmetric 6 x 6 matrices.
 
     Parameters
     ----------
     V : np.ndarray
-        21 x 1 tensor.
+        An array of size (21, 1, ...).
 
     Returns
     ------- 
     T : np.ndarray
-        V converted into a symmetric 6 x 6 tensor.
+        Converted matrices of size (6, 6, ...).
     """
     if V.shape != (21, 1):
-        raise ValueError('The shape of the input array must be (21, 1).')
+        raise ValueError('The shape of the input array must be (21, 1, ...).')
     V = V[:, 0]  # Code is easier to read without the extra dimension
     C = 1 / np.sqrt(2)
     T = np.array(
@@ -108,6 +111,13 @@ def from_21x1_to_6x6(V):
          [C * V[7], C * V[10], C * V[13], C * V[18], V[16], C * V[19]],
          [C * V[8], C * V[11], C * V[14], C * V[20], C * V[19], V[17]]])
     return T
+
+
+# These tensors enable the calculation of the QTI parameter maps
+e_iso = np.eye(3) / 3
+E_iso = np.eye(6) / 3
+E_bulk = np.matmul(from_3x3_to_6x1(e_iso), from_3x3_to_6x1(e_iso).T)
+E_shear = E_iso - E_bulk
 
 
 class QtiModel(ReconstModel):
@@ -193,4 +203,15 @@ class QtiFit(object):
 
     @property
     def S0_hat(self):
+        """Predicted signal at b = 0."""
         return self.params[:, :, :, 0]
+
+    @property
+    def md(self):
+        """Mean diffusivity."""
+        return
+
+    @property
+    def ufa(self):
+        """Microscopic fractional anisotropy."""
+        return
