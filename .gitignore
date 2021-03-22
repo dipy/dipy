@@ -37,3 +37,4 @@ dipy/.idea/
 .idea
 .vscode
 .pytest_cache/*
+tmp/
