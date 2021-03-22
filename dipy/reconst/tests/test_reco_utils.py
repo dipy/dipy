@@ -23,7 +23,7 @@ def test_adj_countarrs():
 
 def test_argmax_from_countarrs():
     # basic case
-    vals = np.arange(10, dtype=np.float)
+    vals = np.arange(10, dtype=float)
     vertinds = np.arange(10, dtype=np.uint32)
     adj_counts = np.ones((10,), dtype=np.uint32)
     adj_inds_raw = np.arange(10, dtype=np.uint32)[::-1]
