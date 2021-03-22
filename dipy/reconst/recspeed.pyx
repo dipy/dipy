@@ -427,7 +427,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
 
 
 def proc_reco_args(vals, vertinds):
-    vals = np.ascontiguousarray(vals.astype(np.float))
+    vals = np.ascontiguousarray(vals.astype(float))
     vertinds = np.ascontiguousarray(vertinds.astype(np.uint32))
     return vals, vertinds
 
