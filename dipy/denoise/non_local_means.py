@@ -59,13 +59,13 @@ def non_local_means(arr, sigma, mask=None, patch_radius=1, block_radius=5,
             patch_radius,
             block_radius,
             sigma,
-            np.int(rician))).astype(arr.dtype)
+            int(rician))).astype(arr.dtype)
     elif arr.ndim == 4:
         denoised_arr = np.zeros_like(arr)
         for i in range(arr.shape[-1]):
             denoised_arr[..., i] = np.array(nlmeans_block(np.double(
                 arr[..., i]), mask, patch_radius, block_radius, sigma,
-                np.int(rician))).astype(arr.dtype)
+                int(rician))).astype(arr.dtype)
 
         return denoised_arr
 

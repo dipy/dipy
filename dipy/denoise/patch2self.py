@@ -234,7 +234,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
-    patch_radius = np.asarray(patch_radius, dtype=np.int)
+    patch_radius = np.asarray(patch_radius, dtype=int)
 
     if not data.ndim == 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.",
