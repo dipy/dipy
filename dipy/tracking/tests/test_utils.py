@@ -581,8 +581,8 @@ def test_unique_rows():
 
 
 def test_reduce_rois():
-    roi1 = np.zeros((4, 4, 4), dtype=np.bool)
-    roi2 = np.zeros((4, 4, 4), dtype=np.bool)
+    roi1 = np.zeros((4, 4, 4), dtype=bool)
+    roi2 = np.zeros((4, 4, 4), dtype=bool)
     roi1[1, 1, 1] = 1
     roi2[2, 2, 2] = 1
     include_roi, exclude_roi = reduce_rois([roi1, roi2], [True, True])
