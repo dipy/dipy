@@ -354,7 +354,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         raise ValueError("Array shape is not supported!", arr.shape)
 
     if disable_background_masking:
-        mask = arr[..., 0].astype(np.bool)
+        mask = arr[..., 0].astype(bool)
     else:
         mask = np.ones_like(arr[..., 0], dtype=bool)
 

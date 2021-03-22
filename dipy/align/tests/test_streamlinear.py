@@ -136,10 +136,10 @@ def test_rigid_partial_real_bundles():
 
     vol = np.zeros((100, 100, 100))
     spts = np.concatenate(static_center, axis=0)
-    spts = np.round(spts).astype(np.int) + np.array([50, 50, 50])
+    spts = np.round(spts).astype(int) + np.array([50, 50, 50])
 
     mpts = np.concatenate(moving_center, axis=0)
-    mpts = np.round(mpts).astype(np.int) + np.array([50, 50, 50])
+    mpts = np.round(mpts).astype(int) + np.array([50, 50, 50])
 
     for index in spts:
         i, j, k = index

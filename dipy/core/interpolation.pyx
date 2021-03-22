@@ -398,7 +398,7 @@ cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
 
 
 def nearestneighbor_interpolate(data, point):
-    index = tuple(np.round(point).astype(np.int))
+    index = tuple(np.round(point).astype(int))
     return data[index]
 
 

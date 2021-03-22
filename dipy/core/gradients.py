@@ -278,8 +278,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     GradientTable, gradient_table
 
     """
-    bvals = np.asarray(bvals, np.float)
-    bvecs = np.asarray(bvecs, np.float)
+    bvals = np.asarray(bvals, float)
+    bvecs = np.asarray(bvecs, float)
     dwi_mask = bvals > b0_threshold
 
     # check that bvals is (N,) array and bvecs is (N, 3) unit vectors
