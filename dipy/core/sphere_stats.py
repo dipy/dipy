@@ -202,8 +202,8 @@ def compare_orientation_sets(S, T):
 
     v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
          for p in permutations(S, n)]
-    return np.max(v)/np.float(n)
-    # return np.max(v)*np.float(n)/np.float(m)
+    return np.max(v)/float(n)
+    # return np.max(v)*float(n)/float(m)
 
 
 def angular_similarity(S, T):
@@ -289,4 +289,4 @@ def angular_similarity(S, T):
     v = [np.sum([np.abs(np.dot(p[i], T[i])) for i in range(n)])
          for p in permutations(S, n)]
 
-    return np.float(np.max(v))  # *np.float(n)/np.float(m)
+    return float(np.max(v))  # *float(n)/float(m)
