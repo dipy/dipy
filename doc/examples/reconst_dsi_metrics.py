@@ -56,7 +56,7 @@ dataslice = data[30:70, 20:80, data.shape[2] // 2]
 Normalize the signal by the b0
 """
 
-dataslice = dataslice / (dataslice[..., 0, None]).astype(np.float)
+dataslice = dataslice / (dataslice[..., 0, None]).astype(float)
 
 """
 Calculate the return to origin probability on the signal
