@@ -39,7 +39,7 @@ def test_squash():
     scalar_arr = np.zeros((2,), dtype=object)
     numeric_types = sum(
         [np.sctypes[t] for t in ('int', 'uint', 'float', 'complex')],
-        [np.bool_])
+        [bool])
     for dt0 in numeric_types:
         arr_arr[0] = np.zeros((3,), dtype=dt0)
         scalar_arr[0] = dt0(0)
@@ -80,7 +80,7 @@ def test_squash():
     arr_masked[1] = 99
     npt.assert_array_equal(_squash(obj_masked, mask=None, fill=99),
                            arr_masked)
-    msk = np.array([1, 0, 1], dtype=np.bool_)  # explicit mask
+    msk = np.array([1, 0, 1], dtype=bool)  # explicit mask
     npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
                            arr_masked)
 

@@ -94,7 +94,7 @@ def remove_similar_vertices(
         double cos_similarity = cos(DPY_PI/180 * theta)
     if n >= 2**16:  # constrained by input data type
         raise ValueError("too many vertices")
-    unique_vertices = np.empty((n, 3), dtype=np.float)
+    unique_vertices = np.empty((n, 3), dtype=float)
     if return_mapping:
         mapping = np.empty(n, dtype=np.uint16)
     if return_index:
@@ -427,7 +427,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
 
 
 def proc_reco_args(vals, vertinds):
-    vals = np.ascontiguousarray(vals.astype(np.float))
+    vals = np.ascontiguousarray(vals.astype(float))
     vertinds = np.ascontiguousarray(vertinds.astype(np.uint32))
     return vals, vertinds
 

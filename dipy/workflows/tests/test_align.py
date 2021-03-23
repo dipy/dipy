@@ -271,11 +271,11 @@ def test_syn_registration_flow():
     syn_flow = SynRegistrationFlow()
 
     with TemporaryDirectory() as out_dir:
-        static_img = nib.Nifti1Image(static_data.astype(np.float), np.eye(4))
+        static_img = nib.Nifti1Image(static_data.astype(float), np.eye(4))
         fname_static = pjoin(out_dir, 'tmp_static.nii.gz')
         nib.save(static_img, fname_static)
 
-        moving_img = nib.Nifti1Image(moving_data.astype(np.float), np.eye(4))
+        moving_img = nib.Nifti1Image(moving_data.astype(float), np.eye(4))
         fname_moving = pjoin(out_dir, 'tmp_moving.nii.gz')
         nib.save(moving_img, fname_moving)
 

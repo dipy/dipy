@@ -625,7 +625,7 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline
     """
-    data = data.astype(np.float)
+    data = data.astype(float)
     if (isinstance(streamlines, list) or
             isinstance(streamlines, types.GeneratorType) or
             isinstance(streamlines, Streamlines)):
@@ -635,15 +635,15 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
         for sl in streamlines:
             if threedvec:
                 vals.append(list(interpolate_vector_3d(
-                    data, sl.astype(np.float))[0]))
+                    data, sl.astype(float))[0]))
             else:
                 vals.append(list(interpolate_scalar_3d(
-                    data, sl.astype(np.float))[0]))
+                    data, sl.astype(float))[0]))
 
     elif isinstance(streamlines, np.ndarray):
         sl_shape = streamlines.shape
         sl_cat = streamlines.reshape(sl_shape[0] *
-                                     sl_shape[1], 3).astype(np.float)
+                                     sl_shape[1], 3).astype(float)
 
         inv_affine = np.linalg.inv(affine)
         sl_cat = (np.dot(sl_cat, inv_affine[:3, :3]) +
