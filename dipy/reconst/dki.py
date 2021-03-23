@@ -2058,7 +2058,7 @@ class DiffusionKurtosisFit(TensorFit):
             The DKI-ODF is calculated in the vertices of this input.
         alpha : float, optional
             radial weighting power. Default is 4 according to [Jen2014]_ and
-            [Raf2015]
+            [Raf2015]_
 
         Returns
         -------
@@ -2089,7 +2089,7 @@ class DiffusionKurtosisFit(TensorFit):
                        normalize_peaks=False, npeaks=3, gtol=1e-5):
         """ Estimation of fiber directions based on diffusion kurtosis imaging
         (DKI). Fiber directions are estimated as the maxima of the DKI
-        orientation distribution function [Jen2014]. This function is based on
+        orientation distribution function [Jen2014]_. This function is based on
         the work done by [Raf2015]_.
 
         Parameters
@@ -2103,7 +2103,7 @@ class DiffusionKurtosisFit(TensorFit):
         relative_peak_threshold : float, optional
             Only return peaks greater than ``relative_peak_threshold * m``
             where m is the largest peak.
-        min_separation_angle : float in [0, 90], optinal
+        min_separation_angle : float in [0, 90], optional
             The minimum distance between directions. If two peaks are too close
             only the larger of the two is returned.
         mask : array, optional
@@ -2137,11 +2137,12 @@ class DiffusionKurtosisFit(TensorFit):
             procedures and novel biomarkers. NeuroImage 111: 85-99.
             doi:10.1016/j.neuroimage.2015.02.004
         """
-        return dki_directions(self.model_params, sphere, alpha=4,
-                              relative_peak_threshold=0.1,
-                              min_separation_angle=20, mask=None,
-                              return_odf=False, normalize_peaks=False,
-                              npeaks=3, gtol=1e-5)
+        return dki_directions(self.model_params, sphere, alpha=alpha,
+                              relative_peak_threshold=relative_peak_threshold,
+                              min_separation_angle=min_separation_angle,
+                              mask=mask, return_odf=return_odf,
+                              normalize_peaks=normalize_peaks,
+                              npeaks=npeaks, gtol=gtol)
 
     def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
@@ -2640,13 +2641,7 @@ def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
     V = sphere.vertices
     kODF = np.zeros((len(kt), len(V)))
 
-    # select non-zero voxels
-    # (when #677 is merged replace this code lines by function _positive_evals)
-    # rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
-    er = np.finfo(evals.ravel()[0]).eps * 1e3
-    rel_i = np.logical_and(evals[..., 0] > er,
-                           np.logical_and(evals[..., 1] > er,
-                                          evals[..., 2] > er))
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
     kt = kt[rel_i]
     evecs = evecs[rel_i]
     evals = evals[rel_i]
@@ -2782,7 +2777,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
                    normalize_peaks=False, npeaks=3, gtol=1e-5):
     """ Estimation of fiber direction based on diffusion kurtosis imaging
     (DKI). Fiber directions are estimated as the maxima of the orientation
-    distribution function [Jen2014]. This function is based on the work done by
+    distribution function [Jen2014]_. This function is based on the work done by
     [Raf2015]_.
 
     Parameters
@@ -2803,7 +2798,7 @@ def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
     relative_peak_threshold : float, optional
         Only return peaks greater than ``relative_peak_threshold * m`` where m
         is the largest peak.
-    min_separation_angle : float in [0, 90], optinal
+    min_separation_angle : float in [0, 90], optional
         The minimum distance between directions. If two peaks are too close
         only the larger of the two is returned.
     mask : array, optional

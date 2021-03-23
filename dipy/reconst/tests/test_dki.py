@@ -870,13 +870,13 @@ def _dki_odf_non_vectorized(n, W, U, a):
     # Compute the summatory term of reference Eq.5
     SW = 0
     xyz = [0, 1, 2]
-    for i in xyz:
-        for j in xyz:
-           for k in xyz:
-               for l in xyz:
-                   SW = SW + W[i, j, k, l] * (3*U[i, j]*U[k, l] - \
-                                              6*(a + 1)*U[i, j]*V[k, l] + \
-                                              (a + 1)*(a + 3)*V[i, j]*V[k, l])
+    for ii in xyz:
+        for jj in xyz:
+            for kk in xyz:
+                for ll in xyz:
+                    SW = (SW + W[ii, jj, kk, ll] * (3*U[ii, jj]*U[kk, ll] -
+                          6 * (a + 1)*U[ii, jj]*V[kk, ll] +
+                          (a + 1)*(a + 3)*V[ii, jj]*V[kk, ll]))
 
     # return the total ODF
     return ODFg * (1. + 1/24.*SW)

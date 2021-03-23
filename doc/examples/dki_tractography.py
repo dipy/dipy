@@ -11,7 +11,7 @@ First we import all relevant modules:
 """
 
 import numpy as np
-import nibabel as nib
+from dipy.io.image import load_nifti, save_nifti
 import os.path as op
 import dipy.reconst.dki as dki
 from dipy.data import read_cenir_multib
@@ -44,7 +44,7 @@ data = img.get_fdata()
 affine = img.affine
 
 """
-Having the acquition paramenters of the loaded data, we can define the
+Having the acquisition parameters of the loaded data, we can define the
 diffusion kurtosis model as:
 """
 
@@ -105,7 +105,11 @@ tensors = np.vstack([AKC, ADC])
 tensors = tensors.reshape((5, 2, 1, len(sphere.vertices)))
 tensors_actor = actor.odf_slicer(tensors, sphere=sphere, scale=0.5)
 scene.add(tensors_actor)
-window.show(scene)
+
+interactive = False
+
+if interactive:
+    window.show(scene)
 
 """
 Ground truth direction of fibers are added to the graphical presentation of the
@@ -166,7 +170,9 @@ scene = window.Scene()
 ODF = ODF.reshape((5, 1, 1, len(sphere.vertices)), order='F')
 odf_actor = actor.odf_slicer(ODF, sphere=sphere, scale=0.5)
 scene.add(tensors_actor)
-window.show(scene)
+
+if interactive:
+    window.show(scene)
 
 window.record(scene, out_path='DKI_ODF_geometry.png', size=(1200, 1200))
 
@@ -192,11 +198,10 @@ examples. If this is the case the load the previous processed data.
 """
 
 if op.exists('denoised_cenir_multib.nii.gz'):
-    img = nib.load('denoised_cenir_multib.nii.gz')
-    den = img.get_fdata()
+    den = load_nifti('denoised_cenir_multib.nii.gz')
 else:
     den = patch2self(data, gtab.bvals)
-    nib.save(nib.Nifti1Image(den, affine), 'denoised_cenir_multib.nii.gz')
+    save_nifti('denoised_cenir_multib.nii.gz', den, affine)
 
 """
 Now, we mask the data to avoid processing unnecessary background voxels:
@@ -228,7 +233,6 @@ fodf_spheres = actor.odf_slicer(dkiodf, sphere=sphere, scale=0.2,
 
 scene.add(fodf_spheres)
 
-interactive = False
 
 if interactive:
     window.show(scene)
