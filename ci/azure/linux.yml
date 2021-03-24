@@ -37,9 +37,9 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
     condition: eq( variables['INSTALL_TYPE'], 'conda' )
-  - script: |
+  - bash: |
       sudo chmod +x ci/azure/install.sh
-      if [[ -z "${USE_PRE}" ]]; then
+      if [ "${USE_PRE}" == "1" ]; then
         echo "we use PRE"
         echo "${USE_PRE}"
         ./ci/azure/install.sh || echo -e "\043#vso[task.logissue type=warning;] Error during pre-package installation"
@@ -47,9 +47,9 @@ jobs:
         ./ci/azure/install.sh
       fi
     displayName: 'Install dependencies'
-  - script: |
+  - bash: |
       sudo chmod +x ci/azure/script.sh
-      if [[ -z "${USE_PRE}" ]]; then
+      if [ "${USE_PRE}" == "1" ]; then
         ./ci/azure/script.sh || echo -e "\043#vso[task.logissue type=warning;] Error during tests on PRE matrix"
       else
         ./ci/azure/script.sh
