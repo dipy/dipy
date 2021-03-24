@@ -52,7 +52,9 @@ if [ "$COVERAGE" == "1" ]; then
     cp ../.codecov.yml .;
     # Run the tests and check for test coverage.
     coverage run -m pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
+    echo "START COVERAGE REPORT"
     coverage report -m  # Generate test coverage report.
+    echo "START UPLOAD COVERAGE"
     codecov    # Upload the report to codecov.
 else
     pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
