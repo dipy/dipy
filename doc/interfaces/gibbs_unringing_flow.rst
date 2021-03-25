@@ -40,7 +40,7 @@ You can also specify optional arguments such as:
 To run the Gibbs unringing on the data it suffices to execute the
 ``dipy_gibbs_ringing`` command, e.g.::
 
-    dipy_gibbs_ringing data/tissue_data/t1_brain_denoised.nii.gz --num_threads 0 --out_dir "gibbs_ringing_output"
+    dipy_gibbs_ringing data/tissue_data/t1_brain_denoised.nii.gz --num_threads 4 --out_dir "gibbs_ringing_output"
 
 This command will apply the Gibbs unringing procedure to the input MR image
 and write the artefact-free result to the ``gibbs_ringing_output`` directory.
