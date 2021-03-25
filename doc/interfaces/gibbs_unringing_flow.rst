@@ -32,17 +32,15 @@ ringing-free volume::
 
 To run the Gibbs unringing method, we need to specify the path to the input
 data. This path may contain wildcards to process multiple inputs at once.
-You can also specify the optional arguments. In this case, we will be
-specifying the number of threads (``num_threads``) and output directory
-(``out_dir``). The number of threads allows to exploit the available
-computational power and accelerate the processing. The maximum number of
-threads available depends on the CPU of the computer, so users are expected
-to set an appropriate value based on their platform.
+You can also specify optional arguments such as:
+
+- ``num_threads``: the number of threads to be used in parallel to accelerate processing. Set it to ``0``  to use all available threads.
+- ``out_dir``: directory to save the output.
 
 To run the Gibbs unringing on the data it suffices to execute the
 ``dipy_gibbs_ringing`` command, e.g.::
 
-    dipy_gibbs_ringing data/tissue_data/t1_brain_denoised.nii.gz --num_threads 4 --out_dir "gibbs_ringing_output"
+    dipy_gibbs_ringing data/tissue_data/t1_brain_denoised.nii.gz --num_threads 0 --out_dir "gibbs_ringing_output"
 
 This command will apply the Gibbs unringing procedure to the input MR image
 and write the artefact-free result to the ``gibbs_ringing_output`` directory.
