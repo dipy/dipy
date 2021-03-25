@@ -55,5 +55,5 @@ jobs:
         ./ci/azure/script.sh
       fi
     env:
-      CODECOV_TOKEN: $(codecov.token)
+      CODECOV_TOKEN: $(CODECOV-TOKEN)
     displayName: 'Install DIPY and Run Tests'
