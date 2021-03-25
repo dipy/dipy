@@ -322,8 +322,8 @@ class GibbsRingingFlow(Workflow):
             third axis.
         n_points : int, optional
             Number of neighbour points to access local TV (see note).
-        num_threads : int or None, optional
-            Number of threads. Only applies to 3D or 4D `data` arrays. If None
+        num_threads : int, optional
+            Number of threads. Only applies to 3D or 4D `data` arrays. If 0
             then all available threads will be used. Otherwise, must be a
             positive integer.
         out_dir : string, optional
