@@ -139,6 +139,7 @@ class QtiModel(ReconstModel):
             Gradient table.
         fit_method : str, must be one of the following
             'OLS' for ordinary least squares
+            'WLS' for weighted least squares
 
         References
         ----------
@@ -157,10 +158,10 @@ class QtiModel(ReconstModel):
             raise ValueError(
                 'QTI requires b-tensors to be defined in the gradient table.')
 
-        if fit_method != 'OLS':
+        if fit_method != 'OLS' and fit_method != 'WLS':
             raise ValueError(
-                'Invalid value (%s) for \'fit_method\'.' % fit_method 
-                + ' Options: \'OLS\'.')
+                'Invalid value (%s) for \'fit_method\'.' % fit_method
+                + ' Options: \'OLS\', \'WLS\'.')
 
         self.fit_method = fit_method
         self.X = np.zeros((self.gtab.btens.shape[0], 28))
@@ -199,11 +200,23 @@ class QtiModel(ReconstModel):
         if self.fit_method == 'OLS':  # Design matrix is independent of data
             self.X_inv = np.linalg.pinv(np.matmul(self.X.T, self.X))
             index = ndindex(mask.shape)
-            for v in index:  # Loop over data
+            for v in index:
                 if not mask[v]:
                     continue
                 S = np.log(data[v])[:, np.newaxis]
                 params[v] = np.matmul(self.X_inv, np.matmul(self.X.T, S))[:, 0]
+
+        elif self.fit_method == 'WLS':
+            N = data.shape[-1]
+            index = ndindex(mask.shape)
+            for v in index:  # Loop over data (very slow, will have to improve)
+                if not mask[v]:
+                    continue
+                C = np.eye(N) * data[v]
+                S = np.log(data[v])[:, np.newaxis]
+                B = np.matmul(self.X.T, C)
+                A = np.matmul(B, self.X)
+                params[v] = np.matmul(np.matmul(np.linalg.pinv(A), B), S)[:, 0]
 
         return QtiFit(params)
 
@@ -250,4 +263,5 @@ class QtiFit(object):
                 from_6x6_to_21x1(E_shear)) /
             np.matmul(
                 np.swapaxes(from_6x6_to_21x1(mean_Dsq), -1, -2),
-                from_6x6_to_21x1(E_iso))))[..., 0, 0]
+                from_6x6_to_21x1(E_iso)))
+        )[..., 0, 0]
