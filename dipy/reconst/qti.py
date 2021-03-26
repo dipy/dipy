@@ -15,10 +15,10 @@ def from_3x3_to_6x1(T):
     Parameters
     ----------
     T : np.ndarray
-        An array of size (..., 3, 3). 
+        An array of size (..., 3, 3).
 
     Returns
-    -------    
+    -------
     V : np.ndarray
         Converted vectors of size (..., 6, 1).
     """
@@ -45,7 +45,7 @@ def from_6x1_to_3x3(V):
         An array of size (..., 6, 1).
 
     Returns
-    ------- 
+    -------
     T : np.ndarray
         Converted matrices of size (..., 3, 3).
     """
@@ -65,10 +65,10 @@ def from_6x6_to_21x1(T):
     Parameters
     ----------
     T : np.ndarray
-        An array of size (..., 6, 6). 
+        An array of size (..., 6, 6).
 
     Returns
-    -------    
+    -------
     V : np.ndarray
         Converted vectors of size (..., 21, 1).
     """
@@ -97,7 +97,7 @@ def from_21x1_to_6x6(V):
         An array of size (..., 21, 1).
 
     Returns
-    ------- 
+    -------
     T : np.ndarray
         Converted matrices of size (..., 6, 6).
     """
@@ -108,15 +108,15 @@ def from_21x1_to_6x6(V):
         ([V[..., 0, 0], C * V[..., 5, 0], C * V[..., 4, 0],
           C * V[..., 6, 0], C * V[..., 7, 0], C * V[..., 8, 0]],
          [C * V[..., 5, 0], V[..., 1, 0], C * V[..., 3, 0],
-         C * V[..., 9, 0], C * V[..., 10, 0], C * V[..., 11, 0]],
+          C * V[..., 9, 0], C * V[..., 10, 0], C * V[..., 11, 0]],
          [C * V[..., 4, 0], C * V[..., 3, 0], V[..., 2, 0],
-         C * V[..., 12, 0], C * V[..., 13, 0], C * V[..., 14, 0]],
+          C * V[..., 12, 0], C * V[..., 13, 0], C * V[..., 14, 0]],
          [C * V[..., 6, 0], C * V[..., 9, 0], C * V[..., 12, 0],
-         V[..., 15, 0], C * V[..., 18, 0], C * V[..., 20, 0]],
+          V[..., 15, 0], C * V[..., 18, 0], C * V[..., 20, 0]],
          [C * V[..., 7, 0], C * V[..., 10, 0], C * V[..., 13, 0],
-         C * V[..., 18, 0], V[..., 16, 0], C * V[..., 19, 0]],
+          C * V[..., 18, 0], V[..., 16, 0], C * V[..., 19, 0]],
          [C * V[..., 8, 0], C * V[..., 11, 0], C * V[..., 14, 0],
-         C * V[..., 20, 0], C * V[..., 19, 0], V[..., 17, 0]]))
+          C * V[..., 20, 0], C * V[..., 19, 0], V[..., 17, 0]]))
     T = np.moveaxis(T, (0, 1), (-2, -1))
     return T
 
@@ -130,7 +130,7 @@ E_shear = E_iso - E_bulk
 
 class QtiModel(ReconstModel):
 
-    def __init__(self, gtab, fit_method='WLS'):
+    def __init__(self, gtab, fit_method='OLS'):
         """Covariance tensor model of q-space trajectory imaging [1].
 
         Parameters
@@ -153,19 +153,22 @@ class QtiModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-        if self.gtab == None:
+        if self.gtab.btens is None:
             raise ValueError(
                 'QTI requires b-tensors to be defined in the gradient table.')
 
+        if fit_method != 'OLS':
+            raise ValueError(
+                'Invalid value (%s) for \'fit_method\'.' % fit_method 
+                + ' Options: \'OLS\'.')
+
         self.fit_method = fit_method
-        if self.fit_method == 'OLS':  # Design matrix is independent of data
-            self.X = np.zeros((self.gtab.btens.shape[0], 28))
-            for i, bten in enumerate(self.gtab.btens):
-                b = from_3x3_to_6x1(bten)
-                b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
-                self.X[i] = np.concatenate(
-                    ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
-                self.X_inv = np.linalg.pinv(np.matmul(self.X.T, self.X))
+        self.X = np.zeros((self.gtab.btens.shape[0], 28))
+        for i, bten in enumerate(self.gtab.btens):
+            b = from_3x3_to_6x1(bten)
+            b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
+            self.X[i] = np.concatenate(
+                ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
 
     def fit(self, data, mask=None):
         """Fit method of the QTI model class.
@@ -192,12 +195,15 @@ class QtiModel(ReconstModel):
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
         params = np.zeros(mask.shape + (28,)) * np.nan
-        index = ndindex(mask.shape)
-        for v in index:  # Loop over data
-            if not mask[v]:
-                continue
-            S = np.log(data[v])[:, np.newaxis]
-            params[v] = np.matmul(self.X_inv, np.matmul(self.X.T, S))[:, 0]
+
+        if self.fit_method == 'OLS':  # Design matrix is independent of data
+            self.X_inv = np.linalg.pinv(np.matmul(self.X.T, self.X))
+            index = ndindex(mask.shape)
+            for v in index:  # Loop over data
+                if not mask[v]:
+                    continue
+                S = np.log(data[v])[:, np.newaxis]
+                params[v] = np.matmul(self.X_inv, np.matmul(self.X.T, S))[:, 0]
 
         return QtiFit(params)
 
