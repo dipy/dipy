@@ -61,7 +61,10 @@ if using_setuptools:
 EXTS = []
 
 # We use some defs from npymath, but we don't want to link against npymath lib
-ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
+ext_kwargs = {
+    'include_dirs': ['src'],  # We add np.get_include() later
+    'define_macros': [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+    }
 
 for modulename, other_sources, language in (
         ('dipy.core.interpolation', [], 'c'),
