@@ -41,7 +41,7 @@ atlas_header = create_tractogram_header(atlas_file,
 
 sft_target = load_trk(target_file, "same", bbox_valid_check=False)
 target = sft_target.streamlines
-target_header = create_tractogram_header(atlas_file,
+target_header = create_tractogram_header(target_file,
                                          *sft_atlas.space_attributes)
 
 """
