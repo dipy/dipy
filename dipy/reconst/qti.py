@@ -7,6 +7,7 @@ import numpy as np
 
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
+from dipy.reconst.dti import auto_attr
 
 
 def from_3x3_to_6x1(T):
@@ -14,12 +15,12 @@ def from_3x3_to_6x1(T):
 
     Parameters
     ----------
-    T : np.ndarray
+    T : numpy.ndarray
         An array of size (..., 3, 3).
 
     Returns
     -------
-    V : np.ndarray
+    V : numpy.ndarray
         Converted vectors of size (..., 6, 1).
     """
     if T.shape[-2::] != (3, 3):
@@ -41,12 +42,12 @@ def from_6x1_to_3x3(V):
 
     Parameters
     ----------
-    V : np.ndarray
+    V : numpy.ndarray
         An array of size (..., 6, 1).
 
     Returns
     -------
-    T : np.ndarray
+    T : numpy.ndarray
         Converted matrices of size (..., 3, 3).
     """
     if V.shape[-2::] != (6, 1):
@@ -64,12 +65,12 @@ def from_6x6_to_21x1(T):
 
     Parameters
     ----------
-    T : np.ndarray
+    T : numpy.ndarray
         An array of size (..., 6, 6).
 
     Returns
     -------
-    V : np.ndarray
+    V : numpy.ndarray
         Converted vectors of size (..., 21, 1).
     """
     if T.shape[-2::] != (6, 6):
@@ -93,12 +94,12 @@ def from_21x1_to_6x6(V):
 
     Parameters
     ----------
-    V : np.ndarray
+    V : numpy.ndarray
         An array of size (..., 21, 1).
 
     Returns
     -------
-    T : np.ndarray
+    T : numpy.ndarray
         Converted matrices of size (..., 6, 6).
     """
     if V.shape[-2::] != (21, 1):
@@ -121,102 +122,151 @@ def from_21x1_to_6x6(V):
     return T
 
 
-# These tensors enable the calculation of the QTI parameter maps
+# These tensors are used in the calculation of QTI parameters
 e_iso = np.eye(3) / 3
 E_iso = np.eye(6) / 3
 E_bulk = np.matmul(from_3x3_to_6x1(e_iso), from_3x3_to_6x1(e_iso).T)
 E_shear = E_iso - E_bulk
+E_tsym = E_bulk + .4 * E_shear
+
+
+def _ols_fit(data, mask, X):
+    """Estimate the QTI model parameters using ordinary least squares.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of shape (..., number of acquisitions).
+    mask : numpy.ndarray
+        Array with the same shape as the data array of a single acquisition.
+    X : numpy.ndarray
+        Design matrix of shape (number of acquisitions, 28).
+
+    Returns
+    -------
+    params : numpy.ndarray
+        Array of shape (..., 28) containing the estimated model parameters.
+        Element 0 is the estimated signal without diffusion-weighting, elements
+        1-6 are the estimated diffusion tensor parameters, and elements 7-28 are
+        the estimated covariance tensor parameters.
+    """
+    params = np.zeros(mask.shape + (28,)) * np.nan
+    X_inv = np.linalg.pinv(np.matmul(X.T, X))  # Independent of data
+    index = ndindex(mask.shape)
+    for v in index:  # This loop is slow
+        if not mask[v]:
+            continue
+        S = np.log(data[v])[:, np.newaxis]
+        params[v] = np.matmul(X_inv, np.matmul(X.T, S))[:, 0]
+    return params
+
+
+def _wls_fit(data, mask, X):
+    """Estimate the QTI model parameters using weighted least squares where the
+    signal magnitudes are used as the weights.
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of shape (..., number of acquisitions).
+    mask : numpy.ndarray
+        Array with the same shape as the data array of a single acquisition.
+    X : numpy.ndarray
+        Design matrix of shape (number of acquisitions, 28).
+
+    Returns
+    -------
+    params : numpy.ndarray
+        Array of shape (..., 28) containing the estimated model parameters.
+        Element 0 is the estimated signal without diffusion-weighting, elements
+        1-6 are the estimated diffusion tensor parameters, and elements 7-28 are
+        the estimated covariance tensor parameters.
+    """
+    params = np.zeros(mask.shape + (28,)) * np.nan
+    index = ndindex(mask.shape)
+    for v in index:  # This loop is slow loop
+        if not mask[v]:
+            continue
+        S = np.log(data[v])[:, np.newaxis]
+        B = X.T * data[v][np.newaxis, :]
+        A = np.matmul(B, X)
+        params[v] = np.matmul(np.matmul(np.linalg.pinv(A), B), S)[:, 0]
+    return params
 
 
 class QtiModel(ReconstModel):
 
     def __init__(self, gtab, fit_method='OLS'):
-        """Covariance tensor model of q-space trajectory imaging [1].
+        """Covariance tensor model of q-space trajectory imaging [1]_.
 
         Parameters
         ----------
-        gtab : dipy.core.gradients.GradientTable instance
-            Gradient table.
-        fit_method : str, must be one of the following
+        gtab : dipy.core.gradients.GradientTable
+            Gradient table with b-tensors.
+        fit_method : str, optional
+            Must be one of the followng:
             'OLS' for ordinary least squares
-            'WLS' for weighted least squares
+            'WLS' for weighted least squares.
 
         References
         ----------
         .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
            multidimensional diffusion MRI of the human brain." Neuroimage 135
-            (2016): 345-362. doi.org/10.1016/j.neuroimage.2016.02.039.
-
-        Notes
-        -----
-        QTI requires at least two b-tensor shapes and a minimum of 28
-        acquisitions.
+           (2016): 345-362. doi.org/10.1016/j.neuroimage.2016.02.039.
         """
         ReconstModel.__init__(self, gtab)
 
         if self.gtab.btens is None:
             raise ValueError(
-                'QTI requires b-tensors to be defined in the gradient table.')
-
-        if fit_method != 'OLS' and fit_method != 'WLS':
-            raise ValueError(
-                'Invalid value (%s) for \'fit_method\'.' % fit_method
-                + ' Options: \'OLS\', \'WLS\'.')
-
-        self.fit_method = fit_method
+                'QTI requires b-tensors to be defined in the gradient table.'
+            )
         self.X = np.zeros((self.gtab.btens.shape[0], 28))
-        for i, bten in enumerate(self.gtab.btens):
+        for i, bten in enumerate(self.gtab.btens):  # Define design matrix
             b = from_3x3_to_6x1(bten)
             b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
             self.X[i] = np.concatenate(
                 ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
+        rank = np.linalg.matrix_rank(np.matmul(self.X.T, self.X))
+        if rank <= 28:
+            warn(
+                'The combination of the b-tensor shapes, sizes, and ' +
+                'orientations does not enable all elements of the covariance ' +
+                'tensor to be estimated (rank(X.T, X) = %s).' % rank
+            )
+
+        if fit_method != 'OLS' and fit_method != 'WLS':
+            raise ValueError(
+                'Invalid value (%s) for \'fit_method\'.' % fit_method
+                + ' Options: \'OLS\', \'WLS\'.'
+            )
+        self.fit_method = fit_method
 
     def fit(self, data, mask=None):
         """Fit method of the QTI model class.
 
         Parameters
         ----------
-        data : array
-            The measured signal from one voxel.
-
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[:-1]
+        data : numpy.ndarray
+            Array of shape (..., number of acquisitions).
+        mask : numpy.ndarray, optional
+            Array with the same shape as the data array of a single acquisition.
 
         Returns
         -------
         qtifit : dipy.reconst.qti.QtiFit instance
+            The fitted model.
         """
         if mask is None:
             mask = np.ones(data.shape[:-1], dtype=bool)
         else:
             if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
+                raise ValueError('Mask is not the same shape as data.')
             mask = np.array(mask, dtype=bool, copy=False)
-        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        params = np.zeros(mask.shape + (28,)) * np.nan
-
-        if self.fit_method == 'OLS':  # Design matrix is independent of data
-            self.X_inv = np.linalg.pinv(np.matmul(self.X.T, self.X))
-            index = ndindex(mask.shape)
-            for v in index:
-                if not mask[v]:
-                    continue
-                S = np.log(data[v])[:, np.newaxis]
-                params[v] = np.matmul(self.X_inv, np.matmul(self.X.T, S))[:, 0]
-
+        if self.fit_method == 'OLS':
+            params = _ols_fit(data, mask, self.X)
         elif self.fit_method == 'WLS':
-            N = data.shape[-1]
-            index = ndindex(mask.shape)
-            for v in index:  # Loop over data (very slow, will have to improve)
-                if not mask[v]:
-                    continue
-                C = np.eye(N) * data[v]
-                S = np.log(data[v])[:, np.newaxis]
-                B = np.matmul(self.X.T, C)
-                A = np.matmul(B, self.X)
-                params[v] = np.matmul(np.matmul(np.linalg.pinv(A), B), S)[:, 0]
+            params = _wls_fit(data, mask, self.X)
 
         return QtiFit(params)
 
@@ -224,44 +274,256 @@ class QtiModel(ReconstModel):
 class QtiFit(object):
 
     def __init__(self, params):
-        """Initialize QtiFit instance."""
+        """Class for the fitted QTI model.
+
+        Parameters
+        ----------
+        params : numpy.ndarray
+            Array of shape (..., 28) containing the estimated model parameters.
+            Element 0 is the estimated signal without diffusion-weighting,
+            elements 1-6 are the estimated diffusion tensor parameters, and
+            elements 7-28 are the estimated covariance tensor parameters.
+        """
         self.params = params
         return
 
-    @property
+    @auto_attr
     def S0_hat(self):
-        """Predicted signal at b = 0."""
-        return np.exp(self.params[:, :, :, 0])
+        """Predicted signal at b = 0.
 
-    @property
-    def MD(self):
-        """Mean diffusivity."""
-        return np.matmul(
+        Returns
+        -------
+        S0 : numpy.ndarray
+        """
+        S0 = np.exp(self.params[:, :, :, 0])
+        return S0
+
+    @auto_attr
+    def md(self):
+        """Mean diffusivity.
+
+        Returns
+        -------
+        md : numpy.ndarray
+        """
+        md = np.matmul(
             self.params[..., np.newaxis, 1:7],
             from_3x3_to_6x1(e_iso)
         )[..., 0, 0]
+        return md
 
-    @property
-    def V_MD(self):
-        """Variance of mean diffusivities."""
-        return np.matmul(
+    @auto_attr
+    def v_md(self):
+        """Variance of microscopic mean diffusivities.
+
+        Returns
+        -------
+        v_md : numpy.ndarray
+        """
+        v_md = np.matmul(
             self.params[..., np.newaxis, 7::],
             from_6x6_to_21x1(E_bulk)
         )[..., 0, 0]
+        return v_md
 
-    @property
-    def uFA(self):
-        """Microscopic fractional anisotropy."""
-        meanD_sq = np.matmul(
-            self.params[..., 1:7, np.newaxis],
-            self.params[..., np.newaxis, 1:7])
-        mean_Dsq = from_21x1_to_6x6(
-            self.params[..., 7::, np.newaxis]) + meanD_sq
-        return np.sqrt(1.5 * (
-            np.matmul(
-                np.swapaxes(from_6x6_to_21x1(mean_Dsq), -1, -2),
-                from_6x6_to_21x1(E_shear)) /
-            np.matmul(
-                np.swapaxes(from_6x6_to_21x1(mean_Dsq), -1, -2),
-                from_6x6_to_21x1(E_iso)))
+    @auto_attr
+    def v_shear(self):
+        """Shear variance.
+
+        Returns
+        -------
+        v_shear : numpy.ndarray
+        """
+        v_shear = np.matmul(
+            self.params[..., np.newaxis, 7::],
+            from_6x6_to_21x1(E_shear)
         )[..., 0, 0]
+        return v_shear
+
+    @auto_attr
+    def v_iso(self):
+        """Total isotropic variance.
+
+        Returns
+        -------
+        v_iso : numpy.ndarray
+        """
+        v_iso = np.matmul(
+            self.params[..., np.newaxis, 7::],
+            from_6x6_to_21x1(E_iso)
+        )[..., 0, 0]
+        return v_iso
+
+    @auto_attr
+    def d_sq(self):
+        """Diffusion tensor's outer product with itself.
+
+        Returns
+        -------
+        d_sq : numpy.ndarray
+        """
+        d_sq = np.matmul(
+            self.params[..., 1:7, np.newaxis],
+            self.params[..., np.newaxis, 1:7]
+        )
+        return d_sq
+
+    @auto_attr
+    def mean_d_sq(self):
+        """Average of microscopic diffusion tensors' outer products with
+        themselves.
+
+        Returns
+        -------
+        mean_d_sq : numpy.ndarray
+        """
+        mean_d_sq = from_21x1_to_6x6(
+            self.params[..., 7::, np.newaxis]) + self.d_sq
+        return mean_d_sq
+
+    @auto_attr
+    def c_md(self):
+        """Normalized variance of mean diffusivities.
+
+        Returns
+        -------
+        c_md : numpy.ndarray
+        """
+        c_md = self.v_md / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+            from_6x6_to_21x1(E_bulk))[..., 0, 0]
+        return c_md
+
+    @auto_attr
+    def c_mu(self):
+        """Normalized variance of microscopic diffusion tensor eigenvalues.
+
+        Returns
+        -------
+        c_mu : numpy.ndarray
+        """
+        c_mu = (1.5 * np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+            from_6x6_to_21x1(E_shear)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+            from_6x6_to_21x1(E_iso)))[..., 0, 0]
+        return c_mu
+
+    @auto_attr
+    def ufa(self):
+        """Microscopic fractional anisotropy.
+
+        Returns
+        -------
+        ufa : numpy.ndarray
+        """
+        ufa = np.sqrt(self.c_mu)
+        return ufa
+
+    @auto_attr
+    def c_m(self):
+        """Normalized variance of diffusion tensor eigenvalues.
+
+        Returns
+        -------
+        c_m : numpy.ndarray
+        """
+        c_m = (1.5 * np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_shear)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_iso)))[..., 0, 0]
+        return c_m
+
+    @auto_attr
+    def fa(self):
+        """Fractional anisotropy.
+
+        Returns
+        -------
+        fa : numpy.ndarray
+        """
+        fa = np.sqrt(self.c_m)
+        return fa
+
+    @auto_attr
+    def c_c(self):
+        """Microscopic orientation coherence.
+
+        Returns
+        -------
+        c_c : numpy.ndarray
+        """
+        c_c = self.c_m / self.c_mu
+        return c_c
+
+    @auto_attr
+    def fa(self):
+        """Fractional anisotropy.
+
+        Returns
+        -------
+        fa : numpy.ndarray
+        """
+        fa = np.sqrt(self.c_m)
+        return fa
+
+    @auto_attr
+    def mk(self):
+        """Total kurtosis.
+
+        Returns
+        -------
+        mk : numpy.ndarray
+        """
+        mk = (3 * np.matmul(
+            self.params[..., np.newaxis, 7::],
+            from_6x6_to_21x1(E_tsym)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        return mk
+
+    @auto_attr
+    def k_bulk(self):
+        """Bulk kurtosis.
+
+        Returns
+        -------
+        k_bulk : numpy.ndarray
+        """
+        k_bulk = (3 * np.matmul(
+            self.params[..., np.newaxis, 7::],
+            from_6x6_to_21x1(E_bulk)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        return k_bulk
+
+    @auto_attr
+    def k_shear(self):
+        """Shear kurtosis.
+
+        Returns
+        -------
+        k_shear : numpy.ndarray
+        """
+        k_shear = (6 / 5 * np.matmul(
+            self.params[..., np.newaxis, 7::],
+            from_6x6_to_21x1(E_shear)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        return k_shear
+
+    @auto_attr
+    def k_mu(self):
+        """Microscopic kurtosis.
+
+        Returns
+        -------
+        k_mu : numpy.ndarray
+        """
+        k_mu = (6 / 5 * np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.mean_d_sq), -1, -2),
+            from_6x6_to_21x1(E_shear)) / np.matmul(
+            np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
+            from_6x6_to_21x1(E_bulk)))[..., 0, 0]
+        return k_mu
