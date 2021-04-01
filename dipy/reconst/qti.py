@@ -130,6 +130,28 @@ E_shear = E_iso - E_bulk
 E_tsym = E_bulk + .4 * E_shear
 
 
+def design_matrix(btens):
+    """Calculate the QTI design matrix from the b-tensors.
+
+    Parameters
+    ----------
+    btens : numpy.ndarray
+        An array of b-tensors of shape (number of acquisitions, 3, 3).
+    
+    Returns
+    -------
+    X : numpy.ndarray
+        QTI design matrix.
+    """
+    X = np.zeros((btens.shape[0], 28))
+    for i, bten in enumerate(btens):
+        b = from_3x3_to_6x1(bten)
+        b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
+        X[i] = np.concatenate(
+            ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
+    return X
+
+
 def _ols_fit(data, mask, X):
     """Estimate the QTI model parameters using ordinary least squares.
 
@@ -179,7 +201,7 @@ def _wls_fit(data, mask, X):
     params : numpy.ndarray
         Array of shape (..., 28) containing the estimated model parameters.
         Element 0 is the estimated signal without diffusion-weighting, elements
-        1-6 are the estimated diffusion tensor parameters, and elements 7-28 are
+        1-6 are the estimated diffusion tensor parameters, and elements 7-27 are
         the estimated covariance tensor parameters.
     """
     params = np.zeros(mask.shape + (28,)) * np.nan
@@ -220,18 +242,13 @@ class QtiModel(ReconstModel):
             raise ValueError(
                 'QTI requires b-tensors to be defined in the gradient table.'
             )
-        self.X = np.zeros((self.gtab.btens.shape[0], 28))
-        for i, bten in enumerate(self.gtab.btens):  # Define design matrix
-            b = from_3x3_to_6x1(bten)
-            b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
-            self.X[i] = np.concatenate(
-                ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
+        self.X = design_matrix(self.gtab.btens)
         rank = np.linalg.matrix_rank(np.matmul(self.X.T, self.X))
-        if rank <= 28:
+        if rank < 28:
             warn(
                 'The combination of the b-tensor shapes, sizes, and ' +
                 'orientations does not enable all elements of the covariance ' +
-                'tensor to be estimated (rank(X.T, X) = %s).' % rank
+                'tensor to be estimated (rank(X.T, X) = %s < 28).' % rank
             )
 
         if fit_method != 'OLS' and fit_method != 'WLS':
@@ -282,7 +299,7 @@ class QtiFit(object):
             Array of shape (..., 28) containing the estimated model parameters.
             Element 0 is the estimated signal without diffusion-weighting,
             elements 1-6 are the estimated diffusion tensor parameters, and
-            elements 7-28 are the estimated covariance tensor parameters.
+            elements 7-27 are the estimated covariance tensor parameters.
         """
         self.params = params
         return
