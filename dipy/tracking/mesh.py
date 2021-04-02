@@ -36,9 +36,9 @@ def random_coordinates_from_surface(nb_triangles, nb_seed, triangles_mask=None,
     # Compute triangles_weight in vts_mask
     if triangles_mask is not None:
         if triangles_weight is None:
-            triangles_weight = triangles_mask.astype(np.float)
+            triangles_weight = triangles_mask.astype(float)
         else:
-            triangles_weight *= triangles_mask.astype(np.float)
+            triangles_weight *= triangles_mask.astype(float)
 
     # Normalize weights to have probability (sum to 1)
     if triangles_weight is not None:
