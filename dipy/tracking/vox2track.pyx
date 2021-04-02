@@ -123,7 +123,7 @@ def streamline_mapping(streamlines, affine=None,
 
     """
     cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
+        cnp.int_t[:, :] voxel_indices
 
     lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
@@ -428,7 +428,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
         # set to find unique voxel points in track
         in_inds = set()
         # the loop below is time-critical
-        for pno in range(t.shape[0]):
+        for pno in range(cnp.PyArray_DIM(t, 0)):
             in_pt = t[pno]
             # Round to voxel coordinates, and set coordinates outside
             # volume to volume edges

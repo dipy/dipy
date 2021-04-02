@@ -389,10 +389,10 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
 
     for i from 0 <= i < lentA:
         t1 = tracksA64[i]
-        t1_ptr = <cnp.float64_t *>t1.data
+        t1_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t1)
         for j from 0 <= j < lentB:
             t2 = tracksB64[j]
-            t2_ptr = <cnp.float64_t *>t2.data
+            t2_ptr = <cnp.float64_t *> cnp.PyArray_DATA(t2)
 
             DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr,t_len)
 
