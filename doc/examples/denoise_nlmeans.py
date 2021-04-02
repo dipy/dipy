@@ -28,7 +28,7 @@ print("vol size", data.shape)
 """
 In order to call ``non_local_means`` first you need to estimate the standard
 deviation of the noise. We use N=32 since the Stanford dataset was acquired
-on a scanner with a 32 array head coil.
+on a 3T GE scanner with a 32 array head coil.
 """
 
 sigma = estimate_sigma(data, N=32)
