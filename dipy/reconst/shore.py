@@ -9,7 +9,7 @@ from scipy.special import genlaguerre, gamma, hyp2f1
 
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import real_sph_harm
+from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.core.geometry import cart2sphere
 
 from dipy.utils.optpkg import optional_package
@@ -554,7 +554,8 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     for l in range(0, radial_order + 1, 2):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
-                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                M[:, counter] = real_sh_descoteaux_from_index(
+                    m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     _kappa(zeta, n, l) * \
@@ -595,7 +596,8 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
     for l in range(0, radial_order + 1, 2):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
-                psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                psi[:, counter] = real_sh_descoteaux_from_index(
+                    m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
                                                 zeta * r ** 2) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
@@ -643,7 +645,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
                 upsilon[:, counter] = (-1) ** (n - l / 2.0) * \
                     _kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
-                    real_sph_harm(m, l, theta, phi)
+                    real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
 
     return upsilon

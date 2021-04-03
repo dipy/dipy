@@ -15,7 +15,7 @@ from dipy.sims.voxel import single_tensor
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
+from dipy.reconst.shm import (sph_harm_ind_list, real_sh_descoteaux_from_index,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
@@ -158,7 +158,7 @@ class AxSymShResponse(object):
         """A basis that maps the response coefficients onto a sphere."""
         theta = sphere.theta[:, None]
         phi = sphere.phi[:, None]
-        return real_sph_harm(self.m, self.n, theta, phi)
+        return real_sh_descoteaux_from_index(self.m, self.n, theta, phi)
 
     def on_sphere(self, sphere):
         """Evaluates the response function on sphere."""
@@ -242,7 +242,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        self.B_dwi = real_sh_descoteaux_from_index(
+            m, n, theta[:, None], phi[:, None])
 
         # for the sphere used in the regularization positivity constraint
         self.sphere = reg_sphere or small_sphere
@@ -252,7 +253,8 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             self.sphere.y,
             self.sphere.z
         )
-        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        self.B_reg = real_sh_descoteaux_from_index(
+            m, n, theta[:, None], phi[:, None])
 
         self.response = response
         if isinstance(response, AxSymShResponse):
@@ -393,7 +395,8 @@ class ConstrainedSDTModel(SphHarmModel):
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        self.B_dwi = real_sh_descoteaux_from_index(
+            m, n, theta[:, None], phi[:, None])
 
         # for the odf sphere
         if reg_sphere is None:
@@ -406,7 +409,8 @@ class ConstrainedSDTModel(SphHarmModel):
             self.sphere.y,
             self.sphere.z
         )
-        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        self.B_reg = real_sh_descoteaux_from_index(
+            m, n, theta[:, None], phi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, n)
 
@@ -1167,7 +1171,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
             x, y, z = rot_gradients[where_dwi].T
             r, theta, phi = cart2sphere(x, y, z)
             # for the gradient sphere
-            B_dwi = real_sph_harm(0, n, theta[:, None], phi[:, None])
+            B_dwi = real_sh_descoteaux_from_index(
+                0, n, theta[:, None], phi[:, None])
             r_sh_all += np.linalg.lstsq(B_dwi, data[num_vox, where_dwi],
                                         rcond=-1)[0]
 

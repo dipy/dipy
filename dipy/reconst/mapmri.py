@@ -13,7 +13,7 @@ except ImportError:
     from scipy.misc import factorial2
 from math import factorial as mfactorial
 from dipy.core.geometry import cart2sphere
-from dipy.reconst.shm import real_sph_harm, sph_harm_ind_list
+from dipy.reconst.shm import real_sh_descoteaux_from_index, sph_harm_ind_list
 import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
@@ -610,7 +610,7 @@ class MapmriFit(ReconstFit):
                                         direction[:, 2])
 
             rtpp = self._mapmri_coef * (1 / self.mu[0]) *\
-                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                rtpp_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
 
             return rtpp.sum()
@@ -661,7 +661,7 @@ class MapmriFit(ReconstFit):
             r, theta, phi = cart2sphere(direction[:, 0],
                                         direction[:, 1], direction[:, 2])
             rtap_vec = self._mapmri_coef * (1 / self.mu[0] ** 2) *\
-                rtap_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                rtap_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
             rtap = rtap_vec.sum()
         return rtap
@@ -1354,7 +1354,7 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
             l = n + 2 - 2 * j
             const = mapmri_isotropic_radial_signal_basis(j, l, mu, qval)
             for m in range(-l, l+1):
-                M[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                M[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
     return M
 
@@ -1408,7 +1408,7 @@ def mapmri_isotropic_M_mu_independent(radial_order, q):
                 (2 * np.pi ** 2 * qval ** 2) ** (l / 2)
             for m in range(-1 * (n + 2 - 2 * j), (n + 3 - 2 * j)):
                 Q_mu_independent[:, counter] = const * \
-                    real_sph_harm(m, l, theta, phi)
+                    real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
     return Q_mu_independent
 
@@ -1472,7 +1472,7 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
             l = n + 2 - 2 * j
             const = mapmri_isotropic_radial_pdf_basis(j, l, mu, r)
             for m in range(-l, l + 1):
-                K[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                K[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
     return K
 
@@ -1526,7 +1526,7 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
                 (np.sqrt(2) * np.pi) ** (-1) *\
                 (r ** 2 / 2) ** (l / 2)
             for m in range(-l, l+1):
-                K[:, counter] = const * real_sph_harm(m, l, theta, phi)
+                K[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
     return K
 
@@ -1614,7 +1614,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
                     (mfactorial(k) * 0.5 ** ((l + s + 3) / 2.0 + k))
             for m in range(-l, l + 1):
                 odf_mat[:, counter] = kappa * matsum *\
-                    real_sph_harm(m, l, theta, phi)
+                    real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
 
     return odf_mat

@@ -47,7 +47,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
     m, n = shm.sph_harm_ind_list(sh_order)
-    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
+    B = shm.real_sh_descoteaux_from_index(m, n, theta[:, None], phi[:, None])
     B[np.ix_(gtab.b0s_mask, n > 0)] = 0.
 
     iso = np.empty([B.shape[0], iso_comp])
@@ -473,8 +473,8 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     big_sphere = sphere.subdivide()
     theta, phi = big_sphere.theta, big_sphere.phi
 
-    B = shm.real_sph_harm(m, n, theta[:, None], phi[:, None])
-    A = shm.real_sph_harm(0, 0, 0, 0)
+    B = shm.real_sh_descoteaux_from_index(m, n, theta[:, None], phi[:, None])
+    A = shm.real_sh_descoteaux_from_index(0, 0, 0, 0)
 
     response = np.empty([len(bvals), len(n) + 2])
 
