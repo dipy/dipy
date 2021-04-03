@@ -20,7 +20,7 @@ from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
 
 
-from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
+from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
                               order_from_ncoef, OpdtModel,
@@ -63,7 +63,7 @@ def test_sph_harm_ind_list():
     assert_true(np.all(np.abs(m_list) <= n_list))
 
 
-def test_real_sph_harm():
+def test_real_sh_descoteaux_from_index():
     # Tests derived from tables in
     # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
     # where real spherical harmonic $Y^m_n$ is defined to be:
@@ -71,7 +71,7 @@ def test_real_sph_harm():
     #    $Y^m_n$                 if m == 0
     #    Imag($Y^m_n$) * sqrt(2) if m < 0
 
-    rsh = real_sph_harm
+    rsh = real_sh_descoteaux_from_index
     pi = np.pi
     sqrt = np.sqrt
     sin = np.sin

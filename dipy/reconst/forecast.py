@@ -5,7 +5,7 @@ from distutils.version import LooseVersion
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.csdeconv import csdeconv
-from dipy.reconst.shm import real_sph_harm
+from dipy.reconst.shm import real_sh_descoteaux_from_index
 from scipy.special import gamma, hyp1f1
 from dipy.core.geometry import cart2sphere
 from dipy.data import default_sphere
@@ -474,7 +474,8 @@ def rho_matrix(sh_order, vecs):
     counter = 0
     for l in range(0, sh_order + 1, 2):
         for m in range(-l, l + 1):
-            rho[:, counter] = real_sph_harm(m, l, theta, phi)
+            rho[:, counter] = real_sh_descoteaux_from_index(
+                m, l, theta, phi)
             counter += 1
     return rho
 

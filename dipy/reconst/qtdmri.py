@@ -14,7 +14,7 @@ try:  # preferred scipy >= 0.14, required scipy >= 1.0
 except ImportError:
     from scipy.misc import factorial, factorial2
 from scipy.optimize import fmin_l_bfgs_b
-from dipy.reconst.shm import real_sph_harm
+from dipy.reconst.shm import real_sh_descoteaux_from_index
 import dipy.reconst.dti as dti
 from dipy.utils.optpkg import optional_package
 import random
@@ -735,7 +735,7 @@ class QtdmriFit():
                                         direction[:, 2])
 
             rtpp = mapmri_coef * (1 / self.us[0]) *\
-                rtpp_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                rtpp_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
             return rtpp.sum()
 
@@ -800,7 +800,7 @@ class QtdmriFit():
             r, theta, phi = cart2sphere(direction[:, 0],
                                         direction[:, 1], direction[:, 2])
             rtap_vec = mapmri_coef * (1 / self.us[0] ** 2) *\
-                rtap_vec * real_sph_harm(ind_mat[:, 2], ind_mat[:, 1],
+                rtap_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
             rtap = rtap_vec.sum()
         return rtap
@@ -1427,7 +1427,7 @@ def angular_basis_opt(l, m, q, theta, phi):
     const = (
         (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
         (2 * np.pi ** 2 * q ** 2) ** (l / 2) *
-        real_sph_harm(m, l, theta, phi)
+        real_sh_descoteaux_from_index(m, l, theta, phi)
     )
     return const
 
@@ -1444,7 +1444,8 @@ def radial_basis_EAP_opt(j, l, us, r):
 def angular_basis_EAP_opt(j, l, m, r, theta, phi):
     angular_part = (
         (-1) ** (j - 1) * (np.sqrt(2) * np.pi) ** (-1) *
-        (r ** 2 / 2) ** (l / 2) * real_sph_harm(m, l, theta, phi)
+        (r ** 2 / 2) ** (l / 2) * real_sh_descoteaux_from_index(
+            m, l, theta, phi)
     )
     return angular_part
 
