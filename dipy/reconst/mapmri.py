@@ -610,7 +610,8 @@ class MapmriFit(ReconstFit):
                                         direction[:, 2])
 
             rtpp = self._mapmri_coef * (1 / self.mu[0]) *\
-                rtpp_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
+                rtpp_vec * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1],
                                          theta, phi)
 
             return rtpp.sum()
@@ -661,8 +662,8 @@ class MapmriFit(ReconstFit):
             r, theta, phi = cart2sphere(direction[:, 0],
                                         direction[:, 1], direction[:, 2])
             rtap_vec = self._mapmri_coef * (1 / self.mu[0] ** 2) *\
-                rtap_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
-                                         theta, phi)
+                rtap_vec * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1], theta, phi)
             rtap = rtap_vec.sum()
         return rtap
 
@@ -1354,7 +1355,8 @@ def mapmri_isotropic_phi_matrix(radial_order, mu, q):
             l = n + 2 - 2 * j
             const = mapmri_isotropic_radial_signal_basis(j, l, mu, qval)
             for m in range(-l, l+1):
-                M[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
+                M[:, counter] = const * real_sh_descoteaux_from_index(
+                    m, l, theta, phi)
                 counter += 1
     return M
 
@@ -1472,7 +1474,8 @@ def mapmri_isotropic_psi_matrix(radial_order, mu, rgrad):
             l = n + 2 - 2 * j
             const = mapmri_isotropic_radial_pdf_basis(j, l, mu, r)
             for m in range(-l, l + 1):
-                K[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
+                K[:, counter] = const * real_sh_descoteaux_from_index(
+                    m, l, theta, phi)
                 counter += 1
     return K
 
@@ -1526,7 +1529,8 @@ def mapmri_isotropic_K_mu_independent(radial_order, rgrad):
                 (np.sqrt(2) * np.pi) ** (-1) *\
                 (r ** 2 / 2) ** (l / 2)
             for m in range(-l, l+1):
-                K[:, counter] = const * real_sh_descoteaux_from_index(m, l, theta, phi)
+                K[:, counter] = const * real_sh_descoteaux_from_index(
+                    m, l, theta, phi)
                 counter += 1
     return K
 
