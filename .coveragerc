@@ -5,7 +5,17 @@ include = */dipy/*
 omit =
     */setup.py
     */benchmarks/*
+    */tests/*
 disable_warnings = include-ignored
 
 [report]
 show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
