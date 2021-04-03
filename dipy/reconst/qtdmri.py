@@ -735,8 +735,8 @@ class QtdmriFit():
                                         direction[:, 2])
 
             rtpp = mapmri_coef * (1 / self.us[0]) *\
-                rtpp_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
-                                         theta, phi)
+                rtpp_vec * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1], theta, phi)
             return rtpp.sum()
 
     def rtap(self, tau):
@@ -800,8 +800,8 @@ class QtdmriFit():
             r, theta, phi = cart2sphere(direction[:, 0],
                                         direction[:, 1], direction[:, 2])
             rtap_vec = mapmri_coef * (1 / self.us[0] ** 2) *\
-                rtap_vec * real_sh_descoteaux_from_index(ind_mat[:, 2], ind_mat[:, 1],
-                                         theta, phi)
+                rtap_vec * real_sh_descoteaux_from_index(
+                    ind_mat[:, 2], ind_mat[:, 1], theta, phi)
             rtap = rtap_vec.sum()
         return rtap
 
