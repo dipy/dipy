@@ -27,7 +27,7 @@ print("vol size", data.shape)
 
 """
 In order to call ``non_local_means`` first you need to estimate the standard
-deviation of the noise. We use N=32 since the Standford dataset was acquired
+deviation of the noise. We use N=32 since the Stanford dataset was acquired
 on a scanner with a 32 array head coil.
 """
 
