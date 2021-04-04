@@ -27,7 +27,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
-                              real_sym_sh_basis, sph_harm_ind_list)
+                              real_sh_descoteaux, sph_harm_ind_list)
 from dipy.reconst.shm import lazy_index
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.io.gradients import read_bvals_bvecs
@@ -577,7 +577,7 @@ def test_default_lambda_csdmodel():
                 npt.assert_("Number of parameters required " in str(w[0].
                                                                     message))
 
-        B_reg, _, _ = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
+        B_reg, _, _ = real_sh_descoteaux(sh_order, sphere.theta, sphere.phi)
         npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
