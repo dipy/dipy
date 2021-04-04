@@ -227,7 +227,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
         multiplier_matrix = _inflate_response(response, gtab, n, delta)
 
         r, theta, phi = geo.cart2sphere(*reg_sphere.vertices.T)
-        odf_reg, _, _ = shm.real_sym_sh_basis(sh_order, theta, phi)
+        odf_reg, _, _ = shm.real_sh_descoteaux(sh_order, theta, phi)
         reg = np.zeros([i + iso for i in odf_reg.shape])
         reg[:iso, :iso] = np.eye(iso)
         reg[iso:, iso:] = odf_reg

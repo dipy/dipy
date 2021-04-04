@@ -17,7 +17,7 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.shm import (sph_harm_ind_list, real_sh_descoteaux_from_index,
                               sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
+                              real_sh_descoteaux, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
 from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 
@@ -319,7 +319,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         else:
             x, y, z = gtab.gradients[~gtab.b0s_mask].T
             r, theta, phi = cart2sphere(x, y, z)
-            SH_basis, m, n = real_sym_sh_basis(self.sh_order, theta, phi)
+            SH_basis, m, n = real_sh_descoteaux(self.sh_order, theta, phi)
 
         # Because R is diagonal, the matrix multiply is written as a multiply
         predict_matrix = SH_basis * self.R.diagonal()
