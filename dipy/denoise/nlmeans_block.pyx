@@ -94,7 +94,6 @@ cdef void _average_block(double[:, :, :] ima, int x, int y, int z,
 
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
-    cdef int count = 0
     cdef int neighborhoodsize = average.shape[0] // 2
     for a in range(average.shape[0]):
         for b in range(average.shape[1]):

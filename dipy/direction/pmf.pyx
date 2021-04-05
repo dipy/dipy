@@ -3,7 +3,7 @@
 # cython: wraparound=False
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.core.geometry import cart2sphere
 from dipy.reconst import shm
@@ -25,8 +25,8 @@ cdef class PmfGen:
 
     cdef void __clear_pmf(self):
         cdef:
-            size_t len_pmf = self.pmf.shape[0]
-            size_t i
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp i
 
         for i in range(len_pmf):
             self.pmf[i] = 0.0
@@ -70,9 +70,9 @@ cdef class SHCoeffPmfGen(PmfGen):
 
     cdef double[:] get_pmf_c(self, double* point):
         cdef:
-            size_t i, j
-            size_t len_pmf = self.pmf.shape[0]
-            size_t len_B = self.B.shape[1]
+            cnp.npy_intp i, j
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp len_B = self.B.shape[1]
             double _sum
 
         if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:

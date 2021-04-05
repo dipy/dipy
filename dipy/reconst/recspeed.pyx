@@ -254,8 +254,8 @@ def local_maxima(double[:] odf, cnp.uint16_t[:, :] edges):
 cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
     """Sorts `A` in-place and applies the same reordering to `B`"""
     cdef:
-        size_t n = A.shape[0]
-        size_t hole
+        cnp.npy_intp n = A.shape[0]
+        cnp.npy_intp hole
         double insert_A
         long insert_B
 
@@ -298,9 +298,9 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
             -2 : odf contains nans
     """
     cdef:
-        size_t lenedges = edges.shape[0]
-        size_t lenodf = odf.shape[0]
-        size_t i
+        cnp.npy_intp lenedges = edges.shape[0]
+        cnp.npy_intp lenodf = odf.shape[0]
+        cnp.npy_intp i
         cnp.uint16_t find0, find1
         double odf0, odf1
         long count = 0

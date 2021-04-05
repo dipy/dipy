@@ -224,7 +224,7 @@ def cut_plane(tracks, ref):
     [[ 2.          2.5         0.          0.70710677  0.        ]]
     """
     cdef:
-        size_t n_hits, hit_no, max_hit_len
+        cnp.npy_intp n_hits, hit_no, max_hit_len
         float alpha,beta,lrq,rcd,lhp,ld
         cnp.ndarray[cnp.float32_t, ndim=2] ref32
         cnp.ndarray[cnp.float32_t, ndim=2] track
@@ -238,9 +238,9 @@ def cut_plane(tracks, ref):
     # convert all the tracks to something we can work with.  Get track
     # lengths
     cdef:
-        size_t N_tracks=len(tracks)
+        cnp.npy_intp N_tracks=len(tracks)
         cnp.ndarray[cnp.uint64_t, ndim=1] track_lengths
-        size_t t_no, N_track
+        cnp.npy_intp t_no, N_track
     cdef object tracks32 = []
     track_lengths = np.empty((N_tracks,), dtype=np.uint64)
     for t_no in range(N_tracks):
@@ -249,8 +249,8 @@ def cut_plane(tracks, ref):
         tracks32.append(track)
     # set up loop across reference fiber points
     cdef:
-        size_t N_ref = cnp.PyArray_DIM(ref32, 0)
-        size_t p_no, q_no
+        cnp.npy_intp N_ref = cnp.PyArray_DIM(ref32, 0)
+        cnp.npy_intp p_no, q_no
         float *this_ref_p
         float *next_ref_p
         float *this_trk_p
@@ -399,7 +399,7 @@ def most_similar_track_mam(tracks,metric='avg'):
     si holds the index of the track with min {avg,min,max} average metric
     """
     cdef:
-        size_t i, j, lent
+        cnp.npy_intp i, j, lent
         int metric_type
     if metric=='avg':
         metric_type = 0
@@ -411,7 +411,7 @@ def most_similar_track_mam(tracks,metric='avg'):
         raise ValueError('Metric should be one of avg, min, max')
     # preprocess tracks
     cdef:
-        size_t longest_track_len = 0, track_len
+        cnp.npy_intp longest_track_len = 0, track_len
         cnp.ndarray[object, ndim=1] tracks32
     lent = len(tracks)
     tracks32 = np.zeros((lent,), dtype=object)
@@ -440,7 +440,7 @@ def most_similar_track_mam(tracks,metric='avg'):
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
     for i from 0 <= i < lent-1:
         t1 = tracks32[i]
         t1_len = cnp.PyArray_DIM(t1, 0)
@@ -455,7 +455,7 @@ def most_similar_track_mam(tracks,metric='avg'):
             sum_track2others[j]+=distance
     # find track with smallest summed metric with other tracks
     cdef double mn = sum_track2others[0]
-    cdef size_t si = 0
+    cdef cnp.npy_intp si = 0
     for i in range(lent):
         if sum_track2others[i] < mn:
             si = i
@@ -496,7 +496,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
 
     """
     cdef:
-        size_t i, j, lentA, lentB
+        cnp.npy_intp i, j, lentA, lentB
         int metric_type
     if metric=='avg':
         metric_type = 0
@@ -508,8 +508,8 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         raise ValueError('Metric should be one of avg, min, max')
     # preprocess tracks
     cdef:
-        size_t longest_track_len = 0, track_len
-        size_t longest_track_lenA = 0, longest_track_lenB = 0
+        cnp.npy_intp longest_track_len = 0, track_len
+        cnp.npy_intp longest_track_lenA = 0, longest_track_lenB = 0
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
         cnp.ndarray[cnp.double_t, ndim=2] DM
@@ -548,7 +548,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
     for i from 0 <= i < lentA:
         t1 = tracksA32[i]
         t1_len = cnp.PyArray_DIM(t1, 0)
@@ -587,10 +587,10 @@ def bundles_distances_mdf(tracksA, tracksB):
 
     """
     cdef:
-        size_t i, j, lentA, lentB
+        cnp.npy_intp i, j, lentA, lentB
     # preprocess tracks
     cdef:
-        size_t longest_track_len = 0, track_len
+        cnp.npy_intp longest_track_len = 0, track_len
         longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
@@ -619,7 +619,7 @@ def bundles_distances_mdf(tracksA, tracksB):
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
         float d[2]
     t_len = tracksA32[0].shape[0]
 
@@ -645,9 +645,9 @@ def bundles_distances_mdf(tracksA, tracksB):
 cdef cnp.float32_t inf = np.inf
 
 @cython.cdivision(True)
-cdef inline cnp.float32_t czhang(size_t t1_len,
+cdef inline cnp.float32_t czhang(cnp.npy_intp t1_len,
                                  cnp.float32_t *track1_ptr,
-                                 size_t t2_len,
+                                 cnp.npy_intp t2_len,
                                  cnp.float32_t *track2_ptr,
                                  cnp.float32_t *min_buffer,
                                  int metric_type) nogil:
@@ -662,7 +662,7 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
                   min_t2t1,
                   min_t1t2)
     cdef:
-        size_t t1_pi, t2_pi
+        cnp.npy_intp t1_pi, t2_pi
         cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0, dist_val = 0
     for t1_pi from 0<= t1_pi < t1_len:
         mean_t1t2+=min_t1t2[t1_pi]
@@ -685,9 +685,9 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
     return dist_val
 
 @cython.cdivision(True)
-cdef inline void min_distances(size_t t1_len,
+cdef inline void min_distances(cnp.npy_intp t1_len,
                                cnp.float32_t *track1_ptr,
-                               size_t t2_len,
+                               cnp.npy_intp t2_len,
                                cnp.float32_t *track2_ptr,
                                cnp.float32_t *min_t2t1,
                                cnp.float32_t *min_t1t2) nogil:
@@ -696,7 +696,7 @@ cdef inline void min_distances(size_t t1_len,
         cnp.float32_t *t2_pt
         cnp.float32_t d0, d1, d2
         cnp.float32_t delta2
-        size_t t1_pi, t2_pi
+        cnp.npy_intp t1_pi, t2_pi
     for t2_pi from 0<= t2_pi < t2_len:
         min_t2t1[t2_pi] = inf
     for t1_pi from 0<= t1_pi < t1_len:
@@ -775,7 +775,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
     cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track1
         cnp.ndarray[cnp.float32_t, ndim=2] track2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
     track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
     t1_len = cnp.PyArray_DIM(track1, 0)
     track2 = np.ascontiguousarray(xyz2, dtype=f32_dt)
@@ -793,7 +793,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
                   min_t2t1,
                   min_t1t2)
     cdef:
-        size_t t1_pi, t2_pi
+        cnp.npy_intp t1_pi, t2_pi
         cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0
     for t1_pi from 0<= t1_pi < t1_len:
         mean_t1t2+=min_t1t2[t1_pi]
@@ -844,7 +844,7 @@ def minimum_closest_distance(xyz1,xyz2):
     cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track1
         cnp.ndarray[cnp.float32_t, ndim=2] track2
-        size_t t1_len, t2_len
+        cnp.npy_intp t1_len, t2_len
     track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
     t1_len = cnp.PyArray_DIM(track1, 0)
     track2 = np.ascontiguousarray(xyz2, dtype=f32_dt)
@@ -862,7 +862,7 @@ def minimum_closest_distance(xyz1,xyz2):
                   min_t2t1,
                   min_t1t2)
     cdef:
-        size_t t1_pi, t2_pi
+        cnp.npy_intp t1_pi, t2_pi
         double min_min_t2t1 = inf
         double min_min_t1t2 = inf
     for t1_pi in range(t1_len):
@@ -1106,13 +1106,13 @@ def approx_polygon_track(xyz,alpha=0.392):
     next point.
     """
     cdef :
-        size_t mid_index
+        cnp.npy_intp mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track
         float *fvec0
         float *fvec1
         float *fvec2
         object characteristic_points
-        size_t t_len
+        cnp.npy_intp t_len
         double angle,tmp
         float vec0[3]
         float vec1[3]
@@ -1169,7 +1169,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
         int start_index,length,current_index, i
         double cost_par,cost_nopar,alphac
         object characteristic_points
-        size_t t_len
+        cnp.npy_intp t_len
         cnp.ndarray[cnp.float32_t, ndim=2] track
         float tmp[3]
         cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
