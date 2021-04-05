@@ -141,9 +141,8 @@ cdef inline float wght(int i, float r) nogil:
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def trilinear_interp(np.ndarray[np.float32_t, ndim=4, mode='strided'] data,
-                     np.ndarray[np.float_t, ndim=1, mode='strided'] index,
-                     np.ndarray[np.float_t, ndim=1, mode='c'] voxel_size):
+def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
+                     cython.floating[::1] voxel_size):
     """Interpolates vector from 4D `data` at 3D point given by `index`
 
     Interpolates a vector of length T from a 4D volume of shape (I, J, K, T),
@@ -159,6 +158,7 @@ def trilinear_interp(np.ndarray[np.float32_t, ndim=4, mode='strided'] data,
         size_t last_d = data.shape[3]
         bint bounds_check
         np.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+
     bounds_check = (x < 0 or y < 0 or z < 0 or
                     x > data.shape[0] or
                     y > data.shape[1] or
@@ -222,13 +222,13 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,
         cnp.npy_intp *strides = <cnp.npy_intp *> cnp.PyArray_DATA(data_strides)
         double *rs=<double *> cnp.PyArray_DATA(result)
 
-    if not cnp.PyArray_CHKFLAGS(data, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(data, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"data is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(points, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(points, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"points is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(data_strides, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(data_strides, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"data_strides is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(result, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(result, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"result is not C contiguous")
     with nogil:
         for i in range(len_points):

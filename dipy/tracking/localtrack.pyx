@@ -161,6 +161,7 @@ cdef int _local_tracker(DirectionGetter dg,
                         StreamlineStatus* stream_status):
     cdef:
         size_t i
+        size_t len_streamlines = streamline.shape[0]
         double point[3]
         double voxdir[3]
         void (*step)(double*, double*, double) nogil
@@ -174,7 +175,7 @@ cdef int _local_tracker(DirectionGetter dg,
     copy_point(seed, &streamline[0,0])
 
     stream_status[0] = TRACKPOINT
-    for i in range(1, streamline.shape[0]):
+    for i in range(1, len_streamlines):
         if dg.get_direction_c(point, dir):
             break
         for j in range(3):

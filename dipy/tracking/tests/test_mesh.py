@@ -52,7 +52,7 @@ def test_surface_seeds():
     for i in range(len(cube_tri)):
         tri_mask = np.zeros([len(cube_tri)])
         tri_mask[i] = 1.0
-        tri_maskb = tri_mask.astype(np.bool)
+        tri_maskb = tri_mask.astype(bool)
         t_idx, _ = random_coordinates_from_surface(nb_tri, nb_seed,
                                                    triangles_mask=tri_maskb)
         npt.assert_array_equal(t_idx, i)
