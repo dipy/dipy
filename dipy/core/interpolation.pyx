@@ -1,7 +1,6 @@
 # cython: boundscheck=False, wraparound=False, cdivision=True
 
 cimport cython
-cimport numpy as np
 cimport numpy as cnp
 
 import numpy as np
@@ -108,7 +107,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     offset : integer
         Element position in array
     """
-    cdef int i
+    cdef cnp.npy_intp i
     cdef cnp.npy_intp summ = 0
     for i from 0 <= i < lenind:
         summ += strides[i] * indices[i]
@@ -116,7 +115,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     return summ
 
 
-cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
+cdef void splitoffset(float *offset, cnp.npy_intp *index, cnp.npy_intp shape) nogil:
     """Splits a global offset into an integer index and a relative offset"""
     offset[0] -= .5
     if offset[0] <= 0:
@@ -126,7 +125,7 @@ cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
         index[0] = shape - 2
         offset[0] = 1.
     else:
-        index[0] = <size_t> offset[0]
+        index[0] = <cnp.npy_intp> offset[0]
         offset[0] = offset[0] - index[0]
 
 
@@ -154,10 +153,10 @@ def trilinear_interp(cnp.float32_t[:, :, :, :] data, cython.floating[:] index,
         float y = index[1] / voxel_size[1]
         float z = index[2] / voxel_size[2]
         float weight
-        size_t x_ind, y_ind, z_ind, ii, jj, kk, LL
-        size_t last_d = data.shape[3]
+        cnp.npy_intp x_ind, y_ind, z_ind, ii, jj, kk, LL
+        cnp.npy_intp last_d = data.shape[3]
         bint bounds_check
-        np.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+        cnp.ndarray[cnp.float32_t, ndim=1, mode='c'] result
 
     bounds_check = (x < 0 or y < 0 or z < 0 or
                     x > data.shape[0] or
@@ -321,9 +320,9 @@ cdef int trilinear_interpolate4d_c(
 
     """
     cdef:
-        np.npy_intp flr, N
+        cnp.npy_intp flr, N
         double w, rem
-        np.npy_intp index[3][2]
+        cnp.npy_intp index[3][2]
         double weight[3][2]
 
     if data.shape[3] != result.shape[0]:
@@ -333,7 +332,7 @@ cdef int trilinear_interpolate4d_c(
         if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
             return -1
 
-        flr = <np.npy_intp> floor(point[i])
+        flr = <cnp.npy_intp> floor(point[i])
         rem = point[i] - flr
 
         index[i][0] = flr + (flr == -1)
@@ -356,7 +355,7 @@ cdef int trilinear_interpolate4d_c(
 
 
 cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
-                              np.ndarray out=None):
+                              cnp.ndarray out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters

@@ -2,7 +2,7 @@
 from random import random
 
 cimport cython
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 from .direction_getter cimport DirectionGetter
 from .stopping_criterion cimport(
@@ -86,10 +86,10 @@ cdef void fixed_step(double * point, double * direction, double step_size) nogil
 def local_tracker(
         DirectionGetter dg,
         StoppingCriterion sc,
-        np.float_t[:] seed_pos,
-        np.float_t[:] first_step,
-        np.float_t[:] voxel_size,
-        np.float_t[:, :] streamline,
+        cnp.float_t[:] seed_pos,
+        cnp.float_t[:] first_step,
+        cnp.float_t[:] voxel_size,
+        cnp.float_t[:, :] streamline,
         double step_size,
         int fixedstep):
     """Tracks one direction from a seed.
@@ -127,7 +127,7 @@ def local_tracker(
         Ending state of the streamlines as determined by the StoppingCriterion.
     """
     cdef:
-        size_t i
+        cnp.npy_intp i
         StreamlineStatus stream_status
         double dir[3]
         double vs[3]
@@ -155,13 +155,13 @@ cdef int _local_tracker(DirectionGetter dg,
                         double* seed,
                         double* dir,
                         double* voxel_size,
-                        np.float_t[:, :] streamline,
+                        cnp.float_t[:, :] streamline,
                         double step_size,
                         int fixedstep,
                         StreamlineStatus* stream_status):
     cdef:
-        size_t i
-        size_t len_streamlines = streamline.shape[0]
+        cnp.npy_intp i
+        cnp.npy_intp len_streamlines = streamline.shape[0]
         double point[3]
         double voxdir[3]
         void (*step)(double*, double*, double) nogil
@@ -198,21 +198,21 @@ cdef int _local_tracker(DirectionGetter dg,
 def pft_tracker(
         DirectionGetter dg,
         AnatomicalStoppingCriterion sc,
-        np.float_t[:] seed_pos,
-        np.float_t[:] first_step,
-        np.float_t[:] voxel_size,
-        np.float_t[:, :] streamline,
-        np.float_t[:, :] directions,
+        cnp.float_t[:] seed_pos,
+        cnp.float_t[:] first_step,
+        cnp.float_t[:] voxel_size,
+        cnp.float_t[:, :] streamline,
+        cnp.float_t[:, :] directions,
         double step_size,
         int pft_max_nbr_back_steps,
         int pft_max_nbr_front_steps,
         int pft_max_trials,
         int particle_count,
-        np.float_t[:, :, :, :] particle_paths,
-        np.float_t[:, :, :, :] particle_dirs,
-        np.float_t[:] particle_weights,
-        np.int_t[:, :]  particle_steps,
-        np.int_t[:, :]  particle_stream_statuses):
+        cnp.float_t[:, :, :, :] particle_paths,
+        cnp.float_t[:, :, :, :] particle_dirs,
+        cnp.float_t[:] particle_weights,
+        cnp.int_t[:, :]  particle_steps,
+        cnp.int_t[:, :]  particle_stream_statuses):
     """Tracks one direction from a seed using the particle filtering algorithm.
 
     This function is the main workhorse of the ``ParticleFilteringTracking``
@@ -270,7 +270,7 @@ def pft_tracker(
 
     """
     cdef:
-        size_t i
+        cnp.npy_intp i
         StreamlineStatus stream_status
         double dir[3]
         double vs[3]
@@ -302,19 +302,19 @@ cdef _pft_tracker(DirectionGetter dg,
                   double* seed,
                   double* dir,
                   double* voxel_size,
-                  np.float_t[:, :] streamline,
-                  np.float_t[:, :] directions,
+                  cnp.float_t[:, :] streamline,
+                  cnp.float_t[:, :] directions,
                   double step_size,
                   StreamlineStatus * stream_status,
                   int pft_max_nbr_back_steps,
                   int pft_max_nbr_front_steps,
                   int pft_max_trials,
                   int particle_count,
-                  np.float_t[:, :, :, :] particle_paths,
-                  np.float_t[:, :, :, :] particle_dirs,
-                  np.float_t[:] particle_weights,
-                  np.int_t[:, :] particle_steps,
-                  np.int_t[:, :] particle_stream_statuses):
+                  cnp.float_t[:, :, :, :] particle_paths,
+                  cnp.float_t[:, :, :, :] particle_dirs,
+                  cnp.float_t[:] particle_weights,
+                  cnp.int_t[:, :] particle_steps,
+                  cnp.int_t[:, :] particle_stream_statuses):
     cdef:
         int i, pft_trial, pft_streamline_i, back_steps, front_steps
         int strl_array_len
@@ -384,9 +384,9 @@ cdef _pft_tracker(DirectionGetter dg,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef _pft(np.float_t[:, :] streamline,
+cdef _pft(cnp.float_t[:, :] streamline,
           int streamline_i,
-          np.float_t[:, :] directions,
+          cnp.float_t[:, :] directions,
           DirectionGetter dg,
           AnatomicalStoppingCriterion sc,
           double* voxel_size,
@@ -394,11 +394,11 @@ cdef _pft(np.float_t[:, :] streamline,
           StreamlineStatus * stream_status,
           int pft_nbr_steps,
           int particle_count,
-          np.float_t[:, :, :, :] particle_paths,
-          np.float_t[:, :, :, :] particle_dirs,
-          np.float_t[:] particle_weights,
-          np.int_t[:, :] particle_steps,
-          np.int_t[:, :] particle_stream_statuses):
+          cnp.float_t[:, :, :, :] particle_paths,
+          cnp.float_t[:, :, :, :] particle_dirs,
+          cnp.float_t[:] particle_weights,
+          cnp.int_t[:, :] particle_steps,
+          cnp.int_t[:, :] particle_stream_statuses):
     cdef:
         double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3]
