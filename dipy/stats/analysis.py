@@ -294,8 +294,9 @@ def afq_profile(data, bundle, affine, n_points=100, profile_stat=np.average,
         else:
             # We check that weights *always sum to 1 across streamlines*:
             if not np.allclose(np.sum(weights, 0), np.ones(n_points)):
-                raise ValueError("The sum of weights across streamlines",
-                                " must be equal to 1")
+                raise ValueError(
+                    "The sum of weights across streamlines",
+                    " must be equal to 1")
 
         return profile_stat(values, weights=weights, axis=0)
     else:
