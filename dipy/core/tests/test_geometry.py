@@ -219,6 +219,17 @@ def test_vec2vec_rotmat():
         R = vec2vec_rotmat(a, b)
         assert_array_almost_equal(np.dot(R, a), b)
 
+    a = np.array([0.33950729, 0.92041729, 0.1938216])
+    a_norm = np.linalg.norm(a)
+    print(a_norm)
+    b = np.array([0.40604787, 0.97518325, 0.2057731])
+    b_norm = np.linalg.norm(b)
+    print(b_norm)
+    R = vec2vec_rotmat(a, b)
+    res = np.dot(a, b)
+    if (res > 1):
+        print("cosa is greater than 1!!")
+    tmp = 1
 
 def test_compose_transformations():
 
