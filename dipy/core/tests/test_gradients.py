@@ -14,17 +14,14 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  unique_bvals_magnitude,
                                  unique_bvals_tolerance, unique_bvals,
                                  params_to_btens, btens_to_params)
-
-
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.geometry import vec2vec_rotmat
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def test_unique_bvals_deprecated():
-    with warnings.catch_warnings(record=True) as cw:
-        warnings.simplefilter("always", DeprecationWarning)
-        _ = unique_bvals(np.array([0, 800, 1400, 1401, 1405]))
-        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+    npt.assert_raises(ExpiredDeprecationError, unique_bvals,
+                      np.array([0, 800, 1400, 1401, 1405]))
 
 
 def test_btable_prepare():
@@ -73,6 +70,7 @@ def test_GradientTable():
     expected_bvecs = gradients / (expected_bvals + expected_b0s_mask)[:, None]
 
     gt = GradientTable(gradients, b0_threshold=0)
+    npt.assert_('B-values shape (5,)' in gt.__str__())
     npt.assert_array_almost_equal(gt.bvals, expected_bvals)
     npt.assert_array_equal(gt.b0s_mask, expected_b0s_mask)
     npt.assert_array_almost_equal(gt.bvecs, expected_bvecs)
@@ -141,12 +139,14 @@ def test_GradientTable_btensor_calculation():
             if btens == ('LTE' or 'CTE'):
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]), bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmax(evals)]),
+                                      bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
             elif btens == 'PTE':
                 if bval != 0:
                     evals, evecs = np.linalg.eig(bten)
-                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]), bvec)
+                    dot_prod = np.dot(np.real(evecs[:, np.argmin(evals)]),
+                                      bvec)
                     npt.assert_almost_equal(np.abs(dot_prod), 1)
 
     # Check btens input option 2
@@ -627,7 +627,6 @@ def test_btens_to_params():
         npt.assert_array_almost_equal(i_bdelta, expected_bdeltas[i])
         npt.assert_array_almost_equal(i_b_eta, expected_b_etas[i])
 
-
     # Test function on a 3D input
     base_tensors_array = np.empty((4, 3, 3))
     base_tensors_array[0, :, :] = linear_tensor
@@ -652,7 +651,7 @@ def test_btens_to_params():
         ebs = expected_bvals*scale
 
         # Generate `n_rotations` random 3-element vectors of norm 1
-        v = np.random.random((n_rotations, 3))-0.5
+        v = np.random.random((n_rotations, 3)) - 0.5
         u = np.apply_along_axis(lambda w: w/np.linalg.norm(w), axis=1, arr=v)
 
         for rot_idx in range(n_rotations):
@@ -738,7 +737,3 @@ def test_params_to_btens():
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         npt.assert_raises(ValueError, params_to_btens, bval, bdelta, b_eta)
-
-if __name__ == "__main__":
-    from numpy.testing import run_module_suite
-    run_module_suite()

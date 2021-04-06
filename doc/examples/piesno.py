@@ -84,7 +84,7 @@ save_nifti('mask_piesno.nii.gz', mask.astype(np.uint8), affine)
 
 print('The noise standard deviation is sigma = ', sigma)
 print('The std of the background is =',
-      np.std(data[mask[..., :].astype(np.bool)]))
+      np.std(data[mask[..., :].astype(bool)]))
 
 """
 

@@ -164,7 +164,9 @@ def _extract_3d_patches(arr, patch_radius):
 
 
 def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
-               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False):
+               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
+               b0_denoising=True, clip_negative_vals=False,
+               shift_intensity=True):
     """ Patch2Self Denoiser
 
     Parameters
@@ -200,10 +202,24 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
 
     alpha : float, optional
         Regularization parameter only for ridge regression model.
-        default: 1.0
+        Default: 1.0
 
     verbose : bool, optional
         Show progress of Patch2Self and time taken.
+
+    b0_denoising : bool, optional
+        Skips denoising b0 volumes if set to False.
+        Default: True
+
+    clip_negative_vals : bool, optional
+        Sets negative values after denoising to 0 using `np.clip`.
+        Default: True
+
+    shift_intensity : bool, optional
+        Shifts the distribution of intensities per volume to give
+        non-negative values
+        Default: False
+
 
     Returns
     --------
@@ -218,7 +234,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
-    patch_radius = np.asarray(patch_radius, dtype=np.int)
+    patch_radius = np.asarray(patch_radius, dtype=int)
 
     if not data.ndim == 4:
         raise ValueError("Patch2Self can only denoise on 4D arrays.",
@@ -256,9 +272,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
         t1 = time.time()
 
     # if only 1 b0 volume, skip denoising it
-    if data_b0s.ndim == 3:
-        if verbose is True:
-            print("Only 1 b0 found, b0 denoising skipped...")
+    if data_b0s.ndim == 3 or not b0_denoising:
+        if verbose:
+            print("b0 denoising skipped...")
         denoised_b0s = data_b0s
 
     else:
@@ -314,7 +330,19 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
+    # shift intensities per volume to handle for negative intensities
+    if shift_intensity and not clip_negative_vals:
+        for i in range(0, denoised_arr.shape[3]):
+            shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
+            denoised_arr[..., i] = denoised_arr[..., i] + shift
+
     # clip out the negative values from the denoised output
-    denoised_arr.clip(min=0, out=denoised_arr)
+    elif clip_negative_vals and not shift_intensity:
+        denoised_arr.clip(min=0, out=denoised_arr)
+
+    elif clip_negative_vals and shift_intensity:
+        warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
+        warn('Defaulting to `clip_negative_bvals`...')
+        denoised_arr.clip(min=0, out=denoised_arr)
 
     return np.array(denoised_arr, dtype=out_dtype)

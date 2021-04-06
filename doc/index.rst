@@ -16,19 +16,16 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.3.0** is now available. New features include:
+**DIPY 1.4.0** is now available. New features include:
 
-- Gibbs Ringing correction 10X faster.
-- Spherical harmonics basis definitions updated.
-- Added SMT2 metrics from mean signal diffusion kurtosis.
-- New interface functions added to the registration module.
-- New linear transform added to the registration module.
-- New tutorials for DIPY command line interfaces.
-- Fixed compatibility issues with different dependencies.
-- Tqdm (multiplatform progress bar for data downloading) dependency added.
+- New self-supervised denoising algorithm Patch2Self added.
+- BUAN and RecoBundles documentation updated.
+- Response function refactored and clarified.
+- B-tensor allowed with response functions.
+- Large Command Line Interface (CLI) documentation updated.
+- Public API for Registration added.
 - Large documentation update.
-- Bundle section highlight from BUAN added in Horizon.
-- Closed 134 issues and merged 49 pull requests.
+- Closed 47 issues and merged 19 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -37,9 +34,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.4.0 <release_notes/release1.4>` released March 13, 2021.
 - :doc:`DIPY 1.3.0 <release_notes/release1.3>` released November 3, 2020.
 - :doc:`DIPY 1.2.0 <release_notes/release1.2>` released September 9, 2020.
-- :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
+
 
 
 See some of our :ref:`Past Announcements <old_news>`

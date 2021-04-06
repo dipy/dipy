@@ -1455,7 +1455,7 @@ def convert_sh_to_full_basis(sh_coeffs):
     _, n = sph_harm_ind_list(sh_order, full_basis=True)
 
     full_sh_coeffs =\
-        np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(np.int))
+        np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(int))
     mask = np.mod(n, 2) == 0
 
     full_sh_coeffs[..., mask] = sh_coeffs

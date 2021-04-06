@@ -223,7 +223,7 @@ class ClusterMap(object):
             When `idx`is either a slice, list or boolean array, returns
             a list of `Cluster` objects.
         """
-        if isinstance(idx, np.ndarray) and idx.dtype == np.bool:
+        if isinstance(idx, np.ndarray) and idx.dtype == bool:
             return [self.clusters[i]
                     for i, take_it in enumerate(idx) if take_it]
         elif type(idx) is slice:
@@ -602,7 +602,7 @@ class TreeCluster(ClusterCentroid):
     @property
     def is_leaf(self):
         return len(self.children) == 0
-    
+
     def return_indices(self):
         return self.children
 

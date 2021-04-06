@@ -73,8 +73,8 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
             pair21.append((i, j))
 
     pair21 = np.array(pair21)
-    A = len(pair12) / np.float(len(dtracks0))
-    B = len(pair21) / np.float(len(dtracks1))
+    A = len(pair12) / float(len(dtracks0))
+    B = len(pair21) / float(len(dtracks1))
     res = 0.5 * (A + B)
     return res
 

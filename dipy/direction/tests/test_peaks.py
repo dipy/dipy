@@ -440,7 +440,7 @@ def test_degenerative_cases():
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
-    odf[1:] = np.finfo(np.float).eps * np.random.rand(odf.shape[0] - 1)
+    odf[1:] = np.finfo(float).eps * np.random.rand(odf.shape[0] - 1)
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
 
     assert_equal(values[0], 1)

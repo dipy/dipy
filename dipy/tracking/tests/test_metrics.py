@@ -1,23 +1,16 @@
 """ Testing track_metrics module """
-
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import assert_equal, assert_array_almost_equal
 
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
+from dipy.utils.deprecator import ExpiredDeprecationError
 
 
 def test_downsample_deprecated():
-    with warnings.catch_warnings(record=True) as cw:
-        warnings.simplefilter("always", DeprecationWarning)
-        streamline = [np.array([[0, 0, 0], [1, 1, 1]])]
-
-        streamline_12 = tm.downsample(streamline, 12)
-        npt.assert_equal(len(streamline_12[0]), 12)
-        npt.assert_(issubclass(cw[0].category, DeprecationWarning))
+    streamline = [np.array([[0, 0, 0], [1, 1, 1]])]
+    npt.assert_raises(ExpiredDeprecationError, tm.downsample, streamline, 12)
 
 
 def test_splines():

@@ -495,6 +495,17 @@ fetch_gold_standard_io = _make_fetcher(
     data_size="47.KB")
 
 
+fetch_fury_surface = _make_fetcher(
+    "fetch_fury_surface",
+    pjoin(dipy_home, 'fury_surface'),
+    'https://raw.githubusercontent.com/fury-gl/fury-data/master/surfaces/',
+    ['100307_white_lh.vtk'],
+    ['100307_white_lh.vtk'],
+    ['dbec91e29af15541a5cb36d80977b26b'],
+    doc="Surface for testing and examples",
+    data_size="11MB")
+
+
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
 
@@ -664,6 +675,10 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+    if name == 'fury_surface':
+        files, folder = fetch_fury_surface()
+        surface_name = pjoin(folder, '100307_white_lh.vtk')
+        return surface_name
 
 
 def read_qtdMRI_test_retest_2subjects():

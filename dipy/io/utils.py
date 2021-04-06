@@ -136,7 +136,7 @@ def decfa_to_float(img_orig):
 
     # Remove the original intent
     new_hdr.set_intent(0)
-    new_hdr.set_data_dtype(np.float)
+    new_hdr.set_data_dtype(float)
 
     return Nifti1Image(out_data, affine=img_orig.affine, header=new_hdr)
 

@@ -28,16 +28,16 @@ cnp.import_array()
 
 #numpy pointers
 cdef inline float* asfp(cnp.ndarray pt):
-    return <float *>pt.data
+    return <float *> cnp.PyArray_DATA(pt)
 
 cdef inline double* asdp(cnp.ndarray pt):
-    return <double *>pt.data
+    return <double *> cnp.PyArray_DATA(pt)
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def remove_similar_vertices(
-    cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
+    cython.floating[:, :] vertices,
     double theta,
     bint return_mapping=False,
     bint return_index=False):
@@ -94,7 +94,7 @@ def remove_similar_vertices(
         double cos_similarity = cos(DPY_PI/180 * theta)
     if n >= 2**16:  # constrained by input data type
         raise ValueError("too many vertices")
-    unique_vertices = np.empty((n, 3), dtype=np.float)
+    unique_vertices = np.empty((n, 3), dtype=float)
     if return_mapping:
         mapping = np.empty(n, dtype=np.uint16)
     if return_index:
@@ -140,8 +140,7 @@ def remove_similar_vertices(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
-                      double relative_threshold):
+def search_descending(cython.floating[::1] a, double relative_threshold):
     """`i` in descending array `a` so `a[i] < a[0] * relative_threshold`
 
     Call ``T = a[0] * relative_threshold``. Return value `i` will be the
@@ -427,7 +426,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
 
 
 def proc_reco_args(vals, vertinds):
-    vals = np.ascontiguousarray(vals.astype(np.float))
+    vals = np.ascontiguousarray(vals.astype(float))
     vertinds = np.ascontiguousarray(vertinds.astype(np.uint32))
     return vals, vertinds
 
@@ -482,7 +481,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        For every vertex ``i`` in ``vertex_inds``, the number of
        neighbors for vertex ``i``
     adj_inds : (P,) array, dtype uint32
-       Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
+       Indices for neighbors for each point.  ``P=sum(adj_counts)``
 
     Returns
     -------
@@ -514,14 +513,14 @@ def argmax_from_countarrs(cnp.ndarray vals,
             cnp.PyArray_ISCONTIGUOUS(cadj_counts) and
             cnp.PyArray_ISCONTIGUOUS(cadj_inds)):
         raise ValueError('Need contiguous arrays as input')
-    vals_size = cvals.shape[0]
-    vals_ptr = <cnp.float64_t *>cvals.data
-    vertinds_ptr = <cnp.uint32_t *>cvertinds.data
-    adj_ptr = <cnp.uint32_t *>cadj_inds.data
-    counts_ptr = <cnp.uint32_t *>cadj_counts.data
-    V = cadj_counts.shape[0]
-    adj_size = cadj_inds.shape[0]
-    if cvertinds.shape[0] < V:
+    vals_size = cnp.PyArray_DIM(cvals, 0)
+    vals_ptr = <cnp.float64_t *> cnp.PyArray_DATA(cvals)
+    vertinds_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cvertinds)
+    adj_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cadj_inds)
+    counts_ptr = <cnp.uint32_t *> cnp.PyArray_DATA(cadj_counts)
+    V = cnp.PyArray_DIM(cadj_counts, 0)
+    adj_size = cnp.PyArray_DIM(cadj_inds, 0)
+    if cnp.PyArray_DIM(cvertinds, 0) < V:
         raise ValueError('Too few indices for adj arrays')
     for i in range(V):
         vert_ind = vertinds_ptr[i]
