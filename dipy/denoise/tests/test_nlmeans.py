@@ -111,7 +111,7 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
     print('All')
     t = time()
-    new_data2 = nlmeans(data, sigma, mask, num_threads=None)
+    new_data2 = nlmeans(data, sigma, mask, num_threads=0)
     duration_all_core = time() - t
     print(duration_all_core)
 

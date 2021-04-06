@@ -17,7 +17,7 @@ from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=None):
+               block_radius=5, rician=True, num_threads=0):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -34,8 +34,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
-    num_threads : int
-        Number of threads. If None (default) then all available threads
+    num_threads : int, optional
+        Number of threads. If <=0 (default) then all available threads
         will be used.
 
     Returns
@@ -73,7 +73,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 @cython.boundscheck(False)
 def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
                 double[:, :, ::1] sigma, patch_radius=1, block_radius=5,
-                rician=True, num_threads=None):
+                rician=True, num_threads=0):
     """ This algorithm denoises the value of every voxel (i, j, k) by
     calculating a weight between a moving 3D patch and a static 3D patch
     centered at (i, j, k). The moving patch can only move inside a
@@ -106,7 +106,7 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
 
                     out[i, j, k] = process_block(arr, i, j, k, B, P, sigma)
 
-    if num_threads is not None:
+    if num_threads > 0:
         restore_default_num_threads()
 
     new = np.asarray(out)

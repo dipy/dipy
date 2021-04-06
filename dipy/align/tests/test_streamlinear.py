@@ -475,7 +475,7 @@ def test_cascade_of_optimizations_and_threading():
 
     print('then affine')
     slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50},
-                                        num_threads=None)
+                                        num_threads=0)
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
 
     assert_(slm2.fopt < slm.fopt)

@@ -26,7 +26,7 @@ cdef class FBCMeasures:
                  kernel,
                  min_fiberlength=10,
                  max_windowsize=7,
-                 num_threads=None,
+                 num_threads=0,
                  verbose=False):
         """ Compute the fiber to bundle coherence measures for a set of
         streamlines.
@@ -43,8 +43,9 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to use for OpenMP. If <=0 (default) then all
+            available threads will be used.
         verbose : boolean
             Enable verbose mode.
 
@@ -143,7 +144,7 @@ cdef class FBCMeasures:
                       kernel,
                       min_fiberlength,
                       max_windowsize,
-                      num_threads=None,
+                      num_threads=0,
                       verbose=False):
         """ Compute the fiber to bundle coherence measures for a set of
         streamlines.
@@ -160,8 +161,9 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to use for OpenMP. If <=0 (default) then all
+            available threads will be used.
         verbose : boolean
             Enable verbose mode.
         """
@@ -185,7 +187,7 @@ cdef class FBCMeasures:
             int threads_to_use = -1
             int all_cores = openmp.omp_get_num_procs()
 
-        if num_threads is not None:
+        if num_threads > 0:
             threads_to_use = num_threads
         else:
             threads_to_use = all_cores
@@ -304,7 +306,7 @@ cdef class FBCMeasures:
                     streamline_scores[line_id, point_id] = score_mp[line_id]
 
         # Reset number of OpenMP cores to default
-        if have_openmp and num_threads is not None:
+        if have_openmp and num_threads > 0:
             openmp.omp_set_num_threads(all_cores)
 
         # Save LFBC as class member
