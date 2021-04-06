@@ -255,7 +255,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
         a new array.
         Default is set to True.
     num_threads : int, optional
-        Number of threads. Only applies to 3D or 4D `data` arrays. If 0 then
+        Number of threads. Only applies to 3D or 4D `data` arrays. If <=0 then
         all available threads will be used. Otherwise, must be a positive
         integer.
         Default is set to 1.
@@ -295,9 +295,6 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
 
     if not isinstance(num_threads, int):
         raise TypeError("num_threads must be an int.")
-    else:
-        if num_threads < 0:
-            raise ValueError("num_threads must be >= 0.")
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
@@ -327,7 +324,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        if num_threads == 0:
+        if num_threads <= 0:
             pool = Pool()
         else:
             pool = Pool(num_threads)
