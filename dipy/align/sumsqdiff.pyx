@@ -214,8 +214,9 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         double* d = [0, 0]
         double* y = [0, 0]
         double* A = [0, 0, 0]
-        int yi
+
         double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
+
     max_displacement = 0
 
     with nogil:
@@ -583,7 +584,7 @@ def compute_residual_displacement_field_ssd_3d(
         int* dCol = [0,  0, 1, 0, -1, 0]
         double* b = [0, 0, 0]
         double* y = [0, 0, 0]
-        int yi
+
         cnp.npy_intp nslices = delta_field.shape[0]
         cnp.npy_intp nrows = delta_field.shape[1]
         cnp.npy_intp ncols = delta_field.shape[2]
@@ -697,7 +698,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         int* dCol = [0, 1, 0, -1]
         double* b = [0, 0]
         double* y = [0, 0]
-        int yi
+
         cnp.npy_intp nrows = delta_field.shape[0]
         cnp.npy_intp ncols = delta_field.shape[1]
         double delta, sigmasq, dotP

@@ -56,8 +56,8 @@ cdef inline int _wrap(int x, int m)nogil:
 cdef inline void _update_factors(double[:, :, :, :] factors,
                                  floating[:, :, :] moving,
                                  floating[:, :, :] static,
-                                 int ss, int rr, int cc,
-                                 int s, int r, int c, int operation)nogil:
+                                 cnp.npy_intp ss, cnp.npy_intp rr, cnp.npy_intp cc,
+                                 cnp.npy_intp s, cnp.npy_intp r, cnp.npy_intp c, int operation)nogil:
     r"""Updates the precomputed CC factors of a rectangular window
 
     Updates the precomputed CC factors of the rectangular window centered

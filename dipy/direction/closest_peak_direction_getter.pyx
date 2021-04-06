@@ -1,5 +1,5 @@
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from warnings import warn
 
@@ -33,8 +33,8 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
     1 : if no new direction is founded
     """
     cdef:
-        size_t _len=len(peak_dirs)
-        size_t i
+        cnp.npy_intp _len=len(peak_dirs)
+        cnp.npy_intp i
         int closest_peak_i=-1
         double _dot
         double closest_peak_dot=0
@@ -109,7 +109,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
 
     cdef _get_pmf(self, double* point):
         cdef:
-            size_t _len, i
+            cnp.npy_intp _len, i
             double[:] pmf
             double absolute_pmf_threshold
 

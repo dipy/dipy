@@ -2413,10 +2413,10 @@ def _gradient_3d(floating[:, :, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int nslices = out.shape[0]
-        int nrows = out.shape[1]
-        int ncols = out.shape[2]
-        int i, j, k, in_flag
+        cnp.npy_intp nslices = out.shape[0]
+        cnp.npy_intp nrows = out.shape[1]
+        cnp.npy_intp ncols = out.shape[2]
+        cnp.npy_intp i, j, k, in_flag
         double tmp
         double[:] x = np.empty(shape=(3,), dtype=np.float64)
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
@@ -2505,8 +2505,8 @@ def _sparse_gradient_3d(floating[:, :, :] img,
         the buffer in which to store the image gradient
     """
     cdef:
-        int n = sample_points.shape[0]
-        int i, in_flag
+        cnp.npy_intp n = sample_points.shape[0]
+        cnp.npy_intp i, in_flag
         double tmp
         double[:] dx = np.empty(shape=(3,), dtype=np.float64)
         double[:] h = np.empty(shape=(3,), dtype=np.float64)
@@ -2593,9 +2593,9 @@ def _gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int nrows = out.shape[0]
-        int ncols = out.shape[1]
-        int i, j, k, in_flag
+        cnp.npy_intp nrows = out.shape[0]
+        cnp.npy_intp ncols = out.shape[1]
+        cnp.npy_intp i, j, k, in_flag
         double tmp
         double[:] x = np.empty(shape=(2,), dtype=np.float64)
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
@@ -2674,8 +2674,8 @@ def _sparse_gradient_2d(floating[:, :] img, double[:, :] img_world2grid,
         point lies inside (=1) or outside (=0) the image grid
     """
     cdef:
-        int n = sample_points.shape[0]
-        int i, in_flag
+        cnp.npy_intp n = sample_points.shape[0]
+        cnp.npy_intp i, in_flag
         double tmp
         double[:] dx = np.empty(shape=(2,), dtype=np.float64)
         double[:] h = np.empty(shape=(2,), dtype=np.float64)
