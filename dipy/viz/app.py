@@ -479,6 +479,8 @@ class Horizon(object):
             first_img = True
             first_roi = True
             if self.roi_images:
+                if self.random_colors:
+                    roi_color_gen = distinguishable_colormap()
                 for img in self.images:
                     img_data, img_affine = img
                     dim = np.unique(img_data).shape[0]
