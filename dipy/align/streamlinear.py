@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
-    def __init__(self, num_threads=None):
+    def __init__(self, num_threads=0):
         """ An abstract class for the metric used for streamline registration
 
         If the two sets of streamlines match exactly then method ``distance``
@@ -36,8 +36,8 @@ class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        num_threads : int
-            Number of threads. If None (default) then all available threads
+        num_threads : int, optional
+            Number of threads. If <=0 (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
         """
         self.static = None
@@ -81,9 +81,6 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
             Fixed or reference set of streamlines.
         moving : streamlines
             Moving streamlines.
-        num_threads : int
-            Number of threads. If None (default) then all available threads
-            will be used.
 
         Notes
         -----
@@ -220,7 +217,7 @@ class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None, evolution=False,
-                 num_threads=None):
+                 num_threads=0):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis15]_.
 
         Parameters
@@ -285,8 +282,8 @@ class StreamlineLinearRegistration(object):
             If True save the transformation for each iteration of the
             optimizer. Default is False. Supported only with Scipy >= 0.11.
 
-        num_threads : int
-            Number of threads. If None (default) then all available threads
+        num_threads : int, optional
+            Number of threads. If <= 0 (default) then all available threads
             will be used. Only metrics using OpenMP will use this variable.
 
         References
@@ -513,7 +510,7 @@ class StreamlineRegistrationMap(object):
         return transform_streamlines(moving, self.matrix)
 
 
-def bundle_sum_distance(t, static, moving, num_threads=None):
+def bundle_sum_distance(t, static, moving):
     """ MDF distance optimization function (SUM)
 
     We minimize the distance between moving streamlines as they align
@@ -572,10 +569,6 @@ def bundle_min_distance(t, static, moving):
     moving : list
         Moving streamlines.
 
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
-
     Returns
     -------
     cost: float
@@ -621,8 +614,8 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads):
         Number of points per streamline. All streamlines in static and moving
         should have the same number of points M.
 
-    num_threads : int
-        Number of threads. If None (default) then all available threads
+    num_threads : int, optional
+        Number of threads. If <=0 (default) then all available threads
         will be used.
 
     Returns
@@ -713,7 +706,7 @@ def remove_clusters_by_size(clusters, min_size=0):
 
 
 def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
-                    verbose=False, num_threads=None):
+                    verbose=False, num_threads=0):
     """ Progressive SLR
 
     This is an utility function that allows for example to do affine
@@ -740,8 +733,8 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
         L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
     verbose :  bool, optional.
         If True, log messages. Default:
-    num_threads : int
-        Number of threads. If None (default) then all available threads
+    num_threads : int, optional
+        Number of threads. If <=0 (default) then all available threads
         will be used. Only metrics using OpenMP will use this variable.
 
     References
@@ -848,7 +841,7 @@ def slr_with_qbx(static, moving,
                  less_than=250,
                  qbx_thr=[40, 30, 20, 15],
                  nb_pts=20,
-                 progressive=True, rng=None, num_threads=None):
+                 progressive=True, rng=None, num_threads=0):
     """ Utility function for registering large tractograms.
 
     For efficiency, we apply the registration on cluster centroids and remove
@@ -891,8 +884,8 @@ def slr_with_qbx(static, moving,
     rng : RandomState
         If None creates RandomState in function.
 
-    num_threads : int
-        Number of threads. If None (default) then all available threads
+    num_threads : int, optional
+        Number of threads. If <=0 (default) then all available threads
         will be used. Only metrics using OpenMP will use this variable.
 
     Notes

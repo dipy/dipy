@@ -52,12 +52,12 @@ def test_resample():
         assert_almost_equal(affine2, _affine)
 
     # check use of multiprocessing pool of specified size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=4)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_threads=4)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
 
     # check use of multiprocessing pool of autoconfigured size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=0)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_threads=0)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
 

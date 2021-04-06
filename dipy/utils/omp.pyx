@@ -54,7 +54,7 @@ cdef void set_num_threads(num_threads):
     """
     cdef:
         int threads_to_use
-    if num_threads is not None:
+    if num_threads > 0:
         threads_to_use = num_threads
     else:
         threads_to_use = <int> default_threads

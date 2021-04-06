@@ -50,7 +50,7 @@ class ResliceFlow(Workflow):
         return 'reslice'
 
     def run(self, input_files, new_vox_size, order=1, mode='constant', cval=0,
-            num_processes=1, out_dir='', out_resliced='resliced.nii.gz'):
+            num_threads=1, out_dir='', out_resliced='resliced.nii.gz'):
         """Reslice data with new voxel resolution defined by ``new_vox_sz``
 
         Parameters
@@ -70,11 +70,9 @@ class ResliceFlow(Workflow):
         cval : float, optional
             Value used for points outside the boundaries of the input if
             mode='constant'.
-        num_processes : int, optional
-            Split the calculation to a pool of children processes. This only
-            applies to 4D `data` arrays. If a positive integer then it defines
-            the size of the multiprocessing pool that will be used. If 0, then
-            the size of the pool will equal the number of cores available.
+        num_threads : int, optional
+            Number of threads. Default is 1. If <=0 then all available threads
+            will be used. This only applies to 4D `data` arrays.
         out_dir : string, optional
             Output directory. (default current directory)
         out_resliced : string, optional
@@ -88,7 +86,7 @@ class ResliceFlow(Workflow):
             logging.info('Processing {0}'.format(inputfile))
             new_data, new_affine = reslice(data, affine, vox_sz, new_vox_size,
                                            order, mode=mode, cval=cval,
-                                           num_processes=num_processes)
+                                           num_threads=num_threads)
             save_nifti(outpfile, new_data, new_affine)
             logging.info('Resliced file save in {0}'.format(outpfile))
 
@@ -103,7 +101,6 @@ class SlrWithQbxFlow(Workflow):
             x0='affine',
             rm_small_clusters=50,
             qbx_thr=[40, 30, 20, 15],
-            num_threads=None,
             greater_than=50,
             less_than=250,
             nb_pts=20,
@@ -129,9 +126,6 @@ class SlrWithQbxFlow(Workflow):
             Remove clusters that have less than `rm_small_clusters`.
         qbx_thr : variable int, optional
             Thresholds for QuickBundlesX.
-        num_threads : int, optional
-            Number of threads. If 'None' then all available threads
-            will be used. Only metrics using OpenMP will use this variable.
         greater_than : int, optional
             Keep streamlines that have length greater than
             this value.

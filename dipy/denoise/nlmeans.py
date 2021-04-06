@@ -10,7 +10,7 @@ from dipy.denoise.denspeed import nlmeans_3d
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
-            rician=True, num_threads=None):
+            rician=True, num_threads=0):
     r""" Non-local means for denoising 3D and 4D images
 
     Parameters
@@ -27,9 +27,9 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used (all CPU cores).
+    num_threads : int, optional
+        Number of threads. If <=0 (default) then all available threads
+        will be used.
 
     Returns
     -------
