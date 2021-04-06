@@ -221,14 +221,19 @@ def test_vec2vec_rotmat():
 
     a = np.array([0.33950729, 0.92041729, 0.1938216])
     a_norm = np.linalg.norm(a)
+    a2 = a/a_norm
     print(a_norm)
     b = np.array([0.40604787, 0.97518325, 0.2057731])
     b_norm = np.linalg.norm(b)
+    b2 = b/b_norm
     print(b_norm)
     R = vec2vec_rotmat(a, b)
+    R2 = vec2vec_rotmat(a2, b2)
+    print(R)
+    print(R2)
     res = np.dot(a, b)
     if (res > 1):
-        print("cosa is greater than 1!!")
+        pass
     tmp = 1
 
 def test_compose_transformations():
