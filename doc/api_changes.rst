@@ -5,6 +5,11 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.5.0 changes
+------------------
+
+- Configured ``<=0`` as the value of ``num_threads`` argument to use all available cores in ``dipy.denoise.gibbs.gibbs_removal``.
+
 DIPY 1.4.0 changes
 ------------------
 
