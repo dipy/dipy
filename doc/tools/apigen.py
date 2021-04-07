@@ -115,7 +115,7 @@ class ApiDocWriter(object):
         return mod
 
     def _get_object_name(self, line):
-        """.Get second token in line.
+        """Get second token in line.
 
         Examples
         --------
