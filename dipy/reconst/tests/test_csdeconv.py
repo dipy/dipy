@@ -552,7 +552,7 @@ def test_default_lambda_csdmodel():
     """
     expected_lambda = {4: 27.5230088, 8: 82.5713865, 16: 216.0843135}
     expected_csdmodel_warnings = {4: 0, 8: 0, 16: 1}
-    expected_sh_basis_deprecation_warnings = 5
+    expected_sh_basis_deprecation_warnings = 3
     sphere = default_sphere
 
     # Create gradient table
