@@ -68,10 +68,20 @@ data.
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
-denoised_arr = patch2self(data, bvals)
+denoised_arr = patch2self(data, bvals, shift_intensity=True,
+                          clip_negative_vals=False)
 
 """
 The array `denoised_arr` contains the denoised output obtained from Patch2Self.
+
+*Note:* Depending on the acquisition, b0 may exhibit signal attenuation or
+other artefacts that are not ideal for any denoising algorithm. We therefore
+provide an option to skip denoising b0 volumes in the data. This can be done
+by using the option `b0_denoising=False` within Patch2Self.
+
+Please set `shift_intensity=True` and `clip_negative_vals=False` by default to
+avoid negative values in the denoised output.
+
 Now lets visualize the output and the residuals obtained from the denoising.
 """
 
