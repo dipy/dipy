@@ -190,7 +190,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             selecting the tracking direction.
         basis_type : name of basis
             The basis that ``shcoeff`` are associated with.
-            ``dipy.reconst.shm.real_sym_sh_basis`` is used by default.
+            ``dipy.reconst.shm.real_sh_descoteaux`` is used by default.
         relative_peak_threshold : float in [0., 1.]
             Used for extracting initial tracking directions. Passed to
             peak_directions.

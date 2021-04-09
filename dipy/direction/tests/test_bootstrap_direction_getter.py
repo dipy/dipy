@@ -109,7 +109,7 @@ def test_bdg_residual():
     bvals = np.insert(bvals, 0, 0)
     gtab = gradient_table(bvals, bvecs)
     r, theta, phi = cart2sphere(*vertices.T)
-    B, m, n = shm.real_sym_sh_basis(6, theta, phi)
+    B, m, n = shm.real_sh_descoteaux(6, theta, phi)
     shm_coeff = np.random.random(B.shape[1])
 
     # sphere_func is sampled of the spherical function for each point of

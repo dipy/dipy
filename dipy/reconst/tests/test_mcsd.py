@@ -71,7 +71,8 @@ def test_mcsd_model_delta():
     iso = response.iso
 
     theta, phi = default_sphere.theta, default_sphere.phi
-    B = shm.real_sph_harm(response.m, response.n, theta[:, None], phi[:, None])
+    B = shm.real_sh_descoteaux_from_index(
+        response.m, response.n, theta[:, None], phi[:, None])
 
     wm_delta = model.delta.copy()
     # set isotropic components to zero
