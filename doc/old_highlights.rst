@@ -4,6 +4,18 @@
 Older Highlights
 ****************
 
+**DIPY 1.4.0** is now available. New features include:
+
+- New self-supervised denoising algorithm Patch2Self added.
+- BUAN and RecoBundles documentation updated.
+- Response function refactored and clarified.
+- B-tensor allowed with response functions.
+- Large Command Line Interface (CLI) documentation updated.
+- Public API for Registration added.
+- Large documentation update.
+- Closed 47 issues and merged 19 pull requests.
+
+
 **DIPY 1.3.0** is now available. New features include:
 
 - Gibbs Ringing correction 10X faster.
