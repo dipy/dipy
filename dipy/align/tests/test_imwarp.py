@@ -4,6 +4,8 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
+from dipy.core.interpolation import (interpolate_scalar_2d,
+                                     interpolate_scalar_3d)
 from dipy.data import get_fnames
 from dipy.align import floating
 from dipy.align import imwarp as imwarp
@@ -1004,7 +1006,7 @@ def test_coordinate_mapping():
             points[:, 0] = np.random.randint(1, nr-1, npoints)
             points[:, 1] = np.random.randint(1, nc-1, npoints)
             random_df = vfu.create_random_displacement_2d
-            interpolate_f = vfu.interpolate_scalar_2d
+            interpolate_f = interpolate_scalar_2d
         else:
             domain_shape = (10, 10, 10)
             codomain_shape = (15, 15, 15)
@@ -1031,7 +1033,7 @@ def test_coordinate_mapping():
             points[:, 1] = np.random.randint(1, nc-1, npoints)
             points[:, 2] = np.random.randint(1, ns-1, npoints)
             random_df = vfu.create_random_displacement_3d
-            interpolate_f = vfu.interpolate_scalar_3d
+            interpolate_f = interpolate_scalar_3d
 
         #create the random displacement field
         domain_grid2world = gt_affine
