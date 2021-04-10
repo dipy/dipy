@@ -16,16 +16,12 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.4.0** is now available. New features include:
+**DIPY 1.4.1** is now available. New features include:
 
-- New self-supervised denoising algorithm Patch2Self added.
-- BUAN and RecoBundles documentation updated.
-- Response function refactored and clarified.
-- B-tensor allowed with response functions.
-- Large Command Line Interface (CLI) documentation updated.
-- Public API for Registration added.
-- Large documentation update.
-- Closed 47 issues and merged 19 pull requests.
+-
+-
+-
+
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -34,9 +30,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.4.1 <release_notes/release1.2>` released April 23, 2021.
 - :doc:`DIPY 1.4.0 <release_notes/release1.4>` released March 13, 2021.
 - :doc:`DIPY 1.3.0 <release_notes/release1.3>` released November 3, 2020.
-- :doc:`DIPY 1.2.0 <release_notes/release1.2>` released September 9, 2020.
+
 
 
 
