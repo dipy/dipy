@@ -1,5 +1,6 @@
 import numpy as np
 cimport numpy as cnp
+cimport cython
 
 from warnings import warn
 
@@ -7,10 +8,17 @@ from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.direction_getter cimport DirectionGetter
+from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
+                                               StoppingCriterion,
+                                               TRACKPOINT,
+                                               ENDPOINT,
+                                               OUTSIDEIMAGE,
+                                               INVALIDPOINT,
+                                               PYERROR)
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 
-cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
+cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity):
     """Update direction with the closest direction from peak_dirs.
 
@@ -58,11 +66,93 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
             return 0
     return 1
 
+<<<<<<< HEAD
+=======
+cdef extern from "dpy_math.h" nogil:
+    int dpy_signbit(double x)
+    double dpy_rint(double x)
+    double fabs(double)
+
+@cython.cdivision(True)
+cdef inline double stepsize(double point, double increment) nogil:
+    """Compute the step size to the closest boundary in units of increment."""
+    cdef:
+        double dist
+    dist = dpy_rint(point) + .5 - dpy_signbit(increment) - point
+    if dist == 0:
+        # Point is on an edge, return step size to next edge.  This is most
+        # likely to come up if overstep is set to 0.
+        return 1. / fabs(increment)
+    else:
+        return dist / increment
+
+cdef void step_to_boundary(double * point, double * direction,
+                           double overstep) nogil:
+    """Takes a step from point in along direction just past a voxel boundary.
+
+    Parameters
+    ----------
+    direction : c-pointer to double[3]
+        The direction along which the step should be taken.
+    point : c-pointer to double[3]
+        The tracking point which will be updated by this function.
+    overstep : double
+        It's often useful to have the points of a streamline lie inside of a
+        voxel instead of having them lie on the boundary. For this reason,
+        each step will overshoot the boundary by ``overstep * direction``.
+        This should not be negative.
+
+    """
+    cdef:
+        double step_sizes[3]
+        double smallest_step
+
+    for i in range(3):
+        step_sizes[i] = stepsize(point[i], direction[i])
+
+    smallest_step = step_sizes[0]
+    for i in range(1, 3):
+        if step_sizes[i] < smallest_step:
+            smallest_step = step_sizes[i]
+
+    smallest_step += overstep
+    for i in range(3):
+        point[i] += smallest_step * direction[i]
+
+cdef void fixed_step(double * point, double * direction, double step_size) nogil:
+    """Updates point by stepping in direction.
+
+    Parameters
+    ----------
+    direction : c-pointer to double[3]
+        The direction along which the step should be taken.
+    point : c-pointer to double[3]
+        The tracking point which will be updated by this function.
+    step_size : double
+        The size of step in units of direction.
+
+    """
+    for i in range(3):
+        point[i] += direction[i] * step_size
+
+cdef class BaseDirectionGetter(BasePmfDirectionGetter):
+
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+        warn(DeprecationWarning(
+            "class 'dipy.direction.BaseDirectionGetter'"
+            " is deprecated since version 1.2.0, use class"
+            " 'dipy.direction.BasePmfDirectionGetter'"
+            " instead"))
+        BasePmfDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                        pmf_threshold, **kwargs)
+>>>>>>> WIP RF - move _local_tracker to directionGetter._generate_streamline.
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere,
+                 StoppingCriterion sc, voxel_size, step_size,
+                 pmf_threshold=.1, fixedstep=True, **kwargs):
         self.sphere = sphere
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
@@ -70,6 +160,51 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             raise ValueError("pmf threshold must be >= 0.")
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
+        self.stopping_criterion = sc
+        self.voxel_size = voxel_size
+        self.step_size = step_size
+        self.use_fixed_step = fixedstep
+
+    cdef int generate_streamline_c(self,
+                                   double* seed,
+                                   double* dir,
+                                   cnp.float_t[:, :] streamline,
+                                   StreamlineStatus* stream_status
+                                   ):
+       cdef:
+           cnp.npy_intp i
+           cnp.npy_intp len_streamlines = streamline.shape[0]
+           double point[3]
+           double voxdir[3]
+           void (*step)(double*, double*, double) nogil
+
+       if self.use_fixed_step:
+           step = fixed_step
+       else:
+           step = step_to_boundary
+
+       copy_point(seed, point)
+       copy_point(seed, &streamline[0,0])
+
+       stream_status[0] = TRACKPOINT
+       for i in range(1, len_streamlines):
+           if self.get_direction_c(point, dir):
+               break
+           for j in range(3):
+               voxdir[j] = dir[j] / self.voxel_size[j]
+           step(point, voxdir, self.step_size)
+           copy_point(point, &streamline[i, 0])
+           stream_status[0] = self.stopping_criterion.check_point_c(point)
+           if stream_status[0] == TRACKPOINT:
+               continue
+           elif (stream_status[0] == ENDPOINT or
+                 stream_status[0] == INVALIDPOINT or
+                 stream_status[0] == OUTSIDEIMAGE):
+               break
+       else:
+           # maximum length of streamline has been reached, return everything
+           i = streamline.shape[0]
+       return i
 
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
@@ -78,7 +213,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
                                                            double[::1] point):
         """Returns best directions at seed location to start tracking.
 
@@ -117,8 +252,9 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
     """A base class for direction getter using a pmf"""
 
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
-                 pmf_threshold=0.1, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere,
+                 StoppingCriterion sc, voxel_size, step_size,
+                 pmf_threshold=.1, fixedstep=True, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -153,7 +289,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             raise ValueError(msg)
 
         pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float))
-        return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return klass(pmf_gen, max_angle, sphere, sc, voxel_size, step_size, pmf_threshold, fixedstep, **kwargs)
 
     @classmethod
     def from_shcoeff(klass, shcoeff, max_angle, sphere=default_sphere,
@@ -212,7 +348,7 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             double[:] pmf
-            np.ndarray[np.float_t, ndim=2] peaks
+            cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 

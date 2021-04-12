@@ -1,10 +1,12 @@
 
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.direction.pmf cimport PmfGen
 from dipy.tracking.direction_getter cimport DirectionGetter
+from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
+                                               StoppingCriterion)
 
-cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
+cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity)
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
@@ -15,10 +17,29 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         PmfGen pmf_gen
         double pmf_threshold
         double cos_similarity
+        StoppingCriterion stopping_criterion
+        double voxel_size
+        double step_size
+        int use_fixed_step
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self,
         double[::1] point)
+
+    cpdef int generate_streamline(
+            self,
+            double[::1] seed,
+            double[::1] dir,
+            cnp.float_t[:, :] streamline,
+            StreamlineStatus stream_status
+            ) except -1
+
+    cdef int generate_streamline_c(
+            self,
+            double* seed,
+            double* dir,
+            cnp.float_t[:, :] streamline,
+            StreamlineStatus* stream_status)
 
     cdef _get_pmf(
         self,

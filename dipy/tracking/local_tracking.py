@@ -138,13 +138,13 @@ class LocalTracking(object):
                     yield [s]
             directions = directions[:self.max_cross]
             for first_step in directions:
-                stepsF, stream_status = self._tracker(s, first_step, F)
+                stepsF, stream_status = self.direction_getter.generate_streamline(s, first_step, F)
                 if not (self.return_all or
                         stream_status == StreamlineStatus.ENDPOINT or
                         stream_status == StreamlineStatus.OUTSIDEIMAGE):
                     continue
                 first_step = -first_step
-                stepsB, stream_status = self._tracker(s, first_step, B)
+                stepsB, stream_status = self.direction_getter.generate_streamline(s, first_step, B)
                 if not (self.return_all or
                         stream_status == StreamlineStatus.ENDPOINT or
                         stream_status == StreamlineStatus.OUTSIDEIMAGE):
