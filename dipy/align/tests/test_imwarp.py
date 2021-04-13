@@ -1035,7 +1035,7 @@ def test_coordinate_mapping():
             random_df = vfu.create_random_displacement_3d
             interpolate_f = interpolate_scalar_3d
 
-        #create the random displacement field
+        # create the random displacement field
         domain_grid2world = gt_affine
         codomain_grid2world = gt_affine
         disp, assign = random_df(np.array(domain_shape, dtype=np.int32),
