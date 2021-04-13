@@ -29,6 +29,12 @@ def test_nlmeans_wrong():
     S0 = np.ones((2, 2, 2, 2, 2))
     assert_raises(ValueError, nlmeans, S0, 1.0)
 
+    # test invalid values of num_threads
+    data = np.ones((10, 10, 10))
+    sigma = 1
+    assert_raises(ValueError, nlmeans, data, sigma, num_threads=0)
+    assert_raises(ValueError, nlmeans, data, sigma, num_threads=-2)
+
 
 def test_nlmeans_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
@@ -111,7 +117,7 @@ def test_nlmeans_4d_3dsigma_and_threads():
 
     print('All')
     t = time()
-    new_data2 = nlmeans(data, sigma, mask, num_threads=0)
+    new_data2 = nlmeans(data, sigma, mask, num_threads=None)
     duration_all_core = time() - t
     print(duration_all_core)
 

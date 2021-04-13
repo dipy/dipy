@@ -11,7 +11,7 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
-def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=0, normalize=True):
+def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -26,8 +26,8 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=0, normaliz
     test_mode : boolean
         Reduced convolution in one direction only for testing
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
+        Number of threads. If -1 (default) then all available threads will be
+        used.
     normalize : boolean
         Apply max-normalization to the output such that its value range matches 
         the input ODF data.
@@ -77,7 +77,7 @@ def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=0, normaliz
     
     return output_sh
     
-def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=0, normalize=True):
+def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=True):
     """ Perform the shift-twist convolution with the ODF data and 
     the lookup-table of the kernel.
 
@@ -90,8 +90,8 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=0, normalize=True)
     test_mode : boolean
         Reduced convolution in one direction only for testing
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
+        Number of threads. If -1 (default) then all available threads will be
+        used.        
     normalize : boolean
         Apply max-normalization to the output such that its value range matches 
         the input ODF data.
@@ -120,7 +120,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=0, normalize=True)
 cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs, 
                                                 double [:, :, :, :, ::1] lut,
                                                 cnp.npy_intp test_mode,
-                                                num_threads=0):
+                                                num_threads=None):
     """ Perform the shift-twist convolution with the ODF data 
     and the lookup-table of the kernel.
 
@@ -133,9 +133,9 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
     test_mode : boolean
         Reduced convolution in one direction only for testing
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
-        
+        Number of threads. If -1 (default) then all available threads will be
+        used.
+                
     Returns
     -------
     output : array of double
@@ -159,10 +159,10 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
         cnp.npy_intp expectedvox
         cnp.npy_intp edgeNormalization = True
 
-    if num_threads > 0:
-        threads_to_use = num_threads
-    else:
+    if num_threads in (None, -1):
         threads_to_use = all_cores
+    elif num_threads > 0:
+        threads_to_use = num_threads
 
     if have_openmp:
         openmp.omp_set_dynamic(0)
@@ -204,7 +204,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
                                 totalval[corient, cx, cy, cz]
 
     # Reset number of OpenMP cores to default
-    if have_openmp and num_threads > 0:
+    if have_openmp and num_threads not in (None, -1):
         openmp.omp_set_num_threads(all_cores)
 
     return output
