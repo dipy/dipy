@@ -74,7 +74,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                     cnp.npy_intp moving_size,
                                     cnp.npy_intp rows,
                                     double [:, ::1] D,
-                                    num_threads=0):
+                                    num_threads=None):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -95,8 +95,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     D : 2D array
         Distance matrix
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
+        Number of threads. If -1 (default) then all available threads will be
+        used.        
 
     Returns
     -------
@@ -108,10 +108,12 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads > 0:
+    if num_threads in (None, -1):
+        threads_to_use = all_cores
+    elif num_threads > 0:
         threads_to_use = num_threads
     else:
-        threads_to_use = all_cores
+        raise ValueError("num_threads must be > 0 or -1 (all cores)")
 
     if have_openmp:
         openmp.omp_set_dynamic(0)
@@ -126,7 +128,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                                &moving[j * rows, 0],
                                                rows)
 
-    if have_openmp and num_threads >0:
+    if have_openmp and num_threads not in (None, -1):
         openmp.omp_set_num_threads(all_cores)
 
     return np.asarray(D)
@@ -137,7 +139,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
                              cnp.npy_intp static_size,
                              cnp.npy_intp moving_size,
                              cnp.npy_intp rows,
-                             num_threads=0):
+                             num_threads=None):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -156,9 +158,9 @@ def _bundle_minimum_distance(double [:, ::1] static,
     rows : int
         Number of points per streamline
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
-
+        Number of threads. If -1 (default) then all available threads will be
+        used.
+        
     Returns
     -------
     cost : double
@@ -180,10 +182,12 @@ def _bundle_minimum_distance(double [:, ::1] static,
         int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads > 0:
+    if num_threads in (None, -1):
+        threads_to_use = all_cores
+    elif num_threads > 0:
         threads_to_use = num_threads
     else:
-        threads_to_use = all_cores
+        raise ValueError("num_threads must be > 0 or -1 (all cores)")
 
     if have_openmp:
         openmp.omp_set_dynamic(0)
@@ -236,7 +240,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
         dist = 0.25 * dist * dist
 
-    if have_openmp and num_threads > 0:
+    if have_openmp and num_threads not in (None, -1):
         openmp.omp_set_num_threads(all_cores)
 
     return dist

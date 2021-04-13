@@ -17,7 +17,7 @@ from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
-               block_radius=5, rician=True, num_threads=0):
+               block_radius=5, rician=True, num_threads=None):
     """ Non-local means for denoising 3D images
 
     Parameters
@@ -35,8 +35,8 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
     num_threads : int, optional
-        Number of threads. If <=0 (default) then all available threads
-        will be used.
+        Number of threads. If -1 (default) then all available threads will be 
+        used.
 
     Returns
     -------
@@ -57,7 +57,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 
     if sigma.ndim != 3:
         raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
-
+        
     arr = np.ascontiguousarray(arr, dtype='f8')
     arr = add_padding_reflection(arr, block_radius)
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
@@ -73,7 +73,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 @cython.boundscheck(False)
 def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
                 double[:, :, ::1] sigma, patch_radius=1, block_radius=5,
-                rician=True, num_threads=0):
+                rician=True, num_threads=None):
     """ This algorithm denoises the value of every voxel (i, j, k) by
     calculating a weight between a moving 3D patch and a static 3D patch
     centered at (i, j, k). The moving patch can only move inside a
@@ -86,12 +86,16 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
         double summ = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
-        int threads_to_use = -1
 
     I = arr.shape[0]
     J = arr.shape[1]
     K = arr.shape[2]
 
+    if num_threads is None:
+        num_threads = -1
+    elif num_threads == 0 or num_threads < -1:
+        raise ValueError('num_threads must be > 0 or -1 (all cores)')
+        
     set_num_threads(num_threads)
 
     # move the block

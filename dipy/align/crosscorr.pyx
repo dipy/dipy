@@ -130,7 +130,7 @@ cdef inline void _update_factors(double[:, :, :, :] factors,
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static,
                              floating[:, :, :] moving,
-                             cnp.npy_intp radius):
+                             cnp.npy_intp radius, num_threads=None):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric and image
@@ -146,7 +146,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
         the moving volume (notice that both images must already be in a common
         reference domain, i.e. the same S, R, C)
     radius : the radius of the neighborhood (cube of (2 * radius + 1)^3 voxels)
-        
+
     Returns
     -------
     factors : array, shape (S, R, C, 5)

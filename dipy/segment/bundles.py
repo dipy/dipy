@@ -322,7 +322,7 @@ class RecoBundles(object):
                   reduction_thr=10,
                   reduction_distance='mdf',
                   slr=True,
-                  slr_num_threads=0,
+                  slr_num_threads=None,
                   slr_metric=None,
                   slr_x0=None,
                   slr_bounds=None,
@@ -347,8 +347,8 @@ class RecoBundles(object):
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
         slr_num_threads : int, optional
-            Number of threads to use. If <=0 (default) then all available
-            threads will be used.
+            Number of threads. If -1 (default) then all available threads will
+            be used.
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
@@ -723,7 +723,7 @@ class RecoBundles(object):
                                   metric=None, x0=None, bounds=None,
                                   select_model=400, select_target=600,
                                   method='L-BFGS-B',
-                                  nb_pts=20, num_threads=0):
+                                  nb_pts=20, num_threads=None):
         if self.verbose:
             logger.info('# Local SLR of neighb_streamlines to model')
             t = time()

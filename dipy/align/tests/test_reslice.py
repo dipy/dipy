@@ -3,7 +3,8 @@ import nibabel as nib
 from numpy.testing import (run_module_suite,
                            assert_,
                            assert_equal,
-                           assert_almost_equal)
+                           assert_almost_equal,
+                           assert_raises)
 from dipy.io.image import load_nifti
 from dipy.data import get_fnames
 from dipy.align.reslice import reslice
@@ -52,14 +53,20 @@ def test_resample():
         assert_almost_equal(affine2, _affine)
 
     # check use of multiprocessing pool of specified size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_threads=4)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=4)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
 
     # check use of multiprocessing pool of autoconfigured size
-    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_threads=0)
+    data3, affine3 = reslice(data, affine, zooms, new_zooms, num_processes=-1)
     assert_almost_equal(data2, data3)
     assert_almost_equal(affine2, affine3)
+
+    # test invalid values of num_threads
+    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
+                  num_processes=0)
+    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
+                  num_processes=-2)
 
 
 if __name__ == '__main__':

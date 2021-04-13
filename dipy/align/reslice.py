@@ -13,7 +13,7 @@ def _affine_transform(kwargs):
 
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
-            num_threads=1):
+            num_processes=None):
     """Reslice data with new voxel resolution defined by ``new_zooms``
 
     Parameters
@@ -36,9 +36,12 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     cval : float
         Value used for points outside the boundaries of the input if
         mode='constant'.
-    num_threads : int, optional
-        Number of threads. Default is 1. If <=0 then all available threads
-        will be used.
+    num_processes: int, optional
+        Split the calculation to a pool of children processes. This only
+        applies to 4D `data` arrays. If a positive integer then it defines
+        the size of the multiprocessing pool that will be used. If -1, then
+        the size of the pool will equal the number of cores available. Default
+        is 1.
 
     Returns
     -------
@@ -83,23 +86,25 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
             data2 = affine_transform(input=data, **kwargs)
         if data.ndim == 4:
             data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
-            if num_threads <= 0:
-                num_threads = cpu_count()
 
-            if num_threads == 1:
+            if num_processes in (None, 1):
                 for i in range(data.shape[-1]):
                     affine_transform(input=data[..., i], output=data2[..., i],
                                      **kwargs)
-            else:
+            elif num_processes == -1 or num_processes > 0:
+                if num_processes == -1:
+                    num_processes = cpu_count()
                 params = []
                 for i in range(data.shape[-1]):
                     _kwargs = {'input': data[..., i]}
                     _kwargs.update(kwargs)
                     params.append(_kwargs)
-                pool = Pool(num_threads)
+                pool = Pool(num_processes)
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res
                 pool.close()
+            else:
+                raise ValueError("num_threads must be > 0 or -1 (all cores)")
 
         Rx = np.eye(4)
         Rx[:3, :3] = np.diag(R)

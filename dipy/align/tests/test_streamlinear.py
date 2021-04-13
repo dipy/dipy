@@ -475,11 +475,22 @@ def test_cascade_of_optimizations_and_threading():
 
     print('then affine')
     slr3 = StreamlineLinearRegistration(x0=12, options={'maxiter': 50},
-                                        num_threads=0)
+                                        num_threads=None)
     slm3 = slr3.optimize(cb1, cb2, slm2.matrix)
 
     assert_(slm2.fopt < slm.fopt)
     assert_(slm3.fopt < slm2.fopt)
+
+
+def test_wrong_num_threads():
+    A = [np.random.rand(10, 3), np.random.rand(10, 3)]
+    B = [np.random.rand(10, 3), np.random.rand(10, 3)]
+
+    slr = StreamlineLinearRegistration(num_threads=0)
+    assert_raises(ValueError, slr.optimize, A, B)
+
+    slr = StreamlineLinearRegistration(num_threads=-2)
+    assert_raises(ValueError, slr.optimize, A, B)
 
 
 if __name__ == '__main__':
