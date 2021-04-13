@@ -60,9 +60,9 @@ def test_parallel():
     )
     assert_array_almost_equal(output_4d_parallel, output_4d_no_parallel)
 
-    # Test num_threads=0 case
+    # Test num_threads=-1 case
     output_4d_all_cpu = gibbs_removal(
-        input_4d, inplace=False, num_threads=0
+        input_4d, inplace=False, num_threads=-1
     )
     assert_array_almost_equal(output_4d_all_cpu, output_4d_no_parallel)
 
@@ -99,6 +99,7 @@ def test_inplace():
 
     output_4d = gibbs_removal(input_4d, inplace=True)
     assert_array_almost_equal(input_4d, output_4d)
+
 
 def test_gibbs_2d():
 
@@ -190,8 +191,11 @@ def test_gibbs_errors():
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
     # Test for valid num_threads
     assert_raises(
-        TypeError, gibbs_removal, image_gibbs.copy(), num_threads="1"
-    )
+        TypeError, gibbs_removal, image_gibbs.copy(), num_threads="1")
+    assert_raises(
+        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=0)
+    assert_raises(
+        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=-2)
     # Test for valid input dimensionality
     assert_raises(ValueError, gibbs_removal, np.ones(2))  # 1D
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))  # 5D
