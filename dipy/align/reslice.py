@@ -1,4 +1,4 @@
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 import warnings
 
 import numpy as np
@@ -13,7 +13,7 @@ def _affine_transform(kwargs):
 
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
-            num_processes=None):
+            num_processes=1):
     """Reslice data with new voxel resolution defined by ``new_zooms``
 
     Parameters
@@ -68,6 +68,13 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2.shape == (77, 77, 40)
     True
     """
+
+    if not isinstance(num_processes, int):
+        raise TypeError("num_threads must be an int")
+
+    if num_processes < -1 or num_processes == 0:
+        raise ValueError("num_threads must be > 0 or -1 (all cores)")
+
     # We are suppressing warnings emitted by scipy >= 0.18,
     # described in https://github.com/dipy/dipy/issues/1107.
     # These warnings are not relevant to us, as long as our offset
@@ -87,24 +94,23 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
         if data.ndim == 4:
             data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
 
-            if num_processes in (None, 1):
+            if num_processes == 1:
                 for i in range(data.shape[-1]):
                     affine_transform(input=data[..., i], output=data2[..., i],
                                      **kwargs)
-            elif num_processes == -1 or num_processes > 0:
-                if num_processes == -1:
-                    num_processes = cpu_count()
+            else:
                 params = []
                 for i in range(data.shape[-1]):
                     _kwargs = {'input': data[..., i]}
                     _kwargs.update(kwargs)
                     params.append(_kwargs)
-                pool = Pool(num_processes)
+                if num_processes == -1:
+                    pool = Pool()
+                else:
+                    pool = Pool(num_processes)
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res
                 pool.close()
-            else:
-                raise ValueError("num_threads must be > 0 or -1 (all cores)")
 
         Rx = np.eye(4)
         Rx[:3, :3] = np.diag(R)

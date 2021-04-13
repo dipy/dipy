@@ -50,7 +50,7 @@ class ResliceFlow(Workflow):
         return 'reslice'
 
     def run(self, input_files, new_vox_size, order=1, mode='constant', cval=0,
-            num_processes=None, out_dir='', out_resliced='resliced.nii.gz'):
+            num_processes=1, out_dir='', out_resliced='resliced.nii.gz'):
         """Reslice data with new voxel resolution defined by ``new_vox_sz``
 
         Parameters
