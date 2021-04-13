@@ -34,7 +34,7 @@ To run the Gibbs unringing method, we need to specify the path to the input
 data. This path may contain wildcards to process multiple inputs at once.
 You can also specify optional arguments such as:
 
-- ``num_threads``: the number of threads to be used in parallel to accelerate processing. Set it to ``0``  to use all available threads.
+- ``num_threads``: the number of threads to be used in parallel to accelerate processing. Set it to ``-1``  to use all available threads.
 - ``out_dir``: directory to save the output.
 
 To run the Gibbs unringing on the data it suffices to execute the
