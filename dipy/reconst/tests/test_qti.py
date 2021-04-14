@@ -4,6 +4,8 @@ import numpy as np
 import numpy.testing as npt
 
 import dipy.reconst.qti as qti
+from dipy.core.gradients import GradientTable
+from dipy.sims.voxel import vec2vec_rotmat
 
 
 def test_from_3x3_to_6x1():
@@ -73,6 +75,46 @@ def test_helper_tensors():
             qti.from_3x3_to_6x1(qti.e_iso).T))
     npt.assert_array_equal(qti.E_shear, qti.E_iso - qti.E_bulk)
     npt.assert_array_equal(qti.E_tsym, qti.E_bulk + .4 * qti.E_shear)
+    return
+
+
+def test_dtd_covariance():
+
+    # Isotropic diffusion tensors with varying sizes
+    DTD = np.array(
+        [[[1., 0, 0], [0, 1., 0], [0, 0, 1.]],
+         [[.5, 0, 0], [0, .5, 0], [0, 0, .5]],
+         [[.1, 0, 0], [0, .1, 0], [0, 0, .1]]])
+    C = np.zeros((6, 6))
+    C[0:3, 0:3] = 0.13555556
+    npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
+
+    # Anisotropic diffusion tensors with varying orientations
+    DTD = np.zeros((6, 3, 3))
+    evals = np.array([1, 0, 0])
+    phi = (1 + np.sqrt(5)) / 2
+    directions = np.array(
+        [[0, 1, phi],
+         [0, 1, -phi],
+         [1, phi, 0],
+         [1, -phi, 0],
+         [phi, 0, 1],
+         [phi, 0, -1]]) / np.linalg.norm([0, 1, phi])
+    for i in range(6):
+        R = vec2vec_rotmat(np.array([1, 0, 0]), directions[i])
+        DTD[i] = np.matmul(R, np.matmul(np.eye(3) * evals, R.T))
+    C = np.eye(6) * 2 / 15
+    C[0:3, 0:3] = np.array(
+        [[4 / 45, -2 / 45, -2 / 45],
+         [-2 / 45, 4 / 45, -2 / 45],
+         [-2 / 45, -2 / 45, 4 / 45]])
+    npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
+    return
+
+
+def test_qti_signal():
+    # Test input validation
+    # Test signal generation
     return
 
 
