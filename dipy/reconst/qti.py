@@ -130,6 +130,113 @@ E_shear = E_iso - E_bulk
 E_tsym = E_bulk + .4 * E_shear
 
 
+def dtd_covariance(DTD):
+    """Calculate covariance of a diffusion tensor distribution (DTD).
+
+    Parameters
+    ----------
+    DTD : numpy.ndarray
+        Array of shape (number of tensors, 3, 3).
+
+    Returns
+    -------
+    C : numpy.ndarray
+        Covariance tensor of shape (6, 6).
+
+    Notes
+    -----
+    The covariance tensor is calculated as [1]_:
+
+        .. math::
+
+         \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle - \langle
+         \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
+
+    References
+    ----------
+    .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
+       multidimensional diffusion MRI of the human brain." Neuroimage 135
+       (2016): 345-362. doi.org/10.1016/j.neuroimage.2016.02.039.
+    """
+    if len(DTD.shape) != 3 or DTD.shape[1:3] != (3, 3):
+        raise ValueError(
+            'The shape of the DTD must be (number of tensors, 3, 3)')
+    C = np.mean(
+        np.matmul(
+            from_3x3_to_6x1(DTD),
+            np.swapaxes(from_3x3_to_6x1(DTD), -2, -1)),
+        axis=0) - np.matmul(
+        from_3x3_to_6x1(np.mean(DTD, axis=0)),
+        np.swapaxes(from_3x3_to_6x1(np.mean(DTD, axis=0)), -2, -1))
+    return C
+
+
+def qti_signal(gtab, D, C, S0=1):
+    """Generate diffusion-weighted signals using the covariance tensor signal
+    approximation.
+
+    Parameters
+    ----------
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table with b-tensors.
+    D : numpy.ndarray
+        Diffusion tensor of shape (3, 3) or (6, 1).
+    C : numpy.ndarray
+        Covariance tensor of shape (6, 6) or (21, 1).
+    S0 : float, optional
+        Signal magnitude without diffusion-weighting.
+
+    Returns
+    -------
+    S : numpy.ndarray
+        Simulated signals.
+
+    Notes
+    -----
+    The signal is generated according to [1]_:
+
+        .. math::
+
+         S = S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle
+         + \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right)
+
+    References
+    ----------
+    .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
+       multidimensional diffusion MRI of the human brain." Neuroimage 135
+       (2016): 345-362. doi.org/10.1016/j.neuroimage.2016.02.039.
+    """
+
+    # Validate input and convert to Voigt notation if necessary
+    if gtab.btens is None:
+        raise ValueError(
+            'QTI requires b-tensors to be defined in the gradient table.')
+    if D.shape != (6, 1):
+        if D.shape == (3, 3):
+            D = from_3x3_to_6x1(D)
+        else:
+            raise ValueError(
+                'The shape of D must be (3, 3) or (6, 1).')
+    if C.shape != (21, 1):
+        if C.shape == (6, 6):
+            C = from_6x6_to_21x1(C)
+        else:
+            raise ValueError(
+                'The shape of C must be (6, 6) or (21, 1).')
+    if not (isinstance(S0, int) or isinstance(S0, float)):
+        raise ValueError('S0 must be an integer or a floating-point number.')
+
+    # Generate signals
+    S = np.zeros(gtab.btens.shape[0])
+    for i, bten in enumerate(gtab.btens):
+        bten = from_3x3_to_6x1(bten)
+        bten_sq = from_6x6_to_21x1(np.matmul(bten, np.swapaxes(bten, -2, -1)))
+        S[i] = S0 * np.exp(
+            - np.matmul(np.swapaxes(bten, -2, -1), D)
+            + .5 * np.matmul(np.swapaxes(bten_sq, -2, -1), C))
+    return S
+
+
 def design_matrix(btens):
     """Calculate the QTI design matrix from the b-tensors.
 
@@ -137,7 +244,7 @@ def design_matrix(btens):
     ----------
     btens : numpy.ndarray
         An array of b-tensors of shape (number of acquisitions, 3, 3).
-    
+
     Returns
     -------
     X : numpy.ndarray
@@ -240,8 +347,7 @@ class QtiModel(ReconstModel):
 
         if self.gtab.btens is None:
             raise ValueError(
-                'QTI requires b-tensors to be defined in the gradient table.'
-            )
+                'QTI requires b-tensors to be defined in the gradient table.')
         self.X = design_matrix(self.gtab.btens)
         rank = np.linalg.matrix_rank(np.matmul(self.X.T, self.X))
         if rank < 28:
@@ -312,7 +418,7 @@ class QtiFit(object):
         -------
         S0 : numpy.ndarray
         """
-        S0 = np.exp(self.params[:, :, :, 0])
+        S0 = np.exp(self.params[..., 0])
         return S0
 
     @auto_attr
