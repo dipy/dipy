@@ -96,7 +96,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         Distance matrix
     num_threads : int, optional
         Number of threads. If -1 (default) then all available threads will be
-        used.        
+        used.
 
     Returns
     -------
@@ -160,7 +160,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
     num_threads : int, optional
         Number of threads. If -1 (default) then all available threads will be
         used.
-        
+
     Returns
     -------
     cost : double
