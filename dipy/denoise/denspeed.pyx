@@ -57,7 +57,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
 
     if sigma.ndim != 3:
         raise ValueError('sigma needs to be a 3D ndarray', sigma.shape)
-        
+
     arr = np.ascontiguousarray(arr, dtype='f8')
     arr = add_padding_reflection(arr, block_radius)
     mask = add_padding_reflection(mask.astype('f8'), block_radius)

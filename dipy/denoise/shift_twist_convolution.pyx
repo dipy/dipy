@@ -91,7 +91,7 @@ def convolve_sf(odfs_sf, kernel, test_mode=False, num_threads=None, normalize=Tr
         Reduced convolution in one direction only for testing
     num_threads : int, optional
         Number of threads. If -1 (default) then all available threads will be
-        used.        
+        used.
     normalize : boolean
         Apply max-normalization to the output such that its value range matches 
         the input ODF data.
@@ -135,7 +135,7 @@ cdef double [:, :, :, ::1] perform_convolution (double [:, :, :, ::1] odfs,
     num_threads : int, optional
         Number of threads. If -1 (default) then all available threads will be
         used.
-                
+
     Returns
     -------
     output : array of double
