@@ -30,7 +30,7 @@ class HorizonFlow(Workflow):
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
             disable_order_transparency=False, buan=False, buan_thr=0.5,
-            buan_highlight=(1, 0, 0), roi_images=False, roi_color=(1, 0, 0),
+            buan_highlight=(1, 0, 0), roi_images=False, roi_colors=(1, 0, 0),
             out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
@@ -48,8 +48,8 @@ class HorizonFlow(Workflow):
             as 2.0. The distance is in mm. For this parameter to be active
             ``cluster`` should be enabled.
         random_colors : bool, optional
-            Given multiple tractograms have been included then each tractogram
-            will be shown with different color.
+            Given multiple tractograms and/or rois then each tractogram and/or
+            roi will be shown with different color.
         length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
@@ -84,7 +84,7 @@ class HorizonFlow(Workflow):
             For example, a value of (1, 0, 0) would mean the red color.
         roi_images : bool, optional
             Displays binary images as contours.
-        roi_color : variable float, optional
+        roi_colors : variable float, optional
             Define the color for the roi images. Colors can be defined
             with 1 or 3 values and should be between [0-1]. For example, a
             value of (1, 0, 0) would mean the red color.
@@ -220,7 +220,7 @@ class HorizonFlow(Workflow):
         if len(bg_color) == 1:
             bg_color *= 3
         elif len(bg_color) != 3:
-            raise ValueError('You need 3 values to set up backgound color. '
+            raise ValueError('You need 3 values to set up background color. '
                              'e.g --bg_color 0.5 0.5 0.5')
 
         order_transparent = not disable_order_transparency
@@ -232,5 +232,5 @@ class HorizonFlow(Workflow):
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive, buan=buan, buan_colors=bundle_colors,
-                roi_images=roi_images, roi_color=roi_color,
+                roi_images=roi_images, roi_colors=roi_colors,
                 out_png=pjoin(out_dir, out_stealth_png))
