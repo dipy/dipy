@@ -500,6 +500,9 @@ class Horizon(object):
                                 size=(320, 100), position=(870, 730),
                                 color=(1, 1, 1), opacity=0.1, align="right")
 
+                            rois_panel_label = build_label(text="ROIs panel",
+                                                           bold=True)
+
                             slider_label_opacity = build_label(text="Opacity")
                             slider_opacity = ui.LineSlider2D(
                                 min_value=0.0, max_value=1.0,
@@ -517,9 +520,12 @@ class Horizon(object):
                             slider_opacity.on_change = change_opacity
 
                             self.panel3.add_element(slider_label_opacity,
-                                                    coords=(0.1, 0.4))
+                                                    coords=(0.1, 0.3))
                             self.panel3.add_element(slider_opacity,
-                                                    coords=(0.42, 0.4))
+                                                    coords=(0.42, 0.3))
+
+                            self.panel3.add_element(rois_panel_label,
+                                                    coords=(0.05, 0.7))
 
                             scene.add(self.panel3)
 
