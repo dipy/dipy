@@ -20,6 +20,17 @@ def get_args_default(func):
     return names, defaults
 
 
+def none_or_dtype(dtype):
+    """Check None presence before type casting."""
+    local_type = dtype
+
+    def inner(value):
+        if value in ['None', 'none']:
+            return 'None'
+        return local_type(value)
+    return inner
+
+
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
@@ -78,11 +89,11 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         self.doc = None
 
     def add_workflow(self, workflow):
-        """ Take a workflow object and use introspection to extract the parameters,
-        types and docstrings of its run method. Then add these parameters
-        to the current arparser's own params to parse. If the workflow is of
-        type combined_workflow, the optional input parameters of its
-        sub workflows will also be added.
+        """Take a workflow object and use introspection to extract the
+        parameters, types and docstrings of its run method. Then add these
+        parameters to the current arparser's own params to parse. If the
+        workflow is of type combined_workflow, the optional input parameters
+        of its sub workflows will also be added.
 
         Parameters
         -----------
@@ -173,6 +184,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)
             else:
+                _kwargs['type'] = none_or_dtype(_kwargs['type'])
                 self.add_argument(*_args, **_kwargs)
 
         if nb_positional_variable > 1:
@@ -253,6 +265,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 if isnarg:
                     _kwargs['nargs'] = '*'
 
+                _kwargs['type'] = none_or_dtype(_kwargs['type'])
                 flow_args.add_argument(*_args, **_kwargs)
 
         return sub_flow_optionals
@@ -292,13 +305,15 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         return arg_type, is_nargs
 
     def get_flow_args(self, args=None, namespace=None):
-        """ Returns the parsed arguments as a dictionary that will be used
+        """Return the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
         """
 
         ns_args = self.parse_args(args, namespace)
         dct = vars(ns_args)
-        return dict((k, v) for k, v in dct.items() if v is not None)
+        res = dict((k, v) for k, v in dct.items() if v is not None)
+        res.update(dict((k, None) for k, v in res.items() if v == 'None'))
+        return res
 
     def update_argument(self, *args, **kargs):
         self.add_argument(*args, **kargs)
