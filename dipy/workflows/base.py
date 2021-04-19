@@ -266,7 +266,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 if isnarg:
                     _kwargs['nargs'] = '*'
 
-                _kwargs['type'] = none_or_dtype(_kwargs['type'])
+                if _kwargs['action'] != 'store_true':
+                    _kwargs['type'] = none_or_dtype(_kwargs['type'])
                 flow_args.add_argument(*_args, **_kwargs)
 
         return sub_flow_optionals
