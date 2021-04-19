@@ -3,11 +3,39 @@ import sys
 from os.path import join as pjoin
 
 from nibabel.tmpdirs import TemporaryDirectory
-from dipy.workflows.base import IntrospectiveArgumentParser
+from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import DummyFlow, \
     DummyCombinedWorkflow, DummyWorkflow1, DummyVariableTypeWorkflow, \
     DummyVariableTypeErrorWorkflow
+
+
+def test_none_or_dtype():
+    # test None
+    for typ in [int, float, str, tuple, list]:
+        dec = none_or_dtype(typ)
+        npt.assert_equal(dec('None'), 'None')
+        npt.assert_equal(dec('none'), 'None')
+
+    dec = none_or_dtype(int)
+    npt.assert_raises(ValueError, dec, 'ma valeur')
+    npt.assert_equal(dec(4), 4)
+
+    dec = none_or_dtype(str)
+    npt.assert_equal(dec(4), '4')
+    npt.assert_equal(dec('ma valeur'), 'ma valeur')
+    npt.assert_equal(dec([4]), '[4]')
+
+    dec = none_or_dtype(float)
+    npt.assert_raises(ValueError, dec, 'ma valeur')
+    for val in [(4,), [4, ]]:
+        npt.assert_raises(TypeError, dec, val)
+    npt.assert_equal(dec(True), 1.0)
+    npt.assert_equal(dec(4), 4.0)
+    npt.assert_equal(dec(4.0), 4.0)
+
+    dec = none_or_dtype(bool)
+    dec = none_or_dtype(tuple)
 
 
 def test_variable_type():
@@ -38,10 +66,10 @@ def test_iap():
                 'positional_float']
 
     opt_keys = ['optional_str', 'optional_bool', 'optional_int',
-                'optional_float']
+                'optional_float', 'optional_int_2', 'optional_float_2']
 
     pos_results = ['test', 0, 10, 10.2]
-    opt_results = ['opt_test', True, 20, 20.2]
+    opt_results = ['opt_test', True, 20, 20.2, None, None]
 
     inputs = inputs_from_results(opt_results, opt_keys, optional=True)
     inputs.extend(inputs_from_results(pos_results))
@@ -121,4 +149,6 @@ if __name__ == '__main__':
     # test_iap()
     # test_flow_runner()
     # test_variable_type()
-    test_iap_epilog_and_description()
+    # test_iap_epilog_and_description()
+    test_iap()
+    test_none_or_dtype()

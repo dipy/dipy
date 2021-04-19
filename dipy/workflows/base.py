@@ -184,7 +184,8 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             if 'out_' in arg:
                 output_args.add_argument(*_args, **_kwargs)
             else:
-                _kwargs['type'] = none_or_dtype(_kwargs['type'])
+                if _kwargs['action'] != 'store_true':
+                    _kwargs['type'] = none_or_dtype(_kwargs['type'])
                 self.add_argument(*_args, **_kwargs)
 
         if nb_positional_variable > 1:
