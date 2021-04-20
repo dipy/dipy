@@ -236,7 +236,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     """
     if isinstance(patch_radius, int):
         patch_radius = np.ones(3, dtype=int) * patch_radius
-        
+
     patch_radius = np.asarray(patch_radius, dtype=int)
 
     if not data.ndim == 4:
