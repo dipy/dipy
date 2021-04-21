@@ -71,7 +71,7 @@ def determine_num_threads(num_threads):
         return default_threads
 
     if num_threads < 0:
-        return max(1, cpu_count() - num_threads + 1)
+        return max(1, cpu_count() + num_threads + 1)
     else:
         return num_threads
 
