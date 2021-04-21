@@ -1,5 +1,5 @@
 
-from multiprocessing import cpu_count, Pool
+from multiprocessing import Pool
 from itertools import repeat
 from os import path
 from warnings import warn
@@ -17,6 +17,8 @@ from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
+
+from dipy.utils.multiproc import determine_num_processes
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -223,28 +225,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
                                sh_basis_type, npeaks, B, invB, nbr_processes):
 
-    if nbr_processes is None:
-        try:
-            nbr_processes = cpu_count()
-        except NotImplementedError:
-            warn("Cannot determine number of cpus. "
-                 "returns peaks_from_model(..., parallel=False).")
-            return peaks_from_model(model, data, sphere,
-                                    relative_peak_threshold,
-                                    min_separation_angle, mask, return_odf,
-                                    return_sh, gfa_thr, normalize_peaks,
-                                    sh_order, sh_basis_type, npeaks,
-                                    parallel=False)
-    elif nbr_processes <= 0:
-        warn("Invalid number of processes (%d). "
-             "returns peaks_from_model(..., parallel=False)." % nbr_processes)
-        return peaks_from_model(model, data, sphere,
-                                relative_peak_threshold,
-                                min_separation_angle, mask, return_odf,
-                                return_sh, gfa_thr, normalize_peaks,
-                                sh_order, sh_basis_type, npeaks,
-                                parallel=False)
-
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
@@ -439,9 +419,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         (default False). Temporary files are saved in the default temporary
         directory of the system. It can be changed using ``import tempfile``
         and ``tempfile.tempdir = '/path/to/tempdir'``.
-    nbr_processes: int
+    nbr_processes: int, optional
         If `parallel` is True, the number of subprocesses to use
-        (default multiprocessing.cpu_count()).
+        (default multiprocessing.cpu_count()). If < 0 the maximal number of
+        cores minus |nbr_processes + 1| is used (enter -1 to use as many cores
+        as possible). 0 raises an error.
 
     Returns
     -------
@@ -464,7 +446,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         B, invB = sh_to_sf_matrix(
             sphere, sh_order, sh_basis_type, return_inv=True)
 
-    if parallel:
+    nbr_processes = determine_num_processes(nbr_processes)
+
+    if parallel and nbr_processes > 1:
         # It is mandatory to provide B and invB to the parallel function.
         # Otherwise, a call to np.linalg.pinv is made in a subprocess and
         # makes it timeout on some system.

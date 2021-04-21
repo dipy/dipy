@@ -193,7 +193,7 @@ def test_gibbs_errors():
         TypeError, gibbs_removal, image_gibbs.copy(), num_threads="1"
     )
     assert_raises(
-        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=-1
+        ValueError, gibbs_removal, image_gibbs.copy(), num_threads=0
     )
     # Test for valid input dimensionality
     assert_raises(ValueError, gibbs_removal, np.ones(2))  # 1D

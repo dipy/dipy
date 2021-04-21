@@ -456,9 +456,11 @@ class ReconstCSDFlow(Workflow):
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
-        nbr_processes : int, optional
+        nbr_processes: int, optional
             If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()).
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus |nbr_processes + 1| is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_pam : string, optional
@@ -618,9 +620,11 @@ class ReconstCSAFlow(Workflow):
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
-        nbr_processes : int, optional
+        nbr_processes: int, optional
             If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()).
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus |nbr_processes + 1| is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_pam : string, optional
