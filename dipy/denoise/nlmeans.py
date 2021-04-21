@@ -28,8 +28,11 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5,
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
     num_threads : int, optional
-        Number of threads. If -1 (default) then all available threads will be
-        used.
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------

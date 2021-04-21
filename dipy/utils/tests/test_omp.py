@@ -4,8 +4,8 @@
 import os
 from dipy.utils.omp import (cpu_count, thread_count, default_threads,
                             _set_omp_threads, _restore_omp_threads,
-                            have_openmp)
-from numpy.testing import assert_equal, run_module_suite
+                            have_openmp, determine_num_threads)
+from numpy.testing import assert_equal, assert_raises, run_module_suite
 
 
 def test_set_omp_threads():
@@ -38,6 +38,10 @@ def test_default_threads():
     else:
         expected_threads = 1
     assert_equal(default_threads, expected_threads)
+
+
+def test_wrong_num_threads():
+    assert_raises(ValueError, determine_num_threads, 0)
 
 
 if __name__ == '__main__':

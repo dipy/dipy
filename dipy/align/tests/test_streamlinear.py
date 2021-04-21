@@ -489,9 +489,6 @@ def test_wrong_num_threads():
     slr = StreamlineLinearRegistration(num_threads=0)
     assert_raises(ValueError, slr.optimize, A, B)
 
-    slr = StreamlineLinearRegistration(num_threads=-2)
-    assert_raises(ValueError, slr.optimize, A, B)
-
 
 if __name__ == '__main__':
 
