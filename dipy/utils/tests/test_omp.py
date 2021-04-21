@@ -43,6 +43,8 @@ def test_default_threads():
 def test_wrong_num_threads():
     assert_raises(ValueError, determine_num_threads, 0)
 
+    assert_raises(TypeError, determine_num_threads, "1")
+
 
 if __name__ == '__main__':
 
