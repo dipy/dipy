@@ -559,7 +559,7 @@ def test_deform_streamlines():
                                              np.linalg.inv(stream2world))
     # All close because of floating pt imprecision
     for o, s in zip(orig_streamlines, streamlines):
-        assert_allclose(s, o, rtol=1e-6, atol=1e-6)
+        assert_allclose(s, o.astype(np.float32), rtol=1e-6, atol=1e-6)
 
 
 def test_center_and_transform():
@@ -1193,10 +1193,9 @@ def test_cluster_confidence():
     test_streamlines.append(mysl+1)
     test_streamlines.append(mysl+2)
     test_streamlines.finalize_append()
-    with warnings.catch_warnings(record=True) as w:
-        cci = cluster_confidence(test_streamlines, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+
+    cci = cluster_confidence(test_streamlines, override=True)
+
     assert_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
@@ -1229,11 +1228,8 @@ def test_cluster_confidence():
     test_streamlines_p3.append(mysl5)
     test_streamlines_p3.finalize_append()
 
-    with warnings.catch_warnings(record=True) as w:
-        cci_p1 = cluster_confidence(test_streamlines_p1, override=True)
-        cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    cci_p1 = cluster_confidence(test_streamlines_p1, override=True)
+    cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
 
     # test relative distance
     assert_array_equal(cci_p1, cci_p2*2)
@@ -1245,11 +1241,8 @@ def test_cluster_confidence():
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
-    with warnings.catch_warnings(record=True) as w:
-        cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
-                                         override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
+                                     override=True)
 
     expected_p1_pow2 = np.array([np.power(1./1, 2)+np.power(1./2, 2),
                                  np.power(1./1, 2)+np.power(1./1, 2),
@@ -1257,12 +1250,9 @@ def test_cluster_confidence():
 
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 
-    with warnings.catch_warnings(record=True) as w:
-        # test max distance (ignore distant sls)
-        cci_dist = cluster_confidence(test_streamlines_p3,
-                                      max_mdf=5, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    # test max distance (ignore distant sls)
+    cci_dist = cluster_confidence(test_streamlines_p3,
+                                  max_mdf=5, override=True)
 
     expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
     assert_array_equal(cci_dist, expected_cci_dist)
