@@ -6,6 +6,7 @@ import numpy as np
 from numpy.lib import NumpyVersion as Version
 import scipy
 
+from dipy.utils.multiproc import determine_num_processes
 
 if Version(scipy.__version__) >= Version('1.4.0'):
     import scipy.fft
@@ -255,10 +256,10 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
         a new array.
         Default is set to True.
     num_threads : int or None, optional
-        Number of threads. Only applies to 3D or 4D `data` arrays. If None then
-        all available threads will be used. Otherwise, must be a positive
-        integer.
-        Default is set to 1.
+        Split the calculation to a pool of children processes. This only
+        applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
+        number of cores minus |num_threads + 1| is used (enter -1 to use as
+        many cores as possible). 0 raises an error.
 
     Returns
     -------
@@ -293,12 +294,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     if not isinstance(inplace, bool):
         raise TypeError("inplace must be a boolean.")
 
-    if (not isinstance(num_threads, int)) and (num_threads is not None):
-        raise TypeError("num_processes must be an int or None.")
-    else:
-        if isinstance(num_threads, int):
-            if num_threads <= 0:
-                raise ValueError("num_processes must be > 0.")
+    num_threads = determine_num_processes(num_threads)
 
     # check the axis corresponding to different slices
     # 1) This axis cannot be larger than 2
@@ -328,10 +324,7 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True, num_threads=1):
     if nd == 2:
         vol[:, :] = _gibbs_removal_2d(vol, n_points=n_points, G0=G0, G1=G1)
     else:
-        if num_threads is None:
-            pool = Pool()
-        else:
-            pool = Pool(num_threads)
+        pool = Pool(num_threads)
 
         partial_func = partial(
             _gibbs_removal_2d, n_points=n_points, G0=G0, G1=G1

@@ -4,6 +4,7 @@ import warnings
 import numpy as np
 from scipy.ndimage import affine_transform
 
+from dipy.utils.multiproc import determine_num_processes
 
 def _affine_transform(kwargs):
     with warnings.catch_warnings():
@@ -38,10 +39,9 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
         mode='constant'.
     num_processes: int, optional
         Split the calculation to a pool of children processes. This only
-        applies to 4D `data` arrays. If a positive integer then it defines
-        the size of the multiprocessing pool that will be used. If -1, then
-        the size of the pool will equal the number of cores available. Default
-        is 1.
+        applies to 4D `data` arrays. Default is 1. If < 0 the maximal number
+        of cores minus |num_processes + 1| is used (enter -1 to use as many
+        cores as possible). 0 raises an error.
 
     Returns
     -------
@@ -68,12 +68,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2.shape == (77, 77, 40)
     True
     """
-
-    if not isinstance(num_processes, int):
-        raise TypeError("num_threads must be an int")
-
-    if num_processes < -1 or num_processes == 0:
-        raise ValueError("num_threads must be > 0 or -1 (all cores)")
+    num_processes = determine_num_processes(num_processes)
 
     # We are suppressing warnings emitted by scipy >= 0.18,
     # described in https://github.com/dipy/dipy/issues/1107.
@@ -104,10 +99,9 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                     _kwargs = {'input': data[..., i]}
                     _kwargs.update(kwargs)
                     params.append(_kwargs)
-                if num_processes == -1:
-                    pool = Pool()
-                else:
-                    pool = Pool(num_processes)
+
+                pool = Pool(num_processes)
+
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res
                 pool.close()

@@ -72,10 +72,9 @@ class ResliceFlow(Workflow):
             mode='constant'.
         num_processes : int, optional
             Split the calculation to a pool of children processes. This only
-            applies to 4D `data` arrays. If a positive integer then it defines
-            the size of the multiprocessing pool that will be used. If -1, then
-            the size of the pool will equal the number of cores available.
-            Default is 1.
+            applies to 4D `data` arrays. Default is 1. If < 0 the maximal
+            number of cores minus |num_processes + 1| is used (enter -1 to use
+            as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_resliced : string, optional
@@ -131,7 +130,11 @@ class SlrWithQbxFlow(Workflow):
         qbx_thr : variable int, optional
             Thresholds for QuickBundlesX.
         num_threads : int, optional
-            Number of threads. If -1 then all available threads will be used.
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is
+            used if it is set, otherwise all available threads are used. If
+            < 0 the maximal number of threads minus |num_threads + 1| is used
+            (enter -1 to use as many threads as possible). 0 raises an error.
             Only metrics using OpenMP will use this variable.
         greater_than : int, optional
             Keep streamlines that have length greater than

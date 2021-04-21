@@ -65,8 +65,6 @@ def test_resample():
     # test invalid values of num_threads
     assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
                   num_processes=0)
-    assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
-                  num_processes=-2)
 
 
 if __name__ == '__main__':

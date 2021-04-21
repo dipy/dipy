@@ -1105,9 +1105,11 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     parallel : bool, optional
         Whether to use parallelization in peak-finding during the calibration
         procedure. Default: True
-    nbr_processes: int
+    nbr_processes: int, optional
         If `parallel` is True, the number of subprocesses to use
-        (default multiprocessing.cpu_count()).
+        (default multiprocessing.cpu_count()). If < 0 the maximal number of
+        cores minus |nbr_processes + 1| is used (enter -1 to use as many cores
+        as possible). 0 raises an error.
     sphere : Sphere, optional.
         The sphere used for peak finding. Default: default_sphere.
 
