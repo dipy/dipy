@@ -31,8 +31,8 @@ def test_patch2self_random_noise():
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
 
-    # both clip and shift = True
-    S0den_clip = p2s.patch2self(S0, bvals, model='ols',
+    # both clip and shift = True, and int patch_radius
+    S0den_clip = p2s.patch2self(S0, bvals, patch_radius=0, model='ols',
                                 clip_negative_vals=True,
                                 shift_intensity=True)
 
