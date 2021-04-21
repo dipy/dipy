@@ -64,6 +64,9 @@ def determine_num_threads(num_threads):
     num_threads : int or None
         Desired number of threads to be used.
     """
+    if not isinstance(num_threads, int) and num_threads is not None:
+        raise TypeError("num_processes must be an int or None")
+
     if num_threads == 0:
         raise ValueError("num_threads cannot be 0")
 
