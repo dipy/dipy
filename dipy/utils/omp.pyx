@@ -42,6 +42,40 @@ def _get_default_threads():
 default_threads = _get_default_threads()
 
 
+def determine_num_threads(num_threads):
+    """Determine the effective number of threads to be used for OpenMP calls
+
+    - For ``num_threads = None``,
+      - if the ``OMP_NUM_THREADS`` environment variable is set, return that
+      value
+      - otherwise, return the maximum number of cores retrieved by
+      ``openmp.opm_get_num_procs()``.
+
+    - For ``num_threads > 0``, return this value.
+
+    - For ``num_threads < 0``, return the maximal number of threads minus
+      ``|num_threads + 1|``. In particular ``num_threads = -1`` will use as
+      many threads as there are available cores on the machine.
+
+    - For ``num_threads = 0`` a ValueError is raised.
+
+    Parameters
+    ----------
+    num_threads : int or None
+        Desired number of threads to be used.
+    """
+    if num_threads == 0:
+        raise ValueError("num_threads cannot be 0")
+
+    if num_threads is None:
+        return default_threads
+
+    if num_threads < 0:
+        return max(1, cpu_count() - num_threads + 1)
+    else:
+        return num_threads
+
+
 cdef void set_num_threads(num_threads):
     """Set the number of threads to be used by OpenMP
 
@@ -50,19 +84,11 @@ cdef void set_num_threads(num_threads):
     Parameters
     ----------
     num_threads : int
-        Desired number of threads for OpenMP accelerated code.
+        Effective number of threads for OpenMP accelerated code.
     """
-    cdef:
-        int threads_to_use
-
-    if num_threads == -1:
-        threads_to_use = <int> default_threads      
-    elif num_threads > 0:
-        threads_to_use = num_threads
-
     if openmp.have_openmp:
         openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
+        openmp.omp_set_num_threads(num_threads)
 
 
 cdef void restore_default_num_threads():

@@ -33,7 +33,6 @@ def test_nlmeans_wrong():
     data = np.ones((10, 10, 10))
     sigma = 1
     assert_raises(ValueError, nlmeans, data, sigma, num_threads=0)
-    assert_raises(ValueError, nlmeans, data, sigma, num_threads=-2)
 
 
 def test_nlmeans_random_noise():
