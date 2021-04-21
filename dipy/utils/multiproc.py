@@ -33,5 +33,5 @@ def determine_num_processes(num_processes):
 
     if num_processes < 0:
         return max(1, cpu_count() + num_processes + 1)
-    else:
-        return num_processes
+
+    return num_processes
