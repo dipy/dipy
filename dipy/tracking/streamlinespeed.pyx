@@ -6,7 +6,7 @@ import numpy as np
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
 
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.tracking import Streamlines
 
@@ -17,7 +17,7 @@ cdef extern from "dpy_math.h" nogil:
 
 cdef double c_length(Streamline streamline) nogil:
     cdef:
-        np.npy_intp i
+        cnp.npy_intp i
         double out = 0.0
         double dn, sum_dn_sqr
 
@@ -33,12 +33,12 @@ cdef double c_length(Streamline streamline) nogil:
 
 
 cdef void c_arclengths_from_arraysequence(Streamline points,
-                                          np.npy_intp[:] offsets,
-                                          np.npy_intp[:] lengths,
+                                          cnp.npy_intp[:] offsets,
+                                          cnp.npy_intp[:] lengths,
                                           double[:] arclengths) nogil:
     cdef:
-        np.npy_intp i, j, k
-        np.npy_intp offset
+        cnp.npy_intp i, j, k
+        cnp.npy_intp offset
         double dn, sum_dn_sqr
 
     for i in range(offsets.shape[0]):
@@ -117,7 +117,7 @@ def length(streamlines):
         return arclengths
 
     only_one_streamlines = False
-    if type(streamlines) is np.ndarray:
+    if type(streamlines) is cnp.ndarray:
         only_one_streamlines = True
         streamlines = [streamlines]
 
@@ -132,7 +132,7 @@ def length(streamlines):
 
     # Allocate memory for each streamline length.
     streamlines_length = np.empty(len(streamlines), dtype=np.float64)
-    cdef np.npy_intp i
+    cdef cnp.npy_intp i
 
     if dtype is None:
         # List of streamlines having different dtypes
@@ -182,7 +182,7 @@ def length(streamlines):
 
 
 cdef void c_arclengths(Streamline streamline, double* out) nogil:
-    cdef np.npy_intp i = 0
+    cdef cnp.npy_intp i = 0
     cdef double dn
 
     out[0] = 0.0
@@ -197,11 +197,11 @@ cdef void c_arclengths(Streamline streamline, double* out) nogil:
 
 cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
     cdef:
-        np.npy_intp N = streamline.shape[0]
-        np.npy_intp D = streamline.shape[1]
-        np.npy_intp new_N = out.shape[0]
+        cnp.npy_intp N = streamline.shape[0]
+        cnp.npy_intp D = streamline.shape[1]
+        cnp.npy_intp new_N = out.shape[0]
         double ratio, step, next_point, delta
-        np.npy_intp i, j, k, dim
+        cnp.npy_intp i, j, k, dim
 
     # Get arclength at each point.
     arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
@@ -245,14 +245,14 @@ cdef void c_set_number_of_points(Streamline streamline, Streamline out) nogil:
 
 
 cdef void c_set_number_of_points_from_arraysequence(Streamline points,
-                                                    np.npy_intp[:] offsets,
-                                                    np.npy_intp[:] lengths,
+                                                    cnp.npy_intp[:] offsets,
+                                                    cnp.npy_intp[:] lengths,
                                                     long nb_points,
                                                     Streamline out) nogil:
     cdef:
-        np.npy_intp i, j, k
-        np.npy_intp offset, length
-        np.npy_intp offset_out = 0
+        cnp.npy_intp i, j, k
+        cnp.npy_intp offset, length
+        cnp.npy_intp offset_out = 0
         double dn, sum_dn_sqr
 
     for i in range(offsets.shape[0]):
@@ -344,7 +344,7 @@ def set_number_of_points(streamlines, nb_points=3):
         return new_streamlines
 
     only_one_streamlines = False
-    if type(streamlines) is np.ndarray:
+    if type(streamlines) is cnp.ndarray:
         only_one_streamlines = True
         streamlines = [streamlines]
 
@@ -364,7 +364,7 @@ def set_number_of_points(streamlines, nb_points=3):
 
     # Allocate memory for each modified streamline
     new_streamlines = []
-    cdef np.npy_intp i
+    cdef cnp.npy_intp i
 
     if dtype is None:
         # List of streamlines having different dtypes
@@ -444,14 +444,14 @@ cdef double c_norm_of_cross_product(double bx, double by, double bz,
     return sqrt(ax*ax + ay*ay + az*az)
 
 
-cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
-                           np.npy_intp next, np.npy_intp curr) nogil:
+cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp prev,
+                           cnp.npy_intp next, cnp.npy_intp curr) nogil:
     """ Computes the shortest Euclidean distance between a point `curr` and
         the line passing through `prev` and `next`. """
 
     cdef:
         double dn, norm1, norm2
-        np.npy_intp D = streamline.shape[1]
+        cnp.npy_intp D = streamline.shape[1]
 
     # Compute cross product of next-prev and curr-next
     norm1 = c_norm_of_cross_product(streamline[next, 0]-streamline[prev, 0],
@@ -472,11 +472,11 @@ cdef double c_dist_to_line(Streamline streamline, np.npy_intp prev,
 
 
 cdef double c_segment_length(Streamline streamline,
-                             np.npy_intp start, np.npy_intp end) nogil:
+                             cnp.npy_intp start, cnp.npy_intp end) nogil:
     """ Computes the length of the segment going from `start` to `end`. """
     cdef:
-        np.npy_intp D = streamline.shape[1]
-        np.npy_intp d
+        cnp.npy_intp D = streamline.shape[1]
+        cnp.npy_intp d
         double segment_length = 0.0
         double dn
 
@@ -487,14 +487,14 @@ cdef double c_segment_length(Streamline streamline,
     return sqrt(segment_length)
 
 
-cdef np.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
+cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
                                        double tol_error, double max_segment_length) nogil:
     """ Compresses a streamline (see function `compress_streamlines`)."""
     cdef:
-        np.npy_intp N = streamline.shape[0]
-        np.npy_intp D = streamline.shape[1]
-        np.npy_intp nb_points = 0
-        np.npy_intp d, prev, next, curr
+        cnp.npy_intp N = streamline.shape[0]
+        cnp.npy_intp D = streamline.shape[1]
+        cnp.npy_intp nb_points = 0
+        cnp.npy_intp d, prev, next, curr
         double segment_length
 
     # Copy first point since it is always kept.
@@ -609,7 +609,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
                  Metrics for Streamlines with Variable Step Sizes, ISMRM, 2015.
     """
     only_one_streamlines = False
-    if type(streamlines) is np.ndarray:
+    if type(streamlines) is cnp.ndarray:
         only_one_streamlines = True
         streamlines = [streamlines]
 
@@ -617,7 +617,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
         return []
 
     compressed_streamlines = []
-    cdef np.npy_intp i
+    cdef cnp.npy_intp i
     for i in range(len(streamlines)):
         dtype = streamlines[i].dtype
         # HACK: To avoid memleaks we have to recast with astype(dtype).

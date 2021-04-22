@@ -1,8 +1,8 @@
 
-cimport numpy as np
+cimport numpy as cnp
 
 cdef class DirectionGetter:
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
             self, double[::1] point):
         pass
 

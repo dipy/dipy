@@ -10,7 +10,7 @@ discrete distribution (pmf) at each step of the tracking.
 from random import random
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.direction.peaks import peak_directions, default_sphere
@@ -97,10 +97,10 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         cdef:
-            size_t i, idx, _len
+            cnp.npy_intp i, idx, _len
             double[:] newdir, pmf
             double last_cdf, random_sample
-            np.uint8_t[:] bool_array
+            cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
@@ -162,10 +162,10 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
             1 otherwise.
         """
         cdef:
-            size_t _len, max_idx
+            cnp.npy_intp _len, max_idx
             double[:] newdir, pmf
             double max_value
-            np.uint8_t[:] bool_array
+            cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]

@@ -234,6 +234,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
+    if isinstance(patch_radius, int):
+        patch_radius = np.ones(3, dtype=int) * patch_radius
+
     patch_radius = np.asarray(patch_radius, dtype=int)
 
     if not data.ndim == 4:

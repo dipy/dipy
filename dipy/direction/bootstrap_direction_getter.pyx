@@ -1,4 +1,4 @@
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from dipy.data import default_sphere
@@ -64,7 +64,7 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
         """
         cdef:
             double[:] pmf,
-            np.ndarray[np.float_t, ndim=2] peaks
+            cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         for _ in range(self.max_attempts):
             pmf = self._get_pmf(point)

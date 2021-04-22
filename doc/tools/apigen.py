@@ -1,5 +1,4 @@
-"""
-Attempt to generate templates for module reference with Sphinx
+"""Attempt to generate templates for module reference with Sphinx.
 
 To include extension modules, first identify them as valid in the
 ``_uri2path`` method, then handle them in the ``_parse_module_with_import``
@@ -31,8 +30,8 @@ DEBUG = True
 
 
 class ApiDocWriter(object):
-    """ Class for automatic detection and parsing of API docs
-    to Sphinx-parsable reST format"""
+    """Automatic detection and parsing of API docs to Sphinx-parsable reST
+    format."""
 
     # only separating first two levels
     rst_section_levels = ['*', '=', '-', '~', '^']
@@ -44,7 +43,7 @@ class ApiDocWriter(object):
                  module_skip_patterns=None,
                  other_defines=True
                  ):
-        """ Initialize package for parsing
+        r"""Initialize package for parsing.
 
         Parameters
         ----------
@@ -87,7 +86,7 @@ class ApiDocWriter(object):
         return self._package_name
 
     def set_package_name(self, package_name):
-        """ Set package_name
+        """Set package_name.
 
         >>> docwriter = ApiDocWriter('sphinx')
         >>> import sphinx
@@ -108,7 +107,7 @@ class ApiDocWriter(object):
                             'get/set package_name')
 
     def _import(self, name):
-        """ Import namespace package """
+        """Import namespace package."""
         mod = __import__(name)
         components = name.split('.')
         for comp in components[1:]:
@@ -116,7 +115,10 @@ class ApiDocWriter(object):
         return mod
 
     def _get_object_name(self, line):
-        """ Get second token in line
+        """Get second token in line.
+
+        Examples
+        --------
         >>> docwriter = ApiDocWriter('sphinx')
         >>> docwriter._get_object_name("  def func():  ")
         'func'
@@ -131,7 +133,7 @@ class ApiDocWriter(object):
         return name.rstrip(':')
 
     def _uri2path(self, uri):
-        """ Convert uri to absolute filepath
+        """Convert uri to absolute filepath.
 
         Parameters
         ----------
@@ -166,6 +168,8 @@ class ApiDocWriter(object):
         # XXX maybe check for extensions as well?
         if os.path.exists(path + '.py'):  # file
             path += '.py'
+        elif os.path.exists(path + '.pyx'):  # file
+            path += '.pyx'
         elif os.path.exists(os.path.join(path, '__init__.py')):
             path = os.path.join(path, '__init__.py')
         else:
@@ -173,7 +177,7 @@ class ApiDocWriter(object):
         return path
 
     def _path2uri(self, dirpath):
-        """ Convert directory path to uri """
+        """Convert directory path to uri."""
         package_dir = self.package_name.replace('.', os.path.sep)
         relpath = dirpath.replace(self.root_path, package_dir)
         if relpath.startswith(os.path.sep):
@@ -181,7 +185,7 @@ class ApiDocWriter(object):
         return relpath.replace(os.path.sep, '.')
 
     def _parse_module(self, uri):
-        """ Parse module defined in *uri* """
+        """Parse module defined in *uri*."""
         filename = self._uri2path(uri)
         if filename is None:
             print(filename, 'erk')
@@ -237,7 +241,7 @@ class ApiDocWriter(object):
         return functions, classes
 
     def _parse_lines(self, linesource):
-        """ Parse lines of text for functions and classes """
+        """Parse lines of text for functions and classes."""
         functions = []
         classes = []
         for line in linesource:
@@ -258,7 +262,7 @@ class ApiDocWriter(object):
         return functions, classes
 
     def generate_api_doc(self, uri):
-        """Make autodoc documentation template string for a module
+        """Make autodoc documentation template string for a module.
 
         Parameters
         ----------
@@ -321,7 +325,7 @@ class ApiDocWriter(object):
         return head, body
 
     def _survives_exclude(self, matchstr, match_type):
-        """ Returns True if *matchstr* does not match patterns
+        r"""Return True if *matchstr* does not match patterns.
 
         ``self.package_name`` removed from front of string if present
 
@@ -363,8 +367,7 @@ class ApiDocWriter(object):
         return True
 
     def discover_modules(self):
-        """ Return module sequence discovered from ``self.package_name``
-
+        r"""Return module sequence discovered from ``self.package_name``.
 
         Parameters
         ----------
@@ -396,8 +399,10 @@ class ApiDocWriter(object):
             # Normally, we'd only iterate over dirnames, but since
             # dipy does not import a whole bunch of modules we'll
             # include those here as well (the *.py filenames).
-            filenames = [f[:-3] for f in filenames if
-                         f.endswith('.py') and not f.startswith('__init__')]
+            filenames = [os.path.splitext(f)[0] for f in filenames
+                         if (f.endswith('.py') and
+                             not f.startswith('__init__'))
+                         or f.endswith('.pyx')]
 
             for subpkg_name in dirnames + filenames:
                 package_uri = '.'.join((root_uri, subpkg_name))
@@ -470,7 +475,7 @@ class ApiDocWriter(object):
         self.write_modules_api(modules, outdir)
 
     def write_index(self, outdir, froot='gen', relative_to=None):
-        """Make a reST API index file from written files
+        """Make a reST API index file from written files.
 
         Parameters
         ----------
