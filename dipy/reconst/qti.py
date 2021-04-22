@@ -232,7 +232,8 @@ def qti_signal(gtab, D, C, S0=1):
     C : numpy.ndarray
         Covariance tensors of shape (..., 6, 6) or (..., 21, 1).
     S0 : numpy.ndarray, optional
-        Signal magnitudes without diffusion-weighting.
+        Signal magnitudes without diffusion-weighting. Must be a single number
+        or an array of same shape as D and C without the last two dimensions.
 
     Returns
     -------
@@ -253,29 +254,36 @@ def qti_signal(gtab, D, C, S0=1):
     if gtab.btens is None:
         raise ValueError(
             'QTI requires b-tensors to be defined in the gradient table.')
-    if D.shape != (6, 1):
-        if D.shape == (3, 3):
+    if D.shape[-2::] != (6, 1):
+        if D.shape[-2::] == (3, 3):
             D = from_3x3_to_6x1(D)
         else:
             raise ValueError(
-                'The shape of D must be (3, 3) or (6, 1).')
-    if C.shape != (21, 1):
-        if C.shape == (6, 6):
+                'The shape of D must be (..., 3, 3) or (..., 6, 1).')
+    if C.shape[-2::] != (21, 1):
+        if C.shape[-2::] == (6, 6):
             C = from_6x6_to_21x1(C)
         else:
             raise ValueError(
-                'The shape of C must be (6, 6) or (21, 1).')
-    if not (isinstance(S0, int) or isinstance(S0, float)):
-        raise ValueError('S0 must be an integer or a floating-point number.')
+                'The shape of C must be (..., 6, 6) or (..., 21, 1).')
+    if D.shape[0:-2] != C.shape[0:-2]:
+        raise ValueError(
+            'The shape of C and D must be the same until the last two '
+            + 'dimensions.')
+    if not ((isinstance(S0, int) or isinstance(S0, float))):
+        if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
+            raise ValueError(
+                'S0 must be a single number or an array of the same shape as D '
+                + ' and C without the last two dimensions.')
 
     # Generate signals
-    S = np.zeros(gtab.btens.shape[0])
+    S = np.zeros(D.shape[0:-2] + (gtab.btens.shape[0],))
     for i, bten in enumerate(gtab.btens):
         bten = from_3x3_to_6x1(bten)
         bten_sq = from_6x6_to_21x1(bten @ np.swapaxes(bten, -2, -1))
-        S[i] = S0 * np.exp(
+        S[..., i] = S0 * np.exp(
             - np.swapaxes(bten, -2, -1) @ D
-            + .5 * np.swapaxes(bten_sq, -2, -1) @ C)
+            + .5 * np.swapaxes(bten_sq, -2, -1) @ C)[..., 0, 0]
     return S
 
 
@@ -454,7 +462,7 @@ class QtiModel(ReconstModel):
         S : numpy.ndarray
             Signals.
         """
-        S0 = params[..., 0, np.newaxis]
+        S0 = np.exp(params[..., 0])
         D = params[..., 1:7, np.newaxis]
         C = params[..., 7::, np.newaxis]
         S = qti_signal(self.gtab, D, C, S0)
@@ -494,7 +502,7 @@ class QtiFit(object):
         if gtab.btens is None:
             raise ValueError(
                 'QTI requires b-tensors to be defined in the gradient table.')
-        S0 = self.params[..., 0, np.newaxis]
+        S0 = self.S0_hat
         D = self.params[..., 1:7, np.newaxis]
         C = self.params[..., 7::, np.newaxis]
         S = qti_signal(gtab, D, C, S0)
