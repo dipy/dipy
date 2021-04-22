@@ -533,7 +533,7 @@ def slicer_panel(scene, iren,
 
     panel.add_element(picker_label, coords=(0.2, ys[5]))
 
-    #panel.add_element(slicer_panel_label, coords=(0.05, 0.85))
+    panel.add_element(slicer_panel_label, coords=(0.05, 0.9))
 
     scene.add(panel)
 
