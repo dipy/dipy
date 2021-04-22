@@ -26,7 +26,7 @@ class HorizonFlow(Workflow):
         return 'horizon'
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
-            random_colors=False, length_gt=0, length_lt=1000,
+            random_colors=None, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
             disable_order_transparency=False, buan=False, buan_thr=0.5,
@@ -47,9 +47,14 @@ class HorizonFlow(Workflow):
             small animal brains you may need to use something smaller such
             as 2.0. The distance is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : bool, optional
-            Given multiple tractograms and/or rois then each tractogram and/or
-            roi will be shown with different color.
+        random_colors : variable str, optional
+            Given multiple tractograms and/or ROIs then each tractogram and/or
+            ROI will be shown with different color. If no value is provided
+            both the tractograms and the ROIs will have a different random
+            color generated from a distinguishable colormap. If the effect
+            should only be applied to one of the 2 objects, then use the
+            options 'tracts' and 'rois' for the tractograms and the ROIs
+            respectively.
         length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
