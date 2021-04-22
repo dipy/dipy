@@ -82,7 +82,7 @@ HELP_MESSAGE = """
 class Horizon(object):
 
     def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
-                 cluster_thr=15.0, random_colors=False, length_gt=0,
+                 cluster_thr=15.0, random_colors=None, length_gt=0,
                  length_lt=1000, clusters_gt=0, clusters_lt=10000,
                  world_coords=True, interactive=True, out_png='tmp.png',
                  recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
@@ -107,9 +107,14 @@ class Horizon(object):
             small animal data you may need to use something smaller such
             as 2.0. The threshold is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : bool
-            Given multiple tractograms have been included then each tractogram
-            will be shown with different color
+        random_colors : string
+            Given multiple tractograms and/or ROIs then each tractogram and/or
+            ROI will be shown with different color. If no value is provided
+            both the tractograms and the ROIs will have a different random
+            color generated from a distinguishable colormap. If the effect
+            should only be applied to one of the 2 objects, then use the
+            options 'tracts' and 'rois' for the tractograms and the ROIs
+            respectively.
         length_gt : float
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
@@ -187,8 +192,12 @@ class Horizon(object):
         self.roi_images = roi_images
         self.roi_colors = roi_colors
 
-        if self.random_colors:
+        if self.random_colors is not None:
             self.color_gen = distinguishable_colormap()
+            if not self.random_colors:
+                self.random_colors = ['tracts', 'rois']
+        else:
+            self.random_colors = []
 
     def build_scene(self):
 
@@ -229,7 +238,7 @@ class Horizon(object):
         for (t, sft) in enumerate(tractograms):
             streamlines = sft.streamlines
 
-            if self.random_colors:
+            if 'tracts' in self.random_colors:
                 colors = next(self.color_gen)
             else:
                 colors = None
@@ -487,7 +496,7 @@ class Horizon(object):
                     img_data, img_affine = img
                     dim = np.unique(img_data).shape[0]
                     if dim == 2:
-                        if self.random_colors:
+                        if 'rois' in self.random_colors:
                             roi_color = next(self.color_gen)
                         roi_actor = actor.contour_from_roi(
                             img_data, affine=img_affine,
@@ -848,7 +857,7 @@ class Horizon(object):
 
 def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
-            random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
+            random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
             roi_images=False, roi_colors=(1, 0, 0), out_png='tmp.png',
@@ -872,9 +881,13 @@ def horizon(tractograms=None, images=None, pams=None,
         small animal data you may need to use something smaller such
         as 2.0. The threshold is in mm. For this parameter to be active
         ``cluster`` should be enabled.
-    random_colors : bool
-        Given multiple tractograms have been included then each tractogram
-        will be shown with different color
+    random_colors : string
+        Given multiple tractograms and/or ROIs then each tractogram and/or
+        ROI will be shown with different color. If no value is provided both
+        the tractograms and the ROIs will have a different random color
+        generated from a distinguishable colormap. If the effect should only be
+        applied to one of the 2 objects, then use the options 'tracts' and
+        'rois' for the tractograms and the ROIs respectively.
     bg_color : ndarray or list or tuple
         Define the background color of the scene. Default is black (0, 0, 0)
     order_transparent : bool
