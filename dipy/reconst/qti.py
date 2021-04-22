@@ -125,7 +125,7 @@ def from_21x1_to_6x6(V):
 # These tensors are used in the calculation of QTI parameters
 e_iso = np.eye(3) / 3
 E_iso = np.eye(6) / 3
-E_bulk = np.matmul(from_3x3_to_6x1(e_iso), from_3x3_to_6x1(e_iso).T)
+E_bulk = from_3x3_to_6x1(e_iso) @ from_3x3_to_6x1(e_iso).T
 E_shear = E_iso - E_bulk
 E_tsym = E_bulk + .4 * E_shear
 
@@ -161,13 +161,10 @@ def dtd_covariance(DTD):
     if len(DTD.shape) != 3 or DTD.shape[1:3] != (3, 3):
         raise ValueError(
             'The shape of the DTD must be (number of tensors, 3, 3)')
+    D = np.mean(DTD, axis=0)
     C = np.mean(
-        np.matmul(
-            from_3x3_to_6x1(DTD),
-            np.swapaxes(from_3x3_to_6x1(DTD), -2, -1)),
-        axis=0) - np.matmul(
-        from_3x3_to_6x1(np.mean(DTD, axis=0)),
-        np.swapaxes(from_3x3_to_6x1(np.mean(DTD, axis=0)), -2, -1))
+        from_3x3_to_6x1(DTD) @ np.swapaxes(from_3x3_to_6x1(DTD), -2, -1),
+        axis=0) - from_3x3_to_6x1(D) @ np.swapaxes(from_3x3_to_6x1(D), -2, -1)
     return C
 
 
@@ -230,10 +227,10 @@ def qti_signal(gtab, D, C, S0=1):
     S = np.zeros(gtab.btens.shape[0])
     for i, bten in enumerate(gtab.btens):
         bten = from_3x3_to_6x1(bten)
-        bten_sq = from_6x6_to_21x1(np.matmul(bten, np.swapaxes(bten, -2, -1)))
+        bten_sq = from_6x6_to_21x1(bten @ np.swapaxes(bten, -2, -1))
         S[i] = S0 * np.exp(
-            - np.matmul(np.swapaxes(bten, -2, -1), D)
-            + .5 * np.matmul(np.swapaxes(bten_sq, -2, -1), C))
+            - np.swapaxes(bten, -2, -1) @ D
+            + .5 * np.swapaxes(bten_sq, -2, -1) @ C)
     return S
 
 
@@ -253,7 +250,7 @@ def design_matrix(btens):
     X = np.zeros((btens.shape[0], 28))
     for i, bten in enumerate(btens):
         b = from_3x3_to_6x1(bten)
-        b_sq = from_6x6_to_21x1(np.matmul(b, b.T))
+        b_sq = from_6x6_to_21x1(b @ b.T)
         X[i] = np.concatenate(
             ([1], (-b.T)[0, :], (0.5 * b_sq.T)[0, :]))
     return X
@@ -280,13 +277,13 @@ def _ols_fit(data, mask, X):
         the estimated covariance tensor parameters.
     """
     params = np.zeros(mask.shape + (28,)) * np.nan
-    X_inv = np.linalg.pinv(np.matmul(X.T, X))  # Independent of data
+    X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
     index = ndindex(mask.shape)
     for v in index:  # This loop is slow
         if not mask[v]:
             continue
         S = np.log(data[v])[:, np.newaxis]
-        params[v] = np.matmul(X_inv, np.matmul(X.T, S))[:, 0]
+        params[v] = (X_inv @ X.T @ S)[:, 0]
     return params
 
 
@@ -313,13 +310,13 @@ def _wls_fit(data, mask, X):
     """
     params = np.zeros(mask.shape + (28,)) * np.nan
     index = ndindex(mask.shape)
-    for v in index:  # This loop is slow loop
+    for v in index:  # This loop is slow
         if not mask[v]:
             continue
         S = np.log(data[v])[:, np.newaxis]
         B = X.T * data[v][np.newaxis, :]
-        A = np.matmul(B, X)
-        params[v] = np.matmul(np.matmul(np.linalg.pinv(A), B), S)[:, 0]
+        A = B @ X
+        params[v] = (np.linalg.pinv(A) @ B @ S)[:, 0]
     return params
 
 
@@ -349,12 +346,12 @@ class QtiModel(ReconstModel):
             raise ValueError(
                 'QTI requires b-tensors to be defined in the gradient table.')
         self.X = design_matrix(self.gtab.btens)
-        rank = np.linalg.matrix_rank(np.matmul(self.X.T, self.X))
+        rank = np.linalg.matrix_rank(self.X.T @ self.X)
         if rank < 28:
             warn(
                 'The combination of the b-tensor shapes, sizes, and ' +
                 'orientations does not enable all elements of the covariance ' +
-                'tensor to be estimated (rank(X.T, X) = %s < 28).' % rank
+                'tensor to be estimated (rank(X.T @ X) = %s < 28).' % rank
             )
 
         if fit_method != 'OLS' and fit_method != 'WLS':
