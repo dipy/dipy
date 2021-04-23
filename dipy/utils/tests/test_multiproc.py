@@ -20,13 +20,13 @@ def test_determine_num_processs():
     # A positive integer should not change
     assert_equal(determine_num_processes(4), 4)
 
-    # None and -1 shoul be equal (all cores)
+    # None and -1 should be equal (all cores)
     assert_equal(determine_num_processes(None), determine_num_processes(-1))
 
     # A big negative number should be 1
     assert_equal(determine_num_processes(-10000), 1)
 
-    # -2 should be one less than -1 (if there are more than 1 core)
+    # -2 should be one less than -1 (if there are more than 1 cores)
     if determine_num_processes(-1) > 1:
         assert_equal(determine_num_processes(-1),
                      determine_num_processes(-2) + 1)
