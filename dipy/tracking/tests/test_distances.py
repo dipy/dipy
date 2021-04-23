@@ -118,13 +118,13 @@ def test_bundles_distances_mam():
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
 
-    with assert_warns(UserWarning):
-        for metric in ('avg', 'min', 'max'):
-            pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
+    for metric in ('avg', 'min', 'max'):
+        pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        _ = pf.bundles_distances_mam(tracksA, tracksB)
+        tracksC = [xyz2A, xyz1A]
+        _ = pf.bundles_distances_mam(tracksA, tracksC)
         print(w)
         assert_true(len(w) == 1)
         assert_true(issubclass(w[0].category, UserWarning))
@@ -136,11 +136,13 @@ def test_bundles_distances_mdf(verbose=False):
     xyz2A = np.array([[0, 1, 1], [1, 0, 1], [2, 3, -2]], dtype='float32')
     xyz3A = np.array([[0, 0, 0], [1, 0, 0], [3, 0, 0]], dtype='float32')
     xyz1B = np.array([[-1, 0, 0], [2, 0, 0], [2, 3, 0]], dtype='float32')
+    xyz1C = np.array([[-1, 0, 0], [2, 0, 0], [2, 3, 0], [3, 0, 0]],
+                     dtype='float32')
 
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
-    with assert_warns(UserWarning):
-        pf.bundles_distances_mdf(tracksA, tracksB)
+
+    pf.bundles_distances_mdf(tracksA, tracksB)
 
     tracksA = [xyz1A, xyz1A]
     tracksB = [xyz1A, xyz1A]
@@ -151,8 +153,7 @@ def test_bundles_distances_mdf(verbose=False):
     tracksA = [xyz1A, xyz3A]
     tracksB = [xyz2A]
 
-    with assert_warns(UserWarning):
-        DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
+    DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
     if verbose:
         print(DM2)
 
@@ -178,7 +179,8 @@ def test_bundles_distances_mdf(verbose=False):
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
-        _ = pf.bundles_distances_mdf(tracksA, tracksB[:2])
+        tracksC = [xyz1C, xyz1A]
+        _ = pf.bundles_distances_mdf(tracksA, tracksC)
         print(w)
         assert_true(len(w) == 1)
         assert_true(issubclass(w[0].category, UserWarning))

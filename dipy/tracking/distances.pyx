@@ -515,7 +515,8 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
-    if lentA != lentB:
+    # for performance issue, we just check the first streamline
+    if len(tracksA[0]) != len(tracksB[0]):
         w_s = "Streamlines do not have the same number of points. "
         w_s += "All streamlines need to have the same number of points. "
         w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
@@ -597,7 +598,8 @@ def bundles_distances_mdf(tracksA, tracksB):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
-    if lentA != lentB:
+    # for performance issue, we just check the first streamline
+    if len(tracksA[0]) != len(tracksB[0]):
         w_s = "Streamlines do not have the same number of points. "
         w_s += "All streamlines need to have the same number of points. "
         w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
