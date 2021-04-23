@@ -115,7 +115,28 @@ as model bundles
 model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 
 """
-Extracting bundles using recobundles [Garyfallidis17]_
+Extracting bundles using RecoBundles [Garyfallidis17]_
+
+RecoBundles requires a model (reference) bundle and tries to extract similar
+looking bundle from the input tractogram. There are some key parameters that
+users can set as per requirements. Here are the key threshold parameters and
+their function in Recobundles:
+
+    - model_clust_thr : It will use QuickBundles to get the centroids of the
+    model bundle and work with centroids instead of all streamlines. This helps
+    in making RecoBundles faster. If you prefer to use all the streamnlines of
+    the model bundle, you can set this threshold to 0.01.
+
+    - reduction_thr : This threshold will be used to reduce the search space
+    for finding the streamlines that match model bundle streamlines in shape.
+    Instead of looking at the entire tractogram, now we will be looking at
+    neighboring region of a model bundle in the tractogram. Increase the threshold
+    to increase the search space.
+
+    - pruning_thr : This threshold will filter the streamnlines that have distance
+    between model bundle and them greater than the pruning_thr. This serves as
+    filtering the neighborhood area (search space) to get model bundle like
+    streamlines.
 """
 
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
@@ -124,7 +145,7 @@ model_af_l = sft_af_l.streamlines
 rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
 
 recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
-                                            model_clust_thr=5.,
+                                            model_clust_thr=1.,
                                             reduction_thr=10,
                                             reduction_distance='mam',
                                             slr=True,
