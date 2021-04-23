@@ -1,6 +1,7 @@
 """Function for determining the effective number of processes to be used."""
 
 from multiprocessing import cpu_count
+from warnings import warn
 
 
 def determine_num_processes(num_processes):
@@ -28,10 +29,14 @@ def determine_num_processes(num_processes):
     if num_processes == 0:
         raise ValueError("num_processes cannot be 0")
 
-    if num_processes is None:
-        return cpu_count()
+    try:
+        if num_processes is None:
+            return cpu_count()
 
-    if num_processes < 0:
-        return max(1, cpu_count() + num_processes + 1)
+        if num_processes < 0:
+            return max(1, cpu_count() + num_processes + 1)
+    except NotImplementedError:
+        warn("Cannot determine number of cores. Using only 1.")
+        return 1
 
     return num_processes
