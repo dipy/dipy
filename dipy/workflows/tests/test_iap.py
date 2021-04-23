@@ -18,16 +18,16 @@ def test_none_or_dtype():
         npt.assert_equal(dec('none'), 'None')
 
     dec = none_or_dtype(int)
-    npt.assert_raises(ValueError, dec, 'ma valeur')
+    npt.assert_raises(ValueError, dec, 'my value')
     npt.assert_equal(dec(4), 4)
 
     dec = none_or_dtype(str)
     npt.assert_equal(dec(4), '4')
-    npt.assert_equal(dec('ma valeur'), 'ma valeur')
+    npt.assert_equal(dec('my value'), 'my value')
     npt.assert_equal(dec([4]), '[4]')
 
     dec = none_or_dtype(float)
-    npt.assert_raises(ValueError, dec, 'ma valeur')
+    npt.assert_raises(ValueError, dec, 'my value')
     for val in [(4,), [4, ]]:
         npt.assert_raises(TypeError, dec, val)
     npt.assert_equal(dec(True), 1.0)
