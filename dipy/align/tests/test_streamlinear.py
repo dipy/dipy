@@ -482,6 +482,14 @@ def test_cascade_of_optimizations_and_threading():
     assert_(slm3.fopt < slm2.fopt)
 
 
+def test_wrong_num_threads():
+    A = [np.random.rand(10, 3), np.random.rand(10, 3)]
+    B = [np.random.rand(10, 3), np.random.rand(10, 3)]
+
+    slr = StreamlineLinearRegistration(num_threads=0)
+    assert_raises(ValueError, slr.optimize, A, B)
+
+
 if __name__ == '__main__':
 
     run_module_suite()

@@ -5,6 +5,17 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.4.1 changes
+------------------
+
+- Change in the parallelization logic when using OpenMP:
+    - If ``ǹum_threads = None`` the value of ``OMP_NUM_THREADS`` environment variable is used. If it is not set then all available threads are used.
+    - If ``num_threads > 0`` that number is used as the number of threads.
+    - If ``num_threads < 0`` the maximum between ``1`` and ``num_cpu_cores - |num_threads + 1|`` is selected. If ``-1`` then all available threads are used.
+    - If ``num_threads = 0`` an error is raised.
+- Change in the parallelization logic when using multiprocessing package:
+    - The same as with OpenMP with the difference that ``num_threads = None`` uses all cores directly.
+
 DIPY 1.4.0 changes
 ------------------
 

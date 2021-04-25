@@ -323,9 +323,10 @@ class GibbsRingingFlow(Workflow):
         n_points : int, optional
             Number of neighbour points to access local TV (see note).
         num_threads : int or None, optional
-            Number of threads. Only applies to 3D or 4D `data` arrays. If None
-            then all available threads will be used. Otherwise, must be a
-            positive integer.
+            Split the calculation to a pool of children processes. Only
+            applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
+            number of cores minus |num_threads + 1| is used (enter -1 to use
+            as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_unrig : string, optional

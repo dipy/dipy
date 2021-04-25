@@ -168,7 +168,7 @@ Gibbs oscillation suppression of all multi-shell data and all slices
 can be performed in the following way:
 """
 
-data_corrected = gibbs_removal(data_slices, slice_axis=2, num_threads=None)
+data_corrected = gibbs_removal(data_slices, slice_axis=2, num_threads=-1)
 
 """
 Due to the high dimensionality of diffusion-weighted data, we recommend

@@ -8,7 +8,7 @@ from safe_openmp cimport have_openmp
 
 from cython.parallel import parallel, prange
 # import cpu_count for backwards compatibility
-from dipy.utils.omp import cpu_count
+from dipy.utils.omp import cpu_count, determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 from libc.math cimport sqrt, exp
@@ -34,9 +34,12 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
     rician : boolean
         If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
+    num_threads : int, optional
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------
@@ -92,7 +95,8 @@ def _nlmeans_3d(double[:, :, ::1] arr, double[:, :, ::1] mask,
     J = arr.shape[1]
     K = arr.shape[2]
 
-    set_num_threads(num_threads)
+    threads_to_use = determine_num_threads(num_threads)
+    set_num_threads(threads_to_use)
 
     # move the block
     with nogil, parallel():

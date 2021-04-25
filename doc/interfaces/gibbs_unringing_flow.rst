@@ -37,7 +37,8 @@ specifying the number of threads (``num_threads``) and output directory
 (``out_dir``). The number of threads allows to exploit the available
 computational power and accelerate the processing. The maximum number of
 threads available depends on the CPU of the computer, so users are expected
-to set an appropriate value based on their platform.
+to set an appropriate value based on their platform. Set ``num_threads`` to
+``-1`` to use all available cores.
 
 To run the Gibbs unringing on the data it suffices to execute the
 ``dipy_gibbs_ringing`` command, e.g.::

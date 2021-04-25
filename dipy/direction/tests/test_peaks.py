@@ -543,65 +543,51 @@ def test_peaksFromModelParallel():
                                       normalize_peaks=True, return_odf=True,
                                       return_sh=True, parallel=False)
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-            pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
-                                              normalize_peaks=True,
-                                              return_odf=True,
-                                              return_sh=True, parallel=True,
-                                              nbr_processes=0)
+        pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
+                                          normalize_peaks=True,
+                                          return_odf=True,
+                                          return_sh=True, parallel=True,
+                                          nbr_processes=-1)
 
-            pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
-                                              normalize_peaks=True,
-                                              return_odf=True,
-                                              return_sh=True, parallel=True,
-                                              nbr_processes=-2)
+        pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
+                                          normalize_peaks=True,
+                                          return_odf=True,
+                                          return_sh=True, parallel=True,
+                                          nbr_processes=-2)
 
-            # Both previous calls to peaks_from_model raise a
-            # PendingDeprecationWarning when sh_to_sf_basis is called, then a
-            # UserWarning when _peaks_from_model_parallel is called with an
-            # invalid number of processes, and finally another
-            # PendingDeprecationWarning when peaks_from_model is called a
-            # second time with parallel=False
-            assert_(len(w) == 6)
-            assert_(issubclass(w[1].category, UserWarning))
-            assert_(issubclass(w[4].category, UserWarning))
-            assert_("Invalid number of processes " in str(w[1].message))
-            assert_("Invalid number of processes " in str(w[4].message))
+        for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
+            assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
+            assert_equal(pam.gfa.shape, pam_single.gfa.shape)
+            assert_array_almost_equal(pam.gfa, pam_single.gfa)
 
-            for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
-                assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
-                assert_equal(pam.gfa.shape, pam_single.gfa.shape)
-                assert_array_almost_equal(pam.gfa, pam_single.gfa)
+            assert_equal(pam.qa.dtype, pam_single.qa.dtype)
+            assert_equal(pam.qa.shape, pam_single.qa.shape)
+            assert_array_almost_equal(pam.qa, pam_single.qa)
 
-                assert_equal(pam.qa.dtype, pam_single.qa.dtype)
-                assert_equal(pam.qa.shape, pam_single.qa.shape)
-                assert_array_almost_equal(pam.qa, pam_single.qa)
+            assert_equal(pam.peak_values.dtype,
+                         pam_single.peak_values.dtype)
+            assert_equal(pam.peak_values.shape,
+                         pam_single.peak_values.shape)
+            assert_array_almost_equal(pam.peak_values,
+                                      pam_single.peak_values)
 
-                assert_equal(pam.peak_values.dtype,
-                             pam_single.peak_values.dtype)
-                assert_equal(pam.peak_values.shape,
-                             pam_single.peak_values.shape)
-                assert_array_almost_equal(pam.peak_values,
-                                          pam_single.peak_values)
+            assert_equal(pam.peak_indices.dtype,
+                         pam_single.peak_indices.dtype)
+            assert_equal(pam.peak_indices.shape,
+                         pam_single.peak_indices.shape)
+            assert_array_equal(pam.peak_indices, pam_single.peak_indices)
 
-                assert_equal(pam.peak_indices.dtype,
-                             pam_single.peak_indices.dtype)
-                assert_equal(pam.peak_indices.shape,
-                             pam_single.peak_indices.shape)
-                assert_array_equal(pam.peak_indices, pam_single.peak_indices)
+            assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
+            assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
+            assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
 
-                assert_equal(pam.peak_dirs.dtype, pam_single.peak_dirs.dtype)
-                assert_equal(pam.peak_dirs.shape, pam_single.peak_dirs.shape)
-                assert_array_almost_equal(pam.peak_dirs, pam_single.peak_dirs)
+            assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
+            assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
+            assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
 
-                assert_equal(pam.shm_coeff.dtype, pam_single.shm_coeff.dtype)
-                assert_equal(pam.shm_coeff.shape, pam_single.shm_coeff.shape)
-                assert_array_almost_equal(pam.shm_coeff, pam_single.shm_coeff)
-
-                assert_equal(pam.odf.dtype, pam_single.odf.dtype)
-                assert_equal(pam.odf.shape, pam_single.odf.shape)
-                assert_array_almost_equal(pam.odf, pam_single.odf)
+            assert_equal(pam.odf.dtype, pam_single.odf.dtype)
+            assert_equal(pam.odf.shape, pam_single.odf.shape)
+            assert_array_almost_equal(pam.odf, pam_single.odf)
 
 
 def test_peaks_shm_coeff():
