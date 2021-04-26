@@ -15,6 +15,7 @@ cdef class DirectionGetter:
                                   double[::1] dir,
                                   cnp.float_t[:, :] streamline,
                                   StreamlineStatus stream_status) except -1:
+
         return self.generate_streamline_c(&seed[0], &dir[0], streamline, &stream_status)
 
     cdef int generate_streamline_c(self,

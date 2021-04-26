@@ -191,7 +191,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
            if self.get_direction_c(point, dir):
                break
            for j in range(3):
-               voxdir[j] = dir[j] / self.voxel_size[j]
+               voxdir[j] = dir[j] / self.voxel_size #[j]  # update to a list to support non isotropic voxel sizes
            step(point, voxdir, self.step_size)
            copy_point(point, &streamline[i, 0])
            stream_status[0] = self.stopping_criterion.check_point_c(point)
