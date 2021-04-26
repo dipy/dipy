@@ -55,7 +55,8 @@ def test_stop_conditions():
     endpoint_mask = tissue == StreamlineStatus.ENDPOINT
     invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
     sc = ActStoppingCriterion(endpoint_mask, invalidpoint_mask)
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere, sc,
+                                               voxel_size=1, step_size=1,)
 
     # valid streamlines only
     streamlines_generator = LocalTracking(direction_getter=dg,
@@ -184,7 +185,8 @@ def test_save_seeds():
     endpoint_mask = tissue == StreamlineStatus.ENDPOINT
     invalidpoint_mask = tissue == StreamlineStatus.INVALIDPOINT
     sc = ActStoppingCriterion(endpoint_mask, invalidpoint_mask)
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere, sc,
+                                               voxel_size=1, step_size=1,)
 
     # valid streamlines only
     streamlines_generator = LocalTracking(direction_getter=dg,
@@ -244,7 +246,8 @@ def test_probabilistic_odf_weighted_tracker():
     mask = (simple_image > 0).astype(float)
     sc = ThresholdStoppingCriterion(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere, sc,
+                                               voxel_size=1, step_size=1,
                                                pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -274,7 +277,8 @@ def test_probabilistic_odf_weighted_tracker():
     npt.assert_(all(path))
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere, sc,
+                                               voxel_size=1, step_size=1,
                                                pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -283,7 +287,8 @@ def test_probabilistic_odf_weighted_tracker():
 
     # The first path is not possible if pmf_threshold > 0.67
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = ProbabilisticDirectionGetter.from_pmf(10 * pmf, 90, sphere,
+    dg = ProbabilisticDirectionGetter.from_pmf(10 * pmf, 90, sphere, sc,
+                                               voxel_size=1, step_size=1,
                                                pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -361,7 +366,8 @@ def test_particle_filtering_tractography():
     pmf = np.random.random(shape_img)
 
     # Test that PFT recover equal or more streamlines than localTracking
-    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 60, sphere, sc,
+                                               voxel_size=1, step_size=1,)
     local_streamlines_generator = LocalTracking(dg, sc, seeds, np.eye(4),
                                                 step_size, max_cross=1,
                                                 return_all=False)
@@ -491,7 +497,9 @@ def test_maximum_deterministic_tracker():
     mask = (simple_image > 0).astype(float)
     sc = ThresholdStoppingCriterion(mask, .5)
 
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, max_angle=90,
+                                                      sphere=sphere, sc=sc,
+                                                      voxel_size=1, step_size=1,
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -518,7 +526,8 @@ def test_maximum_deterministic_tracker():
             raise AssertionError()
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 80, sphere, sc,
+                                                      voxel_size=1, step_size=1,
                                                       pmf_threshold=0.1)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
@@ -529,192 +538,13 @@ def test_maximum_deterministic_tracker():
     # if pmf_threshold is larger than 0.67. Streamlines should stop at
     # the crossing.
     # 0.4/0.6 < 2/3, multiplying the pmf should not change the ratio
-    dg = DeterministicMaximumDirectionGetter.from_pmf(10 * pmf, 80, sphere,
+    dg = DeterministicMaximumDirectionGetter.from_pmf(10 * pmf, 80, sphere, sc,
+                                                      voxel_size=1, step_size=1,
                                                       pmf_threshold=0.67)
     streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[2]))
-
-
-def test_bootstap_peak_tracker():
-    """This tests that the Bootstrat Peak Direction Getter plays nice
-    LocalTracking and produces reasonable streamlines in a simple example.
-    """
-    sphere = get_sphere('repulsion100')
-
-    # A simple image with three possible configurations, a vertical tract,
-    # a horizontal tract and a crossing
-    simple_image = np.array([[0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [2, 3, 2, 2, 2, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             ])
-    simple_image = simple_image[..., None]
-
-    bvecs = sphere.vertices
-    bvals = np.ones(len(bvecs)) * 1000
-    bvecs = np.insert(bvecs, 0, np.array([0, 0, 0]), axis=0)
-    bvals = np.insert(bvals, 0, 0)
-    gtab = gradient_table(bvals, bvecs)
-    angles = [(90, 90), (90, 0)]
-    fracs = [50, 50]
-    mevals = np.array([[1.5, 0.4, 0.4], [1.5, 0.4, 0.4]]) * 1e-3
-    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])]
-    voxel1 = single_tensor(gtab, 1, mevals[0], mevecs[0], snr=None)
-    voxel2 = single_tensor(gtab, 1, mevals[0], mevecs[1], snr=None)
-    voxel3, _ = multi_tensor(gtab, mevals, fractions=fracs, angles=angles,
-                             snr=None)
-    data = np.tile(voxel3, [5, 6, 1, 1])
-    data[simple_image == 1] = voxel1
-    data[simple_image == 2] = voxel2
-
-    response = (np.array(mevals[1]), 1)
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
-
-    seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
-
-    sc = BinaryStoppingCriterion((simple_image > 0).astype(float))
-    sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
-    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
-                                            sphere=sphere)
-
-    streamlines_generator = LocalTracking(boot_dg, sc, seeds, np.eye(4), 1.)
-    streamlines = Streamlines(streamlines_generator)
-    expected = [np.array([[0., 1., 0.],
-                          [1., 1., 0.],
-                          [2., 1., 0.],
-                          [3., 1., 0.],
-                          [4., 1., 0.]]),
-                np.array([[2., 4., 0.],
-                          [2., 3., 0.],
-                          [2., 2., 0.],
-                          [2., 1., 0.],
-                          [2., 0., 0.],
-                          ])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y, atol=0.5)
-
-    if not allclose(streamlines[0], expected[0]):
-        raise AssertionError()
-    if not allclose(streamlines[1], expected[1]):
-        raise AssertionError()
-
-
-def test_closest_peak_tracker():
-    """This tests that the Closest Peak Direction Getter plays nice
-    LocalTracking and produces reasonable streamlines in a simple example.
-    """
-    sphere = HemiSphere.from_sphere(unit_octahedron)
-
-    # A simple image with three possible configurations, a vertical tract,
-    # a horizontal tract and a crossing
-    pmf_lookup = np.array([[0., 0., 1.],
-                           [1., 0., 0.],
-                           [0., 1., 0.],
-                           [.5, .5, 0.]])
-    simple_image = np.array([[0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [2, 3, 2, 2, 2, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0],
-                             ])
-
-    simple_image = simple_image[..., None]
-    pmf = pmf_lookup[simple_image]
-
-    seeds = [np.array([1., 1., 0.]), np.array([2., 4., 0.])]
-
-    mask = (simple_image > 0).astype(float)
-    sc = BinaryStoppingCriterion(mask)
-
-    dg = ClosestPeakDirectionGetter.from_pmf(pmf, 90, sphere,
-                                             pmf_threshold=0.1)
-    streamlines = Streamlines(LocalTracking(dg, sc, seeds, np.eye(4), 1.))
-
-    expected = [np.array([[0., 1., 0.],
-                          [1., 1., 0.],
-                          [2., 1., 0.],
-                          [3., 1., 0.],
-                          [4., 1., 0.]]),
-                np.array([[2., 0., 0.],
-                          [2., 1., 0.],
-                          [2., 2., 0.],
-                          [2., 3., 0.],
-                          [2., 4., 0.]])]
-
-    def allclose(x, y):
-        return x.shape == y.shape and np.allclose(x, y)
-
-    if not allclose(streamlines[0], expected[0]):
-        raise AssertionError()
-    if not allclose(streamlines[1], expected[1]):
-        raise AssertionError()
-
-
-def test_eudx_tracker():
-    """This tests that the Peaks And Metrics Direction Getter plays nice
-    LocalTracking and produces reasonable streamlines in a simple example.
-    """
-    sphere = HemiSphere.from_sphere(unit_octahedron)
-
-    # A simple image with three possible configurations, a vertical tract,
-    # a horizontal tract and a crossing
-    peaks_values_lookup = np.array([[0., 0.],
-                                    [1., 0.],
-                                    [1., 0.],
-                                    [0.5, 0.5]])
-    peaks_indices_lookup = np.array([[-1, -1],
-                                     [0, -1],
-                                     [1, -1],
-                                     [0,  1]])
-    # EuDXDirectionGetter needs at 3 slices on each axis to work
-    simple_image = np.zeros([5, 6, 3], dtype=int)
-    simple_image[:, :, 1] = np.array([[0, 1, 0, 1, 0, 0],
-                                      [0, 1, 0, 1, 0, 0],
-                                      [0, 3, 2, 2, 2, 0],
-                                      [0, 1, 0, 0, 0, 0],
-                                      [0, 1, 0, 0, 0, 0],
-                                      ])
-
-    dg = PeaksAndMetrics()
-    dg.sphere = sphere
-    dg.peak_values = peaks_values_lookup[simple_image]
-    dg.peak_indices = peaks_indices_lookup[simple_image]
-    dg.ang_thr = 90
-
-    mask = (simple_image >= 0).astype(float)
-    sc = ThresholdStoppingCriterion(mask, 0.5)
-    seeds = [np.array([1., 1., 1.]),
-             np.array([2., 4., 1.]),
-             np.array([1., 3., 1.]),
-             np.array([4., 4., 1.])]
-
-    streamlines = LocalTracking(dg, sc, seeds, np.eye(4), 1.)
-
-    expected = [np.array([[0., 1., 1.],
-                          [1., 1., 1.],
-                          [2., 1., 1.],
-                          [3., 1., 1.],
-                          [4., 1., 1.]]),
-                np.array([[2., 0., 1.],
-                          [2., 1., 1.],
-                          [2., 2., 1.],
-                          [2., 3., 1.],
-                          [2., 4., 1.],
-                          [2., 5., 1.]]),
-                np.array([[0., 3., 1.],
-                          [1., 3., 1.],
-                          [2., 3., 1.],
-                          [2., 4., 1.],
-                          [2., 5., 1.]]),
-                np.array([[4., 4., 1.]])]
-
-    for i, sl in enumerate(streamlines):
-        npt.assert_(np.allclose(sl, expected[i]))
 
 
 def test_affine_transformations():
@@ -754,6 +584,8 @@ def test_affine_transformations():
     sc = BinaryStoppingCriterion(mask)
 
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 60, sphere,
+                                                      sc, voxel_size=1,
+                                                      step_size=1,
                                                       pmf_threshold=0.1)
 
     # TST- bad affine wrong shape

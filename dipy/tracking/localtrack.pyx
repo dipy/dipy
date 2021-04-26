@@ -84,14 +84,14 @@ cdef void fixed_step(double * point, double * direction, double step_size) nogil
 
 
 def local_tracker(
-        DirectionGetter dg,
-        StoppingCriterion sc,
-        cnp.float_t[:] seed_pos,
-        cnp.float_t[:] first_step,
-        cnp.float_t[:] voxel_size,
-        cnp.float_t[:, :] streamline,
-        double step_size,
-        int fixedstep):
+        dg,
+        sc,
+        seed_pos,
+        first_step,
+        voxel_size,
+        streamline,
+        step_size,
+        fixedstep):
     """Tracks one direction from a seed.
 
     This function is the main workhorse of the ``LocalTracking`` class defined
@@ -141,9 +141,16 @@ def local_tracker(
         dir[i] = first_step[i]
         vs[i] = voxel_size[i]
         seed[i] = seed_pos[i]
+    stream_status1 = TRACKPOINT
+
+    ###  BUG HERE ### the stream_status is not correctly returned.
+
+    j = dg.generate_streamline(seed_pos, first_step, streamline, stream_status)
 
     i = _local_tracker(dg, sc, seed, dir, vs, streamline,
                        step_size, fixedstep, &stream_status)
+    if not i == j:
+        print(stream_status1, stream_status)
     return i, stream_status
 
 
