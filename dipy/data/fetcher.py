@@ -495,6 +495,16 @@ fetch_gold_standard_io = _make_fetcher(
     data_size="47.KB")
 
 
+fetch_qte_lte_pte = _make_fetcher(
+    'fetch_qte_lte_pte',
+    pjoin(dipy_home, 'qte_lte_pte'),
+    'https://zenodo.org/record/4624866/files/',
+    ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
+    ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
+    doc='Download QTE data with linear and planar tensor encoding.',
+    data_size='41.5 MB')
+
+
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
 
