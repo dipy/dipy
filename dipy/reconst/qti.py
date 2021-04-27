@@ -39,7 +39,7 @@ def from_3x3_to_6x1(T):
     if T.shape[-2::] != (3, 3):
         raise ValueError('The shape of the input array must be (..., 3, 3).')
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All input tensors are not symmetric.')
+        warn('All input matrices are not symmetric.')
     C = np.sqrt(2)
     V = np.stack((T[..., 0, 0],
                   T[..., 1, 1],
@@ -117,7 +117,7 @@ def from_6x6_to_21x1(T):
     if T.shape[-2::] != (6, 6):
         raise ValueError('The shape of the input array must be (..., 6, 6).')
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All input tensors are not symmetric.')
+        warn('All input matrices are not symmetric.')
     C = np.sqrt(2)
     V = np.stack(([T[..., 0, 0], T[..., 1, 1], T[..., 2, 2],
                    C * T[..., 1, 2], C * T[..., 0, 2], C * T[..., 0, 1],
@@ -194,7 +194,8 @@ def dtd_covariance(DTD):
     Parameters
     ----------
     DTD : numpy.ndarray
-        Diffusion tensor distribution of shape (number of tensors, 3, 3).
+        Diffusion tensor distribution of shape (number of tensors, 3, 3) or
+        (number of tensors, 6, 1).
 
     Returns
     -------
@@ -210,13 +211,16 @@ def dtd_covariance(DTD):
             \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle -
             \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
     """
-    if len(DTD.shape) != 3 or DTD.shape[1:3] != (3, 3):
+    dims = DTD.shape
+    if len(dims) != 3 or (dims[1:3] != (3, 3) and dims[1:3] != (6, 1)):
         raise ValueError(
-            'The shape of DTD must be (number of tensors, 3, 3)')
-    D = np.mean(DTD, axis=0)
-    C = np.mean(
-        from_3x3_to_6x1(DTD) @ np.swapaxes(from_3x3_to_6x1(DTD), -2, -1),
-        axis=0) - from_3x3_to_6x1(D) @ np.swapaxes(from_3x3_to_6x1(D), -2, -1)
+            'The shape of DTD must be (number of tensors, 3, 3) or (number of '
+            + 'tensors, 6, 1).')
+    if dims[1:3] == (3, 3):
+        DTD = from_3x3_to_6x1(DTD)
+    D = np.mean(DTD, axis=0)  # Average diffusion tensor
+    C = (np.mean(DTD @ np.swapaxes(DTD, -2, -1), axis=0)
+         - D @ np.swapaxes(D, -2, -1))
     return C
 
 
@@ -279,11 +283,11 @@ def qti_signal(gtab, D, C, S0=1):
     # Generate signals
     S = np.zeros(D.shape[0:-2] + (gtab.btens.shape[0],))
     for i, bten in enumerate(gtab.btens):
-        bten = from_3x3_to_6x1(bten)
-        bten_sq = from_6x6_to_21x1(bten @ np.swapaxes(bten, -2, -1))
+        b = from_3x3_to_6x1(bten)
+        b_sq = from_6x6_to_21x1(b @ np.swapaxes(b, -2, -1))
         S[..., i] = S0 * np.exp(
-            - np.swapaxes(bten, -2, -1) @ D
-            + .5 * np.swapaxes(bten_sq, -2, -1) @ C)[..., 0, 0]
+            - np.swapaxes(b, -2, -1) @ D
+            + .5 * np.swapaxes(b_sq, -2, -1) @ C)[..., 0, 0]
     return S
 
 
@@ -377,7 +381,7 @@ def _wls_fit(data, mask, X):
 
 class QtiModel(ReconstModel):
 
-    def __init__(self, gtab, fit_method='OLS'):
+    def __init__(self, gtab, fit_method='WLS'):
         """Covariance tensor model of q-space trajectory imaging [1]_.
 
         Parameters
@@ -629,6 +633,16 @@ class QtiFit(object):
         Returns
         -------
         mean_d_sq : numpy.ndarray
+
+        Notes
+        -----
+        Average of microscopic diffusion tensors' outer products with themselves
+        is calculated as
+
+            .. math::
+
+                \langle \mathbf{D} \otimes \mathbf{D} \rangle = \mathbb{C} +
+                \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
         """
         mean_d_sq = from_21x1_to_6x6(
             self.params[..., 7::, np.newaxis]) + self.d_sq
