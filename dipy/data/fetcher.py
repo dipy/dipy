@@ -501,6 +501,8 @@ fetch_qte_lte_pte = _make_fetcher(
     'https://zenodo.org/record/4624866/files/',
     ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
     ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
+    ['f378b2cd9f57625512002b9e4c0f1660', '5c25d24dd3df8590582ed690507a8769',
+     '31abe55dfda7ef5fdf5015d0713be9b0', '1b7b83b8a60295f52d80c3855a12b275'],
     doc='Download QTE data with linear and planar tensor encoding.',
     data_size='41.5 MB')
 
@@ -674,6 +676,13 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+    if name == 'qte_lte_pte':
+        _, folder = fetch_qte_lte_pte()
+        fdata = pjoin(folder, 'lte-pte.nii.gz')
+        fbval = pjoin(folder, 'lte-pte.bval')
+        fbvec = pjoin(folder, 'lte-pte.bvec')
+        fmask = pjoin(folder, 'mask.nii.gz')
+        return fdata, fbval, fbvec, fmask
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -1380,3 +1389,26 @@ def get_target_tractogram_hcp():
                   'streamlines.trk')
 
     return file1
+
+
+def read_qte_lte_pte():
+    """Read q-space trajectory encoding data with linear and planar tensor
+    encoding.
+
+    Returns
+    -------
+    data_img : nibabel.nifti1.Nifti1Image,
+        dMRI data image.
+    mask_img : nibabel.nifti1.Nifti1Image,
+        Brain mask image.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table.
+    """
+    fdata, fbval, fbvec, fmask = get_fnames('qte_lte_pte')
+    data_img = nib.load(fdata)
+    mask_img = nib.load(fmask)
+    bvals = np.loadtxt(fbval)
+    bvecs = np.loadtxt(fbvec)
+    btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+    gtab = gradient_table(bvals, bvecs, btens=btens)
+    return data_img, mask_img, gtab
