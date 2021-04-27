@@ -676,10 +676,20 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+<<<<<<< HEAD
     if name == 'fury_surface':
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
         return surface_name
+=======
+    if name == 'qte_lte_pte':
+        _, folder = fetch_qte_lte_pte()
+        fdata = pjoin(folder, 'lte-pte.nii.gz')
+        fbval = pjoin(folder, 'lte-pte.bval')
+        fbvec = pjoin(folder, 'lte-pte.bvec')
+        fmask = pjoin(folder, 'mask.nii.gz')
+        return fdata, fbval, fbvec, fmask
+>>>>>>> a9cf4bfe3 (NF - data fetcher for QTE data with LTE and PTE)
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -1386,3 +1396,26 @@ def get_target_tractogram_hcp():
                   'streamlines.trk')
 
     return file1
+
+
+def read_qte_lte_pte():
+    """Read q-space trajectory encoding data with linear and planar tensor
+    encoding.
+
+    Returns
+    -------
+    data_img : nibabel.nifti1.Nifti1Image,
+        dMRI data image.
+    mask_img : nibabel.nifti1.Nifti1Image,
+        Brain mask image.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table.
+    """
+    fdata, fbval, fbvec, fmask = get_fnames('qte_lte_pte')
+    data_img = nib.load(fdata)
+    mask_img = nib.load(fmask)
+    bvals = np.loadtxt(fbval)
+    bvecs = np.loadtxt(fbvec)
+    btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+    gtab = gradient_table(bvals, bvecs, btens=btens)
+    return data_img, mask_img, gtab
