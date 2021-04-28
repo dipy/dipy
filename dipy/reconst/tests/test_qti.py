@@ -73,7 +73,7 @@ def test_from_21x1_to_6x6():
 
 
 def test_helper_tensors():
-    """Test the helper tensor objects."""
+    """Test the helper tensors."""
     npt.assert_array_equal(qti.e_iso, np.eye(3) / 3)
     npt.assert_array_equal(qti.E_iso, np.eye(6) / 3)
     npt.assert_array_equal(
@@ -119,13 +119,13 @@ def test_dtd_covariance():
     npt.assert_raises(ValueError, qti.dtd_covariance, np.arange(2))
     npt.assert_raises(ValueError, qti.dtd_covariance, np.zeros((1, 1, 1)))
 
-    # Isotropic tensors (Figure 1 in Westin's paper)
+    # Covariance of isotropic tensors (Figure 1 in Westin's paper)
     DTD = _isotropic_DTD()
     C = np.zeros((6, 6))
     C[0:3, 0:3] = 0.98116667
     npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
 
-    # Anisotropic tensors (Figure 1 in Westin's paper)
+    # Covariance of nisotropic tensors (Figure 1 in Westin's paper)
     DTD = _anisotropic_DTD()
     C = np.eye(6) * 2 / 15
     C[0:3, 0:3] = np.array(
@@ -149,13 +149,15 @@ def test_qti_signal():
          [1, -phi, 0],
          [phi, 0, 1],
          [phi, 0, -1]]) / np.linalg.norm([0, 1, phi])
-    gtab = gradient_table(bvals, bvecs)  # No btens defined
+    gtab = gradient_table(bvals, bvecs)
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6))
     gtab = gradient_table(bvals, bvecs, btens='LTE')
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(2), np.eye(6))
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(5))
-    npt.assert_raises(
-        ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6), S0=np.ones(2))
+    npt.assert_raises(ValueError, qti.qti_signal, gtab,
+                      np.stack((np.eye(3), np.eye(3))), np.eye(5))
+    npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6),
+                      np.ones(2))
 
     # Isotropic diffusion and no 2nd order effects
     D = np.eye(3)
@@ -188,7 +190,6 @@ def test_qti_signal():
 
 def test_design_matrix():
     """Test QTI design matrix calculation."""
-    # Linear, planar, and spherical b-tensors
     btens = np.array([np.eye(3, 3) for i in range(3)])
     btens[0, 1, 1] = 0
     btens[0, 2, 2] = 0

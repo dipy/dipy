@@ -218,7 +218,7 @@ def dtd_covariance(DTD):
             + 'tensors, 6, 1).')
     if dims[1:3] == (3, 3):
         DTD = from_3x3_to_6x1(DTD)
-    D = np.mean(DTD, axis=0)  # Average diffusion tensor
+    D = np.mean(DTD, axis=0)
     C = (np.mean(DTD @ np.swapaxes(DTD, -2, -1), axis=0)
          - D @ np.swapaxes(D, -2, -1))
     return C
@@ -303,6 +303,17 @@ def design_matrix(btens):
     -------
     X : numpy.ndarray
         Design matrix.
+
+    Notes
+    -----
+    The design matrix is generated according to
+
+        .. math::
+
+            X = \begin{pmatrix} 1 & -\mathbf{b}_1^T & \frac{1}{2}(\mathbf{b}_1
+            \otimes\mathbf{b}_1)^T \\ \vdots & \vdots & \vdots \\ 1 &
+            -\mathbf{b}_n^T & \frac{1}{2}(\mathbf{b}_n\otimes\mathbf{b}_n)^T
+            \end{pmatrix}
     """
     X = np.zeros((btens.shape[0], 28))
     for i, bten in enumerate(btens):
