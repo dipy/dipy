@@ -91,7 +91,7 @@ acquired with q-space trajectory encoding (QTE):
 
 img, mask_img, gtab = read_qte_lte_pte()  # Data is fetched just once
 data = img.get_fdata()  # Diffusion-weighted data
-mask = mask_img.get_fdata()  # Brain mask
+mask = mask_img.get_fdata().astype(bool)  # Brain mask
 """
 The dataset contains 122 volumes of which the first half were acquired with
 linear tensor encoding (LTE) and the second half with planar tensor encoding
