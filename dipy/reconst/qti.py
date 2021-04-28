@@ -39,7 +39,7 @@ def from_3x3_to_6x1(T):
     if T.shape[-2::] != (3, 3):
         raise ValueError('The shape of the input array must be (..., 3, 3).')
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All input matrices are not symmetric.')
+        warn('All matrices converted to Voigt notation are not symmetric.')
     C = np.sqrt(2)
     V = np.stack((T[..., 0, 0],
                   T[..., 1, 1],
@@ -117,7 +117,7 @@ def from_6x6_to_21x1(T):
     if T.shape[-2::] != (6, 6):
         raise ValueError('The shape of the input array must be (..., 6, 6).')
     if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
-        warn('All input matrices are not symmetric.')
+        warn('All matrices converted to Voigt notation are not symmetric.')
     C = np.sqrt(2)
     V = np.stack(([T[..., 0, 0], T[..., 1, 1], T[..., 2, 2],
                    C * T[..., 1, 2], C * T[..., 0, 2], C * T[..., 0, 1],
@@ -313,7 +313,7 @@ def design_matrix(btens):
     return X
 
 
-def _ols_fit(data, mask, X):
+def _ols_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
@@ -321,9 +321,12 @@ def _ols_fit(data, mask, X):
     data : numpy.ndarray
         Array of shape (..., number of acquisitions).
     mask : numpy.ndarray
-        Array with the same shape as the data array of a single acquisition.
+        Boolean array with the same shape as the data array of a single
+        acquisition.
     X : numpy.ndarray
         Design matrix of shape (number of acquisitions, 28).
+    step : int, optional
+        The number of voxels over which the fit is calculated simultaneously.
 
     Returns
     -------
@@ -334,18 +337,24 @@ def _ols_fit(data, mask, X):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros(mask.shape + (28,)) * np.nan
+    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    data_masked = data[mask]
+    size = len(data_masked)
     X_inv = np.linalg.pinv(X.T @ X)  # Independent of data
-    index = ndindex(mask.shape)
-    for v in index:  # This loop is slow
-        if not mask[v]:
-            continue
-        S = np.log(data[v])[:, np.newaxis]
-        params[v] = (X_inv @ X.T @ S)[:, 0]
+    if step >= size:  # Fit over all data simultaneously
+        S = np.log(data_masked)[..., np.newaxis]
+        params_masked = (X_inv @ X.T @ S)[..., 0]
+    else:  # Iterate over data
+        params_masked = np.zeros((size, 28))
+        for i in range(0, size, step):
+            S = np.log(data_masked[i:i + step])[..., np.newaxis]
+            params_masked[i:i + step] = (X_inv @ X.T @ S)[..., 0]
+    params[np.where(mask.ravel())] = params_masked
+    params = params.reshape((mask.shape + (28,)))
     return params
 
 
-def _wls_fit(data, mask, X):
+def _wls_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -357,6 +366,8 @@ def _wls_fit(data, mask, X):
         Array with the same shape as the data array of a single acquisition.
     X : numpy.ndarray
         Design matrix of shape (number of acquisitions, 28).
+    step : int, optional
+        The number of voxels over which the fit is calculated simultaneously.
 
     Returns
     -------
@@ -367,15 +378,25 @@ def _wls_fit(data, mask, X):
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
     """
-    params = np.zeros(mask.shape + (28,)) * np.nan
-    index = ndindex(mask.shape)
-    for v in index:  # This loop is slow
-        if not mask[v]:
-            continue
-        S = np.log(data[v])[:, np.newaxis]
-        B = X.T * data[v][np.newaxis, :]
-        A = B @ X
-        params[v] = (np.linalg.pinv(A) @ B @ S)[:, 0]
+    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    data_masked = data[mask]
+    size = len(data_masked)
+    if step >= size:  # Fit over all data simultaneously
+        S = np.log(data_masked)[..., np.newaxis]
+        C = data_masked[:, np.newaxis, :]
+        B = X.T * C
+        A = np.linalg.pinv(B @ X)
+        params_masked = (A @ B @ S)[..., 0]
+    else:  # Iterate over data
+        params_masked = np.zeros((size, 28))
+        for i in range(0, size, step):
+            S = np.log(data_masked[i:i + step])[..., np.newaxis]
+            C = data_masked[i:i + step][:, np.newaxis, :]
+            B = X.T * C
+            A = np.linalg.pinv(B @ X)
+            params_masked[i:i + step] = (A @ B @ S)[..., 0]
+    params[np.where(mask.ravel())] = params_masked
+    params = params.reshape((mask.shape + (28,)))
     return params
 
 
