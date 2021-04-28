@@ -40,7 +40,7 @@ The model parameters $S_0$, $\langle\mathbf{D}\rangle$, and $\mathbb{C}$ can be
 estimated by solving the following equation:
 
 .. math::
-   
+
    S = \beta X,
 
 where
@@ -56,11 +56,11 @@ where
 
 .. math::
 
-   X = 
+   X =
    \begin{pmatrix}
    1 & -\mathbf{b}_1^\text{T} & \frac{1}{2} (\mathbf{b}_1 \otimes \mathbf{b}_1)
-   \text{T} \\ 
-   \vdots & \vdots & \vdots \\ 
+   \text{T} \\
+   \vdots & \vdots & \vdots \\
    1 & -\mathbf{b}_n^\text{T} & \frac{1}{2} (\mathbf{b}_n \otimes \mathbf{b}_n)
    ^\text{T}
    \end{pmatrix} ,
@@ -80,12 +80,14 @@ Usage example
 QTI can be fit to data using the module `dipy.reconst.qti`, which we import as
 follows:
 """
+import matplotlib.pyplot as plt
+import numpy as np
+from dipy.data import read_qte_lte_pte
 import dipy.reconst.qti as qti
 """
 As QTI requires data with tensor-valued encoding, let's load an example dataset
 acquired with q-space trajectory encoding (QTE):
 """
-from dipy.data import read_qte_lte_pte
 
 img, mask_img, gtab = read_qte_lte_pte()  # Data is fetched just once
 data = img.get_fdata()  # Diffusion-weighted data
@@ -96,7 +98,6 @@ linear tensor encoding (LTE) and the second half with planar tensor encoding
 (PTE). We can confirm this by calculating the ranks of the b-tensors in the
 gradient table.
 """
-import numpy as np
 
 ranks = np.array([np.linalg.matrix_rank(b) for b in gtab.btens])
 for i, l in enumerate(['b = 0', 'LTE', 'PTE']):
@@ -117,7 +118,6 @@ ufa = qtifit.ufa  # Microscopic fractional anisotropy
 Finally, let's visualize the QTI parameter maps by reproducing Figure 9 from
 [1]_:
 """
-import matplotlib.pyplot as plt
 
 z = 36
 
@@ -132,12 +132,14 @@ for i in range(3):
 
 ax[0, 0].imshow(np.rot90(qtifit.md[:, :, z]), cmap='gray', vmin=0, vmax=3e-3)
 ax[0, 0].set_title('MD')
-ax[0, 1].imshow(np.rot90(qtifit.v_md[:, :, z]), cmap='gray', vmin=0, vmax=.5e-6)
+ax[0, 1].imshow(np.rot90(qtifit.v_md[:, :, z]),
+                cmap='gray', vmin=0, vmax=.5e-6)
 ax[0, 1].set_title('V$_{MD}$')
 ax[0, 2].imshow(np.rot90(qtifit.v_shear[:, :, z]), cmap='gray', vmin=0,
                 vmax=.5e-6)
 ax[0, 2].set_title('V$_{shear}$')
-ax[0, 3].imshow(np.rot90(qtifit.v_iso[:, :, z]), cmap='gray', vmin=0, vmax=1e-6)
+ax[0, 3].imshow(np.rot90(qtifit.v_iso[:, :, z]),
+                cmap='gray', vmin=0, vmax=1e-6)
 ax[0, 3].set_title('V$_{iso}$')
 
 ax[1, 0].imshow(np.rot90(qtifit.c_md[:, :, z]), cmap='gray', vmin=0, vmax=.25)
@@ -151,7 +153,8 @@ ax[1, 3].set_title('C$_{c}$')
 
 ax[2, 0].imshow(np.rot90(qtifit.mk[:, :, z]), cmap='gray', vmin=0, vmax=1.5)
 ax[2, 0].set_title('MK')
-ax[2, 1].imshow(np.rot90(qtifit.k_bulk[:, :, z]), cmap='gray', vmin=0, vmax=1.5)
+ax[2, 1].imshow(np.rot90(qtifit.k_bulk[:, :, z]),
+                cmap='gray', vmin=0, vmax=1.5)
 ax[2, 1].set_title('K$_{bulk}$')
 ax[2, 2].imshow(np.rot90(qtifit.k_shear[:, :, z]), cmap='gray', vmin=0,
                 vmax=1.5)
