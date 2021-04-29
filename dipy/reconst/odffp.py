@@ -17,8 +17,7 @@ from dipy.core.ndindex import ndindex
 from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
-from scipy.io import loadmat
-from scipy.spatial.transform import rotation
+from scipy.io import loadmat, savemat
 
 
 class _DsiSphere8Fold(Sphere):
@@ -94,6 +93,7 @@ class OdffpModel(object):
             faces=tessellation.faces
         )
         
+        
     def _rotate_peak_dirs(self, peak_dirs, rotation):
         return np.dot(
             np.array(sphere2cart(1, np.pi/2 + peak_dirs[1,:], peak_dirs[0,:])).T, 
@@ -115,12 +115,17 @@ class OdffpModel(object):
         output_peak_dirs = np.zeros(data_shape + (max_peaks_num,3))
  
         for idx in ndindex(data_shape):
+            
             model_fit = diff_model.fit(data[idx])
              
             input_odf = model_fit.odf(tessellation)
             input_peak_dirs,_,_ = peak_directions(input_odf, tessellation)
- 
-            rotation = self._get_rotation(np.squeeze(input_peak_dirs[:1]))
+
+            if len(input_peak_dirs) > 0:
+                rotation = self._get_rotation(np.squeeze(input_peak_dirs[:1]))
+            else:
+                rotation = np.eye(3)
+            
             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
              
@@ -133,21 +138,53 @@ class OdffpModel(object):
                 rotated_tessellation, tessellation
             )
             
-            output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation)
+            output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
  
-        return OdffpFit(output_odf, output_peak_dirs)
+        return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
 
         
 class OdffpFit(object):
     
-    def __init__(self, odf, peak_dirs):
+    def __init__(self, data, odf, peak_dirs, tessellation):
+        self._data = data
         self._odf = odf
         self._peak_dirs = peak_dirs
+        self._tessellation = tessellation
+    
         
     def odf(self):
         return self._odf
     
+    
     def peak_dirs(self):
         return self._peak_dirs
+    
+    
+    def saveToFib(self, file_name = 'output.fib'):
+        fib = {}
+        
+        fib['dimension'] = self._data.shape[:-1]
+#         fib['voxel_size'] = np.array([2,2,2])
+        fib['odf_vertices'] = self._tessellation.vertices.T
+        fib['odf_faces'] = self._tessellation.faces.T
+        
+        map_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
+        flat_size = [1, np.prod(fib['dimension'])]
+        
+        max_peaks_num = self._peak_dirs.shape[3]
+        
+        for i in range(max_peaks_num):
+            fib['fa%d' % i] = 0.1 * np.ones(map_size)
+            fib['nqa%d' % i] = 0.1 * np.ones(map_size)
+            fib['index%d' % i] = np.zeros(fib['dimension'])
+        
+            for idx in ndindex(fib['dimension']):
+                fib['index%d' % i][idx] = np.argmax(np.dot(self._peak_dirs[idx][i], fib['odf_vertices']))
+                
+            fib['index%d' % i] = fib['index%d' % i].reshape(flat_size, order='F')
+       
+        savemat(file_name, fib, format='4')
+        
+        
     
     
