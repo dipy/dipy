@@ -18,6 +18,8 @@ from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
 from scipy.io import loadmat, savemat
+from dipy.stats.analysis import peak_values
+from phantomas.utils.tessellation import tessellation
 
 
 class _DsiSphere8Fold(Sphere):
@@ -76,13 +78,19 @@ class OdffpModel(object):
         return odf / np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
 
      
-    def _get_rotation(self, in_direction, out_direction=[0,0,1]):
-        cAB = np.cross(in_direction, out_direction)
-        sAB = np.array([[0,-cAB[2],cAB[1]], [cAB[2],0,-cAB[0]], [-cAB[1],cAB[0],0]])
-        rotation = np.eye(3) + sAB + np.dot(sAB,sAB) * (1-np.dot(in_direction,out_direction)) / np.sum(cAB**2)
-     
-        if np.all(np.isnan(rotation)):
-            rotation = np.eye(3)
+    def _find_highest_peak_rotation(self, input_odf, tessellation, target_direction=[0,0,1]):
+        rotation = np.eye(3)
+        input_peak_dirs,_,_ = peak_directions(input_odf, tessellation)
+
+        if len(input_peak_dirs) > 0:
+            highest_peak_direction = np.squeeze(input_peak_dirs[:1])
+        
+            cr = np.cross(highest_peak_direction, target_direction)
+            sum_sqr_cr = np.sum(cr**2)
+            
+            if sum_sqr_cr != 0:
+                s = np.array([[0,-cr[2],cr[1]], [cr[2],0,-cr[0]], [-cr[1],cr[0],0]])
+                rotation += s + np.dot(s,s) * (1-np.dot(highest_peak_direction,target_direction)) / sum_sqr_cr
 
         return rotation
      
@@ -117,15 +125,9 @@ class OdffpModel(object):
         for idx in ndindex(data_shape):
             
             model_fit = diff_model.fit(data[idx])
-             
             input_odf = model_fit.odf(tessellation)
-            input_peak_dirs,_,_ = peak_directions(input_odf, tessellation)
-
-            if len(input_peak_dirs) > 0:
-                rotation = self._get_rotation(np.squeeze(input_peak_dirs[:1]))
-            else:
-                rotation = np.eye(3)
             
+            rotation = self._find_highest_peak_rotation(input_odf, tessellation)
             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
              
@@ -174,14 +176,18 @@ class OdffpFit(object):
         max_peaks_num = self._peak_dirs.shape[3]
         
         for i in range(max_peaks_num):
-            fib['fa%d' % i] = 0.1 * np.ones(map_size)
+            fib['fa%d' % i] = np.zeros(fib['dimension'])
             fib['nqa%d' % i] = 0.1 * np.ones(map_size)
             fib['index%d' % i] = np.zeros(fib['dimension'])
         
             for idx in ndindex(fib['dimension']):
-                fib['index%d' % i][idx] = np.argmax(np.dot(self._peak_dirs[idx][i], fib['odf_vertices']))
+                peak_vertex_idx = np.argmax(np.dot(self._peak_dirs[idx][i], fib['odf_vertices']))
+                fib['index%d' % i][idx] = peak_vertex_idx
+                fib['fa%d' % i][idx] = self._odf[idx][peak_vertex_idx]
                 
+            fib['fa%d' % i] = fib['fa%d' % i].reshape(map_size, order='F')
             fib['index%d' % i] = fib['index%d' % i].reshape(flat_size, order='F')
+            
        
         savemat(file_name, fib, format='4')
         
