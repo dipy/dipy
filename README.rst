@@ -86,7 +86,7 @@ Please see the `LICENSE file <https://github.com/dipy/dipy/blob/master/LICENSE>`
 Contributing
 ============
 
-We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/dipy/dipy/blob/master/CONTRIBUTING.md>`_.
+We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md>`_.
 
 Reference
 =========
