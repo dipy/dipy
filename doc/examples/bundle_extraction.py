@@ -119,24 +119,29 @@ Extracting bundles using RecoBundles [Garyfallidis17]_
 
 RecoBundles requires a model (reference) bundle and tries to extract similar
 looking bundle from the input tractogram. There are some key parameters that
-users can set as per requirements. Here are the key threshold parameters and
-their function in Recobundles:
+users can set as per requirements. Here are the key threshold parameters
+measured in millimeters and their function in Recobundles:
 
     - model_clust_thr : It will use QuickBundles to get the centroids of the
     model bundle and work with centroids instead of all streamlines. This helps
-    in making RecoBundles faster. If you prefer to use all the streamnlines of
-    the model bundle, you can set this threshold to 0.01.
+    to make RecoBundles faster. The larger the value of threshold fewer
+    centroids will be there and smaller the threshold value, more centroids
+    will be tthere. If you prefer to use all the streamlines of the model
+    bundle, you can set this threshold to 0.01 mm.
+    Recommended range of the model_clust_thr is 0.01 - 3.0 mm.
 
     - reduction_thr : This threshold will be used to reduce the search space
     for finding the streamlines that match model bundle streamlines in shape.
     Instead of looking at the entire tractogram, now we will be looking at
-    neighboring region of a model bundle in the tractogram. Increase the threshold
-    to increase the search space.
+    neighboring region of a model bundle in the tractogram. Increase the
+    threshold to increase the search space.
+    Recommended range of the reduction_thr is 15 - 30 mm.
 
-    - pruning_thr : This threshold will filter the streamnlines that have distance
-    between model bundle and them greater than the pruning_thr. This serves as
-    filtering the neighborhood area (search space) to get model bundle like
-    streamlines.
+    - pruning_thr : This threshold will filter the streamlines for which the
+    distance to the model bundle is greater than the pruning_thr.
+    This serves to filter the neighborhood area (search space) to get
+    streamlines that are like the model bundle.
+    Recommended range of the pruning_thr is 8 - 12 mm.
 """
 
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
