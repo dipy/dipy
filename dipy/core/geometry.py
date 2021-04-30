@@ -873,8 +873,6 @@ def vec2vec_rotmat(u, v):
     # cosa = np.dot(u, v)
     cosa = np.clip(np.dot(u, v), -1, 1)
     sina = np.sqrt(1 - cosa ** 2)
-    # if (cosa > 1):
-    #     print("cosa is greater than 1!!")
     R = np.array([[cosa, -sina, 0], [sina, cosa, 0], [0, 0, 1]])
     Rp = np.dot(Pt, np.dot(R, P))
 
