@@ -870,7 +870,6 @@ def vec2vec_rotmat(u, v):
     # (u vp w) is an orthonormal basis
     P = np.array([u, vp, w])
     Pt = P.T
-    # cosa = np.dot(u, v)
     cosa = np.clip(np.dot(u, v), -1, 1)
     sina = np.sqrt(1 - cosa ** 2)
     R = np.array([[cosa, -sina, 0], [sina, cosa, 0], [0, 0, 1]])
