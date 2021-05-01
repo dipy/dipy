@@ -165,12 +165,12 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         self.step_size = step_size
         self.use_fixed_step = fixedstep
 
-    cdef int generate_streamline_c(self,
-                                   double* seed,
-                                   double* dir,
-                                   cnp.float_t[:, :] streamline,
-                                   StreamlineStatus* stream_status
-                                   ):
+    cpdef tuple generate_streamline(self,
+                                    double[::1] seed,
+                                    double[::1] dir,
+                                    cnp.float_t[:, :] streamline,
+                                    StreamlineStatus stream_status
+                                    ):
        cdef:
            cnp.npy_intp i
            cnp.npy_intp len_streamlines = streamline.shape[0]
@@ -183,28 +183,28 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
        else:
            step = step_to_boundary
 
-       copy_point(seed, point)
-       copy_point(seed, &streamline[0,0])
+       copy_point(&seed[0], point)
+       copy_point(&seed[0], &streamline[0,0])
 
-       stream_status[0] = TRACKPOINT
+       stream_status = TRACKPOINT
        for i in range(1, len_streamlines):
-           if self.get_direction_c(point, dir):
+           if self.get_direction_c(point, &dir[0]):
                break
            for j in range(3):
                voxdir[j] = dir[j] / self.voxel_size #[j]  # update to a list to support non isotropic voxel sizes
            step(point, voxdir, self.step_size)
            copy_point(point, &streamline[i, 0])
-           stream_status[0] = self.stopping_criterion.check_point_c(point)
-           if stream_status[0] == TRACKPOINT:
+           stream_status = self.stopping_criterion.check_point_c(point)
+           if stream_status == TRACKPOINT:
                continue
-           elif (stream_status[0] == ENDPOINT or
-                 stream_status[0] == INVALIDPOINT or
-                 stream_status[0] == OUTSIDEIMAGE):
+           elif (stream_status == ENDPOINT or
+                 stream_status == INVALIDPOINT or
+                 stream_status == OUTSIDEIMAGE):
                break
        else:
            # maximum length of streamline has been reached, return everything
            i = streamline.shape[0]
-       return i
+       return i, stream_status
 
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.

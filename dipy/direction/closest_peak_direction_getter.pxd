@@ -26,20 +26,12 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         self,
         double[::1] point)
 
-    cpdef int generate_streamline(
-            self,
-            double[::1] seed,
-            double[::1] dir,
-            cnp.float_t[:, :] streamline,
-            StreamlineStatus stream_status
-            ) except -1
+    cpdef tuple generate_streamline(self,
+                                                      double[::1] seed,
+                                                      double[::1] dir,
+                                                      cnp.float_t[:, :] streamline,
+                                                      StreamlineStatus stream_status)
 
-    cdef int generate_streamline_c(
-            self,
-            double* seed,
-            double* dir,
-            cnp.float_t[:, :] streamline,
-            StreamlineStatus* stream_status)
 
     cdef _get_pmf(
         self,
