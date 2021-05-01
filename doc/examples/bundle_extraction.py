@@ -358,9 +358,7 @@ reco_af_l = StatefulTractogram(target[af_l_labels], target_header,
 save_trk(reco_af_l, "AF_L_org_3.trk", bbox_valid_check=False)
 
 
-
 """
-
 Let's apply auto-calibrated RecoBundles on the output of standard RecoBundles.
 This step will filter out the fuzzy streamlines. This time, the RecoBundles'
 extracted bundle will serve as a model bundle. As a rule of thumb, provide
