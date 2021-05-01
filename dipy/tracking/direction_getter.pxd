@@ -9,19 +9,11 @@ cdef class DirectionGetter:
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self, double[::1] point)
 
-    cpdef int generate_streamline(
-        self,
-        double[::1] seed,
-        double[::1] dir,
-        cnp.float_t[:, :] streamline,
-        StreamlineStatus stream_status) except -1
-
-    cdef int generate_streamline_c(
-        self,
-        double* seed,
-        double* dir,
-        cnp.float_t[:, :] streamline,
-        StreamlineStatus* stream_status)
+    cpdef tuple generate_streamline(self,
+                                                      double[::1] seed,
+                                                      double[::1] dir,
+                                                      cnp.float_t[:, :] streamline,
+                                                      StreamlineStatus stream_status)
 
 
     cpdef int get_direction(

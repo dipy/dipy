@@ -129,6 +129,7 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
+        StreamlineStatus stream_status_2
         double dir[3]
         double vs[3]
         double seed[3]
@@ -145,13 +146,14 @@ def local_tracker(
 
     ###  BUG HERE ### the stream_status is not correctly returned.
 
-    j = dg.generate_streamline(seed_pos, first_step, streamline, stream_status)
+    j, stream_status_2 = dg.generate_streamline(seed_pos, first_step,
+                                                streamline, stream_status_2)
 
     i = _local_tracker(dg, sc, seed, dir, vs, streamline,
                        step_size, fixedstep, &stream_status)
     if not i == j:
-        print(stream_status1, stream_status)
-    return i, stream_status
+        print(stream_status1, stream_status_2, stream_status)
+    return i, stream_status_2
 
 
 @cython.boundscheck(False)
