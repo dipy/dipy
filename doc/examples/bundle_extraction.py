@@ -138,11 +138,11 @@ measured in millimeters and their function in Recobundles:
     Recommended range of the pruning_thr is 8 - 12 mm.
 
     - reduction_distance and pruning_distance : Distance method used internally.
-    Minimum Diferect Flip distance (mdf) or Minimum Average Mean (mam).
+    Minimum Diferect Flip distance (mdf) or Mean Average Minimum (mam).
     Default is set to mdf.
 
     - slr : If slr flag is set to True, local registration of model bundle with
-    neighbouring area will be performed. Default and recommended True.
+    neighbouring area will be performed. Default and recommended is True.
 """
 
 """
@@ -423,6 +423,15 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 reco_af_l = StatefulTractogram(target[r_af_l_labels], target_header,
                                Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_refine.trk", bbox_valid_check=False)
+
+
+"""
+
+This example shows how changing different threshold parameters can change the
+output. It is up to the user to decide what is the desired output and select
+parameters accordingly.
+
+"""
 
 
 """
