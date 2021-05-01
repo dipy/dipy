@@ -68,10 +68,18 @@ data.
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
-denoised_arr = patch2self(data, bvals, shift_intensity=True,
+denoised_arr = patch2self(data, bvals, model='ols', shift_intensity=True,
                           clip_negative_vals=False)
 
 """
+The above parameters should give optimal denoising performance for Patch2Self.
+The ordinary least squares regression (model='ols') tends to be a little slower
+given the size of the data. In that case, please consider switching to ridge
+regression (model='ridge').
+
+Please do note that sometimes using ridge regression can hamper the performance
+of the Patch2Self. In such a case, please use model='ols'.
+
 The array `denoised_arr` contains the denoised output obtained from Patch2Self.
 
 *Note:* Depending on the acquisition, b0 may exhibit signal attenuation or
@@ -129,6 +137,22 @@ Below we show how the denoised data can be saved.
 save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
 
 print("Entire denoised data saved in denoised_patch2self.nii.gz")
+
+"""
+Lastly, one can also use Patch2Self in batches if the number of gradient
+directions is very high (>=200 volumes). For instance, if the data has 300
+volumes, one can split the data into 2 batches, (150 directions each) and still
+get the same denoising performance. One can simply run Patch2Self using:
+`denoised_batch1 = patch2self(data[..., :150], bvals[:150])`
+`denoised_batch2 = patch2self(data[..., 150:], bvals[150:])`
+
+After doing the 2 denoised batches can be merged as follows:
+`denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)`
+
+If using Patch2Self for research purposes, acquisition design tests, etc., one
+can also consider using the above batching approach to denoise each gradient
+direction separately.
+"""
 
 """
 
