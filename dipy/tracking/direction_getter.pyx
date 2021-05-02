@@ -87,6 +87,10 @@ cdef class DirectionGetter:
             self, double[::1] point):
         pass
 
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
     cpdef tuple generate_streamline(self,
                                     double[::1] seed,
                                     double[::1] dir,
