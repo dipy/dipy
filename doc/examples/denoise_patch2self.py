@@ -77,8 +77,8 @@ The ordinary least squares regression (model='ols') tends to be a little slower
 depending on the size of the data. In that case, please consider switching to
 ridge regression (model='ridge').
 
-*Please do note that sometimes using ridge regression can hamper the
-performance of Patch2Self. If so, please use model='ols'.*
+Please do note that sometimes using ridge regression can hamper the
+performance of Patch2Self. If so, please use model='ols'.
 
 The array `denoised_arr` contains the denoised output obtained from Patch2Self.
 
