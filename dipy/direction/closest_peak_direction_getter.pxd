@@ -17,21 +17,19 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         PmfGen pmf_gen
         double pmf_threshold
         double cos_similarity
-        StoppingCriterion stopping_criterion
-        double voxel_size
-        double step_size
-        int use_fixed_step
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self,
         double[::1] point)
 
     cpdef tuple generate_streamline(self,
-                                                      double[::1] seed,
-                                                      double[::1] dir,
-                                                      cnp.float_t[:, :] streamline,
-                                                      StreamlineStatus stream_status)
-
+                                    double[::1] seed,
+                                    double[::1] dir,
+                                    double[::1] voxel_size,
+                                    double step_size,
+                                    StoppingCriterion stopping_criterion,
+                                    cnp.float_t[:, :] streamline,
+                                    StreamlineStatus stream_status)
 
     cdef _get_pmf(
         self,

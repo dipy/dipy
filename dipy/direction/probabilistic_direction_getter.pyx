@@ -34,8 +34,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         dict _adj_matrix
 
     def __init__(self, pmf_gen, max_angle, sphere,
-                 StoppingCriterion sc, voxel_size, step_size,
-                 pmf_threshold=.1, fixedstep=True, **kwargs):
+                 pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -63,9 +62,8 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         dipy.direction.peaks.peak_directions
 
         """
-        PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere, sc,
-                                       voxel_size, step_size,
-                                       pmf_threshold, fixedstep=True, **kwargs)
+        PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                       pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
         self._set_adjacency_matrix(sphere, self.cos_similarity)
@@ -144,11 +142,10 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
-    def __init__(self, pmf_gen, max_angle, sphere, sc, voxel_size, step_size,
-                 pmf_threshold=0.1, fixedstep=True, **kwargs):
-        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere, sc,
-                                              voxel_size, step_size,
-                                              pmf_threshold, fixedstep, **kwargs)
+    def __init__(self, pmf_gen, max_angle, sphere,
+                 pmf_threshold=0.1, **kwargs):
+        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                              pmf_threshold, **kwargs)
 
     cdef int get_direction_c(self, double* point, double* direction):
         """Find direction with the highest pmf to updates ``direction`` array
