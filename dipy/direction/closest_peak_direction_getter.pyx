@@ -66,8 +66,6 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
             return 0
     return 1
 
-<<<<<<< HEAD
-=======
 cdef extern from "dpy_math.h" nogil:
     int dpy_signbit(double x)
     double dpy_rint(double x)
@@ -135,24 +133,11 @@ cdef void fixed_step(double * point, double * direction, double step_size) nogil
     for i in range(3):
         point[i] += direction[i] * step_size
 
-cdef class BaseDirectionGetter(BasePmfDirectionGetter):
-
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
-        warn(DeprecationWarning(
-            "class 'dipy.direction.BaseDirectionGetter'"
-            " is deprecated since version 1.2.0, use class"
-            " 'dipy.direction.BasePmfDirectionGetter'"
-            " instead"))
-        BasePmfDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                        pmf_threshold, **kwargs)
->>>>>>> WIP RF - move _local_tracker to directionGetter._generate_streamline.
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
-    def __init__(self, pmf_gen, max_angle, sphere,
-                 StoppingCriterion sc, voxel_size, step_size,
-                 pmf_threshold=.1, fixedstep=True, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
@@ -160,51 +145,6 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             raise ValueError("pmf threshold must be >= 0.")
         self.pmf_threshold = pmf_threshold
         self.cos_similarity = np.cos(np.deg2rad(max_angle))
-        self.stopping_criterion = sc
-        self.voxel_size = voxel_size
-        self.step_size = step_size
-        self.use_fixed_step = fixedstep
-
-    cpdef tuple generate_streamline(self,
-                                    double[::1] seed,
-                                    double[::1] dir,
-                                    cnp.float_t[:, :] streamline,
-                                    StreamlineStatus stream_status
-                                    ):
-       cdef:
-           cnp.npy_intp i
-           cnp.npy_intp len_streamlines = streamline.shape[0]
-           double point[3]
-           double voxdir[3]
-           void (*step)(double*, double*, double) nogil
-
-       if self.use_fixed_step:
-           step = fixed_step
-       else:
-           step = step_to_boundary
-
-       copy_point(&seed[0], point)
-       copy_point(&seed[0], &streamline[0,0])
-
-       stream_status = TRACKPOINT
-       for i in range(1, len_streamlines):
-           if self.get_direction_c(point, &dir[0]):
-               break
-           for j in range(3):
-               voxdir[j] = dir[j] / self.voxel_size #[j]  # update to a list to support non isotropic voxel sizes
-           step(point, voxdir, self.step_size)
-           copy_point(point, &streamline[i, 0])
-           stream_status = self.stopping_criterion.check_point_c(point)
-           if stream_status == TRACKPOINT:
-               continue
-           elif (stream_status == ENDPOINT or
-                 stream_status == INVALIDPOINT or
-                 stream_status == OUTSIDEIMAGE):
-               break
-       else:
-           # maximum length of streamline has been reached, return everything
-           i = streamline.shape[0]
-       return i, stream_status
 
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
@@ -253,8 +193,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     @classmethod
     def from_pmf(klass, pmf, max_angle, sphere,
-                 StoppingCriterion sc, voxel_size, step_size,
-                 pmf_threshold=.1, fixedstep=True, **kwargs):
+                 pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -289,7 +228,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             raise ValueError(msg)
 
         pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float))
-        return klass(pmf_gen, max_angle, sphere, sc, voxel_size, step_size, pmf_threshold, fixedstep, **kwargs)
+        return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
     def from_shcoeff(klass, shcoeff, max_angle, sphere=default_sphere,

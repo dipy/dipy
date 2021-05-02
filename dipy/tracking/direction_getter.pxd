@@ -10,11 +10,13 @@ cdef class DirectionGetter:
         self, double[::1] point)
 
     cpdef tuple generate_streamline(self,
-                                                      double[::1] seed,
-                                                      double[::1] dir,
-                                                      cnp.float_t[:, :] streamline,
-                                                      StreamlineStatus stream_status)
-
+                                    double[::1] seed,
+                                    double[::1] dir,
+                                    double[::1] voxel_size,
+                                    double step_size,
+                                    StoppingCriterion stopping_criterion,
+                                    cnp.float_t[:, :] streamline,
+                                    StreamlineStatus stream_status)
 
     cpdef int get_direction(
         self,
