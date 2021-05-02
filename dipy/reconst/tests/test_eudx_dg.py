@@ -8,7 +8,6 @@ import dipy.reconst.peak_direction_getter
 import dipy.reconst.eudx_direction_getter
 
 
-
 def test_EuDXDirectionGetter():
 
     class SillyModel(object):
