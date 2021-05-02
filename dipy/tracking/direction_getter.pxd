@@ -16,7 +16,8 @@ cdef class DirectionGetter:
                                     double step_size,
                                     StoppingCriterion stopping_criterion,
                                     cnp.float_t[:, :] streamline,
-                                    StreamlineStatus stream_status)
+                                    StreamlineStatus stream_status,
+                                    double use_fixed_step)
 
     cpdef int get_direction(
         self,

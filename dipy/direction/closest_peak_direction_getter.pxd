@@ -29,7 +29,8 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
                                     double step_size,
                                     StoppingCriterion stopping_criterion,
                                     cnp.float_t[:, :] streamline,
-                                    StreamlineStatus stream_status)
+                                    StreamlineStatus stream_status,
+                                    double use_fixed_step)
 
     cdef _get_pmf(
         self,
