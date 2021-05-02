@@ -45,9 +45,9 @@ This is done by using the self-supervised loss:
 fed into the regressor :math:`\Phi` built in phase (A). The prediction is a
 denoised version of held-out volume.
 
-*Note: The volume to be denoised is merely used as the target in the training
+Note: The volume to be denoised is merely used as the target in the training
 phase. But is not used in the training set for (A) nor is used to predict the
-denoised output in (B).*
+denoised output in (B).
 
 Let's load the necessary modules:
 """
@@ -69,7 +69,7 @@ hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
 denoised_arr = patch2self(data, bvals, model='ols', shift_intensity=True,
-                          clip_negative_vals=False, b0_threshold=100)
+                          clip_negative_vals=False, b0_denoising=50)
 
 """
 The above parameters should give optimal denoising performance for Patch2Self.
@@ -92,7 +92,11 @@ avoid negative values in the denoised output.
 
 The `b0_threshold` is used to separate the b0 volumes from the DWI volumes.
 Changing the value of the b0 threshold is needed is the b0 volumes in the
-`bval` file have a value greater than the used `b0_threshold`.
+`bval` file have a value greater than the default `b0_threshold`.
+
+The default value of `b0_threshold` in DIPY is set to 50. If using data
+such as HCP, the b0 volume tends to have a higher value, please set it to 100
+or more accordingly.
 
 Now lets visualize the output and the residuals obtained from the denoising.
 """
@@ -153,9 +157,8 @@ get the same denoising performance. One can simply run Patch2Self using:
 After doing this, the 2 denoised batches can be merged as follows:
 `denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)`
 
-If using Patch2Self for research purposes, acquisition design tests, etc., one
-can also consider using the above batching approach to denoise each gradient
-direction separately.
+One can also consider using the above batching approach to denoise each
+gradient direction separately.
 """
 
 """
