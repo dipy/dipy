@@ -158,7 +158,7 @@ After doing this, the 2 denoised batches can be merged as follows:
 `denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)`
 
 One can also consider using the above batching approach to denoise each
-gradient direction separately.
+shell separately if working with multi-shell data.
 """
 
 """
