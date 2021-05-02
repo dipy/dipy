@@ -84,14 +84,14 @@ cdef void fixed_step(double * point, double * direction, double step_size) nogil
 
 
 def local_tracker(
-        dg,
-        sc,
-        seed_pos,
-        first_step,
-        voxel_size,
-        streamline,
-        step_size,
-        fixedstep):
+        DirectionGetter dg,
+        StoppingCriterion sc,
+        double[::1] seed_pos,
+        double[::1] first_step,
+        double[::1] voxel_size,
+        cnp.float_t[:, :] streamline,
+        double step_size,
+        int fixedstep):
     """Tracks one direction from a seed.
 
     This function is the main workhorse of the ``LocalTracking`` class defined
@@ -129,19 +129,11 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
-        double dir[3]
-        double vs[3]
-        double seed[3]
         double use_fixed_step
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
-
-    for i in range(3):
-        dir[i] = first_step[i]
-        vs[i] = voxel_size[i]
-        seed[i] = seed_pos[i]
 
     if fixedstep:
         use_fixed_step = 1
@@ -153,56 +145,7 @@ def local_tracker(
                                               step_size, sc,
                                               streamline, stream_status,
                                               use_fixed_step)
-
     return i, stream_status
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
-cdef int _local_tracker(DirectionGetter dg,
-                        StoppingCriterion sc,
-                        double* seed,
-                        double* dir,
-                        double* voxel_size,
-                        cnp.float_t[:, :] streamline,
-                        double step_size,
-                        int fixedstep,
-                        StreamlineStatus* stream_status):
-    cdef:
-        cnp.npy_intp i
-        cnp.npy_intp len_streamlines = streamline.shape[0]
-        double point[3]
-        double voxdir[3]
-        void (*step)(double*, double*, double) nogil
-
-    if fixedstep:
-        step = fixed_step
-    else:
-        step = step_to_boundary
-
-    copy_point(seed, point)
-    copy_point(seed, &streamline[0,0])
-
-    stream_status[0] = TRACKPOINT
-    for i in range(1, len_streamlines):
-        if dg.get_direction_c(point, dir):
-            break
-        for j in range(3):
-            voxdir[j] = dir[j] / voxel_size[j]
-        step(point, voxdir, step_size)
-        copy_point(point, &streamline[i, 0])
-        stream_status[0] = sc.check_point_c(point)
-        if stream_status[0] == TRACKPOINT:
-            continue
-        elif (stream_status[0] == ENDPOINT or
-              stream_status[0] == INVALIDPOINT or
-              stream_status[0] == OUTSIDEIMAGE):
-            break
-    else:
-        # maximum length of streamline has been reached, return everything
-        i = streamline.shape[0]
-    return i
 
 
 def pft_tracker(
