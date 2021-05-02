@@ -18,7 +18,6 @@ First import the necessary modules.
 """
 
 import numpy as np
-from time import sleep
 from dipy.viz import window, actor
 from dipy.segment.bundles import bundle_shape_similarity
 from dipy.segment.bundles import select_random_set_of_streamlines
@@ -58,7 +57,6 @@ def show_both_bundles(bundles, colors=None, show=True, fname=None):
     if show:
         window.show(scene)
     if fname is not None:
-        sleep(1)
         window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 

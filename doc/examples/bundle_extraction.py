@@ -360,9 +360,9 @@ save_trk(reco_af_l, "AF_L_org_3.trk", bbox_valid_check=False)
 
 """
 Let's apply auto-calibrated RecoBundles on the output of standard RecoBundles.
-This step will filter out the fuzzy streamlines. This time, the RecoBundles'
+This step will filter out the outlier streamlines. This time, the RecoBundles'
 extracted bundle will serve as a model bundle. As a rule of thumb, provide
-larger threhsold values in standard RecoBundles function and smaller values in
+larger threshold values in standard RecoBundles function and smaller values in
 the auto-calibrated RecoBundles (refinement) step.
 
 """
