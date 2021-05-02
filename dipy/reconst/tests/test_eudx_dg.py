@@ -8,20 +8,6 @@ import dipy.reconst.peak_direction_getter
 import dipy.reconst.eudx_direction_getter
 
 
-def test_EuDXDirectionGetter_deprecated_warning():
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        # create a EuDXDirectionGetter from deprecated file
-        dg_peak = dipy.reconst.peak_direction_getter.EuDXDirectionGetter()
-        npt.assert_equal(len(w), 1)
-        npt.assert_equal(issubclass(w[-1].category, DeprecationWarning), True)
-        npt.assert_equal("deprecated" in str(w[-1].message), True)
-
-    npt.assert_equal(
-        isinstance(dg_peak,
-                   dipy.reconst.eudx_direction_getter.EuDXDirectionGetter),
-        True)
-
 
 def test_EuDXDirectionGetter():
 
