@@ -219,6 +219,36 @@ def test_vec2vec_rotmat():
         R = vec2vec_rotmat(a, b)
         assert_array_almost_equal(np.dot(R, a), b)
 
+    # These vectors are not unit norm
+    c = np.array([0.33950729, 0.92041729, 0.1938216])
+    d = np.array([0.40604787, 0.97518325, 0.2057731])
+    R1 = vec2vec_rotmat(c, d)
+
+    c_norm = c / np.linalg.norm(c)
+    d_norm = d / np.linalg.norm(d)
+    R2 = vec2vec_rotmat(c_norm, d_norm)
+
+    assert_array_almost_equal(R1, R2, decimal=1)
+    assert_array_almost_equal(np.diag(R1),
+                              np.diag(R2), decimal=3)
+
+    # we are catching collinear vectors
+    # but in the case where they are not
+    # exactly collinear and slightly different
+    # the cosine can be larger than 1 or smaller than
+    # -1 and therefore we have to catch that issue
+    e = np.array([1.0001, 0, 0])
+    f = np.array([1.001, 0.01, 0])
+    R3 = vec2vec_rotmat(e, f)
+
+    g = np.array([1.001, 0.0, 0])
+    R4 = vec2vec_rotmat(e, g)
+
+    assert_array_almost_equal(R3, R4, decimal=1)
+
+    assert_array_almost_equal(np.diag(R3),
+                              np.diag(R4), decimal=3)
+
 
 def test_compose_transformations():
 
