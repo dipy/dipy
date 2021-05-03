@@ -58,16 +58,6 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
             return 0
     return 1
 
-cdef class BaseDirectionGetter(BasePmfDirectionGetter):
-
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
-        warn(DeprecationWarning(
-            "class 'dipy.direction.BaseDirectionGetter'"
-            " is deprecated since version 1.2.0, use class"
-            " 'dipy.direction.BasePmfDirectionGetter'"
-            " instead"))
-        BasePmfDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                        pmf_threshold, **kwargs)
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
