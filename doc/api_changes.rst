@@ -7,16 +7,25 @@ renamed or are deprecated (not recommended) during different release circles.
 
 DIPY 1.4.1 changes
 ------------------
+
+**General**
+
 - The name of the argument for the number of cores/threads has been standardized to:
     - ``num_threads`` for OpenMP parallelization.
     - ``num_processes`` for parallelization using multiprocessing package.
 - Change in the parallelization logic when using OpenMP:
-    - If ``ǹum_threads = None`` the value of ``OMP_NUM_THREADS`` environment variable is used. If it is not set then all available threads are used.
+    - If ``num_threads = None`` the value of ``OMP_NUM_THREADS`` environment variable is used. If it is not set then all available threads are used.
     - If ``num_threads > 0`` that number is used as the number of threads.
     - If ``num_threads < 0`` the maximum between ``1`` and ``num_cpu_cores - |num_threads + 1|`` is selected. If ``-1`` then all available threads are used.
     - If ``num_threads = 0`` an error is raised.
 - Change in the parallelization logic when using multiprocessing package:
     - The same as with OpenMP with the difference that ``num_processes = None`` uses all cores directly.
+    
+**Tracking**
+
+- Change in DirectionGetters:
+    - The deprecated ``dipy.direction.closest_peak_direction_getter.BaseDirectionGetter`` was removed and replaced by ``dipy.direction.closest_peak_direction_getter.BasePmfDirectionGetter``.
+    - The deprecated ``dipy.reconst.EuDXDirectionGetter`` was removed and replaced by ``dipy.reconst.eudx_direction_getter.EuDXDirectionGetter``.
 
 DIPY 1.4.0 changes
 ------------------
