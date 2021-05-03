@@ -547,13 +547,13 @@ def test_peaksFromModelParallel():
                                           normalize_peaks=True,
                                           return_odf=True,
                                           return_sh=True, parallel=True,
-                                          nbr_processes=-1)
+                                          num_processes=-1)
 
         pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
                                           normalize_peaks=True,
                                           return_odf=True,
                                           return_sh=True, parallel=True,
-                                          nbr_processes=-2)
+                                          num_processes=-2)
 
         for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
             assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
