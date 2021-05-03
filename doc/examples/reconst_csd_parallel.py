@@ -49,9 +49,9 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 """
 Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
 parameter called ``parallel`` which allows for the voxels to be processed in
-parallel. If ``nbr_processes`` is None it will figure out automatically the
+parallel. If ``num_processes`` is None it will figure out automatically the
 number of CPUs available in your system. Alternatively, you can set
-``nbr_processes`` manually. Here, we show an example where we compare the
+``num_processes`` manually. Here, we show an example where we compare the
 duration of execution with or without parallelism.
 """
 
@@ -70,7 +70,7 @@ csd_peaks_parallel = peaks_from_model(model=csd_model,
                                       normalize_peaks=True,
                                       npeaks=5,
                                       parallel=True,
-                                      nbr_processes=None)
+                                      num_processes=None)
 
 time_parallel = time.time() - start_time
 print("peaks_from_model using " + str(multiprocessing.cpu_count())
@@ -92,7 +92,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              normalize_peaks=True,
                              npeaks=5,
                              parallel=False,
-                             nbr_processes=None)
+                             num_processes=None)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in :" + str(time_single) + " seconds")
