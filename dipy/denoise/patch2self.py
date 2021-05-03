@@ -163,7 +163,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
+def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                b0_denoising=True, clip_negative_vals=False,
                shift_intensity=True):
@@ -191,7 +191,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ridge'.
+            Default: 'ols'.
 
     b0_threshold : int, optional
         Threshold for considering volumes as b0.

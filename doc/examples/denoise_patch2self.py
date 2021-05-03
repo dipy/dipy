@@ -69,7 +69,7 @@ hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
 denoised_arr = patch2self(data, bvals, model='ols', shift_intensity=True,
-                          clip_negative_vals=False, b0_denoising=50)
+                          clip_negative_vals=False, b0_threshold=50)
 
 """
 The above parameters should give optimal denoising performance for Patch2Self.
