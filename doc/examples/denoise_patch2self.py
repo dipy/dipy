@@ -91,7 +91,7 @@ Please set `shift_intensity=True` and `clip_negative_vals=False` by default to
 avoid negative values in the denoised output.
 
 The `b0_threshold` is used to separate the b0 volumes from the DWI volumes.
-Changing the value of the b0 threshold is needed is the b0 volumes in the
+Changing the value of the b0 threshold is needed if the b0 volumes in the
 `bval` file have a value greater than the default `b0_threshold`.
 
 The default value of `b0_threshold` in DIPY is set to 50. If using data
