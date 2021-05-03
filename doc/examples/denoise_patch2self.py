@@ -96,7 +96,7 @@ Changing the value of the b0 threshold is needed is the b0 volumes in the
 
 The default value of `b0_threshold` in DIPY is set to 50. If using data
 such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
-assoiciated with them in the `bval` file. Please check the b-values for b0s and
+associated with them in the `bval` file. Please check the b-values for b0s and
 adjust the `b0_threshold` accordingly.
 
 Now lets visualize the output and the residuals obtained from the denoising.
