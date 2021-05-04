@@ -1,5 +1,5 @@
 cimport cython
-from .direction_getter cimport DirectionGetter
+
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
                                                TRACKPOINT,
