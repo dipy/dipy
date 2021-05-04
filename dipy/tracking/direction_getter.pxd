@@ -1,6 +1,6 @@
 
-from .direction_getter cimport DirectionGetter
-from .stopping_criterion cimport (StreamlineStatus, StoppingCriterion)
+from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
+                                               StoppingCriterion)
 
 cimport numpy as cnp
 
