@@ -19,6 +19,7 @@ from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 
 from dipy.utils.multiproc import determine_num_processes
+from dipy.utils.deprecator import deprecated_params
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
@@ -220,15 +221,16 @@ class PeaksAndMetrics(EuDXDirectionGetter):
                                                    self.odf)
 
 
+@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks, sh_order,
-                               sh_basis_type, npeaks, B, invB, nbr_processes):
+                               sh_basis_type, npeaks, B, invB, num_processes):
 
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
-    nbr_chunks = nbr_processes ** 2
+    nbr_chunks = num_processes ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
     indices = list(zip(np.arange(0, n, chunk_size),
                        np.arange(0, n, chunk_size) + chunk_size))
@@ -244,7 +246,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             mask_file_name = None
 
-        pool = Pool(nbr_processes)
+        pool = Pool(num_processes)
 
         pam_res = pool.map(_peaks_from_model_parallel_sub,
                            zip(repeat((data_file_name, mask_file_name)),
@@ -364,14 +366,15 @@ def _peaks_from_model_parallel_sub(args):
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
                             sh_order, sh_basis_type, npeaks, B, invB,
-                            parallel=False, nbr_processes=None)
+                            parallel=False, num_processes=None)
 
 
+@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, npeaks=5, B=None,
-                     invB=None, parallel=False, nbr_processes=None):
+                     invB=None, parallel=False, num_processes=None):
     """Fit the model to data and computes peaks and metrics
 
     Parameters
@@ -419,10 +422,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         (default False). Temporary files are saved in the default temporary
         directory of the system. It can be changed using ``import tempfile``
         and ``tempfile.tempdir = '/path/to/tempdir'``.
-    nbr_processes: int, optional
+    num_processes: int, optional
         If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()). If < 0 the maximal number of
-        cores minus |nbr_processes + 1| is used (enter -1 to use as many cores
+        cores minus |num_processes + 1| is used (enter -1 to use as many cores
         as possible). 0 raises an error.
 
     Returns
@@ -446,9 +449,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         B, invB = sh_to_sf_matrix(
             sphere, sh_order, sh_basis_type, return_inv=True)
 
-    nbr_processes = determine_num_processes(nbr_processes)
+    num_processes = determine_num_processes(num_processes)
 
-    if parallel and nbr_processes > 1:
+    if parallel and num_processes > 1:
         # It is mandatory to provide B and invB to the parallel function.
         # Otherwise, a call to np.linalg.pinv is made in a subprocess and
         # makes it timeout on some system.
@@ -466,7 +469,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           npeaks,
                                           B,
                                           invB,
-                                          nbr_processes)
+                                          num_processes)
 
     shape = data.shape[:-1]
     if mask is None:
