@@ -147,7 +147,7 @@ measured in millimeters and their function in Recobundles:
 
 """
 Read Arcuate Fasciculus Left bundle from already fetched atlas data to use it
-as model bundle. Let's visualize the model bundle.'
+as model bundle. Let's visualize the model bundle.
 """
 
 model_af_l_file, _ = get_two_hcp842_bundles()
