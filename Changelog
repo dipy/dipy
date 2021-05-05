@@ -27,12 +27,13 @@ The code found in Dipy was created by the people found in the AUTHOR file.
 * 1.4.1 (Thursday, May 6, 2021)
 
 - Patch2Self and its documentation updated.
-- Standardization and improvement of the multiprocessing / multithreads rules.
+- BUAN and Recobundles documentation updated.
+- Standardization and improvement of the multiprocessing / multithreading rules.
 - Community and governance information added.
-- New module: `mesh`
+- New surface seeding module for tractography named `mesh`.
 - Large update of Cython code in respect of the last standard.
 - Large documentation update.
-- Closed 61 issues and merged 26 pull requests.
+- Closed 61 issues and merged 28 pull requests.
 
 * 1.4.0 (Tuesday, March 14, 2021)
 
