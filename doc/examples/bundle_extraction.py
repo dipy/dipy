@@ -146,11 +146,12 @@ measured in millimeters and their function in Recobundles:
 """
 
 """
-Read Arcuate Fasciculus Left bundle from already fetched atlas data to use it
-as model bundle. Let's visualize the model bundle.
+Read Arcuate Fasciculus Left and Corticospinal Tract Left bundles from already
+fetched atlas data to use them as model bundle. Let's visualize the
+Arcuate Fasciculus Left model bundle.
 """
 
-model_af_l_file, _ = get_two_hcp842_bundles()
+model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
@@ -421,6 +422,35 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 reco_af_l = StatefulTractogram(target[r_af_l_labels], target_header,
                                Space.RASMM)
 save_trk(reco_af_l, "AF_L_org_refine.trk", bbox_valid_check=False)
+
+
+"""
+Let's load Corticospinal Tract Left model bundle and visualize it.
+"""
+
+sft_cst_l = load_trk(model_cst_l_file, "same", bbox_valid_check=False)
+model_cst_l = sft_cst_l.streamlines
+
+interactive = False
+
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(model_cst_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -30.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_model_bundle.png',
+              size=(600, 600))
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: CST_L_model_bundle.png
+   :align: center
+
+   The Corticospinal tract model bundle
+
+"""
 
 
 """
