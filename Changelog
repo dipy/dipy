@@ -24,6 +24,16 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.4.1 (Thursday, May 6, 2021)
+
+- Patch2Self and its documentation updated.
+- Standardization and improvement of the multiprocessing / multithreads rules.
+- Community and governance information added.
+- New module: `mesh`
+- Large update of Cython code in respect of the last standard.
+- Large documentation update.
+- Closed 61 issues and merged 26 pull requests.
+
 * 1.4.0 (Tuesday, March 14, 2021)
 
 - New self-supervised denoising algorithm Patch2Self added.

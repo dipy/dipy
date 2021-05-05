@@ -90,10 +90,11 @@ jobs:
         python.version: '3.8'
       Python39-64bit:
         python.version: '3.9'
-      CONDA Python37-64bit + OPTIONAL_DEPS:
-        python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
-        INSTALL_TYPE: "conda"
+      # Problem with h5py
+      # CONDA Python37-64bit + OPTIONAL_DEPS:
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
+      #   INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
         INSTALL_TYPE: "conda"
