@@ -8,6 +8,7 @@ bundles from tractograms.
 
 First import the necessary modules.
 """
+
 import numpy as np
 
 from dipy.align.streamlinear import whole_brain_slr
