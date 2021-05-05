@@ -240,8 +240,6 @@ Now, let's increase the reduction_thr and pruning_thr values.
 
 """
 
-rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
-
 recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
                                             model_clust_thr=0.1,
                                             reduction_thr=20,
@@ -301,8 +299,6 @@ save_trk(reco_af_l, "AF_L_org_2.trk", bbox_valid_check=False)
 Now, let's increase the reduction_thr and pruning_thr values further.
 
 """
-
-rb = RecoBundles(moved, verbose=True, rng=np.random.RandomState(2001))
 
 recognized_af_l, af_l_labels = rb.recognize(model_bundle=model_af_l,
                                             model_clust_thr=0.1,
@@ -451,6 +447,247 @@ if interactive:
    The Corticospinal tract model bundle
 
 """
+
+recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
+                                              model_clust_thr=0.1,
+                                              reduction_thr=15,
+                                              pruning_thr=7,
+                                              reduction_distance='mdf',
+                                              pruning_distance='mdf',
+                                              slr=True)
+
+"""
+let's visualize extracted Corticospinal tract Left bundle
+"""
+
+interactive = False
+
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(recognized_cst_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -30.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_recognized_bundle.png',
+              size=(600, 600))
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: CST_L_recognized_bundle.png
+   :align: center
+
+   Extracted Corticospinal tract Left bundle
+
+"""
+
+"""
+
+Save the bundle as a trk file. Let's save the recognized bundle in the
+common space (atlas space), in this case, MNI space.
+
+"""
+
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_rec_1.trk", bbox_valid_check=False)
+
+"""
+
+Let's save the recognized bundle in the original space of the subject anatomy.
+
+"""
+
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_org_1.trk", bbox_valid_check=False)
+
+
+"""
+
+Now, let's increase the reduction_thr and pruning_thr values.
+
+"""
+
+recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
+                                              model_clust_thr=0.1,
+                                              reduction_thr=20,
+                                              pruning_thr=10,
+                                              reduction_distance='mdf',
+                                              pruning_distance='mdf',
+                                              slr=True)
+
+"""
+let's visualize extracted Corticospinal tract Left bundle.
+"""
+
+interactive = False
+
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(recognized_cst_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -30.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_recognized_bundle2.png',
+              size=(600, 600))
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: CST_L_recognized_bundle2.png
+   :align: center
+
+   Extracted Corticospinal tract Left bundle
+
+"""
+
+"""
+
+Save the bundle as a trk file. Let's save the recognized bundle in the
+common space (atlas space), in this case, MNI space.
+
+"""
+
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_rec_2.trk", bbox_valid_check=False)
+
+"""
+
+Let's save the recognized bundle in the original space of the subject anatomy.
+
+"""
+
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_org_2.trk", bbox_valid_check=False)
+
+
+"""
+
+Now, let's increase the reduction_thr and pruning_thr values further.
+
+"""
+
+recognized_cst_l, cst_l_labels = rb.recognize(model_bundle=model_cst_l,
+                                              model_clust_thr=0.1,
+                                              reduction_thr=25,
+                                              pruning_thr=12,
+                                              reduction_distance='mdf',
+                                              pruning_distance='mdf',
+                                              slr=True)
+
+"""
+let's visualize extracted Corticospinal tract Left bundle.
+"""
+
+interactive = False
+
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(recognized_cst_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -30.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_recognized_bundle3.png',
+              size=(600, 600))
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: CST_L_recognized_bundle3.png
+   :align: center
+
+   Extracted Corticospinal tract Left bundle
+
+"""
+
+"""
+
+Save the bundle as a trk file. Let's save the recognized bundle in the
+common space (atlas space), in this case, MNI space.
+
+"""
+
+reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_rec_3.trk", bbox_valid_check=False)
+
+"""
+
+Let's save the recognized bundle in the original space of the subject anatomy.
+
+"""
+
+reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_org_3.trk", bbox_valid_check=False)
+
+
+"""
+Let's apply auto-calibrated RecoBundles on the output of standard RecoBundles.
+This step will filter out the outlier streamlines. This time, the RecoBundles'
+extracted bundle will serve as a model bundle. As a rule of thumb, provide
+larger threshold values in standard RecoBundles function and smaller values in
+the auto-calibrated RecoBundles (refinement) step.
+
+"""
+
+r_recognized_cst_l, r_cst_l_labels = rb.refine(model_bundle=model_cst_l,
+                                        pruned_streamlines=recognized_cst_l,
+                                        model_clust_thr=0.1,
+                                        reduction_thr=15,
+                                        pruning_thr=6,
+                                        reduction_distance='mdf',
+                                        pruning_distance='mdf',
+                                        slr=True)
+
+"""
+let's visualize extracted refined Corticospinal tract Left bundle.
+"""
+
+interactive = False
+
+scene = window.Scene()
+scene.SetBackground(1, 1, 1)
+scene.add(actor.line(r_recognized_cst_l))
+scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
+                 position=(-360.11, -30.46, -40.44),
+                 view_up=(-0.03, 0.028, 0.89))
+window.record(scene, out_path='CST_L_refine_recognized_bundle.png',
+              size=(600, 600))
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: CST_L_refine_recognized_bundle.png
+   :align: center
+
+   Extracted refined Corticospinal tract Left bundle
+
+"""
+
+"""
+
+Save the bundle as a trk file. Let's save the recognized bundle in the
+common space (atlas space), in this case, MNI space.
+
+"""
+
+reco_cst_l = StatefulTractogram(r_recognized_cst_l, atlas_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_rec_refine.trk", bbox_valid_check=False)
+
+"""
+
+Let's save the recognized bundle in the original space of the subject anatomy.
+
+"""
+
+reco_cst_l = StatefulTractogram(target[r_cst_l_labels], target_header,
+                               Space.RASMM)
+save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
 
 
 """
