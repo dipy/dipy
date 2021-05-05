@@ -489,7 +489,7 @@ common space (atlas space), in this case, MNI space.
 """
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_1.trk", bbox_valid_check=False)
 
 """
@@ -499,7 +499,7 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 """
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_1.trk", bbox_valid_check=False)
 
 
@@ -550,7 +550,7 @@ common space (atlas space), in this case, MNI space.
 """
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_2.trk", bbox_valid_check=False)
 
 """
@@ -611,7 +611,7 @@ common space (atlas space), in this case, MNI space.
 """
 
 reco_cst_l = StatefulTractogram(recognized_cst_l, atlas_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_3.trk", bbox_valid_check=False)
 
 """
@@ -621,7 +621,7 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 """
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_3.trk", bbox_valid_check=False)
 
 
@@ -635,13 +635,13 @@ the auto-calibrated RecoBundles (refinement) step.
 """
 
 r_recognized_cst_l, r_cst_l_labels = rb.refine(model_bundle=model_cst_l,
-                                        pruned_streamlines=recognized_cst_l,
-                                        model_clust_thr=0.1,
-                                        reduction_thr=15,
-                                        pruning_thr=6,
-                                        reduction_distance='mdf',
-                                        pruning_distance='mdf',
-                                        slr=True)
+                                     pruned_streamlines=recognized_cst_l,
+                                     model_clust_thr=0.1,
+                                     reduction_thr=15,
+                                     pruning_thr=6,
+                                     reduction_distance='mdf',
+                                     pruning_distance='mdf',
+                                     slr=True)
 
 """
 let's visualize extracted refined Corticospinal tract Left bundle.
@@ -676,7 +676,7 @@ common space (atlas space), in this case, MNI space.
 """
 
 reco_cst_l = StatefulTractogram(r_recognized_cst_l, atlas_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_rec_refine.trk", bbox_valid_check=False)
 
 """
@@ -686,7 +686,7 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 """
 
 reco_cst_l = StatefulTractogram(target[r_cst_l_labels], target_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_refine.trk", bbox_valid_check=False)
 
 
