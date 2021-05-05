@@ -15,7 +15,7 @@ from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_fnames
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 
 """
 For educational purposes we will try to cluster a small streamline bundle known
@@ -110,7 +110,7 @@ if interactive:
 Show the centroids of the fornix after clustering (with random colors):
 """
 
-colormap = actor.create_colormap(np.arange(len(clusters)))
+colormap = colormap.create_colormap(np.arange(len(clusters)))
 
 scene.clear()
 scene.SetBackground(1, 1, 1)

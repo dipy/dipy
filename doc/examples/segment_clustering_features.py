@@ -142,7 +142,7 @@ streamline.
 """
 
 import numpy as np
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import CenterOfMassFeature
 from dipy.segment.metric import EuclideanMetric
@@ -164,7 +164,7 @@ clusters = qb.cluster(streamlines)
 centers = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each center of mass according to the cluster they belong to.
-colormap = actor.create_colormap(np.arange(len(clusters)))
+colormap = colormap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -201,7 +201,7 @@ spatial position of a streamline. This can also be an alternative to the
 """
 
 import numpy as np
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import MidpointFeature
 from dipy.segment.metric import EuclideanMetric
@@ -219,7 +219,7 @@ clusters = qb.cluster(streamlines)
 midpoints = np.asarray(list(map(feature.extract, streamlines)))
 
 # Color each midpoint according to the cluster they belong to.
-colormap = actor.create_colormap(np.arange(len(clusters)))
+colormap = colormap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -255,7 +255,7 @@ length of a streamline.
 """
 
 import numpy as np
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import ArcLengthFeature
 from dipy.segment.metric import EuclideanMetric
@@ -269,7 +269,7 @@ qb = QuickBundles(threshold=2., metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = actor.create_colormap(np.ravel(clusters.centroids))
+colormap = colormap.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color
@@ -307,7 +307,7 @@ using this feature.
 """
 
 import numpy as np
-from dipy.viz import window, actor
+from dipy.viz import window, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
@@ -321,7 +321,7 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = actor.create_colormap(np.arange(len(clusters)))
+colormap = colormap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color

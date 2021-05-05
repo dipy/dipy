@@ -65,7 +65,7 @@ import numpy as np
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.tracking.streamline import Streamlines
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import SumPointwiseEuclideanMetric
 from dipy.segment.metric import Metric
@@ -128,9 +128,9 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = actor.create_colormap(np.ravel(clusters.centroids))
+cmap = colormap.create_colormap(np.ravel(clusters.centroids))
 colormap_full = np.ones((len(streamlines), 3))
-for cluster, color in zip(clusters, colormap):
+for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
 scene = window.Scene()
@@ -224,9 +224,9 @@ We will now visualize the clustering result.
 """
 
 # Color each streamline according to the cluster they belong to.
-colormap = actor.create_colormap(np.arange(len(clusters)))
+cmap = colormap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
-for cluster, color in zip(clusters, colormap):
+for cluster, color in zip(clusters, cmap):
     colormap_full[cluster.indices] = color
 
 scene = window.Scene()
