@@ -21,6 +21,8 @@ from scipy.io import loadmat, savemat
 from dipy.stats.analysis import peak_values
 from phantomas.utils.tessellation import tessellation
 
+from datetime import datetime
+
 
 class _DsiSphere8Fold(Sphere):
     _instance = None
@@ -60,22 +62,24 @@ class OdffpModel(object):
         ) #, sh_order=14, basis_type='tournier07')
      
 
-    def __init__(self, gtab, dict_file, drop_odf_amplitude=True):
+    def __init__(self, gtab, dict_file, drop_odf_baseline=True, output_dict_odf=True):
         self.gtab = gtab
          
         with h5py.File(dict_file, 'r') as mat_file:
             self._dict_odf = np.array(mat_file['odfrot'])    
             self._dict_peak_dirs = np.array(mat_file['dirrot'])
          
-        self._drop_odf_amplitude = drop_odf_amplitude
-        self._dict_odf = self._normalize_odf(self._dict_odf)
+        self._drop_odf_baseline = drop_odf_baseline
+        self._output_dict_odf = output_dict_odf
+        self._normalized_dict_odf,_ = self._normalize_odf(self._dict_odf)
 
      
     def _normalize_odf(self, odf):
-        if self._drop_odf_amplitude:
+        if self._drop_odf_baseline:
             odf -= np.min(odf, axis=0)
-
-        return odf / np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
+            
+        odf_norm = np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
+        return odf / odf_norm, odf_norm
 
      
     def _find_highest_peak_rotation(self, input_odf, tessellation, target_direction=[0,0,1]):
@@ -118,12 +122,10 @@ class OdffpModel(object):
         tessellation = dsiSphere8Fold()
         tessellation_size = len(tessellation.vertices)
  
-        self._rotations = np.zeros(data_shape + (3,3))
         output_odf = np.zeros(data_shape + (tessellation_size,))
-        output_peak_dirs = np.zeros(data_shape + (max_peaks_num,3))
+        output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
  
         for idx in ndindex(data_shape):
-            
             model_fit = diff_model.fit(data[idx])
             input_odf = model_fit.odf(tessellation)
             
@@ -131,14 +133,17 @@ class OdffpModel(object):
             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
              
-            input_odf_trace = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
+            input_odf_trace, input_odf_norm = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
              
-            dict_idx = np.argmax(np.dot(input_odf_trace, self._dict_odf))
+            dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf))
             
-            output_odf[idx] = OdffpModel.resample_odf(
-                np.concatenate((self._dict_odf[:,dict_idx],self._dict_odf[:,dict_idx])), 
-                rotated_tessellation, tessellation
-            )
+            if self._output_dict_odf:
+                output_odf[idx] = OdffpModel.resample_odf(
+                    input_odf_norm * np.concatenate((self._dict_odf[:,dict_idx], self._dict_odf[:,dict_idx])), 
+                    rotated_tessellation, tessellation
+                )
+            else:
+                output_odf[idx] = input_odf
             
             output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
  
@@ -166,31 +171,58 @@ class OdffpFit(object):
         fib = {}
         
         fib['dimension'] = self._data.shape[:-1]
-#         fib['voxel_size'] = np.array([2,2,2])
+        fib['voxel_size'] = np.array([2,2,2])
         fib['odf_vertices'] = self._tessellation.vertices.T
         fib['odf_faces'] = self._tessellation.faces.T
         
         map_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
-        flat_size = [1, np.prod(fib['dimension'])]
+        voxel_num = np.prod(fib['dimension'])
+        tessellation_half_size = len(self._tessellation.vertices) // 2
         
         max_peaks_num = self._peak_dirs.shape[3]
-        
+
+        self._odf = np.flip(self._odf, 1).reshape((np.prod(fib['dimension']), len(self._tessellation.vertices)), order='F')
+        self._peak_dirs = np.flip(self._peak_dirs, 1).reshape((np.prod(fib['dimension']), max_peaks_num, 3), order='F')
+  
         for i in range(max_peaks_num):
-            fib['fa%d' % i] = np.zeros(fib['dimension'])
-            fib['nqa%d' % i] = 0.1 * np.ones(map_size)
-            fib['index%d' % i] = np.zeros(fib['dimension'])
-        
-            for idx in ndindex(fib['dimension']):
-                peak_vertex_idx = np.argmax(np.dot(self._peak_dirs[idx][i], fib['odf_vertices']))
-                fib['index%d' % i][idx] = peak_vertex_idx
-                fib['fa%d' % i][idx] = self._odf[idx][peak_vertex_idx]
-                
+            fib['fa%d' % i] = np.zeros(voxel_num)
+            fib['nqa%d' % i] = 0.1 * np.ones(voxel_num)
+            fib['index%d' % i] = np.zeros(voxel_num)
+ 
+        for j in range(self._odf.shape[0]):
+            peak_vertex_idx = np.zeros(max_peaks_num, dtype=int)
+            peak_vertex_values = np.zeros(max_peaks_num)
+ 
+            for i in range(max_peaks_num):
+                peak_vertex_idx[i] = np.argmax(np.dot(self._peak_dirs[j][i], fib['odf_vertices']))
+                peak_vertex_values[i] = self._odf[j][peak_vertex_idx[i]]
+                 
+            sorted_i = np.argsort(-peak_vertex_values)
+                 
+            for i in range(max_peaks_num):
+                fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
+                fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(self._odf[j])
+
+        for i in range(max_peaks_num):
+            fib['fa%d' % i] -= np.min(fib['fa%d' % i])
+            fib['fa%d' % i] /= np.maximum(1e-8, np.max(fib['fa%d' % i]))
+
+        fib['odf0'] = self._odf[fib['fa0'] > 0]
+        fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
+#         fib['odf0'] = np.flip(fib['odf0'], 1)
+#         fib['odf0'] = fib['odf0'].reshape((np.prod(fib['dimension']), len(self._tessellation.vertices)), order='F')
+#         fib['odf0'] = fib['odf0'][fib['fa0'] > 0]
+        fib['odf0'] = fib['odf0'].T
+        fib['odf0'] = fib['odf0'][:tessellation_half_size,:]
+             
+        for i in range(max_peaks_num):
+#             fib['fa%d' % i] = np.flip(fib['fa%d' % i], 1)
+#             fib['index%d' % i] = np.flip(fib['index%d' % i], 1)
             fib['fa%d' % i] = fib['fa%d' % i].reshape(map_size, order='F')
-            fib['index%d' % i] = fib['index%d' % i].reshape(flat_size, order='F')
-            
-       
-        savemat(file_name, fib, format='4')
-        
-        
+            fib['index%d' % i] = fib['index%d' % i].reshape((1, voxel_num), order='F')
+         
+
+         
+        savemat(file_name, fib, format='4')        
     
     
