@@ -50,7 +50,7 @@ Mailing Lists
 =============
 
 Please see the developer's list at
-http://mail.scipy.org/mailman/listinfo/nipy-devel
+https://mail.python.org/mailman3/lists/dipy.python.org/
 
 Code
 ====
