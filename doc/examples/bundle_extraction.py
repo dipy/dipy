@@ -560,7 +560,7 @@ Let's save the recognized bundle in the original space of the subject anatomy.
 """
 
 reco_cst_l = StatefulTractogram(target[cst_l_labels], target_header,
-                               Space.RASMM)
+                                Space.RASMM)
 save_trk(reco_cst_l, "CST_L_org_2.trk", bbox_valid_check=False)
 
 
@@ -634,7 +634,8 @@ the auto-calibrated RecoBundles (refinement) step.
 
 """
 
-r_recognized_cst_l, r_cst_l_labels = rb.refine(model_bundle=model_cst_l,
+r_recognized_cst_l, r_cst_l_labels = rb.refine(
+                                     model_bundle=model_cst_l,
                                      pruned_streamlines=recognized_cst_l,
                                      model_clust_thr=0.1,
                                      reduction_thr=15,
