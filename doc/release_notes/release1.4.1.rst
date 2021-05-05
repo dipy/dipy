@@ -23,12 +23,15 @@ The following 11 authors contributed 153 commits.
 * Shreyas Fadnavis
 
 
-We closed a total of 86 issues, 25 pull requests and 61 regular issues;
+We closed a total of 89 issues, 28 pull requests and 61 regular issues;
 this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (25):
+Pull Requests (28):
 
+* :ghpull:`2367`: [Upcoming] Release 1.4.1
+* :ghpull:`2387`: added all examples of CST and updated AFQ file name
+* :ghpull:`2386`: Adding CST_L back in Bundle Segmentation Tutorial
 * :ghpull:`2375`: Expanding Bundle Segmentation Tutorial
 * :ghpull:`2382`: Updated docs for using P2S optimally
 * :ghpull:`2385`: RF: Standardize the argument name for the number of threads/cores
