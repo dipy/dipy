@@ -151,18 +151,17 @@ print("Entire denoised data saved in denoised_patch2self.nii.gz")
 Lastly, one can also use Patch2Self in batches if the number of gradient
 directions is very high (>=200 volumes). For instance, if the data has 300
 volumes, one can split the data into 2 batches, (150 directions each) and still
-get the same denoising performance. One can simply run Patch2Self using:
-`denoised_batch1 = patch2self(data[..., :150], bvals[:150])`
-`denoised_batch2 = patch2self(data[..., 150:], bvals[150:])`
+get the same denoising performance. One can simply run Patch2Self using::
 
-After doing this, the 2 denoised batches can be merged as follows:
-`denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)`
+denoised_batch1 = patch2self(data[..., :150], bvals[:150])
+denoised_batch2 = patch2self(data[..., 150:], bvals[150:])
+
+After doing this, the 2 denoised batches can be merged as follows::
+
+denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)
 
 One can also consider using the above batching approach to denoise each
 shell separately if working with multi-shell data.
-"""
-
-"""
 
 References
 ----------
@@ -189,4 +188,5 @@ References
              medicine, 65(2), pp.480-491.
 
 .. include:: ../links_names.inc
+
 """
