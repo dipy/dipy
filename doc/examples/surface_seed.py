@@ -17,9 +17,11 @@ from dipy.tracking.mesh import (random_coordinates_from_surface,
 from fury.io import load_polydata
 from fury.utils import (get_polydata_triangles, get_polydata_vertices,
                         get_actor_from_polydata, normals_from_v_f)
+
 """
 Fetch and load a surface
 """
+
 brain_lh = get_fnames("fury_surface")
 polydata = load_polydata(brain_lh)
 
@@ -37,6 +39,7 @@ Display the surface
 
 First, create an actor from the polydata, to display in the scene
 """
+
 scene = window.Scene()
 surface_actor = get_actor_from_polydata(polydata)
 
@@ -60,22 +63,26 @@ Generate a list of seeding positions
 
 Choose the number of seed
 """
+
 nb_seeds = 100000
 nb_triangles = len(triangles)
 
 """
 Get a list of triangles indices and trilinear coordinates for each seed
 """
+
 tri_idx, trilin_co = random_coordinates_from_surface(nb_triangles, nb_seeds)
 
 """
 Get the 3d cartesian position from triangles indices and trilinear coordinates
 """
+
 seed_pts = seeds_from_surface_coordinates(triangles, vts, tri_idx, trilin_co)
 
 """
 Compute normal and get the normal direction for each seeds
 """
+
 normals = normals_from_v_f(vts, triangles)
 seed_n = seeds_from_surface_coordinates(triangles, normals, tri_idx, trilin_co)
 
@@ -88,6 +95,7 @@ seed_actors = actor.dots(seed_pts, color=(0, 0, 1), dot_size=4.0)
 """
 Create line actors for seeds normals (green outside, red inside)
 """
+
 normal_length = 0.5
 normal_in = np.tile(seed_pts[:, np.newaxis, :], (1, 2, 1))
 normal_out = np.tile(seed_pts[:, np.newaxis, :], (1, 2, 1))
@@ -100,6 +108,7 @@ normal_out_actor = actor.line(normal_out, colors=(0, 1, 0))
 """
 Visualise seeds and normals along the surface
 """
+
 scene = window.Scene()
 scene.add(surface_actor)
 scene.add(seed_actors)
@@ -125,5 +134,5 @@ References
     Surface-enhanced tractography (SET). NeuroImage, 169, 524-539, 2018.
 
 .. include:: ../links_names.inc
-"""
 
+"""

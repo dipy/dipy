@@ -9,18 +9,19 @@ bundles from tractograms.
 First import the necessary modules.
 """
 
-from dipy.data.fetcher import get_two_hcp842_bundles
-from dipy.data.fetcher import (fetch_target_tractogram_hcp,
-                               fetch_bundle_atlas_hcp842,
-                               get_bundle_atlas_hcp842,
-                               get_target_tractogram_hcp)
 import numpy as np
-from dipy.segment.bundles import RecoBundles
+
 from dipy.align.streamlinear import whole_brain_slr
-from fury import actor, window
+from dipy.data import get_two_hcp842_bundles
+from dipy.data import (fetch_target_tractogram_hcp,
+                       fetch_bundle_atlas_hcp842,
+                       get_bundle_atlas_hcp842,
+                       get_target_tractogram_hcp)
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_trk, save_trk
 from dipy.io.utils import create_tractogram_header
+from dipy.segment.bundles import RecoBundles
+from dipy.viz import actor, window
 
 
 """

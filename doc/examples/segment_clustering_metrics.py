@@ -131,7 +131,7 @@ orientation of a streamline.
 """
 
 import numpy as np
-from dipy.viz import window, actor
+from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
 from dipy.segment.metric import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
@@ -148,7 +148,7 @@ qb = QuickBundles(threshold=0.1, metric=metric)
 clusters = qb.cluster(streamlines)
 
 # Color each streamline according to the cluster they belong to.
-colormap = actor.create_colormap(np.arange(len(clusters)))
+colormap = colormap.create_colormap(np.arange(len(clusters)))
 colormap_full = np.ones((len(streamlines), 3))
 for cluster, color in zip(clusters, colormap):
     colormap_full[cluster.indices] = color

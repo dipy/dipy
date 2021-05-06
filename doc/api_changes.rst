@@ -20,7 +20,7 @@ DIPY 1.4.1 changes
     - If ``num_threads = 0`` an error is raised.
 - Change in the parallelization logic when using multiprocessing package:
     - The same as with OpenMP with the difference that ``num_processes = None`` uses all cores directly.
-    
+
 **Tracking**
 
 - Change in DirectionGetters:

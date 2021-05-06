@@ -10,12 +10,13 @@ maps on a bundle. Divide bundle into N smaller segments.
 First import the necessary modules.
 """
 
+import numpy as np
+
 from dipy.data import get_two_hcp842_bundles
 from dipy.data import fetch_bundle_atlas_hcp842
-import numpy as np
-from fury import actor, window
-from dipy.stats.analysis import assignment_map
 from dipy.io.streamline import load_trk
+from dipy.stats.analysis import assignment_map
+from dipy.viz import actor, window
 
 """
 Download and read data for this tutorial
