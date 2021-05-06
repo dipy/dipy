@@ -70,6 +70,7 @@ nb_triangles = len(triangles)
 """
 Get a list of triangles indices and trilinear coordinates for each seed
 """
+
 tri_idx, trilin_co = random_coordinates_from_surface(nb_triangles, nb_seeds)
 
 """

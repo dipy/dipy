@@ -9,6 +9,7 @@ maps on a bundle. Divide bundle into N smaller segments.
 
 First import the necessary modules.
 """
+
 import numpy as np
 
 from dipy.data import get_two_hcp842_bundles

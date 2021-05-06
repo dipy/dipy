@@ -153,15 +153,16 @@ directions is very high (>=200 volumes). For instance, if the data has 300
 volumes, one can split the data into 2 batches, (150 directions each) and still
 get the same denoising performance. One can simply run Patch2Self using::
 
-denoised_batch1 = patch2self(data[..., :150], bvals[:150])
-denoised_batch2 = patch2self(data[..., 150:], bvals[150:])
+   denoised_batch1 = patch2self(data[..., :150], bvals[:150])
+   denoised_batch2 = patch2self(data[..., 150:], bvals[150:])
 
 After doing this, the 2 denoised batches can be merged as follows::
 
-denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)
+   denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)
 
 One can also consider using the above batching approach to denoise each
 shell separately if working with multi-shell data.
+
 
 References
 ----------
