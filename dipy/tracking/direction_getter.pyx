@@ -99,7 +99,7 @@ cdef class DirectionGetter:
                                     StoppingCriterion stopping_criterion,
                                     cnp.float_t[:, :] streamline,
                                     StreamlineStatus stream_status,
-                                    double use_fixed_step
+                                    int fixedstep
                                     ):
        cdef:
            cnp.npy_intp i
@@ -108,7 +108,7 @@ cdef class DirectionGetter:
            double voxdir[3]
            void (*step)(double*, double*, double) nogil
 
-       if use_fixed_step > 0:
+       if fixedstep > 0:
            step = fixed_step
        else:
            step = step_to_boundary
