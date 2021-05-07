@@ -115,9 +115,9 @@ def local_tracker(
         array, ``N``, will set the maximum allowable length of the streamline.
     step_size : float
         Size of tracking steps in mm if ``fixed_step``.
-    fixedstep : bool
-        If true, a fixed step_size is used, otherwise a variable step size is
-        used.
+    fixedstep : int
+        If greater than 0, a fixed step_size is used, otherwise a variable
+        step size is used.
 
     Returns
     -------
@@ -129,22 +129,16 @@ def local_tracker(
     cdef:
         cnp.npy_intp i
         StreamlineStatus stream_status
-        double use_fixed_step
 
     if (seed_pos.shape[0] != 3 or first_step.shape[0] != 3 or
             voxel_size.shape[0] != 3 or streamline.shape[1] != 3):
         raise ValueError('Invalid input parameter dimensions.')
 
-    if fixedstep:
-        use_fixed_step = 1
-    else:
-        use_fixed_step = 0
-
     stream_status = TRACKPOINT
     i, stream_status = dg.generate_streamline(seed_pos, first_step, voxel_size,
                                               step_size, sc,
                                               streamline, stream_status,
-                                              use_fixed_step)
+                                              fixedstep)
     return i, stream_status
 
 
