@@ -1480,8 +1480,10 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     dipy.tracking.distances.local_skeleton_clustering
     """
     cdef:
-        long i=0,j=0
-        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0
+        cnp.npy_intp i=0
+        cnp.npy_intp j=0
+        cnp.float32_t sub=0,subf=0, tmprow=0, tmprowf=0
+        double distf=0,dist=0
 
     for i from 0<=i<rows:
         tmprow=0
@@ -1494,8 +1496,8 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
         dist+=sqrt(tmprow)
         distf+=sqrt(tmprowf)
 
-    out[0]=dist/<float>rows
-    out[1]=distf/<float>rows
+    out[0]=<cnp.float32_t>dist/<cnp.float32_t>rows
+    out[1]=<cnp.float32_t>distf/<cnp.float32_t>rows
 
 
 @cython.cdivision(True)
