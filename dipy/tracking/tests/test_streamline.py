@@ -1196,7 +1196,7 @@ def test_cluster_confidence():
 
     cci = cluster_confidence(test_streamlines, override=True)
 
-    assert_equal(cci[0], cci[2])
+    assert_almost_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
     # 3 parallel streamlines
