@@ -18,7 +18,7 @@ cdef extern from "dpy_math.h" nogil:
     double fabs(double)
 
 @cython.cdivision(True)
-cdef inline double stepsize(double point, double increment) nogil:
+cdef inline double _stepsize(double point, double increment) nogil:
     """Compute the step size to the closest boundary in units of increment."""
     cdef:
         double dist
@@ -30,7 +30,7 @@ cdef inline double stepsize(double point, double increment) nogil:
     else:
         return dist / increment
 
-cdef void step_to_boundary(double * point, double * direction,
+cdef void _step_to_boundary(double * point, double * direction,
                            double overstep) nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
@@ -52,7 +52,7 @@ cdef void step_to_boundary(double * point, double * direction,
         double smallest_step
 
     for i in range(3):
-        step_sizes[i] = stepsize(point[i], direction[i])
+        step_sizes[i] = _stepsize(point[i], direction[i])
 
     smallest_step = step_sizes[0]
     for i in range(1, 3):
@@ -63,7 +63,7 @@ cdef void step_to_boundary(double * point, double * direction,
     for i in range(3):
         point[i] += smallest_step * direction[i]
 
-cdef void fixed_step(double * point, double * direction, double step_size) nogil:
+cdef void _fixed_step(double * point, double * direction, double step_size) nogil:
     """Updates point by stepping in direction.
 
     Parameters
@@ -109,9 +109,9 @@ cdef class DirectionGetter:
            void (*step)(double*, double*, double) nogil
 
        if fixedstep > 0:
-           step = fixed_step
+           step = _fixed_step
        else:
-           step = step_to_boundary
+           step = _step_to_boundary
 
        copy_point(&seed[0], point)
        copy_point(&seed[0], &streamline[0,0])
