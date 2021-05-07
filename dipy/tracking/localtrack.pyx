@@ -12,77 +12,6 @@ from dipy.core.interpolation cimport trilinear_interpolate4d_c
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 
 
-cdef extern from "dpy_math.h" nogil:
-    int dpy_signbit(double x)
-    double dpy_rint(double x)
-    double fabs(double)
-
-
-@cython.cdivision(True)
-cdef inline double stepsize(double point, double increment) nogil:
-    """Compute the step size to the closest boundary in units of increment."""
-    cdef:
-        double dist
-    dist = dpy_rint(point) + .5 - dpy_signbit(increment) - point
-    if dist == 0:
-        # Point is on an edge, return step size to next edge.  This is most
-        # likely to come up if overstep is set to 0.
-        return 1. / fabs(increment)
-    else:
-        return dist / increment
-
-
-cdef void step_to_boundary(double * point, double * direction,
-                           double overstep) nogil:
-    """Takes a step from point in along direction just past a voxel boundary.
-
-    Parameters
-    ----------
-    direction : c-pointer to double[3]
-        The direction along which the step should be taken.
-    point : c-pointer to double[3]
-        The tracking point which will be updated by this function.
-    overstep : double
-        It's often useful to have the points of a streamline lie inside of a
-        voxel instead of having them lie on the boundary. For this reason,
-        each step will overshoot the boundary by ``overstep * direction``.
-        This should not be negative.
-
-    """
-    cdef:
-        double step_sizes[3]
-        double smallest_step
-
-    for i in range(3):
-        step_sizes[i] = stepsize(point[i], direction[i])
-
-    smallest_step = step_sizes[0]
-    for i in range(1, 3):
-        if step_sizes[i] < smallest_step:
-            smallest_step = step_sizes[i]
-
-    smallest_step += overstep
-    for i in range(3):
-        point[i] += smallest_step * direction[i]
-
-
-cdef void fixed_step(double * point, double * direction, double step_size) nogil:
-    """Updates point by stepping in direction.
-
-    Parameters
-    ----------
-    direction : c-pointer to double[3]
-        The direction along which the step should be taken.
-    point : c-pointer to double[3]
-        The tracking point which will be updated by this function.
-    step_size : double
-        The size of step in units of direction.
-
-    """
-    for i in range(3):
-        point[i] += direction[i] * step_size
-
-
 def local_tracker(
         DirectionGetter dg,
         StoppingCriterion sc,
@@ -266,7 +195,6 @@ cdef _pft_tracker(DirectionGetter dg,
         int i, pft_trial, pft_streamline_i, back_steps, front_steps
         int strl_array_len
         double point[3]
-        double voxdir[3]
         void (*step)(double* , double*, double) nogil
 
     copy_point(seed, point)
@@ -283,9 +211,9 @@ cdef _pft_tracker(DirectionGetter dg,
             stream_status[0] = INVALIDPOINT
         else:
             for j in range(3):
-                voxdir[j] = dir[j] / voxel_size[j]
+                # step forward
+                point[j] += dir[j] / voxel_size[j] * step_size
 
-            fixed_step(point, voxdir, step_size)
             copy_point(point, &streamline[i, 0])
             copy_point(dir, &directions[i, 0])
             stream_status[0] = sc.check_point_c(point)
@@ -350,7 +278,6 @@ cdef _pft(cnp.float_t[:, :] streamline,
         double sum_weights, sum_squared, N_effective, rdm_sample
         double point[3]
         double dir[3]
-        double voxdir[3]
         double eps = 1e-16
         int s, p, j
 
@@ -379,8 +306,9 @@ cdef _pft(cnp.float_t[:, :] streamline,
                 particle_weights[p] = 0
             else:
                 for j in range(3):
-                    voxdir[j] = dir[j] / voxel_size[j]
-                fixed_step(point, voxdir, step_size)
+                    # step forward
+                    point[j] += dir[j] / voxel_size[j] * step_size
+
                 copy_point(point, &particle_paths[0, p, s + 1, 0])
                 copy_point(dir, &particle_dirs[0, p, s + 1, 0])
                 particle_stream_statuses[0, p] = sc.check_point_c(point)
