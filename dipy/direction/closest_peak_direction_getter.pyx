@@ -4,7 +4,6 @@ cimport cython
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
-from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
@@ -56,73 +55,6 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
             scalar_muliplication_point(direction, -1)
             return 0
     return 1
-
-cdef extern from "dpy_math.h" nogil:
-    int dpy_signbit(double x)
-    double dpy_rint(double x)
-    double fabs(double)
-
-@cython.cdivision(True)
-cdef inline double stepsize(double point, double increment) nogil:
-    """Compute the step size to the closest boundary in units of increment."""
-    cdef:
-        double dist
-    dist = dpy_rint(point) + .5 - dpy_signbit(increment) - point
-    if dist == 0:
-        # Point is on an edge, return step size to next edge.  This is most
-        # likely to come up if overstep is set to 0.
-        return 1. / fabs(increment)
-    else:
-        return dist / increment
-
-cdef void step_to_boundary(double * point, double * direction,
-                           double overstep) nogil:
-    """Takes a step from point in along direction just past a voxel boundary.
-
-    Parameters
-    ----------
-    direction : c-pointer to double[3]
-        The direction along which the step should be taken.
-    point : c-pointer to double[3]
-        The tracking point which will be updated by this function.
-    overstep : double
-        It's often useful to have the points of a streamline lie inside of a
-        voxel instead of having them lie on the boundary. For this reason,
-        each step will overshoot the boundary by ``overstep * direction``.
-        This should not be negative.
-
-    """
-    cdef:
-        double step_sizes[3]
-        double smallest_step
-
-    for i in range(3):
-        step_sizes[i] = stepsize(point[i], direction[i])
-
-    smallest_step = step_sizes[0]
-    for i in range(1, 3):
-        if step_sizes[i] < smallest_step:
-            smallest_step = step_sizes[i]
-
-    smallest_step += overstep
-    for i in range(3):
-        point[i] += smallest_step * direction[i]
-
-cdef void fixed_step(double * point, double * direction, double step_size) nogil:
-    """Updates point by stepping in direction.
-
-    Parameters
-    ----------
-    direction : c-pointer to double[3]
-        The direction along which the step should be taken.
-    point : c-pointer to double[3]
-        The tracking point which will be updated by this function.
-    step_size : double
-        The size of step in units of direction.
-
-    """
-    for i in range(3):
-        point[i] += direction[i] * step_size
 
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
