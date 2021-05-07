@@ -142,6 +142,11 @@ def test_bundles_distances_mdf(verbose=False):
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
 
+    dist = pf.bundles_distances_mdf(tracksA, tracksA)
+    assert_equal(dist[0, 0], 0)
+    assert_equal(dist[1, 1], 0)
+    assert_equal(dist[1, 0], dist[0, 1])
+
     pf.bundles_distances_mdf(tracksA, tracksB)
 
     tracksA = [xyz1A, xyz1A]
