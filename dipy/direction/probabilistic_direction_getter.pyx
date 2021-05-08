@@ -32,8 +32,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         double[:, :] vertices
         dict _adj_matrix
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
-                 **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -141,8 +140,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
-                 **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold, **kwargs)
 

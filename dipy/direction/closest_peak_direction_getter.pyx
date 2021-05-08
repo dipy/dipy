@@ -1,16 +1,14 @@
 import numpy as np
 cimport numpy as cnp
-
-from warnings import warn
+cimport cython
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
-from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 
-cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
+cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity):
     """Update direction with the closest direction from peak_dirs.
 
@@ -78,7 +76,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
                                                            double[::1] point):
         """Returns best directions at seed location to start tracking.
 
@@ -118,7 +116,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
 
     @classmethod
     def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
-                 pmf_threshold=0.1, **kwargs):
+                 pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -212,7 +210,7 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             double[:] pmf
-            np.ndarray[np.float_t, ndim=2] peaks
+            cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 
