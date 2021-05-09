@@ -10,7 +10,8 @@ from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
 from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
-                                   AffineTransform3D)
+                                   RigidIsoScalingTransform3D,
+                                   RigidScalingTransform3D, AffineTransform3D)
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
 from dipy.tracking.streamline import transform_streamlines
@@ -436,6 +437,114 @@ class ImageRegistrationFlow(Workflow):
                                            affreg, params0, transform,
                                            affine)
 
+    def rigid_isoscaling(self, static, static_grid2world, moving,
+                         moving_grid2world, affreg, params0, progressive):
+        """ Function for rigid body + isotropic scaling image registration.
+
+        Parameters
+        ----------
+        static : 2D or 3D array
+            the image to be used as reference during optimization.
+
+        static_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the static
+            image. The default is None, implying the transform is the
+            identity.
+
+        moving : 2D or 3D array
+            the image to be used as "moving" during optimization. It is
+            necessary to pre-align the moving image to ensure its domain
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the
+            'starting_affine' matrix.
+
+        moving_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the moving
+            image. The default is None, implying the transform is the
+            identity.
+
+        affreg : An object of the image registration class.
+
+        params0 : array, shape (n,)
+            parameters from which to start the optimization. If None, the
+            optimization will start at the identity transform. n is the
+            number of parameters of the specified transformation.
+
+        progressive : boolean
+            Flag to enable or disable the progressive registration. (defa
+            ult True)
+
+        """
+        if progressive:
+            _, affine, xopt, fopt = self.translate(static, static_grid2world,
+                                                   moving, moving_grid2world,
+                                                   affreg, params0)
+
+        else:
+            _, affine = self.center_of_mass(static, static_grid2world, moving,
+                                            moving_grid2world)
+
+        transform = RigidIsoScalingTransform3D()
+        return self.perform_transformation(static, static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0, transform,
+                                           affine)
+
+    def rigid_scaling(self, static, static_grid2world, moving,
+                      moving_grid2world, affreg, params0, progressive):
+        """ Function for rigid body + scaling image registration.
+
+        Parameters
+        ----------
+        static : 2D or 3D array
+            the image to be used as reference during optimization.
+
+        static_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the static
+            image. The default is None, implying the transform is the
+            identity.
+
+        moving : 2D or 3D array
+            the image to be used as "moving" during optimization. It is
+            necessary to pre-align the moving image to ensure its domain
+            lies inside the domain of the deformation fields. This is assumed
+            to be accomplished by "pre-aligning" the moving image towards the
+            static using an affine transformation given by the
+            'starting_affine' matrix.
+
+        moving_grid2world : array, shape (dim+1, dim+1), optional
+            the voxel-to-space transformation associated with the moving
+            image. The default is None, implying the transform is the
+            identity.
+
+        affreg : An object of the image registration class.
+
+        params0 : array, shape (n,)
+            parameters from which to start the optimization. If None, the
+            optimization will start at the identity transform. n is the
+            number of parameters of the specified transformation.
+
+        progressive : boolean
+            Flag to enable or disable the progressive registration. (defa
+            ult True)
+
+        """
+        if progressive:
+            _, affine, xopt, fopt = self.translate(static, static_grid2world,
+                                                   moving, moving_grid2world,
+                                                   affreg, params0)
+
+        else:
+            _, affine = self.center_of_mass(static, static_grid2world, moving,
+                                            moving_grid2world)
+
+        transform = RigidScalingTransform3D()
+        return self.perform_transformation(static, static_grid2world,
+                                           moving, moving_grid2world,
+                                           affreg, params0, transform,
+                                           affine)
+
     def affine(self, static, static_grid2world, moving, moving_grid2world,
                affreg, params0, progressive):
         """ Function for full affine registration.
@@ -505,9 +614,10 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            com: center of mass, trans: translation, rigid: rigid body
-             affine: full affine including translation, rotation, shearing and
-             scaling.
+            com: center of mass, trans: translation, rigid: rigid body,
+            rigid_isoscaling: rigid body + isotropic scaling, rigid_scaling:
+            rigid body + scaling, affine: full affine including translation,
+            rotation, shearing and scaling.
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF.
@@ -608,6 +718,26 @@ class ImageRegistrationFlow(Workflow):
                                                 params0,
                                                 progressive)
 
+                elif transform == 'rigid_isoscaling':
+                    moved_image, affine, \
+                        xopt, fopt = self.rigid_isoscaling(static,
+                                                           static_grid2world,
+                                                           moving,
+                                                           moving_grid2world,
+                                                           affreg,
+                                                           params0,
+                                                           progressive)
+
+                elif transform == 'rigid_scaling':
+                    moved_image, affine, \
+                        xopt, fopt = self.rigid_scaling(static,
+                                                        static_grid2world,
+                                                        moving,
+                                                        moving_grid2world,
+                                                        affreg,
+                                                        params0,
+                                                        progressive)
+
                 elif transform == 'affine':
                     moved_image, affine, \
                         xopt, fopt = self.affine(static,
@@ -618,7 +748,7 @@ class ImageRegistrationFlow(Workflow):
                                                  params0,
                                                  progressive)
                 else:
-                    raise ValueError('Invalid transformation:'
+                    raise ValueError('Invalid transformation:' + transform +
                                      ' Please see program\'s help'
                                      ' for allowed values of'
                                      ' transformation.')
