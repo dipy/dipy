@@ -144,6 +144,46 @@ def test_image_registration():
             npt.assert_almost_equal(dist, -0.6900534794005155, 1)
             check_existence(out_moved, out_affine)
 
+        def test_rigid_isoscaling():
+
+            out_moved = pjoin(temp_out_dir, "rigid_isoscaling_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "rigid_isoscaling_affine.txt")
+
+            image_registeration_flow._force_overwrite = True
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='rigid_isoscaling',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         save_metric=True,
+                                         level_iters=[100, 10, 1],
+                                         out_quality='rigid_isoscaling_q.txt')
+
+            dist = read_distance('rigid_isoscaling_q.txt')
+            npt.assert_almost_equal(dist, -0.6960044668271375, 1)
+            check_existence(out_moved, out_affine)
+
+        def test_rigid_caling():
+
+            out_moved = pjoin(temp_out_dir, "rigid_scaling_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "rigid_scaling_affine.txt")
+
+            image_registeration_flow._force_overwrite = True
+            image_registeration_flow.run(static_image_file,
+                                         moving_image_file,
+                                         transform='rigid_scaling',
+                                         out_dir=temp_out_dir,
+                                         out_moved=out_moved,
+                                         out_affine=out_affine,
+                                         save_metric=True,
+                                         level_iters=[100, 10, 1],
+                                         out_quality='rigid_scaling_q.txt')
+
+            dist = read_distance('rigid_scaling_q.txt')
+            npt.assert_almost_equal(dist, -0.698688892993124, 1)
+            check_existence(out_moved, out_affine)
+
         def test_affine():
 
             out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
@@ -204,6 +244,12 @@ def test_apply_affine_transform():
             ('TRANSLATION', 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
             ('RIGID', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5,
                                                 1.7])),
+            ('RIGIDISOSCALING', 3): (0.1, None, np.array([0.1, 0.15, -0.11,
+                                                         2.3, 4.5, 1.7,
+                                                          0.8])),
+            ('RIGIDSCALING', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3,
+                                                       4.5, 1.7, 0.8, 0.9,
+                                                       1.1])),
             ('AFFINE', 3): (0.1, None, np.array([0.99, -0.05, 0.03, 1.3,
                                                  0.05, 0.99, -0.10, 2.5,
                                                  -0.07, 0.10, 0.99, -1.4]))}
@@ -237,6 +283,10 @@ def test_apply_affine_transform():
 
             if str(i[0]) == "TRANSLATION":
                 transform_type = "trans"
+            elif str(i[0]) == "RIGIDISOSCALING":
+                transform_type = "rigid_isoscaling"
+            elif str(i[0]) == "RIGIDSCALING":
+                transform_type = "rigid_scaling"
             else:
                 transform_type = str(i[0]).lower()
 
