@@ -748,7 +748,7 @@ class ImageRegistrationFlow(Workflow):
                                                  params0,
                                                  progressive)
                 else:
-                    raise ValueError('Invalid transformation:' + transform +
+                    raise ValueError('Invalid transformation:'
                                      ' Please see program\'s help'
                                      ' for allowed values of'
                                      ' transformation.')
