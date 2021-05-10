@@ -22,6 +22,8 @@ from dipy.stats.analysis import peak_values
 from phantomas.utils.tessellation import tessellation
 
 from datetime import datetime
+from click.core import batch
+from conda.common._logic import FALSE
 
 
 class _DsiSphere8Fold(Sphere):
@@ -113,7 +115,44 @@ class OdffpModel(object):
         )
  
    
-    def fit(self, data):
+#     def fit(self, data):
+#         diff_model = GeneralizedQSamplingModel(self.gtab)
+#  
+#         data_shape = data.shape[:-1]
+#         max_peaks_num = self._dict_peak_dirs.shape[1]
+# 
+#         tessellation = dsiSphere8Fold()
+#         tessellation_size = len(tessellation.vertices)
+#  
+#         output_odf = np.zeros(data_shape + (tessellation_size,))
+#         output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
+#  
+#         for idx in ndindex(data_shape):
+#             model_fit = diff_model.fit(data[idx])
+#             input_odf = model_fit.odf(tessellation)
+#             
+#             rotation = self._find_highest_peak_rotation(input_odf, tessellation)
+#             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
+#             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
+#              
+#             input_odf_trace, input_odf_norm = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
+#              
+#             dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf))
+#             
+#             if self._output_dict_odf:
+#                 output_odf[idx] = OdffpModel.resample_odf(
+#                     input_odf_norm * np.concatenate((self._dict_odf[:,dict_idx], self._dict_odf[:,dict_idx])), 
+#                     rotated_tessellation, tessellation
+#                 )
+#             else:
+#                 output_odf[idx] = input_odf
+#             
+#             output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
+#  
+#         return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
+
+
+    def fit(self, data, mask=None):
         diff_model = GeneralizedQSamplingModel(self.gtab)
  
         data_shape = data.shape[:-1]
@@ -122,32 +161,104 @@ class OdffpModel(object):
         tessellation = dsiSphere8Fold()
         tessellation_size = len(tessellation.vertices)
  
-        output_odf = np.zeros(data_shape + (tessellation_size,))
-        output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
+        if mask is None:
+            mask = np.ones(data_shape, dtype=bool)
  
-        for idx in ndindex(data_shape):
-            model_fit = diff_model.fit(data[idx])
+        masked_data = data[mask]
+                
+        batch_size = 1000        
+        voxel_num = masked_data.shape[0]
+        
+        output_odf = []
+        output_peak_dirs = []
+        
+        j = 0
+        
+        for data_chunk in np.split(masked_data, range(batch_size, voxel_num, batch_size)):
+        
+            print(j*batch_size, voxel_num)
+            j += 1
+        
+            model_fit = diff_model.fit(data_chunk)
             input_odf = model_fit.odf(tessellation)
-            
-            rotation = self._find_highest_peak_rotation(input_odf, tessellation)
-            rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
-            rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
-             
-            input_odf_trace, input_odf_norm = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
-             
-            dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf))
-            
-            if self._output_dict_odf:
-                output_odf[idx] = OdffpModel.resample_odf(
-                    input_odf_norm * np.concatenate((self._dict_odf[:,dict_idx], self._dict_odf[:,dict_idx])), 
-                    rotated_tessellation, tessellation
-                )
-            else:
-                output_odf[idx] = input_odf
-            
-            output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
  
-        return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
+            rotation = {}
+            rotated_tessellation = {}
+            rotated_input_odf = {}
+            input_odf_trace = np.zeros((data_chunk.shape[0],int(tessellation_size/2)))
+            input_odf_norm = {}
+            
+            for i in range(data_chunk.shape[0]):
+ 
+                rotation[i] = self._find_highest_peak_rotation(input_odf[i], tessellation)
+                rotated_tessellation[i] = self._rotate_tessellation(tessellation, rotation[i])
+                rotated_input_odf[i] = OdffpModel.resample_odf(input_odf[i], tessellation, rotated_tessellation[i])
+            
+                input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(rotated_input_odf[i][:int(tessellation_size/2)])
+              
+            dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf), axis=1)
+        
+            output_odf_chunk = np.zeros((data_chunk.shape[0], tessellation_size))
+            output_peak_dirs_chunk = np.zeros((data_chunk.shape[0], max_peaks_num, 3))
+
+            for i in range(data_chunk.shape[0]):
+             
+                if self._output_dict_odf:
+                    output_odf_chunk[i] = OdffpModel.resample_odf(
+                        input_odf_norm[i] * np.concatenate((self._dict_odf[:,dict_idx[i]], self._dict_odf[:,dict_idx[i]])), 
+                        rotated_tessellation[i], tessellation
+                    )
+                else:
+                    output_odf_chunk[i] = input_odf[i]
+                  
+                output_peak_dirs_chunk[i] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx[i]], rotation[i].T)
+   
+            output_odf.append(output_odf_chunk)
+            output_peak_dirs.append(output_peak_dirs_chunk)
+   
+        output_odf = np.concatenate(output_odf)
+        output_peak_dirs = np.concatenate(output_peak_dirs)
+   
+        output_odf_3d = np.zeros(data_shape + (tessellation_size,))
+        output_peak_dirs_3d = np.zeros(data_shape + (max_peaks_num, 3))
+   
+        output_odf_3d[mask] = output_odf
+        output_peak_dirs_3d[mask] = output_peak_dirs   
+   
+        return OdffpFit(data, output_odf_3d, output_peak_dirs_3d, tessellation)
+            
+ 
+#  
+#         ###
+#  
+#         return OdffpFit(None, None, None, None)
+
+#         output_odf = np.zeros(data_shape + (tessellation_size,))
+#         output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
+#  
+#         for idx in ndindex(data_shape):
+#             model_fit = diff_model.fit(data[idx])
+#             input_odf = model_fit.odf(tessellation)
+#             
+#             rotation = self._find_highest_peak_rotation(input_odf, tessellation)
+#             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
+#             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
+#              
+#             input_odf_trace, input_odf_norm = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
+#              
+#             dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf))
+#             
+#             if self._output_dict_odf:
+#                 output_odf[idx] = OdffpModel.resample_odf(
+#                     input_odf_norm * np.concatenate((self._dict_odf[:,dict_idx], self._dict_odf[:,dict_idx])), 
+#                     rotated_tessellation, tessellation
+#                 )
+#             else:
+#                 output_odf[idx] = input_odf
+#             
+#             output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
+#  
+#         return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
 
         
 class OdffpFit(object):
