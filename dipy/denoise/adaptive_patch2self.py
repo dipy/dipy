@@ -20,6 +20,30 @@ if not has_sklearn:
     warn(w)
 
 
+def site_weight_beam(U, pca_ind, sign, sigma, growth_func):
+    """
+    Return weights that increase going along the sign direction of U[:, pca_ind],
+    and fall off Gaussianly going away from that axis.
+    """
+    u = U[:, pca_ind]
+    if sign > 0:
+        side = u > 0
+    else:
+        side = u < 0
+    w = growth_func(u[side] / u[side].mean())
+    radial_d2 = np.sum(U[side]**2, axis=1) - u[side]**2
+    w *= np.exp(-0.5 * radial_d2 / sigma**2)
+    return w, side
+
+
+def site_weight_beam_linear(U, pca_ind, sign, sigma):
+    return site_weight_beam(U, pca_ind, sign, sigma, lambda x: x)
+
+
+def site_weight_beam_arctan(U, pca_ind, sign, sigma):
+    return site_weight_beam(U, pca_ind, sign, sigma, np.arctan)
+
+
 class LinearlyVaryingRegressor(object):
     """ Creates a set of regressors that are trained using different neighborhoods
     of the data, spread out along the n_comps largest principal
@@ -33,7 +57,8 @@ class LinearlyVaryingRegressor(object):
     doing that with sklearn would mean fitting a linear regression with the feature vectors
     expanded from n_features to n_features**2 / 2, and thus be a huge memory problem.
     """
-    def __init__(self, data, n_comps=None, dtype=np.float32, model='ols', mod_kwargs={}):
+    def __init__(self, data, n_comps=None, dtype=np.float32, model='ols', mod_kwargs={},
+                 site_weight_func=site_weight_beam_linear):
         """ Calculate the principal components of data and initialize the set of
         regressors and neighborhood weights.
 
@@ -114,11 +139,16 @@ class LinearlyVaryingRegressor(object):
         # The weights for each site, arranged by [sample number, site number],
         # with the central site coming last.
         self.site_weights = np.zeros((self.X.shape[0], 2 * self.n_comps + 1), dtype=self.dtype)
+        sigmaU = self.X.shape[0]**-0.5
         for pca_ind in range(self.n_comps):
-            u = U[:, pca_ind]
-            self.site_weights[u < 0, 2 * pca_ind] = u[u < 0] / u[u < 0].mean()
-            self.site_weights[u > 0, 2 * pca_ind + 1] = u[u > 0] / u[u > 0].mean()
-        self.site_weights[:, -1] = np.exp(-0.5 * self.X.shape[0] * (U**2).sum(axis=1))
+            for sign_ind, sign in enumerate((-1, 1)):
+                w, side = site_weight_func(U, pca_ind, sign, sigmaU)
+                self.site_weights[side, 2 * pca_ind + sign_ind] = w
+
+        # Add a simple Gaussian site at the origin. The 1e-7 prevents division
+        # by zero where the Gaussians have withered away to nothing.
+        self.site_weights[:, -1] = np.exp(-0.5 * ((U / sigmaU)**2).sum(axis=1)) + 1e-7
+
         self.site_weights /= self.site_weights.sum(axis=1)[:, np.newaxis]
 
     def _select_vol(self, vol_idx):
