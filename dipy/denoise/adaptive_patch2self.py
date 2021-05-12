@@ -44,18 +44,18 @@ def site_weight_beam_arctan(U, pca_ind, sign, sigma):
     return site_weight_beam(U, pca_ind, sign, sigma, np.arctan)
 
 
-class LinearlyVaryingRegressor(object):
-    """ Creates a set of regressors that are trained using different neighborhoods
-    of the data, spread out along the n_comps largest principal
-    components. Then when a value is predicted the model coefficients are
-    linearly interpolated from the components of each neighborhood, to estimate
-    a model that had been trained from the neighborhood surrounding the
-    argument (X).
+class AdaptivePatch2Self(object):
+    """Creates a set of regressors that are trained using different neighborhoods
+    of the data, spread out along the n_comps largest principal components,
+    plus one at the center. Then when a value is predicted the model
+    coefficients are a combination of the components of each neighborhood,
+    weighted according to the argument (X)'s distance to each neighborhood.
 
-    The result is a "linear" regression where the coefficients linearly vary with
-    the data, so this could also be achieved with a quadratic regression. Unfortunately
-    doing that with sklearn would mean fitting a linear regression with the feature vectors
-    expanded from n_features to n_features**2 / 2, and thus be a huge memory problem.
+    In other words it is a version of Patch2Self where instead of just one set
+    of coefficients per volume being denoised, there is a collection of them,
+    and the regressor smoothly varies the weights of each to adapt to the
+    voxel's type (or mix of them), without allowing the regressor to exactly
+    fit the voxel, which would prevent denoising.
     """
     def __init__(self, data, n_comps=None, dtype=np.float32, model='ols', mod_kwargs={},
                  site_weight_func=site_weight_beam_linear):
@@ -92,8 +92,11 @@ class LinearlyVaryingRegressor(object):
 
         mod_kwargs : dict
             Any keyword arguments to pass to the models.
+
+        site_weight_func : function(U, pca_ind, sign, sigma) returning array
+            How to weight the samples around each PC's sites.
         """
-        super(LinearlyVaryingRegressor, self).__init__()
+        super(AdaptivePatch2Self, self).__init__()
         self.dtype = dtype
 
         if not n_comps:
@@ -325,7 +328,7 @@ def replace_data(inp, out, mask=None):
 
 
 def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
-    """Return a version of data denoised with a LinearlyVaryingRegressor.
+    """Return a version of data denoised with a AdaptivePatch2Self.
 
     Parameters
     ----------
@@ -362,11 +365,11 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
     denoised : 4D array
     """
     extracted_data = extract_data(data, mask)
-    lvr = LinearlyVaryingRegressor(extracted_data, model=model, dtype=calc_dtype)
+    ap2s = AdaptivePatch2Self(extracted_data, model=model, dtype=calc_dtype)
 
     denoised = data.astype(calc_dtype, copy=True)
     for vol_idx in range(0, data.shape[3]):
-        denoised[..., vol_idx] = replace_data(lvr.vol_denoise(vol_idx),
+        denoised[..., vol_idx] = replace_data(ap2s.vol_denoise(vol_idx),
                                               denoised[..., vol_idx], mask)
 
         if verbose:
@@ -374,10 +377,10 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
     return denoised
 
 
-def patch2self(data, bvals, model='ols', mask=None,
-               b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
-               b0_denoising=True, clip_negative_vals=True, shift_intensity=False):
-    """ Patch2Self Denoiser
+def adaptive_patch2self(data, bvals, model='ols', mask=None,
+                        b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
+                        b0_denoising=True, clip_negative_vals=True, shift_intensity=False):
+    """ Adaptive_Patch2self Denoiser
 
     Parameters
     ----------
@@ -410,11 +413,11 @@ def patch2self(data, bvals, model='ols', mask=None,
         the input.
 
     alpha : float, optional
-        Regularization parameter only for ridge regression model.
+        Regularization parameter, only used with ridge or lasso regression models.
         Default: 1.0
 
     verbose : bool, optional
-        Show progress of Patch2Self and time taken.
+        Show progress of Adaptive_Patch2self and time taken.
 
     b0_denoising : bool, optional
         Skips denoising b0 volumes if set to False.
@@ -443,11 +446,11 @@ def patch2self(data, bvals, model='ols', mask=None,
                     Advances in Neural Information Processing Systems 33 (2020)
     """
     if not data.ndim == 4:
-        raise ValueError("Patch2Self can only denoise on 4D arrays.",
+        raise ValueError("Adaptive_Patch2self can only denoise on 4D arrays.",
                          data.shape)
 
     if data.shape[3] < 10:
-        warn("The input data has less than 10 3D volumes. Patch2Self may not",
+        warn("The input data has less than 10 3D volumes. Adaptive_Patch2self may not",
              "give good denoising performance.")
 
     if out_dtype is None:
@@ -485,7 +488,7 @@ def patch2self(data, bvals, model='ols', mask=None,
 
     if verbose is True:
         t2 = time.time()
-        print('Total time taken for Patch2Self: ', t2-t1, " seconds")
+        print('Total time taken for Adaptive_Patch2self: ', t2-t1, " seconds")
 
     denoised_arr = np.empty((data.shape), dtype=calc_dtype)
     if data_b0s.ndim == 3:
