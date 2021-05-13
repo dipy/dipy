@@ -8,22 +8,15 @@ import h5py
 import numpy as np
 import os.path
 
-from dipy.data import Sphere, HemiSphere
+from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.dsi import DiffusionSpectrumModel
+# from dipy.reconst.dsi import DiffusionSpectrumModel
 
 from dipy.core.geometry import sphere2cart
-from dipy.core.ndindex import ndindex
 from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
 from scipy.io import loadmat, savemat
-from dipy.stats.analysis import peak_values
-from phantomas.utils.tessellation import tessellation
-
-from datetime import datetime
-from click.core import batch
-from conda.common._logic import FALSE
 
 
 class _DsiSphere8Fold(Sphere):
@@ -64,20 +57,30 @@ class OdffpModel(object):
         ) #, sh_order=14, basis_type='tournier07')
      
 
-    def __init__(self, gtab, dict_file, drop_odf_baseline=True, output_dict_odf=True):
+    def __init__(self, gtab, dict_file, 
+                 drop_negative_odf=True, zero_baseline_odf=True, output_dict_odf=True, 
+                 max_chunk_size=1000):
+        """ODF-Fingerprinting reconstruction"""
+        
         self.gtab = gtab
          
         with h5py.File(dict_file, 'r') as mat_file:
             self._dict_odf = np.array(mat_file['odfrot'])    
             self._dict_peak_dirs = np.array(mat_file['dirrot'])
-         
-        self._drop_odf_baseline = drop_odf_baseline
+        
+        self._drop_negative_odf = drop_negative_odf 
+        self._zero_baseline_odf = zero_baseline_odf
         self._output_dict_odf = output_dict_odf
+        self._max_chunk_size = np.maximum(1, max_chunk_size)
+        
         self._normalized_dict_odf,_ = self._normalize_odf(self._dict_odf)
 
      
     def _normalize_odf(self, odf):
-        if self._drop_odf_baseline:
+        if self._drop_negative_odf:
+            odf = np.maximum(0, odf)
+        
+        if self._zero_baseline_odf:
             odf -= np.min(odf, axis=0)
             
         odf_norm = np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
@@ -114,43 +117,6 @@ class OdffpModel(object):
             rotation
         )
  
-   
-#     def fit(self, data):
-#         diff_model = GeneralizedQSamplingModel(self.gtab)
-#  
-#         data_shape = data.shape[:-1]
-#         max_peaks_num = self._dict_peak_dirs.shape[1]
-# 
-#         tessellation = dsiSphere8Fold()
-#         tessellation_size = len(tessellation.vertices)
-#  
-#         output_odf = np.zeros(data_shape + (tessellation_size,))
-#         output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
-#  
-#         for idx in ndindex(data_shape):
-#             model_fit = diff_model.fit(data[idx])
-#             input_odf = model_fit.odf(tessellation)
-#             
-#             rotation = self._find_highest_peak_rotation(input_odf, tessellation)
-#             rotated_tessellation = self._rotate_tessellation(tessellation, rotation)
-#             rotated_input_odf = OdffpModel.resample_odf(input_odf, tessellation, rotated_tessellation)
-#              
-#             input_odf_trace, input_odf_norm = self._normalize_odf(rotated_input_odf[:int(tessellation_size/2)])
-#              
-#             dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf))
-#             
-#             if self._output_dict_odf:
-#                 output_odf[idx] = OdffpModel.resample_odf(
-#                     input_odf_norm * np.concatenate((self._dict_odf[:,dict_idx], self._dict_odf[:,dict_idx])), 
-#                     rotated_tessellation, tessellation
-#                 )
-#             else:
-#                 output_odf[idx] = input_odf
-#             
-#             output_peak_dirs[idx] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx], rotation.T)
-#  
-#         return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
-
 
     def fit(self, data, mask=None):
         diff_model = GeneralizedQSamplingModel(self.gtab)
@@ -163,21 +129,21 @@ class OdffpModel(object):
  
         if mask is None:
             mask = np.ones(data_shape, dtype=bool)
+        else:
+            mask = mask.astype(bool)
  
         masked_data = data[mask]
-                
-        max_chunk_size = 1000        
-        voxel_num = masked_data.shape[0]
+        voxels_num = masked_data.shape[0]
         
         output_odf = np.zeros(data_shape + (tessellation_size,))
         output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
    
-        masked_output_odf = np.zeros((voxel_num, tessellation_size))
-        masked_output_peak_dirs = np.zeros((voxel_num, max_peaks_num, 3))
+        masked_output_odf = np.zeros((voxels_num, tessellation_size))
+        masked_output_peak_dirs = np.zeros((voxels_num, max_peaks_num, 3))
         
-        for chunk_idx in np.split(range(voxel_num), range(max_chunk_size, voxel_num, max_chunk_size)):
+        for chunk_idx in np.split(range(voxels_num), range(self._max_chunk_size, voxels_num, self._max_chunk_size)):
         
-            print(np.min(chunk_idx), np.max(chunk_idx), voxel_num)
+            print("%.1f%%" % (100 * (np.max(chunk_idx) + 1) / voxels_num))
         
             chunk_size = len(chunk_idx)
 
