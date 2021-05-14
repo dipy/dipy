@@ -646,7 +646,7 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
             # Remove the translation component:
             aff = aff[:3, :3]
         # Decompose into rotation and scaling components:
-        R, S = polar(aff_no_trans)
+        R, S = polar(aff)
         Rinv = inv(R)
         
         # Apply the inverse of the rotation to the corresponding gradient
