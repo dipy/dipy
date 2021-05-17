@@ -206,35 +206,40 @@ class OdffpFit(object):
         
         orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
         orientation_sign = 2 * (orientation_agreement).astype(int) - 1
+        orientation_flip = np.arange(3)[~orientation_agreement] 
                 
         fib['dimension'] = self._data.shape[:-1]
         fib['voxel_size'] = np.array([2,2,2])
         fib['odf_vertices'] = self._tessellation.vertices.T
         fib['odf_faces'] = self._tessellation.faces.T
         
-        map_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
-        voxel_num = np.prod(fib['dimension'])
-        tessellation_half_size = len(self._tessellation.vertices) // 2
-        
-        max_peaks_num = self._peak_dirs.shape[3]
+        voxels_num = np.prod(fib['dimension'])
+        slice_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
 
-        output_odf = np.flip(self._odf, 1).reshape((np.prod(fib['dimension']), len(self._tessellation.vertices)), order='F')
-        output_odf = OdffpModel.resample_odf(
-            output_odf, self._tessellation, Sphere(
-                xyz=orientation_sign * self._tessellation.vertices,
-                faces=self._tessellation.faces
-            )
+        max_peaks_num = self._peak_dirs.shape[3]
+        tessellation_half_size = len(self._tessellation.vertices) // 2
+
+        output_odf = np.flip(self._odf, orientation_flip).reshape(
+            (voxels_num, len(self._tessellation.vertices)), order='F'
         )
+
+        if not np.all(orientation_agreement):
+            output_odf = OdffpModel.resample_odf(
+                output_odf, self._tessellation, Sphere(
+                    xyz=orientation_sign * self._tessellation.vertices,
+                    faces=self._tessellation.faces
+                )
+            )
         
-        output_peak_dirs = np.flip(self._peak_dirs, 1).reshape((np.prod(fib['dimension']), max_peaks_num, 3), order='F')
-        output_peak_dirs *= orientation_sign
+        output_peak_dirs = orientation_sign * np.flip(self._peak_dirs, orientation_flip).reshape(
+            (voxels_num, max_peaks_num, 3), order='F'
+        )
   
         for i in range(max_peaks_num):
-            fib['fa%d' % i] = np.zeros(voxel_num)
-            fib['nqa%d' % i] = 0.1 * np.ones(voxel_num)
-            fib['index%d' % i] = np.zeros(voxel_num)
+            fib['fa%d' % i] = np.zeros(voxels_num)
+            fib['index%d' % i] = np.zeros(voxels_num)
         
-        for j in range(output_odf.shape[0]):
+        for j in range(voxels_num):
             peak_vertex_idx = np.zeros(max_peaks_num, dtype=int)
             peak_vertex_values = np.zeros(max_peaks_num)
  
@@ -250,74 +255,16 @@ class OdffpFit(object):
 
         for i in range(max_peaks_num):
             fib['fa%d' % i] -= np.min(fib['fa%d' % i])
-            fib['fa%d' % i] /= np.maximum(1e-8, np.max(fib['fa%d' % i]))
+            fib['nqa%d' % i] = fib['fa%d' % i] / np.maximum(1e-8, np.max(fib['fa%d' % i]))
 
-        fib['odf0'] = output_odf[fib['fa0'] > 0]
+        fib['odf0'] = output_odf[fib['fa0'] > 0,:tessellation_half_size].T
         fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
-        fib['odf0'] = fib['odf0'].T
-        fib['odf0'] = fib['odf0'][:tessellation_half_size,:]
 
         for i in range(max_peaks_num):
-            fib['fa%d' % i] = fib['fa%d' % i].reshape(map_size, order='F')
-            fib['index%d' % i] = fib['index%d' % i].reshape((1, voxel_num), order='F')
+            fib['fa%d' % i] = fib['fa%d' % i].reshape(slice_size, order='F')
+            fib['nqa%d' % i] = fib['nqa%d' % i].reshape(slice_size, order='F')
+            fib['index%d' % i] = fib['index%d' % i].reshape((1, voxels_num), order='F')
          
         savemat(file_name, fib, format='4')        
     
-#     def saveToFib(self, affine, file_name = 'output.fib'):
-#         fib = {}
-#         
-#         fib['dimension'] = self._data.shape[:-1]
-#         fib['voxel_size'] = np.array([2,2,2])
-#         fib['odf_vertices'] = self._tessellation.vertices.T
-#         fib['odf_faces'] = self._tessellation.faces.T
-#         
-#         map_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
-#         voxel_num = np.prod(fib['dimension'])
-#         tessellation_half_size = len(self._tessellation.vertices) // 2
-#         
-#         max_peaks_num = self._peak_dirs.shape[3]
-# 
-#         self._odf = np.flip(self._odf, 1).reshape((np.prod(fib['dimension']), len(self._tessellation.vertices)), order='F')
-#         self._peak_dirs = np.flip(self._peak_dirs, 1).reshape((np.prod(fib['dimension']), max_peaks_num, 3), order='F')
-#   
-#         for i in range(max_peaks_num):
-#             fib['fa%d' % i] = np.zeros(voxel_num)
-#             fib['nqa%d' % i] = 0.1 * np.ones(voxel_num)
-#             fib['index%d' % i] = np.zeros(voxel_num)
-#  
-#         for j in range(self._odf.shape[0]):
-#             peak_vertex_idx = np.zeros(max_peaks_num, dtype=int)
-#             peak_vertex_values = np.zeros(max_peaks_num)
-#  
-#             for i in range(max_peaks_num):
-#                 peak_vertex_idx[i] = np.argmax(np.dot(self._peak_dirs[j][i], fib['odf_vertices']))
-#                 peak_vertex_values[i] = self._odf[j][peak_vertex_idx[i]]
-#                  
-#             sorted_i = np.argsort(-peak_vertex_values)
-#                  
-#             for i in range(max_peaks_num):
-#                 fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
-#                 fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(self._odf[j])
-# 
-#         for i in range(max_peaks_num):
-#             fib['fa%d' % i] -= np.min(fib['fa%d' % i])
-#             fib['fa%d' % i] /= np.maximum(1e-8, np.max(fib['fa%d' % i]))
-# 
-#         fib['odf0'] = self._odf[fib['fa0'] > 0]
-#         fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
-# #         fib['odf0'] = np.flip(fib['odf0'], 1)
-# #         fib['odf0'] = fib['odf0'].reshape((np.prod(fib['dimension']), len(self._tessellation.vertices)), order='F')
-# #         fib['odf0'] = fib['odf0'][fib['fa0'] > 0]
-#         fib['odf0'] = fib['odf0'].T
-#         fib['odf0'] = fib['odf0'][:tessellation_half_size,:]
-#              
-#         for i in range(max_peaks_num):
-# #             fib['fa%d' % i] = np.flip(fib['fa%d' % i], 1)
-# #             fib['index%d' % i] = np.flip(fib['index%d' % i], 1)
-#             fib['fa%d' % i] = fib['fa%d' % i].reshape(map_size, order='F')
-#             fib['index%d' % i] = fib['index%d' % i].reshape((1, voxel_num), order='F')
-#          
-# 
-#          
-#         savemat(file_name, fib, format='4')        
-#         
+        
