@@ -201,7 +201,7 @@ class OdffpFit(object):
         return self._peak_dirs
     
     
-    def saveToFib(self, affine, file_name = 'output.fib'):
+    def save_as_fib(self, affine, file_name = 'output.fib'):
         fib = {}
         
         orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
@@ -219,19 +219,21 @@ class OdffpFit(object):
         max_peaks_num = self._peak_dirs.shape[3]
         tessellation_half_size = len(self._tessellation.vertices) // 2
 
+        output_odf_vertices = orientation_sign * self._tessellation.vertices
+
         output_odf = np.flip(self._odf, orientation_flip).reshape(
-            (voxels_num, len(self._tessellation.vertices)), order='F'
+            (voxels_num, len(output_odf_vertices)), order='F'
         )
 
         if not np.all(orientation_agreement):
             output_odf = OdffpModel.resample_odf(
                 output_odf, self._tessellation, Sphere(
-                    xyz=orientation_sign * self._tessellation.vertices,
+                    xyz=output_odf_vertices,
                     faces=self._tessellation.faces
                 )
             )
         
-        output_peak_dirs = orientation_sign * np.flip(self._peak_dirs, orientation_flip).reshape(
+        output_peak_dirs = np.flip(self._peak_dirs, orientation_flip).reshape(
             (voxels_num, max_peaks_num, 3), order='F'
         )
   
@@ -240,12 +242,8 @@ class OdffpFit(object):
             fib['index%d' % i] = np.zeros(voxels_num)
         
         for j in range(voxels_num):
-            peak_vertex_idx = np.zeros(max_peaks_num, dtype=int)
-            peak_vertex_values = np.zeros(max_peaks_num)
- 
-            for i in range(max_peaks_num):
-                peak_vertex_idx[i] = np.argmax(np.dot(output_peak_dirs[j][i], fib['odf_vertices']))
-                peak_vertex_values[i] = output_odf[j][peak_vertex_idx[i]]
+            peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j], output_odf_vertices[:tessellation_half_size].T), axis=1)     
+            peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
             sorted_i = np.argsort(-peak_vertex_values)
                  
