@@ -243,11 +243,12 @@ class OdffpFit(object):
         
         for j in range(voxels_num):
             peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j], output_odf_vertices[:tessellation_half_size].T), axis=1)     
+            peak_vertex_idx = peak_vertex_idx[peak_vertex_idx > 0]
             peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
             sorted_i = np.argsort(-peak_vertex_values)
-                 
-            for i in range(max_peaks_num):
+
+            for i in range(len(peak_vertex_idx)):
                 fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
                 fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(output_odf[j])
 
