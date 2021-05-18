@@ -176,7 +176,7 @@ class OdffpModel(object):
                 else:
                     masked_output_odf[chunk_idx[i]] = input_odf[i]
                   
-                masked_output_peak_dirs[chunk_idx[i]] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx[i]], rotation[i].T)
+                masked_output_peak_dirs[chunk_idx[i]] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx[i]], rotation[i])
    
         output_odf[mask] = masked_output_odf
         output_peak_dirs[mask] = masked_output_peak_dirs
@@ -207,7 +207,7 @@ class OdffpFit(object):
         orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
         orientation_sign = 2 * (orientation_agreement).astype(int) - 1
         orientation_flip = np.arange(3)[~orientation_agreement] 
-                
+
         fib['dimension'] = self._data.shape[:-1]
         fib['voxel_size'] = np.array([2,2,2])
         fib['odf_vertices'] = self._tessellation.vertices.T
@@ -242,14 +242,15 @@ class OdffpFit(object):
             fib['index%d' % i] = np.zeros(voxels_num)
         
         for j in range(voxels_num):
-            peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j], output_odf_vertices[:tessellation_half_size].T), axis=1)     
+            peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j], output_odf_vertices.T), axis=1)     
             peak_vertex_idx = peak_vertex_idx[peak_vertex_idx > 0]
             peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
             sorted_i = np.argsort(-peak_vertex_values)
 
             for i in range(len(peak_vertex_idx)):
-                fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
+#                 fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
+                fib['index%d' % i][j] = peak_vertex_idx[sorted_i[i]]
                 fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(output_odf[j])
 
         for i in range(max_peaks_num):
