@@ -5,9 +5,11 @@ Created on Feb 18, 2021
 '''
 
 import h5py
+import os, gzip
 import numpy as np
 import nibabel as nib
-import os.path
+
+from scipy.io import loadmat, savemat
 
 from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
@@ -17,7 +19,6 @@ from dipy.core.geometry import sphere2cart
 from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
-from scipy.io import loadmat, savemat
 
 
 class _DsiSphere8Fold(Sphere):
@@ -201,15 +202,20 @@ class OdffpFit(object):
         return self._peak_dirs
     
     
-    def save_as_fib(self, affine, file_name = 'output.fib'):
+    def save_as_fib(self, affine, voxel_size, output_file_name = 'output.fib'):
         fib = {}
         
-        orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
+        try:
+            orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
+        except:
+            print("Couldn't determine orientation of coordinates from the affine.")
+            orientation_agreement = np.ones(3, dtype=bool)
+                
         orientation_sign = 2 * (orientation_agreement).astype(int) - 1
         orientation_flip = np.arange(3)[~orientation_agreement] 
 
         fib['dimension'] = self._data.shape[:-1]
-        fib['voxel_size'] = np.array([2,2,2])
+        fib['voxel_size'] = voxel_size
         fib['odf_vertices'] = self._tessellation.vertices.T
         fib['odf_faces'] = self._tessellation.faces.T
         
@@ -265,6 +271,12 @@ class OdffpFit(object):
             fib['nqa%d' % i] = fib['nqa%d' % i].reshape(slice_size, order='F')
             fib['index%d' % i] = fib['index%d' % i].reshape((1, voxels_num), order='F')
          
-        savemat(file_name, fib, format='4')        
-    
+        output_file_prefix = output_file_name.lower().replace(".fib.gz", "").replace(".fib", "") 
+        savemat("%s.fib" % output_file_prefix, fib, format='4')        
+
+        with open("%s.fib" % output_file_prefix, 'rb') as fib_file:
+            with gzip.open("%s.fib.gz" % output_file_prefix, 'wb') as fib_gz_file:
+                fib_gz_file.writelines(fib_file)
+                
+        os.remove("%s.fib" % output_file_prefix)
         
