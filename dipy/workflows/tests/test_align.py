@@ -164,7 +164,7 @@ def test_image_registration():
             npt.assert_almost_equal(dist, -0.6960044668271375, 1)
             check_existence(out_moved, out_affine)
 
-        def test_rigid_caling():
+        def test_rigid_scaling():
 
             out_moved = pjoin(temp_out_dir, "rigid_scaling_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "rigid_scaling_affine.txt")
@@ -226,6 +226,8 @@ def test_image_registration():
         test_com()
         test_translation()
         test_rigid()
+        test_rigid_isoscaling()
+        test_rigid_scaling()
         test_affine()
         test_err()
 
