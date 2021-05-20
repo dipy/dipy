@@ -428,7 +428,8 @@ def replace_data(inp, out, mask=None):
     return out
 
 
-def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
+def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
+                    site_weight_func=site_weight_beam_linear, site_placer=doICA):
     """Return a version of data denoised with a AdaptivePatch2Self.
 
     Parameters
@@ -461,12 +462,24 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
     calc_dtype : dtype
         Data type to use for the calculations and output.
 
+    site_weight_func : function(U, pca_ind, sign, sigma) returning array
+        How to weight the samples around each PC's sites.
+
+    site_placer : function(data, n_comps) -> (data.shape[0], n_comps) array
+        A decomposition function such as calcSVDU or doICA.
+        doICA gives slightly better results, but usually the components it
+        produces are effectively almost equivalent to the 1st n_comps
+        principal components. calcSVDU may be useful if doICA fails due to
+        a quirk of the data.
+
+
     Returns
     -------
     denoised : 4D array
     """
     extracted_data = extract_data(data, mask)
-    ap2s = AdaptivePatch2Self(extracted_data, model=model, dtype=calc_dtype)
+    ap2s = AdaptivePatch2Self(extracted_data, model=model, dtype=calc_dtype,
+                              site_weight_func=site_weight_func, site_placer=site_placer)
 
     denoised = data.astype(calc_dtype, copy=True)
     for vol_idx in range(0, data.shape[3]):
@@ -480,7 +493,8 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype):
 
 def adaptive_patch2self(data, bvals, model='ols', mask=None,
                         b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
-                        b0_denoising=True, clip_negative_vals=True, shift_intensity=False):
+                        b0_denoising=True, clip_negative_vals=True, shift_intensity=False,
+                        site_weight_func=site_weight_beam_linear, site_placer=doICA):
     """ Adaptive_Patch2self Denoiser
 
     Parameters
@@ -533,6 +547,16 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
         non-negative values
         Default: False
 
+    site_weight_func : function(U, pca_ind, sign, sigma) returning array
+        How to weight the samples around each PC's sites.
+
+    site_placer : function(data, n_comps) -> (data.shape[0], n_comps) array
+        A decomposition function such as calcSVDU or doICA.
+        doICA gives slightly better results, but usually the components it
+        produces are effectively almost equivalent to the 1st n_comps
+        principal components. calcSVDU may be useful if doICA fails due to
+        a quirk of the data.
+
 
     Returns
     --------
@@ -582,10 +606,12 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
         denoised_b0s = data_b0s
 
     else:
-        denoised_b0s = denoise_volumes(data_b0s, mask, model, verbose, "b0", calc_dtype)
+        denoised_b0s = denoise_volumes(data_b0s, mask, model, verbose, "b0", calc_dtype,
+                                       site_weight_func, site_placer)
 
     # Separate denoising for DWI volumes
-    denoised_dwi = denoise_volumes(data_dwi, mask, model, verbose, "DWI", calc_dtype)
+    denoised_dwi = denoise_volumes(data_dwi, mask, model, verbose, "DWI", calc_dtype,
+                                   site_weight_func, site_placer)
 
     if verbose is True:
         t2 = time.time()

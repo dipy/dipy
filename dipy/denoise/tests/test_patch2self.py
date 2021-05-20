@@ -47,6 +47,7 @@ def test_patch2self_random_noise():
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
 
+
 @needs_sklearn
 def test_patch2self_boundary():
     # patch2self preserves boundaries
@@ -60,6 +61,23 @@ def test_patch2self_boundary():
     p2s.patch2self(S0, bvals)
     assert_greater(S0[9, 9, 9, 9], 290)
     assert_less(S0[10, 10, 10, 10], 110)
+
+
+def generate_gtab():
+    """generate a gradient table for phantom data"""
+    directions8 = generate_bvecs(8)
+    directions30 = generate_bvecs(20)
+    directions60 = generate_bvecs(30)
+    # Create full dataset parameters
+    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
+    # 1000 and 60 directions for b-value 2000)
+    bvals = np.hstack((np.zeros(6),
+                       300 * np.ones(8),
+                       1000 * np.ones(20),
+                       2000 * np.ones(30)))
+    bvecs = np.vstack((np.zeros((6, 3)),
+                       directions8, directions30, directions60))
+    return gradient_table(bvals, bvecs), bvals
 
 
 def rfiw_phantom(gtab, snr=None):
@@ -128,22 +146,7 @@ def rfiw_phantom(gtab, snr=None):
 
 @needs_sklearn
 def test_phantom():
-
-    # generate a gradient table for phantom data
-    directions8 = generate_bvecs(8)
-    directions30 = generate_bvecs(20)
-    directions60 = generate_bvecs(30)
-    # Create full dataset parameters
-    # (6 b-values = 0, 8 directions for b-value 300, 30 directions for b-value
-    # 1000 and 60 directions for b-value 2000)
-    bvals = np.hstack((np.zeros(6),
-                       300 * np.ones(8),
-                       1000 * np.ones(20),
-                       2000 * np.ones(30)))
-    bvecs = np.vstack((np.zeros((6, 3)),
-                       directions8, directions30, directions60))
-    gtab = gradient_table(bvals, bvecs)
-
+    gtab, bvals = generate_gtab()
     dwi, sigma = rfiw_phantom(gtab, snr=10)
     dwi_den1 = p2s.patch2self(dwi, model='ridge',
                               bvals=bvals, alpha=1.0)
