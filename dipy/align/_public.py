@@ -20,6 +20,8 @@ from dipy.align.imaffine import (transform_centers_of_mass,
 
 from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
+                                   RigidScalingTransform3D,
+                                   RigidIsoScalingTransform3D,
                                    AffineTransform3D)
 
 
@@ -34,7 +36,8 @@ from dipy.io.image import load_nifti, save_nifti
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
-           "center_of_mass", "translation", "rigid", "affine",
+           "center_of_mass", "translation", "rigid", "rigid_isoscaling",
+           "rigid_scaling", "affine",
            "affine_registration", "register_series",
            "register_dwi_series", "streamline_registration"]
 
@@ -328,7 +331,7 @@ def resample(moving, static, moving_affine=None, static_affine=None,
 
 
 def center_of_mass(moving, static, static_affine=None, moving_affine=None,
-                   starting_affine=None, reg=None):
+                   starting_affine=None, reg=None, ret_metric=None):
     """
     Implements a center of mass transform
 
@@ -357,11 +360,11 @@ def center_of_mass(moving, static, static_affine=None, moving_affine=None,
 
     reg : not needed here. Use None
 
+    ret_metric : not needed here. Use None
+
     Returns
     -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the center of mass transformation and the
-    affine 4x4 associated with the transformation.
+    transform.affine : the affine 4x4 associated with the transformation.
     """
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
@@ -370,11 +373,13 @@ def center_of_mass(moving, static, static_affine=None, moving_affine=None,
                                 starting_affine=starting_affine)
     transform = transform_centers_of_mass(static, static_affine,
                                           moving, moving_affine)
+    if ret_metric:
+        return transform.affine, None, None
     return transform.affine
 
 
 def translation(moving, static, static_affine=None, moving_affine=None,
-                starting_affine=None, reg=None):
+                starting_affine=None, reg=None, ret_metric=False):
     """
     Implements a translation transform
 
@@ -403,11 +408,15 @@ def translation(moving, static, static_affine=None, moving_affine=None,
 
     reg : AffineRegistration class instance.
 
+    ret_metric : boolean, optional
+        Set it to True to return the the value of the optimized coefficients
+        and the optimization quality metric.
+
     Returns
     -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the translation transformation and the
-    affine 4x4 associated with the transformation.
+    transform.affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
     """
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
@@ -415,15 +424,22 @@ def translation(moving, static, static_affine=None, moving_affine=None,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
     transform = TranslationTransform3D()
+    # Return the optimization metric only if requested
+    if ret_metric:
+        translation, xopt, fopt = reg.optimize(static, moving, transform, None,
+                                               static_affine, moving_affine,
+                                               starting_affine=starting_affine,
+                                               ret_metric=True)
+        return translation.affine, xopt, fopt
+
     translation = reg.optimize(static, moving, transform, None,
                                static_affine, moving_affine,
                                starting_affine=starting_affine)
-
     return translation.affine
 
 
 def rigid(moving, static, static_affine=None, moving_affine=None,
-          starting_affine=None, reg=None):
+          starting_affine=None, reg=None, ret_metric=False):
     """
     Implements a rigid transform
 
@@ -452,11 +468,15 @@ def rigid(moving, static, static_affine=None, moving_affine=None,
 
     reg : AffineRegistration class instance.
 
+    ret_metric : boolean, optional
+        Set it to True to return the the value of the optimized coefficients
+        and the optimization quality metric.
+
     Returns
     -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the rigid transformation and the affine 4x4
-    associated with the transformation.
+    transform.affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
     """
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
@@ -464,16 +484,23 @@ def rigid(moving, static, static_affine=None, moving_affine=None,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
     transform = RigidTransform3D()
+    # Return the optimization metric only if requested
+    if ret_metric:
+        rigid, xopt, fopt = reg.optimize(static, moving, transform, None,
+                                         static_affine, moving_affine,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
+        return rigid.affine, xopt, fopt
     rigid = reg.optimize(static, moving, transform, None,
                          static_affine, moving_affine,
                          starting_affine=starting_affine)
     return rigid.affine
 
 
-def affine(moving, static, static_affine=None, moving_affine=None,
-           starting_affine=None, reg=None):
+def rigid_isoscaling(moving, static, static_affine=None, moving_affine=None,
+                     starting_affine=None, reg=None, ret_metric=False):
     """
-    Implements a translation transform
+    Implements a rigid + isotropic scaling transform
 
     Parameters
     ----------
@@ -500,11 +527,133 @@ def affine(moving, static, static_affine=None, moving_affine=None,
 
     reg : AffineRegistration class instance.
 
+    ret_metric : boolean, optional
+        Set it to True to return the the value of the optimized coefficients
+        and the optimization quality metric.
+
     Returns
     -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the affine transformation and the affine
-    4x4 associated with the transformation.
+    transform.affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
+    """
+    static, static_affine, moving, moving_affine, starting_affine = \
+        _handle_pipeline_inputs(moving, static,
+                                moving_affine=moving_affine,
+                                static_affine=static_affine,
+                                starting_affine=starting_affine)
+    transform = RigidIsoScalingTransform3D()
+    # Return the optimization metric only if requested
+    if ret_metric:
+        rigid, xopt, fopt = reg.optimize(static, moving, transform, None,
+                                         static_affine, moving_affine,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
+        return rigid.affine, xopt, fopt
+    rigid = reg.optimize(static, moving, transform, None,
+                         static_affine, moving_affine,
+                         starting_affine=starting_affine)
+    return rigid.affine
+
+
+def rigid_scaling(moving, static, static_affine=None, moving_affine=None,
+                  starting_affine=None, reg=None, ret_metric=False):
+    """
+    Implements a rigid + scaling transform
+
+    Parameters
+    ----------
+    moving : array, nifti image or str
+        Containing the data for the moving object, or full path to a nifti file
+        with the moving data.
+
+    moving_affine : 4x4 array, optional
+        An affine transformation associated with the moving object. Required if
+        data is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
+
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
+    static_affine : 4x4 array, optional
+        An affine transformation associated with the static object. Required if
+        data is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
+
+    starting_affine: 4x4 array, optional
+        Initial guess for the transformation between the spaces.
+
+    reg : AffineRegistration class instance.
+
+    ret_metric : boolean, optional
+        Set it to True to return the the value of the optimized coefficients
+        and the optimization quality metric.
+
+    Returns
+    -------
+    transform.affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
+    """
+    static, static_affine, moving, moving_affine, starting_affine = \
+        _handle_pipeline_inputs(moving, static,
+                                moving_affine=moving_affine,
+                                static_affine=static_affine,
+                                starting_affine=starting_affine)
+    transform = RigidScalingTransform3D()
+    # Return the optimization metric only if requested
+    if ret_metric:
+        rigid, xopt, fopt = reg.optimize(static, moving, transform, None,
+                                         static_affine, moving_affine,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
+        return rigid.affine, xopt, fopt
+    rigid = reg.optimize(static, moving, transform, None,
+                         static_affine, moving_affine,
+                         starting_affine=starting_affine)
+    return rigid.affine
+
+
+def affine(moving, static, static_affine=None, moving_affine=None,
+           starting_affine=None, reg=None, ret_metric=False):
+    """
+    Implements an affine transform
+
+    Parameters
+    ----------
+    moving : array, nifti image or str
+        Containing the data for the moving object, or full path to a nifti file
+        with the moving data.
+
+    moving_affine : 4x4 array, optional
+        An affine transformation associated with the moving object. Required if
+        data is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
+
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
+    static_affine : 4x4 array, optional
+        An affine transformation associated with the static object. Required if
+        data is provided as an array. If provided together with nifti/path,
+        will over-ride the affine that is in the nifti.
+
+    starting_affine: 4x4 array, optional
+        Initial guess for the transformation between the spaces.
+
+    reg : AffineRegistration class instance.
+
+    ret_metric : boolean, optional
+        Set it to True to return the the value of the optimized coefficients
+        and the optimization quality metric.
+
+    Returns
+    -------
+    transform.affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
     """
 
     static, static_affine, moving, moving_affine, starting_affine = \
@@ -513,10 +662,16 @@ def affine(moving, static, static_affine=None, moving_affine=None,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
     transform = AffineTransform3D()
+    # Return the optimization metric only if requested
+    if ret_metric:
+        xform, xopt, fopt = reg.optimize(static, moving, transform, None,
+                                         static_affine, moving_affine,
+                                         starting_affine=starting_affine,
+                                         ret_metric=True)
+        return xform.affine, xopt, fopt
     xform = reg.optimize(static, moving, transform, None,
                          static_affine, moving_affine,
                          starting_affine=starting_affine)
-
     return xform.affine
 
 
@@ -529,10 +684,11 @@ def affine_registration(moving, static,
                         level_iters=None,
                         sigmas=None,
                         factors=None,
+                        ret_metric=False,
                         **metric_kwargs):
-
     """
-    Find the affine transformation between two 3D images.
+    Find the affine transformation between two 3D images. Alternatively, find
+    the combination of several linear transformations.
 
     Parameters
     ----------
@@ -555,9 +711,12 @@ def affine_registration(moving, static,
         will over-ride the affine that is in the nifti.
 
     pipeline : sequence, optional
-        Sequence of transforms to use in the gradual fitting of the full
-        affine. Default: (executed from left to right):
+        Sequence of transforms to use in the gradual fitting. Default: gradual
+        fit of the full affine (executed from left to right):
         `[center_of_mass, translation, rigid, affine]`
+        Alternatively, any other combination of the following registration
+        methods might be used: center_of_mass, translation, rigid,
+        rigid_isoscaling, rigid_scaling and affine.
 
     starting_affine: 4x4 array, optional
         Initial guess for the transformation between the spaces.
@@ -597,12 +756,17 @@ def affine_registration(moving, static,
         scale space (one factor for each scale). By default, the sequence of
         factors will be [4, 2, 1].
 
+    ret_metric : boolean, optional
+        Set it to True to return the value of the optimized coefficients and
+        the optimization quality metric.
+
     Returns
     -------
-    transformed, affine : array with moving data resampled to the static space
-    after computing the affine transformation and the affine 4x4
-    associated with the transformation.
-
+    transformed : array with moving data resampled to the static space
+    after computing the affine transformation
+    affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
 
     Notes
     -----
@@ -631,13 +795,24 @@ def affine_registration(moving, static,
                                 sigmas=sigmas,
                                 factors=factors)
 
+    if pipeline == [center_of_mass] and ret_metric:
+        raise ValueError("center of mass registration cannot return any "
+                         "quality metric.")
+
     # Go through the selected transformation:
     for func in pipeline:
-        starting_affine = func(moving, static,
-                               static_affine=static_affine,
-                               moving_affine=moving_affine,
-                               starting_affine=starting_affine,
-                               reg=affreg)
+        if ret_metric:
+            starting_affine, xopt, fopt = func(moving, static,
+                                               static_affine=static_affine,
+                                               moving_affine=moving_affine,
+                                               starting_affine=starting_affine,
+                                               reg=affreg, ret_metric=True)
+        else:
+            starting_affine = func(moving, static,
+                                   static_affine=static_affine,
+                                   moving_affine=moving_affine,
+                                   starting_affine=starting_affine,
+                                   reg=affreg)
 
     # After doing all that, resample once at the end:
     affine_map = AffineMap(starting_affine,
@@ -646,6 +821,9 @@ def affine_registration(moving, static,
 
     resampled = affine_map.transform(moving)
 
+    # Return the optimization metric only if requested
+    if ret_metric:
+        return resampled, starting_affine, xopt, fopt
     return resampled, starting_affine
 
 
