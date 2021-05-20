@@ -183,6 +183,33 @@ class AdaptivePatch2Self(object):
         self._fit()
         return self._predict()
 
+    def get_coefs(self, vol_idx, site_inds):
+        """Return the model coefficients for vol_idx and site_inds.
+        This is only needed for displaying the coefficients and how they vary by site.
+
+        Parameters
+        ----------
+        vol_idx : int
+            The index of the volume to be fitted.
+        site_inds : int array-like
+            The site indices to get coefficients for.
+            The site indices for the negative and positive sides of PC index i are 2i and 2i + 1.
+            The central site is -1 or 2 * n_comps + 1.
+
+        Returns
+        -------
+        coefs : (nsites, nvols - 1) float array
+            Each row is the coefficients by non-vol_idx volume index for the corresponding site in
+            site_inds.
+        """
+        self._select_vol(vol_idx)
+        coefs = np.zeros((len(site_inds), self._cur_x.shape[1]))
+        for site_ind in site_inds:
+            w = self.site_weights[:, site_ind]
+            self.model.fit(self._cur_x[w > 0], self._y[w > 0], w[w > 0])
+            coefs[site_ind] = self.model.coef_
+        return coefs
+
 
 def supply_model(model, alpha=1.0, max_iter=50, copy_X=False, mod_kwargs={}):
     """ Produce a sklearn.base.RegressorMixin object.
