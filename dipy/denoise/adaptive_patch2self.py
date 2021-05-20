@@ -14,9 +14,11 @@ except ImportError:
 
 sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
+decomposition, _, _ = optional_package('sklearn.decomposition')
+
 
 if not has_sklearn:
-    w = "Scikit-Learn is required to denoise the data via Patch2Self."
+    w = "Scikit-Learn is required to denoise the data via (Adaptive)Patch2Self."
     warn(w)
 
 
@@ -44,6 +46,82 @@ def site_weight_beam_arctan(U, pca_ind, sign, sigma):
     return site_weight_beam(U, pca_ind, sign, sigma, np.arctan)
 
 
+def getRandomState(seed, default=42):
+    """Return a np.random.RandomState whether seed is one already, an int, or None."""
+    if seed is None:
+        rng = np.random.RandomState(default)
+    elif isinstance(seed, int):
+        rng = np.random.RandomState(seed)
+    elif isinstance(seed, np.random.mtrand.RandomState):
+        rng = seed
+    else:
+        raise ValueError("type %s for seed is not supported" % type(seed))
+    return rng
+
+
+def doSVD(X, n_comps=None):
+    """Singular Value Decompose X; X = U.dot(S).dot(Vt)
+
+    Parameters
+    ----------
+    X : (nsamples, nfeatures) array
+        Hint: you can optionally demean it by passing it as X - X.mean(axis=0)[np.newaxis, :]
+    n_comps : int or None
+        Keep the n_comps largest components. None means all. (Does not affect speed)
+
+    Returns
+    -------
+    U : (nsamples, nfeatures) array
+        The principal components in sample space as orthonormal column vectors, matching the order of S.
+    S : 1D array with len min(nsamples, nfeatures)
+        The "eigenvalues", from largest to smallest
+    Vt : (nfeatures, nfeatures) array
+        The principal components in feature space as orthonormal row vectors, matching the order of S.
+    """
+    U, S, Vt = svd(X, *svd_args)[:3]
+
+    # Trim down to the top n_comps principal components. I wonder if there is a way
+    # to do this as part of svd.
+    if n_comps and n_comps < len(S):
+        U = U[:, :n_comps]
+
+        # For completeness - they are not actually used, but take up relatively little memory.
+        S = S[:n_comps]
+        Vt = Vt[:n_comps]
+    return U, S, Vt
+
+
+def calcSVDU(X, n_comps=None):
+    return doSVD(X, n_comps)[0]
+
+
+def doICA(X, n_comps=None, seed=None, whiten=True):
+    """Decompose X into independent components with FastICA.
+
+    Parameters
+    ----------
+    X : (nsamples, nfeatures) array
+        The array to decompose.
+    n_comps : int or None
+        Keep the n_comps largest components. None means all. (Smaller is faster)
+    seed : None, int, or numpy.random.mtrand.RandomState
+        Initialize the ICA's RNG to this. Default: np.random.RandomState(42)
+    whiten : bool
+        Iff True, whiten the input before decomposition.
+
+    Returns
+    -------
+    U : (nsamples, nfeatures) array
+        The principal components in sample space as orthonormal column vectors, matching the order of S.
+    S : 1D array with len min(nsamples, nfeatures)
+        The "eigenvalues", from largest to smallest
+    Vt : (nfeatures, nfeatures) array
+        The principal components in feature space as orthonormal row vectors, matching the order of S.
+    """
+    ica = decomposition.FastICA(n_comps, random_state=getRandomState(seed))
+    return ica.fit(X).transform(X)
+
+
 class AdaptivePatch2Self(object):
     """Creates a set of regressors that are trained using different neighborhoods
     of the data, spread out along the n_comps largest principal components,
@@ -58,7 +136,7 @@ class AdaptivePatch2Self(object):
     fit the voxel, which would prevent denoising.
     """
     def __init__(self, data, n_comps=None, dtype=np.float32, model='ols', mod_kwargs={},
-                 site_weight_func=site_weight_beam_linear):
+                 site_weight_func=site_weight_beam_linear, site_placer=doICA):
         """ Calculate the principal components of data and initialize the set of
         regressors and neighborhood weights.
 
@@ -95,6 +173,13 @@ class AdaptivePatch2Self(object):
 
         site_weight_func : function(U, pca_ind, sign, sigma) returning array
             How to weight the samples around each PC's sites.
+
+        site_placer : function(data, n_comps) -> (data.shape[0], n_comps) array
+            A decomposition function such as calcSVDU or doICA.
+            doICA gives slightly better results, but usually the components it
+            produces are effectively almost equivalent to the 1st n_comps
+            principal components. calcSVDU may be useful if doICA fails due to
+            a quirk of the data.
         """
         super(AdaptivePatch2Self, self).__init__()
         self.dtype = dtype
@@ -121,23 +206,12 @@ class AdaptivePatch2Self(object):
         # volume as -sum(other volumes).
         self.X = data.astype(self.dtype, copy=True)
 
-        # Calculate the principal components of X in order to place fitting
+        # Calculate the primary components of X in order to place fitting
         # sites covering different types of voxels.
-        # U is the normalized eigenheads (same shape as data),
-        # S is the vector of eigenvalues in descending order,
-        # and the rows of Vt are the principal components in diffusion space.
         # This time we use the demeaned data because we want U relative to the centroid.
-        # data = U.dot(S).dot(Vt) + data.mean()
-        U, S, Vt = svd(self.X - self.X.mean(axis=0)[np.newaxis, :], *svd_args)[:3]
-
-        # Trim down to the top n_comps principal components. I wonder if there is a way
-        # to do this as part of svd.
-        if self.n_comps < data.shape[1]:
-            U = U[:, :self.n_comps].astype(self.dtype)
-
-            # For completeness - they are not actually used, but take up relatively little memory.
-            S = S[:self.n_comps].astype(self.dtype)
-            Vt = Vt[:self.n_comps].astype(self.dtype)
+        # (FastICA defaults to whitening, but PCA does not.)
+        # The columns of U are the normalized "eigenheads" (U.shape = (X.shape[0], n_comps))
+        U = site_placer(self.X - self.X.mean(axis=0)[np.newaxis, :], self.n_comps).astype(self.dtype)
 
         # The weights for each site, arranged by [sample number, site number],
         # with the central site coming last.
