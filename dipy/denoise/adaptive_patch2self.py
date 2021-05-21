@@ -199,7 +199,8 @@ class AdaptivePatch2Self(object):
         #self.nonnegative = True
         sup_mod_kwargs = {k: mod_kwargs.pop(k) for k in ['alpha', 'max_iter']
                           if k in mod_kwargs}
-        self.model = supply_model(model, **sup_mod_kwargs, mod_kwargs=mod_kwargs)
+        sup_mod_kwargs['mod_kwargs'] = mod_kwargs
+        self.model = supply_model(model, **sup_mod_kwargs)
 
         # Do NOT demean data - that introduces an anticorrelation between the
         # volumes that makes it easy for the regression to predict any given
