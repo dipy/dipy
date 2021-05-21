@@ -132,7 +132,7 @@ def test_affine_registration():
                                                   level_iters=[5, 5],
                                                   sigmas=[3, 1],
                                                   factors=[2, 1],
-                                                  pipeline=[translation])
+                                                  pipeline=[func])
         # We don't ask for much:
         npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
