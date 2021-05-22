@@ -24,9 +24,8 @@ if not has_sklearn:
 
 
 def site_weight_beam(U, pca_ind, sign, sigma, growth_func):
-    """
-    Return weights that increase going along the sign direction of U[:, pca_ind],
-    and fall off Gaussianly going away from that axis.
+    """Return weights that increase going along the sign direction of
+    U[:, pca_ind], and fall off Gaussianly going away from that axis.
     """
     u = U[:, pca_ind]
     if sign > 0:
@@ -66,27 +65,32 @@ def doSVD(X, n_comps=None):
     Parameters
     ----------
     X : (nsamples, nfeatures) array
-        Hint: you can optionally demean it by passing it as X - X.mean(axis=0)[np.newaxis, :]
+        Hint: you can optionally demean it by passing it as
+        X - X.mean(axis=0)[np.newaxis, :]
     n_comps : int or None
-        Keep the n_comps largest components. None means all. (Does not affect speed)
+        Keep the n_comps largest components. None means all.
+        (Does not affect speed)
 
     Returns
     -------
     U : (nsamples, nfeatures) array
-        The principal components in sample space as orthonormal column vectors, matching the order of S.
+        The principal components in sample space as orthonormal column vectors,
+        matching the order of S.
     S : 1D array with len min(nsamples, nfeatures)
         The "eigenvalues", from largest to smallest
     Vt : (nfeatures, nfeatures) array
-        The principal components in feature space as orthonormal row vectors, matching the order of S.
+        The principal components in feature space as orthonormal row vectors,
+        matching the order of S.
     """
     U, S, Vt = svd(X, *svd_args)[:3]
 
-    # Trim down to the top n_comps principal components. I wonder if there is a way
-    # to do this as part of svd.
+    # Trim down to the top n_comps principal components. I wonder if there is a
+    # way to do this as part of svd.
     if n_comps and n_comps < len(S):
         U = U[:, :n_comps]
 
-        # For completeness - they are not actually used, but take up relatively little memory.
+        # For completeness - they are not actually used, but take up relatively
+        # little memory.
         S = S[:n_comps]
         Vt = Vt[:n_comps]
     return U, S, Vt
@@ -113,11 +117,13 @@ def doICA(X, n_comps=None, seed=None, whiten=True):
     Returns
     -------
     U : (nsamples, nfeatures) array
-        The principal components in sample space as orthonormal column vectors, matching the order of S.
+        The principal components in sample space as orthonormal column vectors,
+        matching the order of S.
     S : 1D array with len min(nsamples, nfeatures)
         The "eigenvalues", from largest to smallest
     Vt : (nfeatures, nfeatures) array
-        The principal components in feature space as orthonormal row vectors, matching the order of S.
+        The principal components in feature space as orthonormal row vectors,
+        matching the order of S.
     """
     ica = decomposition.FastICA(n_comps, random_state=getRandomState(seed))
     return ica.fit(X).transform(X)
@@ -136,8 +142,9 @@ class AdaptivePatch2Self(object):
     voxel's type (or mix of them), without allowing the regressor to exactly
     fit the voxel, which would prevent denoising.
     """
-    def __init__(self, data, n_comps=None, dtype=np.float32, model='ols', mod_kwargs={},
-                 site_weight_func=site_weight_beam_linear, site_placer=doICA):
+    def __init__(self, data, n_comps=None, dtype=np.float32, model='ols',
+                 mod_kwargs={}, site_weight_func=site_weight_beam_linear,
+                 site_placer=doICA):
         """ Calculate the principal components of data and initialize the set of
         regressors and neighborhood weights.
 
@@ -149,9 +156,9 @@ class AdaptivePatch2Self(object):
 
         n_comps : int or None
             The number of principal components to account for in the variation
-            of the model coefficients. Two Gaussian neighborhoods will be created
-            for each component, centered at +/- 1 on the component axis and with unit
-            standard deviation in each normalized component axis.
+            of the model coefficients. Two Gaussian neighborhoods will be
+            created for each component, centered at +/- 1 on the component axis
+            and with unit standard deviation in each normalized component axis.
             If None use int(ceil(n_volumes**0.5)).
 
         dtype : dtype
@@ -193,13 +200,15 @@ class AdaptivePatch2Self(object):
         else:
             self.n_comps = n_comps
 
-        # For a while it seemed to me that the regressor should be based on Non-Negative Least Squares,
-        # since why would a voxel's value in one volume be anticorrelated with its value in another volume?
-        # Negative coefficients do make sense, though:
-        # * if a voxel is bright at high b, it can't be CSF, so it can't be bright(er than average) at b=0
-        # * if a voxel is bright(er than surrounding tissue) at high b, its neurites must be highly
-        #   aligned, so it should be dim in perpendicular volumes.
-        #
+        # For a while it seemed to me that the regressor should be based on
+        # Non-Negative Least Squares, since why would a voxel's value in one
+        # volume be anticorrelated with its value in another volume?  Negative
+        # coefficients do make sense, though:
+        # * if a voxel is bright at high b, it can't be CSF, so it can't be
+        #   bright(er than average) at b=0
+        # * if a voxel is bright(er than surrounding tissue) at high b, its
+        #   neurites must be highly aligned, so it should be dim in
+        #   perpendicular volumes.
         # So negative coefficients can help signal win over noise, but for
         # guaranteeing nonnegativity in the denoised array NNLS still seems
         # like a more attractive option than clipping or
@@ -223,14 +232,17 @@ class AdaptivePatch2Self(object):
 
         # Calculate the primary components of X in order to place fitting
         # sites covering different types of voxels.
-        # This time we use the demeaned data because we want U relative to the centroid.
-        # (FastICA defaults to whitening, but PCA does not.)
-        # The columns of U are the normalized "eigenheads" (U.shape = (X.shape[0], n_comps))
-        U = site_placer(self.X - self.X.mean(axis=0)[np.newaxis, :], self.n_comps).astype(self.dtype)
+        # This time we use the demeaned data because we want U relative to the
+        # centroid. (FastICA defaults to whitening, but PCA does not.)
+        # The columns of U are the normalized "eigenheads"
+        # (U.shape = (X.shape[0], n_comps))
+        U = site_placer(self.X - self.X.mean(axis=0)[np.newaxis, :],
+                        self.n_comps).astype(self.dtype)
 
         # The weights for each site, arranged by [sample number, site number],
         # with the central site coming last.
-        self.site_weights = np.zeros((self.X.shape[0], 2 * self.n_comps + 1), dtype=self.dtype)
+        self.site_weights = np.zeros((self.X.shape[0], 2 * self.n_comps + 1),
+                                     dtype=self.dtype)
         sigmaU = self.X.shape[0]**-0.5
         for pca_ind in range(self.n_comps):
             for sign_ind, sign in enumerate((-1, 1)):
@@ -239,7 +251,8 @@ class AdaptivePatch2Self(object):
 
         # Add a simple Gaussian site at the origin. The 1e-7 prevents division
         # by zero where the Gaussians have withered away to nothing.
-        self.site_weights[:, -1] = np.exp(-0.5 * ((U / sigmaU)**2).sum(axis=1)) + 1e-7
+        self.site_weights[:, -1] = np.exp(-0.5 *
+                                          ((U / sigmaU)**2).sum(axis=1)) + 1e-7
 
         self.site_weights /= self.site_weights.sum(axis=1)[:, np.newaxis]
 
@@ -274,7 +287,8 @@ class AdaptivePatch2Self(object):
 
     def get_coefs(self, vol_idx, site_inds):
         """Return the model coefficients for vol_idx and site_inds.
-        This is only needed for displaying the coefficients and how they vary by site.
+        This is only needed for displaying the coefficients and how they vary
+        by site.
 
         Parameters
         ----------
@@ -282,14 +296,15 @@ class AdaptivePatch2Self(object):
             The index of the volume to be fitted.
         site_inds : int array-like
             The site indices to get coefficients for.
-            The site indices for the negative and positive sides of PC index i are 2i and 2i + 1.
+            The site indices for the negative and positive sides of PC index i
+            are 2i and 2i + 1.
             The central site is -1 or 2 * n_comps + 1.
 
         Returns
         -------
         coefs : (nsites, nvols - 1) float array
-            Each row is the coefficients by non-vol_idx volume index for the corresponding site in
-            site_inds.
+            Each row is the coefficients by non-vol_idx volume index for the
+            corresponding site in site_inds.
         """
         self._select_vol(vol_idx)
         coefs = np.zeros((len(site_inds), self._cur_x.shape[1]))
@@ -358,7 +373,8 @@ def supply_model(model, alpha=1.0, max_iter=50, copy_X=False, mod_kwargs={}):
           has_sklearn and isinstance(model, sklearn.base.RegressorMixin)):
         model = model
 
-    # Both sklearn.linear_model._ridge.Ridge, etc., and opt.SKLearnLinearSolver are abc.ABCMeta.
+    # Both sklearn.linear_model._ridge.Ridge, etc., and opt.SKLearnLinearSolver
+    # are abc.ABCMeta.
     # Using type(opt.SKLearnLinearSolver) avoids having to import abc.
     elif isinstance(model, type(opt.SKLearnLinearSolver)):
         model = model(**mod_kwargs)
@@ -426,7 +442,7 @@ def replace_data(inp, out, mask=None):
     """
     if mask is None:
         if inp.size != out.size:
-            raise ValueError("shape %s cannot be poured into shape %s without a mask"
+            raise ValueError("shape %s cannot be put in shape %s without a mask"
                              % (inp.shape, out.shape))
         out = inp.reshape(out.shape)
     else:
@@ -435,16 +451,18 @@ def replace_data(inp, out, mask=None):
                              % (mask.shape, out.shape))
         nvox = (mask > 0).sum()
         if nvox != len(inp):
-            e_s = "the number of values in input must match the number of nonzero voxels in mask\n"
-            e_s += "(%d vs %d)" % (len(inp), nvox)
+            e_s = "the number of values in input must match the number of"
+            e_s += " nonzero voxels in mask\n(%d vs %d)" % (len(inp), nvox)
             raise ValueError(e_s)
 
         out[mask > 0] = inp
     return out
 
 
-def denoise_volumes(data, mask, label, n_comps=None, model='ols', verbose=True, calc_dtype=np.float32,
-                    site_weight_func=site_weight_beam_linear, site_placer=doICA):
+def denoise_volumes(data, mask, label, n_comps=None, model='ols', verbose=True,
+                    calc_dtype=np.float32,
+                    site_weight_func=site_weight_beam_linear,
+                    site_placer=doICA):
     """Return a version of data denoised with a AdaptivePatch2Self.
 
     Parameters
@@ -499,14 +517,17 @@ def denoise_volumes(data, mask, label, n_comps=None, model='ols', verbose=True, 
     """
     extracted_data = extract_data(data, mask)
 
-    # Check that there is still some data left, to prevent a cryptic warning from e.g. DGESVD later.
-    # It's not so much that I'm worried about mask being empty (although this checks for that),
-    # as one of the test functions feeding it data without any DWIs.
+    # Check that there is still some data left, to prevent a cryptic warning
+    # from e.g. DGESVD later.  It's not so much that I'm worried about mask
+    # being empty (although this checks for that), as one of the test functions
+    # feeding it data without any DWIs.
     if np.prod(extracted_data.shape) == 0:
         raise ValueError("There is no data to denoise")
 
-    ap2s = AdaptivePatch2Self(extracted_data, n_comps=n_comps, model=model, dtype=calc_dtype,
-                              site_weight_func=site_weight_func, site_placer=site_placer)
+    ap2s = AdaptivePatch2Self(extracted_data, n_comps=n_comps, model=model,
+                              dtype=calc_dtype,
+                              site_weight_func=site_weight_func,
+                              site_placer=site_placer)
 
     denoised = data.astype(calc_dtype, copy=True)
     for vol_idx in range(0, data.shape[3]):
@@ -514,14 +535,17 @@ def denoise_volumes(data, mask, label, n_comps=None, model='ols', verbose=True, 
                                               denoised[..., vol_idx], mask)
 
         if verbose:
-            print("Denoised %s volume: %d of %d" % (label, vol_idx + 1, data.shape[3]))
+            print("Denoised %s volume: %d of %d" % (label, vol_idx + 1,
+                                                    data.shape[3]))
     return denoised
 
 
 def adaptive_patch2self(data, bvals, model='ols', mask=None, n_comps=None,
-                        b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
-                        b0_denoising=True, clip_negative_vals=True, shift_intensity=False,
-                        site_weight_func=site_weight_beam_linear, site_placer=doICA):
+                        b0_threshold=50, out_dtype=None, alpha=1.0,
+                        verbose=False, b0_denoising=True,
+                        clip_negative_vals=True, shift_intensity=False,
+                        site_weight_func=site_weight_beam_linear,
+                        site_placer=doICA):
     """ Adaptive_Patch2self Denoiser
 
     Parameters
@@ -560,8 +584,8 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None, n_comps=None,
         the input.
 
     alpha : float, optional
-        Regularization parameter, only used with ridge or lasso regression models.
-        Default: 1.0
+        Regularization parameter, only used with ridge or lasso regression
+        models. Default: 1.0
 
     verbose : bool, optional
         Show progress of Adaptive_Patch2self and time taken.
@@ -607,7 +631,7 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None, n_comps=None,
                          data.shape)
 
     if data.shape[3] < 10:
-        warn("The input data has less than 10 3D volumes. Adaptive_Patch2self may not",
+        warn("The input data has < 10 3D volumes. Adaptive_Patch2self may not",
              "give good denoising performance.")
 
     bvals = np.asarray(bvals)
@@ -669,6 +693,7 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None, n_comps=None,
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
-    denoised_arr = clip_or_shift(data, denoised_arr, shift_intensity, clip_negative_vals)
+    denoised_arr = clip_or_shift(data, denoised_arr, shift_intensity,
+                                 clip_negative_vals)
 
     return np.array(denoised_arr, dtype=out_dtype)
