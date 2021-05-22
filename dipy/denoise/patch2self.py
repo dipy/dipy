@@ -168,7 +168,7 @@ def clip_or_shift(data, dnarr, shift_intensity=False, clip_negative_vals=True):
         dnarr.clip(min=0, out=dnarr)
 
         if shift_intensity:
-            warn('Both `clip_negative_vals` and `shift_intensity` should not be True.')
+            warn('`clip_negative_vals` and `shift_intensity` should not both be True.')  # noqa: E501
             warn('Defaulting to `clip_negative_vals`...')
     elif shift_intensity:
         # shift intensities per volume to handle negative intensities
@@ -348,6 +348,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ridge',
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
-    denoised_arr = clip_or_shift(data, denoised_arr, shift_intensity, clip_negative_vals)
+    denoised_arr = clip_or_shift(data, denoised_arr, shift_intensity,
+                                 clip_negative_vals)
 
     return np.array(denoised_arr, dtype=out_dtype)

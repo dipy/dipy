@@ -88,9 +88,9 @@ class AdaptivePatch2SelfFlow(Workflow):
             out_dir='', out_denoised='dwi_ap2s.nii.gz'):
         """Workflow for the adaptive Patch2Self denoising method.
 
-        It applies adaptive patch2self denoising on each file found by 'globbing'
-        ``input_file`` and ``bval_file``. It saves the results in a directory
-        specified by ``out_dir``.
+        It applies adaptive patch2self denoising on each file found by
+        'globbing' ``input_file`` and ``bval_file``. It saves the results
+        in a directory specified by ``out_dir``.
 
         Parameters
         ----------

@@ -53,7 +53,7 @@ def test_adaptive_patch2self_random_noise():
                                             model='ols', n_comps=2,
                                             clip_negative_vals=True, mask=mask,
                                             shift_intensity=True,
-                                            site_weight_func=ap2s.site_weight_beam_arctan,
+                                            site_weight_func=ap2s.site_weight_beam_arctan,  # noqa: E501
                                             site_placer=ap2s.calcSVDU)
 
     assert_greater_equal(dataden_clip.min(), data.min())
