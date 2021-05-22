@@ -3,6 +3,7 @@ from warnings import warn
 import time
 from dipy.utils.optpkg import optional_package
 import dipy.core.optimize as opt
+from dipy.denoise.patch2self import clip_or_shift
 try:
     from scipy.linalg.lapack import dgesvd as svd
     svd_args = [1, 0]
@@ -46,11 +47,11 @@ def site_weight_beam_arctan(U, pca_ind, sign, sigma):
     return site_weight_beam(U, pca_ind, sign, sigma, np.arctan)
 
 
-def getRandomState(seed, default=42):
-    """Return a np.random.RandomState whether seed is one already, an int, or None."""
-    if seed is None:
-        rng = np.random.RandomState(default)
-    elif isinstance(seed, int):
+def getRandomState(seed):
+    """Return a np.random.RandomState whether seed is one already, an int, or None.
+    (None = /dev/urandom)
+    """
+    if seed is None or isinstance(seed, int):
         rng = np.random.RandomState(seed)
     elif isinstance(seed, np.random.mtrand.RandomState):
         rng = seed
@@ -192,11 +193,24 @@ class AdaptivePatch2Self(object):
         else:
             self.n_comps = n_comps
 
-        if mod_kwargs.get('positive'):
-            self.nonnegative = True
-        else:
-            self.nonnegative = False
-        #self.nonnegative = True
+        # For a while it seemed to me that the regressor should be based on Non-Negative Least Squares,
+        # since why would a voxel's value in one volume be anticorrelated with its value in another volume?
+        # Negative coefficients do make sense, though:
+        # * if a voxel is bright at high b, it can't be CSF, so it can't be bright(er than average) at b=0
+        # * if a voxel is bright(er than surrounding tissue) at high b, its neurites must be highly
+        #   aligned, so it should be dim in perpendicular volumes.
+        #
+        # So negative coefficients can help signal win over noise, but for
+        # guaranteeing nonnegativity in the denoised array NNLS still seems
+        # like a more attractive option than clipping or
+        # shift_intensity. Unfortunately when I tried it NNLS underestimated
+        # the result. Fortunately negative results seem to be less of a problem
+        # with adaptive_patch2self than patch2self.
+        # if mod_kwargs.get('positive'):
+        #     self.nonnegative = True
+        # else:
+        #     self.nonnegative = False
+
         sup_mod_kwargs = {k: mod_kwargs.pop(k) for k in ['alpha', 'max_iter']
                           if k in mod_kwargs}
         sup_mod_kwargs['mod_kwargs'] = mod_kwargs
@@ -279,10 +293,10 @@ class AdaptivePatch2Self(object):
         """
         self._select_vol(vol_idx)
         coefs = np.zeros((len(site_inds), self._cur_x.shape[1]))
-        for site_ind in site_inds:
+        for i, site_ind in enumerate(site_inds):
             w = self.site_weights[:, site_ind]
             self.model.fit(self._cur_x[w > 0], self._y[w > 0], w[w > 0])
-            coefs[site_ind] = self.model.coef_
+            coefs[i] = self.model.coef_
         return coefs
 
 
@@ -429,7 +443,7 @@ def replace_data(inp, out, mask=None):
     return out
 
 
-def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
+def denoise_volumes(data, mask, label, n_comps=None, model='ols', verbose=True, calc_dtype=np.float32,
                     site_weight_func=site_weight_beam_linear, site_placer=doICA):
     """Return a version of data denoised with a AdaptivePatch2Self.
 
@@ -440,6 +454,15 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
 
     mask : None or 3D array
         If not None, only denoise voxels where this is True.
+
+    label : str
+        A label for the kind of volumes being denoised, e.g. "b0" or "DWI".
+        Only used if verbose is True.
+
+    n_comps : None or int
+        The regressors will be trained on neighborhoods of data spread out on
+        this many components, and a central neighborhood.
+        If None, use ceil(data.shape[3]**0.5).
 
     model : string, or initialized linear model object.
             This will determine the algorithm used to solve the set of linear
@@ -455,10 +478,6 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
 
     verbose : bool
         Iff True, print progress updates
-
-    label : str
-        A label for the kind of volumes being denoised, e.g. "b0" or "DWI".
-        Only used if verbose is True.
 
     calc_dtype : dtype
         Data type to use for the calculations and output.
@@ -479,7 +498,14 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
     denoised : 4D array
     """
     extracted_data = extract_data(data, mask)
-    ap2s = AdaptivePatch2Self(extracted_data, model=model, dtype=calc_dtype,
+
+    # Check that there is still some data left, to prevent a cryptic warning from e.g. DGESVD later.
+    # It's not so much that I'm worried about mask being empty (although this checks for that),
+    # as one of the test functions feeding it data without any DWIs.
+    if np.prod(extracted_data.shape) == 0:
+        raise ValueError("There is no data to denoise")
+
+    ap2s = AdaptivePatch2Self(extracted_data, n_comps=n_comps, model=model, dtype=calc_dtype,
                               site_weight_func=site_weight_func, site_placer=site_placer)
 
     denoised = data.astype(calc_dtype, copy=True)
@@ -492,7 +518,7 @@ def denoise_volumes(data, mask, model, verbose, label, calc_dtype,
     return denoised
 
 
-def adaptive_patch2self(data, bvals, model='ols', mask=None,
+def adaptive_patch2self(data, bvals, model='ols', mask=None, n_comps=None,
                         b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                         b0_denoising=True, clip_negative_vals=True, shift_intensity=False,
                         site_weight_func=site_weight_beam_linear, site_placer=doICA):
@@ -520,6 +546,11 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
 
     mask : 3D array or None
            If not None, only denoise where mask is true.
+
+    n_comps : int or None
+        The regressors will be trained on neighborhoods of data spread out on
+        this many components, and a central neighborhood.
+        If None, use ceil(data.shape[3]**0.5).
 
     b0_threshold : int, optional
         Threshold for considering volumes as b0.
@@ -579,6 +610,8 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
         warn("The input data has less than 10 3D volumes. Adaptive_Patch2self may not",
              "give good denoising performance.")
 
+    bvals = np.asarray(bvals)
+
     if out_dtype is None:
         out_dtype = data.dtype
 
@@ -600,6 +633,14 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
     if verbose is True:
         t1 = time.time()
 
+    dn_kwargs = {'mask': mask,
+                 'n_comps': n_comps,
+                 'model': model,
+                 'verbose': verbose,
+                 'calc_dtype': calc_dtype,
+                 'site_weight_func': site_weight_func,
+                 'site_placer': site_placer}
+
     # if only 1 b0 volume, skip denoising it
     if data_b0s.ndim == 3 or data_b0s.shape[-1] == 0 or not b0_denoising:
         if verbose:
@@ -607,12 +648,12 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
         denoised_b0s = data_b0s
 
     else:
-        denoised_b0s = denoise_volumes(data_b0s, mask, model, verbose, "b0", calc_dtype,
-                                       site_weight_func, site_placer)
+        dn_kwargs['label'] = 'b0'
+        denoised_b0s = denoise_volumes(data_b0s, **dn_kwargs)
 
     # Separate denoising for DWI volumes
-    denoised_dwi = denoise_volumes(data_dwi, mask, model, verbose, "DWI", calc_dtype,
-                                   site_weight_func, site_placer)
+    dn_kwargs['label'] = 'DWI'
+    denoised_dwi = denoise_volumes(data_dwi, **dn_kwargs)
 
     if verbose is True:
         t2 = time.time()
@@ -628,19 +669,6 @@ def adaptive_patch2self(data, bvals, model='ols', mask=None,
     for i, idx in enumerate(dwi_idx):
         denoised_arr[:, :, :, idx[0]] = np.squeeze(denoised_dwi[..., i])
 
-    # shift intensities per volume to handle for negative intensities
-    if shift_intensity and not clip_negative_vals:
-        for i in range(0, denoised_arr.shape[3]):
-            shift = np.min(data[..., i]) - np.min(denoised_arr[..., i])
-            denoised_arr[..., i] = denoised_arr[..., i] + shift
-
-    # clip out the negative values from the denoised output
-    elif clip_negative_vals and not shift_intensity:
-        denoised_arr.clip(min=0, out=denoised_arr)
-
-    elif clip_negative_vals and shift_intensity:
-        warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
-        warn('Defaulting to `clip_negative_bvals`...')
-        denoised_arr.clip(min=0, out=denoised_arr)
+    denoised_arr = clip_or_shift(data, denoised_arr, shift_intensity, clip_negative_vals)
 
     return np.array(denoised_arr, dtype=out_dtype)

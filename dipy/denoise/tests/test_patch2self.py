@@ -58,9 +58,9 @@ def test_patch2self_boundary():
 
     bvals = np.repeat(100, 20)
 
-    p2s.patch2self(S0, bvals)
-    assert_greater(S0[9, 9, 9, 9], 290)
-    assert_less(S0[10, 10, 10, 10], 110)
+    den = p2s.patch2self(S0, bvals)
+    assert_greater(den[9, 9, 9, 9], 290)
+    assert_less(den[10, 10, 10, 10], 110)
 
 
 def generate_gtab():

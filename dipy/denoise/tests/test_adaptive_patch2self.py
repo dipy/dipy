@@ -1,9 +1,7 @@
 import numpy as np
 from dipy.denoise import adaptive_patch2self as ap2s
-from dipy.testing import (assert_greater, assert_less,
-                          assert_greater_equal, assert_less_equal)
-from numpy.testing import (assert_array_almost_equal,
-                           assert_raises, assert_equal)
+from dipy.testing import (assert_greater, assert_less, assert_greater_equal)
+from numpy.testing import assert_raises
 import pytest
 
 from .test_patch2self import generate_gtab, rfiw_phantom
@@ -14,78 +12,119 @@ needs_sklearn = pytest.mark.skipif(not ap2s.has_sklearn,
 
 @needs_sklearn
 def test_adaptive_patch2self_random_noise():
-    S0 = 30 + 2 * np.random.standard_normal((20, 20, 20, 50))
+    nb0s = 5
+    ndwis = 15
+    bvals = [0] * nb0s + [1] * ndwis
+    signal = 30.0 * np.ones((9, 9, 9, len(bvals)))
+    for vi, b in enumerate(bvals):
+        signal[..., vi] *= np.exp(-b)
 
-    bvals = np.repeat(30, 50)
+    # Don't do Rician noise here because we want data to be unbiased for comparison.
+    noise = np.random.standard_normal(signal.shape)
+    rmsnoise = np.mean(noise**2)**0.5
+    data = signal + noise
+
+    # ICA doesn't work without some nonGaussian signal, so stick to calcSVDU here.
 
     # shift = True
-    S0den_shift = ap2s.adaptive_patch2self(S0, bvals, model='ols', shift_intensity=True)
+    dataden_shift = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols',
+                                             shift_intensity=True,
+                                             site_placer=ap2s.calcSVDU)
 
-    assert_greater_equal(S0den_shift.min(), S0.min())
-    assert_less_equal(np.round(S0den_shift.mean()), 30)
+    assert_greater_equal(dataden_shift.min(), data.min())
+    assert_less(np.mean((dataden_shift - signal)**2)**0.5, rmsnoise)
 
     # clip = True
-    S0den_clip = ap2s.adaptive_patch2self(S0, bvals, model='ols',
-                                          clip_negative_vals=True)
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', n_comps=2,
+                                            clip_negative_vals=True, site_placer=ap2s.calcSVDU)
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+    assert_greater_equal(dataden_clip.min(), data.min())
+    assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
 
-    # both clip and shift = True, a mask, and site_weight_beam_arctan
-    mask = np.zeros(S0.shape, dtype=np.bool)
+    # both clip and shift = True (produces a warning), a mask, and site_weight_beam_arctan
+    mask = np.zeros(data.shape[:3], dtype=np.bool)
     mask[1:-1, 2:-2, 3:-3] = True
-    S0den_clip = ap2s.adaptive_patch2self(S0, bvals, patch_radius=0, model='ols',
-                                          clip_negative_vals=True, mask=mask,
-                                          shift_intensity=True,
-                                          site_weight_func=ap2s.site_weight_beam_arctan)
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', n_comps=2,
+                                            clip_negative_vals=True, mask=mask,
+                                            shift_intensity=True,
+                                            site_weight_func=ap2s.site_weight_beam_arctan,
+                                            site_placer=ap2s.calcSVDU)
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+    assert_greater_equal(dataden_clip.min(), data.min())
+    assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
 
-    # both clip and shift = False, a mask, and calcSVDU
-    S0den_clip = ap2s.adaptive_patch2self(S0, bvals, model='ols',
-                                          clip_negative_vals=False,
-                                          shift_intensity=False, site_placer=ap2s.calcSVDU)
+    # both clip and shift = False, + a mask
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', mask=mask,
+                                            clip_negative_vals=False,
+                                            shift_intensity=False, site_placer=ap2s.calcSVDU)
 
-    assert_greater(S0den_clip.min(), S0.min())
-    assert_equal(np.round(S0den_clip.mean()), 30)
+    assert_greater_equal(dataden_clip.min(), data.min())
+    assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
 
 
 @needs_sklearn
 def test_adaptive_patch2self_boundary():
     # adaptive_patch2self preserves boundaries
-    S0 = 100 + np.zeros((20, 20, 20, 20))
-    noise = 2 * np.random.standard_normal((20, 20, 20, 20))
-    S0 += noise
-    S0[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
+    nb0s = 5
+    ndwis = 15
+    bvals = [0] * nb0s + [1000] * ndwis
+    data = 100 + np.zeros((20, 20, 20, len(bvals)))
+    noise = 2 * np.random.standard_normal(data.shape)
+    data += noise
+    data[:10, :10, :10, :10] = 300 + noise[:10, :10, :10, :10]
 
-    bvals = np.repeat(100, 20)
-
-    ap2s.adaptive_patch2self(S0, bvals)
-    assert_greater(S0[9, 9, 9, 9], 290)
-    assert_less(S0[10, 10, 10, 10], 110)
+    den = ap2s.adaptive_patch2self(data, bvals, n_comps=1)
+    assert_greater(den[9, 9, 9, 9], 290)
+    assert_less(den[10, 10, 10, 10], 110)
 
 
 @needs_sklearn
 def test_phantom():
     gtab, bvals = generate_gtab()
 
-    dwi, sigma = rfiw_phantom(gtab, snr=10)
-    dwi_den1 = ap2s.adaptive_patch2self(dwi, model='ridge',
-                                        bvals=bvals, alpha=1.0)
-
-    assert_less(np.max(dwi_den1) / sigma, np.max(dwi) / sigma)
-    dwi_den2 = ap2s.adaptive_patch2self(dwi, model='ridge',
-                                        bvals=bvals, alpha=0.7)
-
-    assert_less(np.max(dwi_den2) / sigma, np.max(dwi) / sigma)
-    assert_array_almost_equal(dwi_den1, dwi_den2, decimal=0)
+    snr = 10.0   # must be > 2
+    dwi, sigma = rfiw_phantom(gtab, snr=snr)
+    avb0 = np.mean(dwi[..., bvals == 0], axis=-1)
+    mask = np.zeros(avb0.shape, dtype=np.bool)
+    thresh = 2.0 * np.mean(avb0) / snr
+    mask[avb0 > thresh] = True
+    maxdwi_ov_sigma = np.max(dwi) / sigma
+    for mod in ('ols', 'ridge', 'lasso'):
+        dwi_den = ap2s.adaptive_patch2self(dwi, model=mod, n_comps=1, mask=mask,
+                                           bvals=bvals, alpha=1.0)
+        assert_less(np.max(dwi_den) / sigma, maxdwi_ov_sigma)
 
     assert_raises(ValueError, ap2s.adaptive_patch2self, dwi, model='empty',
                   bvals=bvals)
 
-    # Try this with a sigma volume, instead of a scalar
-    dwi_den = ap2s.adaptive_patch2self(dwi, bvals=bvals,
-                                       model='ols')
 
-    assert_less(np.max(dwi_den) / sigma, np.max(dwi) / sigma)
+@needs_sklearn
+def test_doICA():
+    gtab, bvals = generate_gtab()
+
+    snr = 10.0   # must be > 2
+    dwi, sigma = rfiw_phantom(gtab, snr=snr)
+
+    x = ap2s.extract_data(dwi)
+    ica = ap2s.doICA(x, 2, 20210522)
+    assert ica.shape == (x.shape[0], 2)
+
+
+@needs_sklearn
+def test_get_coefs():
+    gtab, bvals = generate_gtab()
+
+    snr = 50.0   # must be > 2
+    dwi, sigma = rfiw_phantom(gtab, snr=snr)
+
+    x = ap2s.extract_data(dwi)
+
+    # Test getting all the PCs
+    ap = ap2s.AdaptivePatch2Self(x, n_comps=64, site_placer=ap2s.calcSVDU)
+
+    coefs = ap.get_coefs(23, (1, 4, -1))
+
+    # It would be nice to be more specific about the components, but I think
+    # their sign is arbitrary, which means the ordering of the sites is not
+    # completely predictable.
+    assert coefs.shape == (3, 63)
