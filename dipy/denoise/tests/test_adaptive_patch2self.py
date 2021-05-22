@@ -19,32 +19,38 @@ def test_adaptive_patch2self_random_noise():
     for vi, b in enumerate(bvals):
         signal[..., vi] *= np.exp(-b)
 
-    # Don't do Rician noise here because we want data to be unbiased for comparison.
+    # Don't do Rician noise here because we want data to be unbiased for
+    # comparison.
     noise = np.random.standard_normal(signal.shape)
     rmsnoise = np.mean(noise**2)**0.5
     data = signal + noise
 
-    # ICA doesn't work without some nonGaussian signal, so stick to calcSVDU here.
+    # ICA doesn't work without some nonGaussian signal, so stick to calcSVDU
+    # here.
 
     # shift = True
-    dataden_shift = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols',
-                                             shift_intensity=True,
+    dataden_shift = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5,
+                                             model='ols', shift_intensity=True,
                                              site_placer=ap2s.calcSVDU)
 
     assert_greater_equal(dataden_shift.min(), data.min())
     assert_less(np.mean((dataden_shift - signal)**2)**0.5, rmsnoise)
 
     # clip = True
-    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', n_comps=2,
-                                            clip_negative_vals=True, site_placer=ap2s.calcSVDU)
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5,
+                                            model='ols', n_comps=2,
+                                            clip_negative_vals=True,
+                                            site_placer=ap2s.calcSVDU)
 
     assert_greater_equal(dataden_clip.min(), data.min())
     assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
 
-    # both clip and shift = True (produces a warning), a mask, and site_weight_beam_arctan
+    # both clip and shift = True (produces a warning), a mask, and
+    # site_weight_beam_arctan
     mask = np.zeros(data.shape[:3], dtype=np.bool)
     mask[1:-1, 2:-2, 3:-3] = True
-    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', n_comps=2,
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5,
+                                            model='ols', n_comps=2,
                                             clip_negative_vals=True, mask=mask,
                                             shift_intensity=True,
                                             site_weight_func=ap2s.site_weight_beam_arctan,
@@ -54,9 +60,11 @@ def test_adaptive_patch2self_random_noise():
     assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
 
     # both clip and shift = False, + a mask
-    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5, model='ols', mask=mask,
+    dataden_clip = ap2s.adaptive_patch2self(data, bvals, b0_threshold=0.5,
+                                            model='ols', mask=mask,
                                             clip_negative_vals=False,
-                                            shift_intensity=False, site_placer=ap2s.calcSVDU)
+                                            shift_intensity=False,
+                                            site_placer=ap2s.calcSVDU)
 
     assert_greater_equal(dataden_clip.min(), data.min())
     assert_less(np.mean((dataden_clip - signal)**2)**0.5, rmsnoise)
@@ -90,8 +98,8 @@ def test_phantom():
     mask[avb0 > thresh] = True
     maxdwi_ov_sigma = np.max(dwi) / sigma
     for mod in ('ols', 'ridge', 'lasso'):
-        dwi_den = ap2s.adaptive_patch2self(dwi, model=mod, n_comps=1, mask=mask,
-                                           bvals=bvals, alpha=1.0)
+        dwi_den = ap2s.adaptive_patch2self(dwi, model=mod, n_comps=1,
+                                           mask=mask, bvals=bvals, alpha=1.0)
         assert_less(np.max(dwi_den) / sigma, maxdwi_ov_sigma)
 
     assert_raises(ValueError, ap2s.adaptive_patch2self, dwi, model='empty',

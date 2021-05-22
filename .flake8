@@ -1,0 +1,12 @@
+[flake8]
+exclude =
+    .git,
+    .hg,
+    .svn,
+    .tox,
+    *.pyc,
+    __pycache__,
+    build,
+    dist
+max-line-length = 80
+
