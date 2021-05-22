@@ -47,8 +47,8 @@ def site_weight_beam_arctan(U, pca_ind, sign, sigma):
 
 
 def getRandomState(seed):
-    """Return a np.random.RandomState whether seed is one already, an int, or None.
-    (None = /dev/urandom)
+    """Return a np.random.RandomState whether seed is one already, an int,
+    or None. (None = /dev/urandom)
     """
     if seed is None or isinstance(seed, int):
         rng = np.random.RandomState(seed)
@@ -130,8 +130,8 @@ def doICA(X, n_comps=None, seed=None, whiten=True):
 
 
 class AdaptivePatch2Self(object):
-    """Creates a set of regressors that are trained using different neighborhoods
-    of the data, spread out along the n_comps largest principal components,
+    """Creates a set of regressors that are trained using different
+    neighborhoods of the data, spread out along the n_comps largest components,
     plus one at the center. Then when a value is predicted the model
     coefficients are a combination of the components of each neighborhood,
     weighted according to the argument (X)'s distance to each neighborhood.
