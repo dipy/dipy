@@ -3,8 +3,7 @@
 # cython: wraparound=False
 
 """
-Implementation of a probabilistic direction getter based on sampling from
-discrete distribution (pmf) at each step of the tracking.
+Implementation of parallel transport tractography (PTT)
 """
 
 from random import random
@@ -16,6 +15,105 @@ from dipy.direction.closest_peak_direction_getter cimport ProbabilisticDirection
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
+
+# These need to be defined (they are probably already available in dipy)
+cdef float[3]               getAUnitRandomVector()   
+cdef (float[3],float[3])    getARandomPointWithinDisk(float radius)
+cdef float[3]               getAUnitRandomPerpVector(float* inp)
+
+# Tracking Parameters
+# (This might not be necessary but I am still putting it here for completeness. We can remove it later if we find it redundant.)
+cdef struct TP:
+    cdef float stepSize
+    cdef float maxCurvature
+    cdef float probeLength
+    cdef float probeRadius
+    cdef float probeQuality
+    cdef float probeCount
+    cdef float dataSupportExponent
+
+# Parallel Trasport Frame
+cdef class PTF():
+
+    # For each streamline, create a new PTF object with tracking parameters
+    def __init__(self, TP* _params):
+        
+        # Set this PTF's parameters
+        self.params = _params
+
+        # Initialize this PTF's internal tracking parameters
+        self.angularSeparation = 2.0*np.pi/float(self.params->paramsprobeCount)
+        self.probeStepSize     = self.params->probeLength/(self.params->probeQuality-1)
+        self.probeNormalizer   = 1.0/float(self.params->probeQuality*self.params->probeCount)
+
+    
+    TP* params              # Tracking parameters for this frame.
+    cdef float p[3]         # Last position
+    cdef float F[3][3]      # Frame    
+    cdef float k1           # k1 value of the current frame
+    cdef float k2           # k2 value of the current frame
+    cdef float k1_cand      # Candidate k1 value for the next frame
+    cdef float k2_cand      # Candidate k2 value for the next frame
+    cdef float likelihood   # Likelihood of the next candidate frame constructed with k1_cand and k2_cand
+
+    # The following variables are mainly used for code optimization
+    cdef float PP[9]                # Propagator
+    cdef float angularSeparation
+    cdef float probeStepSize
+    cdef float probeNormalizer 
+    cdef float lastVal
+    cdef float lastVal_cand
+    cdef float initFirstVal
+    cdef float initFirstVal_cand
+    
+    # First set the (initial) position of the parallel transport frame (PTF), i.e. set the seed point
+    cdef void setPosition(self, float* pos):
+        self.p[0] = pos[0]
+        self.p[1] = pos[1]
+        self.p[2] = pos[2]
+
+    cdef void getARandomFrame(self,float* _dir):
+        if (_dir==NULL):
+            F[0] = getAUnitRandomVector();
+            F[2] = getAUnitRandomPerpVector(F[0]);
+            cross(F[1],F[2],F[0]);
+            return;
+        
+        F[0][0] = _dir[0];
+        F[0][1] = _dir[1];
+        F[0][2] = _dir[2];
+        getAUnitRandomPerpVector(F[2],F[0]);
+        cross(F[1],F[2],F[0]);
+
+    
+    # After initial position is set, a random PTF (a walking frame, i.e., 3 orthonormal vectors (F), plus 2 scalars, i.e., k1 and k2) is set with this function.
+    # Optionally, the tangential component of PTF can be user provided with the input initDir parameter.
+    # Use initDir=NULL if initDir is not available.
+    # A point + PTF parametrizes a curve that is named the "probe". Using probe parameters (probeLength, probeRadius, probeQuality, probeCount),
+    # a short fiber bundle segment is modelled. 
+    # This function does NOT pick the initial curve. It only returns the datasupport (likelihood) value for a randomly picked candidate.
+    cdef float getInitCandidate(self, float *initDir)
+        getARandomFrame(initDir)
+        getARandomPointWithinDisk()
+        k1 = k1_cand
+        k2 = k2_cand
+
+    # Propagates the last position (p) by stepSize amount, using the parameters of the last candidate.
+    cdef void walk()
+    
+    # Using the current position, pick a random curve parametrization. The walking frame (F) is same, only the k1 and k2 are randomly picked. This was a smooth curve is sampled.
+    # This function does NOT pick the next curve. It only returns the datasupport (likelihood) value for the randomly picked candidate.
+    cdef float getCandidate()
+
+    # Copies PTF parameters then flips the curve. This function can be used after the initial curve is picked in order to save a copy of the curve for tracking towards the other side.  
+    cdef void getFlippedCopy(PTF *ptf)
+    
+    cdef void print()
+
+
+    cdef float calcDataSupport()
+    cdef void  prepPropagator(float t)    
+
 
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
