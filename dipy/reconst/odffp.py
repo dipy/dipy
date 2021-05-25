@@ -20,6 +20,7 @@ from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.odf import OdfFit
 from phantomas.utils.tessellation import tessellation
+from nibabel import orientations
 
 
 
@@ -219,18 +220,15 @@ class OdffpFit(OdfFit):
         return self._peak_dirs
     
     
+    def _fib_reshape(self, matrix, new_size, orientation_agreement = True):
+        if not np.all(orientation_agreement):
+            matrix = np.flip(matrix, np.arange(3)[~orientation_agreement])
+        
+        return matrix.reshape(new_size, order='F')
+
+    
     def save_as_fib(self, affine, voxel_size, output_file_name = 'output.fib'):
         fib = {}
-        
-        try:
-            orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
-        except:
-            print("Couldn't determine orientation of coordinates from the affine.")
-            orientation_agreement = np.ones(3, dtype=bool)
-                
-        orientation_sign = 2 * (orientation_agreement).astype(int) - 1
-        orientation_flip = np.arange(3)[~orientation_agreement] 
-
         fib['dimension'] = self._data.shape[:-1]
         fib['voxel_size'] = voxel_size
         fib['odf_vertices'] = self._tessellation.vertices.T
@@ -242,11 +240,17 @@ class OdffpFit(OdfFit):
         max_peaks_num = self._peak_dirs.shape[3]
         tessellation_half_size = len(self._tessellation.vertices) // 2
 
-        output_odf_vertices = orientation_sign * self._tessellation.vertices
-
-        output_odf = np.flip(self._odf, orientation_flip).reshape(
-            (voxels_num, len(output_odf_vertices)), order='F'
-        )
+        try:
+            orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
+        except:
+            print("Couldn't determine orientation of coordinates from the affine.")
+            orientation_agreement = np.ones(3, dtype=bool)
+                
+        output_odf_vertices = (2 * orientation_agreement.astype(int) - 1) * self._tessellation.vertices
+        
+        output_odf = self._fib_reshape(self._odf, (voxels_num, len(output_odf_vertices)), orientation_agreement)
+        output_peak_dirs = self._fib_reshape(self._peak_dirs, (voxels_num, max_peaks_num, 3), orientation_agreement)
+        dict_idx = self._fib_reshape(self._dict_idx, voxels_num, orientation_agreement)
 
         if not np.all(orientation_agreement):
             output_odf = OdffpModel.resample_odf(
@@ -255,10 +259,6 @@ class OdffpFit(OdfFit):
                     faces=self._tessellation.faces
                 )
             )
-        
-        output_peak_dirs = np.flip(self._peak_dirs, orientation_flip).reshape(
-            (voxels_num, max_peaks_num, 3), order='F'
-        )
   
         for i in range(max_peaks_num):
             fib['fa%d' % i] = np.zeros(voxels_num)
@@ -284,9 +284,9 @@ class OdffpFit(OdfFit):
         fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
 
         for i in range(max_peaks_num):
-            fib['fa%d' % i] = fib['fa%d' % i].reshape(slice_size, order='F')
-            fib['nqa%d' % i] = fib['nqa%d' % i].reshape(slice_size, order='F')
-            fib['index%d' % i] = fib['index%d' % i].reshape((1, voxels_num), order='F')
+            fib['fa%d' % i] = self._fib_reshape(fib['fa%d' % i], slice_size)
+            fib['nqa%d' % i] = self._fib_reshape(fib['nqa%d' % i], slice_size)
+            fib['index%d' % i] = self._fib_reshape(fib['index%d' % i], (1, voxels_num))
          
         output_file_prefix = output_file_name.lower().replace(".fib.gz", "").replace(".fib", "") 
         savemat("%s.fib" % output_file_prefix, fib, format='4')        
