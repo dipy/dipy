@@ -70,11 +70,17 @@ class OdffpModel(object):
         self.gtab = gtab
          
         with h5py.File(dict_file, 'r') as mat_file:
-            self._dict_odf = np.array(mat_file['odfrot'])    
-            self._dict_peak_dirs = np.array(mat_file['dirrot'])
-#             self._dict_model = np.ravel(mat_file['libopt']['microstruct']) # TODO: convert to str
-            self._dict_micro = np.array(mat_file['micro'])
+            self._dict_odf = np.array(mat_file['odfrot']) 
+            
+            # Load only non-empty fibers from the dictionary file   
+            peak_dirs = np.array(mat_file['dirrot'])
+            self._max_peaks_num = np.sum(np.any(~np.isnan(peak_dirs[0]),axis=1))
+            self._dict_peak_dirs = peak_dirs[:,:self._max_peaks_num]
+            self._dict_micro = np.array(mat_file['micro'])[:,:self._max_peaks_num+1]
+            self._dict_ratio = np.array(mat_file['rat'])[:,:self._max_peaks_num+1]
         
+#             self._dict_model = np.ravel(mat_file['libopt']['microstruct']) # TODO: convert to str
+            
         self._drop_negative_odf = drop_negative_odf 
         self._zero_baseline_odf = zero_baseline_odf
         self._output_dict_odf = output_dict_odf
@@ -133,15 +139,12 @@ class OdffpModel(object):
 
     def fit(self, data, mask=None):
         diff_model = GeneralizedQSamplingModel(self.gtab)
- 
-        data_shape = data.shape[:-1]
-        max_peaks_num = self._dict_peak_dirs.shape[1]
 
         tessellation = dsiSphere8Fold()
         tessellation_size = len(tessellation.vertices)
  
         if mask is None:
-            mask = np.ones(data_shape, dtype=bool)
+            mask = np.ones(data.shape[:-1], dtype=bool)
         else:
             mask = mask.astype(bool)
  
@@ -150,7 +153,7 @@ class OdffpModel(object):
         
         dict_idx = np.zeros(voxels_num, dtype=int)
         output_odf = np.zeros((voxels_num, tessellation_size))
-        output_peak_dirs = np.zeros((voxels_num, max_peaks_num, 3))
+        output_peak_dirs = np.zeros((voxels_num, self._max_peaks_num, 3))
         
         for chunk_idx in np.split(range(voxels_num), range(self._max_chunk_size, voxels_num, self._max_chunk_size)):
         
@@ -226,6 +229,12 @@ class OdffpFit(OdfFit):
         
         return matrix.reshape(new_size, order='F')
 
+
+    def _fib_index_map(self, var_data, dict_idx, voxels_num, slice_size, fa_filter):
+        index_map = np.zeros(voxels_num)
+        index_map[fa_filter] = var_data[dict_idx[fa_filter]]
+        return self._fib_reshape(index_map, slice_size)
+
     
     def save_as_fib(self, affine, voxel_size, output_file_name = 'output.fib'):
         fib = {}
@@ -243,7 +252,7 @@ class OdffpFit(OdfFit):
         try:
             orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
         except:
-            print("Couldn't determine orientation of coordinates from the affine.")
+            print("Couldn't determine the orientation of coordinates from the affine.")
             orientation_agreement = np.ones(3, dtype=bool)
                 
         output_odf_vertices = (2 * orientation_agreement.astype(int) - 1) * self._tessellation.vertices
@@ -283,11 +292,39 @@ class OdffpFit(OdfFit):
         fib['odf0'] = output_odf[fib['fa0'] > 0,:tessellation_half_size].T
         fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
 
+        # microstructure parameters
+        fa_filter = fib['fa0'] > 0
+        fib['D_iso'] = self._fib_index_map(self._dict_micro[1,0], dict_idx, voxels_num, slice_size, fa_filter)
+
+        for i in range(1, max_peaks_num+1):
+            fib['fib%d_Da' % i] = self._fib_index_map(self._dict_micro[0,i], dict_idx, voxels_num, slice_size, fa_filter)
+            fib['fib%d_De||' % i] = self._fib_index_map(self._dict_micro[1,i], dict_idx, voxels_num, slice_size, fa_filter)
+            fib['fib%d_De_|_' % i] = self._fib_index_map(self._dict_micro[2,i], dict_idx, voxels_num, slice_size, fa_filter)
+
+#         fib['D_iso'] = np.zeros(voxels_num)
+#         fib['D_iso'][fa_filter] = self._dict_micro[1,0,dict_idx[fa_filter]]
+#         
+#         for i in range(max_peaks_num):
+#             fib['Da_par%d' % i] = np.zeros(voxels_num)
+#             fib['Da_par%d' % i][fa_filter] = self._dict_micro[0,i,dict_idx[fa_filter]]
+#             fib['Da_par%d' % i] = self._fib_reshape(fib['Da_par%d' % i], slice_size)
+#             fib['De_par%d' % i] = np.zeros(voxels_num)
+#             fib['De_par%d' % i][fa_filter] = self._dict_micro[1,i,dict_idx[fa_filter]]
+#             fib['De_perp%d' % i] = np.zeros(voxels_num)
+#             fib['De_perp%d' % i][fa_filter] = self._dict_micro[2,i,dict_idx[fa_filter]]
+            
+#         fib['p_iso'] = np.zeros(voxels_num)
+        
+ 
+        fib['D_iso'] = self._fib_reshape(fib['D_iso'], slice_size)
+#         fib['p_iso'] = self._fib_reshape(fib['p_iso'], slice_size)
+         
+        # reshape to the output sizes
         for i in range(max_peaks_num):
             fib['fa%d' % i] = self._fib_reshape(fib['fa%d' % i], slice_size)
             fib['nqa%d' % i] = self._fib_reshape(fib['nqa%d' % i], slice_size)
             fib['index%d' % i] = self._fib_reshape(fib['index%d' % i], (1, voxels_num))
-         
+        
         output_file_prefix = output_file_name.lower().replace(".fib.gz", "").replace(".fib", "") 
         savemat("%s.fib" % output_file_prefix, fib, format='4')        
 
