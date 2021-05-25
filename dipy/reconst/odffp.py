@@ -18,6 +18,8 @@ from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.core.geometry import sphere2cart
 from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.odf import OdfFit
+from phantomas.utils.tessellation import tessellation
 
 
 
@@ -69,6 +71,8 @@ class OdffpModel(object):
         with h5py.File(dict_file, 'r') as mat_file:
             self._dict_odf = np.array(mat_file['odfrot'])    
             self._dict_peak_dirs = np.array(mat_file['dirrot'])
+#             self._dict_model = np.ravel(mat_file['libopt']['microstruct']) # TODO: convert to str
+            self._dict_micro = np.array(mat_file['micro'])
         
         self._drop_negative_odf = drop_negative_odf 
         self._zero_baseline_odf = zero_baseline_odf
@@ -118,7 +122,13 @@ class OdffpModel(object):
             np.array(sphere2cart(1, np.pi/2 + peak_dirs[1,:], peak_dirs[0,:])).T, 
             rotation
         )
+
  
+    def _unmask(self, vector, mask):
+        output_matrix = np.zeros(mask.shape + vector.shape[1:], dtype=vector.dtype)
+        output_matrix[mask] = vector
+        return output_matrix
+
 
     def fit(self, data, mask=None):
         diff_model = GeneralizedQSamplingModel(self.gtab)
@@ -137,11 +147,9 @@ class OdffpModel(object):
         masked_data = data[mask]
         voxels_num = masked_data.shape[0]
         
-        output_odf = np.zeros(data_shape + (tessellation_size,))
-        output_peak_dirs = np.zeros(data_shape + (max_peaks_num, 3))
-   
-        masked_output_odf = np.zeros((voxels_num, tessellation_size))
-        masked_output_peak_dirs = np.zeros((voxels_num, max_peaks_num, 3))
+        dict_idx = np.zeros(voxels_num, dtype=int)
+        output_odf = np.zeros((voxels_num, tessellation_size))
+        output_peak_dirs = np.zeros((voxels_num, max_peaks_num, 3))
         
         for chunk_idx in np.split(range(voxels_num), range(self._max_chunk_size, voxels_num, self._max_chunk_size)):
         
@@ -164,38 +172,47 @@ class OdffpModel(object):
                 rotated_input_odf[i] = OdffpModel.resample_odf(input_odf[i], tessellation, rotated_tessellation[i])
             
                 input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(rotated_input_odf[i][:int(tessellation_size/2)])
-              
-            dict_idx = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf), axis=1)
+            
+            dict_idx[chunk_idx] = np.argmax(np.dot(input_odf_trace, self._normalized_dict_odf), axis=1)
         
-            for i in range(chunk_size):
-             
+            for i, j in zip(range(chunk_size), chunk_idx):
                 if self._output_dict_odf:
-                    masked_output_odf[chunk_idx[i]] = OdffpModel.resample_odf(
-                        input_odf_norm[i] * np.concatenate((self._dict_odf[:,dict_idx[i]], self._dict_odf[:,dict_idx[i]])), 
+                    output_odf[j] = OdffpModel.resample_odf(
+                        input_odf_norm[i] * np.concatenate((self._dict_odf[:,dict_idx[j]], self._dict_odf[:,dict_idx[j]])), 
                         rotated_tessellation[i], tessellation
                     )
                 else:
-                    masked_output_odf[chunk_idx[i]] = input_odf[i]
+                    output_odf[j] = input_odf[i]
                   
-                masked_output_peak_dirs[chunk_idx[i]] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx[i]], rotation[i])
+                output_peak_dirs[j] = self._rotate_peak_dirs(self._dict_peak_dirs[:,:,dict_idx[j]], rotation[i])
    
-        output_odf[mask] = masked_output_odf
-        output_peak_dirs[mask] = masked_output_peak_dirs
-   
-        return OdffpFit(data, output_odf, output_peak_dirs, tessellation)
+        return OdffpFit(
+            data, tessellation, 
+            self._unmask(output_odf, mask), 
+            self._unmask(output_peak_dirs, mask),
+            self._unmask(dict_idx, mask),
+            self._dict_micro
+        )
             
         
-class OdffpFit(object):
+class OdffpFit(OdfFit):
     
-    def __init__(self, data, odf, peak_dirs, tessellation):
+    def __init__(self, data, tessellation, odf, peak_dirs, dict_idx, dict_micro):
         self._data = data
+        self._tessellation = tessellation
         self._odf = odf
         self._peak_dirs = peak_dirs
-        self._tessellation = tessellation
+        self._dict_idx = dict_idx
+        self._dict_micro = dict_micro
     
         
-    def odf(self):
-        return self._odf
+    def odf(self, sphere=None):
+        if sphere is None or sphere == tessellation:
+            output_odf = self._odf
+        else:
+            output_odf = OdffpModel.resample_odf(self._odf, self._tessellation, sphere)
+        
+        return output_odf / np.maximum(1e-8, np.max(output_odf))
     
     
     def peak_dirs(self):
