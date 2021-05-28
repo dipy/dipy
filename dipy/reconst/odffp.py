@@ -8,6 +8,7 @@ import h5py
 import os, gzip
 import numpy as np
 import nibabel as nib
+import warnings
 
 from scipy.io import loadmat, savemat
 
@@ -255,7 +256,7 @@ class OdffpFit(OdfFit):
         try:
             orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
         except:
-            print("Couldn't determine the orientation of coordinates from the affine.")
+            warnings.warn("Couldn't determine the orientation of coordinates from the affine.")
             orientation_agreement = np.ones(3, dtype=bool)
                 
         output_odf_vertices = (2 * orientation_agreement.astype(int) - 1) * self._tessellation.vertices
@@ -293,8 +294,12 @@ class OdffpFit(OdfFit):
             fib['nqa%d' % i] = fib['fa%d' % i] / np.maximum(1e-8, np.max(fib['fa%d' % i]))
 
         fa_filter = fib['fa0'] > 0
-        fib['odf0'] = output_odf[fa_filter,:tessellation_half_size].T
-        fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
+
+        if np.any(fa_filter):
+            fib['odf0'] = output_odf[fa_filter,:tessellation_half_size].T
+            fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
+        else:
+            warnings.warn("The output is empty.")
 
         # microstructure parameters
         fib['D_iso'] = self._fib_index_map(self._dict['micro'][1,0], dict_idx, slice_size, fa_filter)
