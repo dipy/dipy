@@ -261,6 +261,7 @@ class OdffpFit(OdfFit):
                 
         output_odf_vertices = (2 * orientation_agreement.astype(int) - 1) * self._tessellation.vertices
         
+        # Reorient maps to LPS and flatten to voxels_num x N
         output_odf = self._fib_reshape(self._odf, (voxels_num, len(output_odf_vertices)), orientation_agreement)
         output_peak_dirs = self._fib_reshape(self._peak_dirs, (voxels_num, max_peaks_num, 3), orientation_agreement)
         dict_idx = self._fib_reshape(self._dict_idx, voxels_num, orientation_agreement)
@@ -278,8 +279,8 @@ class OdffpFit(OdfFit):
             fib['index%d' % i] = np.zeros(voxels_num)
         
         for j in range(voxels_num):
-            peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j], output_odf_vertices.T), axis=1)     
-            peak_vertex_idx = peak_vertex_idx[peak_vertex_idx > 0]
+            peaks_filter = np.any(output_peak_dirs[j] != 0, axis=1)
+            peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j,peaks_filter], output_odf_vertices.T), axis=1)     
             peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
             sorted_i = np.argsort(-peak_vertex_values)
