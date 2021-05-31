@@ -22,6 +22,7 @@ from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.odf import OdfFit
 from phantomas.utils.tessellation import tessellation
 from nibabel import orientations
+from _warnings import warn
 
 
 
@@ -73,6 +74,8 @@ class OdffpModel(object):
         self.drop_negative_odf = drop_negative_odf 
         self.zero_baseline_odf = zero_baseline_odf
         self.output_dict_odf = output_dict_odf
+        
+        self._tessellation = dsiSphere8Fold()
         self.max_chunk_size = np.maximum(1, max_chunk_size)
          
         with h5py.File(dict_file, 'r') as mat_file:
@@ -89,8 +92,32 @@ class OdffpModel(object):
             self._dict['micro'] = np.array(mat_file['micro'])[:,:self._max_peaks_num+1]
             self._dict['ratio'] = np.array(mat_file['rat'])[:self._max_peaks_num+1]
         
+        self._sort_peaks()
+        
+        
+        
 #             self._dict_model = np.ravel(mat_file['libopt']['microstruct']) # TODO: convert to str
             
+    def _sort_peaks(self):
+        for j in range(self._dict['peak_dirs'].shape[2]):
+            
+            peak_dirs = np.array(sphere2cart(1, np.pi/2 + self._dict['peak_dirs'][1,:,j], self._dict['peak_dirs'][0,:,j]))
+            peaks_filter = np.any(~np.isnan(peak_dirs), axis=0)
+
+            if ~np.any(peaks_filter):
+                continue
+
+            peak_vertex_idx = np.argmax(np.dot(self._tessellation.vertices, peak_dirs[:,peaks_filter]), axis=0)     
+            peak_vertex_values = self._dict['odf'][np.mod(peak_vertex_idx,self._dict['odf'].shape[0]),j]     
+                  
+            idx = np.arange(len(peak_vertex_values))
+            sorted_idx = np.argsort(-peak_vertex_values)
+            
+            if np.any(idx != sorted_idx):
+                self._dict['peak_dirs'][:,idx,j] = self._dict['peak_dirs'][:,sorted_idx,j]
+                self._dict['micro'][:,idx+1,j] = self._dict['micro'][:,sorted_idx+1,j]
+                self._dict['ratio'][idx+1,j] = self._dict['ratio'][sorted_idx+1,j]
+
 
      
     def _normalize_odf(self, odf):
@@ -284,10 +311,13 @@ class OdffpFit(OdfFit):
             peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
             sorted_i = np.argsort(-peak_vertex_values)
+            
+            if np.any(sorted_i != np.arange(len(sorted_i))):
+                warnings.warn('Reorientation needed for dict_idx=%d, peak_vertex_values=%s' % (dict_idx[j], peak_vertex_values))
+            
 
             for i in range(len(peak_vertex_idx)):
-#                 fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
-                fib['index%d' % i][j] = peak_vertex_idx[sorted_i[i]]
+                fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
                 fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(output_odf[j])
 
         for i in range(max_peaks_num):
