@@ -11,7 +11,7 @@ from random import random
 import numpy as np
 cimport numpy as cnp
 
-from dipy.direction.closest_peak_direction_getter cimport ProbabilisticDirectionGetter
+from dipy.direction.probabilistic_direction_getter cimport ProbabilisticDirectionGetter
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
@@ -394,9 +394,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    @cython.cdivision(True)
+    # @cython.boundscheck(False)
+    # @cython.wraparound(False)
+    # @cython.cdivision(True)
+
     cpdef tuple generate_streamline(self,
                                     double[::1] seed,
                                     double[::1] dir,
