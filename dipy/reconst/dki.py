@@ -1160,6 +1160,9 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     return AK.reshape(outshape)
 
 
+
+
+
 def _kt_maximum_converge(ang, dt, md, kt):
     """ Helper function that computes the inverse of the directional kurtosis
     of a voxel along a given direction in polar coordinates.
@@ -1456,7 +1459,9 @@ def kurtosis_fractional_anisotropy(dki_params):
 
     # Compute KFA
     KFA = np.zeros(A.shape)
-    cond = B > 0  # Avoiding Singularity (if B = 0, KFA = 0)
+    cond1 = B > 0  # Avoiding Singularity (if B = 0, KFA = 0)
+    cond2 = W > 0  # Avoiding overestimating KFA for MKT = 0
+    cond = np.logical_and(cond1, cond2)
     KFA[cond] = np.sqrt(A[cond]/B[cond])
 
     return KFA
