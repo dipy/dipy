@@ -774,3 +774,17 @@ def test_kurtosis_fa():
     dkiF = dkiM.fit(signal)
     dkiF.kfa
     assert_almost_equal(dkiF.kfa, np.sqrt(13/15))
+
+    # KFA = 0 if MKT = 0
+    mevals = np.array([[0.003, 0.001, 0.001], [0.003, 0.001, 0.001]])
+    angles = [(40, -10), (40, -10)]
+    fie = 0.5
+    frac = [fie*100, (1-fie)*100]
+    signal, dt, kt = multi_tensor_dki(gtab_2s, mevals, S0=100, angles=angles,
+                                      fractions=frac, snr=None)
+
+    dkiM = dki.DiffusionKurtosisModel(gtab_2s)
+    dkiF = dkiM.fit(signal)
+    dkiF.kfa
+    assert_almost_equal(dkiF.kfa, 0)
+    
