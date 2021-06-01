@@ -1160,9 +1160,6 @@ def axial_kurtosis(dki_params, min_kurtosis=-3./7, max_kurtosis=10,
     return AK.reshape(outshape)
 
 
-
-
-
 def _kt_maximum_converge(ang, dt, md, kt):
     """ Helper function that computes the inverse of the directional kurtosis
     of a voxel along a given direction in polar coordinates.
