@@ -787,4 +787,3 @@ def test_kurtosis_fa():
     dkiF = dkiM.fit(signal)
     dkiF.kfa
     assert_almost_equal(dkiF.kfa, 0)
-    
