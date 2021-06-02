@@ -26,3 +26,9 @@ cdef class DirectionGetter:
 
     cdef int get_direction_c(
         self, double* point, double* direction)
+
+cdef inline double _stepsize(double point, double increment) nogil
+
+cdef void _step_to_boundary(double * point, double * direction, double overstep) nogil
+
+cdef void _fixed_step(double * point, double * direction, double step_size) nogil
