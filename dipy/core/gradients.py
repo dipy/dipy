@@ -648,7 +648,6 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
         # Decompose into rotation and scaling components:
         R, S = polar(aff)
         Rinv = inv(R)
-        
         # Apply the inverse of the rotation to the corresponding gradient
         # direction:
         new_bvecs[i] = np.dot(Rinv, new_bvecs[i])
