@@ -351,7 +351,7 @@ class OdffpFit(OdfFit):
                 
         output_odf_vertices = (2 * orientation_agreement.astype(int) - 1) * self._dict.tessellation.vertices
         
-        # Reorient maps to LPS and flatten to voxels_num x N
+        # Reorient maps to LPS and reduce their dimensions to voxels_num x N
         output_odf = self._fib_reshape(self._odf, (voxels_num, len(output_odf_vertices)), orientation_agreement)
         output_peak_dirs = self._fib_reshape(self._peak_dirs, (voxels_num, max_peaks_num, 3), orientation_agreement)
         dict_idx = self._fib_reshape(self._dict_idx, voxels_num, orientation_agreement)
@@ -373,15 +373,9 @@ class OdffpFit(OdfFit):
             peak_vertex_idx = np.argmax(np.dot(output_peak_dirs[j,peaks_filter], output_odf_vertices.T), axis=1)     
             peak_vertex_values = output_odf[j][peak_vertex_idx]     
                  
-            sorted_i = np.argsort(-peak_vertex_values)
-            
-            if np.any(sorted_i != np.arange(len(sorted_i))):
-                warnings.warn('Reorientation needed for dict_idx=%d, peak_vertex_values=%s' % (dict_idx[j], peak_vertex_values))
-            
-
             for i in range(len(peak_vertex_idx)):
-                fib['index%d' % i][j] = np.mod(peak_vertex_idx[sorted_i[i]], tessellation_half_size)
-                fib['fa%d' % i][j] = peak_vertex_values[sorted_i[i]] - np.min(output_odf[j])
+                fib['index%d' % i][j] = np.mod(peak_vertex_idx[i], tessellation_half_size)
+                fib['fa%d' % i][j] = peak_vertex_values[i] - np.min(output_odf[j])
 
         for i in range(max_peaks_num):
             fib['fa%d' % i] -= np.min(fib['fa%d' % i])
@@ -395,7 +389,7 @@ class OdffpFit(OdfFit):
         else:
             warnings.warn("The output is empty.")
 
-        # microstructure parameters
+        # Fetch microstructure parameters
         fib['D_iso'] = self._fib_index_map(self._dict.micro[1,0], dict_idx, slice_size, fa_filter)
         fib['p_iso'] = self._fib_index_map(self._dict.ratio[0], dict_idx, slice_size, fa_filter)
 
