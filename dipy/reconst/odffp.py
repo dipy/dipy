@@ -150,10 +150,53 @@ class OdffpDictionary(object):
     def save(self, dict_file):
         pass
    
+
+    # Cummulative Distribution Function (CDF) of a random variable: peaks_per_voxel
+    def _peaks_per_voxel_cdf(self, total_dirs_num):
+        
+        # Numbers of directions are in the proportion 1 : 1*(k-1) : 1*(k-1)*(k-2) : ...
+        # Thus, for k=321 (total_dirs_num) the cumulative number of directions is [1,321,102401,...] 
+        cumulative_dirs_num = np.ones(self.max_peaks_num)
+        
+        # One fiber can have only one orientation [0,0,1]
+        dirs_per_peak = 1
+
+        # Compute the cumulative number of directions for fibers other than [0,0,1]
+        for i in range(1,self.max_peaks_num):
+            dirs_per_peak *= total_dirs_num-i 
+            cumulative_dirs_num[i] = cumulative_dirs_num[i-1] + dirs_per_peak
+        
+        return cumulative_dirs_num[:-1] / cumulative_dirs_num[-1]
     
-    def generate(self, gtab):
-        pass
-     
+    
+    def generate(self, gtab, dict_size=1000000, max_peaks_num=3):
+        dict_size = np.maximum(1, dict_size)
+        self.max_peaks_num = np.maximum(2, max_peaks_num)
+
+        # Total number of directions allowed by the tessellation (k), by default k=321 
+        total_dirs_num = len(self.tessellation.vertices) // 2
+        
+        # Draw peaks_per_voxel randomly. 0th element of the dictionary represents no signal, hence [0] in hstack.
+        # The direction [0,0,1] is obligatory, hence 1+np.sum(...) in the remaining dict_size-1 elements.
+        peaks_per_voxel = np.hstack((
+            [0], 1 + np.sum(np.random.uniform(size=(dict_size-1,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1)
+        ))
+        
+        self.peak_dirs = np.nan * np.zeros((2,self.max_peaks_num,dict_size))        
+#         self.odf = 
+#         self.micro = 
+#         self.ratio = 
+        
+        for i in range(1,dict_size):
+        
+            # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
+            dirs_idx = np.hstack(([0], np.random.choice(range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False)))
+            
+            # Store spherical coordinates of the directions in the Matlab format (azim,elev) for backward compatibility 
+            self.peak_dirs[:,:peaks_per_voxel[i],i] = np.array([
+                self.tessellation.phi[dirs_idx], self.tessellation.theta[dirs_idx] - np.pi/2
+            ])
+       
 
 class OdffpModel(object):
  
