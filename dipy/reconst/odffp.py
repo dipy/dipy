@@ -99,6 +99,155 @@ class OdffpDictionary(object):
             self.load(dict_file)
     
            
+    def _sort_peaks(self):
+        for j in range(self.peak_dirs.shape[2]):
+
+            # First, convert spherical coordinates from Matlab (azim, elev, radius) to Python (radius, phi, theta) 
+            # and then to Cartesian coordinates
+            peak_dirs = np.array(sphere2cart(1, np.pi/2 + self.peak_dirs[1,:,j], self.peak_dirs[0,:,j]))
+            peaks_filter = np.any(~np.isnan(peak_dirs), axis=0)
+
+            if ~np.any(peaks_filter):
+                continue
+
+            peak_vertex_idx = np.argmax(np.dot(self.tessellation.vertices, peak_dirs[:,peaks_filter]), axis=0)     
+            peak_vertex_values = self.odf[np.mod(peak_vertex_idx, self.odf.shape[0]),j]     
+                  
+            idx = np.arange(len(peak_vertex_values))
+            
+            # Sort in the descending order, hence -peak_vertex_values
+            sorted_idx = np.argsort(-peak_vertex_values)
+            
+            if np.any(idx != sorted_idx):
+                self.peak_dirs[:,idx,j] = self.peak_dirs[:,sorted_idx,j]
+                self.micro[:,idx+1,j] = self.micro[:,sorted_idx+1,j]
+                self.ratio[idx+1,j] = self.ratio[sorted_idx+1,j]
+
+   
+    def _peaks_per_voxel_cdf(self, total_dirs_num):
+        """Cummulative Distribution Function (CDF) of a random variable: peaks_per_voxel"""
+        
+        # Numbers of directions are in the proportion 1 : 1*(k-1) : 1*(k-1)*(k-2) : ...
+        # Thus, for k=321 (total_dirs_num) the cumulative number of directions is [1,321,102401,...] 
+        cumulative_dirs_num = np.ones(self.max_peaks_num)
+        
+        # One fiber can have only one orientation [0,0,1]
+        dirs_per_peak = 1
+
+        # Compute the cumulative number of directions for fibers other than [0,0,1]
+        for i in range(1,self.max_peaks_num):
+            dirs_per_peak *= total_dirs_num-i 
+            cumulative_dirs_num[i] = cumulative_dirs_num[i-1] + dirs_per_peak
+        
+        return cumulative_dirs_num[:-1] / cumulative_dirs_num[-1]
+    
+    
+    def _validate_interval_parameter(self, parm):
+        return np.array([np.min(parm), np.max(parm)])
+    
+    
+    def _validate_fraction_volumes(self, p_iso, p_fib):
+        
+        # Convert constants or mismatched arrays to intervals
+        p_iso = self._validate_interval_parameter(p_iso)
+        p_fib = self._validate_interval_parameter(p_fib)
+        
+        # Lower bounds are hard limits, so they must sum up to less than 1
+        if p_iso[0] + self.max_peaks_num * p_fib[0] >= 1:
+            raise Exception(
+                "Lower boundaries of fraction volumes are too high for max_peaks_num=%d" % self.max_peaks_num
+            )
+            
+        return p_iso, p_fib
+
+
+    def _validate_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r):
+        f_in = self._validate_interval_parameter(f_in)
+        D_iso = self._validate_interval_parameter(D_iso)
+        D_a = self._validate_interval_parameter(D_a)
+        D_e = self._validate_interval_parameter(D_e)
+        D_r = self._validate_interval_parameter(D_r)
+        
+        return f_in, D_iso, D_a, D_e, D_r 
+
+
+    def _random_fraction_volumes(self, p_iso, p_fib, peaks_per_voxel):        
+        fraction_volumes = np.zeros(peaks_per_voxel+1)
+        
+        # Lower bounds are hard limits, so the variability remains between 0 and p_random_max 
+        p_random_max = 1 - (p_iso[0] + peaks_per_voxel * p_fib[0])
+
+        # Draw fraction volumes randomly 
+        p_random = np.hstack((
+            np.random.uniform(0, p_iso[1] - p_iso[0]),
+            np.random.uniform(0, p_fib[1] - p_fib[0], size=peaks_per_voxel)
+        ))
+        
+        # Apply soft limits on upper bounds
+        p_random /= np.maximum(1e-8, np.sum(p_random))
+        
+        # Set the fraction volumes of fibers
+        fraction_volumes[1:] = p_fib[0] + p_random_max * p_random[1:]
+        
+        # Set the fraction volume of free water 
+        fraction_volumes[0] = 1 - np.sum(fraction_volumes[1:])
+       
+        return fraction_volumes
+    
+    
+    def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, equal_fibers):
+        micro_params = np.zeros((4, peaks_per_voxel+1))
+        
+        # Free water compartment has D_a=0, f_in=0, and D_a=D_e
+        micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
+        
+        # Equal fibers means that all fibers have the same diffusivities and f_in
+        if equal_fibers:
+            micro_params[:,1:] = np.tile(
+                [[np.random.uniform(D_a[0], D_a[1])], [np.random.uniform(D_e[0], D_e[1])], 
+                [np.random.uniform(D_r[0], D_r[1])], [np.random.uniform(f_in[0], f_in[1])]], 
+                peaks_per_voxel
+            )
+        else:
+            micro_params[:,1:] = np.array([
+                np.random.uniform(D_a[0], D_a[1], size=peaks_per_voxel), 
+                np.random.uniform(D_e[0], D_e[1], size=peaks_per_voxel), 
+                np.random.uniform(D_r[0], D_r[1], size=peaks_per_voxel), 
+                np.random.uniform(f_in[0], f_in[1], size=peaks_per_voxel)
+            ])
+        
+        return micro_params
+    
+    
+    def _compute_odf(self, item_idx, gtab, peak_dirs_idx):
+        
+        # Convert b-values from s/mm^2 to ms/um^2 
+        bval = 1e-3 * gtab.bvals
+        
+        # Diffusion signal of free water
+        dwi = self.ratio[0,item_idx] * np.exp(-bval * self.micro[1,0,item_idx])
+        
+        # Diffusion signal of fibers
+        for j in range(len(peak_dirs_idx)):
+        
+            # Cartesian coordinates of the j-th peak direction
+            fiber_dir_cart = [
+                self.tessellation.x[peak_dirs_idx[j]], 
+                self.tessellation.y[peak_dirs_idx[j]], 
+                self.tessellation.z[peak_dirs_idx[j]]
+            ]
+            dir_prod_sqr = np.dot(gtab.bvecs, fiber_dir_cart) ** 2
+        
+            dwi_intra = np.exp(-bval * self.micro[0,j+1,item_idx] * dir_prod_sqr)
+            dwi_extra = np.exp(
+                -bval * self.micro[1,j+1,item_idx] * dir_prod_sqr - bval * self.micro[1,j+1,item_idx] * (1 - dir_prod_sqr)
+            )
+            
+            dwi += self.ratio[j+1,item_idx] * (self.micro[3,j+1,item_idx] * dwi_intra + (1 - self.micro[3,j+1,item_idx]) * dwi_extra)           
+        
+        return 0
+    
+    
     def load(self, dict_file):
         with h5py.File(dict_file, 'r') as mat_file:
             
@@ -120,73 +269,40 @@ class OdffpDictionary(object):
         if not self._is_sorted:
             self._sort_peaks()
 
-   
-    def _sort_peaks(self):
-        for j in range(self.peak_dirs.shape[2]):
 
-            # First, convert spherical coordinates from Matlab (azim, elev, radius) to Python (radius, phi, theta) 
-            # and then to Cartesian coordinates
-            peak_dirs = np.array(sphere2cart(1, np.pi/2 + self.peak_dirs[1,:,j], self.peak_dirs[0,:,j]))
-            peaks_filter = np.any(~np.isnan(peak_dirs), axis=0)
-
-            if ~np.any(peaks_filter):
-                continue
-
-            peak_vertex_idx = np.argmax(np.dot(self.tessellation.vertices, peak_dirs[:,peaks_filter]), axis=0)     
-            peak_vertex_values = self.odf[np.mod(peak_vertex_idx,self.odf.shape[0]),j]     
-                  
-            idx = np.arange(len(peak_vertex_values))
-            
-            # Sort in the descending order, hence -peak_vertex_values
-            sorted_idx = np.argsort(-peak_vertex_values)
-            
-            if np.any(idx != sorted_idx):
-                self.peak_dirs[:,idx,j] = self.peak_dirs[:,sorted_idx,j]
-                self.micro[:,idx+1,j] = self.micro[:,sorted_idx+1,j]
-                self.ratio[idx+1,j] = self.ratio[sorted_idx+1,j]
-   
-    
-    
     def save(self, dict_file):
         pass
    
-
-    # Cummulative Distribution Function (CDF) of a random variable: peaks_per_voxel
-    def _peaks_per_voxel_cdf(self, total_dirs_num):
-        
-        # Numbers of directions are in the proportion 1 : 1*(k-1) : 1*(k-1)*(k-2) : ...
-        # Thus, for k=321 (total_dirs_num) the cumulative number of directions is [1,321,102401,...] 
-        cumulative_dirs_num = np.ones(self.max_peaks_num)
-        
-        # One fiber can have only one orientation [0,0,1]
-        dirs_per_peak = 1
-
-        # Compute the cumulative number of directions for fibers other than [0,0,1]
-        for i in range(1,self.max_peaks_num):
-            dirs_per_peak *= total_dirs_num-i 
-            cumulative_dirs_num[i] = cumulative_dirs_num[i-1] + dirs_per_peak
-        
-        return cumulative_dirs_num[:-1] / cumulative_dirs_num[-1]
     
-    
-    def generate(self, gtab, dict_size=1000000, max_peaks_num=3):
+    def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
+                 p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
+                 D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5]):
+        
         dict_size = np.maximum(1, dict_size)
         self.max_peaks_num = np.maximum(2, max_peaks_num)
+        p_iso, p_fib = self._validate_fraction_volumes(p_iso, p_fib)
+        f_in, D_iso, D_a, D_e, D_r = self._validate_micro_parameters(f_in, D_iso, D_a, D_e, D_r)
 
         # Total number of directions allowed by the tessellation (k), by default k=321 
         total_dirs_num = len(self.tessellation.vertices) // 2
         
-        # Draw peaks_per_voxel randomly. 0th element of the dictionary represents no signal, hence [0] in hstack.
+        # Draw peaks_per_voxel randomly. 0th element of the dictionary represents 0 fibers, hence [0] in hstack.
         # The direction [0,0,1] is obligatory, hence 1+np.sum(...) in the remaining dict_size-1 elements.
         peaks_per_voxel = np.hstack((
             [0], 1 + np.sum(np.random.uniform(size=(dict_size-1,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1)
         ))
         
-        self.peak_dirs = np.nan * np.zeros((2,self.max_peaks_num,dict_size))        
-#         self.odf = 
-#         self.micro = 
-#         self.ratio = 
+        self.peak_dirs = np.nan * np.zeros((2, self.max_peaks_num, dict_size))        
+        self.ratio = np.nan * np.zeros((self.max_peaks_num+1, dict_size))
+        self.micro = np.nan * np.zeros((4, self.max_peaks_num+1, dict_size))
+        self.odf = np.zeros((total_dirs_num, dict_size))
         
+        # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
+        self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
+        self.micro[1:3,0] = 3  # diffusivity of free water at 37C
+        self.odf[:,0] = self._compute_odf(0, gtab, [])
+        
+        # Generate the remaining elements of the ODF-dictionary
         for i in range(1,dict_size):
         
             # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
@@ -196,7 +312,17 @@ class OdffpDictionary(object):
             self.peak_dirs[:,:peaks_per_voxel[i],i] = np.array([
                 self.tessellation.phi[dirs_idx], self.tessellation.theta[dirs_idx] - np.pi/2
             ])
+            
+            # Draw fraction volumes randomly
+            self.ratio[:peaks_per_voxel[i]+1,i] = self._random_fraction_volumes(p_iso, p_fib, peaks_per_voxel[i])
        
+            # Draw microstructure parameters randomly
+            self.micro[:,:peaks_per_voxel[i]+1,i] = self._random_micro_parameters(
+                f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
+            )
+            
+            self.odf[:,i] = self._compute_odf(i, gtab, dirs_idx)
+            
 
 class OdffpModel(object):
  
