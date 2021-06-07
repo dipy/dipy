@@ -245,7 +245,10 @@ class OdffpDictionary(object):
             
             dwi += self.ratio[j+1,item_idx] * (self.micro[3,j+1,item_idx] * dwi_intra + (1 - self.micro[3,j+1,item_idx]) * dwi_extra)           
         
-        return 0
+        diff_model = GeneralizedQSamplingModel(gtab)
+        odf = diff_model.fit(dwi).odf(self.tessellation)
+        
+        return odf[:len(self.tessellation.vertices)//2]
     
     
     def load(self, dict_file):
@@ -304,6 +307,8 @@ class OdffpDictionary(object):
         
         # Generate the remaining elements of the ODF-dictionary
         for i in range(1,dict_size):
+ 
+            print(i)
         
             # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
             dirs_idx = np.hstack(([0], np.random.choice(range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False)))
@@ -427,7 +432,7 @@ class OdffpModel(object):
             chunk_size = len(chunk_idx)
 
             input_odf = diff_model.fit(masked_data[chunk_idx]).odf(self._dict.tessellation)
-            input_odf_trace = np.zeros((chunk_size, int(tessellation_size/2)))
+            input_odf_trace = np.zeros((chunk_size, tessellation_size//2))
             input_odf_norm = np.zeros(chunk_size)
              
             rotation = np.zeros((chunk_size, 3, 3))
@@ -440,7 +445,7 @@ class OdffpModel(object):
                 rotated_tessellation[i] = self._rotate_tessellation(self._dict.tessellation, rotation[i])
                 rotated_input_odf[i] = OdffpModel.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
             
-                input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(rotated_input_odf[i][:int(tessellation_size/2)])
+                input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(rotated_input_odf[i][:tessellation_size//2])
 
             dict_idx[chunk_idx] = np.argmax(np.dot(input_odf_trace, dict_odf_trace), axis=1)
         
