@@ -4,11 +4,12 @@ Created on Feb 18, 2021
 @author: patrykfi
 '''
 
-import h5py
 import os, sys, gzip
+import h5py, hdf5storage
+import warnings
+
 import numpy as np
 import nibabel as nib
-import warnings
 
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
@@ -17,16 +18,12 @@ from scipy.io import loadmat, savemat
 
 from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-# from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.dsi import DiffusionSpectrumModel
 
 from dipy.core.geometry import sphere2cart
 from dipy.direction import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.odf import OdfFit
-from phantomas.utils.tessellation import tessellation
-from nibabel import orientations
-from _warnings import warn
-from _pylief import NONE
 
 
 class _DsiSphere8Fold(Sphere):
@@ -218,10 +215,10 @@ class OdffpDictionary(object):
         
         return micro_params
     
-    
+
     def _compute_odf(self, item_idx, gtab, peak_dirs_idx):
         
-        # Convert b-values from s/mm^2 to ms/um^2 
+        # Convert the b-values from s/mm^2 to ms/um^2 
         bval = 1e-3 * gtab.bvals
         
         # Diffusion signal of free water
@@ -230,13 +227,8 @@ class OdffpDictionary(object):
         # Diffusion signal of fibers
         for j in range(len(peak_dirs_idx)):
         
-            # Cartesian coordinates of the j-th peak direction
-            fiber_dir_cart = [
-                self.tessellation.x[peak_dirs_idx[j]], 
-                self.tessellation.y[peak_dirs_idx[j]], 
-                self.tessellation.z[peak_dirs_idx[j]]
-            ]
-            dir_prod_sqr = np.dot(gtab.bvecs, fiber_dir_cart) ** 2
+            # Squared dot product of the b-vectors and the j-th peak direction
+            dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]]) ** 2
         
             dwi_intra = np.exp(-bval * self.micro[0,j+1,item_idx] * dir_prod_sqr)
             dwi_extra = np.exp(
@@ -246,11 +238,30 @@ class OdffpDictionary(object):
             dwi += self.ratio[j+1,item_idx] * (self.micro[3,j+1,item_idx] * dwi_intra + (1 - self.micro[3,j+1,item_idx]) * dwi_extra)           
         
         diff_model = GeneralizedQSamplingModel(gtab)
+#         diff_model = DiffusionSpectrumModel(gtab)
+        
         odf = diff_model.fit(dwi).odf(self.tessellation)
         
         return odf[:len(self.tessellation.vertices)//2]
     
     
+    def _sort_generated_peaks(self, item_idx, peak_dirs_idx):
+        seq_idx = np.arange(len(peak_dirs_idx))
+        
+        # Sort in the descending order, hence -self.odf
+        sorted_idx = np.argsort(-self.odf[peak_dirs_idx, item_idx])
+        
+        # If peaks are not sorted, reorder them
+        if np.any(sorted_idx != seq_idx):
+            self.peak_dirs[:,seq_idx,item_idx] = self.peak_dirs[:,sorted_idx,item_idx]
+            self.micro[:,seq_idx+1,item_idx] = self.micro[:,sorted_idx+1,item_idx]
+            self.ratio[seq_idx+1,item_idx] = self.ratio[sorted_idx+1,item_idx]
+
+        # If the first peak is not the highest, rotate the ODF
+        if sorted_idx[0] != 0:
+            pass
+   
+       
     def load(self, dict_file):
         with h5py.File(dict_file, 'r') as mat_file:
             
@@ -273,8 +284,15 @@ class OdffpDictionary(object):
             self._sort_peaks()
 
 
-    def save(self, dict_file):
-        pass
+    def save(self, dict_file = 'odf_dict.mat'):
+        odf_dict = {
+            'odfrot': self.odf.T,
+            'dirrot': self.peak_dirs.T,
+            'micro' : self.micro.T,
+            'rat'   : self.ratio.T
+        }
+        dict_file_split = os.path.split(dict_file)
+        hdf5storage.write(odf_dict, dict_file_split[0], dict_file_split[1], matlab_compatible=True)
    
     
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
@@ -308,7 +326,8 @@ class OdffpDictionary(object):
         # Generate the remaining elements of the ODF-dictionary
         for i in range(1,dict_size):
  
-            print(i)
+            if np.mod(i, 1000) == 0:
+                print("%.1f%%" % (100 * (i+1) / dict_size))
         
             # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
             dirs_idx = np.hstack(([0], np.random.choice(range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False)))
@@ -327,6 +346,7 @@ class OdffpDictionary(object):
             )
             
             self.odf[:,i] = self._compute_odf(i, gtab, dirs_idx)
+            self._sort_generated_peaks(i, dirs_idx)
             
 
 class OdffpModel(object):
@@ -408,6 +428,7 @@ class OdffpModel(object):
 
     def fit(self, data, mask=None):
         diff_model = GeneralizedQSamplingModel(self.gtab)
+#         diff_model = DiffusionSpectrumModel(self.gtab)
 
         tessellation_size = len(self._dict.tessellation.vertices)
  
@@ -470,6 +491,11 @@ class OdffpModel(object):
         
 class OdffpFit(OdfFit):
     
+    # Constants imposed by the .FIB format (DSI Studio)
+    FIB_COORDS_ORIENTATION = np.array(('L', 'P', 'S'))
+    FIB_ODF_CHUNK_SIZE = 20000
+    
+    
     def __init__(self, data, odf_dict, odf, peak_dirs, dict_idx):
         self._data = data
         self._dict = odf_dict
@@ -518,7 +544,7 @@ class OdffpFit(OdfFit):
         tessellation_half_size = len(self._dict.tessellation.vertices) // 2
 
         try:
-            orientation_agreement = np.array(nib.aff2axcodes(affine)) == np.array(('L', 'P', 'S'))
+            orientation_agreement = np.array(nib.aff2axcodes(affine)) == self.FIB_COORDS_ORIENTATION
         except:
             warnings.warn("Couldn't determine the orientation of coordinates from the affine.")
             orientation_agreement = np.ones(3, dtype=bool)
@@ -558,8 +584,13 @@ class OdffpFit(OdfFit):
         fa_filter = fib['fa0'] > 0
 
         if np.any(fa_filter):
-            fib['odf0'] = output_odf[fa_filter,:tessellation_half_size].T
-            fib['odf0'] /= np.maximum(1e-8, np.max(fib['odf0']))
+            odf_map = output_odf[fa_filter,:tessellation_half_size]
+            odf_map /= np.maximum(1e-8, np.max(odf_map))
+            
+            odf_chunk_idx = 0
+            for odf_chunk in np.split(odf_map, range(self.FIB_ODF_CHUNK_SIZE, len(odf_map), self.FIB_ODF_CHUNK_SIZE)):
+                fib['odf%d' % odf_chunk_idx] = odf_chunk.T
+                odf_chunk_idx += 1
         else:
             warnings.warn("The output is empty.")
 
@@ -589,6 +620,4 @@ class OdffpFit(OdfFit):
                 fib_gz_file.writelines(fib_file)
                 
         os.remove("%s.fib" % output_file_prefix)
-        
-        
         
