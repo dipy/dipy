@@ -424,8 +424,7 @@ def test_reorient_bvecs():
     # so that the reorient_bvecs function does not throw an error itself
     new_gt = reorient_bvecs(gt, np.array(shear_affines)[:, :3, :3], atol=1)
     bvecs_close_to_1 = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1) <= 0.001
-    npt.assert_equal(bvecs_close_to_1, np.ones(bvecs_close_to_1.shape,
-                                               dtype=bool))
+    npt.assert_(np.all(bvecs_close_to_1)) 
 
 def test_nan_bvecs():
     """
