@@ -521,15 +521,16 @@ def test_unlist_relist_streamlines():
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
-    # Specify stream2grid and grid2world
-    stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
-                            [0, np.random.randn(1)[0], 0, 0],
-                            [0, 0, np.random.randn(1)[0], 0],
-                            [0, 0, 0, 1]])
-    grid2world = np.array([[np.random.randn(1)[0], 0, 0, 0],
-                           [0, np.random.randn(1)[0], 0, 0],
-                           [0, 0, np.random.randn(1)[0], 0],
-                           [0, 0, 0, 1]])
+    stream2grid = np.array([
+        [-0.13152201, -0.52553149, -0.06759869, -0.80014208],
+        [1.01579851, 0.19840874, 0.18875411, 0.81826065],
+        [-0.07047617, -0.9290094, -0.55623385, 0.55165017],
+        [0., 0., 0., 1.]])
+    grid2world = np.array([
+        [0.83354727, 1.33876877, 1.0218087, 0.12809569],
+        [0.83571344, 0.63824941, 0.20564267, 0.82740437],
+        [-0.26574668, -0.66695577, 0.11636694, -0.02620037],
+        [0., 0., 0., 1.]])
     stream2world = np.dot(stream2grid, grid2world)
 
     # Deform streamlines (let two grid spaces be the same for simplicity)
