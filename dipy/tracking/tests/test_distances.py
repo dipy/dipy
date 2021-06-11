@@ -2,8 +2,9 @@
 import warnings
 import numpy as np
 from dipy.testing import assert_true
-from numpy.testing import (assert_array_almost_equal, assert_warns,
-                           assert_equal, assert_almost_equal)
+from numpy.testing import (assert_array_almost_equal,
+                           assert_equal, assert_almost_equal,
+                           assert_array_equal)
 from dipy.tracking import distances as pf
 from dipy.tracking.streamline import set_number_of_points
 from dipy.data import get_fnames
@@ -212,8 +213,14 @@ def test_approx_ei_traj():
     y = 5*np.sin(5*t)
     z = np.zeros(x.shape)
     xyz = np.vstack((x, y, z)).T
+
     xyza = pf.approx_polygon_track(xyz)
     assert_equal(len(xyza), 27)
+
+    # test repeated point
+    track = np.array([[1., 0., 0.], [1., 0., 0.], [3., 0., 0.], [4., 0., 0.]])
+    xyza = pf.approx_polygon_track(track)
+    assert_array_equal(xyza, np.array([[1., 0., 0.], [4., 0., 0.]]))
 
 
 def test_approx_mdl_traj():
