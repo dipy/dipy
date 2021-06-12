@@ -644,12 +644,9 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
         if aff.shape == (4, 4):
             # This must be an affine!
             # Remove the translation component:
-            aff_no_trans = aff[:3, :3]
-            # Decompose into rotation and scaling components:
-            R, S = polar(aff_no_trans)
-        elif aff.shape == (3, 3):
-            # We assume this is a rotation matrix:
-            R = aff
+            aff = aff[:3, :3]
+        # Decompose into rotation and scaling components:
+        R, S = polar(aff)
         Rinv = inv(R)
         # Apply the inverse of the rotation to the corresponding gradient
         # direction:

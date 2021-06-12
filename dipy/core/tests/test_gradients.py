@@ -14,7 +14,7 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  unique_bvals_magnitude,
                                  unique_bvals_tolerance, unique_bvals,
                                  params_to_btens, btens_to_params)
-from dipy.core.geometry import vec2vec_rotmat
+from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.utils.deprecator import ExpiredDeprecationError
 
@@ -412,6 +412,19 @@ def test_reorient_bvecs():
     full_affines.append(np.zeros((4, 4)))
     npt.assert_raises(ValueError, reorient_bvecs, gt_rot, full_affines)
 
+    # Shear components in the matrix need to be decomposed into rotation only,
+    # and should not lead to scaling of the bvecs
+    shear_affines = []
+    for i in np.where(~gt.b0s_mask)[0]:
+        shear_affines.append(np.array([[1, 0, 1, 0],
+                                       [0, 1, 0, 0],
+                                       [0, 0, 1, 0],
+                                       [0, 0, 0, 1]]))
+    # atol is set to 1 here to do the scaling verification here,
+    # so that the reorient_bvecs function does not throw an error itself
+    new_gt = reorient_bvecs(gt, np.array(shear_affines)[:, :3, :3], atol=1)
+    bvecs_close_to_1 = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1) <= 0.001
+    npt.assert_(np.all(bvecs_close_to_1)) 
 
 def test_nan_bvecs():
     """
