@@ -215,16 +215,52 @@ class OdffpDictionary(object):
         
         return micro_params
     
-
-    def _compute_odf(self, item_idx, gtab, peak_dirs_idx):
+    
+    def _compute_dwi(self, gtab, ratio, micro, peak_dirs_idx):
         
         # Convert the b-values from s/mm^2 to ms/um^2 
         bval = 1e-3 * gtab.bvals
         
-        # Diffusion signal of free water
+        # First, compute the diffusion signal of free water
+        dwi = ratio[0] * np.exp(-bval * micro[1,0])
+        
+        # Then, add the diffusion signal of fibers
+        for j in range(len(peak_dirs_idx)):
+        
+            # Squared dot product of the b-vectors and the j-th peak direction
+            dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]]) ** 2
+        
+            dwi_intra = np.exp(-bval * micro[0,j+1] * dir_prod_sqr)
+            dwi_extra = np.exp(
+                -bval * micro[1,j+1] * dir_prod_sqr - bval * micro[1,j+1] * (1 - dir_prod_sqr)
+            )
+            
+            dwi += ratio[j+1] * (micro[3,j+1] * dwi_intra + (1 - micro[3,j+1]) * dwi_extra)           
+    
+        return dwi
+    
+    
+    def _compute_odf_trace(self, gtab, ratio, micro, peak_dirs_idx):
+        diff_model = GeneralizedQSamplingModel(gtab)
+#         diff_model = DiffusionSpectrumModel(gtab)
+
+        dwi = self._compute_dwi(gtab, ratio, micro, peak_dirs_idx)        
+   
+        # Compute the ODF for the generated DWI
+        odf = diff_model.fit(dwi).odf(self.tessellation)
+        
+        return odf[:len(self.tessellation.vertices)//2]
+        
+    
+    def _compute_odf_trace_old(self, item_idx, gtab, peak_dirs_idx):
+        
+        # Convert the b-values from s/mm^2 to ms/um^2 
+        bval = 1e-3 * gtab.bvals
+        
+        # First, compute the diffusion signal of free water
         dwi = self.ratio[0,item_idx] * np.exp(-bval * self.micro[1,0,item_idx])
         
-        # Diffusion signal of fibers
+        # Then, add the diffusion signal of fibers
         for j in range(len(peak_dirs_idx)):
         
             # Squared dot product of the b-vectors and the j-th peak direction
@@ -240,28 +276,34 @@ class OdffpDictionary(object):
         diff_model = GeneralizedQSamplingModel(gtab)
 #         diff_model = DiffusionSpectrumModel(gtab)
         
+        # Compute the ODF for the generated DWI
         odf = diff_model.fit(dwi).odf(self.tessellation)
         
+        if len(peak_dirs_idx) > 1:
+        
+            # Sort the peaks in the descending order, hence -odf
+            sorted_idx = np.argsort(-odf[peak_dirs_idx])
+            
+            # If peaks are not sorted, reorder them (and also the microstructure parameters)
+            seq_idx = np.arange(len(peak_dirs_idx))
+            if np.any(sorted_idx != seq_idx):
+                self.peak_dirs[:,seq_idx,item_idx] = self.peak_dirs[:,sorted_idx,item_idx]
+                self.micro[:,seq_idx+1,item_idx] = self.micro[:,sorted_idx+1,item_idx]
+                self.ratio[seq_idx+1,item_idx] = self.ratio[sorted_idx+1,item_idx]
+            
+            # If the highest peak is not at [0,0,1], rotate it and resample the ODF. 
+            # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+            if sorted_idx[0] != 0:
+                rotation = OdffpModel.peak_rotation_matrix(
+                    self.tessellation.vertices[peak_dirs_idx[sorted_idx[0]]]
+                )
+                rotated_tessellation = OdffpModel.rotate_tessellation(self.tessellation, rotation)
+                odf = diff_model.fit(dwi).odf(rotated_tessellation)
+#                 odf = OdffpModel.resample_odf(odf, self.tessellation, rotated_tessellation)
+    
         return odf[:len(self.tessellation.vertices)//2]
-    
-    
-    def _sort_generated_peaks(self, item_idx, peak_dirs_idx):
-        seq_idx = np.arange(len(peak_dirs_idx))
-        
-        # Sort in the descending order, hence -self.odf
-        sorted_idx = np.argsort(-self.odf[peak_dirs_idx, item_idx])
-        
-        # If peaks are not sorted, reorder them
-        if np.any(sorted_idx != seq_idx):
-            self.peak_dirs[:,seq_idx,item_idx] = self.peak_dirs[:,sorted_idx,item_idx]
-            self.micro[:,seq_idx+1,item_idx] = self.micro[:,sorted_idx+1,item_idx]
-            self.ratio[seq_idx+1,item_idx] = self.ratio[sorted_idx+1,item_idx]
 
-        # If the first peak is not the highest, rotate the ODF
-        if sorted_idx[0] != 0:
-            pass
-   
-       
+    
     def load(self, dict_file):
         with h5py.File(dict_file, 'r') as mat_file:
             
@@ -321,7 +363,7 @@ class OdffpDictionary(object):
         # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
         self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
         self.micro[1:3,0] = 3  # diffusivity of free water at 37C
-        self.odf[:,0] = self._compute_odf(0, gtab, [])
+        self.odf[:,0] = self._compute_odf_trace(gtab, self.ratio[:,0], self.micro[:,:,0], [])
         
         # Generate the remaining elements of the ODF-dictionary
         for i in range(1,dict_size):
@@ -345,20 +387,28 @@ class OdffpDictionary(object):
                 f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
             )
             
-            self.odf[:,i] = self._compute_odf(i, gtab, dirs_idx)
-            self._sort_generated_peaks(i, dirs_idx)
-            
+            self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+
+            if peaks_per_voxel[i] > 1:
+             
+                # Sort the peaks in the descending order, hence -self.odf
+                sorted_idx = np.argsort(-self.odf[dirs_idx,i])
+                 
+                # If peaks were not sorted, reorder the microstructure parameters accordingly
+                seq_idx = np.arange(peaks_per_voxel[i])
+                if np.any(sorted_idx != seq_idx):
+                    self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
+                    self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
+                 
+                # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
+                # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+                if sorted_idx[0] != 0:
+                    self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+
+             
 
 class OdffpModel(object):
  
-    @staticmethod 
-    def resample_odf(odf, in_sphere, out_sphere):
-        return sh_to_sf(
-            sf_to_sh(odf, in_sphere), # sh_order=14, basis_type='tournier07') 
-            out_sphere
-        ) #, sh_order=14, basis_type='tournier07')
-     
-
     def __init__(self, gtab, odf_dict, 
                  drop_negative_odf=True, zero_baseline_odf=True, output_dict_odf=True, 
                  max_chunk_size=1000):
@@ -378,6 +428,14 @@ class OdffpModel(object):
         self._dict = odf_dict 
          
      
+    @staticmethod 
+    def resample_odf(odf, in_sphere, out_sphere):
+        return sh_to_sf(
+            sf_to_sh(odf, in_sphere), # sh_order=14, basis_type='tournier07') 
+            out_sphere
+        ) #, sh_order=14, basis_type='tournier07')
+     
+
     def _normalize_odf(self, odf):
         if self._drop_negative_odf:
             odf = np.maximum(0, odf)
@@ -388,21 +446,21 @@ class OdffpModel(object):
         odf_norm = np.maximum(1e-8, np.sqrt(np.sum(odf**2, axis=0)))
         return odf / odf_norm, odf_norm
 
-     
-    def _find_highest_peak_rotation(self, input_odf, tessellation, target_direction=[0,0,1]):
+
+    def _find_highest_peak_rotation(self, input_odf, target_dir=[0,0,1]):
         rotation = np.eye(3)
-        input_peak_dirs,_,_ = peak_directions(input_odf, tessellation)
+        input_peak_dirs,_,_ = peak_directions(input_odf, self._dict.tessellation)
 
         if len(input_peak_dirs) > 0:
-            highest_peak_direction = np.squeeze(input_peak_dirs[:1])
-        
-            cr = np.cross(highest_peak_direction, target_direction)
+            highest_peak_dir = np.squeeze(input_peak_dirs[0])
+            
+            cr = np.cross(highest_peak_dir, target_dir)
             sum_sqr_cr = np.sum(cr**2)
             
             if sum_sqr_cr != 0:
                 s = np.array([[0,-cr[2],cr[1]], [cr[2],0,-cr[0]], [-cr[1],cr[0],0]])
-                rotation += s + np.dot(s,s) * (1-np.dot(highest_peak_direction,target_direction)) / sum_sqr_cr
-
+                rotation += s + np.dot(s, s) * (1 - np.dot(highest_peak_dir, target_dir)) / sum_sqr_cr
+    
         return rotation
      
      
@@ -411,8 +469,8 @@ class OdffpModel(object):
             xyz=np.dot(tessellation.vertices, rotation),
             faces=tessellation.faces
         )
-        
-        
+
+
     def _rotate_peak_dirs(self, peak_dirs, rotation):
         return np.dot(
             np.array(sphere2cart(1, np.pi/2 + peak_dirs[1,:], peak_dirs[0,:])).T, 
@@ -462,9 +520,9 @@ class OdffpModel(object):
             
             for i in range(chunk_size):
 
-                rotation[i] = self._find_highest_peak_rotation(input_odf[i], self._dict.tessellation)
+                rotation[i] = self._find_highest_peak_rotation(input_odf[i])
                 rotated_tessellation[i] = self._rotate_tessellation(self._dict.tessellation, rotation[i])
-                rotated_input_odf[i] = OdffpModel.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
+                rotated_input_odf[i] = self.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
             
                 input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(rotated_input_odf[i][:tessellation_size//2])
 
@@ -472,7 +530,7 @@ class OdffpModel(object):
         
             for i, j in zip(range(chunk_size), chunk_idx):
                 if self._output_dict_odf:
-                    output_odf[j] = OdffpModel.resample_odf(
+                    output_odf[j] = self.resample_odf(
                         input_odf_norm[i] * np.concatenate((self._dict.odf[:,dict_idx[j]], self._dict.odf[:,dict_idx[j]])), 
                         rotated_tessellation[i], self._dict.tessellation
                     )
