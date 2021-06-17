@@ -252,58 +252,6 @@ class OdffpDictionary(object):
         return odf[:len(self.tessellation.vertices)//2]
         
     
-    def _compute_odf_trace_old(self, item_idx, gtab, peak_dirs_idx):
-        
-        # Convert the b-values from s/mm^2 to ms/um^2 
-        bval = 1e-3 * gtab.bvals
-        
-        # First, compute the diffusion signal of free water
-        dwi = self.ratio[0,item_idx] * np.exp(-bval * self.micro[1,0,item_idx])
-        
-        # Then, add the diffusion signal of fibers
-        for j in range(len(peak_dirs_idx)):
-        
-            # Squared dot product of the b-vectors and the j-th peak direction
-            dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]]) ** 2
-        
-            dwi_intra = np.exp(-bval * self.micro[0,j+1,item_idx] * dir_prod_sqr)
-            dwi_extra = np.exp(
-                -bval * self.micro[1,j+1,item_idx] * dir_prod_sqr - bval * self.micro[1,j+1,item_idx] * (1 - dir_prod_sqr)
-            )
-            
-            dwi += self.ratio[j+1,item_idx] * (self.micro[3,j+1,item_idx] * dwi_intra + (1 - self.micro[3,j+1,item_idx]) * dwi_extra)           
-        
-        diff_model = GeneralizedQSamplingModel(gtab)
-#         diff_model = DiffusionSpectrumModel(gtab)
-        
-        # Compute the ODF for the generated DWI
-        odf = diff_model.fit(dwi).odf(self.tessellation)
-        
-        if len(peak_dirs_idx) > 1:
-        
-            # Sort the peaks in the descending order, hence -odf
-            sorted_idx = np.argsort(-odf[peak_dirs_idx])
-            
-            # If peaks are not sorted, reorder them (and also the microstructure parameters)
-            seq_idx = np.arange(len(peak_dirs_idx))
-            if np.any(sorted_idx != seq_idx):
-                self.peak_dirs[:,seq_idx,item_idx] = self.peak_dirs[:,sorted_idx,item_idx]
-                self.micro[:,seq_idx+1,item_idx] = self.micro[:,sorted_idx+1,item_idx]
-                self.ratio[seq_idx+1,item_idx] = self.ratio[sorted_idx+1,item_idx]
-            
-            # If the highest peak is not at [0,0,1], rotate it and resample the ODF. 
-            # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
-            if sorted_idx[0] != 0:
-                rotation = OdffpModel.peak_rotation_matrix(
-                    self.tessellation.vertices[peak_dirs_idx[sorted_idx[0]]]
-                )
-                rotated_tessellation = OdffpModel.rotate_tessellation(self.tessellation, rotation)
-                odf = diff_model.fit(dwi).odf(rotated_tessellation)
-#                 odf = OdffpModel.resample_odf(odf, self.tessellation, rotated_tessellation)
-    
-        return odf[:len(self.tessellation.vertices)//2]
-
-    
     def load(self, dict_file):
         with h5py.File(dict_file, 'r') as mat_file:
             
