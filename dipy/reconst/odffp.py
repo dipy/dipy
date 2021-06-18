@@ -219,8 +219,9 @@ class OdffpDictionary(object):
     def _compute_dwi(self, gtab, ratio, micro, peak_dirs_idx):
         
         # Convert the b-values from s/mm^2 to ms/um^2 
-        bval = 1e-3 * gtab.bvals
-        
+#         bval = 1e-3 * gtab.bvals
+        bval = gtab.bvals
+
         # First, compute the diffusion signal of free water
         dwi = ratio[0] * np.exp(-bval * micro[1,0])
         
@@ -239,6 +240,27 @@ class OdffpDictionary(object):
     
         return dwi
     
+
+    def _compute_dwi2(self, gtab, ratio, micro, peak_dirs_idx):
+
+        ratio[np.isnan(ratio)] = 0
+        micro[np.isnan(micro)] = 0
+        
+        bvals = np.vstack(gtab.bvals)
+        
+        dwi = ratio[0] * np.exp(-bvals * micro[1,0])
+        
+        for j in range(len(peak_dirs_idx)):
+            
+            dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]].T) ** 2
+            
+            dwi_intra = np.exp(-bvals * micro[0,j+1] * dir_prod_sqr)
+            dwi_extra = np.exp(-bvals * (micro[1,j+1] * dir_prod_sqr + micro[1,j+1] * (1 - dir_prod_sqr)))
+            
+            dwi += ratio[j+1] * (micro[3,j+1] * dwi_intra + (1 - micro[3,j+1]) * dwi_extra)
+        
+        return dwi.T
+
     
     def _compute_odf_trace(self, gtab, ratio, micro, peak_dirs_idx):
         diff_model = GeneralizedQSamplingModel(gtab)
@@ -251,6 +273,18 @@ class OdffpDictionary(object):
         
         return odf[:len(self.tessellation.vertices)//2]
         
+    
+    def _compute_odf_trace2(self, gtab, ratio, micro, peak_dirs_idx):
+        diff_model = GeneralizedQSamplingModel(gtab)
+#         diff_model = DiffusionSpectrumModel(gtab)
+
+        dwi = self._compute_dwi2(gtab, ratio, micro, peak_dirs_idx)        
+   
+        # Compute the ODF for the generated DWI
+        odf = diff_model.fit(dwi).odf(self.tessellation).T
+        
+        return np.squeeze(odf[:len(self.tessellation.vertices)//2])
+
     
     def load(self, dict_file):
         with h5py.File(dict_file, 'r') as mat_file:
@@ -288,6 +322,76 @@ class OdffpDictionary(object):
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
                  p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
                  D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5]):
+         
+        dict_size = np.maximum(1, dict_size)
+        self.max_peaks_num = np.maximum(2, max_peaks_num)
+        p_iso, p_fib = self._validate_fraction_volumes(p_iso, p_fib)
+        f_in, D_iso, D_a, D_e, D_r = self._validate_micro_parameters(f_in, D_iso, D_a, D_e, D_r)
+ 
+        # Total number of directions allowed by the tessellation (k), by default k=321 
+        total_dirs_num = len(self.tessellation.vertices) // 2
+         
+        # Draw peaks_per_voxel randomly. 0th element of the dictionary represents 0 fibers, hence [0] in hstack.
+        # The direction [0,0,1] is obligatory, hence 1+np.sum(...) in the remaining dict_size-1 elements.
+        peaks_per_voxel = np.hstack((
+            [0], 1 + np.sum(np.random.uniform(size=(dict_size-1,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1)
+        ))
+         
+        self.peak_dirs = np.nan * np.zeros((2, self.max_peaks_num, dict_size))        
+        self.ratio = np.nan * np.zeros((self.max_peaks_num+1, dict_size))
+        self.micro = np.nan * np.zeros((4, self.max_peaks_num+1, dict_size))
+        self.odf = np.zeros((total_dirs_num, dict_size))
+         
+        # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
+        self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
+        self.micro[1:3,0] = 3  # diffusivity of free water at 37C
+        self.odf[:,0] = self._compute_odf_trace(gtab, self.ratio[:,0], self.micro[:,:,0], [])
+         
+        # Generate the remaining elements of the ODF-dictionary
+        for i in range(1,dict_size):
+  
+            if np.mod(i, 1000) == 0:
+                print("%.1f%%" % (100 * (i+1) / dict_size))
+         
+            # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
+            dirs_idx = np.hstack(([0], np.random.choice(range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False)))
+             
+            # Store spherical coordinates of the directions in the Matlab format (azim,elev) for backward compatibility 
+            self.peak_dirs[:,:peaks_per_voxel[i],i] = np.array([
+                self.tessellation.phi[dirs_idx], self.tessellation.theta[dirs_idx] - np.pi/2
+            ])
+             
+            # Draw fraction volumes randomly
+            self.ratio[:peaks_per_voxel[i]+1,i] = self._random_fraction_volumes(p_iso, p_fib, peaks_per_voxel[i])
+        
+            # Draw microstructure parameters randomly
+            self.micro[:,:peaks_per_voxel[i]+1,i] = self._random_micro_parameters(
+                f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
+            )
+             
+            self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+ 
+#             if peaks_per_voxel[i] > 1:
+#               
+#                 # Sort the peaks in the descending order, hence -self.odf
+#                 sorted_idx = np.argsort(-self.odf[dirs_idx,i])
+#                   
+#                 # If peaks were not sorted, reorder the microstructure parameters accordingly
+#                 seq_idx = np.arange(peaks_per_voxel[i])
+#                 if np.any(sorted_idx != seq_idx):
+#                     self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
+#                     self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
+#                   
+#                 # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
+#                 # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+#                 if sorted_idx[0] != 0:
+#                     self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+
+             
+    def generate2(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
+                 p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
+                 D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5],
+                 max_chunk_size = 10000):
         
         dict_size = np.maximum(1, dict_size)
         self.max_peaks_num = np.maximum(2, max_peaks_num)
@@ -297,63 +401,75 @@ class OdffpDictionary(object):
         # Total number of directions allowed by the tessellation (k), by default k=321 
         total_dirs_num = len(self.tessellation.vertices) // 2
         
-        # Draw peaks_per_voxel randomly. 0th element of the dictionary represents 0 fibers, hence [0] in hstack.
-        # The direction [0,0,1] is obligatory, hence 1+np.sum(...) in the remaining dict_size-1 elements.
-        peaks_per_voxel = np.hstack((
-            [0], 1 + np.sum(np.random.uniform(size=(dict_size-1,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1)
-        ))
-        
+        # Not used elements will be kept as NaNs for backward compatibility
         self.peak_dirs = np.nan * np.zeros((2, self.max_peaks_num, dict_size))        
         self.ratio = np.nan * np.zeros((self.max_peaks_num+1, dict_size))
         self.micro = np.nan * np.zeros((4, self.max_peaks_num+1, dict_size))
         self.odf = np.zeros((total_dirs_num, dict_size))
-        
+
         # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
         self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
         self.micro[1:3,0] = 3  # diffusivity of free water at 37C
-        self.odf[:,0] = self._compute_odf_trace(gtab, self.ratio[:,0], self.micro[:,:,0], [])
+        self.odf[:,0] = self._compute_odf_trace2(gtab, self.ratio[:,0], self.micro[:,:,0], [])
+
+        for chunk_idx in np.split(range(1, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
         
-        # Generate the remaining elements of the ODF-dictionary
-        for i in range(1,dict_size):
- 
-            if np.mod(i, 1000) == 0:
-                print("%.1f%%" % (100 * (i+1) / dict_size))
-        
-            # Obligatory direction [0,0,1] has index 0 in the tesselation, hence [0] in hstack, and later: peaks_per_voxel[i]-1
-            dirs_idx = np.hstack(([0], np.random.choice(range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False)))
-            
-            # Store spherical coordinates of the directions in the Matlab format (azim,elev) for backward compatibility 
-            self.peak_dirs[:,:peaks_per_voxel[i],i] = np.array([
-                self.tessellation.phi[dirs_idx], self.tessellation.theta[dirs_idx] - np.pi/2
-            ])
-            
-            # Draw fraction volumes randomly
-            self.ratio[:peaks_per_voxel[i]+1,i] = self._random_fraction_volumes(p_iso, p_fib, peaks_per_voxel[i])
-       
-            # Draw microstructure parameters randomly
-            self.micro[:,:peaks_per_voxel[i]+1,i] = self._random_micro_parameters(
-                f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
+            print("%.1f%%" % (100 * (np.max(chunk_idx) + 1) / dict_size))
+
+            chunk_size = len(chunk_idx)
+
+            # Draw the numbers of peaks per voxel randomly. The direction [0,0,1] is obligatory, hence 1 + np.sum(...)
+            peaks_per_voxel = 1 + np.sum(
+                np.random.uniform(size=(chunk_size,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1
             )
+            peak_dirs_idx = np.zeros((self.max_peaks_num, chunk_size), dtype=int)
+        
+            for i, j in zip(range(chunk_size), chunk_idx):
+     
+                # Obligatory direction [0,0,1] has index 0 in the tesselation, 
+                # hence 1:peaks_per_voxel[i] and later: peaks_per_voxel[i]-1
+                peak_dirs_idx[1:peaks_per_voxel[i],i] = np.random.choice(
+                    range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False
+                )
+                
+                # Store spherical coordinates of the directions in the Matlab format (azim,elev) for backward compatibility 
+                self.peak_dirs[:,:peaks_per_voxel[i],j] = np.array([
+                    self.tessellation.phi[peak_dirs_idx[:peaks_per_voxel[i],i]], 
+                    self.tessellation.theta[peak_dirs_idx[:peaks_per_voxel[i],i]] - np.pi/2
+                ])
+                
+                # Draw fraction volumes randomly
+                self.ratio[:peaks_per_voxel[i]+1,j] = self._random_fraction_volumes(p_iso, p_fib, peaks_per_voxel[i])
+           
+                # Draw microstructure parameters randomly
+                self.micro[:,:peaks_per_voxel[i]+1,j] = self._random_micro_parameters(
+                    f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
+                )
             
-            self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+            self.odf[:,chunk_idx] = self._compute_odf_trace2(
+                gtab, self.ratio[:,chunk_idx], self.micro[:,:,chunk_idx], peak_dirs_idx
+            )
+    
+#             for j, i in zip(range(chunk_size), chunk_idx):
+#     
+#                 if peaks_per_voxel[i] > 1:
+#                   
+#                     dirs_idx = peak_dirs_idx[:peaks_per_voxel[i],j]
+#                   
+#                     # Sort the peaks in the descending order, hence -self.odf
+#                     sorted_idx = np.argsort(-self.odf[dirs_idx,i])
+#                       
+#                     # If peaks were not sorted, reorder the microstructure parameters accordingly
+#                     seq_idx = np.arange(peaks_per_voxel[i])
+#                     if np.any(sorted_idx != seq_idx):
+#                         self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
+#                         self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
+#                       
+#                     # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
+#                     # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+#                     if sorted_idx[0] != 0:
+#                         self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
 
-            if peaks_per_voxel[i] > 1:
-             
-                # Sort the peaks in the descending order, hence -self.odf
-                sorted_idx = np.argsort(-self.odf[dirs_idx,i])
-                 
-                # If peaks were not sorted, reorder the microstructure parameters accordingly
-                seq_idx = np.arange(peaks_per_voxel[i])
-                if np.any(sorted_idx != seq_idx):
-                    self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
-                    self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
-                 
-                # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
-                # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
-                if sorted_idx[0] != 0:
-                    self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
-
-             
 
 class OdffpModel(object):
  
@@ -499,7 +615,7 @@ class OdffpFit(OdfFit):
     
     # Constants imposed by the .FIB format (DSI Studio)
     FIB_COORDS_ORIENTATION = np.array(('L', 'P', 'S'))
-    FIB_ODF_CHUNK_SIZE = 20000
+    FIB_ODF_MAX_CHUNK_SIZE = 20000
     
     
     def __init__(self, data, odf_dict, odf, peak_dirs, dict_idx):
@@ -594,7 +710,7 @@ class OdffpFit(OdfFit):
             odf_map /= np.maximum(1e-8, np.max(odf_map))
             
             odf_chunk_idx = 0
-            for odf_chunk in np.split(odf_map, range(self.FIB_ODF_CHUNK_SIZE, len(odf_map), self.FIB_ODF_CHUNK_SIZE)):
+            for odf_chunk in np.split(odf_map, range(self.FIB_ODF_MAX_CHUNK_SIZE, len(odf_map), self.FIB_ODF_MAX_CHUNK_SIZE)):
                 fib['odf%d' % odf_chunk_idx] = odf_chunk.T
                 odf_chunk_idx += 1
         else:
