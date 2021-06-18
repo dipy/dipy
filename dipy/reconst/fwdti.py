@@ -147,7 +147,7 @@ class FreeWaterTensorModel(ReconstModel):
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b and self.fit_method in (wls_iter, nls_iter):
             mes = "fwDTI requires at least 3 b-values (which can include b=0)"
-            mes =+ " when using the NLS or WLS fit methods"
+            mes += " when using the NLS or WLS fit methods"
             raise ValueError(mes)
 
     @multi_voxel_fit
