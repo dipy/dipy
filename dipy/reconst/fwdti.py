@@ -126,11 +126,28 @@ class FreeWaterTensorModel(ReconstModel):
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
+        # if single-shell methods are used
+        if self.fit_method in (fwmd_iter, fws0_iter, fwhy_iter):
+            # an array of b-values must be provided in args
+            bvals = self.gtab.bvals
+            self.args =(bvals, )
+            if self.fit_method in (fws0_iter, fwhy_iter):
+                # St and Sw kwargs must be provided by the user
+                St = self.kwargs.get('St', None)
+                Sw = self.kwargs.get('Sw', None)
+                if St is None or Sw is None:
+                    e_s = 'To use the single-shell methods, provide St and Sw '
+                    e_s += 'keyword arguments to FreeWaterTensorModel, these '
+                    e_s += 'values should represent typical tissue and CSF '
+                    e_s += 'intensities in your S0 image respectively, '
+                    e_s += 'see fwhy_iter function for more details'
+                    raise ValueError(e_s)
 
-        # Check if at least three b-values are given
+        # Check if at least three b-values are given for the NLS and WLS methods
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
-        if not enough_b:
+        if not enough_b and self.fit_method in (wls_iter, nls_iter):
             mes = "fwDTI requires at least 3 b-values (which can include b=0)"
+            mes =+ " when using the NLS or WLS fit methods"
             raise ValueError(mes)
 
     @multi_voxel_fit
@@ -799,12 +816,6 @@ def cholesky_to_lower_triangular(R):
     return np.array([Dxx, Dxy, Dyy, Dxz, Dyz, Dzz])
 
 
-common_fit_methods = {'WLLS': wls_iter,
-                      'WLS': wls_iter,
-                      'NLLS': nls_iter,
-                      'NLS': nls_iter,
-                      }
-
 # ---------------------------- single-shell code -------------------------------
 
 def fwmd_iter(design_matrix, sig, S0, bvals,
@@ -1391,3 +1402,14 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         fw_params[12] = 1.0
 
     return fw_params
+
+
+common_fit_methods = {'WLLS': wls_iter,
+                      'WLS': wls_iter,
+                      'NLLS': nls_iter,
+                      'NLS': nls_iter,
+                      'MD': fwmd_iter,
+                      'S0': fws0_iter,
+                      'HY': fwhy_iter,
+                      'fernet' : fwhy_iter,
+                      }
