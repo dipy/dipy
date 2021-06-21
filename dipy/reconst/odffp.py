@@ -219,8 +219,8 @@ class OdffpDictionary(object):
     def _compute_dwi(self, gtab, ratio, micro, peak_dirs_idx):
         
         # Convert the b-values from s/mm^2 to ms/um^2 
-#         bval = 1e-3 * gtab.bvals
-        bval = gtab.bvals
+        bval = 1e-3 * gtab.bvals
+#         bval = gtab.bvals
 
         # First, compute the diffusion signal of free water
         dwi = ratio[0] * np.exp(-bval * micro[1,0])
@@ -233,7 +233,7 @@ class OdffpDictionary(object):
         
             dwi_intra = np.exp(-bval * micro[0,j+1] * dir_prod_sqr)
             dwi_extra = np.exp(
-                -bval * micro[1,j+1] * dir_prod_sqr - bval * micro[1,j+1] * (1 - dir_prod_sqr)
+                -bval * micro[1,j+1] * dir_prod_sqr - bval * micro[2,j+1] * (1 - dir_prod_sqr)
             )
             
             dwi += ratio[j+1] * (micro[3,j+1] * dwi_intra + (1 - micro[3,j+1]) * dwi_extra)           
@@ -246,7 +246,7 @@ class OdffpDictionary(object):
         ratio[np.isnan(ratio)] = 0
         micro[np.isnan(micro)] = 0
         
-        bvals = np.vstack(gtab.bvals)
+        bvals = np.vstack(1e-3 * gtab.bvals)
         
         dwi = ratio[0] * np.exp(-bvals * micro[1,0])
         
@@ -255,7 +255,7 @@ class OdffpDictionary(object):
             dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]].T) ** 2
             
             dwi_intra = np.exp(-bvals * micro[0,j+1] * dir_prod_sqr)
-            dwi_extra = np.exp(-bvals * (micro[1,j+1] * dir_prod_sqr + micro[1,j+1] * (1 - dir_prod_sqr)))
+            dwi_extra = np.exp(-bvals * (micro[1,j+1] * dir_prod_sqr + micro[2,j+1] * (1 - dir_prod_sqr)))
             
             dwi += ratio[j+1] * (micro[3,j+1] * dwi_intra + (1 - micro[3,j+1]) * dwi_extra)
         
@@ -371,21 +371,21 @@ class OdffpDictionary(object):
              
             self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
  
-#             if peaks_per_voxel[i] > 1:
-#               
-#                 # Sort the peaks in the descending order, hence -self.odf
-#                 sorted_idx = np.argsort(-self.odf[dirs_idx,i])
-#                   
-#                 # If peaks were not sorted, reorder the microstructure parameters accordingly
-#                 seq_idx = np.arange(peaks_per_voxel[i])
-#                 if np.any(sorted_idx != seq_idx):
-#                     self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
-#                     self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
-#                   
-#                 # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
-#                 # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
-#                 if sorted_idx[0] != 0:
-#                     self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+            if peaks_per_voxel[i] > 1:
+               
+                # Sort the peaks in the descending order, hence -self.odf
+                sorted_idx = np.argsort(-self.odf[dirs_idx,i])
+                   
+                # If peaks were not sorted, reorder the microstructure parameters accordingly
+                seq_idx = np.arange(peaks_per_voxel[i])
+                if np.any(sorted_idx != seq_idx):
+                    self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
+                    self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
+                   
+                # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
+                # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+                if sorted_idx[0] != 0:
+                    self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
 
              
     def generate2(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
@@ -405,6 +405,7 @@ class OdffpDictionary(object):
         self.peak_dirs = np.nan * np.zeros((2, self.max_peaks_num, dict_size))        
         self.ratio = np.nan * np.zeros((self.max_peaks_num+1, dict_size))
         self.micro = np.nan * np.zeros((4, self.max_peaks_num+1, dict_size))
+        
         self.odf = np.zeros((total_dirs_num, dict_size))
 
         # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
@@ -417,12 +418,12 @@ class OdffpDictionary(object):
             print("%.1f%%" % (100 * (np.max(chunk_idx) + 1) / dict_size))
 
             chunk_size = len(chunk_idx)
+            peak_dirs_idx = np.zeros((self.max_peaks_num, chunk_size), dtype=int)
 
             # Draw the numbers of peaks per voxel randomly. The direction [0,0,1] is obligatory, hence 1 + np.sum(...)
             peaks_per_voxel = 1 + np.sum(
                 np.random.uniform(size=(chunk_size,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1
             )
-            peak_dirs_idx = np.zeros((self.max_peaks_num, chunk_size), dtype=int)
         
             for i, j in zip(range(chunk_size), chunk_idx):
      
@@ -449,26 +450,32 @@ class OdffpDictionary(object):
             self.odf[:,chunk_idx] = self._compute_odf_trace2(
                 gtab, self.ratio[:,chunk_idx], self.micro[:,:,chunk_idx], peak_dirs_idx
             )
-    
-#             for j, i in zip(range(chunk_size), chunk_idx):
-#     
-#                 if peaks_per_voxel[i] > 1:
-#                   
-#                     dirs_idx = peak_dirs_idx[:peaks_per_voxel[i],j]
-#                   
-#                     # Sort the peaks in the descending order, hence -self.odf
-#                     sorted_idx = np.argsort(-self.odf[dirs_idx,i])
-#                       
-#                     # If peaks were not sorted, reorder the microstructure parameters accordingly
-#                     seq_idx = np.arange(peaks_per_voxel[i])
-#                     if np.any(sorted_idx != seq_idx):
-#                         self.micro[:,seq_idx+1,i] = self.micro[:,sorted_idx+1,i]
-#                         self.ratio[seq_idx+1,i] = self.ratio[sorted_idx+1,i]
-#                       
-#                     # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
-#                     # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
-#                     if sorted_idx[0] != 0:
-#                         self.odf[:,i] = self._compute_odf_trace(gtab, self.ratio[:,i], self.micro[:,:,i], dirs_idx)
+            
+            recompute_filter = np.zeros(chunk_size, dtype=bool)
+              
+            for i, j in zip(range(chunk_size), chunk_idx):
+       
+                if peaks_per_voxel[i] > 1:
+                     
+                    dirs_idx = peak_dirs_idx[:peaks_per_voxel[i],i]
+                     
+                    # Sort the peaks in the descending order, hence -self.odf
+                    sorted_idx = np.argsort(-self.odf[dirs_idx,j])
+                         
+                    # If peaks were not sorted, reorder the microstructure parameters accordingly
+                    seq_idx = np.arange(peaks_per_voxel[i])
+                    if np.any(sorted_idx != seq_idx):
+                        self.micro[:,seq_idx+1,j] = self.micro[:,sorted_idx+1,j]
+                        self.ratio[seq_idx+1,j] = self.ratio[sorted_idx+1,j]
+                         
+                    # If the highest peak was not at [0,0,1], recompute the ODF with the reordered parameters. 
+                    # Note that peak_dirs_idx[0] = 0, so it's sufficient to test if sorted_idx[0] != 0
+                    if sorted_idx[0] != 0:
+                        recompute_filter[i] = True
+                          
+            self.odf[:,chunk_idx[recompute_filter]] = self._compute_odf_trace2(
+                gtab, self.ratio[:,chunk_idx[recompute_filter]], self.micro[:,:,chunk_idx[recompute_filter]], peak_dirs_idx[:,recompute_filter]
+            )
 
 
 class OdffpModel(object):
