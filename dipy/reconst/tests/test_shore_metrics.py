@@ -7,9 +7,8 @@ from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
                                 shore_order)
-from dipy.sims.voxel import (multi_tensor, all_tensor_evecs, multi_tensor_odf,
-                             multi_tensor_rtop, multi_tensor_msd,
-                             multi_tensor_pdf)
+from dipy.sims.voxel import (multi_tensor, multi_tensor_rtop,
+                             multi_tensor_msd, multi_tensor_pdf)
 
 
 def test_shore_metrics():
@@ -37,6 +36,8 @@ def test_shore_metrics():
     npt.assert_equal(radial_order, radial_order2)
     npt.assert_equal(c, c2)
 
+    npt.assert_raises(ValueError, shore_indices, 6, 100)
+    npt.assert_raises(ValueError, shore_order, m, n, l)
     # since we are testing without noise we can use higher order and lower
     # lambdas, with respect to the default.
     radial_order = 8
