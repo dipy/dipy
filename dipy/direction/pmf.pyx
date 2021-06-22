@@ -66,7 +66,14 @@ cdef class SHCoeffPmfGen(PmfGen):
             raise ValueError("%s is not a known basis type." % basis_type)
         self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi)
         self.coeff = np.empty(shcoeff_array.shape[3])
-        self.pmf = np.empty(self.B.shape[0])
+        self.pmf = np.empty(self.B.shape[0])        
+
+    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        return self.get_pmf(point)[self.sphere.find_closest(xyz)]
 
     cdef double[:] get_pmf_c(self, double* point):
         cdef:
@@ -123,7 +130,6 @@ cdef class BootPmfGen(PmfGen):
         self.sphere = sphere
         self.pmf = np.empty(len(sphere.theta))
 
-
     cdef double[:] get_pmf_c(self, double* point):
         """Produces an ODF from a SH bootstrap sample"""
         if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
@@ -134,10 +140,8 @@ cdef class BootPmfGen(PmfGen):
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
         return self.pmf
 
-
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
         return self.get_pmf_no_boot_c(&point[0])
-
 
     cdef double[:] get_pmf_no_boot_c(self, double* point):
         if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:

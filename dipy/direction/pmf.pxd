@@ -20,6 +20,7 @@ cdef class SHCoeffPmfGen(PmfGen):
         double[:, :] B
         object sphere
         double[:] coeff
+    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz)
     pass
 
 
