@@ -79,6 +79,13 @@ cdef class SHCoeffPmfGen(PmfGen):
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 
+    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        return self.get_pmf(point)[self.sphere.find_closest(xyz)]
+
     cpdef double[:] get_pmf(self, double[::1] point):
         cdef:
             cnp.npy_intp i, j
