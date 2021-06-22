@@ -19,7 +19,7 @@ jobs:
 - template: ci/azure/linux.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-latest
     matrix:
       Python36-64bit:
         python.version: '3.6'
