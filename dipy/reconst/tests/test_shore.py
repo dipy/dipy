@@ -2,6 +2,7 @@
 from math import factorial
 
 import numpy as np
+import numpy.testing as npt
 
 from scipy.special import genlaguerre, gamma
 
@@ -9,9 +10,6 @@ from dipy.data import get_gtab_taiwan_dsi
 from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import multi_tensor
 
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite)
 import pytest
 from dipy.utils.optpkg import optional_package
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
@@ -39,6 +37,14 @@ def setup():
     data.lambdaL = 1e-12
 
 
+def test_shore_error():
+    data.gtab = get_gtab_taiwan_dsi()
+    npt.assert_raises(ValueError, ShoreModel, data.gtab, radial_order=-4)
+    npt.assert_raises(ValueError, ShoreModel, data.gtab, radial_order=7)
+    npt.assert_raises(ValueError, ShoreModel, data.gtab, constrain_e0=False,
+                      positive_constraint=True)
+
+
 @needs_cvxpy
 def test_shore_positive_constrain():
     asm = ShoreModel(data.gtab,
@@ -52,7 +58,7 @@ def test_shore_positive_constrain():
                      pos_radius=20e-03)
     asmfit = asm.fit(data.S)
     eap = asmfit.pdf_grid(11, 20e-03)
-    assert_almost_equal(eap[eap < 0].sum(), 0, 3)
+    npt.assert_almost_equal(eap[eap < 0].sum(), 0, 3)
 
 
 def test_shore_fitting_no_constrain_e0():
@@ -60,7 +66,7 @@ def test_shore_fitting_no_constrain_e0():
                      zeta=data.zeta, lambdaN=data.lambdaN,
                      lambdaL=data.lambdaL)
     asmfit = asm.fit(data.S)
-    assert_almost_equal(compute_e0(asmfit), 1)
+    npt.assert_almost_equal(compute_e0(asmfit), 1)
 
 
 @needs_cvxpy
@@ -70,7 +76,7 @@ def test_shore_fitting_constrain_e0():
                      lambdaL=data.lambdaL,
                      constrain_e0=True)
     asmfit = asm.fit(data.S)
-    assert_almost_equal(compute_e0(asmfit), 1)
+    npt.assert_almost_equal(compute_e0(asmfit), 1)
 
 
 def compute_e0(shorefit):
