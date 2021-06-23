@@ -468,7 +468,7 @@ cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp prev,
         norm2 += dn*dn
     norm2 = sqrt(norm2)
 
-    return norm1 / norm2 if norm2 else 0
+    return norm1 / norm2
 
 
 cdef double c_segment_length(Streamline streamline,
