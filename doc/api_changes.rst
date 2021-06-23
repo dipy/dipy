@@ -12,7 +12,9 @@ DIPY 1.5.0 changes
 **Tracking**
 
 - Change in ``dipy.tracking.pmf``
-    - The class ``SimplePmfGen`` as new mendatory parameter ``sphere``. The sphere vectices corespond to the spherical distribution of the pmf values.
+    - The parent class ``PmfGen`` has new mandatory parameter ``sphere``. The sphere vertices correspond to the spherical distribution of the pmf values.
+    - The parent class ``PmfGen`` has new function ``get_pmf_value(point, xyz)`` which return the pmf value at location ``point`` and orientation ``xyz``.
+
 
 DIPY 1.4.1 changes
 ------------------
