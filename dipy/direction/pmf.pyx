@@ -14,14 +14,23 @@ from dipy.core.interpolation cimport trilinear_interpolate4d_c
 cdef class PmfGen:
 
     def __init__(self,
-                 double[:, :, :, :] data):
+                 double[:, :, :, :] data,
+                 object sphere):
         self.data = np.asarray(data,  dtype=float)
+        self.sphere = sphere
 
     cpdef double[:] get_pmf(self, double[::1] point):
         return self.get_pmf_c(&point[0])
 
     cdef double[:] get_pmf_c(self, double* point):
         pass
+
+    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        return self.get_pmf(point)[self.sphere.find_closest(xyz)]
 
     cdef void __clear_pmf(self):
         cdef:
@@ -35,8 +44,9 @@ cdef class PmfGen:
 cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
-                 double[:, :, :, :] pmf_array):
-        PmfGen.__init__(self, pmf_array)
+                 double[:, :, :, :] pmf_array,
+                 object sphere):
+        PmfGen.__init__(self, pmf_array, sphere)
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
             raise ValueError("pmf should not have negative values.")
@@ -56,9 +66,8 @@ cdef class SHCoeffPmfGen(PmfGen):
         cdef:
             int sh_order
 
-        PmfGen.__init__(self, shcoeff_array)
+        PmfGen.__init__(self, shcoeff_array, sphere)
 
-        self.sphere = sphere
         sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
         try:
             basis = shm.sph_harm_lookup[basis_type]
@@ -66,14 +75,7 @@ cdef class SHCoeffPmfGen(PmfGen):
             raise ValueError("%s is not a known basis type." % basis_type)
         self.B, _, _ = basis(sh_order, sphere.theta, sphere.phi)
         self.coeff = np.empty(shcoeff_array.shape[3])
-        self.pmf = np.empty(self.B.shape[0])        
-
-    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz):
-        """
-        Return the pmf value corresponding to the closest vertex to the
-        direction xyz.
-        """
-        return self.get_pmf(point)[self.sphere.find_closest(xyz)]
+        self.pmf = np.empty(self.B.shape[0])
 
     cdef double[:] get_pmf_c(self, double* point):
         cdef:
@@ -107,7 +109,7 @@ cdef class BootPmfGen(PmfGen):
             double[:] theta, phi
             double[:, :] B
 
-        PmfGen.__init__(self, dwi_array)
+        PmfGen.__init__(self, dwi_array, sphere)
         self.sh_order = sh_order
         if self.sh_order == 0:
             if hasattr(model, "sh_order"):
@@ -127,7 +129,6 @@ cdef class BootPmfGen(PmfGen):
         self.vox_data = np.empty(dwi_array.shape[3])
 
         self.model = model
-        self.sphere = sphere
         self.pmf = np.empty(len(sphere.theta))
 
     cdef double[:] get_pmf_c(self, double* point):

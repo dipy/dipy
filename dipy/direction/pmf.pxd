@@ -4,9 +4,11 @@ cdef class PmfGen:
     cdef:
         double[:] pmf
         double[:, :, :, :] data
+        object sphere
 
     cpdef double[:] get_pmf(self, double[::1] point)
     cdef double[:] get_pmf_c(self, double* point)
+    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz)
     cdef void __clear_pmf(self)
     pass
 
@@ -18,9 +20,7 @@ cdef class SimplePmfGen(PmfGen):
 cdef class SHCoeffPmfGen(PmfGen):
     cdef:
         double[:, :] B
-        object sphere
         double[:] coeff
-    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz)
     pass
 
 
@@ -28,7 +28,6 @@ cdef class BootPmfGen(PmfGen):
     cdef:
         int sh_order
         double[:, :] R
-        object sphere
         object model
         object H
         np.ndarray vox_data

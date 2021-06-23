@@ -5,6 +5,15 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.5.0 changes
+------------------
+**General**
+
+**Tracking**
+
+- Change in ``dipy.tracking.pmf``
+    - The class ``SimplePmfGen`` as new mendatory parameter ``sphere``. The sphere vectices corespond to the spherical distribution of the pmf values.
+
 DIPY 1.4.1 changes
 ------------------
 - The name of the argument for the number of cores/threads has been standardized to:
