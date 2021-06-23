@@ -13,7 +13,6 @@ from dipy.sims.voxel import single_tensor
 response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
-
 def test_pmf_val():
     sphere = sphere = get_sphere('symmetric724')
     pmfgen = SHCoeffPmfGen(np.random.random([2, 2, 2, 28]), sphere, None)

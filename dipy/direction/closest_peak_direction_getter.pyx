@@ -150,7 +150,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
                    "points in sphere.")
             raise ValueError(msg)
 
-        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float))
+        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
