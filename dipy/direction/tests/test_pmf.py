@@ -59,6 +59,7 @@ def test_pmf_from_array():
     # Test ValueError for negative pmf
     npt.assert_raises(
         ValueError,
+<<<<<<< HEAD
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1,
                              sphere))
     # Test ValueError for non matching pmf and sphere
@@ -66,6 +67,15 @@ def test_pmf_from_array():
         ValueError,
         lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]),
                              default_sphere))
+=======
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1),
+                             sphere)
+    # Test ValueError for non matching pmf and sphere
+    npt.assert_raises(
+        ValueError,
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])),
+                             default_sphere)
+>>>>>>> e44c8d516 (TST - pmf sphere ValueError)
 
 
 def test_boot_pmf():
