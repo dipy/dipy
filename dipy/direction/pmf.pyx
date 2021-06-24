@@ -16,7 +16,11 @@ cdef class PmfGen:
 
     def __init__(self,
                  double[:, :, :, :] data,
+<<<<<<< HEAD
                  object sphere):
+=======
+                 object sphere=default_sphere):
+>>>>>>> 37843de9a (default sphere + remove get_pmf_c)
         self.data = np.asarray(data, dtype=float)
         self.sphere = sphere
 
@@ -44,7 +48,7 @@ cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
                  double[:, :, :, :] pmf_array,
-                 object sphere):
+                 object sphere=default_sphere):
         PmfGen.__init__(self, pmf_array, sphere)
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
