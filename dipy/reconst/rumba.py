@@ -17,8 +17,9 @@ EPS = np.finfo(float).eps
 
 class RumbaSD(OdfModel, Cache):
 
-    def __init__(self, gtab, lambda1, lambda2, lambda_csf, lambda_gm, n_iter=600, recon_type='smf',
-                 n_coils=1, R=1):  # TODO: add default lambdas # TODO: optional isotropic compartments
+    def __init__(self, gtab, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3, lambda_gm=0.8e-4,
+                 n_iter=600, recon_type='smf', n_coils=1, R=1):
+        # TODO: optional isotropic compartments
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 
@@ -35,15 +36,15 @@ class RumbaSD(OdfModel, Cache):
         Parameters
         ----------
         gtab : GradientTable
-        lambda1 : float
-            white matter diffusivity parallel to fiber axis (first DTI eigenvalue).
-        lambda2 : float
+        lambda1 : float, optional
+            white matter diffusivity parallel to fiber axis (first DTI eigenvalue). Default: 1.7e-3
+        lambda2 : float, optional
             white matter diffusivity perpendicular to fiber axis (second/third DTI eigenvalues are
-            assumed equal)
-        lambda_csf : float
-            mean diffusivity for CSF.
-        lambda_gm : float
-            mean diffusivity for grey matter.
+            assumed equal). Default: 0.2e-3
+        lambda_csf : float, optional
+            mean diffusivity for CSF. Default: 3.0e-3
+        lambda_gm : float, optional
+            mean diffusivity for grey matter. Default: 0.8e-4
         n_iter : int, optional
             Number of iterations for fODF estimation. Must be a positive int. Default: 600
         recon_type : {'smf', 'sos'}, optional
@@ -57,8 +58,6 @@ class RumbaSD(OdfModel, Cache):
             Acceleration factor of the acquisition. For SIEMENS, R = iPAT factor. For GE, R = ASSET
             factor. For PHILIPS, R = SENSE factor. Typical values are 1 or 2. Must be a positive
             int. Default: 1
-
-            # TODO: The R factor only seems relevant for total variation
 
         References
         ----------
@@ -409,7 +408,8 @@ def mbessel_ratio(n, x):
     return y
 
 
-def generate_kernel(gtab, sphere, lambda1, lambda2, lambda_csf, lambda_gm):
+def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3,
+                    lambda_gm=0.8e-4):
     '''
     Generate deconvolution kernel
 
@@ -422,15 +422,15 @@ def generate_kernel(gtab, sphere, lambda1, lambda2, lambda_csf, lambda_gm):
     gtab : GradientTable
     sphere : Sphere
         sphere with which to sample discrete fiber orientations in order to construct kernel
-    lambda1 : float
-        white matter diffusivity parallel to fiber axis (first DTI eigenvalue).
+    lambda1 : float, optional
+        white matter diffusivity parallel to fiber axis (first DTI eigenvalue). Default: 1.7e-3
     lambda2 : float
         white matter diffusivity perpendicular to fiber axis (second/third DTI eigenvalues are
-        assumed equal)
+        assumed equal). Default: 0.2e-3
     lambda_csf : float
-        mean diffusivity for CSF.
+        mean diffusivity for CSF. Default: 3.0e-3
     lambda_gm : float
-        mean diffusivity for grey matter.
+        mean diffusivity for grey matter. Default: 0.8e-3
 
     Returns
     -------
