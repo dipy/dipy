@@ -48,6 +48,9 @@ cdef class SimplePmfGen(PmfGen):
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
             raise ValueError("pmf should not have negative values.")
+        if pmf_array.shape[-1] != sphere.vertices.shape[0]:
+            raise ValueError("pmf should have the same number of values as the"
+                             + "number of vertices on sphere.")
 
     cpdef double[:] get_pmf(self, double[::1] point):
         if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
