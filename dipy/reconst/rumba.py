@@ -4,7 +4,7 @@ from numpy.matlib import repmat
 
 from dipy.sims.voxel import multi_tensor
 from dipy.core.geometry import cart2sphere
-from dipy.reconst.shm import lazy_index
+from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.core.gradients import gradient_table
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfModel, OdfFit
@@ -108,7 +108,7 @@ class RumbaSD(OdfModel, Cache):
         ## Initializing remaining parameters ##
         if R < 1 or n_iter < 1 or n_coils < 1:
             raise ValueError(f"R, n_iter, and n_coils must be >= 1, but R={R}, n_iter={n_iter}" +
-                             f", and n_coils = {n_coils} ")
+                             f", and n_coils={n_coils} ")
         if recon_type not in ['smf', 'sos']:
             raise ValueError(
                 f"Invalid recon_type. Should be 'smf' or 'sos', received {recon_type}")
@@ -121,24 +121,13 @@ class RumbaSD(OdfModel, Cache):
     @multi_voxel_fit
     def fit(self, data):
 
-        data = data.copy()  # Prevent changes to user data
-
         ## Signal repair, normalization ##
 
-        data[data < 0] = EPS
-        s0_est = np.mean(data[self._where_b0s])
+        # Normalize data to mean b0 image
+        data = normalize_data(data, self._where_b0s, min_signal=EPS)
         # Rearrange data to match corrected gradient table
-        data = np.concatenate(([s0_est], data[self._where_dwi]))
-        data = data / (s0_est + EPS)  # Normalize data to mean b0 image
+        data = np.concatenate(([1], data[self._where_dwi]))
         data[data > 1] = 1  # Clip values between 0 and 1
-        # TODO: is it possible to have data with no b0 images? throw ValueError
-        # TODO: dipy has a normalize_data function which does something similar, although it will
-        #       replace 0s in the signal with a small positive number (slightly different than this
-        #       procedure -- all 0 voxels will become all 1 instead). use it
-
-        # TODO: Is it always okay to replace values > 1?
-        # TODO: csdeconv only passes the non-b0 data to be fit; should we do something similar? we
-        #       might not have to do the reorganization that way
 
         return RumbaFit(self, data)
 
@@ -533,12 +522,11 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     ## Signal repair, normalization ##
 
-    data = data.copy()  # prevent changes to user data
-    data[data < 0] = EPS
-    s0_est = np.mean(data[..., model._where_b0s], axis=3, keepdims=True)
+    # Normalize data to mena b0 image
+    data = normalize_data(data, model._where_b0s, EPS)
     # Rearrange data to match corrected gradient table
-    data = np.concatenate((s0_est, data[..., model._where_dwi]), axis=3)
-    data = data / (s0_est + EPS)
+    data = np.concatenate(
+        (np.ones([*data.shape[:3], 1]), data[..., model._where_dwi]), axis=3)
     data[data > 1] = 1  # clip values between 0 and 1
 
     if mask is None:  # default mask includes all voxels
@@ -561,7 +549,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     f_iso = (f_csf + f_gm) / fodf_wm.shape[3]
     fodf_wm = fodf_wm + f_iso[..., None]
     fodf_wm = fodf_wm / (np.sum(fodf_wm, keepdims=True,
-                         axis=3) + EPS)  # re-normalize
+                                axis=3) + EPS)  # re-normalize
 
     return fodf_wm
 
