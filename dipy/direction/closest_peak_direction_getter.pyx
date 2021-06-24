@@ -115,7 +115,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
     """A base class for direction getter using a pmf"""
 
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
+    def from_pmf(klass, pmf, max_angle, sphere,
                  pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
@@ -127,7 +127,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             The maximum allowed angle between incoming direction and new
             direction.
         sphere : Sphere
-            The set of directions to be used for tracking.
+            The set of directions on which the pmf is sampled and to be used
+            for tracking.
         pmf_threshold : float [0., 1.]
             Used to remove direction from the probability mass function for
             selecting the tracking direction.

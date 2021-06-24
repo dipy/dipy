@@ -16,7 +16,7 @@ cdef class PmfGen:
 
     def __init__(self,
                  double[:, :, :, :] data,
-                 object sphere=default_sphere):
+                 object sphere):
         self.data = np.asarray(data, dtype=float)
         self.sphere = sphere
 
@@ -43,12 +43,12 @@ cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
                  double[:, :, :, :] pmf_array,
-                 object sphere=default_sphere):
+                 object sphere):
         PmfGen.__init__(self, pmf_array, sphere)
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
             raise ValueError("pmf should not have negative values.")
-        if pmf_array.shape[-1] != sphere.vertices.shape[0]:
+        if not pmf_array.shape[3] == sphere.vertices.shape[0]:
             raise ValueError("pmf should have the same number of values as the"
                              + "number of vertices on sphere.")
 
