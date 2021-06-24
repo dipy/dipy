@@ -42,9 +42,11 @@ class RumbaSD(OdfModel, Cache):
             white matter diffusivity perpendicular to fiber axis (second/third DTI eigenvalues are
             assumed equal). Default: 0.2e-3
         lambda_csf : float, optional
-            mean diffusivity for CSF. Default: 3.0e-3
+            Mean diffusivity for CSF. If `None`, then CSF volume fraction is not computed.
+            Default: 3.0e-3
         lambda_gm : float, optional
-            mean diffusivity for grey matter. Default: 0.8e-4
+            Mean diffusivity for grey matter. If `None`, then grey matter volume fraction is not
+            computed. Default: 0.8e-4
         n_iter : int, optional
             Number of iterations for fODF estimation. Must be a positive int. Default: 600
         recon_type : {'smf', 'sos'}, optional
@@ -437,9 +439,11 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
         white matter diffusivity perpendicular to fiber axis (second/third DTI eigenvalues are
         assumed equal). Default: 0.2e-3
     lambda_csf : float
-        mean diffusivity for CSF. Default: 3.0e-3
+        Mean diffusivity for CSF. If `None`, then CSF kernel column set to all zeroes.
+        Default: 3.0e-3
     lambda_gm : float
-        mean diffusivity for grey matter. Default: 0.8e-3
+        Mean diffusivity for grey matter. If `None`, then grey matter kernel column set to all
+        zeroes. Default: 0.8e-3
 
     Returns
     -------
@@ -475,10 +479,16 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
         kernel[:, i] = S
 
     # CSF and GM components
-    S_csf, _ = multi_tensor(gtab, np.array([[lambda_csf, lambda_csf, lambda_csf]]),
-                            S0, [[0, 0]], [100], None)
-    S_gm, _ = multi_tensor(gtab, np.array([[lambda_gm, lambda_gm, lambda_gm]]),
-                           S0, [[0, 0]], [100], None)
+    if lambda_csf is None:
+        S_csf = np.zeros((n_grad))
+    else:
+        S_csf, _ = multi_tensor(gtab, np.array([[lambda_csf, lambda_csf, lambda_csf]]),
+                                S0, [[0, 0]], [100], None)
+    if lambda_gm is None:
+        S_gm = np.zeros((n_grad))
+    else:
+        S_gm, _ = multi_tensor(gtab, np.array([[lambda_gm, lambda_gm, lambda_gm]]),
+                               S0, [[0, 0]], [100], None)
 
     kernel[:, n_wm_comp] = S_csf
     kernel[:, n_wm_comp + 1] = S_gm
