@@ -74,6 +74,9 @@ class RumbaSD(OdfModel, Cache):
 
         ## Correct gradient table to contain b0 data at the beginning ##
 
+        if not np.any(gtab.b0s_mask):
+            raise ValueError("Gradient table has no b0 measurements")
+
         # Masks to extract b0/non-b0 measurements
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
@@ -87,6 +90,15 @@ class RumbaSD(OdfModel, Cache):
         OdfModel.__init__(self, gtab_cor)
 
         ## Store diffusivities ##
+        if lambda1 < 0 or lambda2 < 0:
+            raise ValueError(f"lambda1 and lambda2 must be > 0, received lambda1={lambda1}" +
+                             f", lambda2={lambda2}")
+        if lambda_csf is not None and lambda_csf < 0:
+            raise ValueError(
+                f"lambda_csf must be None or > 0, received {lambda_csf}")
+        if lambda_gm is not None and lambda_gm < 0:
+            raise ValueError(
+                f"lambda_gm must be None or > 0, received {lambda_gm}")
 
         self.lambda1 = lambda1
         self.lambda2 = lambda2
@@ -94,7 +106,13 @@ class RumbaSD(OdfModel, Cache):
         self.lambda_gm = lambda_gm
 
         ## Initializing remaining parameters ##
-        # TODO : any input checking?
+        if R < 1 or n_iter < 1 or n_coils < 1:
+            raise ValueError(f"R, n_iter, and n_coils must be >= 1, but R={R}, n_iter={n_iter}" +
+                             f", and n_coils = {n_coils} ")
+        if recon_type not in ['smf', 'sos']:
+            raise ValueError(
+                f"Invalid recon_type. Should be 'smf' or 'sos', received {recon_type}")
+
         self.R = R
         self.n_iter = n_iter
         self.recon_type = recon_type
@@ -139,7 +157,6 @@ class RumbaFit(OdfFit):
             signal values for a single voxel.
 
         '''
-
         OdfFit.__init__(self, model, data)
         self.kernel = None
 
@@ -510,11 +527,9 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     '''
 
     ## Checking data and mask shapes ##
+
     if len(data.shape) != 4:
         raise ValueError(f"Data should be 4D, received shape f{data.shape}")
-    if data.shape[:3] != mask.shape:
-        raise ValueError("Mask shape should match first 3 dimensions of data, but data " +
-                         f"dimensions are f{data.shape} while mask dimensions are f{mask.shape}")
 
     ## Signal repair, normalization ##
 
@@ -526,12 +541,16 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     data = data / (s0_est + EPS)
     data[data > 1] = 1  # clip values between 0 and 1
 
+    if mask is None:  # default mask includes all voxels
+        mask = np.ones(data.shape[:3])
+
+    if data.shape[:3] != mask.shape:
+        raise ValueError("Mask shape should match first 3 dimensions of data, but data " +
+                         f"dimensions are f{data.shape} while mask dimensions are f{mask.shape}")
+
     # Generate kernel
     kernel = generate_kernel(model.gtab, sphere, model.lambda1, model.lambda2,
                              model.lambda_csf, model.lambda_gm)
-
-    if mask is None:  # default mask includes all voxels
-        mask = np.ones(data.shape[:3])
 
     # Fit fODF
     fodf_wm, f_csf, f_gm = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
