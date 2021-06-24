@@ -22,7 +22,7 @@ def test_pmf_val():
         pmf = pmfgen.get_pmf(point)
         # Create a direction vector close to the vertex idx
         xyz = sphere.vertices[idx] + np.random.random([3]) / 100
-        pmf_idx = pmfgen.get_pmf_val(point, xyz)
+        pmf_idx = pmfgen.get_pmf_value(point, xyz)
         # Test that the pmf sampled for the direction xyz is correct
         npt.assert_array_equal(pmf[idx], pmf_idx)
 
