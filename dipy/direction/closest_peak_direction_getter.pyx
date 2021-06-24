@@ -101,7 +101,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
             double[:] pmf
             double absolute_pmf_threshold
 
-        pmf = self.pmf_gen.get_pmf_c(point)
+        pmf = self.pmf_gen.get_pmf(<double[:3]>point)
         _len = pmf.shape[0]
 
         absolute_pmf_threshold = self.pmf_threshold*np.max(pmf)

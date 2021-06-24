@@ -7,8 +7,7 @@ cdef class PmfGen:
         object sphere
 
     cpdef double[:] get_pmf(self, double[::1] point)
-    cdef double[:] get_pmf_c(self, double* point)
-    cpdef double get_pmf_val(self, double[::1] point, double[::1] xyz)
+    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz)
     cdef void __clear_pmf(self)
     pass
 
