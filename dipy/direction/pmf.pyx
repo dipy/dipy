@@ -50,7 +50,7 @@ cdef class SimplePmfGen(PmfGen):
             raise ValueError("pmf should not have negative values.")
         if not pmf_array.shape[3] == sphere.vertices.shape[0]:
             raise ValueError("pmf should have the same number of values as the"
-                             + "number of vertices on sphere.")
+                             + " number of vertices of sphere.")
 
     cpdef double[:] get_pmf(self, double[::1] point):
         if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
@@ -123,7 +123,7 @@ cdef class BootPmfGen(PmfGen):
         r, theta, phi = shm.cart2sphere(x, y, z)
         b_range = (r.max() - r.min()) / r.min()
         if b_range > tol:
-            raise ValueError("BootPmfGen only supports single shell data")
+            raise ValueError("BootPmfGen only supports single shell data.")
         B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
