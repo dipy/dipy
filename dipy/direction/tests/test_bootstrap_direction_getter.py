@@ -71,7 +71,7 @@ def test_bdg_get_direction():
 
     pmf = np.zeros([1, 1, 1, len(sphere.vertices)])
     pmf[:, :, :, two_neighbors[0]] = 1
-    pmf_gen = SimplePmfGen(pmf)
+    pmf_gen = SimplePmfGen(pmf, sphere)
 
     # test case in which no valid direction is found with default maxdir
     boot_dg = BootDirectionGetter(pmf_gen, angle / 2., sphere=sphere)
