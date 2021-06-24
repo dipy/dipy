@@ -32,6 +32,5 @@ cdef class BootPmfGen(PmfGen):
         np.ndarray vox_data
         np.ndarray dwi_mask
 
-
     cpdef double[:] get_pmf_no_boot(self, double[::1] point)
     pass

@@ -3,7 +3,7 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.gradients import gradient_table
-from dipy.core.sphere import HemiSphere, unit_octahedron
+from dipy.core.sphere import HemiSphere, unit_octahedron, default_sphere
 from dipy.data import get_sphere
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen, BootPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
@@ -44,7 +44,7 @@ def test_pmf_from_sh():
 
 def test_pmf_from_array():
     sphere = HemiSphere.from_sphere(unit_octahedron)
-    pmfgen = SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]))
+    pmfgen = SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]), sphere)
 
     # Test that the pmf is greater than 0 for a valid point
     pmf = pmfgen.get_pmf(np.array([0, 0, 0], dtype='float'))
@@ -56,9 +56,16 @@ def test_pmf_from_array():
     npt.assert_array_equal(pmfgen.get_pmf(np.array([0, 0, 10], dtype='float')),
                            np.zeros(len(sphere.vertices)))
 
+    # Test ValueError for negative pmf
     npt.assert_raises(
         ValueError,
-        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1))
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1),
+                             sphere)
+    # Test ValueError for non matching pmf and sphere
+    npt.assert_raises(
+        ValueError,
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])),
+                             default_sphere)
 
 
 def test_boot_pmf():
