@@ -1,4 +1,6 @@
 '''Tools for using Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)'''
+import warnings
+
 import numpy as np
 from numpy.matlib import repmat
 
@@ -19,7 +21,6 @@ class RumbaSD(OdfModel, Cache):
 
     def __init__(self, gtab, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3, lambda_gm=0.8e-4,
                  n_iter=600, recon_type='smf', n_coils=1, R=1):
-        # TODO: optional isotropic compartments
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 
@@ -81,6 +82,11 @@ class RumbaSD(OdfModel, Cache):
         # Masks to extract b0/non-b0 measurements
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
+
+        if len(np.unique(gtab.bvals[~gtab.b0s_mask])) == 1 and lambda_csf is not None \
+                and lambda_gm is not None:
+            msg = "with one b-value, estimation of grey matter volume fraction is unreliable"
+            warnings.warn(msg)
 
         # Reconstruct gradient table
         bvals_cor = np.concatenate(([0], gtab.bvals[self._where_dwi]))
@@ -152,7 +158,6 @@ class RumbaFit(OdfFit):
         self._f_csf = None
         self._f_gm = None
 
-        # TODO: are these necessary?
         self._gfa = None
         self.npeaks = 5
         self._peak_values = None
@@ -193,10 +198,6 @@ class RumbaFit(OdfFit):
 
         self._f_csf = f_csf
         self._f_gm = f_gm
-
-        # TODO: there was a comment about how the isotropic compartments only really work with
-        #       multi-shell data. should there be a condition here that only adds the isotropic
-        #       compartments if the data is multi-shell?
 
         return fodf_wm
 
@@ -758,11 +759,6 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             snr_std = np.std(1 / np.sqrt(sigma2_i))
             print(
                 f"Mean SNR (S0/sigma) estimated to be {snr_mean} +/- {snr_std}")
-
-            # TODO: are these updates useful?
-            print(f"Reconstruction using {n_order} coils")
-            mean_fodf = np.mean(np.sum(fodf, axis=0))
-            print(f"Mean fODF: {mean_fodf}")
 
         sigma2 = repmat(sigma2_i, data_2d.shape[0], 1)  # expand into matrix
 
