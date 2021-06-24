@@ -140,10 +140,7 @@ cdef class BootPmfGen(PmfGen):
         return self.pmf
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
-        return self.get_pmf_no_boot_c(&point[0])
-
-    cdef double[:] get_pmf_no_boot_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
         else:
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)

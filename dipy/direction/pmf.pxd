@@ -34,5 +34,4 @@ cdef class BootPmfGen(PmfGen):
 
 
     cpdef double[:] get_pmf_no_boot(self, double[::1] point)
-    cdef double[:] get_pmf_no_boot_c(self, double* point)
     pass
