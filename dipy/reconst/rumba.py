@@ -147,6 +147,8 @@ class RumbaFit(OdfFit):
         '''
         OdfFit.__init__(self, model, data)
         self.kernel = None
+        self._f_csf = None
+        self._f_gm = None
 
         # TODO: are these necessary?
         self._gfa = None
@@ -187,20 +189,28 @@ class RumbaFit(OdfFit):
                                             self.model.n_iter, self.model.recon_type,
                                             self.model.n_coils)
 
-        ## Add isotropic components to WM odf ##
+        self._f_csf = f_csf
+        self._f_gm = f_gm
 
-        f_iso = (f_csf + f_gm) / len(fodf_wm)
-        fodf_wm = fodf_wm + f_iso
-        fodf_wm = fodf_wm / (np.sum(fodf_wm) + EPS)  # re-normalize
-
-        # TODO: Is there any benefit to returning the isotropic compartments separately
-        #       rather than combining them with the fODF in this way?
-        # TODO: Is there any benefit in returning the variance?
         # TODO: there was a comment about how the isotropic compartments only really work with
         #       multi-shell data. should there be a condition here that only adds the isotropic
         #       compartments if the data is multi-shell?
 
         return fodf_wm
+
+    @property
+    def f_gm(self):
+        if self._f_gm is None:
+            raise RuntimeError(
+                "No fODF generated yet; call odf to generate grey matter volume fraction maps")
+        return self._f_gm
+
+    @property
+    def f_csf(self):
+        if self._f_csf is None:
+            raise RuntimeError(
+                "No fODF generated yet; call odf to generate CSF volume fraction maps")
+        return self._f_csf
 
 
 def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
@@ -363,7 +373,6 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         sigma2 = sigma2_i * np.ones(data.shape)  # Expand into vector
 
     fodf = fodf / (np.sum(fodf, axis=0) + EPS)  # normalize final result
-    # variance = sigma2_i
 
     fodf_wm = np.squeeze(fodf[:n_c-2])  # white matter components
     f_csf = fodf[n_c-2]  # CSF component
@@ -512,7 +521,11 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     Returns
     -------
     fodf_wm : ndarray (x, y, z, K)
-        K-point fODF computed for each voxel (K is the number of vertices on `sphere`)
+        fODF computed for each voxel, where K is the number of vertices on `sphere`
+    f_csf : 3d ndarray (x, y, z)
+        volume fraction of CSF at each voxel.
+    f_gm : 3d ndarray (x, y, z)
+        volume fraction of GM at each voxel.
     '''
 
     ## Checking data and mask shapes ##
@@ -544,14 +557,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     fodf_wm, f_csf, f_gm = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
                                                model.n_coils, model.R, use_tv, verbose)
 
-    # Add isotropic components
-    # evenly distribute across each fiber population
-    f_iso = (f_csf + f_gm) / fodf_wm.shape[3]
-    fodf_wm = fodf_wm + f_iso[..., None]
-    fodf_wm = fodf_wm / (np.sum(fodf_wm, keepdims=True,
-                                axis=3) + EPS)  # re-normalize
-
-    return fodf_wm
+    return fodf_wm, f_csf, f_gm
 
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
@@ -595,12 +601,12 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     Returns
     -------
-    fodf_wm : ndarray (M-2,)
-        fODF for white matter compartments.
-    f_csf : float
-        volume fraction of CSF.
-    f_gm : float
-        volume fraction of GM.
+    fodf_wm : 4d ndarray (x, y, z, M-2)
+        fODF for white matter compartments at each voxel.
+    f_csf : 3d ndarray (x, y, z)
+        volume fraction of CSF at each voxel.
+    f_gm : 3d ndarray (x, y, z)
+        volume fraction of GM at each voxel.
 
     Notes
     -----
@@ -761,9 +767,6 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                 tv_lambda = np.reshape(tv_lambda_aux, dim[:3], order='F')
 
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + EPS)  # normalize fODF
-
-    # snr_est = snr_mean
-    # variance = np.reshape(sigma2_i, dim[:3], order='F')
 
     # Extract WM components
     fodf_wm = np.zeros([*dim[:3], n_c-2], np.float32)
