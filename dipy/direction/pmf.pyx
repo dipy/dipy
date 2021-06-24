@@ -6,6 +6,7 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.core.geometry import cart2sphere
+from dipy.data import default_sphere
 from dipy.reconst import shm
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
@@ -15,14 +16,11 @@ cdef class PmfGen:
 
     def __init__(self,
                  double[:, :, :, :] data,
-                 object sphere):
-        self.data = np.asarray(data,  dtype=float)
+                 object sphere=default_sphere):
+        self.data = np.asarray(data, dtype=float)
         self.sphere = sphere
 
     cpdef double[:] get_pmf(self, double[::1] point):
-        return self.get_pmf_c(&point[0])
-
-    cdef double[:] get_pmf_c(self, double* point):
         pass
 
     cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
@@ -45,14 +43,14 @@ cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
                  double[:, :, :, :] pmf_array,
-                 object sphere):
+                 object sphere=default_sphere):
         PmfGen.__init__(self, pmf_array, sphere)
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
             raise ValueError("pmf should not have negative values.")
 
-    cdef double[:] get_pmf_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
+    cpdef double[:] get_pmf(self, double[::1] point):
+        if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf
 
@@ -77,14 +75,14 @@ cdef class SHCoeffPmfGen(PmfGen):
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 
-    cdef double[:] get_pmf_c(self, double* point):
+    cpdef double[:] get_pmf(self, double[::1] point):
         cdef:
             cnp.npy_intp i, j
             cnp.npy_intp len_pmf = self.pmf.shape[0]
             cnp.npy_intp len_B = self.B.shape[1]
             double _sum
 
-        if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.coeff) != 0:
             PmfGen.__clear_pmf(self)
         else:
             for i in range(len_pmf):
@@ -131,9 +129,9 @@ cdef class BootPmfGen(PmfGen):
         self.model = model
         self.pmf = np.empty(len(sphere.theta))
 
-    cdef double[:] get_pmf_c(self, double* point):
+    cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
         else:
             self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
