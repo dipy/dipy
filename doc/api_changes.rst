@@ -5,6 +5,17 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.5.0 changes
+------------------
+**General**
+
+**Tracking**
+
+- Change in ``dipy.tracking.pmf``
+    - The parent class ``PmfGen`` has new mandatory parameter ``sphere``. The sphere vertices correspond to the spherical distribution of the pmf values.
+    - The parent class ``PmfGen`` has new function ``get_pmf_value(point, xyz)`` which return the pmf value at location ``point`` and orientation ``xyz``.
+
+
 DIPY 1.4.1 changes
 ------------------
 
