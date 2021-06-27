@@ -1,6 +1,7 @@
 """Tools to easily make multi voxel models"""
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
+from tqdm import tqdm
 
 from dipy.core.ndindex import ndindex
 from dipy.reconst.quick_squash import quick_squash as _squash
@@ -28,9 +29,13 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
+        MAXCOUNT = np.prod(data.shape[:-1])
+        bar = tqdm(total=MAXCOUNT, position=0)
         for ijk in ndindex(data.shape[:-1]):
             if mask[ijk]:
                 fit_array[ijk] = single_voxel_fit(self, data[ijk])
+            bar.update()
+        bar.close()
         return MultiVoxelFit(self, fit_array, mask)
     return new_fit
 
