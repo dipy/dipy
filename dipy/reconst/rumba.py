@@ -746,43 +746,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     return fodf_wm, f_csf
 
-
-def divergence(F):
-    '''
-    Compute divergence of 3-dimensional vector field
-
-    Parameters
-    ----------
-    F : 4d ndarray (x, y, z, 3)
-        3-dimensional vector field split into x, y, and z components (i.e. stack of x-volume,
-        y-volume, z-volume)
-
-    Returns
-    -------
-    div : ndarray (x, y, z)
-        divergence at each point in vector field
-
-    Notes
-    -----
-    The formula for divergence of a vector field is as follows:
-
-    $ \text{div} (\bold{F}) = \triangledown \cdot \bold{F} = \frac{\partial{F_x}}{\partial{x}}
-      + \frac{\partial{F_y}}{\partial{y}} + \frac{\partial{F_z}}{\partial{z}} $
-    '''
-    Fx = F[:, :, :, 0]  # x-component of vector field
-    Fy = F[:, :, :, 1]  # y-component
-    Fz = F[:, :, :, 2]  # z-component
-
-    fx = np.gradient(Fx, axis=0)
-    fy = np.gradient(Fy, axis=1)
-    fz = np.gradient(Fz, axis=2)
-
-    div = fx + fy + fz
-
-    return div
-
-
 #### Private Functions ####
+
 
 def _grad(M):
     '''
@@ -801,7 +766,7 @@ def _grad(M):
 
 def _divergence(F):
     '''
-    Computes divergence (using one way first difference)
+    Computes divergence of a 3-dimensional vector field (using one way first difference)
     '''
     Fx = F[:, :, :, 0]
     Fy = F[:, :, :, 1]
