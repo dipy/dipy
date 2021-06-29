@@ -378,8 +378,8 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     fodf = fodf / (np.sum(fodf, axis=0) + EPS)  # normalize final result
 
     fodf_wm = np.squeeze(fodf[:n_c-2])  # white matter components
-    f_csf = fodf[n_c-2]  # CSF component
-    f_gm = fodf[n_c-1]  # grey matter component
+    f_csf = np.squeeze(fodf[n_c-2])  # CSF component
+    f_gm = np.squeeze(fodf[n_c-1])  # grey matter component
 
     return fodf_wm, f_csf, f_gm
 
@@ -788,7 +788,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
     f_tmp[index_mask, 0] = fodf[n_c-1, :]
-    f_gm = np.reshape(f_tmp, dim[:3], order='F')  # GM volume fraction
+    f_gm = np.reshape(f_tmp, *dim[:3], order='F')  # GM volume fraction
 
     return fodf_wm, f_csf, f_gm
 
