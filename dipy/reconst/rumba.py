@@ -19,19 +19,18 @@ EPS = np.finfo(float).eps
 
 class RumbaSD(OdfModel, Cache):
 
-    def __init__(self, gtab, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3, lambda_gm=0.8e-4,
-                 n_iter=600, recon_type='smf', n_coils=1, R=1):
+    def __init__(self, gtab, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3, n_iter=600,
+                 recon_type='smf', n_coils=1, R=1):
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 
         Modification of the Richardson-Lucy algorithm accounting for Rician and Noncentral Chi
         noise distributions, which more accurately represent MRI noise. Computes a maximum
         likelihood estimation of the fiber orientation density function (fODF) at each voxel [1]_.
-        Includes compartments for cerbrospinal fluid (CSF) and grey matter (GM) to account for
-        partial volume effects.
+        Includes a compartment for cerbrospinal fluid (CSF) to account for partial volume effects.
 
         Kernel for deconvolution constructed using a priori knowledge of white matter diffusivity
-        parallel and perpendicular to the fiber, as well as the mean diffusivity of CSF and GM.
+        parallel and perpendicular to the fiber, as well as the mean diffusivity of CSF.
 
 
         Parameters
@@ -45,9 +44,6 @@ class RumbaSD(OdfModel, Cache):
         lambda_csf : float, optional
             Mean diffusivity for CSF. If `None`, then CSF volume fraction is not computed.
             Default: 3.0e-3
-        lambda_gm : float, optional
-            Mean diffusivity for grey matter. If `None`, then grey matter volume fraction is not
-            computed. Default: 0.8e-4
         n_iter : int, optional
             Number of iterations for fODF estimation. Must be a positive int. Default: 600
         recon_type : {'smf', 'sos'}, optional
@@ -83,11 +79,6 @@ class RumbaSD(OdfModel, Cache):
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
 
-        if len(np.unique(gtab.bvals[~gtab.b0s_mask])) == 1 and lambda_csf is not None \
-                and lambda_gm is not None:
-            msg = "with one b-value, estimation of grey matter volume fraction is unreliable"
-            warnings.warn(msg)
-
         # Reconstruct gradient table
         bvals_cor = np.concatenate(([0], gtab.bvals[self._where_dwi]))
         bvecs_cor = np.concatenate(([[0, 0, 0]], gtab.bvecs[self._where_dwi]))
@@ -103,14 +94,10 @@ class RumbaSD(OdfModel, Cache):
         if lambda_csf is not None and lambda_csf < 0:
             raise ValueError(
                 f"lambda_csf must be None or > 0, received {lambda_csf}")
-        if lambda_gm is not None and lambda_gm < 0:
-            raise ValueError(
-                f"lambda_gm must be None or > 0, received {lambda_gm}")
 
         self.lambda1 = lambda1
         self.lambda2 = lambda2
         self.lambda_csf = lambda_csf
-        self.lambda_gm = lambda_gm
 
         ## Initializing remaining parameters ##
         if R < 1 or n_iter < 1 or n_coils < 1:
@@ -156,7 +143,6 @@ class RumbaFit(OdfFit):
         OdfFit.__init__(self, model, data)
         self.kernel = None
         self._f_csf = None
-        self._f_gm = None
 
         self._gfa = None
         self.npeaks = 5
@@ -187,26 +173,17 @@ class RumbaFit(OdfFit):
 
         if self.kernel is None:
             self.kernel = generate_kernel(self.model.gtab, sphere, self.model.lambda1,
-                                          self.model.lambda2, self.model.lambda_csf,
-                                          self.model.lambda_gm)
+                                          self.model.lambda2, self.model.lambda_csf)
             self.model.cache_set('kernel', sphere, self.kernel)
 
         ## Fitting ##
-        fodf_wm, f_csf, f_gm = rumba_deconv(self.data, self.kernel,
-                                            self.model.n_iter, self.model.recon_type,
-                                            self.model.n_coils)
+        fodf_wm, f_csf = rumba_deconv(self.data, self.kernel,
+                                      self.model.n_iter, self.model.recon_type,
+                                      self.model.n_coils)
 
         self._f_csf = f_csf
-        self._f_gm = f_gm
 
         return fodf_wm
-
-    @property
-    def f_gm(self):
-        if self._f_gm is None:
-            raise RuntimeError(
-                "No fODF generated yet; call odf to generate grey matter volume fraction maps")
-        return self._f_gm
 
     @property
     def f_csf(self):
@@ -231,8 +208,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         signal values for a single voxel.
     kernel : 2d ndarray (N, M)
         Deconvolution kernel mapping volume fractions of the M compartments to N-length signal.
-        Last two columns should be for cerebrospinal fluid (CSF) and grey matter (GM) compartments
-        respectively.
+        Last column should be for a cerebrospinal fluid (CSF) compartment.
     n_iter : int, optional
         Number of iterations for fODF estimation. Must be a positive int. Default: 600
     recon_type : {'smf', 'sos'}, optional
@@ -249,15 +225,14 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         fODF for white matter compartments.
     f_csf : float
         volume fraction of CSF.
-    f_gm : float
-        volume fraction of GM.
 
     Notes
     -----
     The diffusion MRI signal measured at a given voxel is a sum of contributions from each
     intra-voxel compartment, including parallel white matter (WM) fiber populations in a given
-    orientation as well as effects from grey matter (GM) and cerebrospinal fluid (CSF). The
-    equation governing these contributions is:
+    orientation as well as effects from grey matter (GM) and cerebrospinal fluid (CSF) (this
+    implementation only contains a compartment for CSF, since we found CSF and GM contributions
+    were hard to resolve). The equation governing these contributions is:
 
     $ S_i = S_0\left(\sum_{j=1}^{M}f_j\exp(-b_i\bold{v}_i^T\bold{D}_j\bold{v}_i) + f_{GM}
       \exp(-b_iD_{GM})+f_{CSF}\exp(-b_iD_{CSF})\right) $
@@ -377,11 +352,10 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     fodf = fodf / (np.sum(fodf, axis=0) + EPS)  # normalize final result
 
-    fodf_wm = np.squeeze(fodf[:n_c-2])  # white matter components
-    f_csf = np.squeeze(fodf[n_c-2])  # CSF component
-    f_gm = np.squeeze(fodf[n_c-1])  # grey matter component
+    fodf_wm = np.squeeze(fodf[:n_c-1])  # white matter components
+    f_csf = np.squeeze(fodf[n_c-1])  # CSF component
 
-    return fodf_wm, f_csf, f_gm
+    return fodf_wm, f_csf
 
 
 def mbessel_ratio(n, x):
@@ -420,14 +394,12 @@ def mbessel_ratio(n, x):
     return y
 
 
-def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3,
-                    lambda_gm=0.8e-4):
+def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0e-3):
     '''
     Generate deconvolution kernel
 
     Compute kernel mapping volume fractions of white matter fiber populations (oriented along each
-    vertex of a sphere), cerebrospinal fluid (CSF) and grey matter (GM) to a diffusion weighted
-    signal.
+    vertex of a sphere) and cerebrospinal fluid (CSF) to a diffusion weighted signal.
 
     Parameters
     ----------
@@ -442,15 +414,12 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
     lambda_csf : float
         Mean diffusivity for CSF. If `None`, then CSF kernel column set to all zeroes.
         Default: 3.0e-3
-    lambda_gm : float
-        Mean diffusivity for grey matter. If `None`, then grey matter kernel column set to all
-        zeroes. Default: 0.8e-3
 
     Returns
     -------
     kernel : ndarray (N, M)
         computed kernel; can be multiplied with a vector consisting of volume fractions for each of
-        M-2 fiber populations and fractions for CSF and GM to produce a diffusion weighted signal.
+        M-1 fiber populations and the fraction of CSF to produce a diffusion weighted signal.
     '''
 
     # Coordinates of sphere vertices
@@ -462,7 +431,7 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
 
     n_grad = len(gtab.gradients)  # number of gradient directions
     n_wm_comp = len(theta)  # number of fiber populations
-    n_comp = n_wm_comp + 2  # plus compartments for GM and for CSF
+    n_comp = n_wm_comp + 1  # plus compartment for CSF
 
     kernel = np.zeros((n_grad, n_comp))
 
@@ -479,20 +448,14 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
                             S0, [angles], [fi], None)
         kernel[:, i] = S
 
-    # CSF and GM components
+    # CSF component
     if lambda_csf is None:
         S_csf = np.zeros((n_grad))
     else:
         S_csf, _ = multi_tensor(gtab, np.array([[lambda_csf, lambda_csf, lambda_csf]]),
                                 S0, [[0, 0]], [100], None)
-    if lambda_gm is None:
-        S_gm = np.zeros((n_grad))
-    else:
-        S_gm, _ = multi_tensor(gtab, np.array([[lambda_gm, lambda_gm, lambda_gm]]),
-                               S0, [[0, 0]], [100], None)
 
-    kernel[:, n_wm_comp] = S_csf
-    kernel[:, n_wm_comp + 1] = S_gm
+    kernel[:, n_wm_comp-1] = S_csf
 
     return kernel
 
@@ -535,8 +498,6 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
         fODF computed for each voxel, where K is the number of vertices on `sphere`
     f_csf : 3d ndarray (x, y, z)
         volume fraction of CSF at each voxel.
-    f_gm : 3d ndarray (x, y, z)
-        volume fraction of GM at each voxel.
     '''
 
     ## Checking data and mask shapes ##
@@ -562,13 +523,13 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     # Generate kernel
     kernel = generate_kernel(model.gtab, sphere, model.lambda1, model.lambda2,
-                             model.lambda_csf, model.lambda_gm)
+                             model.lambda_csf)
 
     # Fit fODF
-    fodf_wm, f_csf, f_gm = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
-                                               model.n_coils, model.R, use_tv, verbose)
+    fodf_wm, f_csf = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
+                                         model.n_coils, model.R, use_tv, verbose)
 
-    return fodf_wm, f_csf, f_gm
+    return fodf_wm, f_csf
 
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
@@ -590,8 +551,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         regularization is required.
     kernel : 2d ndarray (N, M)
         Deconvolution kernel mapping volume fractions of the M compartments to N-length signal.
-        Last two columns should be for cerebrospinal fluid (CSF) and grey matter (GM) compartments
-        respectively.
+        Last column should be for a cerebrospinal fluid (CSF) compartment.
     mask : 3d ndarray(x, y, z)
         Binary mask specifying voxels of interest with 1; fODF will only be fit at these voxel
         (0 elsewhere).
@@ -616,8 +576,6 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         fODF for white matter compartments at each voxel.
     f_csf : 3d ndarray (x, y, z)
         volume fraction of CSF at each voxel.
-    f_gm : 3d ndarray (x, y, z)
-        volume fraction of GM at each voxel.
 
     Notes
     -----
@@ -775,22 +733,18 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + EPS)  # normalize fODF
 
     # Extract WM components
-    fodf_wm = np.zeros([*dim[:3], n_c-2], np.float32)
-    for i in range(n_c - 2):
+    fodf_wm = np.zeros([*dim[:3], n_c-1], np.float32)
+    for i in range(n_c - 1):
         f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
         f_tmp[index_mask, 0] = fodf[i, :]
         fodf_wm[:, :, :, i] = np.reshape(f_tmp, dim[:3], order='F')
 
-    # Extract isotropic components
-    f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
-    f_tmp[index_mask, 0] = fodf[n_c-2, :]
-    f_csf = np.reshape(f_tmp, dim[:3], order='F')  # CSF volume fraction
-
+    # Extract isotropic component
     f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
     f_tmp[index_mask, 0] = fodf[n_c-1, :]
-    f_gm = np.reshape(f_tmp, *dim[:3], order='F')  # GM volume fraction
+    f_csf = np.reshape(f_tmp, dim[:3], order='F')  # CSF volume fraction
 
-    return fodf_wm, f_csf, f_gm
+    return fodf_wm, f_csf
 
 
 def divergence(F):
