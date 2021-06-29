@@ -729,10 +729,10 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                 fodf_3d = fodf_jv.reshape((dim[0], dim[1], dim[2]), order='F')
 
                 # stack x, y, and z gradients
-                gr = np.stack(np.gradient(fodf_3d), axis=-1)
+                gr = _grad(fodf_3d)
                 d = np.sqrt(np.sum(gr**2, axis=3))
                 d = np.sqrt(epsilon**2 + d**2)
-                div_f = divergence(gr / np.stack((d, d, d), axis=-1))
+                div_f = _divergence(gr / np.stack((d, d, d), axis=-1))
                 g0 = np.abs(1 - tv_lambda * div_f)
                 tv_factor_3d = 1 / (g0 + EPS)
                 tv_factor_1d = np.ravel(tv_factor_3d, order='F')[index_mask]
@@ -826,3 +826,47 @@ def divergence(F):
     div = fx + fy + fz
 
     return div
+
+
+#### Private Functions ####
+
+def _grad(M):
+    '''
+    Computes one way first difference
+    '''
+    x_ind = list(range(1, M.shape[0])) + [M.shape[0]-1]
+    y_ind = list(range(1, M.shape[1])) + [M.shape[1]-1]
+    z_ind = list(range(1, M.shape[2])) + [M.shape[2]-1]
+
+    fx = M[x_ind, :, :] - M
+    fy = M[:, y_ind, :] - M
+    fz = M[:, :, z_ind] - M
+
+    return np.stack((fx, fy, fz), axis=-1)
+
+
+def _divergence(F):
+    '''
+    Computes divergence (using one way first difference)
+    '''
+    Fx = F[:, :, :, 0]
+    Fy = F[:, :, :, 1]
+    Fz = F[:, :, :, 2]
+
+    x_ind = [0] + list(range(F.shape[0]-1))
+    y_ind = [0] + list(range(F.shape[1]-1))
+    z_ind = [0] + list(range(F.shape[2]-1))
+
+    fx = Fx - Fx[x_ind, :, :]
+    fx[0, :, :] = Fx[0, :, :]  # edge conditions
+    fx[-1, :, :] = -Fx[-2, :, :]
+
+    fy = Fy - Fy[:, y_ind, :]
+    fy[:, 0, :] = Fy[:, 0, :]
+    fy[:, -1, :] = -Fy[:, -2, :]
+
+    fz = Fz - Fz[:, :, z_ind]
+    fz[:, :, 0] = Fz[:, :, 0]
+    fz[:, :, -1] = -Fz[:, :, -2]
+
+    return fx + fy + fz
