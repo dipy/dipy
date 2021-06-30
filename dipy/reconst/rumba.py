@@ -455,7 +455,7 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
         S_csf, _ = multi_tensor(gtab, np.array([[lambda_csf, lambda_csf, lambda_csf]]),
                                 S0, [[0, 0]], [100], None)
 
-    kernel[:, n_wm_comp-1] = S_csf
+    kernel[:, n_wm_comp] = S_csf
 
     return kernel
 
