@@ -504,7 +504,8 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     if len(data.shape) != 4:
         raise ValueError(f"Data should be 4D, received shape f{data.shape}")
-
+    if data[:, :, :, 0].size == 1:
+        raise ValueError(f"Data should contain multiple voxels in global_fit")
     ## Signal repair, normalization ##
 
     # Normalize data to mena b0 image
@@ -620,7 +621,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
            Mathematical Imaging and Vision. 2004; 20:89–97.
     '''
 
-    if np.any(data.shape[:3] == 1) and use_tv:
+    if np.any(np.array(data.shape[:3]) == 1) and use_tv:
         raise ValueError("Cannot use TV regularization if any spatial dimensions are 1; " +
                          f"provided dimensions were {data.shape[:3]}")
 
@@ -646,7 +647,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     index_mask = np.squeeze(np.argwhere(mask_vec))  # indices of target voxels
     n_v_true = len(index_mask)  # number of target voxels
 
-    data_2d = np.zeros((n_v_true, n_g), dtype=np.float32)
+    data_2d = np.zeros((n_v_true, n_g))
     for i in range(n_g):
         data_2d[:, i] = np.ravel(data[:, :, :, i], order='F')[
             index_mask]  # only keep voxels of interest
@@ -666,7 +667,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     # Expand into matrix form for iterations
     sigma2 = sigma2 * np.ones(data_2d.shape)
-    tv_lambda_aux = np.zeros((n_v_tot, 1), dtype=np.float32)
+    tv_lambda_aux = np.zeros((n_v_tot))
 
     reblurred_s = data_2d * reblurred / sigma2
 
@@ -677,11 +678,11 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             (np.matmul(kernel_T, reblurred) + EPS)
 
         if use_tv:  # apply TV regularization
-            tv_factor = np.ones(fodf_i.shape, dtype=np.float32)
+            tv_factor = np.ones(fodf_i.shape)
 
             for j in range(n_c):
 
-                fodf_jv = np.zeros((n_v_tot, 1), dtype=np.float32)
+                fodf_jv = np.zeros((n_v_tot, 1))
                 fodf_jv[index_mask, 0] = np.squeeze(
                     fodf_i[j, :])  # zeros at non-target voxels
                 fodf_3d = fodf_jv.reshape((dim[0], dim[1], dim[2]), order='F')
@@ -733,14 +734,14 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + EPS)  # normalize fODF
 
     # Extract WM components
-    fodf_wm = np.zeros([*dim[:3], n_c-1], np.float32)
+    fodf_wm = np.zeros([*dim[:3], n_c-1])
     for i in range(n_c - 1):
-        f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
+        f_tmp = np.zeros((n_v_tot, 1))
         f_tmp[index_mask, 0] = fodf[i, :]
         fodf_wm[:, :, :, i] = np.reshape(f_tmp, dim[:3], order='F')
 
     # Extract isotropic component
-    f_tmp = np.zeros((n_v_tot, 1), dtype=np.float32)
+    f_tmp = np.zeros((n_v_tot, 1))
     f_tmp[index_mask, 0] = fodf[n_c-1, :]
     f_csf = np.reshape(f_tmp, dim[:3], order='F')  # CSF volume fraction
 
