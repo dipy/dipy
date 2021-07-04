@@ -28,7 +28,8 @@ cdef class PmfGen:
         Return the pmf value corresponding to the closest vertex to the
         direction xyz.
         """
-        return self.get_pmf(point)[self.sphere.find_closest(xyz)]
+        cdef int idx = self.sphere.find_closest(xyz)
+        return self.get_pmf(point)[idx]
 
     cdef void __clear_pmf(self):
         cdef:
