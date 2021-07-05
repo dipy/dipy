@@ -458,6 +458,28 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
     return kernel
 
 
+def combine_odf_csf(odf, f_csf):
+    '''
+    Combine fODF and CSF volume fraction maps
+
+    Distributes CSF volume fraction at each voxel along each fODF direction
+
+    Parameters
+    ----------
+    odf : 4d ndarray (x, y, z, K)
+        fODF for each voxel
+    f_csf : 3d ndarray (x, y, z)
+        volume fraction of CSF for each voxel
+
+    Returns
+    -------
+    combined : 4d ndarray (x, y, z, K)
+        fODF for each voxel combined with CSF volume fractions
+    '''
+    combined = odf + f_csf[..., None] / odf.shape[3]
+    return combined
+
+
 '''
 ==============================================================
 ======================= GLOBAL FITTING =======================
