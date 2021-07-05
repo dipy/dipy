@@ -219,7 +219,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     Returns
     -------
-    fodf_wm : ndarray (M-2,)
+    fodf_wm : 1d ndarray (M-1,)
         fODF for white matter compartments.
     f_csf : float
         volume fraction of CSF.
@@ -415,7 +415,7 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_csf=3.0
 
     Returns
     -------
-    kernel : ndarray (N, M)
+    kernel : 2d ndarray (N, M)
         computed kernel; can be multiplied with a vector consisting of volume fractions for each of
         M-1 fiber populations and the fraction of CSF to produce a diffusion weighted signal.
     '''
@@ -514,7 +514,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     Returns
     -------
-    fodf_wm : ndarray (x, y, z, K)
+    fodf_wm : 4d ndarray (x, y, z, K)
         fODF computed for each voxel, where K is the number of vertices on `sphere`
     f_csf : 3d ndarray (x, y, z)
         volume fraction of CSF at each voxel.
@@ -593,7 +593,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     Returns
     -------
-    fodf_wm : 4d ndarray (x, y, z, M-2)
+    fodf_wm : 4d ndarray (x, y, z, M-1)
         fODF for white matter compartments at each voxel.
     f_csf : 3d ndarray (x, y, z)
         volume fraction of CSF at each voxel.
