@@ -28,7 +28,9 @@ class RumbaSD(OdfModel, Cache):
         Includes a compartment for cerbrospinal fluid (CSF) to account for partial volume effects.
 
         Kernel for deconvolution constructed using a priori knowledge of white matter diffusivity
-        parallel and perpendicular to the fiber, as well as the mean diffusivity of CSF.
+        parallel and perpendicular to the fiber, as well as the mean diffusivity of CSF. RUMBA-SD
+        is robust against impulse response imprecision, and thus the default diffusivity values are
+        often adequate [2]_.
 
 
         Parameters
@@ -59,11 +61,17 @@ class RumbaSD(OdfModel, Cache):
         References
         ----------
         .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N., Caruyer, E.,
-                Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y., Iturria-Medina, Y.,
-                Melie-García, L., Alemán-Gómez, Y., Thiran, J.-P., Sarró, S., Pomarol-Clotet, E.,
-                & Salvador, R. (2015). Spherical Deconvolution of Multichannel Diffusion MRI Data
-                with Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE, 10(10),
-                e0138910. https://doi.org/10.1371/journal.pone.0138910
+               Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y., Iturria-Medina, Y.,
+               Melie-García, L., Alemán-Gómez, Y., Thiran, J.-P., Sarró, S., Pomarol-Clotet, E.,
+               & Salvador, R. (2015). Spherical Deconvolution of Multichannel Diffusion MRI Data
+               with Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE, 10(10),
+               e0138910. https://doi.org/10.1371/journal.pone.0138910
+
+        .. [2] Dell’Acqua, F., Rizzo, G., Scifo, P., Clarke, R., Scotti, G., & Fazio, F. (2007).
+               A Model-Based Deconvolution Approach to Solve Fiber Crossing in Diffusion-Weighted
+               MR Imaging. IEEE Transactions on Bio-Medical Engineering, 54, 462–472.
+               https://doi.org/10.1109/TBME.2006.888830
+
 
 
         '''
