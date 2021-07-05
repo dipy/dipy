@@ -1,6 +1,4 @@
 '''Tools for using Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)'''
-import warnings
-
 import numpy as np
 from numpy.matlib import repmat
 
