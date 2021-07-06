@@ -733,6 +733,25 @@ def test_compress_streamlines():
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
 
 
+def test_compress_streamlines_identical_points():
+
+    sl_1 = np.array([[1, 1, 1], [1, 1, 1], [2, 2, 2], [3, 3, 3], [3, 3, 3]])
+    sl_2 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2]])
+    sl_3 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1],
+                     [2, 2, 2], [2, 2, 2], [2, 2, 2], [3, 3, 3], [3, 3, 3]])
+    sl_4 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2],
+                    [3, 3, 3], [3, 3, 3], [1, 1, 1]])
+    new_sl_1 = compress_streamlines(sl_1)
+    new_sl_2 = compress_streamlines(sl_2)
+    new_sl_3 = compress_streamlines(sl_3)
+    new_sl_4 = compress_streamlines(sl_4)
+    npt.assert_array_equal(new_sl_1, np.array([[1, 1, 1], [3, 3, 3]]))
+    npt.assert_array_equal(new_sl_2, np.array([[1, 1, 1], [2, 2, 2]]))
+    npt.assert_array_equal(new_sl_3, new_sl_1)
+    npt.assert_array_equal(new_sl_4, np.array([[1, 1, 1], [3, 3, 3],
+                                               [1, 1, 1]]))
+
+
 def test_compress_streamlines_memory_leaks():
     # Test some dtypes
     dtypes = [np.float32, np.float64, np.int32, np.int64]
