@@ -46,7 +46,7 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ridge'.
+            Default: 'ols'.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
         out_dir : string, optional
