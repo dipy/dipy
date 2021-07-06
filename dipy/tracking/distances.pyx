@@ -1115,7 +1115,7 @@ def approx_polygon_track(xyz,alpha=0.392):
         float *fvec2
         object characteristic_points
         cnp.npy_intp t_len
-        double angle,tmp
+        double angle,tmp, denom
         float vec0[3]
         float vec1[3]
 
@@ -1135,7 +1135,8 @@ def approx_polygon_track(xyz,alpha=0.392):
         #csub_3vecs(<float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0)
         csub_3vecs(fvec1,fvec0,vec0)
         csub_3vecs(fvec2,fvec1,vec1)
-        tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))
+        denom = cnorm_3vec(vec0)*cnorm_3vec(vec1)
+        tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/ denom)) if denom else 0
         if dpy_isnan(tmp) :
             angle+=0.
         else:
