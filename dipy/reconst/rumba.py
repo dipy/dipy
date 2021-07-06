@@ -82,12 +82,12 @@ class RumbaSD(OdfModel, Cache):
             raise ValueError("Gradient table has no b0 measurements")
 
         # Masks to extract b0/non-b0 measurements
-        self._where_b0s = lazy_index(gtab.b0s_mask)
-        self._where_dwi = lazy_index(~gtab.b0s_mask)
+        self.where_b0s = lazy_index(gtab.b0s_mask)
+        self.where_dwi = lazy_index(~gtab.b0s_mask)
 
         # Reconstruct gradient table
-        bvals_cor = np.concatenate(([0], gtab.bvals[self._where_dwi]))
-        bvecs_cor = np.concatenate(([[0, 0, 0]], gtab.bvecs[self._where_dwi]))
+        bvals_cor = np.concatenate(([0], gtab.bvals[self.where_dwi]))
+        bvecs_cor = np.concatenate(([[0, 0, 0]], gtab.bvecs[self.where_dwi]))
         gtab_cor = gradient_table(bvals_cor, bvecs_cor)
 
         # Initializes self.gtab
@@ -124,9 +124,9 @@ class RumbaSD(OdfModel, Cache):
         ## Signal repair, normalization ##
 
         # Normalize data to mean b0 image
-        data = normalize_data(data, self._where_b0s, min_signal=EPS)
+        data = normalize_data(data, self.where_b0s, min_signal=EPS)
         # Rearrange data to match corrected gradient table
-        data = np.concatenate(([1], data[self._where_dwi]))
+        data = np.concatenate(([1], data[self.where_dwi]))
         data[data > 1] = 1  # Clip values between 0 and 1
 
         return RumbaFit(self, data)
@@ -488,12 +488,7 @@ def combine_odf_csf(odf, f_csf):
     return combined
 
 
-'''
-==============================================================
-======================= GLOBAL FITTING =======================
-==============================================================
-'''
-
+### GLOBAL FITTING ###
 
 def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     '''
@@ -533,14 +528,14 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     if len(data.shape) != 4:
         raise ValueError(f"Data should be 4D, received shape f{data.shape}")
     if data[:, :, :, 0].size == 1:
-        raise ValueError(f"Data should contain multiple voxels in global_fit")
+        raise ValueError("Data should contain multiple voxels in global_fit")
     ## Signal repair, normalization ##
 
     # Normalize data to mena b0 image
-    data = normalize_data(data, model._where_b0s, EPS)
+    data = normalize_data(data, model.where_b0s, EPS)
     # Rearrange data to match corrected gradient table
     data = np.concatenate(
-        (np.ones([*data.shape[:3], 1]), data[..., model._where_dwi]), axis=3)
+        (np.ones([*data.shape[:3], 1]), data[..., model.where_dwi]), axis=3)
     data[data > 1] = 1  # clip values between 0 and 1
 
     if mask is None:  # default mask includes all voxels
