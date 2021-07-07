@@ -21,7 +21,7 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files, model='ridge', verbose=False,
+    def run(self, input_files, bval_files, model='ols', verbose=False,
             out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
@@ -46,7 +46,7 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ridge'.
+            Default: 'ols'.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
         out_dir : string, optional
