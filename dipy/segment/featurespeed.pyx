@@ -227,7 +227,7 @@ cdef class CenterOfMassFeature(CythonFeature):
         super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
     cdef Shape c_infer_shape(CenterOfMassFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
@@ -262,7 +262,7 @@ cdef class MidpointFeature(CythonFeature):
         super(MidpointFeature, self).__init__(is_order_invariant=False)
 
     cdef Shape c_infer_shape(MidpointFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
@@ -292,7 +292,7 @@ cdef class ArcLengthFeature(CythonFeature):
         super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
     cdef Shape c_infer_shape(ArcLengthFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = 1
@@ -317,7 +317,7 @@ cdef class VectorOfEndpointsFeature(CythonFeature):
         super(VectorOfEndpointsFeature, self).__init__(is_order_invariant=False)
 
     cdef Shape c_infer_shape(VectorOfEndpointsFeature self, Data2D datum) nogil except *:
-        cdef Shape shape
+        cdef Shape shape = shape_from_memview(datum)
         shape.ndim = 2
         shape.dims[0] = 1
         shape.dims[1] = datum.shape[1]
