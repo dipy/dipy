@@ -295,20 +295,21 @@ regtools.overlay_slices(static, transformed, None, 2,
 Now, let's repeat this process with a simplified functional interface:
 """
 
-from dipy.align import (affine_registration, center_of_mass, translation,
-                        rigid, affine, register_dwi_to_template)
+from dipy.align import affine_registration, register_dwi_to_template
 
 """
-This interface constructs a pipeline of operations as a sequence of functions
-that each implement one of the transforms.
+This interface constructs a pipeline of operations from a given list of 
+transformations.
 """
 
-pipeline = [center_of_mass, translation, rigid, affine]
+pipeline = ["center_of_mass", "translation", "rigid", "affine"]
 
 """
-And then applies the functions in the pipeline on the input (from left to
+And then applies the transformations in the pipeline on the input (from left to
 right) with a call to an `affine_registration` function, which takes optional
-settings for things like the iterations, sigmas and factors.
+settings for things like the iterations, sigmas and factors. The pipeline must
+be a list of strings with one or more of the following transformations:
+center_of_mass, translation, rigid, rigid_isoscaling, rigid_scaling and affine.
 """
 
 xformed_img, reg_affine = affine_registration(

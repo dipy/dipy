@@ -8,8 +8,7 @@ from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
                                DiffeomorphicMap)
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
-from dipy.align import (affine_registration, center_of_mass, translation,
-                        rigid, rigid_isoscaling, rigid_scaling, affine)
+from dipy.align import affine_registration
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
 from dipy.tracking.streamline import transform_streamlines
@@ -326,20 +325,22 @@ class ImageRegistrationFlow(Workflow):
 
         if progressive:
             pipeline_opt = {
-                'com': [center_of_mass],
-                'trans': [center_of_mass, translation],
-                'rigid': [center_of_mass, translation, rigid],
-                'rigid_isoscaling': [center_of_mass, rigid_isoscaling],
-                'rigid_scaling': [center_of_mass, translation, rigid_scaling],
-                'affine': [center_of_mass, translation, rigid, affine]}
+                "com": ["center_of_mass"],
+                "trans": ["center_of_mass", "translation"],
+                "rigid": ["center_of_mass", "translation", "rigid"],
+                "rigid_isoscaling": ["center_of_mass", "translation",
+                                     "rigid_isoscaling"],
+                "rigid_scaling": ["center_of_mass", "translation",
+                                  "rigid_scaling"],
+                "affine": ["center_of_mass", "translation", "rigid", "affine"]}
         else:
             pipeline_opt = {
-                'com': [center_of_mass],
-                'trans': [center_of_mass, translation],
-                'rigid': [center_of_mass, rigid],
-                'rigid_isoscaling': [center_of_mass, rigid_isoscaling],
-                'rigid_scaling': [center_of_mass, rigid_scaling],
-                'affine': [center_of_mass, affine]}
+                "com": ["center_of_mass"],
+                "trans": ["center_of_mass", "translation"],
+                "rigid": ["center_of_mass", "rigid"],
+                "rigid_isoscaling": ["center_of_mass", "rigid_isoscaling"],
+                "rigid_scaling": ["center_of_mass", "rigid_scaling"],
+                "affine": ["center_of_mass", "affine"]}
 
         pipeline = pipeline_opt.get(transform)
 
@@ -361,7 +362,7 @@ class ImageRegistrationFlow(Workflow):
             starting_affine = None
 
             # If only center of mass is selected do not return metric
-            if pipeline == [center_of_mass]:
+            if pipeline == ["center_of_mass"]:
                 moved_image, affine_matrix = \
                     affine_registration(moving,
                                         static,
