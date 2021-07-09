@@ -298,7 +298,7 @@ Now, let's repeat this process with a simplified functional interface:
 from dipy.align import affine_registration, register_dwi_to_template
 
 """
-This interface constructs a pipeline of operations from a given list of 
+This interface constructs a pipeline of operations from a given list of
 transformations.
 """
 
