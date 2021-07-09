@@ -11,10 +11,8 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        center_of_mass, translation, rigid, rigid_isoscaling,
-                        rigid_scaling, affine, affine_registration,
-                        streamline_registration, write_mapping, read_mapping,
-                        register_dwi_to_template)
+                        affine_registration, streamline_registration,
+                        write_mapping, read_mapping, register_dwi_to_template)
 
 from dipy.align.imwarp import DiffeomorphicMap
 
@@ -117,12 +115,12 @@ def test_affine_registration():
         xformed, affine_mat = affine_registration(moving, static,
                                                   moving_affine=moving_affine,
                                                   static_affine=static_affine,
-                                                  pipeline=[center_of_mass],
+                                                  pipeline=["center_of_mass"],
                                                   ret_metric=True)
 
     # Define list of methods
-    reg_methods = [center_of_mass, translation, rigid, rigid_isoscaling,
-                   rigid_scaling, affine]
+    reg_methods = ["center_of_mass", "translation", "rigid",
+                   "rigid_isoscaling", "rigid_scaling", "affine"]
 
     # Test methods individually (without returning any metric)
     for func in reg_methods:
