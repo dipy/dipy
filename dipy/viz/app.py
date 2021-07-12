@@ -107,12 +107,12 @@ class Horizon(object):
             small animal data you may need to use something smaller such
             as 2.0. The threshold is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : string
+        random_colors : string, optional
             Given multiple tractograms and/or ROIs then each tractogram and/or
-            ROI will be shown with different color. If no value is provided
+            ROI will be shown with a different color. If no value is provided,
             both the tractograms and the ROIs will have a different random
             color generated from a distinguishable colormap. If the effect
-            should only be applied to one of the 2 objects, then use the
+            should only be applied to one of the 2 types, then use the
             options 'tracts' and 'rois' for the tractograms and the ROIs
             respectively.
         length_gt : float
