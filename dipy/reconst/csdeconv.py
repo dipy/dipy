@@ -24,7 +24,7 @@ from dipy.reconst.utils import _roi_in_volume, _mask_from_roi
 from dipy.direction.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
 
-from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.deprecator import deprecate_with_version, deprecated_params
 
 
 @deprecate_with_version("dipy.reconst.csdeconv.auto_response is deprecated, "
@@ -1073,9 +1073,10 @@ def _get_response(S0s, lambdas):
     return response, ratio
 
 
+@deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001, parallel=True, nbr_processes=None,
+                       convergence=0.001, parallel=True, num_processes=None,
                        sphere=default_sphere):
     """ Recursive calibration of response function using peak threshold
 
@@ -1105,9 +1106,11 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     parallel : bool, optional
         Whether to use parallelization in peak-finding during the calibration
         procedure. Default: True
-    nbr_processes: int
+    num_processes : int, optional
         If `parallel` is True, the number of subprocesses to use
-        (default multiprocessing.cpu_count()).
+        (default multiprocessing.cpu_count()). If < 0 the maximal number of
+        cores minus |num_processes + 1| is used (enter -1 to use as many cores
+        as possible). 0 raises an error.
     sphere : Sphere, optional.
         The sphere used for peak finding. Default: default_sphere.
 
@@ -1155,7 +1158,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                                      relative_peak_threshold=peak_thr,
                                      min_separation_angle=25,
                                      parallel=parallel,
-                                     nbr_processes=nbr_processes)
+                                     num_processes=num_processes)
 
         dirs = csd_peaks.peak_dirs
         vals = csd_peaks.peak_values

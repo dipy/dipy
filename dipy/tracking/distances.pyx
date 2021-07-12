@@ -515,7 +515,8 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
-    if lentA != lentB:
+    # for performance issue, we just check the first streamline
+    if len(tracksA[0]) != len(tracksB[0]):
         w_s = "Streamlines do not have the same number of points. "
         w_s += "All streamlines need to have the same number of points. "
         w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
@@ -597,7 +598,8 @@ def bundles_distances_mdf(tracksA, tracksB):
         cnp.ndarray[cnp.double_t, ndim=2] DM
     lentA = len(tracksA)
     lentB = len(tracksB)
-    if lentA != lentB:
+    # for performance issue, we just check the first streamline
+    if len(tracksA[0]) != len(tracksB[0]):
         w_s = "Streamlines do not have the same number of points. "
         w_s += "All streamlines need to have the same number of points. "
         w_s += "Use dipy.tracking.streamline.set_number_of_points to adjust "
@@ -1113,7 +1115,7 @@ def approx_polygon_track(xyz,alpha=0.392):
         float *fvec2
         object characteristic_points
         cnp.npy_intp t_len
-        double angle,tmp
+        double angle,tmp, denom
         float vec0[3]
         float vec1[3]
 
@@ -1133,7 +1135,8 @@ def approx_polygon_track(xyz,alpha=0.392):
         #csub_3vecs(<float *> cnp.PyArray_DATA(fvec1),<float *> cnp.PyArray_DATA(fvec0),vec0)
         csub_3vecs(fvec1,fvec0,vec0)
         csub_3vecs(fvec2,fvec1,vec1)
-        tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))
+        denom = cnorm_3vec(vec0)*cnorm_3vec(vec1)
+        tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/ denom)) if denom else 0
         if dpy_isnan(tmp) :
             angle+=0.
         else:
@@ -1478,8 +1481,10 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     dipy.tracking.distances.local_skeleton_clustering
     """
     cdef:
-        long i=0,j=0
-        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0
+        cnp.npy_intp i=0
+        cnp.npy_intp j=0
+        cnp.float32_t sub=0,subf=0, tmprow=0, tmprowf=0
+        double distf=0,dist=0
 
     for i from 0<=i<rows:
         tmprow=0
@@ -1492,8 +1497,8 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
         dist+=sqrt(tmprow)
         distf+=sqrt(tmprowf)
 
-    out[0]=dist/<float>rows
-    out[1]=distf/<float>rows
+    out[0]=<cnp.float32_t>dist/<cnp.float32_t>rows
+    out[1]=<cnp.float32_t>distf/<cnp.float32_t>rows
 
 
 @cython.cdivision(True)

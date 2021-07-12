@@ -519,6 +519,8 @@ cdef cnp.npy_intp c_compress_streamline(Streamline streamline, Streamline out,
 
         # Check that each point is not offset by more than `tol_error` mm.
         for curr in range(prev+1, next):
+            if c_segment_length(streamline, curr, prev) == 0:
+                continue
             dist = c_dist_to_line(streamline, prev, next, curr)
 
             if dpy_isnan(dist) or dist > tol_error:

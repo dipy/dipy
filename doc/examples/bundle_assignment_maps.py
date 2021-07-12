@@ -10,12 +10,13 @@ maps on a bundle. Divide bundle into N smaller segments.
 First import the necessary modules.
 """
 
+import numpy as np
+
 from dipy.data import get_two_hcp842_bundles
 from dipy.data import fetch_bundle_atlas_hcp842
-import numpy as np
-from fury import actor, window
-from dipy.stats.analysis import assignment_map
 from dipy.io.streamline import load_trk
+from dipy.stats.analysis import assignment_map
+from dipy.viz import actor, window
 
 """
 Download and read data for this tutorial
@@ -41,9 +42,9 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(model_af_l))
+scene.add(actor.line(model_af_l, fake_tube=True, linewidth=6))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -340.46, -40.44),
+                 position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
 window.record(scene, out_path='af_l_before_assignment_maps.png',
               size=(600, 600))
@@ -80,9 +81,10 @@ interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.streamtube(model_af_l, colors=disks_color))
+scene.add(actor.line(model_af_l, fake_tube=True, colors=disks_color,
+                     linewidth=6))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
-                 position=(-360.11, -340.46, -40.44),
+                 position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
 window.record(scene, out_path='af_l_after_assignment_maps.png',
               size=(600, 600))

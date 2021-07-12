@@ -50,9 +50,9 @@ start_time = time.time()
 
 """
 We will first run `peaks_from_model` using parallelism with 2 processes. If
-`nbr_processes` is None (default option) then this function will find the total
+`num_processes` is None (default option) then this function will find the total
 number of processors from the operating system and use this number as
-`nbr_processes`. Sometimes it makes sense to use only a few of the processes in
+`num_processes`. Sometimes it makes sense to use only a few of the processes in
 order to allow resources for other applications. However, most of the times
 using the default option will be sufficient.
 """
@@ -67,7 +67,7 @@ csapeaks_parallel = peaks_from_model(model=csamodel,
                                      normalize_peaks=True,
                                      npeaks=5,
                                      parallel=True,
-                                     nbr_processes=2)
+                                     num_processes=2)
 
 time_parallel = time.time() - start_time
 print("peaks_from_model using 2 processes ran in : " +
@@ -91,7 +91,7 @@ csapeaks = peaks_from_model(model=csamodel,
                             normalize_peaks=True,
                             npeaks=5,
                             parallel=False,
-                            nbr_processes=None)
+                            num_processes=None)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in : " + str(time_single) + " seconds")

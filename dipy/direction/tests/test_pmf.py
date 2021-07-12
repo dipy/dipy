@@ -4,12 +4,27 @@ import numpy.testing as npt
 
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import HemiSphere, unit_octahedron
+from dipy.data import default_sphere, get_sphere
 from dipy.direction.pmf import SimplePmfGen, SHCoeffPmfGen, BootPmfGen
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.dti import TensorModel
 from dipy.sims.voxel import single_tensor
 
 response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
+
+
+def test_pmf_val():
+    sphere = sphere = get_sphere('symmetric724')
+    pmfgen = SHCoeffPmfGen(np.random.random([2, 2, 2, 28]), sphere, None)
+    point = np.array([1, 1, 1], dtype='float')
+
+    for idx in [0, 5, 15, -1]:
+        pmf = pmfgen.get_pmf(point)
+        # Create a direction vector close to the vertex idx
+        xyz = sphere.vertices[idx] + np.random.random([3]) / 100
+        pmf_idx = pmfgen.get_pmf_value(point, xyz)
+        # Test that the pmf sampled for the direction xyz is correct
+        npt.assert_array_equal(pmf[idx], pmf_idx)
 
 
 def test_pmf_from_sh():
@@ -29,7 +44,7 @@ def test_pmf_from_sh():
 
 def test_pmf_from_array():
     sphere = HemiSphere.from_sphere(unit_octahedron)
-    pmfgen = SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]))
+    pmfgen = SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]), sphere)
 
     # Test that the pmf is greater than 0 for a valid point
     pmf = pmfgen.get_pmf(np.array([0, 0, 0], dtype='float'))
@@ -41,9 +56,16 @@ def test_pmf_from_array():
     npt.assert_array_equal(pmfgen.get_pmf(np.array([0, 0, 10], dtype='float')),
                            np.zeros(len(sphere.vertices)))
 
+    # Test ValueError for negative pmf
     npt.assert_raises(
         ValueError,
-        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1))
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)])*-1,
+                             sphere))
+    # Test ValueError for non matching pmf and sphere
+    npt.assert_raises(
+        ValueError,
+        lambda: SimplePmfGen(np.ones([2, 2, 2, len(sphere.vertices)]),
+                             default_sphere))
 
 
 def test_boot_pmf():
@@ -80,7 +102,7 @@ def test_boot_pmf():
         # Tests that additionnal warnings are raised for outdated SH basis
         npt.assert_(len(w) > 1)
 
-    boot_pmf_gen_sh4 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
+    boot_pmf_gen_sh4 = BootPmfGen(data, sphere=hsph_updated, model=csd_model,
                                   sh_order=4)
     pmf_sh4 = boot_pmf_gen_sh4.get_pmf(point)
     npt.assert_equal(len(hsph_updated.vertices), pmf_sh4.shape[0])

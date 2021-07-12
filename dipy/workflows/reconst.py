@@ -27,6 +27,8 @@ from dipy.reconst.ivim import IvimModel
 
 from dipy.reconst import mapmri
 
+from dipy.utils.deprecator import deprecated_params
+
 
 class ReconstMAPMRIFlow(Workflow):
     @classmethod
@@ -405,10 +407,12 @@ class ReconstCSDFlow(Workflow):
     def get_short_name(cls):
         return 'csd'
 
+    @deprecated_params('nbr_processes', 'num_processes', since='1.4',
+                       until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
             fa_thr=0.7, frf=None, extract_pam_values=False, sh_order=8,
-            odf_to_sh_order=8, parallel=False, nbr_processes=None,
+            odf_to_sh_order=8, parallel=False, num_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -456,9 +460,11 @@ class ReconstCSDFlow(Workflow):
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
-        nbr_processes : int, optional
+        num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()).
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus |num_processes + 1| is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_pam : string, optional
@@ -553,7 +559,7 @@ class ReconstCSDFlow(Workflow):
                                          sh_order=sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
-                                         nbr_processes=nbr_processes)
+                                         num_processes=num_processes)
             peaks_csd.affine = affine
 
             save_peaks(opam, peaks_csd)
@@ -579,9 +585,11 @@ class ReconstCSAFlow(Workflow):
     def get_short_name(cls):
         return 'csa'
 
+    @deprecated_params('nbr_processes', 'num_processes', since='1.4',
+                       until='1.5')
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             sh_order=6, odf_to_sh_order=8, b0_threshold=50.0, bvecs_tol=0.01,
-            extract_pam_values=False, parallel=False, nbr_processes=None,
+            extract_pam_values=False, parallel=False, num_processes=None,
             out_dir='',
             out_pam='peaks.pam5', out_shm='shm.nii.gz',
             out_peaks_dir='peaks_dirs.nii.gz',
@@ -618,9 +626,11 @@ class ReconstCSAFlow(Workflow):
         parallel : bool, optional
             Whether to use parallelization in peak-finding during the
             calibration procedure.
-        nbr_processes : int, optional
+        num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
-            (default multiprocessing.cpu_count()).
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus |num_processes + 1| is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_pam : string, optional
@@ -674,7 +684,7 @@ class ReconstCSAFlow(Workflow):
                                          sh_order=odf_to_sh_order,
                                          normalize_peaks=True,
                                          parallel=parallel,
-                                         nbr_processes=nbr_processes)
+                                         num_processes=num_processes)
             peaks_csa.affine = affine
 
             save_peaks(opam, peaks_csa)

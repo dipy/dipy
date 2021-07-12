@@ -13,7 +13,9 @@ from safe_openmp cimport have_openmp
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
-from multiprocessing import cpu_count
+
+from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
@@ -94,9 +96,12 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
         Number of points per streamline
     D : 2D array
         Distance matrix
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
+    num_threads : int, optional
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------
@@ -105,17 +110,10 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
 
     cdef:
         cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
-        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
-
-    if have_openmp:
-        openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
+    threads_to_use = determine_num_threads(num_threads)
+    set_num_threads(threads_to_use)
 
     with nogil:
 
@@ -126,8 +124,8 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
                                                &moving[j * rows, 0],
                                                rows)
 
-    if have_openmp and num_threads is not None:
-        openmp.omp_set_num_threads(all_cores)
+    if num_threads is not None:
+        restore_default_num_threads()
 
     return np.asarray(D)
 
@@ -155,9 +153,12 @@ def _bundle_minimum_distance(double [:, ::1] static,
         Number of moving streamlines
     rows : int
         Number of points per streamline
-    num_threads : int
-        Number of threads. If None (default) then all available threads
-        will be used.
+    num_threads : int, optional
+        Number of threads to be used for OpenMP parallelization. If None
+        (default) the value of OMP_NUM_THREADS environment variable is used
+        if it is set, otherwise all available threads are used. If < 0 the
+        maximal number of threads minus |num_threads + 1| is used (enter -1 to
+        use as many threads as possible). 0 raises an error.
 
     Returns
     -------
@@ -177,17 +178,10 @@ def _bundle_minimum_distance(double [:, ::1] static,
         double * min_j
         double * min_i
         openmp.omp_lock_t lock
-        int all_cores = openmp.omp_get_num_procs()
         int threads_to_use = -1
 
-    if num_threads is not None:
-        threads_to_use = num_threads
-    else:
-        threads_to_use = all_cores
-
-    if have_openmp:
-        openmp.omp_set_dynamic(0)
-        openmp.omp_set_num_threads(threads_to_use)
+    threads_to_use = determine_num_threads(num_threads)
+    set_num_threads(threads_to_use)
 
     with nogil:
 
@@ -236,8 +230,8 @@ def _bundle_minimum_distance(double [:, ::1] static,
 
         dist = 0.25 * dist * dist
 
-    if have_openmp and num_threads is not None:
-        openmp.omp_set_num_threads(all_cores)
+    if num_threads is not None:
+        restore_default_num_threads()
 
     return dist
 

@@ -85,7 +85,7 @@ class DummyFlow(Workflow):
     def run(self, positional_str, positional_bool, positional_int,
             positional_float, optional_str='default', optional_bool=False,
             optional_int=0, optional_float=1.0, optional_float_2=2.0,
-            out_dir=''):
+            optional_int_2=5, optional_float_3=2.0, out_dir=''):
         """ Workflow used to test the introspective argument parser.
 
         Parameters
@@ -108,12 +108,17 @@ class DummyFlow(Workflow):
             optional float argument (default 1.0)
         optional_float_2 : float, optional
             optional float argument #2 (default 2.0)
+        optional_int_2 : int, optional
+            optional int argument #2 (default 5)
+        optional_float_3 : float, optional
+            optional float argument #3 (default 2.0)
         out_dir : string
             output directory (default '')
         """
         return (positional_str, positional_bool, positional_int,
                 positional_float, optional_str, optional_bool,
-                optional_int, optional_float, optional_float_2)
+                optional_int, optional_float, optional_int_2, optional_float_2,
+                optional_float_3)
 
 
 class DummyVariableTypeWorkflow(Workflow):

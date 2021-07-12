@@ -1456,7 +1456,10 @@ def kurtosis_fractional_anisotropy(dki_params):
 
     # Compute KFA
     KFA = np.zeros(A.shape)
-    cond = B > 0  # Avoiding Singularity (if B = 0, KFA = 0)
+    cond1 = B > 0  # Avoiding Singularity (if B = 0, KFA = 0)
+    # Avoiding overestimating KFA for small MKT values (KFA=0, MKT < tol)
+    cond2 = W > 1e-8
+    cond = np.logical_and(cond1, cond2)
     KFA[cond] = np.sqrt(A[cond]/B[cond])
 
     return KFA

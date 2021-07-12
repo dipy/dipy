@@ -14,6 +14,9 @@ from dipy.data import get_sphere
 from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.core.ndindex import ndindex
 
+from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
+
 cdef class FBCMeasures:
 
     cdef int [:] streamline_length
@@ -43,8 +46,12 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is used
+            if it is set, otherwise all available threads are used. If < 0 the
+            maximal number of threads minus |num_threads + 1| is used (enter -1
+            to use as many threads as possible). 0 raises an error.
         verbose : boolean
             Enable verbose mode.
 
@@ -160,8 +167,12 @@ cdef class FBCMeasures:
             computation.
         max_windowsize : int
             The maximal window size used to calculate the average LFBC region
-        num_threads : int
-            Number of threads to use for OpenMP.
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is used
+            if it is set, otherwise all available threads are used. If < 0 the
+            maximal number of threads minus |num_threads + 1| is used (enter -1
+            to use as many threads as possible). 0 raises an error.
         verbose : boolean
             Enable verbose mode.
         """
@@ -183,16 +194,9 @@ cdef class FBCMeasures:
             int xd, yd, zd, N, hn
             double [:, :, :, :, ::1] lut
             int threads_to_use = -1
-            int all_cores = openmp.omp_get_num_procs()
 
-        if num_threads is not None:
-            threads_to_use = num_threads
-        else:
-            threads_to_use = all_cores
-
-        if have_openmp:
-            openmp.omp_set_dynamic(0)
-            openmp.omp_set_num_threads(threads_to_use)
+        threads_to_use = determine_num_threads(num_threads)
+        set_num_threads(threads_to_use)
 
         # if the fibers are too short FBC measures cannot be applied,
         # remove these.
@@ -304,8 +308,8 @@ cdef class FBCMeasures:
                     streamline_scores[line_id, point_id] = score_mp[line_id]
 
         # Reset number of OpenMP cores to default
-        if have_openmp and num_threads is not None:
-            openmp.omp_set_num_threads(all_cores)
+        if num_threads is not None:
+            restore_default_num_threads()
 
         # Save LFBC as class member
         self.streamlines_lfbc = streamline_scores

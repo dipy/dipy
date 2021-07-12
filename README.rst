@@ -44,7 +44,7 @@ Please see the developers' list at
 https://mail.python.org/mailman/listinfo/neuroimaging
 
 Please see the users' forum at
-https://neurostars.org/tags/dipy
+https://github.com/dipy/dipy/discussions
 
 Please join the gitter chatroom `here <https://gitter.im/dipy/dipy>`_.
 
@@ -86,7 +86,7 @@ Please see the `LICENSE file <https://github.com/dipy/dipy/blob/master/LICENSE>`
 Contributing
 ============
 
-We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/dipy/dipy/blob/master/CONTRIBUTING.md>`_.
+We welcome contributions from the community. Please read our `Contributing guidelines <https://github.com/dipy/dipy/blob/master/.github/CONTRIBUTING.md>`_.
 
 Reference
 =========
