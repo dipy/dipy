@@ -261,7 +261,7 @@ class RumbaFit(OdfFit):
                                       self.model.n_iter, self.model.recon_type,
                                       self.model.n_coils)
 
-        f_wm = sum(fodf_wm)
+        f_wm = np.sum(fodf_wm)
         self._f_wm = f_wm
         self._f_iso = f_iso
         self._odf = fodf_wm
