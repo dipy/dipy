@@ -138,12 +138,12 @@ plt.savefig('gfa_tracking_mask.png')
 """
 
 """
-3. Before we can begin tracking, we need to specify where to "seed" (begin) the fiber
-tracking. Generally, the seeds chosen will depend on the pathways one is
-interested in modeling. In this example, we'll use a $2 \times 2 \times 2$ grid
-of seeds per voxel, in a sagittal slice of the corpus callosum. Tracking from
-this region will give us a model of the corpus callosum tract. This slice has
-label value ``2`` in the label's image.
+3. Before we can begin tracking, we need to specify where to "seed" (begin)
+the fiber tracking. Generally, the seeds chosen will depend on the pathways
+one is interested in modeling. In this example, we'll use a $2 \times 2 \times
+2$ grid of seeds per voxel, in a sagittal slice of the corpus callosum.
+Tracking from this region will give us a model of the corpus callosum tract.
+This slice has label value ``2`` in the label's image.
 """
 
 from dipy.tracking import utils
