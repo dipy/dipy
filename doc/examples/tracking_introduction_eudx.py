@@ -45,7 +45,7 @@ gtab = gradient_table(bvals, bvecs)
 
 """
 This dataset provides a label map in which all white matter tissues are
-labeled either 1 or 2. Lets create a white matter mask to restrict tracking to
+labeled either 1 or 2. Let's create a white matter mask to restrict tracking to
 the white matter.
 """
 
@@ -58,7 +58,7 @@ data to a Constant Solid Angle ODF Model. This model will estimate the
 Orientation Distribution Function (ODF) at each voxel. The ODF is the
 distribution of water diffusion as a function of direction. The peaks of an ODF
 are good estimates for the orientation of tract segments at a point in the
-image. Here, we use ``peaks_from_model`` to fit the data and calculated the
+image. Here, we use ``peaks_from_model`` to fit the data and calculate the
 fiber directions in all voxels of the white matter.
 """
 
@@ -113,7 +113,7 @@ from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 """
-Again, for quality assurance we can also visualize a slice the GFA and the
+Again, for quality assurance we can also visualize slice of the GFA and the
 resulting tracking mask.
 """
 
@@ -133,17 +133,17 @@ plt.savefig('gfa_tracking_mask.png')
 .. figure:: gfa_tracking_mask.png
    :align: center
 
-   An example of tracking mask derived from the generalized fractional
+   An example of a tracking mask derived from the generalized fractional
    anisotropy (GFA).
 """
 
 """
-3. Before we can begin tracking is to specify where to "seed" (begin) the fiber
+3. Before we can begin tracking, we need to specify where to "seed" (begin) the fiber
 tracking. Generally, the seeds chosen will depend on the pathways one is
 interested in modeling. In this example, we'll use a $2 \times 2 \times 2$ grid
 of seeds per voxel, in a sagittal slice of the corpus callosum. Tracking from
 this region will give us a model of the corpus callosum tract. This slice has
-label value ``2`` in the labels image.
+label value ``2`` in the label's image.
 """
 
 from dipy.tracking import utils
@@ -152,7 +152,7 @@ seed_mask = (labels == 2)
 seeds = utils.seeds_from_mask(seed_mask, affine, density=[2, 2, 2])
 
 """
-Finally, we can bring it all together using ``LocalTracking``, performing Using
+Finally, we can bring it all together using ``LocalTracking``, using
 the EuDX algorithm [Garyfallidis12]_. ``EuDX`` [Garyfallidis12]_ is a fast
 algorithm that we use here to generate streamlines. This algorithm is what is
 used here and the default option when providing the output of peaks directly
