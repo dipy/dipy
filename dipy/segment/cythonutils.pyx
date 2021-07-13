@@ -17,12 +17,12 @@ cdef Shape shape_from_memview(Data data) nogil:
     Parameters
     ----------
     data : memoryview object (float)
-        array for which the shape informations are retrieved
+        array for which the shape information are retrieved
 
     Returns
     -------
     shape : `Shape` struct
-        structure containing informations about the shape of `data`
+        structure containing information about the shape of `data`
     """
     cdef Shape shape
     cdef int i
@@ -48,7 +48,7 @@ cdef Shape tuple2shape(dims) except *:
     Returns
     -------
     shape : `Shape` struct
-        structure containing shape informations obtained from `dims`
+        structure containing shape information obtained from `dims`
     """
     assert len(dims) < MAX_NDIM
     cdef Shape shape
@@ -67,7 +67,7 @@ cdef shape2tuple(Shape shape):
     Parameters
     ----------
     shape : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
@@ -91,9 +91,9 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
     Parameters
     ----------
     shape1 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
     shape2 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
