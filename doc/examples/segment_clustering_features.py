@@ -15,7 +15,7 @@ familiar with the tractography clustering framework, read the
 
 **Note**:
 All examples assume a function `get_streamlines` exists. We defined here a
-simple function to do so. It imports the necessary modules and load a small
+simple function to do so. It imports the necessary modules and loads a small
 streamline bundle.
 """
 
@@ -184,7 +184,7 @@ if interactive:
 .. figure:: center_of_mass_feature.png
    :align: center
 
-   Showing the center of mass of each streamline and colored according to
+   Showing the center of mass of each streamline colored according to
    the QuickBundles results.
 
 .. _clustering-examples-MidpointFeature:
@@ -239,7 +239,7 @@ if interactive:
 .. figure:: midpoint_feature.png
    :align: center
 
-   Showing the middle point of each streamline and colored according to the
+   Showing the middle point of each streamline colored according to the
    QuickBundles results.
 
 .. _clustering-examples-ArcLengthFeature:
@@ -248,7 +248,7 @@ ArcLength Feature
 =================
 **What:** Instances of `ArcLengthFeature` compute the length of a streamline.
 More specifically, this feature corresponds to the sum of the lengths of every
-streamline segments.
+streamline's segments.
 
 **When:** This feature can be useful when you *only* need information about the
 length of a streamline.
