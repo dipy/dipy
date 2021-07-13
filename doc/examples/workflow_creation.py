@@ -82,8 +82,8 @@ By iterating on the ``IOIterator`` object you created previously you
 conveniently get all input and output paths for every input file
 found when globbing the input parameters.
 
-The code in the loop is the actual workflow processing code. It can be anything.
-For example, it just appends text to an input file.
+The code in the loop is the actual workflow processing code. It can be
+anything. For example, it just appends text to an input file.
 
 This is it for the workflow! Now to be able to call it easily via command
 line, you need to add this bit of code. Usually this is in a separate
@@ -97,7 +97,8 @@ from dipy.workflows.flow_runner import run_flow
 """
 The second line imports the ``AppendTextFlow`` class from the newly created
 ``my_workflow.py`` file. In this specific case, we comment on this import
-since the ``AppendTextFlow`` class is not in an external file but in the current file.
+since the ``AppendTextFlow`` class is not in an external file but in the
+current file.
 """
 
 # from dipy.workflows.my_workflow import AppendTextFlow
@@ -111,8 +112,8 @@ if __name__ == "__main__":
     run_flow(AppendTextFlow())
 
 """
-This is the only thing needed to make your workflow available through the command
-line.
+This is the only thing needed to make your workflow available through the
+command line.
 
 Now just call the script you just made with ``-h`` to see the argparser help
 text::
