@@ -24,7 +24,7 @@ module of dipy:
 from dipy.denoise.gibbs import gibbs_removal
 
 """
-We first apply this algorithm to T1-weighted dataset which can be fetched
+We first apply this algorithm to a T1-weighted dataset which can be fetched
 using the following code:
 """
 
@@ -158,7 +158,7 @@ img, gtab = read_cenir_multib(bvals)
 data = np.asarray(img.dataobj)
 
 """
-For illustration proposes, we select two slices of this dataset
+For illustration purposes, we select two slices of this dataset
 """
 
 data_slices = data[:, :, 40:42, :]
