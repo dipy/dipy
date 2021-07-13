@@ -70,7 +70,7 @@ window.record(scene, out_path='bundle1.png', size=(600, 600))
    One orientation color for every streamline.
 
 You may wonder how we knew how to set the camera. This is very easy. You just
-need to run ``window.show`` once see how you want to see the object and then
+need to run ``window.show`` once to see how you want to see the object and then
 close the window and call the ``camera_info`` method which prints the position,
 focal point and view up vectors of the camera.
 """
@@ -139,7 +139,7 @@ window.record(scene, out_path='bundle3.png', size=(600, 600))
 Show every bundle with a specific color
 ========================================
 
-You can have a bundle with a specific color. In this example, we are chosing
+You can have a bundle with a specific color. In this example, we are choosing
 orange.
 """
 
@@ -219,7 +219,7 @@ window.record(scene, out_path='bundle6.png', size=(600, 600))
 .. figure:: bundle6.png
    :align: center
 
-   Random colors per points per streamline.
+   Random colors per point per streamline.
 
 In summary, we showed that there are many useful ways for visualizing maps
 on bundles.
