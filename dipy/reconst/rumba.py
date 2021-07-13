@@ -257,11 +257,10 @@ class RumbaFit(OdfFit):
             self.model.cache_set('kernel', sphere, self.kernel)
 
         ## Fitting ##
-        fodf_wm, f_iso = rumba_deconv(self.data, self.kernel,
-                                      self.model.n_iter, self.model.recon_type,
-                                      self.model.n_coils)
+        fodf_wm, f_iso, f_wm = rumba_deconv(self.data, self.kernel,
+                                            self.model.n_iter, self.model.recon_type,
+                                            self.model.n_coils)
 
-        f_wm = np.sum(fodf_wm)
         self._f_wm = f_wm
         self._f_iso = f_iso
         self._odf = fodf_wm
@@ -300,7 +299,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     fodf_wm : 1d ndarray (M-1,)
         fODF for white matter compartments.
     f_iso : float
-        Volume fraction of isotropic compartment.
+        Isotropic volume fraction
+    f_wm : float
+        White matter volume fraction.
 
     Notes
     -----
@@ -429,9 +430,10 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
 
     fodf_wm = np.squeeze(fodf[:n_comp-1])  # white matter compartments
-    f_iso = np.squeeze(fodf[n_comp-1])  # Isotropic compartment
+    f_iso = fodf[n_comp-1]  # isotropic compartment
+    f_wm = np.sum(fodf_wm)  # white matter fraction
 
-    return fodf_wm, f_iso
+    return fodf_wm, f_iso, f_wm
 
 
 def mbessel_ratio(n, x):
@@ -566,7 +568,9 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     fodf_wm : 4d ndarray (x, y, z, K)
         fODF computed for each voxel, where K is the number of vertices on `sphere`
     f_iso : 3d ndarray (x, y, z)
-        Volume fraction of isotropic compartment at each voxel.
+        Isotropic volume fraction at each voxel.
+    f_wm : 3d ndarray (x, y, z)
+        White matter volume fraction at each voxel.
     '''
 
     ## Checking data and mask shapes ##
@@ -595,10 +599,10 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
                              model.lambda_iso)
 
     # Fit fODF
-    fodf_wm, f_iso = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
-                                         model.n_coils, model.R, use_tv, verbose)
+    fodf_wm, f_iso, f_wm = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
+                                               model.n_coils, model.R, use_tv, verbose)
 
-    return fodf_wm, f_iso
+    return fodf_wm, f_iso, f_wm
 
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
@@ -644,7 +648,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     fodf_wm : 4d ndarray (x, y, z, M-1)
         fODF for white matter compartments at each voxel.
     f_iso : 3d ndarray (x, y, z)
-        Volume fraction of isotropic compartment at each voxel.
+        Isotropic volume fraction at each voxel.
+    f_wm : 3d ndarray (x, y, z)
+        White matter volume fraction at each voxel.
 
     Notes
     -----
@@ -812,9 +818,10 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     # Extract isotropic compartment
     f_tmp = np.zeros((n_v_tot, 1))
     f_tmp[index_mask, 0] = fodf[n_comp-1, :]
-    f_iso = np.reshape(f_tmp, dim[:3], order='F')  # Isotropic volume fraction
+    f_iso = np.reshape(f_tmp, dim[:3], order='F')  # isotropic volume fraction
+    f_wm = np.sum(fodf_wm, axis=3)  # white matter volume fraction
 
-    return fodf_wm, f_iso
+    return fodf_wm, f_iso, f_wm
 
 
 def _grad(M):
