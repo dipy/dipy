@@ -150,10 +150,10 @@ def test_global_fit():
     for model in model_list:
         for use_tv in [True, False]:  # test with/without TV regularization
             if use_tv:
-                odf, f_iso = global_fit(
+                odf, f_iso, _ = global_fit(
                     model, data_mvoxel, sphere, use_tv=True)
             else:
-                odf, f_iso = global_fit(
+                odf, f_iso, _ = global_fit(
                     model, data, sphere, use_tv=False)
 
             directions, _, _ = peak_directions(
@@ -168,7 +168,7 @@ def test_global_fit():
         for sbd in sb_dummies:
             data, golden_directions = sb_dummies[sbd]
             data = data[None, None, None, :]  # make 4D
-            odf, f_iso = global_fit(model, data, sphere, use_tv=False)
+            odf, f_iso, _ = global_fit(model, data, sphere, use_tv=False)
             directions, _, _ = peak_directions(
                 odf[0, 0, 0], sphere, .35, 25)
             if len(directions) <= 3:
@@ -196,7 +196,7 @@ def test_mvoxel_global_fit():
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-            odf, f_iso = global_fit(model, data, sphere, use_tv=use_tv)
+            odf, f_iso, f_wm = global_fit(model, data, sphere, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
             assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
@@ -208,8 +208,8 @@ def test_mvoxel_global_fit():
             assert_equal(np.alltrue(f_iso > 0), True)
 
             # Verify normalization
-            assert_almost_equal(np.sum(odf, axis=3) +
-                                f_iso, np.ones(f_iso.shape))
+            assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
+            assert_equal(np.sum(odf, axis=3), f_wm)
 
 
 def test_generate_kernel():
