@@ -9,7 +9,7 @@ Overview
 
 DIPY_ can read and write many different file formats. In this example
 we give a short introduction on how to use it for loading or saving
-streamlines. The new statefull tractogram class was made to reduce errors
+streamlines. The new stateful tractogram class was made to reduce errors
 caused by spatial transformation and complex file format convention.
 
 Read :ref:`faq`
@@ -54,7 +54,7 @@ reference_anatomy = nib.load(ref_anat_filename)
 Load tractogram will support 5 file formats, functions like load_trk or
 load_tck will simply be restricted to one file format
 
-TRK files contain their own header (when writen properly), so they
+TRK files contain their own header (when written properly), so they
 technically do not need a reference. (See how below)
 
 ``cc_trk = load_tractogram(bundles_filename[0], 'same')``
@@ -87,8 +87,8 @@ inputs is considered valid (as long as they are in the same share space)
 - Trk header (dict)
 - Stateful Tractogram
 
-The reason why this parameters is required is to guarantee all informations
-related to space attribute are always present.
+The reason why this parameter is required is to guarantee all information
+related to space attributes are always present.
 """
 
 affine, dimensions, voxel_sizes, voxel_order = get_reference_info(
@@ -147,7 +147,7 @@ save_tractogram(rpt_sft, 'rpt.trk')
 
 """
 Some functions in DIPY require streamlines to be in voxel space so computation
-can be perfomed on a grid (connectivity matrix, ROIs masking, density map).
+can be performed on a grid (connectivity matrix, ROIs masking, density map).
 The stateful tractogram class provides safe functions for such manipulation.
 These functions can be called safely over and over, by knowing in which state
 the tractogram is operating, and compute only necessary transformations
@@ -163,7 +163,7 @@ cc_sft.to_rasmm()
 print(cc_sft.space)
 
 """
-Now lets move them all to voxel space, subsample them to 100 streamlines,
+Now let's move them all to voxel space, subsample them to 100 streamlines,
 compute a density map and save everything for visualisation in another
 software such as Trackvis or MI-Brain.
 
