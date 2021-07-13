@@ -8,8 +8,8 @@ called DSI with Deconvolution. This algorithm is using Lucy-Richardson
 deconvolution in the diffusion propagator with the goal to create sharper ODFs
 with higher angular resolution.
 
-In this example we will show with simulated data how this method's ODF performs
-against standard DSI ODF and a ground truth multi tensor ODF.
+In this example we will show with simulated data how this method's ODF
+performance against standard DSI ODF and a ground truth multi tensor ODF.
 """
 
 import numpy as np
@@ -20,7 +20,7 @@ from dipy.reconst.dsi import (DiffusionSpectrumDeconvModel,
                               DiffusionSpectrumModel)
 
 """
-For the simulation we will use a standard DSI acqusition scheme with 514
+For the simulation we will use a standard DSI acquisition scheme with 514
 gradient directions and 1 S0.
 """
 
