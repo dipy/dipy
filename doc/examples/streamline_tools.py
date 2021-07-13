@@ -11,7 +11,7 @@ available in DIPY_. Some of the functions covered in this example are
 to filter streamlines that either pass through or do not pass through some
 region of the brain, ``connectivity_matrix`` groups and counts streamlines
 based on where in the brain they begin and end, and finally, density map counts
-the number of streamlines that pass though every voxel of some image.
+the number of streamlines that pass through every voxel of some image.
 
 To get started we'll need to have a set of streamlines to work with. We'll use
 EuDX along with the CsaOdfModel to make some streamlines. Let's import the
@@ -66,7 +66,7 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 Now we can use EuDX to track all of the white matter. To keep things reasonably
 fast we use ``density=1`` which will result in 1 seeds per voxel. The stopping
 criterion, determining when the tracking stops, is set to stop when the
-tracking exit the white matter.
+tracking exits the white matter.
 """
 
 affine = np.eye(4)
@@ -80,10 +80,10 @@ streamlines = Streamlines(streamline_generator)
 """
 The first of the tracking utilities we'll cover here is ``target``. This
 function takes a set of streamlines and a region of interest (ROI) and returns
-only those streamlines that pass though the ROI. The ROI should be an array
+only those streamlines that pass through the ROI. The ROI should be an array
 such that the voxels that belong to the ROI are ``True`` and all other voxels
 are ``False`` (this type of binary array is sometimes called a mask). This
-function can also exclude all the streamlines that pass though an ROI by
+function can also exclude all the streamlines that pass through an ROI by
 setting the ``include`` flag to ``False``. In this example we'll target the
 streamlines of the corpus callosum. Our ``labels`` array has a sagittal slice
 of the corpus callosum identified by the label value 2. We'll create an ROI
@@ -102,7 +102,7 @@ assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
 
 """
 We can use some of DIPY_'s visualization tools to display the ROI we targeted
-above and all the streamlines that pass though that ROI. The ROI is the yellow
+above and all the streamlines that pass through that ROI. The ROI is the yellow
 region near the center of the axial image.
 """
 
@@ -156,7 +156,7 @@ if interactive:
    **Corpus Callosum Sagittal**
 """
 """
-Once we've targeted on the corpus callosum ROI, we might want to find out which
+Once we've targeted th corpus callosum ROI, we might want to find out which
 regions of the brain are connected by these streamlines. To do this we can use
 the ``connectivity_matrix`` function. This function takes a set of streamlines
 and an array of labels as arguments. It returns the number of streamlines that
@@ -182,7 +182,7 @@ regions, and because the label 0 represents background and the labels 1 and 2
 represent white matter, we discard the first three rows and columns of the
 connectivity matrix.
 
-We can now display this matrix using matplotlib, we display it using a log
+We can now display this matrix using matplotlib. We display it using a log
 scale to make small values in the matrix easier to see.
 """
 
@@ -252,10 +252,10 @@ save_trk(sft, "lr-superiorfrontal.trk")
        <https://surfer.nmr.mgh.harvard.edu/>`_. The corpus callosum region is a
        combination of the FreeSurfer labels 251-255. The remaining FreeSurfer
        labels were re-mapped and reduced so that they lie between 0 and 88. To
-       see the FreeSurfer region, label and name, represented by each value see
+       see the FreeSurfer region, label and name, represented by each value, see
        `label_info.txt` in `~/.dipy/stanford_hardi`.
 .. [#] An affine transformation is a mapping between two coordinate systems
-       that can represent scaling, rotation, sheer, translation and reflection.
+       that can represent scaling, rotation, shear, translation and reflection.
        Affine transformations are often represented using a 4x4 matrix where
        the last row of the matrix is ``[0, 0, 0, 1]``.
 """
