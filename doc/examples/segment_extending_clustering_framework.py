@@ -37,7 +37,7 @@ points of a streamline). To define a new way of extracting features, one has to
 subclass ``Feature`` (see below).
 
 The **distance computation** part includes any metric capable of evaluating a
-distance between two set of features previously extracted from the data. To
+distance between two sets of features previously extracted from the data. To
 define a new way of extracting features, one has to subclass ``Metric`` (see
 below).
 
