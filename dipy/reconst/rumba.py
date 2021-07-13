@@ -430,7 +430,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
 
     fodf_wm = np.squeeze(fodf[:n_comp-1])  # white matter compartments
-    f_iso = fodf[n_comp-1]  # isotropic compartment
+    f_iso = np.squeeze(fodf[n_comp-1])  # isotropic compartment
     f_wm = np.sum(fodf_wm)  # white matter fraction
 
     return fodf_wm, f_iso, f_wm
