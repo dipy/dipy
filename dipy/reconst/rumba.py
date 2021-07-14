@@ -28,7 +28,7 @@ class RumbaSD(OdfModel, Cache):
         Modification of the Richardson-Lucy algorithm accounting for Rician and Noncentral Chi
         noise distributions, which more accurately represent MRI noise. Computes a maximum
         likelihood estimation of the fiber orientation density function (fODF) at each voxel [1]_.
-        Includes an isotropic compartment to account for partial volume effects.
+        Includes an optional isotropic compartment to account for partial volume effects.
 
         Kernel for deconvolution constructed using a priori knowledge of white matter diffusivity
         parallel and perpendicular to the fiber, as well as the mean isotropic diffusivity. RUMBA-SD
@@ -133,7 +133,9 @@ class RumbaFit(OdfFit):
 
     def __init__(self, model, data):
         '''
-        Computes fODF for a single voxel
+        Computes fODF and isotropic volume fraction for a single voxel.
+
+        fODF and isotropic fraction are normalized to collectively sum to 1.
 
         Parameters
         ----------
@@ -149,6 +151,7 @@ class RumbaFit(OdfFit):
         self._f_iso = None
         self._f_wm = None
         self._odf = None
+        self._combined = None
         self._sphere = None
 
     def odf(self, sphere):
@@ -176,7 +179,7 @@ class RumbaFit(OdfFit):
 
     def f_iso(self, sphere):
         '''
-        Computes isotropic volume fraction of voxel
+        Computes isotropic volume fraction of voxel.
 
         Parameters
         ----------
@@ -198,7 +201,9 @@ class RumbaFit(OdfFit):
 
     def f_wm(self, sphere):
         '''
-        Computes white matter fraction of voxel
+        Computes white matter fraction of voxel.
+
+        Equivalent to sum of fODF.
 
         Parameters
         ----------
@@ -222,7 +227,7 @@ class RumbaFit(OdfFit):
         '''
         Combine fODF and isotropic volume fraction.
 
-        Distributes isotropic volume fraction evenly along each fODF direction.
+        Distributes isotropic volume fraction evenly along each fODF direction. Sums to 1.
 
         Parameters
         ----------
@@ -236,12 +241,11 @@ class RumbaFit(OdfFit):
         '''
 
         # Check if previously fit on same sphere
-        if self._f_iso is not None and self._odf is not None and self._sphere == sphere:
+        if self._combined is not None and self._sphere == sphere:
             pass
         else:
             self._fit(sphere)
-        combined = self._odf + self._f_iso / len(self._odf)
-        return combined
+        return self._combined
 
     def _fit(self, sphere):
         '''
@@ -257,13 +261,14 @@ class RumbaFit(OdfFit):
             self.model.cache_set('kernel', sphere, self.kernel)
 
         ## Fitting ##
-        fodf_wm, f_iso, f_wm = rumba_deconv(self.data, self.kernel,
-                                            self.model.n_iter, self.model.recon_type,
-                                            self.model.n_coils)
+        fodf_wm, f_iso, f_wm, combined = rumba_deconv(self.data, self.kernel,
+                                                      self.model.n_iter, self.model.recon_type,
+                                                      self.model.n_coils)
 
         self._f_wm = f_wm
         self._f_iso = f_iso
         self._odf = fodf_wm
+        self._combined = combined
         self._sphere = sphere
         return
 
@@ -274,8 +279,8 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     Deconvolves the kernel from the diffusion-weighted signal by computing a maximum likelihood
     estimation of the fODF. Minimizes the negative log-likelihood of the data under Rician or
-    Noncentral Chi noise distributions by adapting the iterative technique developed in the
-    Richardson-Lucy algorithm [1]_.
+    Noncentral Chi noise distributions by adapting the iterative technique developed in
+    Richardson-Lucy deconvolution [1]_.
 
     Parameters
     ----------
@@ -302,6 +307,8 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         Isotropic volume fraction
     f_wm : float
         White matter volume fraction.
+    combined : 1d ndarray (M-1, )
+        fODF combined with isotropic compartment.
 
     Notes
     -----
@@ -432,8 +439,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     fodf_wm = np.squeeze(fodf[:n_comp-1])  # white matter compartments
     f_iso = np.squeeze(fodf[n_comp-1])  # isotropic compartment
     f_wm = np.sum(fodf_wm)  # white matter fraction
+    combined = fodf_wm + f_iso / len(fodf_wm)
 
-    return fodf_wm, f_iso, f_wm
+    return fodf_wm, f_iso, f_wm, combined
 
 
 def mbessel_ratio(n, x):
@@ -453,7 +461,7 @@ def mbessel_ratio(n, x):
         Order of Bessel function in numerator (denominator is of order n-1). Must be a positive
         int.
     x : float or ndarray
-        Value or array of values with which to compute ratio
+        Value or array of values with which to compute ratio.
 
     Returns
     -------
@@ -476,8 +484,8 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3, lambda_iso=3.0
     '''
     Generate deconvolution kernel
 
-    Compute kernel mapping volume fractions of white matter fiber populations (oriented along each
-    vertex of a sphere) and an isotropic volume fraction to a diffusion weighted signal.
+    Compute kernel mapping orientation densities of white matter fiber populations (along each
+    vertex of the sphere) and an isotropic volume fraction to a diffusion weighted signal.
 
     Parameters
     ----------
@@ -558,9 +566,10 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
         Binary mask specifying voxels of interest with 1; fODF will only be fit at these voxel
         (0 elsewhere). `None` generates a mask of all 1s. Default: None
     use_tv : bool, optional
-        If true, applies total variation regularization. Default: True
+        If true, applies total variation regularization. This requires a brain volume with no
+        singleton dimensions. Default: True
     verbose : bool, optional
-        If true, fit prints updates on estimated signal-to-noise ratio after each iteration.
+        If true, logs updates on estimated signal-to-noise ratio after each iteration.
         Default: False
 
     Returns
@@ -571,6 +580,8 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
         Isotropic volume fraction at each voxel.
     f_wm : 3d ndarray (x, y, z)
         White matter volume fraction at each voxel.
+    combined : 4d ndarray (x, y, z, K)
+        fODF combined with isotropic compartment for each voxel.
     '''
 
     ## Checking data and mask shapes ##
@@ -599,10 +610,10 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
                              model.lambda_iso)
 
     # Fit fODF
-    fodf_wm, f_iso, f_wm = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
-                                               model.n_coils, model.R, use_tv, verbose)
+    fodf_wm, f_iso, f_wm, combined = rumba_deconv_global(data, kernel, mask, model.n_iter, model.recon_type,
+                                                         model.n_coils, model.R, use_tv, verbose)
 
-    return fodf_wm, f_iso, f_wm
+    return fodf_wm, f_iso, f_wm, combined
 
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
@@ -638,19 +649,22 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         Number of coils in MRI scanner -- only relevant in SoS reconstruction. Must be a
         positive int. Default: 1
     use_tv : bool, optional
-        If true, applies total variation regularization. Default: True
+        If true, applies total variation regularization. This requires a brain volume with no
+        singleton dimensions. Default: True
     verbose : bool, optional
-        If true, fit prints updates on estimated signal-to-noise ratio after each iteration.
+        If true, logs updates on estimated signal-to-noise ratio after each iteration.
         Default: False
 
     Returns
     -------
     fodf_wm : 4d ndarray (x, y, z, M-1)
-        fODF for white matter compartments at each voxel.
+        fODF computed for each voxel.
     f_iso : 3d ndarray (x, y, z)
         Isotropic volume fraction at each voxel.
     f_wm : 3d ndarray (x, y, z)
         White matter volume fraction at each voxel.
+    combined : 4d ndarray (x, y, z, M-1)
+        fODF combined with isotropic compartment for each voxel.
 
     Notes
     -----
@@ -787,7 +801,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         sigma2_i = np.minimum((1 / 8)**2, np.maximum(sigma2_i, (1 / 80)**2))
 
         if verbose:
-            logger.info("Iteration %d+1 of %d", i, n_iter)
+            logger.info("Iteration %d of %d", i+1, n_iter)
 
             snr_mean = np.mean(1 / np.sqrt(sigma2_i))
             snr_std = np.std(1 / np.sqrt(sigma2_i))
@@ -820,8 +834,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     f_tmp[index_mask, 0] = fodf[n_comp-1, :]
     f_iso = np.reshape(f_tmp, dim[:3], order='F')  # isotropic volume fraction
     f_wm = np.sum(fodf_wm, axis=3)  # white matter volume fraction
+    combined = fodf_wm + f_iso[..., None] / fodf_wm.shape[3]
 
-    return fodf_wm, f_iso, f_wm
+    return fodf_wm, f_iso, f_wm, combined
 
 
 def _grad(M):
