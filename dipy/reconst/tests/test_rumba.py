@@ -5,7 +5,8 @@ import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
-                           assert_raises)
+                           assert_raises,
+                           run_module_suite)
 
 from dipy.reconst.rumba import RumbaSD, global_fit, generate_kernel
 from dipy.data import get_fnames, dsi_voxels, default_sphere
@@ -106,8 +107,9 @@ def test_mvoxel_rumba():
 
         # Verify properties of fODF and volume fractions
         assert_equal(combined, odf + f_iso[..., None] / len(sphere.vertices))
-        assert_equal(np.sum(odf, axis=3), f_wm)
         assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
+        assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
+        assert_equal(np.sum(odf, axis=3), f_wm)
 
 
 def test_global_fit():
@@ -130,54 +132,49 @@ def test_global_fit():
     # TV requires non-singleton size in all volume dimensions
     data_mvoxel = np.tile(data, (2, 2, 2, 1))
 
-    # Models to validate
-    rumba_smf = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1)
-    rumba_sos = RumbaSD(gtab, n_iter=20, recon_type='sos', n_coils=32)
-    rumba_r = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2)
-    model_list = [rumba_smf, rumba_sos, rumba_r]
+    # Model to validate
+    rumba = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2)
 
     # Testing input validation
-    assert_raises(ValueError, global_fit, rumba_smf,
+    assert_raises(ValueError, global_fit, rumba,
                   data[:, :, :, 0], sphere, use_tv=False)  # Must be 4D
     # TV can't work with singleton dimensions in data volume
-    assert_raises(ValueError, global_fit, rumba_smf,
+    assert_raises(ValueError, global_fit, rumba,
                   data, sphere, use_tv=True)
     # Mask must match first 3 dimensions of data
-    assert_raises(ValueError, global_fit, rumba_smf, data, sphere, mask=np.ones(
+    assert_raises(ValueError, global_fit, rumba, data, sphere, mask=np.ones(
         data.shape), use_tv=False)
 
     # Test on repulsion 724 sphere
-    for model in model_list:
-        for use_tv in [True, False]:  # test with/without TV regularization
-            if use_tv:
-                odf, f_iso, _ = global_fit(
-                    model, data_mvoxel, sphere, use_tv=True)
-            else:
-                odf, f_iso, _ = global_fit(
-                    model, data, sphere, use_tv=False)
+    for use_tv in [True, False]:  # test with/without TV regularization
+        if use_tv:
+            odf, f_iso, _, _ = global_fit(
+                rumba, data_mvoxel, sphere, use_tv=True)
+        else:
+            odf, f_iso, _, _ = global_fit(
+                rumba, data, sphere, use_tv=False)
 
-            directions, _, _ = peak_directions(
-                odf[0, 0, 0], sphere, .35, 25)
-            assert_equal(len(directions), 2)
-            assert_almost_equal(angular_similarity(directions, golden_directions), 2,
-                                1)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, .35, 25)
+        assert_equal(len(directions), 2)
+        assert_almost_equal(angular_similarity(directions, golden_directions), 2,
+                            1)
 
     # Test on data with 1, 2, 3, or no peaks
     sb_dummies = sticks_and_ball_dummies(gtab)
-    for model in model_list:
-        for sbd in sb_dummies:
-            data, golden_directions = sb_dummies[sbd]
-            data = data[None, None, None, :]  # make 4D
-            odf, f_iso, _ = global_fit(model, data, sphere, use_tv=False)
-            directions, _, _ = peak_directions(
-                odf[0, 0, 0], sphere, .35, 25)
-            if len(directions) <= 3:
-                # Verify small isotropic fraction in anisotropic case
-                assert_equal(f_iso[0, 0, 0] < 0.1, True)
-                assert_equal(len(directions), len(golden_directions))
-            if len(directions) > 3:
-                # Verify large isotropic fraction in isotropic case
-                assert_equal(f_iso[0, 0, 0] > 0.8, True)
+    for sbd in sb_dummies:
+        data, golden_directions = sb_dummies[sbd]
+        data = data[None, None, None, :]  # make 4D
+        odf, f_iso, _, _ = global_fit(rumba, data, sphere, use_tv=False)
+        directions, _, _ = peak_directions(
+            odf[0, 0, 0], sphere, .35, 25)
+        if len(directions) <= 3:
+            # Verify small isotropic fraction in anisotropic case
+            assert_equal(f_iso[0, 0, 0] < 0.1, True)
+            assert_equal(len(directions), len(golden_directions))
+        if len(directions) > 3:
+            # Verify large isotropic fraction in isotropic case
+            assert_equal(f_iso[0, 0, 0] > 0.8, True)
 
 
 def test_mvoxel_global_fit():
@@ -188,15 +185,15 @@ def test_mvoxel_global_fit():
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
-    rumba_smf = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1)
     rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32)
     rumba_r = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2)
-    model_list = [rumba_smf, rumba_sos, rumba_r]
+    model_list = [rumba_sos, rumba_r]
 
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-            odf, f_iso, f_wm = global_fit(model, data, sphere, use_tv=use_tv)
+            odf, f_iso, f_wm, combined = global_fit(
+                model, data, sphere, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
             assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
@@ -208,7 +205,10 @@ def test_mvoxel_global_fit():
             assert_equal(np.alltrue(f_iso > 0), True)
 
             # Verify normalization
+            assert_equal(combined, odf +
+                         f_iso[..., None] / len(sphere.vertices))
             assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
+            assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
             assert_equal(np.sum(odf, axis=3), f_wm)
 
 
@@ -248,7 +248,11 @@ def test_generate_kernel():
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi], None)
     assert_array_equal(kernel[:, 0], S)
 
-    # Test optional isotropic compartment; should cause last column to contain zeroes
+    # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
         gtab, sphere, lambda1=lambda1, lambda2=lambda2, lambda_iso=None)
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
+
+
+if __name__ == '__main__':
+    run_module_suite()
