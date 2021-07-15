@@ -228,6 +228,12 @@ class HorizonFlow(Workflow):
             raise ValueError('You need 3 values to set up background color. '
                              'e.g --bg_color 0.5 0.5 0.5')
 
+        if len(roi_colors) == 1:
+            roi_colors *= 3
+        elif len(roi_colors) != 3:
+            raise ValueError('You need 3 values to set up ROI color. '
+                             'e.g. --roi_colors 0.5 0.5 0.5')
+
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
                 cluster=cluster, cluster_thr=cluster_thr,
