@@ -11,6 +11,7 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
+                        center_of_mass, translation, rigid, affine,
                         affine_registration, streamline_registration,
                         write_mapping, read_mapping, register_dwi_to_template)
 
@@ -155,6 +156,11 @@ def test_affine_registration():
         # For array input, must provide affines:
         xformed, affine_mat = affine_registration(moving, static)
 
+    # Not supported transform names should raise an error
+    npt.assert_raises(ValueError, affine_registration, moving, static,
+                      moving_affine, static_affine,
+                      pipeline=["wrong_transform"])
+
     # If providing nifti image objects, don't need to provide affines:
     moving_img = nib.Nifti1Image(moving, moving_affine)
     static_img = nib.Nifti1Image(static, static_affine)
@@ -170,6 +176,21 @@ def test_affine_registration():
                                               sigmas=[3, 1],
                                               factors=[4, 2])
     npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+
+
+def test_single_transforms():
+    moving = subset_b0
+    static = subset_b0
+    moving_affine = static_affine = np.eye(4)
+
+    reg_methods = [center_of_mass, translation, rigid, affine]
+
+    for func in reg_methods:
+        xformed, affine_mat = func(moving, static, moving_affine,
+                                   static_affine, level_iters=[5, 5],
+                                   sigmas=[3, 1], factors=[2, 1])
+        # We don't ask for much:
+        npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
 
 def test_register_series():
