@@ -6,6 +6,7 @@ streamlines.
 
 """
 import collections
+from functools import partial
 import numbers
 import numpy as np
 import nibabel as nib
@@ -36,6 +37,7 @@ from dipy.io.image import load_nifti, save_nifti
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
+           "center_of_mass", "translation", "rigid", "affine",
            "affine_registration", "register_series",
            "register_dwi_series", "streamline_registration"]
 
@@ -490,6 +492,23 @@ def affine_registration(moving, static,
     if ret_metric:
         return resampled, starting_affine, xopt, fopt
     return resampled, starting_affine
+
+
+center_of_mass = partial(affine_registration, pipeline=['center_of_mass'])
+center_of_mass.__doc__ = ("Implements a center of mass transform. "
+                          "Based on `affine_registration()`.")
+
+translation = partial(affine_registration, pipeline=['translation'])
+translation.__doc__ = ("Implements a translation transform. "
+                       "Based on `affine_registration()`.")
+
+rigid = partial(affine_registration, pipeline=['rigid'])
+rigid.__doc__ = ("Implements a rigid transform. "
+                 "Based on `affine_registration()`.")
+
+affine = partial(affine_registration, pipeline=['affine'])
+affine.__doc__ = ("Implements an affine transform. "
+                  "Based on `affine_registration()`.")
 
 
 def register_series(series, ref, pipeline=None, series_affine=None,
