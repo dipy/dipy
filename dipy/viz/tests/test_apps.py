@@ -138,8 +138,6 @@ def test_roi_images():
     img3 = np.zeros((5, 5, 5))
     img3[3, 3, 3] = 1
     images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
-    #horizon(images=images)
-    #horizon(images=images, roi_images=True)
     with TemporaryDirectory() as out_dir:
         tmp_fname = os.path.join(out_dir, 'tmp_x.png')
 
