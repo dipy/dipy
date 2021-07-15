@@ -55,8 +55,8 @@ def test_rumba():
         odf = model.fit(data).odf(sphere)
         directions, _, _ = peak_directions(odf, sphere, .35, 25)
         assert_equal(len(directions), 2)
-        assert_almost_equal(angular_similarity(directions, golden_directions), 2,
-                            1)
+        assert_almost_equal(angular_similarity(directions, golden_directions),
+                            2, 1)
 
     # Test on data with 1, 2, 3, or no peaks
     sb_dummies = sticks_and_ball_dummies(gtab)
@@ -157,8 +157,8 @@ def test_global_fit():
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, .35, 25)
         assert_equal(len(directions), 2)
-        assert_almost_equal(angular_similarity(directions, golden_directions), 2,
-                            1)
+        assert_almost_equal(angular_similarity(directions, golden_directions),
+                            2, 1)
 
     # Test on data with 1, 2, 3, or no peaks
     sb_dummies = sticks_and_ball_dummies(gtab)
@@ -179,7 +179,7 @@ def test_global_fit():
 
 def test_mvoxel_global_fit():
     '''
-    Verify form of results in global fitting paradigm. 
+    Verify form of results in global fitting paradigm.
     '''
     data, gtab = dsi_voxels()  # multi-voxel data
     sphere = default_sphere  # repulsion 724
@@ -245,7 +245,8 @@ def test_generate_kernel():
     fi = 100  # volume fraction assumed to be 100%
 
     S, _ = multi_tensor(gtab, np.array([[lambda1, lambda2, lambda2]]),
-                        S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi], None)
+                        S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
+                        None)
     assert_array_equal(kernel[:, 0], S)
 
     # Test optional isotropic compartment; should cause last column of zeroes
