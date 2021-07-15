@@ -18,6 +18,7 @@
  reconst_mapmri.py
  reconst_mcsd.py
  reconst_qtdmri.py
+ reconst_rumba.py
  reconst_sh.py
  reconst_shore.py
  reconst_shore_metrics.py
@@ -51,6 +52,7 @@
  tracking_bootstrap_peaks.py
  tracking_stopping_criterion.py
  tracking_pft.py
+ tracking_rumba.py
  tracking_sfm.py
  affine_registration_3d.py
  syn_registration_2d.py
