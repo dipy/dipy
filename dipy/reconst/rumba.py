@@ -838,9 +838,10 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
                 # stack x, y, and z gradients
                 gr = _grad(fodf_3d)
-                d = np.sqrt(np.sum(gr**2, axis=3))
-                d = np.sqrt(epsilon**2 + d**2)
-                div_f = _divergence(gr / np.stack((d, d, d), axis=-1))
+                d = np.sum(gr**2, axis=3)
+                d = np.sqrt(epsilon**2 + d)
+                gr_norm = (gr / d[..., None])
+                div_f = _divergence(gr_norm)
                 g0 = np.abs(1 - tv_lambda * div_f)
                 tv_factor_3d = 1 / (g0 + _EPS)
                 tv_factor_1d = np.ravel(tv_factor_3d, order='F')[index_mask]
@@ -911,11 +912,12 @@ def _grad(M):
     y_ind = list(range(1, M.shape[1])) + [M.shape[1]-1]
     z_ind = list(range(1, M.shape[2])) + [M.shape[2]-1]
 
-    fx = M[x_ind, :, :] - M
-    fy = M[:, y_ind, :] - M
-    fz = M[:, :, z_ind] - M
+    grad = np.zeros((*M.shape, 3))
+    grad[:, :, :, 0] = M[x_ind, :, :] - M
+    grad[:, :, :, 1] = M[:, y_ind, :] - M
+    grad[:, :, :, 2] = M[:, :, z_ind] - M
 
-    return np.stack((fx, fy, fz), axis=-1)
+    return grad
 
 
 def _divergence(F):
