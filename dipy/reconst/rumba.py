@@ -345,7 +345,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     population with an anisotropic diffusion tensor $\bold{D_j}$.
 
     $f_{GM}$ and $f_{CSF}$ are the volume fractions and $D_{GM}$ and $D_{CSF}$
-    are the mean diffusivity coefficients of GM and CSF respectively.
+    are the mean diffusivities of GM and CSF respectively.
 
     This equation is linear in $f_j, f_{GM}, f_{CSF}$ and can be simplified to
     a single matrix multiplication:
