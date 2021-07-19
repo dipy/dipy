@@ -58,9 +58,9 @@ One simple approach is to use the values included as the default arguments in
 the `RumbaSD` constructor. The larger eigenvalue or the axial diffusivity,
 `lambda1`, is set to 1.7e-3, while the smaller eigenvalue or the perpendicular
 diffusivity, `lambda2`, is set to 0.2e-3. The mean isotropic diffusivity,
-`lambda_iso`, is set to 3.0e-3 [CanalesRodriguez2015]_. These default values
-will often be adequate as RUMBA-SD is robust against impulse response
-imprecision [DellAcqua2007]_.
+`lambda_iso`, is set to 3.0e-3, which is the diffusivity of water at 37 degrees
+celsius [CanalesRodriguez2015]_. These default values will often be adequate as
+RUMBA-SD is robust against impulse response imprecision [DellAcqua2007]_.
 """
 
 from dipy.reconst.rumba import RumbaSD
@@ -157,8 +157,6 @@ if interactive:
 scene.rm(response_actor)
 
 """
-There is no technique for estimating the isotropic diffusivity, so if this
-compartment is desired, the default value will perform adequately.
 
 Step 2. fODF Reconstruction
 ===========================

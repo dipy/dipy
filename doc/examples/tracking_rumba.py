@@ -86,7 +86,7 @@ plt.imshow((f_wm[:, :, sli] > 0.25).T, cmap='gray', origin='lower')
 plt.savefig('f_wm_tracking_mask.png')
 
 """
-.. figure:: f_wm_trackin_mask.png
+.. figure:: f_wm_tracking_mask.png
    :align: center
 
    White matter volume fraction slice
