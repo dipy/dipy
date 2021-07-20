@@ -13,6 +13,8 @@ extension on :ref:`example_tracking_probabilistic`.
 We start by loading sample data and identifying a fiber response function.
 """
 
+from numpy.linalg import inv
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, small_sphere
 from dipy.io.gradients import read_bvals_bvecs
@@ -20,9 +22,9 @@ from dipy.io.image import load_nifti, load_nifti_data
 from dipy.reconst.csdeconv import auto_response_ssst
 from dipy.tracking import utils
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.tracking.streamline import Streamlines
+from dipy.tracking.streamline import Streamlines, transform_streamlines
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
-from dipy.viz import window, actor, colormap, has_fury
+from dipy.viz import window, actor, colormap
 from dipy.reconst.rumba import RumbaSD, global_fit
 
 # Enables/disables interactive visualization
@@ -30,15 +32,17 @@ interactive = False
 
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 label_fname = get_fnames('stanford_labels')
+t1_fname = get_fnames('stanford_t1')
 
 data, affine, hardi_img = load_nifti(hardi_fname, return_img=True)
 labels = load_nifti_data(label_fname)
+t1_data, t1_aff = load_nifti(t1_fname)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 seed_mask = (labels == 2)
 white_matter = (labels == 1) | (labels == 2)
-seeds = utils.seeds_from_mask(seed_mask, affine, density=1)
+seeds = utils.seeds_from_mask(seed_mask, affine, density=2)
 
 response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
@@ -48,7 +52,7 @@ sphere = small_sphere
 We can now initialize a `RumbaSD` model and fit it using the `global_fit`
 method. For this example, TV regularization will be turned off for efficiency
 although its usage can provide more coherent results in fiber tracking. The
-fit will take about 15 minutes to complete.
+fit will take about 2 minutes to complete.
 """
 
 rumba = RumbaSD(gtab, lambda1=response[0][0], lambda2=response[0][1])
@@ -108,16 +112,29 @@ prob_dg = ProbabilisticDirectionGetter.from_pmf(odf, max_angle=30.,
 streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)
-sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
-save_trk(sft, "tractogram_probabilistic_dg_pmf.trk")
 
-if has_fury:
-    scene = window.Scene()
-    scene.add(actor.line(streamlines, colormap.line_colors(streamlines)))
-    window.record(scene, out_path='tractogram_probabilistic_rumba.png',
-                  size=(800, 800))
-    if interactive:
-        window.show(scene)
+color = colormap.line_colors(streamlines)
+streamlines_actor = actor.streamtube(
+        list(transform_streamlines(streamlines, inv(t1_aff))),
+        color, linewidth=0.1)
+
+vol_actor = actor.slicer(t1_data)
+vol_actor.display(x=40)
+vol_actor2 = vol_actor.copy()
+vol_actor2.display(z=35)
+
+scene = window.Scene()
+scene.add(vol_actor)
+scene.add(vol_actor2)
+scene.add(streamlines_actor)
+if interactive:
+    window.show(scene)
+
+window.record(scene, out_path='tractogram_probabilistic_rumba.png',
+              size=(800, 800))
+
+sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
+save_trk(sft, "tractogram_probabilistic_rumba.trk")
 
 """
 .. figure:: tractogram_probabilistic_rumba.png
