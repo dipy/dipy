@@ -644,6 +644,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     data = np.concatenate(
         (np.ones([*data.shape[:3], 1]), data[..., model.where_dwi]), axis=3)
     data[data > 1] = 1  # clip values between 0 and 1
+    # All arrays are converted to float32 to reduce memory load in global_fit
     data = data.astype(np.float32)
 
     if mask is None:  # default mask includes all voxels
@@ -681,6 +682,10 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     prevents oscillations), while still allowing for sharp discontinuities
     [2]_. This promots smoothness and continuity along individual tracts while
     preventing smoothing of adjacent tracts.
+
+    Generally, global_fit will proceed more quickly than the voxelwise fit
+    provided that the computer has adequate RAM (>= 16 GB will be more than
+    sufficient.).
 
     Parameters
     ----------
@@ -800,7 +805,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                          f"received f{recon_type}")
 
     mask_vec = np.ravel(mask, order='F')
-    # indices of target voxels
+    # Indices of target voxels
     index_mask = np.atleast_1d(np.squeeze(np.argwhere(mask_vec)))
     n_v_true = len(index_mask)  # number of target voxels
 

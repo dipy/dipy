@@ -315,7 +315,7 @@ global fitting where all voxels are fit simultaneously. This comes with some
 potential benefits such as:
 
 1. More efficient fitting due to matrix parallelization, in exchange for
-   larger demands on RAM
+   larger demands on RAM (>= 16 GB is more than sufficient)
 2. The option for spatial regularization; specifically, TV regularization is
    built into the fitting function (RUMBA-SD + TV)
 
