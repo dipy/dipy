@@ -37,7 +37,7 @@ b-value of 2000.
 import numpy as np
 
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, default_sphere
+from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 
@@ -46,6 +46,8 @@ data, affine = load_nifti(hardi_fname)
 
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
+
+sphere = get_sphere('symmetric362')
 
 """
 Step 1. Estimation of the fiber response function
@@ -86,10 +88,10 @@ scene = window.Scene()
 evals = [rumba.lambda1, rumba.lambda2, rumba.lambda2]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
-response_odf = single_tensor_odf(default_sphere.vertices, evals, evecs)
+response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # Transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=default_sphere,
+response_actor = actor.odf_slicer(response_odf, sphere=sphere,
                                   colormap='plasma')
 
 scene.add(response_actor)
@@ -135,10 +137,10 @@ We can visualize this estimated response as well.
 evals = response[0]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
-response_odf = single_tensor_odf(default_sphere.vertices, evals, evecs)
+response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 # transform our data from 1D to 4D
 response_odf = response_odf[None, None, None, :]
-response_actor = actor.odf_slicer(response_odf, sphere=default_sphere,
+response_actor = actor.odf_slicer(response_odf, sphere=sphere,
                                   colormap='plasma')
 scene.add(response_actor)
 print('Saving illustration as estimated_response.png')
@@ -197,12 +199,12 @@ data_small = data[20:50, 55:85, 38:39]
 This is the standard framework in DIPY for generating ODFs, wherein each voxel
 is fit sequentially. This is done using the typical `fit`, `odf` sequence.
 
-We will estimate the fODF using the `default_sphere` ("repulsion724"). This
+We will estimate the fODF using the 'symmetric362' sphere. This
 will take about a minute to compute.
 """
 
 rumba_fit = rumba.fit(data_small)
-odf = rumba_fit.odf(default_sphere)
+odf = rumba_fit.odf(sphere)
 
 """
 The inclusion of RUMBA-SD's isotropic compartment means we can also extract
@@ -212,8 +214,8 @@ sum to 1. If the isotropic compartment is not included, then the isotropic
 volume fraction map will all be zeroes.
 """
 
-f_iso = rumba_fit.f_iso(default_sphere)
-f_wm = rumba_fit.f_wm(default_sphere)
+f_iso = rumba_fit.f_iso(sphere)
+f_wm = rumba_fit.f_wm(sphere)
 
 """
 We can visualize these maps using adjacent heatmaps.
@@ -248,10 +250,10 @@ component. This is done using the `RumbaFit` object's method
 `norm=True` is used in FURY's `odf_slicer` method.
 """
 
-combined = rumba_fit.combined_odf_iso(default_sphere)
+combined = rumba_fit.combined_odf_iso(sphere)
 
 fodf_spheres = actor.odf_slicer(
-    combined, sphere=default_sphere, norm=True, scale=0.9, colormap=None)
+    combined, sphere=sphere, norm=True, scale=0.9, colormap=None)
 scene.add(fodf_spheres)
 print('Saving illustration as rumba_odfs.png')
 window.record(scene, out_path='rumba_odfs.png', size=(600, 600))
@@ -276,7 +278,7 @@ from dipy.direction import peaks_from_model
 
 rumba_peaks = peaks_from_model(model=rumba,
                                data=data_small,
-                               sphere=default_sphere,
+                               sphere=sphere,
                                relative_peak_threshold=.5,
                                min_separation_angle=25,
                                normalize_peaks=False,
@@ -334,14 +336,14 @@ from dipy.reconst.rumba import global_fit
 
 g_odf, g_f_iso, g_f_wm, g_combined = global_fit(rumba,
                                                 data_tv,
-                                                default_sphere,
+                                                sphere,
                                                 use_tv=True)
 
 """
 Now we can visualize the combined fODF map as before.
 """
 
-fodf_spheres = actor.odf_slicer(g_combined, sphere=default_sphere, norm=True,
+fodf_spheres = actor.odf_slicer(g_combined, sphere=sphere, norm=True,
                                 scale=0.9, colormap=None)
 
 scene.add(fodf_spheres)
@@ -378,7 +380,7 @@ g_peak_values = np.zeros((shape + (npeaks,)))
 
 for idx in np.ndindex(shape):  # iterate through each voxel
     # Get peaks of odf
-    direction, pk, _ = peak_directions(g_odf[idx], default_sphere,
+    direction, pk, _ = peak_directions(g_odf[idx], sphere,
                                        relative_peak_threshold=0.5,
                                        min_separation_angle=25)
 
@@ -391,7 +393,8 @@ for idx in np.ndindex(shape):  # iterate through each voxel
 # Scale up for visualization
 g_peak_values = np.clip(g_peak_values * 15, 0, 1)
 
-fodf_peaks = actor.peak_slicer(g_peak_dirs, g_peak_values)
+fodf_peaks = actor.peak_slicer(g_peak_dirs[:, :, 0:1, :], 
+                               g_peak_values[:, :, 0:1, :])
 scene.add(fodf_peaks)
 
 print('Saving illustration as rumba_g_peaks.png')
