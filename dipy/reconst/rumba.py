@@ -11,7 +11,7 @@ from dipy.core.gradients import gradient_table
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
-
+from dipy.segment.mask import bounding_box, crop
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
@@ -644,6 +644,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
     data = np.concatenate(
         (np.ones([*data.shape[:3], 1]), data[..., model.where_dwi]), axis=3)
     data[data > 1] = 1  # clip values between 0 and 1
+    data = data.astype(np.float32)
 
     if mask is None:  # default mask includes all voxels
         mask = np.ones(data.shape[:3])
@@ -655,7 +656,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     # Generate kernel
     kernel = generate_kernel(model.gtab, sphere, model.lambda1, model.lambda2,
-                             model.lambda_iso)
+                             model.lambda_iso).astype(np.float32)
 
     # Fit fODF
     fodf_wm, f_iso, f_wm, combined = rumba_deconv_global(data, kernel, mask,
@@ -768,6 +769,12 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
            20:89–97.
     '''
 
+    # Crop data to reduce memory consumption
+    dim_orig = data.shape
+    ixmin, ixmax = bounding_box(mask)
+    data = crop(data, ixmin, ixmax)
+    mask = crop(mask, ixmin, ixmax)
+
     if np.any(np.array(data.shape[:3]) == 1) and use_tv:
         raise ValueError("Cannot use TV regularization if any spatial" +
                          "dimensions are 1; " +
@@ -780,7 +787,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     dim = data.shape
     n_v_tot = np.prod(dim[:3])  # total number of voxels
 
-    fodf0 = np.ones((n_comp, 1))  # initial guess is iso-probable
+    # Initial guess is iso-probable
+    fodf0 = np.ones((n_comp, 1), dtype=np.float32)
     fodf0 = fodf0 / np.sum(fodf0, axis=0)
 
     if recon_type == "smf":
@@ -796,7 +804,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     index_mask = np.atleast_1d(np.squeeze(np.argwhere(mask_vec)))
     n_v_true = len(index_mask)  # number of target voxels
 
-    data_2d = np.zeros((n_v_true, n_grad))
+    data_2d = np.zeros((n_v_true, n_grad), dtype=np.float32)
     for i in range(n_grad):
         data_2d[:, i] = np.ravel(data[:, :, :, i], order='F')[
             index_mask]  # only keep voxels of interest
@@ -815,36 +823,38 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     tv_lambda = sigma2  # initial guess for TV regularization strength
 
     # Expand into matrix form for iterations
-    sigma2 = sigma2 * np.ones(data_2d.shape)
-    tv_lambda_aux = np.zeros((n_v_tot))
+    sigma2 = sigma2 * np.ones(data_2d.shape, dtype=np.float32)
+    tv_lambda_aux = np.zeros((n_v_tot), dtype=np.float32)
 
     reblurred_s = data_2d * reblurred / sigma2
 
     for i in range(n_iter):
         fodf_i = fodf
-        ratio = mbessel_ratio(n_order, reblurred_s)
+        ratio = mbessel_ratio(n_order, reblurred_s).astype(np.float32)
         rl_factor = np.matmul(kernel_t, data_2d*ratio) / \
             (np.matmul(kernel_t, reblurred) + _EPS)
 
         if use_tv:  # apply TV regularization
-            tv_factor = np.ones(fodf_i.shape)
+            tv_factor = np.ones(fodf_i.shape, dtype=np.float32)
+            fodf_4d = np.zeros((*dim[:3], n_comp), dtype=np.float32)
 
             for j in range(n_comp):
-
-                fodf_jv = np.zeros((n_v_tot, 1))
+                fodf_jv = np.zeros((n_v_tot, 1), dtype=np.float32)
                 fodf_jv[index_mask, 0] = np.squeeze(
                     fodf_i[j, :])  # zeros at non-target voxels
-                fodf_3d = fodf_jv.reshape((dim[0], dim[1], dim[2]), order='F')
+                fodf_4d[:, :, :, j] = fodf_jv.reshape((dim[0], dim[1], dim[2]),
+                                                      order='F')
+            # Compute gradient, divergence
+            gr = _grad(fodf_4d)
+            d_inv = 1 / np.sqrt(epsilon**2 + np.sum(gr**2, axis=3))
+            gr_norm = (gr * d_inv[:, :, :, None, :])
+            div_f = _divergence(gr_norm)
+            g0 = np.abs(1 - tv_lambda * div_f)
+            tv_factor_4d = 1 / (g0 + _EPS)
 
-                # stack x, y, and z gradients
-                gr = _grad(fodf_3d)
-                d = np.sum(gr**2, axis=3)
-                d = np.sqrt(epsilon**2 + d)
-                gr_norm = (gr / d[..., None])
-                div_f = _divergence(gr_norm)
-                g0 = np.abs(1 - tv_lambda * div_f)
-                tv_factor_3d = 1 / (g0 + _EPS)
-                tv_factor_1d = np.ravel(tv_factor_3d, order='F')[index_mask]
+            for j in range(n_comp):
+                tv_factor_1d = np.ravel(tv_factor_4d[:, :, :, j],
+                                        order='F')[index_mask]
                 tv_factor[j, :] = tv_factor_1d
 
             # Apply TV regularization to iteration factor
@@ -888,16 +898,19 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + _EPS)  # normalize fODF
 
     # Extract WM compartments
-    fodf_wm = np.zeros([*dim[:3], n_comp-1])
+    fodf_wm = np.zeros((*dim_orig[:3], n_comp-1))
     for i in range(n_comp - 1):
         f_tmp = np.zeros((n_v_tot, 1))
         f_tmp[index_mask, 0] = fodf[i, :]
-        fodf_wm[:, :, :, i] = np.reshape(f_tmp, dim[:3], order='F')
+        fodf_wm[ixmin[0]:ixmax[0], ixmin[1]:ixmax[1], ixmin[2]:ixmax[2], i] = \
+            np.reshape(f_tmp, dim[:3], order='F')
 
     # Extract isotropic compartment
     f_tmp = np.zeros((n_v_tot, 1))
     f_tmp[index_mask, 0] = fodf[n_comp-1, :]
-    f_iso = np.reshape(f_tmp, dim[:3], order='F')  # isotropic volume fraction
+    f_iso = np.zeros((*dim_orig[:3],))
+    f_iso[ixmin[0]:ixmax[0], ixmin[1]:ixmax[1], ixmin[2]:ixmax[2]] = \
+        np.reshape(f_tmp, dim[:3], order='F')  # isotropic volume fraction
     f_wm = np.sum(fodf_wm, axis=3)  # white matter volume fraction
     combined = fodf_wm + f_iso[..., None] / fodf_wm.shape[3]
 
@@ -912,10 +925,10 @@ def _grad(M):
     y_ind = list(range(1, M.shape[1])) + [M.shape[1]-1]
     z_ind = list(range(1, M.shape[2])) + [M.shape[2]-1]
 
-    grad = np.zeros((*M.shape, 3))
-    grad[:, :, :, 0] = M[x_ind, :, :] - M
-    grad[:, :, :, 1] = M[:, y_ind, :] - M
-    grad[:, :, :, 2] = M[:, :, z_ind] - M
+    grad = np.zeros((*M.shape[:3], 3, M.shape[-1]), dtype=np.float32)
+    grad[:, :, :, 0, :] = M[x_ind, :, :, :] - M
+    grad[:, :, :, 1, :] = M[:, y_ind, :, :] - M
+    grad[:, :, :, 2, :] = M[:, :, z_ind, :] - M
 
     return grad
 
@@ -925,24 +938,24 @@ def _divergence(F):
     Computes divergence of a 3-dimensional vector field (with one way
     first difference)
     '''
-    Fx = F[:, :, :, 0]
-    Fy = F[:, :, :, 1]
-    Fz = F[:, :, :, 2]
+    Fx = F[:, :, :, 0, :]
+    Fy = F[:, :, :, 1, :]
+    Fz = F[:, :, :, 2, :]
 
     x_ind = [0] + list(range(F.shape[0]-1))
     y_ind = [0] + list(range(F.shape[1]-1))
     z_ind = [0] + list(range(F.shape[2]-1))
 
-    fx = Fx - Fx[x_ind, :, :]
-    fx[0, :, :] = Fx[0, :, :]  # edge conditions
-    fx[-1, :, :] = -Fx[-2, :, :]
+    fx = Fx - Fx[x_ind, :, :, :]
+    fx[0, :, :, :] = Fx[0, :, :, :]  # edge conditions
+    fx[-1, :, :, :] = -Fx[-2, :, :, :]
 
-    fy = Fy - Fy[:, y_ind, :]
-    fy[:, 0, :] = Fy[:, 0, :]
-    fy[:, -1, :] = -Fy[:, -2, :]
+    fy = Fy - Fy[:, y_ind, :, :]
+    fy[:, 0, :, :] = Fy[:, 0, :, :]
+    fy[:, -1, :, :] = -Fy[:, -2, :, :]
 
-    fz = Fz - Fz[:, :, z_ind]
-    fz[:, :, 0] = Fz[:, :, 0]
-    fz[:, :, -1] = -Fz[:, :, -2]
+    fz = Fz - Fz[:, :, z_ind, :]
+    fz[:, :, 0, :] = Fz[:, :, 0, :]
+    fz[:, :, -1, :] = -Fz[:, :, -2, :]
 
     return fx + fy + fz
