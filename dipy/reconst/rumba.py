@@ -898,8 +898,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                     tv_lambda = (1/30)**2
             else:  # different factor for each voxel
                 tv_lambda_aux[index_mask] = sigma2_i
-                tv_lambda = np.reshape(tv_lambda_aux, dim[:3], order='F')
+                tv_lambda = np.reshape(tv_lambda_aux, (*dim[:3], 1), order='F')
 
+    fodf = fodf.astype(np.float64)
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + _EPS)  # normalize fODF
 
     # Extract WM compartments
