@@ -52,10 +52,11 @@ sphere = small_sphere
 We can now initialize a `RumbaSD` model and fit it using the `global_fit`
 method. For this example, TV regularization will be turned off for efficiency
 although its usage can provide more coherent results in fiber tracking. The
-fit will take about 2 minutes to complete.
+fit will take about 5 minutes to complete.
 """
 
-rumba = RumbaSD(gtab, lambda1=response[0][0], lambda2=response[0][1])
+rumba = RumbaSD(gtab, lambda1=response[0][0], lambda2=response[0][1],
+                n_iter=200)
 odf, f_iso, f_wm, combined = global_fit(rumba, data, sphere,
                                         mask=white_matter, use_tv=False)
 
