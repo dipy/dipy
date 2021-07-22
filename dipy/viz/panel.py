@@ -458,6 +458,7 @@ def slicer_panel(scene, iren,
     volume_slider_label = build_label(text="Volume")
     picker_label = build_label(text='')
     double_slider_label = build_label(text='Colormap')
+    slicer_panel_label = build_label(text="Slicer panel", bold=True)
 
     def label_colormap_callback(obj, event):
 
@@ -498,27 +499,27 @@ def slicer_panel(scene, iren,
                                            1.0)
 
     if data.ndim == 4:
-        panel_size = (400, 400 + 100)
+        panel_size = (320, 400 + 100)
     if data.ndim == 3:
-        panel_size = (400, 300 + 100)
+        panel_size = (320, 300 + 100)
 
     panel = ui.Panel2D(size=panel_size,
-                       position=(850, 110),
+                       position=(870, 10),
                        color=(1, 1, 1),
                        opacity=0.1,
                        align="right")
 
     ys = np.linspace(0, 1, 10)
 
-    panel.add_element(line_slider_z, coords=(0.4, ys[1]))
-    panel.add_element(line_slider_y, coords=(0.4, ys[2]))
-    panel.add_element(line_slider_x, coords=(0.4, ys[3]))
-    panel.add_element(opacity_slider, coords=(0.4, ys[4]))
-    panel.add_element(double_slider, coords=(0.4, (ys[7] + ys[8])/2.))
+    panel.add_element(line_slider_z, coords=(0.42, ys[1]))
+    panel.add_element(line_slider_y, coords=(0.42, ys[2]))
+    panel.add_element(line_slider_x, coords=(0.42, ys[3]))
+    panel.add_element(opacity_slider, coords=(0.42, ys[4]))
+    panel.add_element(double_slider, coords=(0.42, (ys[7] + ys[8])/2.))
 
     if data.ndim == 4:
         if data.shape[-1] > 3:
-            panel.add_element(volume_slider, coords=(0.4, ys[6]))
+            panel.add_element(volume_slider, coords=(0.42, ys[6]))
 
     panel.add_element(line_slider_label_z, coords=(0.1, ys[1]))
     panel.add_element(line_slider_label_y, coords=(0.1, ys[2]))
@@ -528,10 +529,11 @@ def slicer_panel(scene, iren,
 
     if data.ndim == 4:
         if data.shape[-1] > 3:
-            panel.add_element(volume_slider_label,
-                              coords=(0.1, ys[6]))
+            panel.add_element(volume_slider_label, coords=(0.1, ys[6]))
 
     panel.add_element(picker_label, coords=(0.2, ys[5]))
+
+    panel.add_element(slicer_panel_label, coords=(0.05, 0.9))
 
     scene.add(panel)
 
