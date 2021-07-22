@@ -82,7 +82,7 @@ def test_image_registration():
         static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
         moving_image_file = pjoin(temp_out_dir, 't1.nii.gz')
 
-        image_registeration_flow = ImageRegistrationFlow()
+        image_registration_flow = ImageRegistrationFlow()
 
         def read_distance(qual_fname):
             temp_val = 0
@@ -95,13 +95,13 @@ def test_image_registration():
             out_moved = pjoin(temp_out_dir, "com_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "com_affine.txt")
 
-            image_registeration_flow._force_overwrite = True
-            image_registeration_flow.run(static_image_file,
-                                         moving_image_file,
-                                         transform='com',
-                                         out_dir=temp_out_dir,
-                                         out_moved=out_moved,
-                                         out_affine=out_affine)
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='com',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine)
             check_existence(out_moved, out_affine)
 
         def test_translation():
@@ -109,16 +109,16 @@ def test_image_registration():
             out_moved = pjoin(temp_out_dir, "trans_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "trans_affine.txt")
 
-            image_registeration_flow._force_overwrite = True
-            image_registeration_flow.run(static_image_file,
-                                         moving_image_file,
-                                         transform='trans',
-                                         out_dir=temp_out_dir,
-                                         out_moved=out_moved,
-                                         out_affine=out_affine,
-                                         save_metric=True,
-                                         level_iters=[100, 10, 1],
-                                         out_quality='trans_q.txt')
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='trans',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        save_metric=True,
+                                        level_iters=[100, 10, 1],
+                                        out_quality='trans_q.txt')
 
             dist = read_distance('trans_q.txt')
             npt.assert_almost_equal(float(dist), -0.3953547764454917, 1)
@@ -129,19 +129,59 @@ def test_image_registration():
             out_moved = pjoin(temp_out_dir, "rigid_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "rigid_affine.txt")
 
-            image_registeration_flow._force_overwrite = True
-            image_registeration_flow.run(static_image_file,
-                                         moving_image_file,
-                                         transform='rigid',
-                                         out_dir=temp_out_dir,
-                                         out_moved=out_moved,
-                                         out_affine=out_affine,
-                                         save_metric=True,
-                                         level_iters=[100, 10, 1],
-                                         out_quality='rigid_q.txt')
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='rigid',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        save_metric=True,
+                                        level_iters=[100, 10, 1],
+                                        out_quality='rigid_q.txt')
 
             dist = read_distance('rigid_q.txt')
             npt.assert_almost_equal(dist, -0.6900534794005155, 1)
+            check_existence(out_moved, out_affine)
+
+        def test_rigid_isoscaling():
+
+            out_moved = pjoin(temp_out_dir, "rigid_isoscaling_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "rigid_isoscaling_affine.txt")
+
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='rigid_isoscaling',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        save_metric=True,
+                                        level_iters=[100, 10, 1],
+                                        out_quality='rigid_isoscaling_q.txt')
+
+            dist = read_distance('rigid_isoscaling_q.txt')
+            npt.assert_almost_equal(dist, -0.6960044668271375, 1)
+            check_existence(out_moved, out_affine)
+
+        def test_rigid_scaling():
+
+            out_moved = pjoin(temp_out_dir, "rigid_scaling_moved.nii.gz")
+            out_affine = pjoin(temp_out_dir, "rigid_scaling_affine.txt")
+
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='rigid_scaling',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        save_metric=True,
+                                        level_iters=[100, 10, 1],
+                                        out_quality='rigid_scaling_q.txt')
+
+            dist = read_distance('rigid_scaling_q.txt')
+            npt.assert_almost_equal(dist, -0.698688892993124, 1)
             check_existence(out_moved, out_affine)
 
         def test_affine():
@@ -149,16 +189,16 @@ def test_image_registration():
             out_moved = pjoin(temp_out_dir, "affine_moved.nii.gz")
             out_affine = pjoin(temp_out_dir, "affine_affine.txt")
 
-            image_registeration_flow._force_overwrite = True
-            image_registeration_flow.run(static_image_file,
-                                         moving_image_file,
-                                         transform='affine',
-                                         out_dir=temp_out_dir,
-                                         out_moved=out_moved,
-                                         out_affine=out_affine,
-                                         save_metric=True,
-                                         level_iters=[100, 10, 1],
-                                         out_quality='affine_q.txt')
+            image_registration_flow._force_overwrite = True
+            image_registration_flow.run(static_image_file,
+                                        moving_image_file,
+                                        transform='affine',
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        save_metric=True,
+                                        level_iters=[100, 10, 1],
+                                        out_quality='affine_q.txt')
 
             dist = read_distance('affine_q.txt')
             npt.assert_almost_equal(dist, -0.7670650775914811, 1)
@@ -166,14 +206,14 @@ def test_image_registration():
 
         # Creating the erroneous behavior
         def test_err():
-            image_registeration_flow._force_overwrite = True
-            npt.assert_raises(ValueError, image_registeration_flow.run,
+            image_registration_flow._force_overwrite = True
+            npt.assert_raises(ValueError, image_registration_flow.run,
                               static_image_file,
                               moving_image_file,
                               transform='notransform')
 
-            image_registeration_flow._force_overwrite = True
-            npt.assert_raises(ValueError, image_registeration_flow.run,
+            image_registration_flow._force_overwrite = True
+            npt.assert_raises(ValueError, image_registration_flow.run,
                               static_image_file,
                               moving_image_file,
                               metric='wrong_metric')
@@ -186,6 +226,8 @@ def test_image_registration():
         test_com()
         test_translation()
         test_rigid()
+        test_rigid_isoscaling()
+        test_rigid_scaling()
         test_affine()
         test_err()
 
@@ -204,11 +246,17 @@ def test_apply_affine_transform():
             ('TRANSLATION', 3): (2.0, None, np.array([2.3, 4.5, 1.7])),
             ('RIGID', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3, 4.5,
                                                 1.7])),
+            ('RIGIDISOSCALING', 3): (0.1, None, np.array([0.1, 0.15, -0.11,
+                                                         2.3, 4.5, 1.7,
+                                                          0.8])),
+            ('RIGIDSCALING', 3): (0.1, None, np.array([0.1, 0.15, -0.11, 2.3,
+                                                       4.5, 1.7, 0.8, 0.9,
+                                                       1.1])),
             ('AFFINE', 3): (0.1, None, np.array([0.99, -0.05, 0.03, 1.3,
                                                  0.05, 0.99, -0.10, 2.5,
                                                  -0.07, 0.10, 0.99, -1.4]))}
 
-        image_registeration_flow = ImageRegistrationFlow()
+        image_registration_flow = ImageRegistrationFlow()
         apply_trans = ApplyTransformFlow()
 
         for i in factors.keys():
@@ -237,16 +285,20 @@ def test_apply_affine_transform():
 
             if str(i[0]) == "TRANSLATION":
                 transform_type = "trans"
+            elif str(i[0]) == "RIGIDISOSCALING":
+                transform_type = "rigid_isoscaling"
+            elif str(i[0]) == "RIGIDSCALING":
+                transform_type = "rigid_scaling"
             else:
                 transform_type = str(i[0]).lower()
 
-            image_registeration_flow.run(static_image_file, moving_image_file,
-                                         transform=transform_type,
-                                         out_dir=temp_out_dir,
-                                         out_moved=out_moved,
-                                         out_affine=out_affine,
-                                         level_iters=[1, 1, 1],
-                                         save_metric=False)
+            image_registration_flow.run(static_image_file, moving_image_file,
+                                        transform=transform_type,
+                                        out_dir=temp_out_dir,
+                                        out_moved=out_moved,
+                                        out_affine=out_affine,
+                                        level_iters=[1, 1, 1],
+                                        save_metric=False)
 
             # Checking for the created moved file.
             assert os.path.exists(out_moved)

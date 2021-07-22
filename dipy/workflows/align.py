@@ -3,14 +3,12 @@ import logging
 import numpy as np
 import nibabel as nib
 
-from dipy.align.imaffine import AffineMap, transform_centers_of_mass, \
-    MutualInformationMetric, AffineRegistration
+from dipy.align.imaffine import AffineMap
 from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
                                DiffeomorphicMap)
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
-from dipy.align.transforms import (TranslationTransform3D, RigidTransform3D,
-                                   AffineTransform3D)
+from dipy.align import affine_registration
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
 from dipy.tracking.streamline import transform_streamlines
@@ -238,9 +236,8 @@ class SlrWithQbxFlow(Workflow):
 
 class ImageRegistrationFlow(Workflow):
     """
-    The registration workflow is organized as a collection of different
-    functions. The user can intend to use only one type of registration
-    (such as center of mass or rigid body registration only).
+    The registration workflow allows the user to use only one type of
+    registration (such as center of mass or rigid body registration only).
 
     Alternatively, a registration can be done in a progressive manner.
     For example, using affine registration with progressive set to 'True'
@@ -251,243 +248,6 @@ class ImageRegistrationFlow(Workflow):
 
     This can be controlled by using the progressive flag (True by default).
     """
-
-    def perform_transformation(self, static, static_grid2world, moving,
-                               moving_grid2world,
-                               affreg, params0, transform, affine):
-        """ Function to apply the transformation.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : 2D or 3D array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix.
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        transform : An instance of transform type.
-
-        affine : Affine matrix to be used as starting affine.
-        """
-        img_registration, \
-            xopt, fopt = affreg.optimize(static, moving, transform, params0,
-                                         static_grid2world,
-                                         moving_grid2world,
-                                         starting_affine=affine,
-                                         ret_metric=True)
-        transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine, xopt, fopt
-
-    def center_of_mass(self, static, static_grid2world,
-                       moving, moving_grid2world):
-        """ Function for the center of mass based image registration.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : 2D or 3D array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix.
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        """
-
-        img_registration = transform_centers_of_mass(static,
-                                                     static_grid2world,
-                                                     moving,
-                                                     moving_grid2world)
-
-        transformed = img_registration.transform(moving)
-        return transformed, img_registration.affine
-
-    def translate(self, static, static_grid2world, moving,
-                  moving_grid2world, affreg, params0):
-        """ Function for translation based registration.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : 2D or 3D  array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix.
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        """
-        _, affine = self.center_of_mass(static, static_grid2world, moving,
-                                        moving_grid2world)
-
-        transform = TranslationTransform3D()
-        return self.perform_transformation(static, static_grid2world,
-                                           moving, moving_grid2world,
-                                           affreg, params0, transform,
-                                           affine)
-
-    def rigid(self, static, static_grid2world, moving, moving_grid2world,
-              affreg, params0, progressive):
-        """ Function for rigid body based image registration.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : 2D or 3D array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix.
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        progressive : boolean
-            Flag to enable or disable the progressive registration. (defa
-            ult True)
-
-        """
-
-        if progressive:
-            _, affine, xopt, fopt = self.translate(static, static_grid2world,
-                                                   moving, moving_grid2world,
-                                                   affreg, params0)
-
-        else:
-            _, affine = self.center_of_mass(static, static_grid2world, moving,
-                                            moving_grid2world)
-
-        transform = RigidTransform3D()
-        return self.perform_transformation(static, static_grid2world,
-                                           moving, moving_grid2world,
-                                           affreg, params0, transform,
-                                           affine)
-
-    def affine(self, static, static_grid2world, moving, moving_grid2world,
-               affreg, params0, progressive):
-        """ Function for full affine registration.
-
-        Parameters
-        ----------
-        static : 2D or 3D array
-            the image to be used as reference during optimization.
-
-        static_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the static
-            image. The default is None, implying the transform is the
-            identity.
-
-        moving : 2D or 3D array
-            the image to be used as "moving" during optimization. It is
-            necessary to pre-align the moving image to ensure its domain
-            lies inside the domain of the deformation fields. This is assumed
-            to be accomplished by "pre-aligning" the moving image towards the
-            static using an affine transformation given by the
-            'starting_affine' matrix.
-
-        moving_grid2world : array, shape (dim+1, dim+1), optional
-            the voxel-to-space transformation associated with the moving
-            image. The default is None, implying the transform is the
-            identity.
-
-        affreg : An object of the image registration class.
-
-        params0 : array, shape (n,)
-            parameters from which to start the optimization. If None, the
-            optimization will start at the identity transform. n is the
-            number of parameters of the specified transformation.
-
-        progressive : boolean
-            Flag to enable or disable the progressive registration. (defa
-            ult True)
-
-        """
-        if progressive:
-            _, affine, xopt, fopt = self.rigid(static, static_grid2world,
-                                               moving, moving_grid2world,
-                                               affreg, params0, progressive)
-        else:
-            _, affine = self.center_of_mass(static, static_grid2world,
-                                            moving, moving_grid2world)
-
-        transform = AffineTransform3D()
-        return self.perform_transformation(static, static_grid2world,
-                                           moving, moving_grid2world,
-                                           affreg, params0, transform,
-                                           affine)
 
     def run(self, static_image_files, moving_image_files, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
@@ -505,9 +265,10 @@ class ImageRegistrationFlow(Workflow):
             Path to the moving image file.
 
         transform : string, optional
-            com: center of mass, trans: translation, rigid: rigid body
-             affine: full affine including translation, rotation, shearing and
-             scaling.
+            com: center of mass, trans: translation, rigid: rigid body,
+            rigid_isoscaling: rigid body + isotropic scaling, rigid_scaling:
+            rigid body + scaling, affine: full affine including translation,
+            rotation, shearing and scaling.
 
         nbins : int, optional
             Number of bins to discretize the joint and marginal PDF.
@@ -557,6 +318,37 @@ class ImageRegistrationFlow(Workflow):
 
         io_it = self.get_io_iterator()
         transform = transform.lower()
+        metric = metric.upper()
+        if metric != 'MI':
+            raise ValueError("Invalid similarity metric: Please provide a"
+                             "valid metric.")
+
+        if progressive:
+            pipeline_opt = {
+                "com": ["center_of_mass"],
+                "trans": ["center_of_mass", "translation"],
+                "rigid": ["center_of_mass", "translation", "rigid"],
+                "rigid_isoscaling": ["center_of_mass", "translation",
+                                     "rigid_isoscaling"],
+                "rigid_scaling": ["center_of_mass", "translation",
+                                  "rigid_scaling"],
+                "affine": ["center_of_mass", "translation", "rigid", "affine"]}
+        else:
+            pipeline_opt = {
+                "com": ["center_of_mass"],
+                "trans": ["center_of_mass", "translation"],
+                "rigid": ["center_of_mass", "rigid"],
+                "rigid_isoscaling": ["center_of_mass", "rigid_isoscaling"],
+                "rigid_scaling": ["center_of_mass", "rigid_scaling"],
+                "affine": ["center_of_mass", "affine"]}
+
+        pipeline = pipeline_opt.get(transform)
+
+        if pipeline is None:
+            raise ValueError('Invalid transformation:'
+                             ' Please see program\'s help'
+                             ' for allowed values of'
+                             ' transformation.')
 
         for static_img, mov_img, moved_file, affine_matrix_file, \
                 qual_val_file in io_it:
@@ -567,61 +359,38 @@ class ImageRegistrationFlow(Workflow):
 
             check_dimensions(static, moving)
 
-            if transform == 'com':
-                moved_image, affine = self.center_of_mass(static,
-                                                          static_grid2world,
-                                                          moving,
-                                                          moving_grid2world)
+            starting_affine = None
+
+            # If only center of mass is selected do not return metric
+            if pipeline == ["center_of_mass"]:
+                moved_image, affine_matrix = \
+                    affine_registration(moving,
+                                        static,
+                                        moving_grid2world,
+                                        static_grid2world,
+                                        pipeline,
+                                        starting_affine,
+                                        metric,
+                                        level_iters,
+                                        sigmas,
+                                        factors,
+                                        nbins=nbins,
+                                        sampling_proportion=sampling_prop)
             else:
-
-                params0 = None
-                if metric != 'mi':
-                    raise ValueError("Invalid similarity metric: Please"
-                                     " provide a valid metric.")
-                metric = MutualInformationMetric(nbins, sampling_prop)
-
-                """
-                Instantiating the registration class with the configurations.
-                """
-
-                affreg = AffineRegistration(metric=metric,
-                                            level_iters=level_iters,
-                                            sigmas=sigmas,
-                                            factors=factors)
-
-                if transform == 'trans':
-                    moved_image, affine, \
-                        xopt, fopt = self.translate(static,
-                                                    static_grid2world,
-                                                    moving,
-                                                    moving_grid2world,
-                                                    affreg,
-                                                    params0)
-
-                elif transform == 'rigid':
-                    moved_image, affine, \
-                        xopt, fopt = self.rigid(static,
-                                                static_grid2world,
-                                                moving,
-                                                moving_grid2world,
-                                                affreg,
-                                                params0,
-                                                progressive)
-
-                elif transform == 'affine':
-                    moved_image, affine, \
-                        xopt, fopt = self.affine(static,
-                                                 static_grid2world,
-                                                 moving,
-                                                 moving_grid2world,
-                                                 affreg,
-                                                 params0,
-                                                 progressive)
-                else:
-                    raise ValueError('Invalid transformation:'
-                                     ' Please see program\'s help'
-                                     ' for allowed values of'
-                                     ' transformation.')
+                moved_image, affine_matrix, xopt, fopt = \
+                    affine_registration(moving,
+                                        static,
+                                        moving_grid2world,
+                                        static_grid2world,
+                                        pipeline,
+                                        starting_affine,
+                                        metric,
+                                        level_iters,
+                                        sigmas,
+                                        factors,
+                                        ret_metric=True,
+                                        nbins=nbins,
+                                        sampling_proportion=sampling_prop)
 
                 """
                 Saving the moved image file and the affine matrix.
@@ -633,7 +402,7 @@ class ImageRegistrationFlow(Workflow):
                     save_qa_metric(qual_val_file, xopt, fopt)
 
             save_nifti(moved_file, moved_image, static_grid2world)
-            np.savetxt(affine_matrix_file, affine)
+            np.savetxt(affine_matrix_file, affine_matrix)
 
 
 class ApplyTransformFlow(Workflow):

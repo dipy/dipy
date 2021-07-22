@@ -11,6 +11,7 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
+                        center_of_mass, translation, rigid, affine,
                         affine_registration, streamline_registration,
                         write_mapping, read_mapping, register_dwi_to_template)
 
@@ -86,48 +87,110 @@ def test_register_dwi_to_template():
     # Use affine registration (+ don't provide a template and inputs as
     # strings):
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
-    warped_data, affine = register_dwi_to_template(fdata, (fbval, fbvec),
-                                                   reg_method="aff",
-                                                   level_iters=[5, 5, 5],
-                                                   sigmas=[3, 1, 0],
-                                                   factors=[4, 2, 1])
-    npt.assert_(isinstance(affine, np.ndarray))
-    npt.assert_(affine.shape == (4, 4))
+    warped_data, affine_mat = register_dwi_to_template(fdata, (fbval, fbvec),
+                                                       reg_method="aff",
+                                                       level_iters=[5, 5, 5],
+                                                       sigmas=[3, 1, 0],
+                                                       factors=[4, 2, 1])
+    npt.assert_(isinstance(affine_mat, np.ndarray))
+    npt.assert_(affine_mat.shape == (4, 4))
 
 
 def test_affine_registration():
     moving = subset_b0
     static = subset_b0
     moving_affine = static_affine = np.eye(4)
-    xformed, affine = affine_registration(moving, static,
-                                          moving_affine=moving_affine,
-                                          static_affine=static_affine,
-                                          level_iters=[5, 5],
-                                          sigmas=[3, 1],
-                                          factors=[2, 1])
+    xformed, affine_mat = affine_registration(moving, static,
+                                              moving_affine=moving_affine,
+                                              static_affine=static_affine,
+                                              level_iters=[5, 5],
+                                              sigmas=[3, 1],
+                                              factors=[2, 1])
 
     # We don't ask for much:
-    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
+    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+
+    # [center_of_mass] + ret_metric=True should raise an error
+    with pytest.raises(ValueError):
+        # For array input, must provide affines:
+        xformed, affine_mat = affine_registration(moving, static,
+                                                  moving_affine=moving_affine,
+                                                  static_affine=static_affine,
+                                                  pipeline=["center_of_mass"],
+                                                  ret_metric=True)
+
+    # Define list of methods
+    reg_methods = ["center_of_mass", "translation", "rigid",
+                   "rigid_isoscaling", "rigid_scaling", "affine"]
+
+    # Test methods individually (without returning any metric)
+    for func in reg_methods:
+        xformed, affine_mat = affine_registration(moving, static,
+                                                  moving_affine=moving_affine,
+                                                  static_affine=static_affine,
+                                                  level_iters=[5, 5],
+                                                  sigmas=[3, 1],
+                                                  factors=[2, 1],
+                                                  pipeline=[func])
+        # We don't ask for much:
+        npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+
+    # Test methods individually (returning quality metric)
+    expected_nparams = [3, 6, 7, 9, 12]
+    for i, func in enumerate(reg_methods[1:]):
+        xformed, affine_mat, \
+            xopt, fopt = affine_registration(moving, static,
+                                             moving_affine=moving_affine,
+                                             static_affine=static_affine,
+                                             level_iters=[5, 5],
+                                             sigmas=[3, 1],
+                                             factors=[2, 1],
+                                             pipeline=[func],
+                                             ret_metric=True)
+        # Expected number of optimization parameters
+        npt.assert_equal(len(xopt), expected_nparams[i])
+        # Optimization metric must be a single numeric value
+        npt.assert_equal(isinstance(fopt, (int, float)), True)
 
     with pytest.raises(ValueError):
         # For array input, must provide affines:
-        xformed, affine = affine_registration(moving, static)
+        xformed, affine_mat = affine_registration(moving, static)
+
+    # Not supported transform names should raise an error
+    npt.assert_raises(ValueError, affine_registration, moving, static,
+                      moving_affine, static_affine,
+                      pipeline=["wrong_transform"])
 
     # If providing nifti image objects, don't need to provide affines:
     moving_img = nib.Nifti1Image(moving, moving_affine)
     static_img = nib.Nifti1Image(static, static_affine)
-    xformed, affine = affine_registration(moving_img, static_img)
-    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
+    xformed, affine_mat = affine_registration(moving_img, static_img)
+    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
     # Using strings with full paths as inputs also works:
     t1_name, b0_name = dpd.get_fnames('syn_data')
     moving = b0_name
     static = t1_name
-    xformed, affine = affine_registration(moving, static,
-                                          level_iters=[5, 5],
-                                          sigmas=[3, 1],
-                                          factors=[4, 2])
-    npt.assert_almost_equal(affine[:3, :3], np.eye(3), decimal=1)
+    xformed, affine_mat = affine_registration(moving, static,
+                                              level_iters=[5, 5],
+                                              sigmas=[3, 1],
+                                              factors=[4, 2])
+    npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+
+
+def test_single_transforms():
+    moving = subset_b0
+    static = subset_b0
+    moving_affine = static_affine = np.eye(4)
+
+    reg_methods = [center_of_mass, translation, rigid, affine]
+
+    for func in reg_methods:
+        xformed, affine_mat = func(moving, static, moving_affine,
+                                   static_affine, level_iters=[5, 5],
+                                   sigmas=[3, 1], factors=[2, 1])
+        # We don't ask for much:
+        npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
 
 def test_register_series():
@@ -162,11 +225,11 @@ def test_register_dwi_series():
 def test_streamline_registration():
     sl1 = [np.array([[0, 0, 0], [0, 0, 0.5], [0, 0, 1], [0, 0, 1.5]]),
            np.array([[0, 0, 0], [0, 0.5, 0.5], [0, 1, 1]])]
-    affine = np.eye(4)
-    affine[:3, 3] = np.random.randn(3)
-    sl2 = list(transform_tracking_output(sl1, affine))
+    affine_mat = np.eye(4)
+    affine_mat[:3, 3] = np.random.randn(3)
+    sl2 = list(transform_tracking_output(sl1, affine_mat))
     aligned, matrix = streamline_registration(sl2, sl1)
-    npt.assert_almost_equal(matrix, np.linalg.inv(affine))
+    npt.assert_almost_equal(matrix, np.linalg.inv(affine_mat))
     npt.assert_almost_equal(aligned[0], sl1[0])
     npt.assert_almost_equal(aligned[1], sl1[1])
 
