@@ -804,14 +804,14 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         raise ValueError("Invalid recon_type. Should be 'smf' or 'sos', " +
                          f"received f{recon_type}")
 
-    mask_vec = np.ravel(mask, order='F')
+    mask_vec = np.ravel(mask)
     # Indices of target voxels
     index_mask = np.atleast_1d(np.squeeze(np.argwhere(mask_vec)))
     n_v_true = len(index_mask)  # number of target voxels
 
     data_2d = np.zeros((n_v_true, n_grad), dtype=np.float32)
     for i in range(n_grad):
-        data_2d[:, i] = np.ravel(data[:, :, :, i], order='F')[
+        data_2d[:, i] = np.ravel(data[:, :, :, i])[
             index_mask]  # only keep voxels of interest
 
     data_2d = data_2d.T
@@ -841,14 +841,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
         if use_tv:  # apply TV regularization
             tv_factor = np.ones(fodf_i.shape, dtype=np.float32)
-            fodf_4d = np.zeros((*dim[:3], n_comp), dtype=np.float32)
-
-            for j in range(n_comp):
-                fodf_jv = np.zeros((n_v_tot, 1), dtype=np.float32)
-                fodf_jv[index_mask, 0] = np.squeeze(
-                    fodf_i[j, :])  # zeros at non-target voxels
-                fodf_4d[:, :, :, j] = fodf_jv.reshape((dim[0], dim[1], dim[2]),
-                                                      order='F')
+            fodf_4d = _reshape_2d_4d(fodf_i.T, mask)
             # Compute gradient, divergence
             gr = _grad(fodf_4d)
             d_inv = 1 / np.sqrt(epsilon**2 + np.sum(gr**2, axis=3))
@@ -858,8 +851,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             tv_factor_4d = 1 / (g0 + _EPS)
 
             for j in range(n_comp):
-                tv_factor_1d = np.ravel(tv_factor_4d[:, :, :, j],
-                                        order='F')[index_mask]
+                tv_factor_1d = np.ravel(tv_factor_4d[:, :, :, j])[index_mask]
                 tv_factor[j, :] = tv_factor_1d
 
             # Apply TV regularization to iteration factor
@@ -898,25 +890,18 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                     tv_lambda = (1/30)**2
             else:  # different factor for each voxel
                 tv_lambda_aux[index_mask] = sigma2_i
-                tv_lambda = np.reshape(tv_lambda_aux, (*dim[:3], 1), order='F')
+                tv_lambda = np.reshape(tv_lambda_aux, (*dim[:3], 1))
 
     fodf = fodf.astype(np.float64)
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + _EPS)  # normalize fODF
 
-    # Extract WM compartments
-    fodf_wm = np.zeros((*dim_orig[:3], n_comp-1))
-    for i in range(n_comp - 1):
-        f_tmp = np.zeros((n_v_tot, 1))
-        f_tmp[index_mask, 0] = fodf[i, :]
-        fodf_wm[ixmin[0]:ixmax[0], ixmin[1]:ixmax[1], ixmin[2]:ixmax[2], i] = \
-            np.reshape(f_tmp, dim[:3], order='F')
-
-    # Extract isotropic compartment
-    f_tmp = np.zeros((n_v_tot, 1))
-    f_tmp[index_mask, 0] = fodf[n_comp-1, :]
-    f_iso = np.zeros((*dim_orig[:3],))
-    f_iso[ixmin[0]:ixmax[0], ixmin[1]:ixmax[1], ixmin[2]:ixmax[2]] = \
-        np.reshape(f_tmp, dim[:3], order='F')  # isotropic volume fraction
+    # Extract compartments
+    fodf_4d = np.zeros((*dim_orig[:3], n_comp))
+    _reshape_2d_4d(fodf.T, mask, out=fodf_4d[ixmin[0]:ixmax[0],
+                                             ixmin[1]:ixmax[1],
+                                             ixmin[2]:ixmax[2]])
+    fodf_wm = fodf_4d[:, :, :, :-1]  # WM compartment
+    f_iso = fodf_4d[:, :, :, -1]  # isotropic compartment
     f_wm = np.sum(fodf_wm, axis=3)  # white matter volume fraction
     combined = fodf_wm + f_iso[..., None] / fodf_wm.shape[3]
 
@@ -965,3 +950,14 @@ def _divergence(F):
     fz[:, :, -1, :] = -Fz[:, :, -2, :]
 
     return fx + fy + fz
+
+
+def _reshape_2d_4d(M, mask, out=None):
+    if out is None:
+        out = np.zeros((*mask.shape, M.shape[-1]), dtype=M.dtype)
+    n = 0
+    for i, j, k in np.ndindex(mask.shape):
+        if mask[i, j, k]:
+            out[i, j, k, :] = M[n, :]
+            n += 1
+    return out
