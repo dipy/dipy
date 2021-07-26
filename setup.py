@@ -226,7 +226,8 @@ def main(**extra_args):
                     'dipy.workflows',
                     'dipy.workflows.tests',
                     'dipy.nn',
-                    'dipy.nn.tests'],
+                    'dipy.nn.tests',
+                    'dipy.atlasing'],
 
           ext_modules=EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
