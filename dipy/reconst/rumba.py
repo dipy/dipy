@@ -877,8 +877,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             logger.info(
                 "Mean SNR (S0/sigma) estimated to be %.3f +/- %.3f",
                 snr_mean, snr_std)
-
-        sigma2 = np.tile(sigma2_i[None, :], (data_2d.shape[0], 1))  # expand into matrix
+        # Expand into matrix
+        sigma2 = np.tile(sigma2_i[None, :], (data_2d.shape[0], 1))
 
         # Update TV regularization strength using the discrepancy principle
         if use_tv:
