@@ -15,7 +15,8 @@ from dipy.tracking.streamline import (relist_streamlines,
                                       unlist_streamlines)
 from dipy.utils.optpkg import optional_package
 
-pd, have_pandas, _ = optional_package("pandas")
+pd, has_pandas, _ = optional_package('pandas')
+_, has_fury, _ = optional_package('fury')
 
 
 def test_pairwise_tree():
@@ -99,7 +100,8 @@ def test_combine_bundle():
             assert_equal(len(combined), 33)
 
 
-@pytest.mark.skipif(not have_pandas, reason='Requires Pandas')
+@pytest.mark.skipif(not has_pandas or not has_fury,
+                    reason="Requires Pandas and Fury")
 def test_compute_atlas_bundle():
     # Prepare input test data
     with TemporaryDirectory() as in_dir:

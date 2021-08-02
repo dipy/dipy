@@ -9,10 +9,10 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import get_fnames
 from dipy.workflows.atlasing import DiscreteBundleAtlasFlow
 
-_, have_pandas, _ = optional_package("pandas")
+_, has_fury, _ = optional_package('fury')
 
 
-@pytest.mark.skipif(not have_pandas, reason='Requires Pandas')
+@pytest.mark.skipif(not has_fury, reason="Requires Fury")
 def test_discrete_bundle_atlas():
 
     with TemporaryDirectory() as in_dir:
