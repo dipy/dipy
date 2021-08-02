@@ -15,7 +15,6 @@ from os.path import join, isdir, splitext
 from shutil import rmtree, copyfile
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from time import sleep
 from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.streamline import (create_tractogram_header, load_tractogram,
@@ -25,10 +24,12 @@ from dipy.tracking.streamline import (orient_by_streamline, relist_streamlines,
                                       set_number_of_points, Streamlines,
                                       unlist_streamlines)
 from dipy.utils.optpkg import optional_package
-from dipy.viz import actor, window
 
 pd, has_pd, _ = optional_package('pandas')
 _, has_fury, _ = optional_package('fury')
+
+if has_fury:
+    from dipy.io.utils import show_bundles
 
 
 def get_pairwise_tree(n_item, seed=None):
@@ -222,56 +223,6 @@ def combine_bundles(bundle1, bundle2, comb_method='rlap', distance='mdf',
     else:
         raise ValueError("Not supported bundle combination method")
     return combined
-
-
-def show_bundles(bundles, fname, colors=None):
-    """Show and/or save bundle renderization.
-
-    Renders the the input bundles and saves them to the fname file.
-
-    Parameters
-    ----------
-    bundles : list
-        Bundles to be rendered.
-    fname : str
-        File to save renderization image.
-    colors : list, optional
-        Colors of each bundle. If None, then random colors are used.
-
-    Returns
-    -------
-    None.
-
-    """
-    n_bundle = len(bundles)
-
-    if colors is None:
-        colors = list(np.random.rand(n_bundle, 3))
-
-    scene = window.Scene()
-    scene.SetBackground(1, 1, 1)
-    scene.set_camera((0, 0, 300), (12, 18, 40), (0, 1, 0))
-    for i, bundle in enumerate(bundles):
-
-        lines_actor = actor.streamtube(bundle, colors[i],
-                                       opacity=0.5, linewidth=0.1)
-
-        # Guess the optimal visualization angle based on coordinates
-        coords, _ = unlist_streamlines(bundle)
-        in_left = len(np.where(coords[:, 0] < 0)[0])/coords.shape[0]
-        in_right = len(np.where(coords[:, 0] > 0)[0])/coords.shape[0]
-        if abs(in_left-in_right) < 0.2:
-            rY, rZ = 0, 0
-        elif in_left > in_right:
-            rY, rZ = 90, 90
-        else:
-            rY, rZ = -90, -90
-        lines_actor.RotateZ(rZ)
-        lines_actor.RotateY(rY)
-
-        scene.add(lines_actor)
-    sleep(1)  # necessary?
-    window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
 def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
