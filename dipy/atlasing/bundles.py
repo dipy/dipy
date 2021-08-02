@@ -14,7 +14,6 @@ from os import listdir, mkdir, makedirs, getcwd
 from os.path import join, isdir, splitext
 from shutil import rmtree, copyfile
 import numpy as np
-import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from time import sleep
 from dipy.align.bundlemin import distance_matrix_mdf
@@ -25,7 +24,11 @@ from dipy.tracking.streamline import (orient_by_streamline, relist_streamlines,
                                       select_random_set_of_streamlines,
                                       set_number_of_points, Streamlines,
                                       unlist_streamlines)
+from dipy.utils.optpkg import optional_package
 from dipy.viz import actor, window
+
+pd, has_pd, _ = optional_package('pandas')
+_, has_fury, _ = optional_package('fury')
 
 
 def get_pairwise_tree(n_item, seed=None):
@@ -472,7 +475,7 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
             new_tractogram = StatefulTractogram(streamlines, reference=header,
                                                 space=Space.RASMM)
             save_trk(new_tractogram, f'{file}.trk', bbox_valid_check=False)
-            if save_temp:
+            if save_temp and has_fury:
                 show_bundles([streamlines], f'{file}.png')
 
         print("Bundle preprocessing: ok.")
@@ -497,7 +500,7 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
                 file_new = f'{step_dir}/bundle_0_prev_{alone[i_step]}'
                 new_file_list.append(file_new)
                 copyfile(f'{file_prev}.trk', f'{file_new}.trk')
-                if save_temp:
+                if save_temp and has_fury:
                     copyfile(f'{file_prev}.png', f'{file_new}.png')
 
             # Register and combine each pair of bundles
@@ -544,7 +547,7 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
                                                     reference=header,
                                                     space=Space.RASMM)
                 save_trk(new_tractogram, file + ".trk", bbox_valid_check=False)
-                if save_temp:
+                if save_temp and has_fury:
                     show_bundles([static, moving, aligned], f'{file}_reg.png',
                                  colors=[(0, 0, 1), (1, 0, 0), (0, 1, 0)])
                     show_bundles([Streamlines(combined)], f'{file}.png')
