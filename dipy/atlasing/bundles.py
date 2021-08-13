@@ -19,6 +19,7 @@ from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.io.streamline import (create_tractogram_header, load_tractogram,
                                 save_trk, Space, StatefulTractogram)
+from dipy.segment.clustering import QuickBundles
 from dipy.tracking.streamline import (orient_by_streamline, relist_streamlines,
                                       select_random_set_of_streamlines,
                                       set_number_of_points, Streamlines,
@@ -130,6 +131,21 @@ def combine_bundles(bundle1, bundle2, comb_method='rlap', distance='mdf',
         bundles = np.concatenate((bundle1, bundle2))
         return select_random_set_of_streamlines(bundles, n_stream)
 
+    # Set as bundle 1 the bundle with less streamlines
+    if len(bundle2) < len(bundle1):
+        aux = bundle1.copy()
+        bundle1 = bundle2
+        bundle2 = aux
+
+    # Reorient all streamlines at once based on centroid
+    bundle1 = orient_by_streamline(bundle1, bundle1[0])
+    qb = QuickBundles(threshold=50.)
+    centroid = qb.cluster(bundle1).centroids[0]
+
+    bundle1 = orient_by_streamline(bundle1, centroid)
+    bundle2 = orient_by_streamline(bundle2, centroid)
+
+    # Compute distance matrix (cost)
     def distance_matrix_mdf_start_end(bundle_1, bundle_2):
         bundle_1 = set_number_of_points(bundle_1, 2)
         bundle_2 = set_number_of_points(bundle_2, 2)
@@ -142,84 +158,38 @@ def combine_bundles(bundle1, bundle2, comb_method='rlap', distance='mdf',
     else:
         raise ValueError("Incorrect distance metric")
 
-    # Set as bundle 1 the bundle with less streamlines
-    if len(bundle2) < len(bundle1):
-        aux = bundle1.copy()
-        bundle1 = bundle2
-        bundle2 = aux
-
-    # Compute distance matrix
     cost = distance(bundle1, bundle2)
 
+    # Match and average n1 streamlines based on RLAP
+    matched_pairs = np.asarray(linear_sum_assignment(cost)).T
+
     combined = []
+    for ind1, ind2 in matched_pairs:
+        stream1 = bundle1[ind1]
+        stream2 = bundle2[ind2]
+
+        stream_mean = np.mean([stream1, stream2], axis=0)
+        combined.append(stream_mean)
 
     if comb_method == 'rlap':
-        # Minimize the sum of distances (RLAP)
-        matched_pairs = np.asarray(linear_sum_assignment(cost)).T
-        # For each matched pair, reorient and average
-        for ind1, ind2 in matched_pairs:
+        return combined
+
+    # Go through n2-n1 unmatched streamlines
+    ind2_matched = matched_pairs[:, 1]
+    ind2_unmatched = np.setdiff1d(np.arange(len(bundle2)), ind2_matched)
+
+    if comb_method == 'rlap_closest':
+        for ind2 in ind2_unmatched:
+            ind1 = np.argmin(cost[:, ind2])
 
             stream1 = bundle1[ind1]
             stream2 = bundle2[ind2]
 
-            stream2 = orient_by_streamline([stream2], stream1)
-            stream2, _ = unlist_streamlines(stream2)
-
             stream_mean = np.mean([stream1, stream2], axis=0)
-
             combined.append(stream_mean)
-
-    elif comb_method == 'rlap_closest':
-
-        n_stream = len(bundle2)
-
-        # Solve the linear assignment problem
-        ind_lap1, ind_lap2 = linear_sum_assignment(cost)
-
-        for ind2 in range(n_stream):
-            # Check if streamline already matched by RLAP
-            aux = np.argwhere(ind_lap2 == ind2)
-            if aux.size > 0:
-                ind1 = ind_lap1[aux[0][0]]
-            # If not, find the closest streamline
-            else:
-                ind1 = np.argmin(cost[:, ind2])
-
-            # Get matched streamline pair, reorient and average
-            stream1 = bundle1[ind1]
-            stream2 = bundle2[ind2]
-
-            stream2 = orient_by_streamline([stream2], stream1)
-            stream2, _ = unlist_streamlines(stream2)
-
-            stream_mean = np.mean([stream1, stream2], axis=0)
-
-            combined.append(stream_mean)
-
     elif comb_method == 'rlap_keep':
-
-        n_stream = len(bundle2)
-
-        # Solve the linear assignment problem
-        ind_lap1, ind_lap2 = linear_sum_assignment(cost)
-
-        for ind2 in range(n_stream):
-            # If streamline already matched by RLAP, average them
-            aux = np.argwhere(ind_lap2 == ind2)
-            if aux.size > 0:
-                ind1 = ind_lap1[aux[0][0]]
-
-                stream1 = bundle1[ind1]
-                stream2 = bundle2[ind2]
-
-                stream2 = orient_by_streamline([stream2], stream1)
-                stream2, _ = unlist_streamlines(stream2)
-
-                combined.append(np.mean([stream1, stream2], axis=0))
-
-            # If not matched keep it as it is
-            else:
-                combined.append(bundle2[ind2])
+        for ind2 in ind2_unmatched:
+            combined.append(bundle2[ind2])
     else:
         raise ValueError("Not supported bundle combination method")
     return combined

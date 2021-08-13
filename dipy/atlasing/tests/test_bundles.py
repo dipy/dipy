@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_equal, assert_raises, run_module_suite
 from nibabel.tmpdirs import TemporaryDirectory
+from dipy.align.bundlemin import distance_matrix_mdf
 from dipy.atlasing.bundles import (combine_bundles, compute_atlas_bundle,
                                    get_pairwise_tree)
 from dipy.data import get_fnames
@@ -75,22 +76,31 @@ def test_combine_bundle():
             assert_equal(len(combined), 30)
             combined = combine_bundles(bundle2, bundle1, 'rlap', dist)
             assert_equal(len(combined), 30)
+
             combined = combine_bundles(bundle1, bundle1, 'rlap', dist)
-            assert_equal(combined, bundle1)
+            d = np.diagonal(distance_matrix_mdf(bundle1, combined))
+            assert_equal(d, np.zeros(30))
+
             # Test RLAP + keep
             combined = combine_bundles(bundle1, bundle2, 'rlap_keep', dist)
             assert_equal(len(combined), 50)
             combined = combine_bundles(bundle2, bundle1, 'rlap_keep', dist)
             assert_equal(len(combined), 50)
+
             combined = combine_bundles(bundle1, bundle1, 'rlap_keep', dist)
-            assert_equal(combined, bundle1)
+            d = np.diagonal(distance_matrix_mdf(bundle1, combined))
+            assert_equal(d, np.zeros(30))
+
             # Test RLAP + closest
             combined = combine_bundles(bundle1, bundle2, 'rlap_closest', dist)
             assert_equal(len(combined), 50)
             combined = combine_bundles(bundle2, bundle1, 'rlap_closest', dist)
             assert_equal(len(combined), 50)
-            combined = combine_bundles(bundle1, bundle1, 'rlap_keep', dist)
-            assert_equal(combined, bundle1)
+
+            combined = combine_bundles(bundle1, bundle1, 'rlap_closest', dist)
+            d = np.diagonal(distance_matrix_mdf(bundle1, combined))
+            assert_equal(d, np.zeros(30))
+
             # Test random pick
             combined = combine_bundles(bundle1, bundle2, 'random_pick', dist,
                                        n_stream=33)
