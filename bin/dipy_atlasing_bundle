@@ -1,7 +1,7 @@
 #!python
 
 from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.bundle_atlas import DiscreteBundleAtlasFlow
+from dipy.workflows.atlasing import DiscreteBundleAtlasFlow
 
 if __name__ == "__main__":
     run_flow(DiscreteBundleAtlasFlow())
