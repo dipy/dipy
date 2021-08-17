@@ -556,5 +556,4 @@ def show_bundles(bundles, fname, colors=None, opacity=None, linewidth=None):
         lines_actor.RotateY(rY)
 
         scene.add(lines_actor)
-    sleep(1)  # necessary?
     window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
