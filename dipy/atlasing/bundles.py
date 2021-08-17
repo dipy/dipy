@@ -9,7 +9,7 @@ Available functions:
     compute_bundle_atlas: given a list of input bundles computes the population
     atlas.
 """
-
+import logging
 from os import listdir, mkdir, makedirs, getcwd
 from os.path import join, isdir, splitext
 from shutil import rmtree, copyfile
@@ -31,6 +31,8 @@ _, has_fury, _ = optional_package('fury')
 
 if has_fury:
     from dipy.io.utils import show_bundles
+
+logger = logging.getLogger(__name__)
 
 
 def get_pairwise_tree(n_item, seed=None):
@@ -60,9 +62,11 @@ def get_pairwise_tree(n_item, seed=None):
         Number of pairwise registrations at each level of the tree.
     """
     if type(n_item) != int:
-        raise TypeError("n_item must be an integer > 1")
+        raise TypeError("You provided a n_item input {n_item} of type \
+                        {type(n_item)} but it must be an integer > 1")
     if n_item <= 1:
-        raise ValueError("n_item must be > 1")
+        raise ValueError("You provided a n_item input {n_item} that is not > \
+                         1")
 
     np.random.seed(seed)
 
@@ -156,7 +160,8 @@ def combine_bundles(bundle1, bundle2, comb_method='rlap', distance='mdf',
     elif distance == 'mdf_se':
         distance = distance_matrix_mdf_start_end
     else:
-        raise ValueError("Incorrect distance metric")
+        raise ValueError(f"You provided a distance input {distance}, but the \
+                         possible options are: 'mdf' or 'mdf_se'")
 
     cost = distance(bundle1, bundle2)
 
@@ -191,7 +196,9 @@ def combine_bundles(bundle1, bundle2, comb_method='rlap', distance='mdf',
         for ind2 in ind2_unmatched:
             combined.append(bundle2[ind2])
     else:
-        raise ValueError("Not supported bundle combination method")
+        raise ValueError(f"You provided a bundle combination method \
+                         {comb_method}, but the possible options are \
+                         'random_pick', 'rlap', 'rlap_keep' or 'rlap_closest'")
     return combined
 
 
@@ -260,35 +267,41 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
         A single bundle containing all the computed atlas bundles together.
     """
     if type(in_dir) != str:
-        raise TypeError("in_dir must be a string")
+        raise TypeError("Provided in_dir input {in_dir} is of type \
+                        {type(in_dir)} but it must be a string")
     if type(mid_path) != str:
-        raise TypeError("mid_path must be a string")
+        raise TypeError("Provided mid_path input {mid_path} is of type \
+                        {type(mid_path)} but it must be a string")
     if type(n_point) != int:
-        raise TypeError("n_point must be an int")
+        raise TypeError("Provided n_point input {n_point} is of type \
+                        {type(n_point)} but it must be an integer")
     if isdir(in_dir) is False:
-        raise ValueError("Input directory does not exist")
+        raise ValueError("Provided input directory {in_dir} does not exist")
     if out_dir is None:
         out_dir = getcwd()
     if isdir(out_dir) is False:
-        raise ValueError("Output directory does not exist")
+        raise ValueError("Provided output directory {out_dir} does not exist")
     if n_stream_min < 1:
-        raise ValueError("n_stream_min must be >= 1")
+        raise ValueError("Provided n_stream_min input {n_stream_min) is not \
+                         >= 1")
     if n_stream_max < 1:
-        raise ValueError("n_stream_max must be >= 1")
+        raise ValueError("Provided n_stream_max input {n_stream_max} is not \
+                         >= 1")
     if n_point < 2:
-        raise ValueError("n_point must be >= 2")
+        raise ValueError("Provided n_point input {n_point} is not >= 2")
 
-    print('Input directory:' + in_dir)
-    print('Output directory:' + out_dir)
+    logger.info('Input directory:' + in_dir)
+    logger.info('Output directory:' + out_dir)
 
     # Create temporary folder
     temp_dir = join(out_dir, 'temp')
     if isdir(temp_dir):
-        print("There is already a /temp folder in out_dir. Deleting.")
+        logger.warning("There is already a temp folder in out_dir {out_dir}. \
+                       Deleting.")
         rmtree(temp_dir)
     mkdir(temp_dir)
 
-    # Get subjects (from in_dir or a BIDS-like parciticipants.tsv file)
+    # Get subjects (from in_dir or a BIDS-like participants.tsv file)
     if subjects is None:
         files = listdir(in_dir)
         subjects = [file for file in files if isdir(join(in_dir, file))]
@@ -300,17 +313,18 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
             subjects = list(df.loc[df.group == group].participant)
     subjects.sort()  # necessary?
     if len(set(subjects)) < len(subjects):
-        raise ValueError("Subjects cannot be duplicated")
+        raise ValueError("There are duplicated subjects names.")
 
-    print(str(len(subjects)) + " subjects to be processed:")
-    print(subjects)
+    logger.info(str(len(subjects)) + " subjects to be processed:")
+    logger.info(subjects)
 
     # Get bundle names (from first subject folder or from tsv file)
     if bundle_names is None:
         bundle_dir = join(in_dir, subjects[0], mid_path)
-        print("Retrieving bundle names from " + bundle_dir)
+        logger.info("Retrieving bundle names from " + bundle_dir)
         if isdir(bundle_dir) is False:
-            raise ValueError("Path to subject bundles is incorrect")
+            raise ValueError("Path to subject bundles {bundle_dir} does not \
+                             exist")
 
         files = listdir(bundle_dir)
         trk_files = [file for file in files if file.endswith('.trk')]
@@ -322,8 +336,7 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
     if len(set(bundle_names)) < len(bundle_names):
         raise ValueError("Bundle names cannot be duplicated")
 
-    print(str(len(bundle_names)) + " bundles to be processed:")
-    print(bundle_names)
+    logger.info(f"{len(bundle_names)} bundles to be processed: {bundle_names}")
 
     # Create a dictionary with all bundle files
     bundle_files = {}
@@ -347,9 +360,10 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
             model_bundles[bundle] = join(model_bundle_dir, bundle + '.trk')
 
     # Atlas building starts
+    logger.info("Atlasing building started")
     atlas = []
     for bundle in bundle_names:
-        print("Processing bundle: " + bundle)
+        logger.info("Processing bundle: " + bundle)
 
         step_dir = join(temp_dir, bundle, 'step_0')
         makedirs(step_dir)
@@ -375,7 +389,8 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
 
             n_stream = len(streamlines)
             if n_stream < n_stream_min:
-                print(f"{file} has {n_stream} streamlines. Discarded.")
+                logger.warning(f"{file} has {n_stream} streamlines (< \
+                               {n_stream_min}). Discarded.")
                 continue
             elif n_stream > n_stream_max:
                 streamlines = select_random_set_of_streamlines(streamlines,
@@ -399,7 +414,7 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
             if save_temp and has_fury:
                 show_bundles([streamlines], f'{file}.png')
 
-        print("Bundle preprocessing: ok.")
+        logger.info("Bundle preprocessing finished")
 
         # Compute pairwise registration tree-structure
         tree, alone, n_reg = get_pairwise_tree(n_item=len(file_list))
@@ -429,8 +444,8 @@ def compute_atlas_bundle(in_dir, subjects=None, group=None, mid_path='',
                 i = pair[0]
                 j = pair[1]
 
-                print(f"step:{i_step+1}/{len(tree)}" +
-                      f" pair:{index+1}/{n_reg[i_step]}")
+                logger.info(f"step:{i_step+1}/{len(tree)}" +
+                            f" pair:{index+1}/{n_reg[i_step]}")
 
                 file = file_list[i] + '.trk'
                 bundle_obj = load_tractogram(file, reference='same',
