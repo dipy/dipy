@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from scipy.spatial import cKDTree
-from scipy.ndimage.interpolation import map_coordinates
+from scipy.ndimage import map_coordinates
 from scipy.spatial.distance import mahalanobis
 
 from dipy.utils.optpkg import optional_package
