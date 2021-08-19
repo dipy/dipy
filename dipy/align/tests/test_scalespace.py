@@ -43,7 +43,7 @@ def test_scale_space():
             for level in range(num_levels):
                 # Verify sigmas and images are consistent
                 sigmas = ss.get_sigmas(level)
-                expected = sp.ndimage.filters.gaussian_filter(original, sigmas)
+                expected = sp.ndimage.gaussian_filter(original, sigmas)
                 expected = ((expected - expected.min()) /
                             (expected.max() - expected.min()))
                 actual = ss.get_image(level)

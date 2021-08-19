@@ -135,10 +135,8 @@ def test_em_demons_step_2d():
     expected_fwd[..., 0] *= num_fwd / den_fwd
     expected_fwd[..., 1] *= num_fwd / den_fwd
     # apply Gaussian smoothing
-    expected_fwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 0], 3.0)
-    expected_fwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 1], 3.0)
+    expected_fwd[..., 0] = ndimage.gaussian_filter(expected_fwd[..., 0], 3.0)
+    expected_fwd[..., 1] = ndimage.gaussian_filter(expected_fwd[..., 1], 3.0)
 
     num_bwd = sigma_x_sq * (F - G)
     den_bwd = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
@@ -147,10 +145,8 @@ def test_em_demons_step_2d():
     expected_bwd[..., 0] *= num_bwd / den_bwd
     expected_bwd[..., 1] *= num_bwd / den_bwd
     # apply Gaussian smoothing
-    expected_bwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 0], 3.0)
-    expected_bwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 1], 3.0)
+    expected_bwd[..., 0] = ndimage.gaussian_filter(expected_bwd[..., 0], 3.0)
+    expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
 
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
@@ -233,12 +229,9 @@ def test_em_demons_step_3d():
     expected_fwd[..., 1] *= num_fwd / den_fwd
     expected_fwd[..., 2] *= num_fwd / den_fwd
     # apply Gaussian smoothing
-    expected_fwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 0], 3.0)
-    expected_fwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 1], 3.0)
-    expected_fwd[..., 2] = ndimage.filters.gaussian_filter(
-        expected_fwd[..., 2], 3.0)
+    expected_fwd[..., 0] = ndimage.gaussian_filter(expected_fwd[..., 0], 3.0)
+    expected_fwd[..., 1] = ndimage.gaussian_filter(expected_fwd[..., 1], 3.0)
+    expected_fwd[..., 2] = ndimage.gaussian_filter(expected_fwd[..., 2], 3.0)
 
     num_bwd = sigma_x_sq * (F - G)
     den_bwd = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
@@ -247,12 +240,9 @@ def test_em_demons_step_3d():
     expected_bwd[..., 1] *= num_bwd / den_bwd
     expected_bwd[..., 2] *= num_bwd / den_bwd
     # apply Gaussian smoothing
-    expected_bwd[..., 0] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 0], 3.0)
-    expected_bwd[..., 1] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 1], 3.0)
-    expected_bwd[..., 2] = ndimage.filters.gaussian_filter(
-        expected_bwd[..., 2], 3.0)
+    expected_bwd[..., 0] = ndimage.gaussian_filter(expected_bwd[..., 0], 3.0)
+    expected_bwd[..., 1] = ndimage.gaussian_filter(expected_bwd[..., 1], 3.0)
+    expected_bwd[..., 2] = ndimage.gaussian_filter(expected_bwd[..., 2], 3.0)
 
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
