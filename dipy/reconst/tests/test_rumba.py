@@ -40,8 +40,6 @@ def test_rumba():
             bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
         assert_raises(ValueError, RumbaSD, gtab_broken)
 
-    assert_raises(ValueError, RumbaSD, gtab_broken, lambda1=-1.0)
-    assert_raises(ValueError, RumbaSD, gtab, lambda_iso=-1.0)
     assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
     assert_raises(ValueError, RumbaSD, gtab, recon_type='test')
 
@@ -148,10 +146,10 @@ def test_global_fit():
     # Test on repulsion 724 sphere
     for use_tv in [True, False]:  # test with/without TV regularization
         if use_tv:
-            odf, f_iso, _, _ = global_fit(
+            odf, _, _, _, f_iso, _ = global_fit(
                 rumba, data_mvoxel, sphere, use_tv=True)
         else:
-            odf, f_iso, _, _ = global_fit(
+            odf, _, _, _, f_iso, _ = global_fit(
                 rumba, data, sphere, use_tv=False)
 
         directions, _, _ = peak_directions(
@@ -165,7 +163,7 @@ def test_global_fit():
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         data = data[None, None, None, :]  # make 4D
-        odf, f_iso, _, _ = global_fit(rumba, data, sphere, use_tv=False)
+        odf, _, _, _, f_iso, _ = global_fit(rumba, data, sphere, use_tv=False)
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, .35, 25)
         if len(directions) <= 3:
@@ -192,7 +190,7 @@ def test_mvoxel_global_fit():
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-            odf, f_iso, f_wm, combined = global_fit(
+            odf, _, _, f_wm, f_iso, combined = global_fit(
                 model, data, sphere, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
