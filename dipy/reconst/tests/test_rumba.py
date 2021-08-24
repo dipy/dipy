@@ -74,6 +74,32 @@ def test_rumba():
                 assert_equal(model_fit.f_iso(sphere) > 0.8, True)
 
 
+def test_multishell_rumba():
+    '''
+    Test with multi-shell response
+    '''
+    sphere = default_sphere  # repulsion 724
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
+
+    wm_response = np.tile(np.array([1.7E-3, 0.2E-3, 0.2E-3]), (22, 1))
+    model = RumbaSD(gtab, wm_response, n_iter=20)
+    model_fit = model.fit(data)
+
+    # Test peaks
+    odf = model_fit.odf(sphere)
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions),
+                        2, 1)
+
+
 def test_mvoxel_rumba():
     '''
     Verify form of results in multi-voxel situation.
@@ -224,14 +250,14 @@ def test_generate_kernel():
     gtab = gradient_table(bvals, bvecs)
 
     # Kernel parameters
-    lambda1 = 1.7e-3
-    lambda2 = 0.2e-3
-    lambda_iso = 3e-3
+    wm_response = np.array([1.7e-3, 0.2e-3, 0.2e-3])
+    gm_response = 0.2e-4
+    csf_response = 3.0e-3
 
     # Test kernel shape
     kernel = generate_kernel(
-        gtab, sphere, lambda1=lambda1, lambda2=lambda2, lambda_iso=lambda_iso)
-    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+1))
+        gtab, sphere, wm_response, gm_response, csf_response)
+    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
 
     # Verify first column of kernel
     _, theta, phi = cart2sphere(
@@ -242,14 +268,22 @@ def test_generate_kernel():
     S0 = 1  # S0 assumed to be 1
     fi = 100  # volume fraction assumed to be 100%
 
-    S, _ = multi_tensor(gtab, np.array([[lambda1, lambda2, lambda2]]),
+    S, _ = multi_tensor(gtab, np.array([wm_response]),
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
                         None)
     assert_array_equal(kernel[:, 0], S)
 
+    # Multi-shell version
+    wm_response_multi = np.tile(wm_response, (22, 1))
+    kernel_multi = generate_kernel(
+        gtab, sphere, wm_response_multi, gm_response, csf_response)
+    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
+    assert_array_equal(kernel, kernel_multi)
+
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
-        gtab, sphere, lambda1=lambda1, lambda2=lambda2, lambda_iso=None)
+        gtab, sphere, gm_response=None, csf_response=None)
+    assert_array_equal(kernel[:, -2], np.zeros(len(gtab.bvals)))
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
 
 
