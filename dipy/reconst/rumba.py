@@ -116,9 +116,6 @@ class RumbaSD(OdfModel, Cache):
         if R < 1 or n_iter < 1 or n_coils < 1:
             raise ValueError(f"R, n_iter, and n_coils must be >= 1, but R={R},"
                              + f"n_iter={n_iter}, and n_coils={n_coils} ")
-        if recon_type not in ['smf', 'sos']:
-            raise ValueError("Invalid recon_type. Should be 'smf' or 'sos',"
-                             + f" received {recon_type}")
 
         self.R = R
         self.n_iter = n_iter
