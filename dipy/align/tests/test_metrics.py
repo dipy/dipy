@@ -20,10 +20,10 @@ def test_exceptions():
         dim = len(shape)
         metric = CCMetric(dim, radius=radius)
         metric.set_static_image(np.arange(np.prod(shape),
-                                          dtype=np.float).reshape(shape),
+                                          dtype=float).reshape(shape),
                                 np.eye(4), np.ones(dim), np.eye(3))
         metric.set_moving_image(np.arange(np.prod(shape),
-                                dtype=np.float).reshape(shape),
+                                dtype=float).reshape(shape),
                                 np.eye(4), np.ones(dim), np.eye(3))
         return metric
 

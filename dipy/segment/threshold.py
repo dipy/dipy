@@ -20,7 +20,7 @@ def otsu(image, nbins=256):
         Threshold value.
     """
     hist, bin_centers = np.histogram(image, nbins)
-    hist = hist.astype(np.float)
+    hist = hist.astype(float)
 
     # class probabilities for all possible thresholds
     weight1 = np.cumsum(hist)

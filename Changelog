@@ -24,6 +24,28 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.4.1 (Thursday, May 6, 2021)
+
+- Patch2Self and its documentation updated.
+- BUAN and Recobundles documentation updated.
+- Standardization and improvement of the multiprocessing / multithreading rules.
+- Community and governance information added.
+- New surface seeding module for tractography named `mesh`.
+- Large update of Cython code in respect of the last standard.
+- Large documentation update.
+- Closed 61 issues and merged 28 pull requests.
+
+* 1.4.0 (Tuesday, March 14, 2021)
+
+- New self-supervised denoising algorithm Patch2Self added.
+- BUAN and RecoBundles documentation updated.
+- Response function refactored and clarified.
+- B-tensor allowed with response functions.
+- Large Command Line Interface (CLI) documentation updated.
+- Public API for Registration added.
+- Large documentation update.
+- Closed 47 issues and merged 19 pull requests.
+
 * 1.3.0 (Tuesday, November 3, 2020)
 
 - Gibbs ringing correction 10X faster.

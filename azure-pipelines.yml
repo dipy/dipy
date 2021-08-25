@@ -35,10 +35,9 @@ jobs:
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm"
-      Python37-64bit + OPTIONAL_DEPS + COVERAGE:
+      Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
-        COVERAGE: "1"
       Python37-64bit + VIZ + COVERAGE:
         TEST_WITH_XVFB: "1"
         COVERAGE: "1"
@@ -91,10 +90,11 @@ jobs:
         python.version: '3.8'
       Python39-64bit:
         python.version: '3.9'
-      CONDA Python37-64bit + OPTIONAL_DEPS:
-        python.version: '3.7'
-        EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
-        INSTALL_TYPE: "conda"
+      # Problem with h5py
+      # CONDA Python37-64bit + OPTIONAL_DEPS:
+      #   python.version: '3.7'
+      #   EXTRA_DEPENDS: "scikit-learn pandas statsmodels pytables scipy==1.2"
+      #   INSTALL_TYPE: "conda"
       CONDA Python37-64bit:
         python.version: '3.7'
         INSTALL_TYPE: "conda"

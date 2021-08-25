@@ -13,6 +13,7 @@ from dipy.denoise.gibbs import gibbs_removal
 from dipy.denoise.noise_estimate import estimate_sigma
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 from dipy.workflows.workflow import Workflow
+from dipy.utils.deprecator import deprecated_params
 
 
 class Patch2SelfFlow(Workflow):
@@ -20,7 +21,7 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files, model='ridge', verbose=False,
+    def run(self, input_files, bval_files, model='ols', verbose=False,
             out_dir='', out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
@@ -45,7 +46,7 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.LinearRegression`,
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
-            Default: 'ridge'.
+            Default: 'ols'.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
         out_dir : string, optional
@@ -307,7 +308,9 @@ class GibbsRingingFlow(Workflow):
     def get_short_name(cls):
         return 'gibbs_ringing'
 
-    def run(self, input_files, slice_axis=2, n_points=3, num_threads=1,
+    @deprecated_params('num_threads', 'num_processes', since='1.4',
+                       until='1.5')
+    def run(self, input_files, slice_axis=2, n_points=3, num_processes=1,
             out_dir='', out_unring='dwi_unrig.nii.gz'):
         r"""Workflow for applying Gibbs Ringing method.
 
@@ -322,10 +325,11 @@ class GibbsRingingFlow(Workflow):
             third axis.
         n_points : int, optional
             Number of neighbour points to access local TV (see note).
-        num_threads : int or None, optional
-            Number of threads. Only applies to 3D or 4D `data` arrays. If None
-            then all available threads will be used. Otherwise, must be a
-            positive integer.
+        num_processes : int or None, optional
+            Split the calculation to a pool of children processes. Only
+            applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
+            number of cores minus |num_processes + 1| is used (enter -1 to use
+            as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_unrig : string, optional
@@ -349,7 +353,7 @@ class GibbsRingingFlow(Workflow):
 
             unring_data = gibbs_removal(data, slice_axis=slice_axis,
                                         n_points=n_points,
-                                        num_threads=num_threads)
+                                        num_processes=num_processes)
 
             save_nifti(ounring, unring_data, affine, image.header)
             logging.info('Denoised volume saved as %s', ounring)

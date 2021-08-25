@@ -57,7 +57,7 @@ class MedianOtsuFlow(Workflow):
         """
         io_it = self.get_io_iterator()
         if vol_idx is not None:
-            vol_idx = map(int, vol_idx)
+            vol_idx = [int(idx) for idx in vol_idx]
 
         for fpath, mask_out_path, masked_out_path in io_it:
             logging.info('Applying median_otsu segmentation on {0}'.

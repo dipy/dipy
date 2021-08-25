@@ -45,9 +45,9 @@ This is done by using the self-supervised loss:
 fed into the regressor :math:`\Phi` built in phase (A). The prediction is a
 denoised version of held-out volume.
 
-*Note: The volume to be denoised is merely used as the target in the training
+Note: The volume to be denoised is merely used as the target in the training
 phase. But is not used in the training set for (A) nor is used to predict the
-denoised output in (B).*
+denoised output in (B).
 
 Let's load the necessary modules:
 """
@@ -68,10 +68,37 @@ data.
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
 data, affine = load_nifti(hardi_fname)
 bvals = np.loadtxt(hardi_bval_fname)
-denoised_arr = patch2self(data, bvals)
+denoised_arr = patch2self(data, bvals, model='ols', shift_intensity=True,
+                          clip_negative_vals=False, b0_threshold=50)
 
 """
+The above parameters should give optimal denoising performance for Patch2Self.
+The ordinary least squares regression (model='ols') tends to be a little slower
+depending on the size of the data. In that case, please consider switching to
+ridge regression (model='ridge').
+
+Please do note that sometimes using ridge regression can hamper the
+performance of Patch2Self. If so, please use model='ols'.
+
 The array `denoised_arr` contains the denoised output obtained from Patch2Self.
+
+*Note:* Depending on the acquisition, b0 may exhibit signal attenuation or
+other artefacts that are not ideal for any denoising algorithm. We therefore
+provide an option to skip denoising b0 volumes in the data. This can be done
+by using the option `b0_denoising=False` within Patch2Self.
+
+Please set `shift_intensity=True` and `clip_negative_vals=False` by default to
+avoid negative values in the denoised output.
+
+The `b0_threshold` is used to separate the b0 volumes from the DWI volumes.
+Changing the value of the b0 threshold is needed if the b0 volumes in the
+`bval` file have a value greater than the default `b0_threshold`.
+
+The default value of `b0_threshold` in DIPY is set to 50. If using data
+such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
+associated with them in the `bval` file. Please check the b-values for b0s and
+adjust the `b0_threshold` accordingly.
+
 Now lets visualize the output and the residuals obtained from the denoising.
 """
 
@@ -121,6 +148,21 @@ save_nifti('denoised_patch2self.nii.gz', denoised_arr, affine)
 print("Entire denoised data saved in denoised_patch2self.nii.gz")
 
 """
+Lastly, one can also use Patch2Self in batches if the number of gradient
+directions is very high (>=200 volumes). For instance, if the data has 300
+volumes, one can split the data into 2 batches, (150 directions each) and still
+get the same denoising performance. One can simply run Patch2Self using::
+
+   denoised_batch1 = patch2self(data[..., :150], bvals[:150])
+   denoised_batch2 = patch2self(data[..., 150:], bvals[150:])
+
+After doing this, the 2 denoised batches can be merged as follows::
+
+   denoised_p2s = np.concatenate((denoised_batch1, denoised_batch2), axis=3)
+
+One can also consider using the above batching approach to denoise each
+shell separately if working with multi-shell data.
+
 
 References
 ----------
@@ -147,4 +189,5 @@ References
              medicine, 65(2), pp.480-491.
 
 .. include:: ../links_names.inc
+
 """

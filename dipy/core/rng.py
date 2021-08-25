@@ -129,8 +129,8 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
     if iz < 0:
         iz = iz + 30323
     """
-    return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307. +
-                        np.float(iz) / 30323., 1.0)
+    return np.remainder(float(ix) / 30269. + float(iy) / 30307. +
+                        float(iz) / 30323., 1.0)
 
 
 def LEcuyer(s1=100001, s2=200002):

@@ -4,6 +4,33 @@
 Older Highlights
 ****************
 
+**DIPY 1.4.0** is now available. New features include:
+
+- New self-supervised denoising algorithm Patch2Self added.
+- BUAN and RecoBundles documentation updated.
+- Response function refactored and clarified.
+- B-tensor allowed with response functions.
+- Large Command Line Interface (CLI) documentation updated.
+- Public API for Registration added.
+- Large documentation update.
+- Closed 47 issues and merged 19 pull requests.
+
+
+**DIPY 1.3.0** is now available. New features include:
+
+- Gibbs Ringing correction 10X faster.
+- Spherical harmonics basis definitions updated.
+- Added SMT2 metrics from mean signal diffusion kurtosis.
+- New interface functions added to the registration module.
+- New linear transform added to the registration module.
+- New tutorials for DIPY command line interfaces.
+- Fixed compatibility issues with different dependencies.
+- Tqdm (multiplatform progress bar for data downloading) dependency added.
+- Large documentation update.
+- Bundle section highlight from BUAN added in Horizon.
+- Closed 134 issues and merged 49 pull requests.
+
+
 **DIPY 1.2.0** is now available. New features include:
 
 - New command line interfaces for group analysis: BUAN.

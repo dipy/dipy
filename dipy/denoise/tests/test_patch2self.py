@@ -1,9 +1,9 @@
 import numpy as np
 from dipy.denoise import patch2self as p2s
-from dipy.testing import assert_greater, assert_less
-from numpy.testing import (assert_equal,
-                           assert_array_almost_equal,
-                           assert_raises)
+from dipy.testing import (assert_greater, assert_less,
+                          assert_greater_equal, assert_less_equal)
+from numpy.testing import (assert_array_almost_equal,
+                           assert_raises, assert_equal)
 import pytest
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -17,11 +17,35 @@ def test_patch2self_random_noise():
     S0 = 30 + 2 * np.random.standard_normal((20, 20, 20, 50))
 
     bvals = np.repeat(30, 50)
-    S0nb = p2s.patch2self(S0, bvals, model='ols')
 
-    assert_greater(S0nb.min(), S0.min())
-    assert_equal(np.round(S0nb.mean()), 30)
+    # shift = True
+    S0den_shift = p2s.patch2self(S0, bvals, model='ols', shift_intensity=True)
 
+    assert_greater_equal(S0den_shift.min(), S0.min())
+    assert_less_equal(np.round(S0den_shift.mean()), 30)
+
+    # clip = True
+    S0den_clip = p2s.patch2self(S0, bvals, model='ols',
+                                clip_negative_vals=True)
+
+    assert_greater(S0den_clip.min(), S0.min())
+    assert_equal(np.round(S0den_clip.mean()), 30)
+
+    # both clip and shift = True, and int patch_radius
+    S0den_clip = p2s.patch2self(S0, bvals, patch_radius=0, model='ols',
+                                clip_negative_vals=True,
+                                shift_intensity=True)
+
+    assert_greater(S0den_clip.min(), S0.min())
+    assert_equal(np.round(S0den_clip.mean()), 30)
+
+    # both clip and shift = False
+    S0den_clip = p2s.patch2self(S0, bvals, model='ols',
+                                clip_negative_vals=False,
+                                shift_intensity=False)
+
+    assert_greater(S0den_clip.min(), S0.min())
+    assert_equal(np.round(S0den_clip.mean()), 30)
 
 @needs_sklearn
 def test_patch2self_boundary():

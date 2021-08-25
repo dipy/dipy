@@ -1,9 +1,10 @@
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 import warnings
 
 import numpy as np
 from scipy.ndimage import affine_transform
 
+from dipy.utils.multiproc import determine_num_processes
 
 def _affine_transform(kwargs):
     with warnings.catch_warnings():
@@ -36,11 +37,11 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     cval : float
         Value used for points outside the boundaries of the input if
         mode='constant'.
-    num_processes : int
+    num_processes : int, optional
         Split the calculation to a pool of children processes. This only
-        applies to 4D `data` arrays. If a positive integer then it defines
-        the size of the multiprocessing pool that will be used. If 0, then
-        the size of the pool will equal the number of cores available.
+        applies to 4D `data` arrays. Default is 1. If < 0 the maximal number
+        of cores minus |num_processes + 1| is used (enter -1 to use as many
+        cores as possible). 0 raises an error.
 
     Returns
     -------
@@ -67,6 +68,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2.shape == (77, 77, 40)
     True
     """
+    num_processes = determine_num_processes(num_processes)
+
     # We are suppressing warnings emitted by scipy >= 0.18,
     # described in https://github.com/dipy/dipy/issues/1107.
     # These warnings are not relevant to us, as long as our offset
@@ -85,9 +88,8 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
             data2 = affine_transform(input=data, **kwargs)
         if data.ndim == 4:
             data2 = np.zeros(new_shape+(data.shape[-1],), data.dtype)
-            if not num_processes:
-                num_processes = cpu_count()
-            if num_processes < 2:
+
+            if num_processes == 1:
                 for i in range(data.shape[-1]):
                     affine_transform(input=data[..., i], output=data2[..., i],
                                      **kwargs)
@@ -97,7 +99,9 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
                     _kwargs = {'input': data[..., i]}
                     _kwargs.update(kwargs)
                     params.append(_kwargs)
+
                 pool = Pool(num_processes)
+
                 for i, res in enumerate(pool.imap(_affine_transform, params)):
                     data2[..., i] = res
                 pool.close()

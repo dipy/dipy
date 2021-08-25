@@ -9,7 +9,7 @@ fi
 
 PIPI="pip install --timeout=60"
 
-if [ -n "$USE_PRE" ]; then
+if [ "$USE_PRE" == "1" ]; then
     PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
 fi
 
@@ -52,6 +52,7 @@ if [ "$COVERAGE" == "1" ]; then
     # Run the tests and check for test coverage.
     coverage run -m pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
     coverage report -m  # Generate test coverage report.
+    echo "START UPLOAD COVERAGE"
     codecov    # Upload the report to codecov.
 else
     pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy

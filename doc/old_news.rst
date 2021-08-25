@@ -5,6 +5,8 @@
 Past Announcements
 **********************
 
+- :doc:`DIPY 1.2.0 <release_notes/release1.2>` released September 9, 2020.
+- :doc:`DIPY 1.1.1 <release_notes/release1.1>` released January 10, 2020.
 - :doc:`DIPY 1.0 <release_notes/release1.0>` released August 5, 2019.
 - :doc:`DIPY 0.16 <release_notes/release0.16>` released March 10, 2019.
 - :doc:`DIPY 0.15 <release_notes/release0.15>` released December 12, 2018.

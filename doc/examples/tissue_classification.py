@@ -4,9 +4,9 @@
 Tissue Classification of a T1-weighted Structural Image
 =======================================================
 
-This example explains how to segment a T1-weighted structural image by using 
+This example explains how to segment a T1-weighted structural image by using
 Bayesian formulation. The observation model (likelihood term) is defined as a
-Gaussian distribution and a Markov Random Field (MRF) is used to model the 
+Gaussian distribution and a Markov Random Field (MRF) is used to model the
 a priori probability of context-dependent patterns of different tissue
 types of the brain. Expectation Maximization and Iterated Conditional
 Modes are used to find the optimal solution. Similar algorithms have been
@@ -65,7 +65,7 @@ nclass = 3
 
 """
 Then, the smoothness factor of the segmentation. Good performance is achieved
-with values between 0 and 0.5. 
+with values between 0 and 0.5.
 """
 
 beta = 0.1
@@ -78,6 +78,7 @@ After setting the necessary parameters we can now call an instance of the class
 "TissueClassifierHMRF" and its method called "classify" and input the
 parameters defined above to perform the segmentation task.
 """
+
 t0 = time.time()
 
 hmrf = TissueClassifierHMRF()

@@ -39,11 +39,11 @@ def gradient(f):
 
     Examples
     --------
-    >>> x = np.array([1, 2, 4, 7, 11, 16], dtype=np.float)
+    >>> x = np.array([1, 2, 4, 7, 11, 16], dtype=float)
     >>> gradient(x)
     array([ 1. ,  1.5,  2.5,  3.5,  4.5,  5. ])
 
-    >>> gradient(np.array([[1, 2, 6], [3, 4, 5]], dtype=np.float))
+    >>> gradient(np.array([[1, 2, 6], [3, 4, 5]], dtype=float))
     [array([[ 2.,  2., -1.],
            [ 2.,  2., -1.]]), array([[ 1. ,  2.5,  4. ],
            [ 1. ,  1. ,  1. ]])]
@@ -366,7 +366,7 @@ class FiberModel(ReconstModel):
         n_unique_f = len(np.hstack(list(v2f.values())))
         # Preallocate these, which will be used to generate the sparse
         # matrix:
-        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=np.float)
+        f_matrix_sig = np.zeros(n_unique_f * n_bvecs, dtype=float)
         f_matrix_row = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
         f_matrix_col = np.zeros(n_unique_f * n_bvecs, dtype=np.intp)
 

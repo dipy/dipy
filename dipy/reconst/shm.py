@@ -83,7 +83,7 @@ def sh_to_rh(r_sh, m, n):
     r_sh : ndarray (N,)
         ndarray of SH coefficients for the single fiber response function.
         These coefficients must correspond to the real spherical harmonic
-        functions produced by `shm.real_sph_harm`.
+        functions produced by `shm.real_sh_descoteaux_from_index`.
     m : ndarray (N,)
         The degree of the spherical harmonic function associated with each
         coefficient.
@@ -98,7 +98,7 @@ def sh_to_rh(r_sh, m, n):
 
     See Also
     --------
-    shm.real_sph_harm, shm.real_sym_sh_basis
+    shm.real_sh_descoteaux_from_index, shm.real_sh_descoteaux
 
     References
     ----------
@@ -737,7 +737,7 @@ class SphHarmModel(OdfModel, Cache):
             sh_order = self.sh_order
             theta = sphere.theta
             phi = sphere.phi
-            sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
+            sampling_matrix, m, n = real_sh_descoteaux(sh_order, theta, phi)
             self.cache_set("sampling_matrix", sphere, sampling_matrix)
         return sampling_matrix
 
@@ -777,7 +777,7 @@ class QballBaseModel(SphHarmModel):
         self.min_signal = min_signal
         x, y, z = gtab.gradients[self._where_dwi].T
         r, theta, phi = cart2sphere(x, y, z)
-        B, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
+        B, m, n = real_sh_descoteaux(sh_order, theta[:, None], phi[:, None])
         L = -n * (n + 1)
         legendre0 = sps.lpn(sh_order, 0)[0]
         F = legendre0[n]
@@ -1455,7 +1455,7 @@ def convert_sh_to_full_basis(sh_coeffs):
     _, n = sph_harm_ind_list(sh_order, full_basis=True)
 
     full_sh_coeffs =\
-        np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(np.int))
+        np.zeros(np.append(sh_coeffs.shape[:-1], [n.size]).astype(int))
     mask = np.mod(n, 2) == 0
 
     full_sh_coeffs[..., mask] = sh_coeffs

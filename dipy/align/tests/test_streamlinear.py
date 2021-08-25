@@ -136,10 +136,10 @@ def test_rigid_partial_real_bundles():
 
     vol = np.zeros((100, 100, 100))
     spts = np.concatenate(static_center, axis=0)
-    spts = np.round(spts).astype(np.int) + np.array([50, 50, 50])
+    spts = np.round(spts).astype(int) + np.array([50, 50, 50])
 
     mpts = np.concatenate(moving_center, axis=0)
-    mpts = np.round(mpts).astype(np.int) + np.array([50, 50, 50])
+    mpts = np.round(mpts).astype(int) + np.array([50, 50, 50])
 
     for index in spts:
         i, j, k = index
@@ -480,6 +480,14 @@ def test_cascade_of_optimizations_and_threading():
 
     assert_(slm2.fopt < slm.fopt)
     assert_(slm3.fopt < slm2.fopt)
+
+
+def test_wrong_num_threads():
+    A = [np.random.rand(10, 3), np.random.rand(10, 3)]
+    B = [np.random.rand(10, 3), np.random.rand(10, 3)]
+
+    slr = StreamlineLinearRegistration(num_threads=0)
+    assert_raises(ValueError, slr.optimize, A, B)
 
 
 if __name__ == '__main__':

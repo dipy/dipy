@@ -62,9 +62,9 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices,
     >>> A.ravel()[4]==A[1,1]
     True
     """
-    if not cnp.PyArray_CHKFLAGS(indices, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(indices, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"indices is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(strides, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(strides, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"strides is not C contiguous")
     return offset(<cnp.npy_intp*> cnp.PyArray_DATA(indices),
                   <cnp.npy_intp*> cnp.PyArray_DATA(strides),
@@ -301,22 +301,22 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
         double *pqa = <double*> cnp.PyArray_DATA(qa)
         double *pin = <double*> cnp.PyArray_DATA(ind)
         double *pverts = <double*> cnp.PyArray_DATA(odf_vertices)
-        cnp.npy_intp *pstr = <cnp.npy_intp *> qa.strides
-        cnp.npy_intp *qa_shape = <cnp.npy_intp *> qa.shape
-        cnp.npy_intp *pvstr = <cnp.npy_intp *> odf_vertices.strides
+        cnp.npy_intp *pstr = <cnp.npy_intp *> cnp.PyArray_STRIDES(qa)
+        cnp.npy_intp *qa_shape = <cnp.npy_intp *> cnp.PyArray_DIMS(qa)
+        cnp.npy_intp *pvstr = <cnp.npy_intp *> cnp.PyArray_STRIDES(odf_vertices)
         cnp.npy_intp d, i, j, cnt
         double direction[3]
         double dx[3]
         double idirection[3]
         double ps2[3]
         double tmp, ftmp
-    if not cnp.PyArray_CHKFLAGS(seed, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(seed, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"seed is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(qa, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(qa, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"qa is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(ind, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(ind, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"ind is not C contiguous")
-    if not cnp.PyArray_CHKFLAGS(odf_vertices, cnp.NPY_C_CONTIGUOUS):
+    if not cnp.PyArray_CHKFLAGS(odf_vertices, cnp.NPY_ARRAY_C_CONTIGUOUS):
         raise ValueError(u"odf_vertices is not C contiguous")
 
     cnt = 0

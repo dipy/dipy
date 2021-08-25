@@ -37,8 +37,8 @@ yet exist, and we'll need to run that example:
 
 """
 
-if not (op.exists("CST_L.trk") and
-        op.exists("AF_L.trk") and
+if not (op.exists("CST_L_org_1.trk") and
+        op.exists("AF_L_org_1.trk") and
         op.exists("slr_transform.npy")):
     import bundle_extraction
 
@@ -49,8 +49,8 @@ Either way, we can use the `dipy.io` API to read in the bundles from file.
 
 """
 
-cst_l = load_trk("CST_L.trk", "same", bbox_valid_check=False).streamlines
-af_l = load_trk("AF_L.trk", "same", bbox_valid_check=False).streamlines
+cst_l = load_trk("CST_L_org_1.trk", "same", bbox_valid_check=False).streamlines
+af_l = load_trk("AF_L_org_1.trk", "same", bbox_valid_check=False).streamlines
 
 transform = np.load("slr_transform.npy")
 

@@ -29,6 +29,11 @@ def test_nlmeans_wrong():
     S0 = np.ones((2, 2, 2, 2, 2))
     assert_raises(ValueError, nlmeans, S0, 1.0)
 
+    # test invalid values of num_threads
+    data = np.ones((10, 10, 10))
+    sigma = 1
+    assert_raises(ValueError, nlmeans, data, sigma, num_threads=0)
+
 
 def test_nlmeans_random_noise():
     S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))

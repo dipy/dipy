@@ -56,8 +56,8 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         double epsilon, delta
         double min_val = -1
         double max_val = -1
-        int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
-        int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
+        cnp.npy_int32[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
+        cnp.npy_int32[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
 
     #Quantizing at zero levels is undefined
@@ -65,6 +65,8 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     #maximum level in the quantization is never greater than num_levels-1
     if(num_levels < 2):
         raise ValueError('Quantization levels must be at least 2')
+    if (num_levels >= 2**31):
+        raise ValueError('Quantization levels must be < 2**31')
 
     num_levels -= 1  # zero is one of the levels
 

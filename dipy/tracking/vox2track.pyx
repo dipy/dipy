@@ -123,7 +123,7 @@ def streamline_mapping(streamlines, affine=None,
 
     """
     cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
+        cnp.int_t[:, :] voxel_indices
 
     lin, offset = _mapping_to_voxel(affine)
     if mapping_as_streamlines:
@@ -394,12 +394,12 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     >>> tcs[1,1,2], tcs[1,2,3]
     (1, 1)
     """
-    vol_dims = np.asarray(vol_dims).astype(np.int)
+    vol_dims = np.asarray(vol_dims).astype(int)
     vox_sizes = np.asarray(vox_sizes).astype(np.double)
     n_voxels = np.prod(vol_dims)
     # output track counts array, flattened
     cdef cnp.ndarray[cnp.int_t, ndim=1] tcs = \
-        np.zeros((n_voxels,), dtype=np.int)
+        np.zeros((n_voxels,), dtype=int)
     # pointer to output track indices
     cdef cnp.npy_intp i
     if return_elements:
@@ -424,11 +424,11 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     # x slice size (C array ordering)
     cdef cnp.npy_intp yz = vd[1] * vd[2]
     for tno in range(len(tracks)):
-        t = tracks[tno].astype(np.float)
+        t = tracks[tno].astype(float)
         # set to find unique voxel points in track
         in_inds = set()
         # the loop below is time-critical
-        for pno in range(t.shape[0]):
+        for pno in range(cnp.PyArray_DIM(t, 0)):
             in_pt = t[pno]
             # Round to voxel coordinates, and set coordinates outside
             # volume to volume edges
