@@ -41,7 +41,9 @@ def test_rumba():
         assert_raises(ValueError, RumbaSD, gtab_broken)
 
     assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
-    assert_raises(ValueError, RumbaSD, gtab, recon_type='test')
+    rumba_broken = RumbaSD(gtab, recon_type='test')
+    broken_fit = rumba_broken.fit(data)
+    assert_raises(ValueError, broken_fit.odf, sphere)
 
     # Models to validate
     rumba_smf = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1)
@@ -118,6 +120,8 @@ def test_mvoxel_rumba():
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso(sphere)
         f_wm = model_fit.f_wm(sphere)
+        f_gm = model_fit.f_gm(sphere)
+        f_csf = model_fit.f_csf(sphere)
         combined = model_fit.combined_odf_iso(sphere)
 
         # Verify shape, positivity, realness of results
@@ -130,6 +134,7 @@ def test_mvoxel_rumba():
         assert_equal(np.alltrue(f_iso > 0), True)
 
         # Verify properties of fODF and volume fractions
+        assert_equal(f_iso, f_gm + f_csf)
         assert_equal(combined, odf + f_iso[..., None] / len(sphere.vertices))
         assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
         assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
@@ -209,15 +214,15 @@ def test_mvoxel_global_fit():
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
-    rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32)
+    rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32, R=1)
     rumba_r = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2)
     model_list = [rumba_sos, rumba_r]
 
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-            odf, _, _, f_wm, f_iso, combined = global_fit(
-                model, data, sphere, use_tv=use_tv)
+            odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(
+                model, data, sphere, verbose=True, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
             assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
@@ -229,6 +234,7 @@ def test_mvoxel_global_fit():
             assert_equal(np.alltrue(f_iso > 0), True)
 
             # Verify normalization
+            assert_equal(f_iso, f_gm + f_csf)
             assert_equal(combined, odf +
                          f_iso[..., None] / len(sphere.vertices))
             assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
