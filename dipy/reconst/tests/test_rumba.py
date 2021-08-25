@@ -43,7 +43,10 @@ def test_rumba():
     assert_raises(ValueError, RumbaSD, gtab_broken, lambda1=-1.0)
     assert_raises(ValueError, RumbaSD, gtab, lambda_iso=-1.0)
     assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
-    assert_raises(ValueError, RumbaSD, gtab, recon_type='test')
+
+    rumba_broken = RumbaSD(gtab, recon_type='test')  # recon_type validation
+    broken_fit = rumba_broken.fit(data)
+    assert_raises(ValueError, broken_fit.odf, sphere)
 
     # Models to validate
     rumba_smf = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1)
@@ -144,6 +147,9 @@ def test_global_fit():
     # Mask must match first 3 dimensions of data
     assert_raises(ValueError, global_fit, rumba, data, sphere, mask=np.ones(
         data.shape), use_tv=False)
+    # Recon type validation
+    rumba_broken = RumbaSD(gtab, recon_type='test')
+    assert_raises(ValueError, global_fit, rumba_broken, data, sphere)
 
     # Test on repulsion 724 sphere
     for use_tv in [True, False]:  # test with/without TV regularization
@@ -185,7 +191,7 @@ def test_mvoxel_global_fit():
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
-    rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32)
+    rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32, R=1)
     rumba_r = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2)
     model_list = [rumba_sos, rumba_r]
 
@@ -193,7 +199,7 @@ def test_mvoxel_global_fit():
     for model in model_list:
         for use_tv in [True, False]:
             odf, f_iso, f_wm, combined = global_fit(
-                model, data, sphere, use_tv=use_tv)
+                model, data, sphere, verbose=True, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
             assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
