@@ -204,6 +204,9 @@ def test_global_fit():
     # Mask must match first 3 dimensions of data
     assert_raises(ValueError, global_fit, rumba, data, sphere, mask=np.ones(
         data.shape), use_tv=False)
+    # Recon type validation
+    rumba_broken = RumbaSD(gtab, recon_type='test')
+    assert_raises(ValueError, global_fit, rumba_broken, data, sphere)
 
     # Test on repulsion 724 sphere
     for use_tv in [True, False]:  # test with/without TV regularization
@@ -252,7 +255,11 @@ def test_mvoxel_global_fit():
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
+<<<<<<< HEAD
             odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(
+=======
+            odf, f_iso, f_wm, combined = global_fit(
+>>>>>>> d6ef27592 (Increase test coverage)
                 model, data, sphere, verbose=True, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
