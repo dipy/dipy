@@ -47,7 +47,7 @@ class RumbaSD(OdfModel, Cache):
         wm_response : 1d ndarray or 2d ndarray, optional
             Tensor eigenvalues as a (3,) ndarray, or multishell eigenvalues as
             a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray, in order
-            of smallest to largest b-values.
+            of smallest to largest b-value.
             Default: np.array([1.7e-3, 0.2e-3, 0.2e-3])
         gm_response : float, optional
             Mean diffusivity for grey matter compartment. If `None`, then grey
@@ -228,7 +228,7 @@ class RumbaFit(OdfFit):
             pass
         else:
             self._fit(sphere)
-        return self._f_gm
+        return self._f_csf
 
     def f_wm(self, sphere):
         '''
@@ -581,7 +581,7 @@ def generate_kernel(gtab, sphere,
     wm_response : 1d ndarray or 2d ndarray, optional
         Tensor eigenvalues as a (3,) ndarray, or multishell eigenvalues as
         a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray, in order
-        of smallest to largest b-values.
+        of smallest to largest b-value.
         Default: np.array([1.7e-3, 0.2e-3, 0.2e-3])
     gm_response : float, optional
         Mean diffusivity for grey matter compartment. If `None`, then grey
@@ -616,14 +616,14 @@ def generate_kernel(gtab, sphere,
 
     # White matter compartments
     list_bvals = unique_bvals_tolerance(gtab.bvals)
-    n_bvals = len(list_bvals) - 1
+    n_bvals = len(list_bvals) - 1  # number of unique b-values
     if wm_response.shape == (n_bvals, 3):
         # Multi-shell response
         bvals = gtab.bvals
         bvecs = gtab.bvecs
         for n, bval in enumerate(list_bvals[1:]):
             indices = get_bval_indices(bvals, bval)
-            with warnings.catch_warnings():
+            with warnings.catch_warnings():  # extract relevant b-value
                 warnings.simplefilter("ignore")
                 gtab_sub = gradient_table(bvals[indices], bvecs[indices])
 
