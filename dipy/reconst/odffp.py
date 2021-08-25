@@ -202,26 +202,41 @@ class OdffpDictionary(object):
         return fraction_volumes
     
     
-    def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, equal_fibers):
+    def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, 
+                                 equal_fibers, assert_faster_D_a, tortuosity_approximation):
+        
         micro_params = np.zeros((4, peaks_per_voxel+1))
         
         # Free water compartment has D_a=0, f_in=0, and D_a=D_e
         micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
         
-        # Equal fibers means that all fibers have the same diffusivities and f_in
-        if equal_fibers:
-            micro_params[:,1:] = np.tile(
-                [[np.random.uniform(D_a[0], D_a[1])], [np.random.uniform(D_e[0], D_e[1])], 
-                [np.random.uniform(D_r[0], D_r[1])], [np.random.uniform(f_in[0], f_in[1])]], 
-                peaks_per_voxel
-            )
-        else:
-            micro_params[:,1:] = np.array([
-                np.random.uniform(D_a[0], D_a[1], size=peaks_per_voxel), 
-                np.random.uniform(D_e[0], D_e[1], size=peaks_per_voxel), 
-                np.random.uniform(D_r[0], D_r[1], size=peaks_per_voxel), 
-                np.random.uniform(f_in[0], f_in[1], size=peaks_per_voxel)
-            ])
+        # Repeat until the microstructure parameters are valid
+        while True:
+
+            # Equal fibers means that all fibers have the same diffusivities and f_in
+            if equal_fibers:
+                micro_params[:,1:] = np.tile(
+                    [[np.random.uniform(D_a[0], D_a[1])], [np.random.uniform(D_e[0], D_e[1])], 
+                    [np.random.uniform(D_r[0], D_r[1])], [np.random.uniform(f_in[0], f_in[1])]], 
+                    peaks_per_voxel
+                )
+            else:
+                micro_params[:,1:] = np.array([
+                    np.random.uniform(D_a[0], D_a[1], size=peaks_per_voxel), 
+                    np.random.uniform(D_e[0], D_e[1], size=peaks_per_voxel), 
+                    np.random.uniform(D_r[0], D_r[1], size=peaks_per_voxel), 
+                    np.random.uniform(f_in[0], f_in[1], size=peaks_per_voxel)
+                ])
+                
+            if assert_faster_D_a and np.any(micro_params[0,1:] < micro_params[1,1:]):
+                continue
+
+            if tortuosity_approximation:
+                micro_params[2,1:] = (1 - micro_params[3,1:]) * micro_params[0,1:]
+                if np.any(micro_params[2,1:] < D_r[0]) or np.any(micro_params[2,1:] > D_r[1]):
+                    continue
+                
+            break
         
         return micro_params
     
@@ -287,22 +302,23 @@ class OdffpDictionary(object):
             'odfrot': self.odf.T,
             'dirrot': self.peak_dirs.T,
             'micro' : self.micro.T,
-            'rat'   : self.ratio.T
+            'rat'   : self.ratio.T,
+            'adc'   : np.zeros_like(self.ratio.T)
         }
-        dict_file_split = os.path.split(dict_file)
-        hdf5storage.write(odf_dict, dict_file_split[0], dict_file_split[1], matlab_compatible=True)
+        hdf5storage.write(odf_dict, '.', dict_file, matlab_compatible=True)
    
     
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
                  p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
                  D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5],
-                 max_chunk_size=10000, odf_recon_model=None):
+                 max_chunk_size=10000, odf_recon_model=None, 
+                 assert_faster_D_a=True, tortuosity_approximation=False):
            
         if odf_recon_model is None:
             odf_recon_model = GeneralizedQSamplingModel(gtab, sampling_length=DEFAULT_DICT_EDGE)
            
         dict_size = np.maximum(1, dict_size)
-        self.max_peaks_num = np.maximum(2, max_peaks_num)
+        self.max_peaks_num = np.maximum(1, max_peaks_num)
         p_iso, p_fib = self._validate_fraction_volumes(p_iso, p_fib)
         f_in, D_iso, D_a, D_e, D_r = self._validate_micro_parameters(f_in, D_iso, D_a, D_e, D_r)
    
@@ -352,7 +368,8 @@ class OdffpDictionary(object):
               
                 # Draw microstructure parameters randomly
                 self.micro[:,:peaks_per_voxel[i]+1,j] = self._random_micro_parameters(
-                    f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], equal_fibers
+                    f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], 
+                    equal_fibers, assert_faster_D_a, tortuosity_approximation
                 )
                
             self.odf[:,chunk_idx] = self._compute_odf_trace(
