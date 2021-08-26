@@ -4,14 +4,16 @@ import warnings
 
 import numpy as np
 
-from dipy.sims.voxel import single_tensor, _check_directions, all_tensor_evecs
-from dipy.core.geometry import cart2sphere
-from dipy.core.gradients import unique_bvals_tolerance, get_bval_indices
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
+from dipy.core.geometry import vec2vec_rotmat
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance, \
+    get_bval_indices
+from dipy.core.sphere import Sphere
 from dipy.reconst.shm import lazy_index, normalize_data
-from dipy.core.gradients import gradient_table
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
+from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.segment.mask import bounding_box, crop
 
 # Machine precision for numerical stability in division
@@ -44,10 +46,10 @@ class RumbaSD(OdfModel, Cache):
         Parameters
         ----------
         gtab : GradientTable
-        wm_response : 1d ndarray or 2d ndarray, optional
-            Tensor eigenvalues as a (3,) ndarray, or multishell eigenvalues as
-            a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray, in order
-            of smallest to largest b-value.
+        wm_response : 1d ndarray or 2d ndarray or AxSymShResponse, optional
+            Tensor eigenvalues as a (3,) ndarray, multishell eigenvalues as
+            a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray in
+            order of smallest to largest b-value, or an AxSymShResponse.
             Default: np.array([1.7e-3, 0.2e-3, 0.2e-3])
         gm_response : float, optional
             Mean diffusivity for grey matter compartment. If `None`, then grey
@@ -575,10 +577,10 @@ def generate_kernel(gtab, sphere,
     sphere : Sphere
         Sphere with which to sample discrete fiber orientations in order to
         construct kernel
-    wm_response : 1d ndarray or 2d ndarray, optional
-        Tensor eigenvalues as a (3,) ndarray, or multishell eigenvalues as
-        a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray, in order
-        of smallest to largest b-value.
+    wm_response : 1d ndarray or 2d ndarray or AxSymShResponse, optional
+        Tensor eigenvalues as a (3,) ndarray, multishell eigenvalues as
+        a (len(unique_bvals_tolerance(gtab.bvals))-1, 3) ndarray in
+        order of smallest to largest b-value, or an AxSymShResponse.
         Default: np.array([1.7e-3, 0.2e-3, 0.2e-3])
     gm_response : float, optional
         Mean diffusivity for grey matter compartment. If `None`, then grey
@@ -595,26 +597,36 @@ def generate_kernel(gtab, sphere,
     '''
 
     # Coordinates of sphere vertices
-    _, theta, phi = cart2sphere(
-        sphere.x,
-        sphere.y,
-        sphere.z
-    )
-    angles = np.array(list(zip(theta, phi)))
+    sticks = sphere.vertices
 
     n_grad = len(gtab.gradients)  # number of gradient directions
-    n_wm_comp = len(theta)  # number of fiber populations
+    n_wm_comp = sticks.shape[0]  # number of fiber populations
     n_comp = n_wm_comp + 2  # plus isotropic compartments
 
     kernel = np.zeros((n_grad, n_comp))
 
-    angles = angles * 180 / np.pi  # convert angles to degrees
-    sticks = _check_directions(angles)  # convert angles to vectors
-
     # White matter compartments
     list_bvals = unique_bvals_tolerance(gtab.bvals)
     n_bvals = len(list_bvals) - 1  # number of unique b-values
-    if wm_response.shape == (n_bvals, 3):
+
+    if isinstance(wm_response, AxSymShResponse):
+        # Data-driven response
+        where_dwi = lazy_index(~gtab.b0s_mask)
+        gradients = gtab.gradients[where_dwi]
+        gradients = gradients / np.linalg.norm(gradients, axis=1)
+        S0 = wm_response.S0
+        for i in range(n_wm_comp):
+            # Response oriented along [0, 0, 1], so must rotate to sticks[i]
+            rot_mat = vec2vec_rotmat(np.array([0, 0, 1]), sticks[i])
+            rot_gradients = np.dot(rot_mat, gradients.T).T
+            rot_sphere = Sphere(xyz=rot_gradients)
+            # Project onto rotated sphere and scale
+            rot_response = wm_response.on_sphere(rot_sphere) / S0
+            kernel[where_dwi, i] = rot_response
+
+        kernel[gtab.b0s_mask, :] = 1
+
+    elif wm_response.shape == (n_bvals, 3):
         # Multi-shell response
         bvals = gtab.bvals
         bvecs = gtab.bvecs
