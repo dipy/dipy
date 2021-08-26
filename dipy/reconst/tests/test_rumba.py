@@ -255,11 +255,7 @@ def test_mvoxel_global_fit():
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-<<<<<<< HEAD
             odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(
-=======
-            odf, f_iso, f_wm, combined = global_fit(
->>>>>>> d6ef27592 (Increase test coverage)
                 model, data, sphere, verbose=True, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
@@ -316,6 +312,7 @@ def test_generate_kernel():
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
                         None)
     assert_almost_equal(kernel[:, 0], S)
+<<<<<<< HEAD
 
     # Multi-shell version
     wm_response_multi = np.tile(wm_response, (22, 1))
@@ -323,6 +320,8 @@ def test_generate_kernel():
         gtab, sphere, wm_response_multi[:, :-1], gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
     assert_array_equal(kernel, kernel_multi)
+=======
+>>>>>>> db57297c5 (Fix `generate_kernel` test)
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
