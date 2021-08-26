@@ -613,7 +613,7 @@ def generate_kernel(gtab, sphere,
         # Data-driven response
         where_dwi = lazy_index(~gtab.b0s_mask)
         gradients = gtab.gradients[where_dwi]
-        gradients = gradients / np.linalg.norm(gradients, axis=1)
+        gradients = gradients / np.linalg.norm(gradients, axis=1)[..., None]
         S0 = wm_response.S0
         for i in range(n_wm_comp):
             # Response oriented along [0, 0, 1], so must rotate to sticks[i]
@@ -624,6 +624,7 @@ def generate_kernel(gtab, sphere,
             rot_response = wm_response.on_sphere(rot_sphere) / S0
             kernel[where_dwi, i] = rot_response
 
+        # Set b0 components
         kernel[gtab.b0s_mask, :] = 1
 
     elif wm_response.shape == (n_bvals, 3):
