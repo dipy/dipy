@@ -9,6 +9,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite)
 
 from dipy.reconst.rumba import RumbaSD, global_fit, generate_kernel
+from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.data import get_fnames, dsi_voxels, default_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import cart2sphere
@@ -74,6 +75,36 @@ def test_rumba():
             if len(directions) > 3:
                 # Verify large isotropic fraction in isotropic case
                 assert_equal(model_fit.f_iso(sphere) > 0.8, True)
+
+
+def test_recursive_rumba():
+    '''
+    Test with recursive data-driven response
+    '''
+    sphere = default_sphere  # repulsion 724
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
+
+    wm_response = AxSymShResponse(480, np.array([570.35065982,
+                                                 -262.81741086,
+                                                 80.23104069,
+                                                 -16.93940972,
+                                                 2.57628738]))
+    model = RumbaSD(gtab, wm_response, n_iter=20)
+    model_fit = model.fit(data)
+
+    # Test peaks
+    odf = model_fit.odf(sphere)
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions),
+                        2, 1)
 
 
 def test_multishell_rumba():
