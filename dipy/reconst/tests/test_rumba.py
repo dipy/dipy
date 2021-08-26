@@ -308,7 +308,7 @@ def test_generate_kernel():
     S, _ = multi_tensor(gtab, np.array([wm_response]),
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
                         None)
-    assert_array_equal(kernel[:, 0], S)
+    assert_almost_equal(kernel[:, 0], S)
 
     # Multi-shell version
     wm_response_multi = np.tile(wm_response, (22, 1))
