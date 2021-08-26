@@ -253,7 +253,7 @@ def test_generate_kernel():
     S, _ = multi_tensor(gtab, np.array([[lambda1, lambda2, lambda2]]),
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
                         None)
-    assert_array_equal(kernel[:, 0], S)
+    assert_almost_equal(kernel[:, 0], S)
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
