@@ -3,8 +3,7 @@ import logging
 
 import numpy as np
 
-from dipy.sims.voxel import single_tensor, _check_directions, all_tensor_evecs
-from dipy.core.geometry import cart2sphere
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
 from dipy.reconst.shm import lazy_index, normalize_data
 from dipy.core.gradients import gradient_table
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -539,21 +538,13 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3,
     '''
 
     # Coordinates of sphere vertices
-    _, theta, phi = cart2sphere(
-        sphere.x,
-        sphere.y,
-        sphere.z
-    )
-    angles = np.array(list(zip(theta, phi)))
+    sticks = sphere.vertices
 
     n_grad = len(gtab.gradients)  # number of gradient directions
-    n_wm_comp = len(theta)  # number of fiber populations
+    n_wm_comp = sticks.shape[0]  # number of fiber populations
     n_comp = n_wm_comp + 1  # plus isotropic compartment
 
     kernel = np.zeros((n_grad, n_comp))
-
-    angles = angles * 180 / np.pi  # convert angles to degrees
-    sticks = _check_directions(angles)  # convert angles to vectors
 
     # White matter compartments
     for i in range(n_wm_comp):
