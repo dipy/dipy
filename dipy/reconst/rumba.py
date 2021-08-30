@@ -351,7 +351,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         Signal values for a single voxel.
     kernel : 2d ndarray (N, M)
         Deconvolution kernel mapping volume fractions of the M compartments to
-        N-length signal. Last column should be for an isotropic compartment.
+        N-length signal. Last two columns should be for grey matter and CSF.
     n_iter : int, optional
         Number of iterations for fODF estimation. Must be a positive int.
         Default: 600
@@ -616,8 +616,8 @@ def generate_kernel(gtab, sphere,
         gradients = gradients / np.linalg.norm(gradients, axis=1)[..., None]
         S0 = wm_response.S0
         for i in range(n_wm_comp):
-            # Response oriented along [0, 0, 1], so must rotate to sticks[i]
-            rot_mat = vec2vec_rotmat(np.array([0, 0, 1]), sticks[i])
+            # Response oriented along [0, 0, 1], so must rotate sticks[i]
+            rot_mat = vec2vec_rotmat(sticks[i], np.array([0, 0, 1]))
             rot_gradients = np.dot(rot_mat, gradients.T).T
             rot_sphere = Sphere(xyz=rot_gradients)
             # Project onto rotated sphere and scale
@@ -795,7 +795,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         can be 1 if TV regularization is required.
     kernel : 2d ndarray (N, M)
         Deconvolution kernel mapping volume fractions of the M compartments to
-        N-length signal. Last column should be for an isotropic compartment.
+        N-length signal. Last two columns should be for grey matter and CSF.
     mask : 3d ndarray(x, y, z)
         Binary mask specifying voxels of interest with 1; fODF will only be
         fit at these voxels (0 elsewhere).
