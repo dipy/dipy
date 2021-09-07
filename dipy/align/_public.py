@@ -455,12 +455,11 @@ def affine_registration(moving, static,
     # Convert pipeline to sanitized list of str
     pipeline = list(pipeline)
     for fi, func in enumerate(pipeline):
-        if not isinstance(func, str):
-            if callable(func):
-                for key, val in _METHOD_DICT.items():
-                    if func is val[0]:  # if they passed the callable equiv.
-                        pipeline[fi] = func = key
-                        break
+        if callable(func):
+            for key, val in _METHOD_DICT.items():
+                if func is val[0]:  # if they passed the callable equiv.
+                    pipeline[fi] = func = key
+                    break
         if not isinstance(func, str) or func not in _METHOD_DICT:
             raise ValueError(f'pipeline[{fi}] must be one of '
                              f'{list(_METHOD_DICT)}, got {repr(func)}')
@@ -509,11 +508,11 @@ rigid = partial(affine_registration, pipeline=['rigid'])
 rigid.__doc__ = ("Implements a rigid transform. "
                  "Based on `affine_registration()`.")
 
-rigid_isoscaling = partial(affine_registration, pipeline=['rigid'])
+rigid_isoscaling = partial(affine_registration, pipeline=['rigid_isoscaling'])
 rigid_isoscaling.__doc__ = ("Implements a rigid isoscaling transform. "
                             "Based on `affine_registration()`.")
 
-rigid_scaling = partial(affine_registration, pipeline=['rigid'])
+rigid_scaling = partial(affine_registration, pipeline=['rigid_scaling'])
 rigid_scaling.__doc__ = ("Implements a rigid scaling transform. "
                          "Based on `affine_registration()`.")
 
