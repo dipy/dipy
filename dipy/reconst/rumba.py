@@ -33,7 +33,7 @@ class RumbaSD(OdfModel, Cache):
         and Noncentral Chi noise distributions, which more accurately
         represent MRI noise. Computes a maximum likelihood estimation of the
         fiber orientation density function (fODF) at each voxel. Includes
-        an optional isotropic compartment to account for partial volume
+        optional isotropic compartments to account for partial volume
         effects.
 
         Kernel for deconvolution constructed using a priori knowledge of white
@@ -139,9 +139,9 @@ class RumbaFit(OdfFit):
 
     def __init__(self, model, data):
         '''
-        Computes fODF and isotropic volume fraction for a single voxel.
+        Computes fODF and isotropic volume fractions for a single voxel.
 
-        fODF and isotropic fraction are normalized to collectively sum to 1.
+        fODF and isotropic fractions are normalized to collectively sum to 1.
 
         Parameters
         ----------
@@ -568,8 +568,8 @@ def generate_kernel(gtab, sphere,
     Generate deconvolution kernel
 
     Compute kernel mapping orientation densities of white matter fiber
-    populations (along each vertex of the sphere) and an isotropic volume
-    fraction to a diffusion weighted signal.
+    populations (along each vertex of the sphere) and isotropic volume
+    fractions to a diffusion weighted signal.
 
     Parameters
     ----------
