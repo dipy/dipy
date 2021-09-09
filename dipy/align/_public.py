@@ -37,7 +37,9 @@ from dipy.io.image import load_nifti, save_nifti
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
-           "center_of_mass", "translation", "rigid", "affine",
+           "center_of_mass", "translation",
+           "rigid_isoscaling", "rigid_scaling",
+           "rigid", "affine",
            "affine_registration", "register_series",
            "register_dwi_series", "streamline_registration"]
 
@@ -368,7 +370,7 @@ def affine_registration(moving, static,
     pipeline : list of str, optional
         Sequence of transforms to use in the gradual fitting. Default: gradual
         fit of the full affine (executed from left to right):
-        `["center_of_mass", "translation", "rigid", "affine"]`
+        ``["center_of_mass", "translation", "rigid", "affine"]``
         Alternatively, any other combination of the following registration
         methods might be used: center_of_mass, translation, rigid,
         rigid_isoscaling, rigid_scaling and affine.
@@ -450,6 +452,18 @@ def affine_registration(moving, static,
                                 sigmas=sigmas,
                                 factors=factors)
 
+    # Convert pipeline to sanitized list of str
+    pipeline = list(pipeline)
+    for fi, func in enumerate(pipeline):
+        if callable(func):
+            for key, val in _METHOD_DICT.items():
+                if func is val[0]:  # if they passed the callable equiv.
+                    pipeline[fi] = func = key
+                    break
+        if not isinstance(func, str) or func not in _METHOD_DICT:
+            raise ValueError(f'pipeline[{fi}] must be one of '
+                             f'{list(_METHOD_DICT)}, got {repr(func)}')
+
     if pipeline == ["center_of_mass"] and ret_metric:
         raise ValueError("center of mass registration cannot return any "
                          "quality metric.")
@@ -461,19 +475,7 @@ def affine_registration(moving, static,
                                                   moving, moving_affine)
             starting_affine = transform.affine
         else:
-            if func == "translation":
-                transform = TranslationTransform3D()
-            elif func == "rigid":
-                transform = RigidTransform3D()
-            elif func == "rigid_isoscaling":
-                transform = RigidIsoScalingTransform3D()
-            elif func == "rigid_scaling":
-                transform = RigidScalingTransform3D()
-            elif func == "affine":
-                transform = AffineTransform3D()
-            else:
-                raise ValueError("Not supported registration method")
-
+            transform = _METHOD_DICT[func][1]()
             xform, xopt, fopt \
                 = affreg.optimize(static, moving, transform, None,
                                   static_affine, moving_affine,
@@ -506,9 +508,26 @@ rigid = partial(affine_registration, pipeline=['rigid'])
 rigid.__doc__ = ("Implements a rigid transform. "
                  "Based on `affine_registration()`.")
 
+rigid_isoscaling = partial(affine_registration, pipeline=['rigid_isoscaling'])
+rigid_isoscaling.__doc__ = ("Implements a rigid isoscaling transform. "
+                            "Based on `affine_registration()`.")
+
+rigid_scaling = partial(affine_registration, pipeline=['rigid_scaling'])
+rigid_scaling.__doc__ = ("Implements a rigid scaling transform. "
+                         "Based on `affine_registration()`.")
+
 affine = partial(affine_registration, pipeline=['affine'])
 affine.__doc__ = ("Implements an affine transform. "
                   "Based on `affine_registration()`.")
+
+
+_METHOD_DICT = dict(  # mapping from str key -> (callable, class) tuple
+    center_of_mass=(center_of_mass, None),
+    translation=(translation, TranslationTransform3D),
+    rigid_isoscaling=(rigid_isoscaling, RigidIsoScalingTransform3D),
+    rigid_scaling=(rigid_scaling, RigidScalingTransform3D),
+    rigid=(rigid, RigidTransform3D),
+    affine=(affine, AffineTransform3D))
 
 
 def register_series(series, ref, pipeline=None, series_affine=None,
@@ -604,7 +623,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
 
     pipeline : list of callables, optional.
         The transformations to perform in sequence (from left to right):
-        Default: `[center_of_mass, translation, rigid, affine]`
+        Default: ``[center_of_mass, translation, rigid, affine]``
 
 
     Returns
