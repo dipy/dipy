@@ -507,9 +507,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
 
-    fodf = np.squeeze(fodf[:n_comp-2])  # white matter compartments
     f_gm = np.squeeze(fodf[n_comp-2])  # GM compartment
     f_csf = np.squeeze(fodf[n_comp-1])  # CSF compartment
+    fodf = np.squeeze(fodf[:n_comp-2])  # white matter compartments
     f_wm = np.sum(fodf)  # white matter fraction
     combined = fodf + (f_gm + f_csf) / len(fodf)
     f_iso = f_csf + f_gm
