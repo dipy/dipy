@@ -28,7 +28,7 @@ from dipy.align._public import (syn_registration, register_dwi_to_template, # no
                                 write_mapping, read_mapping, resample,
                                 center_of_mass, translation,
                                 rigid_isoscaling, rigid_scaling,
-                                rigid, affine,
+                                rigid, affine, motion_correction,
                                 affine_registration, register_series,
                                 register_dwi_series, streamline_registration)
 
@@ -36,6 +36,6 @@ __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
            "center_of_mass", "translation",
            "rigid_isoscaling", "rigid_scaling",
-           "rigid", "affine",
+           "rigid", "affine", "motion_correction",
            "affine_registration", "register_series",
            "register_dwi_series", "streamline_registration"]
