@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 from scipy.ndimage import generate_binary_structure, binary_dilation
-from scipy.ndimage.filters import median_filter
+from scipy.ndimage import median_filter
 
 from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
                                multi_median, median_otsu)

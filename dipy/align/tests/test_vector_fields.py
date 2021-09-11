@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_equal,
                            assert_almost_equal,
                            assert_equal,
                            assert_raises)
-from scipy.ndimage.interpolation import map_coordinates
+from scipy.ndimage import map_coordinates
 from nibabel.affines import apply_affine, from_matvec
 from dipy.core import geometry
 from dipy.align import floating

@@ -1145,9 +1145,9 @@ def transform_centers_of_mass(static, static_grid2world,
         static_grid2world = np.eye(dim + 1)
     if moving_grid2world is None:
         moving_grid2world = np.eye(dim + 1)
-    c_static = ndimage.measurements.center_of_mass(np.array(static))
+    c_static = ndimage.center_of_mass(np.array(static))
     c_static = static_grid2world.dot(c_static + (1,))
-    c_moving = ndimage.measurements.center_of_mass(np.array(moving))
+    c_moving = ndimage.center_of_mass(np.array(moving))
     c_moving = moving_grid2world.dot(c_moving + (1,))
     transform = np.eye(dim + 1)
     transform[:dim, dim] = (c_moving - c_static)[:dim]

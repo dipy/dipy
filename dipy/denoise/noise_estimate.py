@@ -2,7 +2,7 @@
 import numpy as np
 
 from scipy.special import gammainccinv
-from scipy.ndimage.filters import convolve
+from scipy.ndimage import convolve
 
 
 def _inv_nchi_cdf(N, K, alpha):
