@@ -176,10 +176,9 @@ class RumbaFit(OdfFit):
         '''
 
         # Check if previously fit on same sphere
-        if self._odf is not None and self._sphere == sphere:
-            pass
-        else:
+        if self._odf is None or self._sphere != sphere:
             self._fit(sphere)
+
         return self._odf
 
     def f_iso(self, sphere):
@@ -198,10 +197,9 @@ class RumbaFit(OdfFit):
         '''
 
         # Check if previously fit on same sphere
-        if self._f_iso is not None and self._sphere == sphere:
-            pass
-        else:
+        if self._f_iso is None or self._sphere != sphere:
             self._fit(sphere)
+
         return self._f_iso
 
     def f_wm(self, sphere):
@@ -222,10 +220,9 @@ class RumbaFit(OdfFit):
         '''
 
         # Check if previously fit on same sphere
-        if self._f_wm is not None and self._sphere == sphere:
-            pass
-        else:
+        if self._f_wm is None or self._sphere != sphere:
             self._fit(sphere)
+
         return self._f_wm
 
     def combined_odf_iso(self, sphere):
@@ -247,10 +244,9 @@ class RumbaFit(OdfFit):
         '''
 
         # Check if previously fit on same sphere
-        if self._combined is not None and self._sphere == sphere:
-            pass
-        else:
+        if self._combined is None or self._sphere != sphere:
             self._fit(sphere)
+
         return self._combined
 
     def _fit(self, sphere):
@@ -269,14 +265,14 @@ class RumbaFit(OdfFit):
             self.model.cache_set('kernel', sphere, self.kernel)
 
         # Fitting
-        fodf_wm, f_iso, f_wm, combined = rumba_deconv(self.data, self.kernel,
-                                                      self.model.n_iter,
-                                                      self.model.recon_type,
-                                                      self.model.n_coils)
+        fodf, f_iso, f_wm, combined = rumba_deconv(self.data, self.kernel,
+                                                   self.model.n_iter,
+                                                   self.model.recon_type,
+                                                   self.model.n_coils)
 
         self._f_wm = f_wm
         self._f_iso = f_iso
-        self._odf = fodf_wm
+        self._odf = fodf
         self._combined = combined
         self._sphere = sphere
         return
@@ -312,7 +308,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     Returns
     -------
-    fodf_wm : 1d ndarray (M-1,)
+    fodf : 1d ndarray (M-1,)
         fODF for white matter compartments.
     f_iso : float
         Isotropic volume fraction
@@ -326,10 +322,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     The diffusion MRI signal measured at a given voxel is a sum of
     contributions from each intra-voxel compartment, including parallel white
     matter (WM) fiber populations in a given orientation as well as effects
-    from grey matter (GM) and cerebrospinal fluid (CSF) (this implementation
-    only contains a general isotropic compartment for CSF, since we found that
-    separate CSF and GM contributions were hard to resolve). The equation
-    governing these  contributions is:
+    from GM and CSF (this implementation only contains a general isotropic
+    compartment for CSF, since we found that separate CSF and GM contributions
+    were hard to resolve). The equation governing these  contributions is:
 
     $ S_i = S_0\left(\sum_{j=1}^{M}f_j\exp(-b_i\bold{v}_i^T\bold{D}_j
       \bold{v}_i) + f_{GM}\exp(-b_iD_{GM})+f_{CSF}\exp(-b_iD_{CSF})\right) $
@@ -459,12 +454,12 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
 
-    fodf_wm = np.squeeze(fodf[:n_comp-1])  # white matter compartments
     f_iso = np.squeeze(fodf[n_comp-1])  # isotropic compartment
-    f_wm = np.sum(fodf_wm)  # white matter fraction
-    combined = fodf_wm + f_iso / len(fodf_wm)
+    fodf = np.squeeze(fodf[:n_comp-1])  # white matter compartments
+    f_wm = np.sum(fodf)  # white matter fraction
+    combined = fodf + f_iso / len(fodf)
 
-    return fodf_wm, f_iso, f_wm, combined
+    return fodf, f_iso, f_wm, combined
 
 
 def mbessel_ratio(n, x):
@@ -504,8 +499,7 @@ def mbessel_ratio(n, x):
     return y
 
 
-def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3,
-                    lambda_iso=3.0e-3):
+def generate_kernel(gtab, sphere, lambda1, lambda2, lambda_iso):
     '''
     Generate deconvolution kernel
 
@@ -521,13 +515,12 @@ def generate_kernel(gtab, sphere, lambda1=1.7e-3, lambda2=0.2e-3,
         construct kernel
     lambda1 : float, optional
         White matter diffusivity parallel to fiber axis (first DTI eigenvalue).
-        Default: 1.7e-3
     lambda2 : float
         White matter diffusivity perpendicular to fiber axis (second/third DTI
-        eigenvalues are assumed equal). Default: 0.2e-3
+        eigenvalues are assumed equal).
     lambda_iso : float
         Mean diffusivity for isotropic compartment. If `None`, then isotropic
-        kernel column set to all zeroes. Default: 3.0e-3
+        kernel column set to all zeroes.
 
     Returns
     -------
@@ -595,7 +588,7 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 
     Returns
     -------
-    fodf_wm : 4d ndarray (x, y, z, K)
+    fodf : 4d ndarray (x, y, z, K)
         fODF computed for each voxel, where K is the vertices on `sphere`
     f_iso : 3d ndarray (x, y, z)
         Isotropic volume fraction at each voxel.
@@ -644,14 +637,14 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
                              model.lambda_iso).astype(np.float32)
 
     # Fit fODF
-    fodf_wm, f_iso, f_wm, combined = rumba_deconv_global(data, kernel, mask,
-                                                         model.n_iter,
-                                                         model.recon_type,
-                                                         model.n_coils,
-                                                         model.R, use_tv,
-                                                         verbose)
+    fodf, f_iso, f_wm, combined = rumba_deconv_global(data, kernel, mask,
+                                                      model.n_iter,
+                                                      model.recon_type,
+                                                      model.n_coils,
+                                                      model.R, use_tv,
+                                                      verbose)
 
-    return fodf_wm, f_iso, f_wm, combined
+    return fodf, f_iso, f_wm, combined
 
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
@@ -701,7 +694,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     Returns
     -------
-    fodf_wm : 4d ndarray (x, y, z, M-1)
+    fodf : 4d ndarray (x, y, z, M-1)
         fODF computed for each voxel.
     f_iso : 3d ndarray (x, y, z)
         Isotropic volume fraction at each voxel.
@@ -884,12 +877,12 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     _reshape_2d_4d(fodf.T, mask, out=fodf_4d[ixmin[0]:ixmax[0],
                                              ixmin[1]:ixmax[1],
                                              ixmin[2]:ixmax[2]])
-    fodf_wm = fodf_4d[:, :, :, :-1]  # WM compartment
+    fodf = fodf_4d[:, :, :, :-1]  # WM compartment
     f_iso = fodf_4d[:, :, :, -1]  # isotropic compartment
-    f_wm = np.sum(fodf_wm, axis=3)  # white matter volume fraction
-    combined = fodf_wm + f_iso[..., None] / fodf_wm.shape[3]
+    f_wm = np.sum(fodf, axis=3)  # white matter volume fraction
+    combined = fodf + f_iso[..., None] / fodf.shape[3]
 
-    return fodf_wm, f_iso, f_wm, combined
+    return fodf, f_iso, f_wm, combined
 
 
 def _grad(M):
