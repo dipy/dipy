@@ -1,5 +1,6 @@
 
 import logging
+from warnings import warn
 import numpy as np
 import nibabel as nib
 
@@ -8,9 +9,11 @@ from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
                                DiffeomorphicMap)
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
-from dipy.align import affine_registration
+from dipy.align import affine_registration, register_dwi_series
 from dipy.align.streamlinear import slr_with_qbx
+from dipy.core.gradients import gradient_table
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.tracking.streamline import transform_streamlines
 from dipy.workflows.workflow import Workflow
 
@@ -704,3 +707,66 @@ class SynRegistrationFlow(Workflow):
             save_nifti(owarped_file, warped_moving, static_grid2world)
             logging.info('Saving Diffeomorphic map {0}'.format(omap_file))
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
+
+
+class MotionCorrectionFlow(Workflow):
+    """
+    The Motion Correction workflow allows the user to use only one type of
+    registration (such as center of mass or rigid body registration only).
+    """
+
+    def run(self, input_files, bvalues_files, bvectors_files, b0_threshold=50,
+            bvecs_tol=0.01, out_dir='', out_moved='moved.nii.gz',
+            out_affine='affine.txt'):
+        """
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+            b-vectors are unit vectors
+        out_dir : string, optional
+            Directory to save the transformed image and the affine matrix
+             (default current directory).
+        out_moved : string, optional
+            Name for the saved transformed image.
+        out_affine : string, optional
+            Name for the saved affine matrix.
+        """
+
+        io_it = self.get_io_iterator()
+        pipeline = ["center_of_mass", "translation", "rigid", "affine"]
+
+        for dwi, bval, bvec, qual_val_file in io_it:
+
+            # Load the data from the input files and store into objects.
+            logging.info('Loading {0}'.format(dwi))
+            data, affine = load_nifti(dwi)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+            print(b0_threshold, bvals.min())
+            if b0_threshold < bvals.min():
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should be higher than the first b0 value "
+                     "({1}).".format(b0_threshold, bvals.min()))
+            gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
+                                  atol=bvecs_tol)
+
+            reg_img, reg_affines = register_dwi_series(data=data, gtab=gtab,
+                                                      affiine=affine,
+                                                      pipeline=pipeline)
+            """
+            Saving the moved image file and the affine matrix.
+            """
+            save_nifti(moved_file, moved_image, static_grid2world)
+            np.savetxt(affine_matrix_file, affine_matrix)
