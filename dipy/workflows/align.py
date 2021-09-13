@@ -747,7 +747,7 @@ class MotionCorrectionFlow(Workflow):
         io_it = self.get_io_iterator()
         pipeline = ["center_of_mass", "translation", "rigid", "affine"]
 
-        for dwi, bval, bvec, qual_val_file in io_it:
+        for dwi, bval, bvec in io_it:
 
             # Load the data from the input files and store into objects.
             logging.info('Loading {0}'.format(dwi))
@@ -766,7 +766,7 @@ class MotionCorrectionFlow(Workflow):
                                                       affiine=affine,
                                                       pipeline=pipeline)
             """
-            Saving the moved image file and the affine matrix.
+            Saving the corrected image file and the affine matrix.
             """
-            save_nifti(moved_file, moved_image, static_grid2world)
-            np.savetxt(affine_matrix_file, affine_matrix)
+            save_nifti(out_moved, reg_img, reg_affines)
+            np.savetxt(out_affine, reg_affines)
