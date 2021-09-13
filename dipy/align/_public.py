@@ -670,10 +670,11 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
 
     return nib.Nifti1Image(data_array, affine), affine_array
 
-motion_correction  = partial(register_dwi_series, pipeline=["center_of_mass",
-                                                            "translation",
-                                                            "rigid", "affine"])
-motion_correction.__doc__ = re.sub('Register.*?volume','Apply a motion '
+
+motion_correction = partial(register_dwi_series, pipeline=["center_of_mass",
+                                                           "translation",
+                                                           "rigid", "affine"])
+motion_correction.__doc__ = re.sub('Register.*?volume', 'Apply a motion '
                                    'correction to a DWI dataset '
                                    '(Between-Volumes Motion correction',
                                    register_dwi_series.__doc__,
