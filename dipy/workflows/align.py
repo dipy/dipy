@@ -757,14 +757,14 @@ class MotionCorrectionFlow(Workflow):
             print(b0_threshold, bvals.min())
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first b0 value "
-                     "({1}).".format(b0_threshold, bvals.min()))
+                     "b0_threshold. It should be higher than the first "
+                     "b0 value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
 
             reg_img, reg_affines = register_dwi_series(data=data, gtab=gtab,
-                                                      affiine=affine,
-                                                      pipeline=pipeline)
+                                                       affine=affine,
+                                                       pipeline=pipeline)
             """
             Saving the corrected image file and the affine matrix.
             """
