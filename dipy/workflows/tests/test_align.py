@@ -17,7 +17,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow)
+                                  SlrWithQbxFlow, MotionCorrectionFlow)
 
 
 def test_reslice():
@@ -312,6 +312,22 @@ def test_apply_affine_transform():
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
 
+def test_motion_correction():
+    with TemporaryDirectory() as temp_out_dir:
+
+        static, moving, static_g2w, moving_g2w, smask, mmask, M\
+            = setup_random_transform(transform=regtransforms[('AFFINE', 3)],
+                                     rfactor=0.1)
+
+        save_nifti(pjoin(temp_out_dir, 'b0.nii.gz'), data=static,
+                   affine=static_g2w)
+        save_nifti(pjoin(temp_out_dir, 't1.nii.gz'), data=moving,
+                   affine=moving_g2w)
+
+        static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
+        moving_image_file = pjoin(temp_out_dir, 't1.nii.gz')
+
+        motion_correction_flow = MotionCorrectionFlow()
 
 def test_syn_registration_flow():
     moving_data, static_data = get_synthetic_warped_circle(40)
