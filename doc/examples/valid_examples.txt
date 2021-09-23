@@ -19,6 +19,7 @@
  reconst_mcsd.py
  reconst_qtdmri.py
  reconst_rumba.py
+ reconst_rumba_multishell.py
  reconst_sh.py
  reconst_shore.py
  reconst_shore_metrics.py
