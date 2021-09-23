@@ -9,7 +9,7 @@ et al [CanalesRodriguez2015]_.
 
 RUMBA-SD uses a priori information about the fiber response function (axial
 and perpendicular diffusivities) to generate a convolution kernel mapping the
-fODF on a sphere to the recorded data. The fODF is then estimated using an
+fODFs on a sphere to the recorded data. The fODFs are then estimated using an
 iterative, maximum likelihood estimation algorithm adapted from Richardson-Lucy
 (RL) deconvolution [Richardson1972]_. Specifically, the RL algorithm assumes
 Gaussian noise, while RUMBA assumes Rician/Noncentral Chi noise -- these more
@@ -18,16 +18,17 @@ This algorithm also contains an optional compartment for estimating an
 isotropic volume fraction to account for partial volume effects.
 
 RUMBA-SD works with single- and multi-shell data, as well as data recorded in
-Cartesian or spherical coordinate systems.
+Cartesian or spherical coordinate systems (see also
+:ref:`example_reconst_rumba_multishell`).
 
 The result from RUMBA-SD can be smoothed by applying total variation spatial
 regularization (termed RUMBA-SD + TV), a technique which promotes a more
-coherent estimate of the fODF across neighboring voxels [Rudin1992]_.
+coherent estimate of the fODFs across neighboring voxels [Rudin1992]_.
 This regularization ability is also included in this implementation.
 
 This example will showcase how to:
     1. Estimate the fiber response function
-    2. Reconstruct the fODF voxel-wise or globally with TV regularization
+    2. Reconstruct the fODFs voxel-wise or globally with TV regularization
     3. Visualize fODF maps
 
 To begin, we will load the data, consisting of 10 b0s and 150 non-b0s with a
@@ -57,35 +58,37 @@ There are multiple ways to estimate the fiber response function.
 
 **Strategy 1: use default values**
 One simple approach is to use the values included as the default arguments in
-the `RumbaSD` constructor. The larger eigenvalue or the axial diffusivity,
-`lambda1`, is set to 1.7e-3, while the smaller eigenvalue or the perpendicular
-diffusivity, `lambda2`, is set to 0.2e-3. The mean isotropic diffusivity,
-`lambda_iso`, is set to 3.0e-3, which is the diffusivity of water at 37 degrees
-celsius [CanalesRodriguez2015]_. These default values will often be adequate as
-RUMBA-SD is robust against impulse response imprecision [DellAcqua2007]_.
+the RumbaSD constructor. The white matter response, `wm_response` has two
+values corresponding to an axial diffusivity of 1.7e-3 and a perpendicular
+diffusivity of 0.2e-3. The model has compartments for cerebrospinal fluid (CSF)
+(`csf_response`) and grey matter (GM) (`gm_response`) as well, with these mean
+diffusivities set to 3.0e-3 and 0.8e-4 respectively [CanalesRodriguez2015]_.
+These default values will often be adequate as RUMBA-SD is robust against
+impulse response imprecision [Dell'Acqua2007]_. 
 """
 
 from dipy.reconst.rumba import RumbaSD
 
 rumba = RumbaSD(gtab)
-print(f"lambda1: {rumba.lambda1}, lambda2: {rumba.lambda2}," +
-      f"lambda_iso: {rumba.lambda_iso}")
+print(f"wm_response: {rumba.wm_response}, " +
+      f"csf_response: {rumba.csf_response}, " +
+      f"gm_response: {rumba.gm_response}")
 
 """
-lambda1: .0017, lambda2: 0.0002, lambda_iso: 0.003
+wm_response: [0.00139919 0.0003007 ], csf_response: 0.003, gm_response: 8e-05
 
 We can visualize what this default response looks like.
 """
 
-from dipy.viz import window, actor
 from dipy.sims.voxel import single_tensor_odf
+from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
 interactive = False
 
 scene = window.Scene()
 
-evals = [rumba.lambda1, rumba.lambda2, rumba.lambda2]
+evals = [rumba.wm_response[0], rumba.wm_response[1], rumba.wm_response[1]]
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
@@ -125,7 +128,7 @@ response, _ = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 print(response)
 
 """
-(array([ 0.0014,  0.00029,  0.00029]), 416.206)
+(array([0.00139919, 0.0003007 , 0.0003007 ]), 416.7372408293461)
 
 This response contains the estimated eigenvalues in its first element, and the
 estimated S0 in the second. The eigenvalues are all we care about for using
@@ -159,15 +162,66 @@ if interactive:
 scene.rm(response_actor)
 
 """
+**Strategy 3: recursive, data-driven estimation**
+The other method for extracting a response function uses a recursive approach.
+Here, we initialize a "fat" response function, which is used in CSD. From this
+deconvolution, the voxels with one peak are extracted and their data is
+averaged to get a new response function. This is repeated iteratively until
+convergence [Tax2014]_.
+
+To shorten computation time, a mask can be estimated for the data.
+"""
+
+from dipy.reconst.csdeconv import recursive_response
+from dipy.segment.mask import median_otsu
+
+b0_mask, mask = median_otsu(data, median_radius=2,
+                            numpass=1, vol_idx=np.arange(10))
+
+rec_response = recursive_response(gtab, data, mask=mask, sh_order=8,
+                                  peak_thr=0.01, init_fa=0.08,
+                                  init_trace=0.0021, iter=4, convergence=0.001,
+                                  parallel=True)
+
+
+"""
+We can now visualize this response, which will look like a pancake.
+"""
+
+rec_response_signal = rec_response.on_sphere(sphere)
+# transform our data from 1D to 4D
+rec_response_signal = rec_response_signal[None, None, None, :]
+response_actor = actor.odf_slicer(rec_response_signal, sphere=sphere,
+                                  colormap='plasma')
+
+scene.add(response_actor)
+print('Saving illustration as recursive_response.png')
+window.record(scene, out_path='recursive_response.png', size=(200, 200))
+if interactive:
+    window.show(scene)
+
+
+"""
+.. figure:: recursive_response.png
+   :align: center
+
+   Recursive response function.
+
+"""
+
+scene.rm(response_actor)
+
+
+"""
 
 Step 2. fODF Reconstruction
 ===========================
 
 We will now use the estimated response function with the RUMBA-SD model to
-reconstruct the fODF. As mentioned previously, we will use the default value
-for `lambda_iso`. If one doesn't wish to fit this isotropic compartment, one
-can specify `lambda_iso` as `None`. This will result in the estimated isotropic
-volume fraction map being all zeroes.
+reconstruct the fODFs. We will use the default value for `csf_response` and
+`gm_response`. If one doesn't wish to fit these compartments, one can specify
+either argument as `None`. This will result in the corresponding volume
+fraction map being all zeroes.
 
 When constructing the RUMBA-SD model, one can also specify `n_iter`,
 `recon_type`, `n_coils`, and `R`. `n_iter` is the number of iterations for the
@@ -185,7 +239,7 @@ common choice, and is the default for the model. This is only important when
 using TV regularization, which will be covered later in the tutorial.
 """
 
-rumba = RumbaSD(gtab, lambda1=response[0][0], lambda2=response[0][1])
+rumba = RumbaSD(gtab, wm_response=response[0][:-1])
 
 """
 For efficiency, we will only fit a small part of the data. This is the same
@@ -199,7 +253,7 @@ data_small = data[20:50, 55:85, 38:39]
 This is the standard framework in DIPY for generating ODFs, wherein each voxel
 is fit sequentially. This is done using the typical `fit`, `odf` sequence.
 
-We will estimate the fODF using the 'symmetric362' sphere. This
+We will estimate the fODFs using the 'symmetric362' sphere. This
 will take about a minute to compute.
 """
 
@@ -244,8 +298,8 @@ plt.savefig('wm_iso_partition.png')
 """
 
 """
-To visualize the fODF, it's recommended to combine the fODF and the isotropic
-component. This is done using the `RumbaFit` object's method
+To visualize the fODFs, it's recommended to combine the fODF and the isotropic
+components. This is done using the `RumbaFit` object's method
 `combined_odf_iso`. To reach a proper scale for visualization, the argument
 `norm=True` is used in FURY's `odf_slicer` method.
 """
@@ -270,7 +324,7 @@ if interactive:
 scene.rm(fodf_spheres)
 
 """
-We can extract the peaks from this fODF using `peaks_from_model`. This will
+We can extract the peaks from these fODFs using `peaks_from_model`. This will
 reconstruct the fODFs again, so will take about a minute to run.
 """
 
@@ -328,32 +382,32 @@ have to start be expanding our data slice.
 data_tv = data[20:50, 55:85, 38:40]
 
 """
-Here, we generate the fODF and other maps in one step. This will take about 90
+Here, we generate the fODFs and other maps in one step. This will take about 90
 seconds.
 """
 
 from dipy.reconst.rumba import global_fit
 
-g_odf, g_f_iso, g_f_wm, g_combined = global_fit(rumba,
-                                                data_tv,
-                                                sphere,
-                                                use_tv=True)
+odf, f_gm, f_csf, f_iso, f_wm, combined = global_fit(rumba,
+                                                     data_tv,
+                                                     sphere,
+                                                     use_tv=True)
 
 """
 Now we can visualize the combined fODF map as before.
 """
 
-fodf_spheres = actor.odf_slicer(g_combined, sphere=sphere, norm=True,
+fodf_spheres = actor.odf_slicer(combined, sphere=sphere, norm=True,
                                 scale=0.9, colormap=None)
 
 scene.add(fodf_spheres)
-print('Saving illustration as rumba_g_odfs.png')
-window.record(scene, out_path='rumba_g_odfs.png', size=(600, 600))
+print('Saving illustration as rumba_global_odfs.png')
+window.record(scene, out_path='rumba_global_odfs.png', size=(600, 600))
 if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_g_odfs.png
+.. figure:: rumba_global_odfs.png
    :align: center
 
    RUMBA-SD + TV fODFs
@@ -373,37 +427,37 @@ our peaks using a for loop.
 
 from dipy.direction import peak_directions
 
-shape = g_odf.shape[:3]
+shape = odf.shape[:3]
 npeaks = 5  # maximum number of peaks returned for a given voxel
-g_peak_dirs = np.zeros((shape + (npeaks, 3)))
-g_peak_values = np.zeros((shape + (npeaks,)))
+peak_dirs = np.zeros((shape + (npeaks, 3)))
+peak_values = np.zeros((shape + (npeaks,)))
 
 for idx in np.ndindex(shape):  # iterate through each voxel
     # Get peaks of odf
-    direction, pk, _ = peak_directions(g_odf[idx], sphere,
+    direction, pk, _ = peak_directions(odf[idx], sphere,
                                        relative_peak_threshold=0.5,
                                        min_separation_angle=25)
 
     # Calculate peak metrics
     if pk.shape[0] != 0:
         n = min(npeaks, pk.shape[0])
-        g_peak_dirs[idx][:n] = direction[:n]
-        g_peak_values[idx][:n] = pk[:n]
+        peak_dirs[idx][:n] = direction[:n]
+        peak_values[idx][:n] = pk[:n]
 
 # Scale up for visualization
-g_peak_values = np.clip(g_peak_values * 15, 0, 1)
+peak_values = np.clip(peak_values * 15, 0, 1)
 
-fodf_peaks = actor.peak_slicer(g_peak_dirs[:, :, 0:1, :], 
-                               g_peak_values[:, :, 0:1, :])
+fodf_peaks = actor.peak_slicer(peak_dirs[:, :, 0:1, :],
+                               peak_values[:, :, 0:1, :])
 scene.add(fodf_peaks)
 
-print('Saving illustration as rumba_g_peaks.png')
-window.record(scene, out_path='rumba_g_peaks.png', size=(600, 600))
+print('Saving illustration as rumba_global_peaks.png')
+window.record(scene, out_path='rumba_global_peaks.png', size=(600, 600))
 if interactive:
     window.show(scene)
 
 """
-.. figure:: rumba_g_peaks.png
+.. figure:: rumba_global_peaks.png
    :align: center
 
    RUMBA-SD + TV peaks
@@ -445,6 +499,12 @@ References
    G., & Fazio, F. (2007). A Model-Based Deconvolution Approach to Solve Fiber
    Crossing in Diffusion-Weighted MR Imaging. IEEE Transactions on Bio-Medical
    Engineering, 54, 462–472. https://doi.org/10.1109/TBME.2006.888830
+
+.. [Tax2014] Tax, C. M. W., Jeurissen, B., Vos, S. B., Viergever, M. A., &
+   Leemans, A. (2014). Recursive calibration of the fiber response
+   function for spherical deconvolution of diffusion MRI data.
+   NeuroImage, 86, 67–80.
+   https://doi.org/10.1016/j.neuroimage.2013.07.067
 
 
 .. include:: ../links_names.inc
