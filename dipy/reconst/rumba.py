@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class RumbaSD(OdfModel, Cache):
 
     def __init__(self, gtab, wm_response=np.array([1.7e-3, 0.2e-3]),
-                 gm_response=0.8e-4, csf_response=3.0e-3, n_iter=600,
+                 gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
                  recon_type='smf', n_coils=1, R=1):
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
@@ -53,7 +53,7 @@ class RumbaSD(OdfModel, Cache):
             Default: np.array([1.7e-3, 0.2e-3])
         gm_response : float, optional
             Mean diffusivity for GM compartment. If `None`, then grey
-            matter volume fraction is not computed. Default: 0.8e-4
+            matter volume fraction is not computed. Default: 0.8e-3
         csf_response : float, optional
             Mean diffusivity for CSF compartment. If `None`, then CSF
             volume fraction is not computed. Default: 3.0e-3
