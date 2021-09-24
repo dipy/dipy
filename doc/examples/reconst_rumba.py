@@ -64,7 +64,7 @@ diffusivity of 0.2e-3. The model has compartments for cerebrospinal fluid (CSF)
 (`csf_response`) and grey matter (GM) (`gm_response`) as well, with these mean
 diffusivities set to 3.0e-3 and 0.8e-4 respectively [CanalesRodriguez2015]_.
 These default values will often be adequate as RUMBA-SD is robust against
-impulse response imprecision [Dell'Acqua2007]_. 
+impulse response imprecision [Dell'Acqua2007]_.
 """
 
 from dipy.reconst.rumba import RumbaSD
@@ -221,7 +221,9 @@ We will now use the estimated response function with the RUMBA-SD model to
 reconstruct the fODFs. We will use the default value for `csf_response` and
 `gm_response`. If one doesn't wish to fit these compartments, one can specify
 either argument as `None`. This will result in the corresponding volume
-fraction map being all zeroes.
+fraction map being all zeroes. While we keep the GM compartment in this
+example, generally the GM volume fraction can only be accurately estimated
+with multi-shell data.
 
 When constructing the RUMBA-SD model, one can also specify `n_iter`,
 `recon_type`, `n_coils`, and `R`. `n_iter` is the number of iterations for the
@@ -388,7 +390,7 @@ seconds.
 
 from dipy.reconst.rumba import global_fit
 
-odf, f_gm, f_csf, f_iso, f_wm, combined = global_fit(rumba,
+odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba,
                                                      data_tv,
                                                      sphere,
                                                      use_tv=True)
