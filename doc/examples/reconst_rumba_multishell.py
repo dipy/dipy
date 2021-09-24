@@ -70,7 +70,7 @@ take about 10 minutes.
 """
 
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1, vol_idx=[0, 1])
-odf, f_gm, f_csf, f_iso, f_wm, combined = global_fit(rumba, data, sphere,
+odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba, data, sphere,
                                                      mask=mask, use_tv=False)
 
 """
@@ -101,18 +101,73 @@ if interactive:
 scene.rm(fodf_spheres)
 
 """
-We can also visualize the peaks computed from these fODFs.
+RUMBA-SD also has compartments for cerebrospinal fluid (CSF) and grey matter
+(GM). The volume fractions of white matter, CSF, and GM are normalized to add
+up to 1. This is shown below.
+"""
+
+import matplotlib.pyplot as plt
+
+fig, axs = plt.subplots(1, 3, figsize=(12, 3))
+
+ax0 = axs[0].imshow(f_wm[..., 0].T, origin='lower')
+axs[0].set_title("Voxelwise WM Volume Fraction")
+
+ax1 = axs[1].imshow(f_csf[..., 0].T, origin='lower')
+axs[1].set_title("Voxelwise CSF Volume Fraction")
+
+ax2 = axs[2].imshow(f_gm[..., 0].T, origin='lower')
+axs[2].set_title("Voxelwise GM Volume Fraction")
+
+plt.colorbar(ax0, ax=axs[0])
+plt.colorbar(ax1, ax=axs[1])
+plt.colorbar(ax2, ax=axs[2])
+
+plt.savefig('wm_gm_csf_partition.png')
+
+"""
+We can now zoom into a small patch of this image to take a closer look at the
+fODFs and visualize the peaks.
+"""
+combined_patch = combined[35:60, 50:70]
+odf_patch = odf[35:60, 50:70]
+
+fodf_spheres = actor.odf_slicer(combined_patch, sphere=sphere, scale=0.9,
+                                norm=True, colormap=None)
+
+interactive = True
+scene = window.Scene()
+scene.add(fodf_spheres)
+scene.reset_camera_tight()
+
+print('Saving illustration as rumba_multishell_patch.png')
+window.record(scene, out_path='rumba_multishell_patch.png', size=(600, 600))
+
+if interactive:
+    window.show(scene)
+
+"""
+.. figure:: rumba_multishell_patch.png
+   :align: center
+
+   RUMBA-SD multi-shell fODFs patch
+"""
+
+scene.rm(fodf_spheres)
+
+"""
+We can now extract the peaks from this patch using a for loop.
 """
 
 from dipy.direction.peaks import peak_directions
-shape = odf.shape[:3]
+shape = odf_patch.shape[:3]
 npeaks = 5  # maximum number of peaks returned for a given voxel
 peak_dirs = np.zeros((shape + (npeaks, 3)))
 peak_values = np.zeros((shape + (npeaks,)))
 
 for idx in np.ndindex(shape):  # iterate through each voxel
     # Get peaks of odf
-    direction, pk, _ = peak_directions(odf[idx], sphere,
+    direction, pk, _ = peak_directions(odf_patch[idx], sphere,
                                        relative_peak_threshold=0.5,
                                        min_separation_angle=25)
 
@@ -122,7 +177,7 @@ for idx in np.ndindex(shape):  # iterate through each voxel
         peak_dirs[idx][:n] = direction[:n]
         peak_values[idx][:n] = pk[:n]
 
-peak_values = np.clip(peak_values * 25, 0, 1)  # scale up for visualization
+peak_values = np.clip(peak_values * 30, 0, 1)  # scale up for visualization
 
 fodf_peaks = actor.peak_slicer(
     peak_dirs[:, :, 0:1, :], peak_values[:, :, 0:1, :])
