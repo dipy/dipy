@@ -221,9 +221,10 @@ We will now use the estimated response function with the RUMBA-SD model to
 reconstruct the fODFs. We will use the default value for `csf_response` and
 `gm_response`. If one doesn't wish to fit these compartments, one can specify
 either argument as `None`. This will result in the corresponding volume
-fraction map being all zeroes. While we keep the GM compartment in this
-example, generally the GM volume fraction can only be accurately estimated
-with multi-shell data.
+fraction map being all zeroes. The GM compartment can only be accurately
+estimated with at least 3-shell data. With less shells, it is recommended
+to only keep the compartment for CSF. Since this data is single-shell, we will
+only compute the CSF compartment.
 
 When constructing the RUMBA-SD model, one can also specify `n_iter`,
 `recon_type`, `n_coils`, and `R`. `n_iter` is the number of iterations for the
@@ -241,7 +242,7 @@ common choice, and is the default for the model. This is only important when
 using TV regularization, which will be covered later in the tutorial.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0][:-1])
+rumba = RumbaSD(gtab, wm_response=response[0][:-1], gm_response=None)
 
 """
 For efficiency, we will only fit a small part of the data. This is the same
