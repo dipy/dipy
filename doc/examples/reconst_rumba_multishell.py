@@ -102,8 +102,11 @@ scene.rm(fodf_spheres)
 
 """
 RUMBA-SD also has compartments for cerebrospinal fluid (CSF) and grey matter
-(GM). The volume fractions of white matter, CSF, and GM are normalized to add
-up to 1. This is shown below.
+(GM). The GM compartment can only be estimated with at least 3 shells of data.
+In cases with less shells, we recommend only computing the CSF compartment.
+Since this data has many shells, GM can be computed and the the volume
+fractions of white matter, CSF, and GM are shown below. They are normalized to
+add up to 1 for each voxel.
 """
 
 import matplotlib.pyplot as plt
