@@ -9,6 +9,7 @@ from numpy.testing import (assert_equal,
                            run_module_suite)
 
 from dipy.reconst.rumba import RumbaSD, global_fit, generate_kernel
+from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.data import get_fnames, dsi_voxels, default_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import cart2sphere
@@ -40,11 +41,8 @@ def test_rumba():
             bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
         assert_raises(ValueError, RumbaSD, gtab_broken)
 
-    assert_raises(ValueError, RumbaSD, gtab_broken, lambda1=-1.0)
-    assert_raises(ValueError, RumbaSD, gtab, lambda_iso=-1.0)
     assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
-
-    rumba_broken = RumbaSD(gtab, recon_type='test')  # recon_type validation
+    rumba_broken = RumbaSD(gtab, recon_type='test')
     broken_fit = rumba_broken.fit(data)
     assert_raises(ValueError, broken_fit.odf, sphere)
 
@@ -79,6 +77,62 @@ def test_rumba():
                 assert_equal(model_fit.f_iso(sphere) > 0.8, True)
 
 
+def test_recursive_rumba():
+    '''
+    Test with recursive data-driven response
+    '''
+    sphere = default_sphere  # repulsion 724
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
+
+    wm_response = AxSymShResponse(480, np.array([570.35065982,
+                                                 -262.81741086,
+                                                 80.23104069,
+                                                 -16.93940972,
+                                                 2.57628738]))
+    model = RumbaSD(gtab, wm_response, n_iter=20)
+    model_fit = model.fit(data)
+
+    # Test peaks
+    odf = model_fit.odf(sphere)
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions),
+                        2, 1)
+
+
+def test_multishell_rumba():
+    '''
+    Test with multi-shell response
+    '''
+    sphere = default_sphere  # repulsion 724
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+    data, golden_directions = sticks_and_ball(gtab, d=0.0015, S0=100,
+                                              angles=[(0, 0), (90, 0)],
+                                              fractions=[50, 50], snr=None)
+
+    wm_response = np.tile(np.array([1.7E-3, 0.2E-3]), (22, 1))
+    model = RumbaSD(gtab, wm_response, n_iter=20)
+    model_fit = model.fit(data)
+
+    # Test peaks
+    odf = model_fit.odf(sphere)
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions),
+                        2, 1)
+
+
 def test_mvoxel_rumba():
     '''
     Verify form of results in multi-voxel situation.
@@ -97,6 +151,8 @@ def test_mvoxel_rumba():
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso(sphere)
         f_wm = model_fit.f_wm(sphere)
+        f_gm = model_fit.f_gm(sphere)
+        f_csf = model_fit.f_csf(sphere)
         combined = model_fit.combined_odf_iso(sphere)
 
         # Verify shape, positivity, realness of results
@@ -109,6 +165,7 @@ def test_mvoxel_rumba():
         assert_equal(np.alltrue(f_iso > 0), True)
 
         # Verify properties of fODF and volume fractions
+        assert_equal(f_iso, f_gm + f_csf)
         assert_equal(combined, odf + f_iso[..., None] / len(sphere.vertices))
         assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
         assert_almost_equal(np.sum(combined, axis=3), np.ones(f_iso.shape))
@@ -154,10 +211,10 @@ def test_global_fit():
     # Test on repulsion 724 sphere
     for use_tv in [True, False]:  # test with/without TV regularization
         if use_tv:
-            odf, f_iso, _, _ = global_fit(
+            odf, _, _, _, f_iso, _ = global_fit(
                 rumba, data_mvoxel, sphere, use_tv=True)
         else:
-            odf, f_iso, _, _ = global_fit(
+            odf, _, _, _, f_iso, _ = global_fit(
                 rumba, data, sphere, use_tv=False)
 
         directions, _, _ = peak_directions(
@@ -171,7 +228,7 @@ def test_global_fit():
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         data = data[None, None, None, :]  # make 4D
-        odf, f_iso, _, _ = global_fit(rumba, data, sphere, use_tv=False)
+        odf, _, _, _, f_iso, _ = global_fit(rumba, data, sphere, use_tv=False)
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, .35, 25)
         if len(directions) <= 3:
@@ -198,7 +255,7 @@ def test_mvoxel_global_fit():
     # Test each model with/without TV regularization
     for model in model_list:
         for use_tv in [True, False]:
-            odf, f_iso, f_wm, combined = global_fit(
+            odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(
                 model, data, sphere, verbose=True, use_tv=use_tv)
 
             # Verify shape, positivity, realness of results
@@ -211,6 +268,7 @@ def test_mvoxel_global_fit():
             assert_equal(np.alltrue(f_iso > 0), True)
 
             # Verify normalization
+            assert_equal(f_iso, f_gm + f_csf)
             assert_equal(combined, odf +
                          f_iso[..., None] / len(sphere.vertices))
             assert_almost_equal(f_iso + f_wm, np.ones(f_iso.shape))
@@ -232,14 +290,14 @@ def test_generate_kernel():
     gtab = gradient_table(bvals, bvecs)
 
     # Kernel parameters
-    lambda1 = 1.7e-3
-    lambda2 = 0.2e-3
-    lambda_iso = 3e-3
+    wm_response = np.array([1.7e-3, 0.2e-3, 0.2e-3])
+    gm_response = 0.2e-4
+    csf_response = 3.0e-3
 
     # Test kernel shape
     kernel = generate_kernel(
-        gtab, sphere, lambda1=lambda1, lambda2=lambda2, lambda_iso=lambda_iso)
-    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+1))
+        gtab, sphere, wm_response[:-1], gm_response, csf_response)
+    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
 
     # Verify first column of kernel
     _, theta, phi = cart2sphere(
@@ -250,14 +308,22 @@ def test_generate_kernel():
     S0 = 1  # S0 assumed to be 1
     fi = 100  # volume fraction assumed to be 100%
 
-    S, _ = multi_tensor(gtab, np.array([[lambda1, lambda2, lambda2]]),
+    S, _ = multi_tensor(gtab, np.array([wm_response]),
                         S0, [[theta[0]*180/np.pi, phi[0]*180/np.pi]], [fi],
                         None)
     assert_almost_equal(kernel[:, 0], S)
 
+    # Multi-shell version
+    wm_response_multi = np.tile(wm_response, (22, 1))
+    kernel_multi = generate_kernel(
+        gtab, sphere, wm_response_multi[:, :-1], gm_response, csf_response)
+    assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
+    assert_array_equal(kernel, kernel_multi)
+
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
-        gtab, sphere, lambda1=lambda1, lambda2=lambda2, lambda_iso=None)
+        gtab, sphere, wm_response[:-1], gm_response=None, csf_response=None)
+    assert_array_equal(kernel[:, -2], np.zeros(len(gtab.bvals)))
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
 
 

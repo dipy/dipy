@@ -55,10 +55,10 @@ although its usage can provide more coherent results in fiber tracking. The
 fit will take about 5 minutes to complete.
 """
 
-rumba = RumbaSD(gtab, lambda1=response[0][0], lambda2=response[0][1],
-                n_iter=200)
-odf, f_iso, f_wm, combined = global_fit(rumba, data, sphere,
-                                        mask=white_matter, use_tv=False)
+rumba = RumbaSD(gtab, wm_response=response[0][:-1], n_iter=200)
+odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba, data, sphere,
+                                                     mask=white_matter,
+                                                     use_tv=False)
 
 """
 To establish stopping criterion, a common technique is to use the Generalized
@@ -98,10 +98,10 @@ plt.savefig('f_wm_tracking_mask.png')
 """
 
 """
-This discrete fODF can be used as a PMF in the `ProbabilisticDirectionGetter`
+These discrete fODFs can be used as a PMF in the `ProbabilisticDirectionGetter`
 for sampling tracking directions. The PMF must be strictly non-negative;
 RUMBA-SD already adheres to this constraint so no further manipulation of the
-fODF is necessary.
+fODFs is necessary.
 """
 
 from dipy.direction import ProbabilisticDirectionGetter
@@ -116,8 +116,8 @@ streamlines = Streamlines(streamline_generator)
 
 color = colormap.line_colors(streamlines)
 streamlines_actor = actor.streamtube(
-        list(transform_streamlines(streamlines, inv(t1_aff))),
-        color, linewidth=0.1)
+    list(transform_streamlines(streamlines, inv(t1_aff))),
+    color, linewidth=0.1)
 
 vol_actor = actor.slicer(t1_data)
 vol_actor.display(x=40)
@@ -142,4 +142,20 @@ save_trk(sft, "tractogram_probabilistic_rumba.trk")
    :align: center
 
    RUMBA-SD tractogram
+"""
+
+"""
+References
+----------
+
+.. [CanalesRodriguez2015] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos,
+   S. N., Caruyer, E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
+   Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y., Thiran, J.-P.,
+   Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015). Spherical
+   Deconvolution of Multichannel Diffusion MRI Data with Non-Gaussian Noise
+   Models and Spatial Regularization. PLOS ONE, 10(10), e0138910.
+   https://doi.org/10.1371/journal.pone.0138910
+
+.. include:: ../links_names.inc
+
 """
