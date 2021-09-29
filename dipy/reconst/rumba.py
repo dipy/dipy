@@ -225,7 +225,7 @@ class RumbaFit(OdfFit):
             self._fit(sphere)
 
         return self._f_csf
-
+      
     def f_wm(self, sphere):
         '''
         Computes white matter fraction of voxel.
@@ -318,7 +318,6 @@ class RumbaFit(OdfFit):
                          self.model.n_iter,
                          self.model.recon_type,
                          self.model.n_coils)
-
         self._f_wm = f_wm
         self._f_gm = f_gm
         self._f_csf = f_csf
@@ -578,6 +577,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     csf_response : float, optional
         Mean diffusivity for CSF compartment. If `None`, then CSF
         compartment set to all zeros.
+
     Returns
     -------
     kernel : 2d ndarray (N, M)

@@ -204,6 +204,9 @@ def test_global_fit():
     # Mask must match first 3 dimensions of data
     assert_raises(ValueError, global_fit, rumba, data, sphere, mask=np.ones(
         data.shape), use_tv=False)
+    # Recon type validation
+    rumba_broken = RumbaSD(gtab, recon_type='test')
+    assert_raises(ValueError, global_fit, rumba_broken, data, sphere)
 
     # Test on repulsion 724 sphere
     for use_tv in [True, False]:  # test with/without TV regularization
