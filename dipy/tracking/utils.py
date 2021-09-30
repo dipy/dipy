@@ -915,9 +915,9 @@ def reduce_rois(rois, include):
 
     for i in range(len(rois)):
         if include[i]:
-            include_roi |= rois[i]
+            include_roi |= rois[i]>0
         else:
-            exclude_roi |= rois[i]
+            exclude_roi |= rois[i]>0
 
     return include_roi, exclude_roi
 
