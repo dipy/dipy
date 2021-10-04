@@ -76,16 +76,25 @@ cdef (float,float) getARandomPointWithinDisk(float r):
 # Tracking Parameters
 # (This might not be necessary but I am still putting it here for completeness. We can remove it later if we find it redundant.)
 cdef struct TP:
-    float step_size
-    float max_curvature
-    float probe_length
-    float probe_radius
-    float probe_quality
-    float probe_count
-    float data_support_exponent
+    float step_size = 1/20
+    float max_curvature = 1/2
+    float probe_length = 1/2
+    float probe_radius = 0
+    float probe_quality = 3
+    float probe_count = 0
+    float data_support_exponent = 1
 
-# Parallel Trasport Frame
-cdef class PTF():
+
+cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
+    """Randomly samples direction of a sphere based on probability mass
+    function (pmf).
+
+    The main constructors for this class are current from_pmf and from_shcoeff.
+    The pmf gives the probability that each direction on the sphere should be
+    chosen as the next direction. To get the true pmf from the "raw pmf"
+    directions more than ``max_angle`` degrees from the incoming direction are
+    set to 0 and the result is normalized.
+    """
 
     cdef TP          params                # Tracking parameters for this frame.
     cdef float[3]    p                     # Last position
@@ -108,10 +117,49 @@ cdef class PTF():
 
 
     # For each streamline, create a new PTF object with tracking parameters
-    def __init__(self, TP _params):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1,
+                 max_curvature = 1/2, probe_length = 1/2, probe_radius = 0,
+                 probe_quality = 3, probe_count = 0, data_support_exponent = 1,
+                  **kwargs):
+        """Direction getter from a pmf generator.
 
+        Parameters
+        ----------
+        pmf_gen : PmfGen
+            Used to get probability mass function for selecting tracking
+            directions.
+        max_angle : float, [0, 90]
+            The maximum allowed angle between incoming direction and new
+            direction.
+        sphere : Sphere
+            The set of directions to be used for tracking.
+        pmf_threshold : float [0., 1.]
+            Used to remove direction from the probability mass function for
+            selecting the tracking direction.
+        relative_peak_threshold : float in [0., 1.]
+            Used for extracting initial tracking directions. Passed to
+            peak_directions.
+        min_separation_angle : float in [0, 90]
+            Used for extracting initial tracking directions. Passed to
+            peak_directions.
+
+        See also
+        --------
+        dipy.direction.peaks.peak_directions
+
+        """
         # Set this PTF's parameters
-        self.params = _params
+        self.params = TP()
+
+        # TODO: review max_angle vs max_curvature.
+        self.params.max_curvature = max_curvature
+        self.params.probe_length = probe_length
+        self.params.probe_radius = probe_radius
+        self.params.probe_quality = probe_quality
+        self.params.probe_count = 0
+        self.params.data_support_exponent = 1
+        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                       pmf_threshold, **kwargs)
 
         # Initialize this PTF's internal tracking parameters
         self.angular_separation = 2.0*M_PI/float(self.params.probe_count)
@@ -146,6 +194,7 @@ cdef class PTF():
 
         if (self.params.probe_count==1):
             # fodAmp = getFODamp(p,F[0])
+            # fodAmp = self.get_pmf_value(p, F[0])
             self.likelihood = fodAmp
         else:
             for c in range(self.params.probe_count):
@@ -153,6 +202,7 @@ cdef class PTF():
                     pp[i] = self.p[i] + self.F[1][i]*self.params.probe_radius*cos(c*self.params.angular_separation) + self.F[2][i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
                 # fodAmp = getFODamp(pp,F[0])
+                # fodAmp = self.get_pmf_value(pp, F[0])
                 self.likelihood += fodAmp
 
         self.init_first_val_cand = self.likelihood
@@ -319,6 +369,7 @@ cdef class PTF():
             if (self.params.probe_count==1):
 
                 # fodAmp       = getFODamp(_p,_T)
+                # fodAmp = self.get_pmf_value(_p, _T)
                 self.last_val_cand = fodAmp
                 self.likelihood  += self.last_val_cand
 
@@ -337,6 +388,7 @@ cdef class PTF():
                         pp[i] = _p[i] + _N1[i]*self.params.probe_radius*cos(c*self.params.angular_separation) + _N2[i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
                     # fodAmp = getFODamp(pp,_T)
+                    # fodAmp = self.get_pmf_value(pp, _T)
                     self.last_val_cand += fodAmp
 
                 self.likelihood += self.last_val_cand
@@ -351,64 +403,33 @@ cdef class PTF():
 
 
 
-cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
-    """Randomly samples direction of a sphere based on probability mass
-    function (pmf).
-
-    The main constructors for this class are current from_pmf and from_shcoeff.
-    The pmf gives the probability that each direction on the sphere should be
-    chosen as the next direction. To get the true pmf from the "raw pmf"
-    directions more than ``max_angle`` degrees from the incoming direction are
-    set to 0 and the result is normalized.
-    """
 
     # cdef int propagate(self):
+    #    """Return next point and streamlines status
+    #        streamlines status should be TRACKPOINT or NODATASUPPORT"""
     #     return 0
 
-    # cdef int initialize(self):
+    # cdef int reinitialize(self):
+    #    """Reset/initialize cached object  """
+    #    """Return streamlines status. streamlines status should be TRACKPOINT or NODATASUPPORT"""
     #     return 0
 
     # cdef int flip(self):
     #     return 0
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
-        """Direction getter from a pmf generator.
 
-        Parameters
-        ----------
-        pmf_gen : PmfGen
-            Used to get probability mass function for selecting tracking
-            directions.
-        max_angle : float, [0, 90]
-            The maximum allowed angle between incoming direction and new
-            direction.
-        sphere : Sphere
-            The set of directions to be used for tracking.
-        pmf_threshold : float [0., 1.]
-            Used to remove direction from the probability mass function for
-            selecting the tracking direction.
-        relative_peak_threshold : float in [0., 1.]
-            Used for extracting initial tracking directions. Passed to
-            peak_directions.
-        min_separation_angle : float in [0, 90]
-            Used for extracting initial tracking directions. Passed to
-            peak_directions.
 
-        See also
-        --------
-        dipy.direction.peaks.peak_directions
 
-        """
-        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
 
     # @cython.boundscheck(False)
     # @cython.wraparound(False)
     # @cython.cdivision(True)
-
     cpdef tuple generate_streamline(self,
                                     double[::1] seed,
                                     double[::1] dir,
+                                    #TODO: Move step_size, voxel_size, fixed_Step variable
+                                    # should be outside of generate_streamline
+                                    # use it inside the init
                                     double[::1] voxel_size,
                                     double step_size,
                                     StoppingCriterion stopping_criterion,
@@ -423,10 +444,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
            double voxdir[3]
            void (*step)(double*, double*, double) nogil
 
-       if fixedstep > 0:
-           step = _fixed_step
-       else:
-           step = _step_to_boundary
+       self.params.step_size = step_size
 
        copy_point(&seed[0], point)
        copy_point(&seed[0], &streamline[0,0])
@@ -439,11 +457,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
           self.initialize()
 
        for i in range(1, len_streamlines):
-           if self.propagate():
-               break
-           for j in range(3):
-               voxdir[j] = dir[j] / voxel_size[j]
-           step(point, voxdir, step_size)
+            point, stream_status = self.propagate()
+            if stream_status == NODATASUPPORT:
+                break
            copy_point(point, &streamline[i, 0])
            stream_status = stopping_criterion.check_point_c(point)
            if stream_status == TRACKPOINT:
