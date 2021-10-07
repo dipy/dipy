@@ -58,13 +58,13 @@ There are multiple ways to estimate the fiber response function.
 
 **Strategy 1: use default values**
 One simple approach is to use the values included as the default arguments in
-the RumbaSD constructor. The white matter response, `wm_response` has two
-values corresponding to an axial diffusivity of 1.7e-3 and a perpendicular
-diffusivity of 0.2e-3. The model has compartments for cerebrospinal fluid (CSF)
-(`csf_response`) and grey matter (GM) (`gm_response`) as well, with these mean
-diffusivities set to 3.0e-3 and 0.8e-4 respectively [CanalesRodriguez2015]_.
-These default values will often be adequate as RUMBA-SD is robust against
-impulse response imprecision [Dell'Acqua2007]_.
+the RumbaSD constructor. The white matter response, `wm_response` has three
+values corresponding to the tensor eigenvalues (1.7e-3, 0.2e-3, 0.2e-3). The
+model has compartments for cerebrospinal fluid (CSF) (`csf_response`) and
+grey matter (GM) (`gm_response`) as well, with these mean diffusivities set
+to 3.0e-3 and 0.8e-3 respectively [CanalesRodriguez2015]_. These default
+values will often be adequate as RUMBA-SD is robust against impulse response
+imprecision [Dell'Acqua2007]_.
 """
 
 from dipy.reconst.rumba import RumbaSD
@@ -75,7 +75,9 @@ print(f"wm_response: {rumba.wm_response}, " +
       f"gm_response: {rumba.gm_response}")
 
 """
-wm_response: [0.00139919 0.0003007 ], csf_response: 0.003, gm_response: 8e-05
+wm_response: [0.0017 0.0002 0.0002]
+csf_response: 0.003
+gm_response: 0.0008
 
 We can visualize what this default response looks like.
 """
@@ -88,7 +90,7 @@ interactive = False
 
 scene = window.Scene()
 
-evals = [rumba.wm_response[0], rumba.wm_response[1], rumba.wm_response[1]]
+evals = rumba.wm_response
 evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
 response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
@@ -128,7 +130,7 @@ response, _ = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 print(response)
 
 """
-(array([0.00139919, 0.0003007 , 0.0003007 ]), 416.7372408293461)
+(array([0.00139919, 0.0003007 , 0.0003007]), 416.7372408293461)
 
 This response contains the estimated eigenvalues in its first element, and the
 estimated S0 in the second. The eigenvalues are all we care about for using
@@ -242,7 +244,7 @@ common choice, and is the default for the model. This is only important when
 using TV regularization, which will be covered later in the tutorial.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0][:-1], gm_response=None)
+rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None)
 
 """
 For efficiency, we will only fit a small part of the data. This is the same

@@ -55,7 +55,7 @@ although its usage can provide more coherent results in fiber tracking. The
 fit will take about 5 minutes to complete.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0][:-1], n_iter=200)
+rumba = RumbaSD(gtab, wm_response=response[0], n_iter=200)
 odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba, data, sphere,
                                                      mask=white_matter,
                                                      use_tv=False)

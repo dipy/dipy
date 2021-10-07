@@ -121,7 +121,7 @@ def test_multishell_rumba():
                                               angles=[(0, 0), (90, 0)],
                                               fractions=[50, 50], snr=None)
 
-    wm_response = np.tile(np.array([1.7E-3, 0.2E-3]), (22, 1))
+    wm_response = np.tile(np.array([1.7E-3, 0.2E-3, 0.2E-3]), (22, 1))
     model = RumbaSD(gtab, wm_response, n_iter=20)
     model_fit = model.fit(data)
 
@@ -296,7 +296,7 @@ def test_generate_kernel():
 
     # Test kernel shape
     kernel = generate_kernel(
-        gtab, sphere, wm_response[:-1], gm_response, csf_response)
+        gtab, sphere, wm_response, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
 
     # Verify first column of kernel
@@ -317,7 +317,7 @@ def test_generate_kernel():
     # Multi-shell version
     wm_response_multi = np.tile(wm_response, (22, 1))
     kernel_multi = generate_kernel(
-        gtab, sphere, wm_response_multi[:, :-1], gm_response, csf_response)
+        gtab, sphere, wm_response_multi, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices)+2))
     assert_array_equal(kernel, kernel_multi)
 =======
@@ -325,7 +325,7 @@ def test_generate_kernel():
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
-        gtab, sphere, wm_response[:-1], gm_response=None, csf_response=None)
+        gtab, sphere, wm_response, gm_response=None, csf_response=None)
     assert_array_equal(kernel[:, -2], np.zeros(len(gtab.bvals)))
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
 

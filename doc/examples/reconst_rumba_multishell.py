@@ -57,11 +57,11 @@ wm_response, gm_response, csf_response = \
 
 """
 This white matter response can now be used in RUMBA-SD as follows. Note that
-RUMBA-SD only requires two values per shell (the axial and perpendicular
-diffusivity). There is no way to pass a multi-shell GM or CSF response.
+RUMBA-SD requires three values per shell (the diffusion tensor eigenvalues).
+There is no way to pass a multi-shell GM or CSF response.
 """
 
-rumba = RumbaSD(gtab, wm_response=wm_response[:, :-2])
+rumba = RumbaSD(gtab, wm_response=wm_response[:, :-1])
 
 """
 Now we can compute our fODFs. For efficiency, we won't use total variation
