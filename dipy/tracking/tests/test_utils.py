@@ -596,6 +596,11 @@ def test_reduce_rois():
                                            [True, True])
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
+    # Int and float input
+    roi1 = np.zeros((4, 4, 4), dtype=int)
+    roi2 = np.zeros((4, 4, 4), dtype=float)
+    npt.assert_warns(UserWarning, reduce_rois, [roi1], [True])
+    npt.assert_warns(UserWarning, reduce_rois, [roi2], [True])
 
 
 def test_path_length():
