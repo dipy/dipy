@@ -910,18 +910,18 @@ def reduce_rois(rois, include):
     and X, Y are exclusion regions.
 
     """
-    #throw warning if non bool roi detected
+    # throw warning if non bool roi detected
     if np.any([np.isin(irois.dtype, [int, float]) for irois in rois]):
         warn("Non-boolean input mask detected. Treating all nonzeros as True.")
-    
+
     include_roi = np.zeros(rois[0].shape, dtype=bool)
     exclude_roi = np.zeros(rois[0].shape, dtype=bool)
 
     for i in range(len(rois)):
         if include[i]:
-            include_roi |= rois[i]!=0
+            include_roi |= rois[i] != 0
         else:
-            exclude_roi |= rois[i]!=0
+            exclude_roi |= rois[i] != 0
 
     return include_roi, exclude_roi
 
