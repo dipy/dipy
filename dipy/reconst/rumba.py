@@ -225,7 +225,7 @@ class RumbaFit(OdfFit):
             self._fit(sphere)
 
         return self._f_csf
-      
+
     def f_wm(self, sphere):
         '''
         Computes white matter fraction of voxel.
@@ -478,7 +478,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     f_zero = 0  # minimum value allowed in fODF
 
     # Initialize variance
-    sigma0 = 1/15
+    sigma0 = 1 / 15
     sigma2 = sigma0**2 * np.ones(data.shape)  # Expand into vector
 
     reblurred_s = data * reblurred / sigma2
@@ -486,7 +486,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     for _ in range(n_iter):
         fodf_i = fodf
         ratio = mbessel_ratio(n_order, reblurred_s)
-        rl_factor = np.matmul(kernel_t, data*ratio) / \
+        rl_factor = np.matmul(kernel_t, data * ratio) / \
             (np.matmul(kernel_t, reblurred) + _EPS)
 
         fodf = fodf_i * rl_factor  # result of iteration
@@ -506,9 +506,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
 
-    f_gm = np.squeeze(fodf[n_comp-2])  # GM compartment
-    f_csf = np.squeeze(fodf[n_comp-1])  # CSF compartment
-    fodf = np.squeeze(fodf[:n_comp-2])  # white matter compartments
+    f_gm = np.squeeze(fodf[n_comp - 2])  # GM compartment
+    f_csf = np.squeeze(fodf[n_comp - 1])  # CSF compartment
+    fodf = np.squeeze(fodf[:n_comp - 2])  # white matter compartments
     f_wm = np.sum(fodf)  # white matter fraction
     combined = fodf + (f_gm + f_csf) / len(fodf)
     f_iso = f_csf + f_gm
@@ -547,8 +547,8 @@ def mbessel_ratio(n, x):
            doi: 10.1090/S0025-5718-1978-0470267-9
     '''
 
-    y = x / ((2*n + x) - (2*x * (n + 1/2) / (2*n + 1 + 2*x - (2*x*(n + 3/2) / (
-        2*n + 2 + 2*x - (2*x*(n + 5/2) / (2*n + 3 + 2*x)))))))
+    y = x / ((2 * n + x) - (2 * x * (n + 1 / 2) / (2 * n + 1 + 2 * x - (2 * x * (n + 3 / 2) / (
+        2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (2 * n + 3 + 2 * x)))))))
 
     return y
 
@@ -663,8 +663,8 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
             single_tensor(gtab, evals=np.array(
                 [csf_response, csf_response, csf_response]))
 
-    kernel[:, n_comp-2] = S_gm
-    kernel[:, n_comp-1] = S_csf
+    kernel[:, n_comp - 2] = S_gm
+    kernel[:, n_comp - 1] = S_csf
 
     return kernel
 
@@ -766,19 +766,19 @@ def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                         n_coils=1, R=1, use_tv=True, verbose=False):
     '''
-    Fit fODF for a all voxels simultaneously using RUMBA-SD.
+    Fit fODF for all voxels simultaneously using RUMBA-SD.
 
     Deconvolves the kernel from the diffusion-weighted signal at each voxel by
     computing a maximum likelihood estimation of the fODF [1]_. Global fitting
     also permits the use of total variation regularization (RUMBA-SD + TV). The
     spatial dependence introduced by TV promotes smoother solutions (i.e.
     prevents oscillations), while still allowing for sharp discontinuities
-    [2]_. This promots smoothness and continuity along individual tracts while
+    [2]_. This promotes smoothness and continuity along individual tracts while
     preventing smoothing of adjacent tracts.
 
     Generally, global_fit will proceed more quickly than the voxelwise fit
-    provided that the computer has adequate RAM (>= 16 GB will be more than
-    sufficient.).
+    provided that the computer has adequate RAM (>= 16 GB should be more than
+    sufficient).
 
     Parameters
     ----------
@@ -920,7 +920,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     f_zero = 0
 
     # Initialize algorithm parameters
-    sigma0 = 1/15
+    sigma0 = 1 / 15
     sigma2 = sigma0**2
     tv_lambda = sigma2  # initial guess for TV regularization strength
 
@@ -933,7 +933,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     for i in range(n_iter):
         fodf_i = fodf
         ratio = mbessel_ratio(n_order, reblurred_s).astype(np.float32)
-        rl_factor = np.matmul(kernel_t, data_2d*ratio) / \
+        rl_factor = np.matmul(kernel_t, data_2d * ratio) / \
             (np.matmul(kernel_t, reblurred) + _EPS)
 
         if use_tv:  # apply TV regularization
@@ -968,7 +968,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
         sigma2_i = np.minimum((1 / 8)**2, np.maximum(sigma2_i, (1 / 80)**2))
 
         if verbose:
-            logger.info("Iteration %d of %d", i+1, n_iter)
+            logger.info("Iteration %d of %d", i + 1, n_iter)
 
             snr_mean = np.mean(1 / np.sqrt(sigma2_i))
             snr_std = np.std(1 / np.sqrt(sigma2_i))
@@ -983,8 +983,8 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
             if R == 1:
                 tv_lambda = np.mean(sigma2_i)
 
-                if tv_lambda < (1/30)**2:
-                    tv_lambda = (1/30)**2
+                if tv_lambda < (1 / 30)**2:
+                    tv_lambda = (1 / 30)**2
             else:  # different factor for each voxel
                 tv_lambda_aux[index_mask] = sigma2_i
                 tv_lambda = np.reshape(tv_lambda_aux, (*dim[:3], 1))
@@ -1012,9 +1012,9 @@ def _grad(M):
     '''
     Computes one way first difference
     '''
-    x_ind = list(range(1, M.shape[0])) + [M.shape[0]-1]
-    y_ind = list(range(1, M.shape[1])) + [M.shape[1]-1]
-    z_ind = list(range(1, M.shape[2])) + [M.shape[2]-1]
+    x_ind = list(range(1, M.shape[0])) + [M.shape[0] - 1]
+    y_ind = list(range(1, M.shape[1])) + [M.shape[1] - 1]
+    z_ind = list(range(1, M.shape[2])) + [M.shape[2] - 1]
 
     grad = np.zeros((*M.shape[:3], 3, M.shape[-1]), dtype=np.float32)
     grad[:, :, :, 0, :] = M[x_ind, :, :, :] - M
@@ -1033,9 +1033,9 @@ def _divergence(F):
     Fy = F[:, :, :, 1, :]
     Fz = F[:, :, :, 2, :]
 
-    x_ind = [0] + list(range(F.shape[0]-1))
-    y_ind = [0] + list(range(F.shape[1]-1))
-    z_ind = [0] + list(range(F.shape[2]-1))
+    x_ind = [0] + list(range(F.shape[0] - 1))
+    y_ind = [0] + list(range(F.shape[1] - 1))
+    z_ind = [0] + list(range(F.shape[2] - 1))
 
     fx = Fx - Fx[x_ind, :, :, :]
     fx[0, :, :, :] = Fx[0, :, :, :]  # edge conditions
