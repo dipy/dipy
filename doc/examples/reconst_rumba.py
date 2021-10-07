@@ -230,7 +230,7 @@ When constructing the RUMBA-SD model, one can also specify `n_iter`,
 `recon_type`, `n_coils`, and `R`. `n_iter` is the number of iterations for the
 iterative estimation, and the default value of 600 should be suitable for most
 applications. `recon_type` is the technique used by the MRI scanner to
-reconstruct the MRI signal, and should be iether 'smf' for 'spatial matched
+reconstruct the MRI signal, and should be either 'smf' for 'spatial matched
 filter', or 'sos' for 'sum-of-squares'; 'smf' is a common choice and is the
 default, but the specifications of the MRI scanner used to collect the data
 should be checked. If 'sos' is used, then it's important to specify `n_coils`,
