@@ -306,7 +306,7 @@ class OdffpDictionary(object):
             'adc'   : np.zeros_like(self.ratio.T)
         }
         hdf5storage.write(odf_dict, '.', dict_file, matlab_compatible=True)
-   
+ 
     
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
                  p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
@@ -698,7 +698,7 @@ class OdffpFit(OdfFit):
             fib['nqa%d' % i] = self._fib_reshape(fib['nqa%d' % i], slice_size)
             fib['index%d' % i] = self._fib_reshape(fib['index%d' % i], (1, voxels_num))
         
-        output_file_prefix = output_file_name.lower().replace(".fib.gz", "").replace(".fib", "") 
+        output_file_prefix = output_file_name.replace(".fib.gz", "").replace(".fib", "") 
         savemat("%s.fib" % output_file_prefix, fib, format='4')        
  
         with open("%s.fib" % output_file_prefix, 'rb') as fib_file:

@@ -9,11 +9,8 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 
 class RadialDsiModel(OdfModel, Cache):
 
-    def __init__(self, gtab):
+    def __init__(self, gtab, sampling_length=1.2):
         self.gtab = gtab
-    
-#     @multi_voxel_fit
-    def fit(self, data, edge=1.2):
 
         if self.gtab.big_delta is None:
             self.gtab.big_delta = 1
@@ -21,15 +18,19 @@ class RadialDsiModel(OdfModel, Cache):
         if self.gtab.small_delta is None:
             self.gtab.small_delta = 0
         
-        self.qtable = np.vstack(self.gtab.qvals) * self.gtab.bvecs
+        # Multiply by 2*np.pi for backward compatibility with the Matlab version
+        self.qtable = np.vstack(self.gtab.qvals) * self.gtab.bvecs * 2 * np.pi
             
         bshells = []
-        sorted_bvals = np.sort(self.gtab.bvals[~self.gtab.b0s_mask])
+        sorted_bvals = np.sort(self.gtab.bvals)
+      
         for bvals_chunk in np.split(sorted_bvals, 1 + np.nonzero(np.diff(sorted_bvals) > 50)[0]):
             bshells.append(np.mean(bvals_chunk))
             
-        self.max_displacement = edge * (4 * np.pi) / np.sqrt(bshells[-1])
+        self.max_displacement = sampling_length / (2 * np.max(np.diff(np.sqrt(bshells))))
             
+    
+    def fit(self, data):
         return RadialDsiFit(self, data)
     
     
@@ -56,7 +57,7 @@ class RadialDsiFit(OdfFit):
     
     def odf(self, sphere):
         E = np.dot(sphere.vertices, self._model.qtable.T)
-        F = -self._sinc_second_derivative(E * self._model.max_displacement)
+        F = -self._sinc_second_derivative(2 * np.pi * E * self._model.max_displacement)
         
         odf = np.matmul(self._data, F.T)
 #         clear dwi;
