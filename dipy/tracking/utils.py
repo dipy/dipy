@@ -911,7 +911,7 @@ def reduce_rois(rois, include):
 
     """
     # throw warning if non bool roi detected
-    if np.any([np.isin(irois.dtype, [int, float]) for irois in rois]):
+    if not np.all([irois.dtype == bool for irois in rois]):
         warn("Non-boolean input mask detected. Treating all nonzeros as True.")
 
     include_roi = np.zeros(rois[0].shape, dtype=bool)
