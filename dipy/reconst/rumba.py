@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 
 from dipy.sims.voxel import single_tensor, all_tensor_evecs
+from dipy.data import get_sphere
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import gradient_table, unique_bvals_tolerance, \
     get_bval_indices
@@ -25,7 +26,9 @@ class RumbaSD(OdfModel, Cache):
 
     def __init__(self, gtab, wm_response=np.array([1.7e-3, 0.2e-3, 0.2e-3]),
                  gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
-                 recon_type='smf', n_coils=1, R=1):
+                 recon_type='smf', n_coils=1, R=1, voxelwise=True,
+                 use_tv=False, sphere=get_sphere('repulsion724'),
+                 verbose=False):
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
 
@@ -33,14 +36,16 @@ class RumbaSD(OdfModel, Cache):
         and Noncentral Chi noise distributions, which more accurately
         represent MRI noise. Computes a maximum likelihood estimation of the
         fiber orientation density function (fODF) at each voxel. Includes
-        optional isotropic compartments to account for partial volume
-        effects.
+        optional GM and CSF compartments to account for partial volume
+        effects. This fit can be performed voxelwise or globally. The global
+        fit will proceed more quickly than the voxelwise fit provided that the
+        computer has adequate RAM (>= 16 GB should be sufficient for most
+        datasets).
 
         Kernel for deconvolution constructed using a priori knowledge of white
-        matter resposne function, as well as the mean diffusivity of grey
-        matter and/or CSF. RUMBA-SD is robust against impulse response
-        imprecision, and thus the default diffusivity values are often
-        adequate [2]_.
+        matter resposne function, as well as the mean diffusivity of GM and/or
+        CSF. RUMBA-SD is robust against impulse response imprecision, and thus
+        the default diffusivity values are often adequate [2]_.
 
 
         Parameters
@@ -73,6 +78,22 @@ class RumbaSD(OdfModel, Cache):
             R = iPAT factor. For GE, R = ASSET factor. For PHILIPS,
             R = SENSE factor. Typical values are 1 or 2. Must be a positive
             int. Default: 1
+        voxelwise : bool, optional
+            If true, performs a voxelwise fit. If false, performs a global fit
+            on the entire brain at once. The global fit requires a 4D brain
+            volume in `fit`. Default: True
+        use_tv : bool, optional
+            If true, applies total variation regularization. This only takes
+            effect in a global fit (`voxelwise` is set to `False`). TV can only
+            be applied to 4D brain volumes with no singleton dimensions.
+            Default: False
+        sphere : Sphere, optional
+            Sphere on which to construct fODF.
+            Default: get_sphere('repulsion724')
+        verbose : bool, optional
+            If true, logs updates on estimated signal-to-noise ratio after each
+            iteration. This only takes effect in a global fit (`voxelwise` is
+            set to `False`). Default: False
 
         References
         ----------
@@ -96,6 +117,8 @@ class RumbaSD(OdfModel, Cache):
 
         if not np.any(gtab.b0s_mask):
             raise ValueError("Gradient table has no b0 measurements")
+
+        self.gtab_orig = gtab  # save for prediction
 
         # Masks to extract b0/non-b0 measurements
         self.where_b0s = lazy_index(gtab.b0s_mask)
@@ -124,213 +147,302 @@ class RumbaSD(OdfModel, Cache):
         self.recon_type = recon_type
         self.n_coils = n_coils
 
+        if voxelwise and use_tv:
+            warnings.warn("Total variation has no effect in voxelwise fit",
+                          UserWarning)
+        if voxelwise and verbose:
+            warnings.warn("Verbosity has no effect in voxelwise fit",
+                          UserWarning)
+
+        self.voxelwise = voxelwise
+        self.use_tv = use_tv
+
+        self.verbose = verbose
+        self.sphere = sphere
+
+        # Fitting parameters
+        self.kernel = None
+
+    def fit(self, data, mask=None):
+        '''
+        Fit fODF and GM/CSF volume fractions.
+
+        Parameters
+        ----------
+        data : ndarray ([x, y, z], N)
+            Signal values for each voxel. Must be 4D in global fit.
+        mask : ndarray ([x, y, z]), optional
+            Binary mask specifying voxels of interest with 1; results will only
+            be fit at these voxels (0 elsewhere). If `None`, fits all voxels.
+            Default: None.
+
+        Returns
+        -------
+        model_fit : RumbaFit
+            Fit object storing model parameters.
+
+        '''
+        if self.voxelwise:
+            mvfit = self._voxelwise_fit(data, mask=mask)
+            if data.ndim == 1:
+                model_params = mvfit
+            else:  # wraps result in MultiVoxelFit object
+                # Convert to ndarray
+                model_params = np.array(mvfit.fit_array.tolist())
+        else:
+            model_params = self._global_fit(data, mask=mask)
+
+        model_fit = RumbaFit(self, model_params, data)
+        return model_fit
+
     @multi_voxel_fit
-    def fit(self, data):
+    def _voxelwise_fit(self, data):
+        '''
+        Fit fODF and GM/CSF volume fractions voxelwise.
+        '''
         # Normalize data to mean b0 image
         data = normalize_data(data, self.where_b0s, min_signal=_EPS)
         # Rearrange data to match corrected gradient table
         data = np.concatenate(([1], data[self.where_dwi]))
         data[data > 1] = 1  # Clip values between 0 and 1
 
-        return RumbaFit(self, data)
+        # Check if kernel previously constructed
+        self.kernel = self.cache_get('kernel', key=self.sphere)
+
+        if self.kernel is None:
+            self.kernel = generate_kernel(self.gtab,
+                                          self.sphere,
+                                          self.wm_response,
+                                          self.gm_response,
+                                          self.csf_response)
+            self.cache_set('kernel', self.sphere, self.kernel)
+
+        # Fitting
+        model_params = rumba_deconv(data,
+                                    self.kernel,
+                                    self.n_iter,
+                                    self.recon_type,
+                                    self.n_coils)
+
+        return model_params
+
+    def _global_fit(self, data, mask):
+        '''
+        Fit fODF and GM/CSF volume fractions globally.
+        '''
+
+        # Checking data and mask shapes
+        if len(data.shape) != 4:
+            raise ValueError(
+                f"Data should be 4D, received shape f{data.shape}")
+
+        if mask is None:  # default mask includes all voxels
+            mask = np.ones(data.shape[:3])
+
+        if data.shape[:3] != mask.shape:
+            raise ValueError("Mask shape should match first 3 dimensions of "
+                             + f"data, but data dimensions are f{data.shape} "
+                             + f"while mask dimensions are f{mask.shape}")
+
+        # Signal repair, normalization
+
+        # Normalize data to mean b0 image
+        data = normalize_data(data, self.where_b0s, _EPS)
+        # Rearrange data to match corrected gradient table
+        data = np.concatenate(
+            (np.ones([*data.shape[:3], 1]), data[..., self.where_dwi]), axis=3)
+        data[data > 1] = 1  # clip values between 0 and 1
+
+        # All arrays are converted to float32 to reduce memory load
+        data = data.astype(np.float32)
+
+        # Generate kernel
+        self.kernel = generate_kernel(self.gtab, self.sphere, self.wm_response,
+                                      self.gm_response, self.csf_response
+                                      ).astype(np.float32)
+
+        # Fit fODF
+        model_params = rumba_deconv_global(data, self.kernel, mask,
+                                           self.n_iter,
+                                           self.recon_type,
+                                           self.n_coils,
+                                           self.R, self.use_tv,
+                                           self.verbose)
+
+        return model_params
 
 
 class RumbaFit(OdfFit):
 
-    def __init__(self, model, data):
+    def __init__(self, model, model_params, data):
         '''
-        Computes fODF and isotropic volume fractions for a single voxel.
+        Constructs fODF, GM/CSF volume fractions, and other dereived results.
 
-        fODF and isotropic fractions are normalized to collectively sum to 1.
+        fODF and GM/CSF fractions are normalized to collectively sum to 1 for
+        each voxel.
 
         Parameters
         ----------
         model : RumbaSD
             RUMBA-SD model.
-        data : 1d ndarray
-            Signal values for a single voxel.
+        model_params : ndarray ([x, y, z], M)
+            fODF and GM/CSF volume fractions for each voxel.
+        data : ndarray ([x, y, z], N)
+            Signal values for each voxel.
 
         '''
         OdfFit.__init__(self, model, data)
-        self.kernel = None
+        self.model_params = model_params
 
-        self._f_gm = None
-        self._f_csf = None
-        self._f_iso = None
-        self._f_wm = None
-        self._odf = None
-        self._combined = None
-        self._sphere = None
-
-    def odf(self, sphere):
+    def odf(self, sphere=None):
         '''
-        Computes fODF at discrete vertices on sphere.
+        Constructs fODF at discrete vertices on model sphere for each voxel.
 
         Parameters
         ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
+        sphere : Sphere, optional
+            Sphere on which to construct fODF. If specified, must be the same
+            sphere used by the `RumbaSD` model. Default: None.
 
         Returns
         -------
-        odf : 1d ndarray
-            fODF computed at each vertex on `sphere`.
+        odf : ndarray ([x, y, z], M-2)
+            fODF computed at each vertex on model sphere.
 
         '''
+        if sphere is not None and sphere != self.model.sphere:
+            raise ValueError("Reconstruction sphere must be the same as used"
+                             + " in the RUMBA-SD model.")
 
-        # Check if previously fit on same sphere
-        if self._odf is None or self._sphere != sphere:
-            self._fit(sphere)
+        odf = self.model_params[..., :-2]
+        return odf
 
-        return self._odf
-
-    def f_gm(self, sphere):
+    def f_gm(self):
         '''
-        Computes GM volume fraction of voxel.
-
-        Parameters
-        ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
+        Constructs GM volume fraction for each voxel.
 
         Returns
         -------
-        f_gm : float
+        f_gm : ndarray ([x, y, z])
             GM volume fraction.
         '''
 
-        # Check if previously fit on same sphere
-        if self._f_gm is None or self._sphere != sphere:
-            self._fit(sphere)
+        f_gm = self.model_params[..., -2]
+        return f_gm
 
-        return self._f_gm
-
-    def f_csf(self, sphere):
+    def f_csf(self):
         '''
-        Computes CSF volume fraction of voxel.
-
-        Parameters
-        ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
+        Constructs CSF volume fraction for each voxel.
 
         Returns
         -------
-        f_csf : float
+        f_csf : ndarray ([x, y, z])
             CSF volume fraction.
         '''
 
-        # Check if previously fit on same sphere
-        if self._f_csf is None or self._sphere != sphere:
-            self._fit(sphere)
+        f_csf = self.model_params[..., -1]
+        return f_csf
 
-        return self._f_csf
-
-    def f_wm(self, sphere):
+    def f_wm(self):
         '''
-        Computes white matter fraction of voxel.
+        Constructs white matter volume fraction for each voxel.
 
         Equivalent to sum of fODF.
 
-        Parameters
-        ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
-
         Returns
         -------
-        f_wm : float
+        f_wm : ndarray ([x, y, z])
             White matter volume fraction.
         '''
 
-        # Check if previously fit on same sphere
-        if self._f_wm is None or self._sphere != sphere:
-            self._fit(sphere)
+        f_wm = np.sum(self.odf(), axis=-1)
+        return f_wm
 
-        return self._f_wm
-
-    def f_iso(self, sphere):
+    def f_iso(self):
         '''
-        Computes isotropic volume fraction of voxel.
+        Constructs isotropic volume fraction for each voxel.
 
         Equivalent to sum of GM and CSF volume fractions.
 
-        Parameters
-        ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
-
         Returns
         -------
-        f_iso : float
+        f_iso : ndarray ([x, y, z])
             Isotropic volume fraction.
         '''
 
-        # Check if previously fit on same sphere
-        if self._f_iso is None or self._sphere != sphere:
-            self._fit(sphere)
+        f_iso = self.f_gm() + self.f_csf()
+        return f_iso
 
-        return self._f_iso
-
-    def combined_odf_iso(self, sphere):
+    def combined_odf_iso(self):
         '''
-        Combine fODF and isotropic volume fractionss.
+        Constructs fODF combined with isotropic volume fraction at discrete
+        vertices on model sphere.
 
         Distributes isotropic compartments evenly along each fODF direction.
         Sums to 1.
 
+        Returns
+        -------
+        combined : ndarray ([x, y, z], M-2)
+            fODF combined with isotropic volume fraction.
+        '''
+
+        combined = self.odf() + self.f_iso()[..., None] / self.odf().shape[-1]
+        return combined
+
+    def predict(self, odf, gtab=None, S0=None):
+        """
+        Compute signal prediction on model gradient table given given fODF
+        and GM/CSF volume fractions for each voxel.
+
         Parameters
         ----------
-        sphere : Sphere
-            Sphere on which to construct fODF.
+        odf : ndarray ([x, y, z], M)
+            fODF computed at each vertex on model sphere and GM/CSF
+            volume fractions for each voxel. First M-2 components are fODF
+            estimations on model sphere, while last two are GM/CSF volume
+            fractions respectively.
+        gtab : GradientTable, optional
+            The gradients for which the signal will be predicted. Use the
+            model's gradient table if `None`. Default: None
+        S0 : ndarray ([x, y, z]) or float, optional
+            The non diffusion-weighted signal value for each voxel. If a float,
+            the same value is used for each voxel. If `None`, 1 is used for
+            each voxel. Default: None
 
         Returns
         -------
-        combined : 1d ndarray
-            fODF combined with isotropic volume fractions.
-        '''
+        pred_sig : ndarray ([x, y, z], N)
+            The predicted signal.
 
-        # Check if previously fit on same sphere
-        if self._combined is None or self._sphere != sphere:
-            self._fit(sphere)
+        """
 
-        return self._combined
+        if gtab is None:
+            gtab = self.model.gtab_orig
 
-    def _fit(self, sphere):
-        '''
-        Fit fODF and isotropic volume fractions on a given sphere
-        '''
+        pred_kernel = generate_kernel(gtab,
+                                      self.model.sphere,
+                                      self.model.wm_response,
+                                      self.model.gm_response,
+                                      self.model.csf_response)
 
-        # Check if kernel previously constructed
-        self.kernel = self.model.cache_get('kernel', key=sphere)
+        if S0 is None:
+            S0 = np.ones(odf.shape[:-1] + (1,))
+        elif isinstance(S0, np.ndarray):
+            S0 = S0[..., None]
+        else:
+            S0 = S0 * np.ones(odf.shape[:-1] + (1,))
 
-        if self.kernel is None:
-            self.kernel = generate_kernel(self.model.gtab, sphere,
-                                          self.model.wm_response,
-                                          self.model.gm_response,
-                                          self.model.csf_response)
-            self.model.cache_set('kernel', sphere, self.kernel)
+        pred_sig = np.empty(odf.shape[:-1] + (len(gtab.bvals),))
+        for ijk in np.ndindex(odf.shape[:-1]):
+            pred_sig[ijk] = S0[ijk] * np.dot(pred_kernel, odf[ijk])
 
-        # Fitting
-        fodf, f_gm, f_csf, f_wm, f_iso, combined = \
-            rumba_deconv(self.data,
-                         self.kernel,
-                         self.model.n_iter,
-                         self.model.recon_type,
-                         self.model.n_coils)
-        self._f_wm = f_wm
-        self._f_gm = f_gm
-        self._f_csf = f_csf
-        self._f_iso = f_iso
-        self._odf = fodf
-        self._combined = combined
-        self._sphere = sphere
-        return
+        return pred_sig
 
 
 def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     '''
-    Fit fODF for a single voxel using RUMBA-SD [1]_.
+    Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
 
     Deconvolves the kernel from the diffusion-weighted signal by computing a
     maximum likelihood estimation of the fODF. Minimizes the negative
@@ -358,18 +470,9 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     Returns
     -------
-    fodf : 1d ndarray (M-1,)
-        fODF for white matter compartments.
-    f_gm : float
-        GM volume fraction.
-    f_csf : float
-        CSF volume fraction.
-    f_wm : float
-        White matter volume fraction.
-    f_iso : float
-        Isotropic volume fraction (GM + CSF).
-    combined : 1d ndarray (M-1, )
-        fODF combined with isotropic compartments.
+    fit_vec : 1d ndarray (M,)
+        Vector containing fODF and GM/CSF volume fractions. First M-2
+        components are fODF while last two are GM and CSF respectively.
 
     Notes
     -----
@@ -504,16 +607,10 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
         sigma2_i = np.minimum((1 / 8)**2, np.maximum(sigma2_i, (1 / 80)**2))
         sigma2 = sigma2_i * np.ones(data.shape)  # Expand into vector
 
-    fodf = fodf / (np.sum(fodf, axis=0) + _EPS)  # normalize final result
+    # Normalize final result
+    fit_vec = np.squeeze(fodf / (np.sum(fodf, axis=0) + _EPS))
 
-    f_gm = np.squeeze(fodf[n_comp - 2])  # GM compartment
-    f_csf = np.squeeze(fodf[n_comp - 1])  # CSF compartment
-    fodf = np.squeeze(fodf[:n_comp - 2])  # white matter compartments
-    f_wm = np.sum(fodf)  # white matter fraction
-    combined = fodf + (f_gm + f_csf) / len(fodf)
-    f_iso = f_csf + f_gm
-
-    return fodf, f_gm, f_csf, f_wm, f_iso, combined
+    return fit_vec
 
 
 def mbessel_ratio(n, x):
@@ -547,8 +644,9 @@ def mbessel_ratio(n, x):
            doi: 10.1090/S0025-5718-1978-0470267-9
     '''
 
-    y = x / ((2 * n + x) - (2 * x * (n + 1 / 2) / (2 * n + 1 + 2 * x - (2 * x * (n + 3 / 2) / (
-        2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (2 * n + 3 + 2 * x)))))))
+    y = x / ((2 * n + x) - (2 * x * (n + 1 / 2) / (2 * n + 1 + 2 * x - (
+        2 * x * (n + 3 / 2) / (2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (
+            2 * n + 3 + 2 * x)))))))
 
     return y
 
@@ -667,100 +765,6 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
     return kernel
 
 
-def global_fit(model, data, sphere, mask=None, use_tv=True, verbose=False):
-    '''
-    Computes fODF for all voxels simultaneously.
-
-    Simultaneous computation parallelizes estimation and also permits spatial
-    regularization via total variation (RUMBA-SD + TV) [1]_.
-
-    Parameters
-    ----------
-    model : RumbaSD
-        RUMBA-SD model.
-    data : 4d ndarray (x, y, z, N)
-        Signal values for entire brain. None of the volume dimensions x, y, z
-        can be 1 if TV regularization is required.
-    sphere : Sphere
-        Sphere on which to construct fODF.
-    mask : 3d ndarray (x, y, z), optional
-        Binary mask specifying voxels of interest with 1; fODF will only be
-        fit at these voxel (0 elsewhere). `None` generates a mask of all 1s.
-        Default: None
-    use_tv : bool, optional
-        If true, applies total variation regularization. This requires a brain
-        volume with no singleton dimensions. Default: True
-    verbose : bool, optional
-        If true, logs updates on estimated signal-to-noise ratio after each
-        iteration. Default: False
-
-    Returns
-    -------
-    fodf : 4d ndarray (x, y, z, K)
-        fODF computed for each voxel, where K is the vertices on `sphere`
-    f_gm : 3d ndarray (x, y, z)
-        GM volume fraction at each voxel.
-    f_csf : 3d ndarray (x, y, z)
-        CSF volume fraction at each voxel.
-    f_wm : 3d ndarray (x, y, z)
-        White matter volume fraction at each voxel.
-    f_iso : 3d ndarray (x, y, z)
-        Isotropic volume fraction at each voxel (GM + CSF).
-    combined : 4d ndarray (x, y, z, K)
-        fODF combined with isotropic compartment for each voxel.
-
-    References
-    ----------
-    .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N., Caruyer,
-           E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
-           Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y., Thiran,
-           J.-P.,Sarró, S., Pomarol-Clotet, E., & Salvador, R. (2015).
-           Spherical Deconvolution of Multichannel Diffusion MRI Data with
-           Non-Gaussian Noise Models and Spatial Regularization. PLOS ONE,
-           10(10), e0138910. https://doi.org/10.1371/journal.pone.0138910
-    '''
-
-    # Checking data and mask shapes
-
-    if len(data.shape) != 4:
-        raise ValueError(f"Data should be 4D, received shape f{data.shape}")
-
-    # Signal repair, normalization
-
-    # Normalize data to mean b0 image
-    data = normalize_data(data, model.where_b0s, _EPS)
-    # Rearrange data to match corrected gradient table
-    data = np.concatenate(
-        (np.ones([*data.shape[:3], 1]), data[..., model.where_dwi]), axis=3)
-    data[data > 1] = 1  # clip values between 0 and 1
-    # All arrays are converted to float32 to reduce memory load in global_fit
-    data = data.astype(np.float32)
-
-    if mask is None:  # default mask includes all voxels
-        mask = np.ones(data.shape[:3])
-
-    if data.shape[:3] != mask.shape:
-        raise ValueError("Mask shape should match first 3 dimensions of data, "
-                         + f"but data dimensions are f{data.shape} while mask"
-                         + f"dimensions are f{mask.shape}")
-
-    # Generate kernel
-    kernel = generate_kernel(model.gtab, sphere, model.wm_response,
-                             model.gm_response, model.csf_response
-                             ).astype(np.float32)
-
-    # Fit fODF
-    fodf, f_gm, f_csf, f_wm, f_iso, combined = \
-        rumba_deconv_global(data, kernel, mask,
-                            model.n_iter,
-                            model.recon_type,
-                            model.n_coils,
-                            model.R, use_tv,
-                            verbose)
-
-    return fodf, f_gm, f_csf, f_wm, f_iso, combined
-
-
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                         n_coils=1, R=1, use_tv=True, verbose=False):
     '''
@@ -808,18 +812,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     Returns
     -------
-    fodf : 4d ndarray (x, y, z, M-1)
-        fODF computed for each voxel.
-    f_gm : 3d ndarray (x, y, z)
-        GM volume fraction at each voxel.
-    f_csf : 3d ndarray (x, y, z)
-        CSF volume fraction at each voxel.
-    f_wm : 3d ndarray (x, y, z)
-        White matter volume fraction at each voxel.
-    f_iso : 3d ndarray (x, y, z)
-        Isotropic volume fraction at each voxel (GM + CSF)
-    combined : 4d ndarray (x, y, z, M-1)
-        fODF combined with isotropic compartment for each voxel.
+    fit_array : 4d ndarray (x, y, z, M)
+        fODF and GM/CSF volume fractions computed for each voxel. First M-2
+        components are fODF, while last two are GM and CSf respectively.
 
     Notes
     -----
@@ -991,19 +986,12 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     fodf = fodf / (np.sum(fodf, axis=0)[None, ...] + _EPS)  # normalize fODF
 
     # Extract compartments
-    fodf_4d = np.zeros((*dim_orig[:3], n_comp))
-    _reshape_2d_4d(fodf.T, mask, out=fodf_4d[ixmin[0]:ixmax[0],
-                                             ixmin[1]:ixmax[1],
-                                             ixmin[2]:ixmax[2]])
-    fodf = fodf_4d[:, :, :, :-2]  # WM compartment
-    f_gm = fodf_4d[:, :, :, -2]  # GM compartment
-    f_csf = fodf_4d[:, :, :, -1]  # CSF compartment
-    f_wm = np.sum(fodf, axis=3)  # white matter volume fraction
-    combined = fodf + (f_gm[..., None] + f_csf[..., None]) \
-        / fodf.shape[3]
-    f_iso = f_gm + f_csf
+    fit_array = np.zeros((*dim_orig[:3], n_comp))
+    _reshape_2d_4d(fodf.T, mask, out=fit_array[ixmin[0]:ixmax[0],
+                                               ixmin[1]:ixmax[1],
+                                               ixmin[2]:ixmax[2]])
 
-    return fodf, f_gm, f_csf, f_wm, f_iso, combined
+    return fit_array
 
 
 def _grad(M):
@@ -1051,6 +1039,9 @@ def _divergence(F):
 
 
 def _reshape_2d_4d(M, mask, out=None):
+    '''
+    Faster reshape from 2D to 4D.
+    '''
     if out is None:
         out = np.zeros((*mask.shape, M.shape[-1]), dtype=M.dtype)
     n = 0

@@ -61,17 +61,22 @@ RUMBA-SD requires three values per shell (the diffusion tensor eigenvalues).
 There is no way to pass a multi-shell GM or CSF response.
 """
 
-rumba = RumbaSD(gtab, wm_response=wm_response[:, :-1])
+rumba = RumbaSD(gtab, wm_response=wm_response[:, :-1], voxelwise=False)
 
 """
-Now we can compute our fODFs. For efficiency, we won't use total variation
-regularization. We will first fit a mask using `median_otsu`. The fit will
-take about 10 minutes.
+Now we can compute our fODFs. For efficiency, we are using the global fit
+without total variation regularization. We will also first fit a mask using
+`median_otsu`. The fit will take about 10 minutes.
 """
 
 b0_mask, mask = median_otsu(data, median_radius=2, numpass=1, vol_idx=[0, 1])
-odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba, data, sphere,
-                                                     mask=mask, use_tv=False)
+rumba_fit = rumba.fit(data, mask=mask)
+
+odf = rumba_fit.odf()
+f_gm = rumba_fit.f_gm()
+f_csf = rumba_fit.f_csf()
+f_wm = rumba_fit.f_wm()
+combined = rumba_fit.combined_odf_iso()
 
 """
 We can now visualize these fODFs

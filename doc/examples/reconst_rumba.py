@@ -228,23 +228,33 @@ estimated with at least 3-shell data. With less shells, it is recommended
 to only keep the compartment for CSF. Since this data is single-shell, we will
 only compute the CSF compartment.
 
+RUMBA-SD can fit the data voxelwise or globally. By default, a voxelwise
+approach is used (`voxelwise` is set to `True`). However, by setting
+`voxelwise` to false, the whole brain can be fit at once. In this global
+setting, one can specify the use of TV regularization with `use_tv`, and the
+model can log updates on its progress and estimated signal-to-noise ratios by
+setting `verbose` to True. By default, both `use_tv` and `verbose` are set to
+`False` as they have no bearing on the voxelwise fit.
+
 When constructing the RUMBA-SD model, one can also specify `n_iter`,
-`recon_type`, `n_coils`, and `R`. `n_iter` is the number of iterations for the
-iterative estimation, and the default value of 600 should be suitable for most
-applications. `recon_type` is the technique used by the MRI scanner to
-reconstruct the MRI signal, and should be either 'smf' for 'spatial matched
-filter', or 'sos' for 'sum-of-squares'; 'smf' is a common choice and is the
-default, but the specifications of the MRI scanner used to collect the data
-should be checked. If 'sos' is used, then it's important to specify `n_coils`,
-which is the number of coils in the MRI scanner. With 'smf', this isn't
-important and the default argument of 1 can be used. Finally, `R` is the
+`recon_type`, `n_coils`, `R`, and `sphere`. `n_iter` is the number of
+iterations for the iterative estimation, and the default value of 600
+should be suitable for most applications. `recon_type` is the technique used
+by the MRI scanner to reconstruct the MRI signal, and should be either 'smf'
+for 'spatial matched filter', or 'sos' for 'sum-of-squares'; 'smf' is a common
+choice and is the default, but the specifications of the MRI scanner used to
+collect the data should be checked. If 'sos' is used, then it's important to
+specify `n_coils`, which is the number of coils in the MRI scanner. With 'smf',
+this isn't important and the default argument of 1 can be used. `R` is the
 acceleration factor of the MRI scanner, which is termed the iPAT factor for
 SIEMENS, the ASSET factor for GE, or the SENSE factor for PHILIPS. 1 is a
 common choice, and is the default for the model. This is only important when
-using TV regularization, which will be covered later in the tutorial.
+using TV regularization, which will be covered later in the tutorial. Finally,
+`sphere` specifies the sphere on which to construct the fODF. The default is
+'repulsion724' sphere, but this tutorial will use `symmetric362`.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None)
+rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None, sphere=sphere)
 
 """
 For efficiency, we will only fit a small part of the data. This is the same
@@ -255,26 +265,26 @@ data_small = data[20:50, 55:85, 38:39]
 
 """
 **Option 1: voxel-wise fit**
-This is the standard framework in DIPY for generating ODFs, wherein each voxel
-is fit sequentially. This is done using the typical `fit`, `odf` sequence.
+This is the default approach for generating ODFs, wherein each voxel is fit
+sequentially.
 
 We will estimate the fODFs using the 'symmetric362' sphere. This
 will take about a minute to compute.
 """
 
 rumba_fit = rumba.fit(data_small)
-odf = rumba_fit.odf(sphere)
+odf = rumba_fit.odf()
 
 """
-The inclusion of RUMBA-SD's isotropic compartment means we can also extract
+The inclusion of RUMBA-SD's CSF compartment means we can also extract
 the isotropic volume fraction map as well as the white matter volume fraction
 map (the fODF sum at each voxel). These values are normalized such that they
-sum to 1. If the isotropic compartment is not included, then the isotropic
+sum to 1. If neither isotropic compartment is included, then the isotropic
 volume fraction map will all be zeroes.
 """
 
-f_iso = rumba_fit.f_iso(sphere)
-f_wm = rumba_fit.f_wm(sphere)
+f_iso = rumba_fit.f_iso()
+f_wm = rumba_fit.f_wm()
 
 """
 We can visualize these maps using adjacent heatmaps.
@@ -309,7 +319,7 @@ components. This is done using the `RumbaFit` object's method
 `norm=True` is used in FURY's `odf_slicer` method.
 """
 
-combined = rumba_fit.combined_odf_iso(sphere)
+combined = rumba_fit.combined_odf_iso()
 
 fodf_spheres = actor.odf_slicer(
     combined, sphere=sphere, norm=True, scale=0.9, colormap=None)
@@ -374,29 +384,27 @@ global fitting where all voxels are fit simultaneously. This comes with some
 potential benefits such as:
 
 1. More efficient fitting due to matrix parallelization, in exchange for
-   larger demands on RAM (>= 16 GB is more than sufficient)
+   larger demands on RAM (>= 16 GB should be sufficient)
 2. The option for spatial regularization; specifically, TV regularization is
    built into the fitting function (RUMBA-SD + TV)
 
-This is done using the `global_fit` function.
+This is done by setting `voxelwise` to `False`, and setting `use_tv` to `True`.
 
 TV regularization requires a volume without any singleton dimensions, so we'll
-have to start be expanding our data slice.
+have to start by expanding our data slice.
 """
-
+rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None,
+                voxelwise=False, use_tv=True)
 data_tv = data[20:50, 55:85, 38:40]
 
 """
-Here, we generate the fODFs and other maps in one step. This will take about 90
-seconds.
+Now, we fit the model in the same way. This will take about 90 seconds.
 """
 
-from dipy.reconst.rumba import global_fit
+rumba_fit = rumba.fit(data)
 
-odf, f_gm, f_csf, f_wm, f_iso, combined = global_fit(rumba,
-                                                     data_tv,
-                                                     sphere,
-                                                     use_tv=True)
+odf = rumba_fit.odf()
+combined = rumba_fit.combined()
 
 """
 Now we can visualize the combined fODF map as before.
@@ -426,8 +434,8 @@ observe that the coherence between neighboring voxels is improved.
 scene.rm(fodf_spheres)
 
 """
-For peak detection, `peaks_from_model` cannot be used. Instead, we'll compute
-our peaks using a for loop.
+For peak detection, `peaks_from_model` cannot be used as it doesn't support
+global fitting approaches. Instead, we'll compute our peaks using a for loop.
 """
 
 from dipy.direction import peak_directions
