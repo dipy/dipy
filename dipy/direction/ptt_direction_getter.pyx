@@ -438,6 +438,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
     cdef int propagate(self):
 
+        self.prepPropagator(self.params.step_size)
+
         self.walk()
 
         # Initial max estimate
