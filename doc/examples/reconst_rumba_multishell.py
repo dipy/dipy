@@ -18,7 +18,7 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
-from dipy.reconst.rumba import RumbaSD, global_fit
+from dipy.reconst.rumba import RumbaSD
 from dipy.reconst.mcsd import auto_response_msmt
 from dipy.viz import window, actor
 
@@ -73,10 +73,10 @@ b0_mask, mask = median_otsu(data, median_radius=2, numpass=1, vol_idx=[0, 1])
 rumba_fit = rumba.fit(data, mask=mask)
 
 odf = rumba_fit.odf()
-f_gm = rumba_fit.f_gm()
-f_csf = rumba_fit.f_csf()
-f_wm = rumba_fit.f_wm()
-combined = rumba_fit.combined_odf_iso()
+f_gm = rumba_fit.f_gm
+f_csf = rumba_fit.f_csf
+f_wm = rumba_fit.f_wm
+combined = rumba_fit.combined_odf_iso
 
 """
 We can now visualize these fODFs
@@ -118,13 +118,13 @@ import matplotlib.pyplot as plt
 
 fig, axs = plt.subplots(1, 3, figsize=(12, 3))
 
-ax0 = axs[0].imshow(f_wm[..., 0].T, origin='lower')
+ax0 = axs[0].imshow(f_wm[..., 10].T, origin='lower')
 axs[0].set_title("Voxelwise WM Volume Fraction")
 
-ax1 = axs[1].imshow(f_csf[..., 0].T, origin='lower')
+ax1 = axs[1].imshow(f_csf[..., 10].T, origin='lower')
 axs[1].set_title("Voxelwise CSF Volume Fraction")
 
-ax2 = axs[2].imshow(f_gm[..., 0].T, origin='lower')
+ax2 = axs[2].imshow(f_gm[..., 10].T, origin='lower')
 axs[2].set_title("Voxelwise GM Volume Fraction")
 
 plt.colorbar(ax0, ax=axs[0])

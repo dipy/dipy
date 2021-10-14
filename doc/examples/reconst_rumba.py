@@ -283,8 +283,8 @@ sum to 1. If neither isotropic compartment is included, then the isotropic
 volume fraction map will all be zeroes.
 """
 
-f_iso = rumba_fit.f_iso()
-f_wm = rumba_fit.f_wm()
+f_iso = rumba_fit.f_iso
+f_wm = rumba_fit.f_wm
 
 """
 We can visualize these maps using adjacent heatmaps.
@@ -319,7 +319,7 @@ components. This is done using the `RumbaFit` object's method
 `norm=True` is used in FURY's `odf_slicer` method.
 """
 
-combined = rumba_fit.combined_odf_iso()
+combined = rumba_fit.combined_odf_iso
 
 fodf_spheres = actor.odf_slicer(
     combined, sphere=sphere, norm=True, scale=0.9, colormap=None)
@@ -394,17 +394,17 @@ TV regularization requires a volume without any singleton dimensions, so we'll
 have to start by expanding our data slice.
 """
 rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None,
-                voxelwise=False, use_tv=True)
+                voxelwise=False, use_tv=True, sphere=sphere)
 data_tv = data[20:50, 55:85, 38:40]
 
 """
 Now, we fit the model in the same way. This will take about 90 seconds.
 """
 
-rumba_fit = rumba.fit(data)
+rumba_fit = rumba.fit(data_tv)
 
 odf = rumba_fit.odf()
-combined = rumba_fit.combined()
+combined = rumba_fit.combined_odf_iso
 
 """
 Now we can visualize the combined fODF map as before.

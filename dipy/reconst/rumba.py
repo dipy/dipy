@@ -4,31 +4,29 @@ import warnings
 
 import numpy as np
 
-from dipy.sims.voxel import single_tensor, all_tensor_evecs
-from dipy.data import get_sphere
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import gradient_table, unique_bvals_tolerance, \
     get_bval_indices
+from dipy.core.onetime import auto_attr
 from dipy.core.sphere import Sphere
+from dipy.data import get_sphere
 from dipy.reconst.shm import lazy_index, normalize_data
-from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.odf import OdfModel, OdfFit
-from dipy.reconst.cache import Cache
 from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.segment.mask import bounding_box, crop
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
 
 # Machine precision for numerical stability in division
 _EPS = np.finfo(float).eps
 logger = logging.getLogger(__name__)
 
 
-class RumbaSD(OdfModel, Cache):
+class RumbaSD(OdfModel):
 
     def __init__(self, gtab, wm_response=np.array([1.7e-3, 0.2e-3, 0.2e-3]),
                  gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
                  recon_type='smf', n_coils=1, R=1, voxelwise=True,
-                 use_tv=False, sphere=get_sphere('repulsion724'),
-                 verbose=False):
+                 use_tv=False, sphere=None, verbose=False):
         '''
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
 
@@ -88,8 +86,8 @@ class RumbaSD(OdfModel, Cache):
             be applied to 4D brain volumes with no singleton dimensions.
             Default: False
         sphere : Sphere, optional
-            Sphere on which to construct fODF.
-            Default: get_sphere('repulsion724')
+            Sphere on which to construct fODF. If None, uses `repulsion724`.
+            Default: None
         verbose : bool, optional
             If true, logs updates on estimated signal-to-noise ratio after each
             iteration. This only takes effect in a global fit (`voxelwise` is
@@ -148,8 +146,7 @@ class RumbaSD(OdfModel, Cache):
         self.n_coils = n_coils
 
         if voxelwise and use_tv:
-            warnings.warn("Total variation has no effect in voxelwise fit",
-                          UserWarning)
+            raise ValueError("Total variation has no effect in voxelwise fit")
         if voxelwise and verbose:
             warnings.warn("Verbosity has no effect in voxelwise fit",
                           UserWarning)
@@ -158,20 +155,31 @@ class RumbaSD(OdfModel, Cache):
         self.use_tv = use_tv
 
         self.verbose = verbose
-        self.sphere = sphere
+
+        if sphere is None:
+            self.sphere = get_sphere('repulsion724')
+        else:
+            self.sphere = sphere
+
+        if voxelwise:
+            self.fit = self._voxelwise_fit
+        else:
+            self.fit = self._global_fit
 
         # Fitting parameters
         self.kernel = None
 
-    def fit(self, data, mask=None):
+    def _global_fit(self, data, mask=None):
         '''
-        Fit fODF and GM/CSF volume fractions.
+        Fit fODF and GM/CSF volume fractions globally.
 
         Parameters
         ----------
-        data : ndarray ([x, y, z], N)
-            Signal values for each voxel. Must be 4D in global fit.
-        mask : ndarray ([x, y, z]), optional
+        model : RumbaSD
+            RumbaSD model
+        data : ndarray (x, y, z, N)
+            Signal values for each voxel. Must be 4D.
+        mask : ndarray (x, y, z), optional
             Binary mask specifying voxels of interest with 1; results will only
             be fit at these voxels (0 elsewhere). If `None`, fits all voxels.
             Default: None.
@@ -181,54 +189,6 @@ class RumbaSD(OdfModel, Cache):
         model_fit : RumbaFit
             Fit object storing model parameters.
 
-        '''
-        if self.voxelwise:
-            mvfit = self._voxelwise_fit(data, mask=mask)
-            if data.ndim == 1:
-                model_params = mvfit
-            else:  # wraps result in MultiVoxelFit object
-                # Convert to ndarray
-                model_params = np.array(mvfit.fit_array.tolist())
-        else:
-            model_params = self._global_fit(data, mask=mask)
-
-        model_fit = RumbaFit(self, model_params, data)
-        return model_fit
-
-    @multi_voxel_fit
-    def _voxelwise_fit(self, data):
-        '''
-        Fit fODF and GM/CSF volume fractions voxelwise.
-        '''
-        # Normalize data to mean b0 image
-        data = normalize_data(data, self.where_b0s, min_signal=_EPS)
-        # Rearrange data to match corrected gradient table
-        data = np.concatenate(([1], data[self.where_dwi]))
-        data[data > 1] = 1  # Clip values between 0 and 1
-
-        # Check if kernel previously constructed
-        self.kernel = self.cache_get('kernel', key=self.sphere)
-
-        if self.kernel is None:
-            self.kernel = generate_kernel(self.gtab,
-                                          self.sphere,
-                                          self.wm_response,
-                                          self.gm_response,
-                                          self.csf_response)
-            self.cache_set('kernel', self.sphere, self.kernel)
-
-        # Fitting
-        model_params = rumba_deconv(data,
-                                    self.kernel,
-                                    self.n_iter,
-                                    self.recon_type,
-                                    self.n_coils)
-
-        return model_params
-
-    def _global_fit(self, data, mask):
-        '''
-        Fit fODF and GM/CSF volume fractions globally.
         '''
 
         # Checking data and mask shapes
@@ -269,12 +229,75 @@ class RumbaSD(OdfModel, Cache):
                                            self.R, self.use_tv,
                                            self.verbose)
 
-        return model_params
+        model_fit = RumbaFit(self, model_params)
+        return model_fit
+
+    def _voxelwise_fit(self, data, mask=None):
+        '''
+        Fit fODF and GM/CSF volume fractions voxelwise.
+
+        Parameters
+        ----------
+        model : RumbaSD
+            RumbaSD model
+        data : ndarray ([x, y, z], N)
+            Signal values for each voxel.
+        mask : ndarray ([x, y, z]), optional
+            Binary mask specifying voxels of interest with 1; results will only
+            be fit at these voxels (0 elsewhere). If `None`, fits all voxels.
+            Default: None.
+
+        Returns
+        -------
+        model_fit : RumbaFit
+            Fit object storing model parameters.
+
+        '''
+
+        if mask is None:  # default mask includes all voxels
+            mask = np.ones(data.shape[:-1])
+
+        if data.shape[:-1] != mask.shape:
+            raise ValueError("Mask shape should match first dimensions of "
+                             + f"data, but data dimensions are f{data.shape} "
+                             + f"while mask dimensions are f{mask.shape}")
+
+        self.kernel = generate_kernel(self.gtab,
+                                      self.sphere,
+                                      self.wm_response,
+                                      self.gm_response,
+                                      self.csf_response)
+
+        model_params = np.zeros(
+            data.shape[:-1] + (len(self.sphere.vertices) + 2,))
+
+        for ijk in np.ndindex(data.shape[:-1]):
+            if mask[ijk]:
+
+                vox_data = data[ijk]
+                # Normalize data to mean b0 image
+                vox_data = normalize_data(vox_data, self.where_b0s,
+                                          min_signal=_EPS)
+                # Rearrange data to match corrected gradient table
+                vox_data = np.concatenate(([1], vox_data[self.where_dwi]))
+                vox_data[vox_data > 1] = 1  # clip values between 0 and 1
+
+                # Fitting
+                model_param = rumba_deconv(vox_data,
+                                           self.kernel,
+                                           self.n_iter,
+                                           self.recon_type,
+                                           self.n_coils)
+
+                model_params[ijk] = model_param
+
+        model_fit = RumbaFit(self, model_params)
+        return model_fit
 
 
 class RumbaFit(OdfFit):
 
-    def __init__(self, model, model_params, data):
+    def __init__(self, model, model_params):
         '''
         Constructs fODF, GM/CSF volume fractions, and other dereived results.
 
@@ -291,7 +314,8 @@ class RumbaFit(OdfFit):
             Signal values for each voxel.
 
         '''
-        OdfFit.__init__(self, model, data)
+
+        self.model = model
         self.model_params = model_params
 
     def odf(self, sphere=None):
@@ -317,6 +341,7 @@ class RumbaFit(OdfFit):
         odf = self.model_params[..., :-2]
         return odf
 
+    @auto_attr
     def f_gm(self):
         '''
         Constructs GM volume fraction for each voxel.
@@ -330,6 +355,7 @@ class RumbaFit(OdfFit):
         f_gm = self.model_params[..., -2]
         return f_gm
 
+    @auto_attr
     def f_csf(self):
         '''
         Constructs CSF volume fraction for each voxel.
@@ -343,6 +369,7 @@ class RumbaFit(OdfFit):
         f_csf = self.model_params[..., -1]
         return f_csf
 
+    @auto_attr
     def f_wm(self):
         '''
         Constructs white matter volume fraction for each voxel.
@@ -358,6 +385,7 @@ class RumbaFit(OdfFit):
         f_wm = np.sum(self.odf(), axis=-1)
         return f_wm
 
+    @auto_attr
     def f_iso(self):
         '''
         Constructs isotropic volume fraction for each voxel.
@@ -370,9 +398,10 @@ class RumbaFit(OdfFit):
             Isotropic volume fraction.
         '''
 
-        f_iso = self.f_gm() + self.f_csf()
+        f_iso = self.f_gm + self.f_csf
         return f_iso
 
+    @auto_attr
     def combined_odf_iso(self):
         '''
         Constructs fODF combined with isotropic volume fraction at discrete
@@ -387,7 +416,8 @@ class RumbaFit(OdfFit):
             fODF combined with isotropic volume fraction.
         '''
 
-        combined = self.odf() + self.f_iso()[..., None] / self.odf().shape[-1]
+        odf = self.odf()
+        combined = odf + self.f_iso[..., None] / odf.shape[-1]
         return combined
 
     def predict(self, gtab=None, S0=None):
@@ -739,6 +769,9 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
             S = single_tensor(gtab, evals=wm_response,
                               evecs=all_tensor_evecs(sticks[i]))
             kernel[:, i] = S
+
+        # Set b0 components
+        kernel[gtab.b0s_mask, :] = 1
 
     # GM compartment
     if gm_response is None:
