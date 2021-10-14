@@ -56,10 +56,10 @@ in fiber tracking. The fit will take about 5 minutes to complete.
 """
 
 rumba = RumbaSD(gtab, wm_response=response[0], n_iter=200,
-                voxelwise=False, use_tv=False)
-rumba_fit = RumbaSD.fit(data, mask=white_matter)
+                voxelwise=False, use_tv=False, sphere=sphere)
+rumba_fit = rumba.fit(data, mask=white_matter)
 odf = rumba_fit.odf()  # fODF
-f_wm = rumba_fit.f_wm()  # white matter volume fractions
+f_wm = rumba_fit.f_wm  # white matter volume fractions
 
 
 """
@@ -111,7 +111,7 @@ from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_trk
 
 prob_dg = ProbabilisticDirectionGetter.from_pmf(odf, max_angle=30.,
-                                                sphere=small_sphere)
+                                                sphere=sphere)
 streamline_generator = LocalTracking(prob_dg, stopping_criterion, seeds,
                                      affine, step_size=.5)
 streamlines = Streamlines(streamline_generator)

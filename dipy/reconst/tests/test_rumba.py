@@ -5,18 +5,19 @@ import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
+                           assert_allclose,
                            assert_raises,
                            run_module_suite)
 from numpy.testing._private.utils import assert_
 
 from dipy.reconst.rumba import RumbaSD, generate_kernel
 from dipy.reconst.csdeconv import AxSymShResponse
-from dipy.data import get_fnames, dsi_voxels, default_sphere
+from dipy.data import get_fnames, dsi_voxels, default_sphere, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import cart2sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.sims.voxel import sticks_and_ball, multi_tensor
+from dipy.sims.voxel import sticks_and_ball, multi_tensor, single_tensor
 from dipy.direction.peaks import peak_directions
 
 
@@ -26,6 +27,7 @@ def test_rumba():
     '''
 
     sphere = default_sphere  # repulsion 724
+    sphere2 = get_sphere('symmetric362')
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
     bvals = btable[:, 0]
@@ -36,18 +38,16 @@ def test_rumba():
                                               fractions=[50, 50], snr=None)
 
     # Testing input validation
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        gtab_broken = gradient_table(
-            bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
-        assert_raises(ValueError, RumbaSD, gtab_broken)
+    gtab_broken = gradient_table(
+        bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+    assert_raises(ValueError, RumbaSD, gtab_broken)
 
     with warnings.catch_warnings(record=True) as w:
-        _ = RumbaSD(gtab, use_tv=True, verbose=True)
-        assert_equal(len(w), 2)
+        _ = RumbaSD(gtab, verbose=True)
+        assert_equal(len(w), 1)
         assert_(w[0].category, UserWarning)
-        assert_(w[1].category, UserWarning)
 
+    assert_raises(ValueError, RumbaSD, gtab, use_tv=True)
     assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
     rumba_broken = RumbaSD(gtab, recon_type='test')
     assert_raises(ValueError, rumba_broken.fit, data)
@@ -61,7 +61,12 @@ def test_rumba():
 
     # Test on repulsion724 sphere
     for model in model_list:
-        odf = model.fit(data).odf(sphere)
+        model_fit = model.fit(data)
+
+        # Verify only works on original sphere
+        assert_raises(ValueError, model_fit.odf, sphere2)
+        odf = model_fit.odf(sphere)
+
         directions, _, _ = peak_directions(odf, sphere, .35, 25)
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions),
@@ -78,11 +83,34 @@ def test_rumba():
                 odf, sphere, .35, 25)
             if len(directions) <= 3:
                 # Verify small isotropic fraction in anisotropic case
-                assert_equal(model_fit.f_iso() < 0.1, True)
+                assert_equal(model_fit.f_iso < 0.1, True)
                 assert_equal(len(directions), len(golden_directions))
             if len(directions) > 3:
                 # Verify large isotropic fraction in isotropic case
-                assert_equal(model_fit.f_iso() > 0.8, True)
+                assert_equal(model_fit.f_iso > 0.8, True)
+
+
+def test_predict():
+    '''
+    Test signal reconstruction on ideal example
+    '''
+
+    sphere = default_sphere
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+
+    rumba = RumbaSD(gtab, n_iter=600, sphere=sphere)
+
+    # Simulated data
+    data = single_tensor(gtab, S0=1, evals=rumba.wm_response)
+    rumba_fit = rumba.fit(data)
+    data_pred = rumba_fit.predict()
+
+    # Assert reconstructed signal value within 0.01 of original
+    assert_allclose(data, data_pred, atol=0.01, rtol=1.0)
 
 
 def test_recursive_rumba():
@@ -159,11 +187,11 @@ def test_mvoxel_rumba():
         model_fit = model.fit(data)
 
         odf = model_fit.odf(sphere)
-        f_iso = model_fit.f_iso()
-        f_wm = model_fit.f_wm()
-        f_gm = model_fit.f_gm()
-        f_csf = model_fit.f_csf()
-        combined = model_fit.combined_odf_iso()
+        f_iso = model_fit.f_iso
+        f_wm = model_fit.f_wm
+        f_gm = model_fit.f_gm
+        f_csf = model_fit.f_csf
+        combined = model_fit.combined_odf_iso
 
         # Verify prediction properties
         pred_sig_1 = model_fit.predict()
@@ -255,7 +283,7 @@ def test_global_fit():
 
         rumba_fit = rumba.fit(data)
         odf = rumba_fit.odf(sphere)
-        f_iso = rumba_fit.f_iso()
+        f_iso = rumba_fit.f_iso
 
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, .35, 25)
@@ -290,11 +318,11 @@ def test_mvoxel_global_fit():
     for model in model_list:
         model_fit = model.fit(data)
         odf = model_fit.odf(sphere)
-        f_iso = model_fit.f_iso()
-        f_wm = model_fit.f_wm()
-        f_gm = model_fit.f_gm()
-        f_csf = model_fit.f_csf()
-        combined = model_fit.combined_odf_iso()
+        f_iso = model_fit.f_iso
+        f_wm = model_fit.f_wm
+        f_gm = model_fit.f_gm
+        f_csf = model_fit.f_csf
+        combined = model_fit.combined_odf_iso
 
         # Verify shape, positivity, realness of results
         assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
