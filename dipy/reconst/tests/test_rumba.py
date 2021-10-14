@@ -166,11 +166,10 @@ def test_mvoxel_rumba():
         combined = model_fit.combined_odf_iso()
 
         # Verify prediction properties
-        pred_sig_1 = model_fit.predict(model_fit.model_params)
-        pred_sig_2 = model_fit.predict(model_fit.model_params, S0=1)
-        pred_sig_3 = model_fit.predict(model_fit.model_params,
-                                       S0=np.ones(odf.shape[:-1]))
-        pred_sig_4 = model_fit.predict(model_fit.model_params, gtab=gtab)
+        pred_sig_1 = model_fit.predict()
+        pred_sig_2 = model_fit.predict(S0=1)
+        pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
+        pred_sig_4 = model_fit.predict(gtab=gtab)
 
         assert_equal(pred_sig_1, pred_sig_2)
         assert_equal(pred_sig_3, pred_sig_4)

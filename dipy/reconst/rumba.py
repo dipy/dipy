@@ -390,18 +390,13 @@ class RumbaFit(OdfFit):
         combined = self.odf() + self.f_iso()[..., None] / self.odf().shape[-1]
         return combined
 
-    def predict(self, odf, gtab=None, S0=None):
+    def predict(self, gtab=None, S0=None):
         """
         Compute signal prediction on model gradient table given given fODF
         and GM/CSF volume fractions for each voxel.
 
         Parameters
         ----------
-        odf : ndarray ([x, y, z], M)
-            fODF computed at each vertex on model sphere and GM/CSF
-            volume fractions for each voxel. First M-2 components are fODF
-            estimations on model sphere, while last two are GM/CSF volume
-            fractions respectively.
         gtab : GradientTable, optional
             The gradients for which the signal will be predicted. Use the
             model's gradient table if `None`. Default: None
@@ -416,6 +411,7 @@ class RumbaFit(OdfFit):
             The predicted signal.
 
         """
+        model_params = self.model_params
 
         if gtab is None:
             gtab = self.model.gtab_orig
@@ -427,15 +423,15 @@ class RumbaFit(OdfFit):
                                       self.model.csf_response)
 
         if S0 is None:
-            S0 = np.ones(odf.shape[:-1] + (1,))
+            S0 = np.ones(model_params.shape[:-1] + (1,))
         elif isinstance(S0, np.ndarray):
             S0 = S0[..., None]
         else:
-            S0 = S0 * np.ones(odf.shape[:-1] + (1,))
+            S0 = S0 * np.ones(model_params.shape[:-1] + (1,))
 
-        pred_sig = np.empty(odf.shape[:-1] + (len(gtab.bvals),))
-        for ijk in np.ndindex(odf.shape[:-1]):
-            pred_sig[ijk] = S0[ijk] * np.dot(pred_kernel, odf[ijk])
+        pred_sig = np.empty(model_params.shape[:-1] + (len(gtab.bvals),))
+        for ijk in np.ndindex(model_params.shape[:-1]):
+            pred_sig[ijk] = S0[ijk] * np.dot(pred_kernel, model_params[ijk])
 
         return pred_sig
 
