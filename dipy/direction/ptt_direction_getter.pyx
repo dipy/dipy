@@ -210,7 +210,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         if (self.params.probe_count==1):
             # fodAmp = getFODamp(p,F[0])
-            fodAmp = self.get_pmf_value(p, F[0])
+            fodAmp = self.get_pmf_value(self.p, self.F[0])
             self.last_val = fodAmp
         else:
             for c in range(self.params.probe_count):
@@ -218,7 +218,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     pp[i] = self.p[i] + self.F[1][i]*self.params.probe_radius*cos(c*self.params.angular_separation) + self.F[2][i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
                 # fodAmp = getFODamp(pp,F[0])
-                fodAmp = self.get_pmf_value(pp, F[0])
+                fodAmp = self.get_pmf_value(pp, self.F[0])
                 self.last_val += fodAmp
 
         self.init_last_val = self.last_val
@@ -369,7 +369,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             if (self.params.probe_count==1):
 
                 # fodAmp       = getFODamp(_p,_T)
-                # fodAmp = self.get_pmf_value(_p, _T)
+                fodAmp = self.get_pmf_value(_p, _T)
                 self.last_val_cand = fodAmp
                 self.likelihood   += self.last_val_cand
 
@@ -388,7 +388,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                         pp[i] = _p[i] + _N1[i]*self.params.probe_radius*cos(c*self.params.angular_separation) + _N2[i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
                     # fodAmp = getFODamp(pp,_T)
-                    # fodAmp = self.get_pmf_value(pp, _T)
+                    fodAmp = self.get_pmf_value(pp, _T)
                     self.last_val_cand += fodAmp
 
                 self.likelihood += self.last_val_cand
