@@ -73,7 +73,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         msg += "dataset, it is recommended to have at least 3 directions."
         msg += "You may have problems during the reconstruction step."
         warnings.warn(msg)
-    if bvecs.shape[1] != 3 and bvecs.shape[1] > bvecs.shape[0]:
+    if bvecs.shape[1] != 3:
         bvecs = bvecs.T
 
     # If bvals is None, you don't need to check that they have the same shape:
