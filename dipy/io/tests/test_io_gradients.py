@@ -40,19 +40,22 @@ def test_read_bvals_bvecs():
             for x in range(new_bvecs1.shape[0]):
                 bv_file1.write('%s %s\n' % (new_bvecs1[x][0],
                                             new_bvecs1[x][1]))
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals, 'test_bv_file1.txt')
+        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+                          'test_bv_file1.txt')
 
         # These bvecs are saved as one long array:
         new_bvecs2 = np.ravel(bvecs)
         with open('test_bv_file2.npy', 'w') as bv_file2:
             np.save(bv_file2.name, new_bvecs2)
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals, 'test_bv_file2.npy')
+        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+                          'test_bv_file2.npy')
 
         # There are less bvecs than bvals:
         new_bvecs3 = bvecs[:-1, :]
         with open('test_bv_file3.txt', 'w') as bv_file3:
             np.savetxt(bv_file3.name, new_bvecs3)
-        npt.assert_raises(IOError, read_bvals_bvecs, fbvals, 'test_bv_file3.txt')
+        npt.assert_raises(IOError, read_bvals_bvecs, fbvals,
+                          'test_bv_file3.txt')
 
         # You entered the bvecs on both sides:
         npt.assert_raises(IOError, read_bvals_bvecs, fbvecs, fbvecs)
@@ -106,7 +109,7 @@ def test_read_bvals_bvecs():
 
         bv_two_volume = 'bv_two_volume.txt'
         with open(bv_two_volume, 'w') as f:
-            f.write("0 0 0\n0 0 0\n")
+            f.write("0 0 \n 0 0 \n 0 0\n")
         bval_two_volume = 'bval_two_volume.txt'
         with open(bval_two_volume, 'w') as f:
             f.write("0\n0\n")
