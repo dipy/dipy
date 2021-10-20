@@ -109,7 +109,7 @@ def test_read_bvals_bvecs():
 
         bv_two_volume = 'bv_two_volume.txt'
         with open(bv_two_volume, 'w') as f:
-            f.write("0 0 \n 0 0 \n 0 0\n")
+            f.write("0 0 \n0 0 \n0 0")
         bval_two_volume = 'bval_two_volume.txt'
         with open(bval_two_volume, 'w') as f:
             f.write("0\n0\n")
@@ -120,7 +120,7 @@ def test_read_bvals_bvecs():
 
         bv_single_volume = 'test_single_volume.txt'
         with open(bv_single_volume, 'w') as f:
-            f.write("0 0 0\n")
+            f.write("0 \n0 \n0 ")
         bval_single_volume = 'test_single_volume_2.txt'
         with open(bval_single_volume, 'w') as f:
             f.write("0\n")
