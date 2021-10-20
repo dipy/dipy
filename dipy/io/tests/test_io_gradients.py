@@ -115,7 +115,7 @@ def test_read_bvals_bvecs():
             f.write("0\n0\n")
         bval_5, bvecs_5 = read_bvals_bvecs(bval_two_volume,
                                            bv_two_volume)
-        npt.assert_array_equal(bvecs_5, np.zeros((2, 3)))
+        npt.assert_array_equal(bvecs_5, np.zeros((3, 2)))
         npt.assert_array_equal(bval_5, np.zeros(2))
 
         bv_single_volume = 'test_single_volume.txt'
@@ -128,7 +128,7 @@ def test_read_bvals_bvecs():
         with warnings.catch_warnings(record=True) as w:
             bval_5, bvecs_5 = read_bvals_bvecs(bval_single_volume,
                                                bv_single_volume)
-            npt.assert_array_equal(bvecs_5, np.zeros((1, 3)))
+            npt.assert_array_equal(bvecs_5, np.zeros((3, 1)))
             npt.assert_array_equal(bval_5, np.zeros(1))
             assert_true(len(w) == 1)
             assert_true(issubclass(w[0].category, UserWarning))
