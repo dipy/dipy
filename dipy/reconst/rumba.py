@@ -21,7 +21,7 @@ _EPS = np.finfo(float).eps
 logger = logging.getLogger(__name__)
 
 
-class RumbaSD(OdfModel):
+class RumbaSDModel(OdfModel):
 
     def __init__(self, gtab, wm_response=np.array([1.7e-3, 0.2e-3, 0.2e-3]),
                  gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
@@ -175,8 +175,8 @@ class RumbaSD(OdfModel):
 
         Parameters
         ----------
-        model : RumbaSD
-            RumbaSD model
+        model : RumbaSDModel
+            RumbaSDModel model
         data : ndarray (x, y, z, N)
             Signal values for each voxel. Must be 4D.
         mask : ndarray (x, y, z), optional
@@ -238,8 +238,8 @@ class RumbaSD(OdfModel):
 
         Parameters
         ----------
-        model : RumbaSD
-            RumbaSD model
+        model : RumbaSDModel
+            RumbaSDModel model
         data : ndarray ([x, y, z], N)
             Signal values for each voxel.
         mask : ndarray ([x, y, z]), optional
@@ -306,8 +306,8 @@ class RumbaFit(OdfFit):
 
         Parameters
         ----------
-        model : RumbaSD
-            RUMBA-SD model.
+        model : RumbaSDModel
+            RumbaSDModel-SD model.
         model_params : ndarray ([x, y, z], M)
             fODF and GM/CSF volume fractions for each voxel.
         data : ndarray ([x, y, z], N)
@@ -326,7 +326,7 @@ class RumbaFit(OdfFit):
         ----------
         sphere : Sphere, optional
             Sphere on which to construct fODF. If specified, must be the same
-            sphere used by the `RumbaSD` model. Default: None.
+            sphere used by the `RumbaSDModel` model. Default: None.
 
         Returns
         -------

@@ -18,7 +18,7 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
-from dipy.reconst.rumba import RumbaSD
+from dipy.reconst.rumba import RumbaSDModel
 from dipy.reconst.mcsd import auto_response_msmt
 from dipy.viz import window, actor
 
@@ -61,7 +61,7 @@ RUMBA-SD requires three values per shell (the diffusion tensor eigenvalues).
 There is no way to pass a multi-shell GM or CSF response.
 """
 
-rumba = RumbaSD(gtab, wm_response=wm_response[:, :-1], voxelwise=False)
+rumba = RumbaSDModel(gtab, wm_response=wm_response[:, :-1], voxelwise=False)
 
 """
 Now we can compute our fODFs. For efficiency, we are using the global fit
@@ -82,10 +82,10 @@ combined = rumba_fit.combined_odf_iso
 We can now visualize these fODFs
 """
 
-fodf_spheres = actor.odf_slicer(combined, sphere=sphere, scale=0.9,
+fodf_spheres = actor.odf_slicer(combined, sphere=sphere, scale=0.5,
                                 norm=True, colormap=None)
 
-interactive = True
+interactive = False
 scene = window.Scene()
 scene.add(fodf_spheres)
 scene.reset_camera_tight()
@@ -140,7 +140,7 @@ fODFs and visualize the peaks.
 combined_patch = combined[35:60, 50:70]
 odf_patch = odf[35:60, 50:70]
 
-fodf_spheres = actor.odf_slicer(combined_patch, sphere=sphere, scale=0.9,
+fodf_spheres = actor.odf_slicer(combined_patch, sphere=sphere, scale=0.5,
                                 norm=True, colormap=None)
 
 interactive = True
