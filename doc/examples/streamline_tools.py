@@ -19,7 +19,7 @@ modules and download the data we'll be using.
 """
 
 import numpy as np
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames

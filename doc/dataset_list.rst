@@ -97,7 +97,7 @@
         <td>Multi shell data: b-vals: [0, 10, 20, 30, 40, 60, 80, 100, 120, 140, 160, 180, 200, 300, 400, 500, 600, 700, 800, 900, 1000] (s/mm^2); 21 gradient directions</td>
         <td></td>
         <td>fetch_ivim</td>
-        <td></td>
+        <td>Peterson, Eric (2016): IVIM dataset. figshare. Dataset. <a href='https://doi.org/10.6084/m9.figshare.3395704.v1'>figshare.com/articles/dataset/IVIM_dataset/3395704/1</a></td>
     </tr>
     <tr>
         <td>MNI template</td>

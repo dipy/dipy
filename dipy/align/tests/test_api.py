@@ -11,7 +11,8 @@ import dipy.data as dpd
 import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
-                        center_of_mass, translation, rigid, affine,
+                        center_of_mass, translation, rigid_isoscaling,
+                        rigid_scaling, rigid, affine,
                         affine_registration, streamline_registration,
                         write_mapping, read_mapping, register_dwi_to_template)
 
@@ -121,7 +122,9 @@ def test_affine_registration():
 
     # Define list of methods
     reg_methods = ["center_of_mass", "translation", "rigid",
-                   "rigid_isoscaling", "rigid_scaling", "affine"]
+                   "rigid_isoscaling", "rigid_scaling", "affine",
+                   center_of_mass, translation, rigid,
+                   rigid_isoscaling, rigid_scaling, affine]
 
     # Test methods individually (without returning any metric)
     for func in reg_methods:
@@ -135,9 +138,23 @@ def test_affine_registration():
         # We don't ask for much:
         npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
 
+    # Bad method
+    with pytest.raises(ValueError, match=r'^pipeline\[0\] must be one.*foo.*'):
+        affine_registration(
+            moving, static, moving_affine, static_affine, pipeline=['foo'])
+
     # Test methods individually (returning quality metric)
-    expected_nparams = [3, 6, 7, 9, 12]
-    for i, func in enumerate(reg_methods[1:]):
+    expected_nparams = [0, 3, 6, 7, 9, 12] * 2
+    assert len(expected_nparams) == len(reg_methods)
+    for i, func in enumerate(reg_methods):
+        if func in ('center_of_mass', center_of_mass):
+            # can't return metric
+            with pytest.raises(ValueError, match='cannot return any quality'):
+                affine_registration(
+                    moving, static, moving_affine, static_affine,
+                    pipeline=[func], ret_metric=True)
+            continue
+
         xformed, affine_mat, \
             xopt, fopt = affine_registration(moving, static,
                                              moving_affine=moving_affine,
@@ -183,7 +200,8 @@ def test_single_transforms():
     static = subset_b0
     moving_affine = static_affine = np.eye(4)
 
-    reg_methods = [center_of_mass, translation, rigid, affine]
+    reg_methods = [center_of_mass, translation, rigid_isoscaling,
+                   rigid_scaling, rigid, affine]
 
     for func in reg_methods:
         xformed, affine_mat = func(moving, static, moving_affine,

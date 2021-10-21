@@ -406,7 +406,7 @@ def interpolate_vector_2d(floating[:, :, :] field, double[:, :] locations):
 
     Interpolates the 2D vector field at the given locations. This function is
     a wrapper for _interpolate_vector_2d for testing purposes, it is
-    equivalent to using scipy.ndimage.interpolation.map_coordinates with
+    equivalent to using scipy.ndimage.map_coordinates with
     bilinear interpolation at each vector component
 
     Parameters
@@ -516,7 +516,7 @@ def interpolate_scalar_2d(floating[:, :] image, double[:, :] locations):
 
     Interpolates the 2D image at the given locations. This function is
     a wrapper for _interpolate_scalar_2d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    equivalent to scipy.ndimage.map_coordinates with
     bilinear interpolation
 
     Parameters
@@ -620,7 +620,7 @@ def interpolate_scalar_nn_2d(number[:, :] image, double[:, :] locations):
 
     Interpolates the 2D image at the given locations. This function is
     a wrapper for _interpolate_scalar_nn_2d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    equivalent to scipy.ndimage.map_coordinates with
     nearest neighbor interpolation
 
     Parameters
@@ -713,7 +713,7 @@ def interpolate_scalar_nn_3d(number[:, :, :] image, double[:, :] locations):
 
     Interpolates the 3D image at the given locations. This function is
     a wrapper for _interpolate_scalar_nn_3d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    equivalent to scipy.ndimage.map_coordinates with
     nearest neighbor interpolation
 
     Parameters
@@ -815,7 +815,7 @@ def interpolate_scalar_3d(floating[:, :, :] image, locations):
 
     Interpolates the 3D image at the given locations. This function is
     a wrapper for _interpolate_scalar_3d for testing purposes, it is
-    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    equivalent to scipy.ndimage.map_coordinates with
     trilinear interpolation
 
     Parameters
@@ -949,7 +949,7 @@ def interpolate_vector_3d(floating[:, :, :, :] field, double[:, :] locations):
 
     Interpolates the 3D vector field at the given locations. This function is
     a wrapper for _interpolate_vector_3d for testing purposes, it is
-    equivalent to using scipy.ndimage.interpolation.map_coordinates with
+    equivalent to using scipy.ndimage.map_coordinates with
     trilinear interpolation at each vector component
 
     Parameters

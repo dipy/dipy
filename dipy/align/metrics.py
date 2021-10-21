@@ -302,7 +302,7 @@ class CCMetric(SimilarityMetric):
             self.gradient_static, self.factors, self.radius)
         displacement = np.array(displacement)
         for i in range(self.dim):
-            displacement[..., i] = ndimage.filters.gaussian_filter(
+            displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.sigma_diff)
         return displacement
 
@@ -317,7 +317,7 @@ class CCMetric(SimilarityMetric):
                                                           self.radius)
         displacement = np.array(displacement)
         for i in range(self.dim):
-            displacement[..., i] = ndimage.filters.gaussian_filter(
+            displacement[..., i] = ndimage.gaussian_filter(
                 displacement[..., i], self.sigma_diff)
         return displacement
 
@@ -611,8 +611,7 @@ class EMMetric(SimilarityMetric):
                                                              sigma_reg_2,
                                                              None)
         for i in range(self.dim):
-            step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
-                                                           self.smooth)
+            step[..., i] = ndimage.gaussian_filter(step[..., i], self.smooth)
         return step
 
     def get_energy(self):
@@ -866,8 +865,7 @@ class SSDMetric(SimilarityMetric):
                                                                sigma_reg_2,
                                                                None)
         for i in range(self.dim):
-            step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
-                                                           self.smooth)
+            step[..., i] = ndimage.gaussian_filter(step[..., i], self.smooth)
         return step
 
     def get_energy(self):

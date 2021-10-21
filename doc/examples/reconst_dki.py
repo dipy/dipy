@@ -69,7 +69,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 
 """
 DKI requires multi-shell data, i.e. data acquired from more than one non-zero

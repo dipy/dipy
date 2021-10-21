@@ -4,7 +4,7 @@ import numpy as np
 import random
 import dipy.reconst.dki_micro as dki_micro
 from numpy.testing import (assert_array_almost_equal, assert_almost_equal,
-                           assert_, assert_raises)
+                           assert_, assert_raises, assert_allclose)
 from dipy.sims.voxel import (multi_tensor_dki, _check_directions, multi_tensor)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
@@ -118,7 +118,7 @@ def test_single_fiber_model():
     # Test model and fit objects
     wmtiM = dki_micro.KurtosisMicrostructureModel(gtab_2s, fit_method="WLS")
     wmtiF = wmtiM.fit(signal)
-    assert_almost_equal(wmtiF.awf, AWF)
+    assert_allclose(wmtiF.awf, AWF, rtol=1e-6)
     assert_array_almost_equal(wmtiF.hindered_evals,
                               np.array([ADe, RDe, RDe]))
     assert_array_almost_equal(wmtiF.restricted_evals,
