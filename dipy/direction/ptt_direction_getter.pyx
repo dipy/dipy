@@ -88,13 +88,6 @@ cdef struct TP:
     double probe_quality
     double probe_count
     double data_support_exponent
-    # double step_size = 1/20
-    # double max_curvature = 1/2
-    # double probe_length = 1/2
-    # double probe_radius = 0
-    # double probe_quality = 3
-    # double probe_count = 0
-    # double data_support_exponent = 1
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
