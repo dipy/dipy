@@ -58,7 +58,7 @@ There are multiple ways to estimate the fiber response function.
 
 **Strategy 1: use default values**
 One simple approach is to use the values included as the default arguments in
-the RumbaSD constructor. The white matter response, `wm_response` has three
+the RumbaSDModel constructor. The white matter response, `wm_response` has three
 values corresponding to the tensor eigenvalues (1.7e-3, 0.2e-3, 0.2e-3). The
 model has compartments for cerebrospinal fluid (CSF) (`csf_response`) and
 grey matter (GM) (`gm_response`) as well, with these mean diffusivities set
@@ -67,9 +67,9 @@ values will often be adequate as RUMBA-SD is robust against impulse response
 imprecision [Dell'Acqua2007]_.
 """
 
-from dipy.reconst.rumba import RumbaSD
+from dipy.reconst.rumba import RumbaSDModel
 
-rumba = RumbaSD(gtab)
+rumba = RumbaSDModel(gtab)
 print(f"wm_response: {rumba.wm_response}, " +
       f"csf_response: {rumba.csf_response}, " +
       f"gm_response: {rumba.gm_response}")
@@ -254,7 +254,8 @@ using TV regularization, which will be covered later in the tutorial. Finally,
 'repulsion724' sphere, but this tutorial will use `symmetric362`.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None, sphere=sphere)
+rumba = RumbaSDModel(
+    gtab, wm_response=response[0], gm_response=None, sphere=sphere)
 
 """
 For efficiency, we will only fit a small part of the data. This is the same
@@ -322,7 +323,7 @@ components. This is done using the `RumbaFit` object's method
 combined = rumba_fit.combined_odf_iso
 
 fodf_spheres = actor.odf_slicer(
-    combined, sphere=sphere, norm=True, scale=0.9, colormap=None)
+    combined, sphere=sphere, norm=True, scale=0.5, colormap=None)
 scene.add(fodf_spheres)
 print('Saving illustration as rumba_odfs.png')
 window.record(scene, out_path='rumba_odfs.png', size=(600, 600))
@@ -393,8 +394,8 @@ This is done by setting `voxelwise` to `False`, and setting `use_tv` to `True`.
 TV regularization requires a volume without any singleton dimensions, so we'll
 have to start by expanding our data slice.
 """
-rumba = RumbaSD(gtab, wm_response=response[0], gm_response=None,
-                voxelwise=False, use_tv=True, sphere=sphere)
+rumba = RumbaSDModel(gtab, wm_response=response[0], gm_response=None,
+                     voxelwise=False, use_tv=True, sphere=sphere)
 data_tv = data[20:50, 55:85, 38:40]
 
 """
@@ -411,7 +412,7 @@ Now we can visualize the combined fODF map as before.
 """
 
 fodf_spheres = actor.odf_slicer(combined, sphere=sphere, norm=True,
-                                scale=0.9, colormap=None)
+                                scale=0.5, colormap=None)
 
 scene.add(fodf_spheres)
 print('Saving illustration as rumba_global_odfs.png')

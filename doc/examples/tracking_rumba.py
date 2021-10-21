@@ -25,7 +25,7 @@ from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.streamline import Streamlines, transform_streamlines
 from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 from dipy.viz import window, actor, colormap
-from dipy.reconst.rumba import RumbaSD
+from dipy.reconst.rumba import RumbaSDModel
 
 # Enables/disables interactive visualization
 interactive = False
@@ -49,14 +49,14 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 sphere = small_sphere
 
 """
-We can now initialize a `RumbaSD` model and fit it globally by setting
+We can now initialize a `RumbaSdModel` model and fit it globally by setting
 `voxelwise` to `False`. For this example, TV regularization (`use_tv`) will be
 turned off for efficiency, although its usage can provide more coherent results
 in fiber tracking. The fit will take about 5 minutes to complete.
 """
 
-rumba = RumbaSD(gtab, wm_response=response[0], n_iter=200,
-                voxelwise=False, use_tv=False, sphere=sphere)
+rumba = RumbaSDModel(gtab, wm_response=response[0], n_iter=200,
+                     voxelwise=False, use_tv=False, sphere=sphere)
 rumba_fit = rumba.fit(data, mask=white_matter)
 odf = rumba_fit.odf()  # fODF
 f_wm = rumba_fit.f_wm  # white matter volume fractions
