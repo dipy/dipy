@@ -60,7 +60,8 @@ def test_horizon_events():
             recorded_events=fname)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
+                    reason="Needs xvfb")
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -133,7 +134,8 @@ def test_horizon():
             world_coords=True, interactive=False)
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
+                    reason="Needs xvfb")
 def test_roi_images():
     np.random.seed(42)
     img1 = np.random.rand(5, 5, 5)
