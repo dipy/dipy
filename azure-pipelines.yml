@@ -34,7 +34,7 @@ jobs:
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm"
       Python38-64bit + MIN_DEPS:
         python.version: '3.8'
-        DEPENDS: "cython==0.29 numpy==1.17.5 scipy==1.1 nibabel==3.0.0 h5py==3.0.0 tqdm"
+        DEPENDS: "cython==0.29 numpy==1.17.5 scipy==1.2.3 nibabel==3.0.0 h5py==3.0.0 tqdm"
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
