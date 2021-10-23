@@ -6,8 +6,6 @@
 Implementation of parallel transport tractography (PTT)
 """
 
-from random import random
-
 import numpy as np
 cimport numpy as cnp
 
@@ -184,18 +182,32 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.p[2] = pos[2]
 
 
-    # After initial position is set, a random PTF (a walking frame, i.e., 3 orthonormal vectors (F), plus 2 scalars, i.e., k1 and k2) is set with this function.
-    # Optionally, the tangential component of PTF can be user provided with the input initDir parameter.
-    # Use initdir=[0,0,0] if initDir is not available.
-    # A point + PTF parametrizes a curve that is named the "probe". Using probe parameters (probe_length, probe_radius, probe_quality, probe_count),
-    # a short fiber bundle segment is modelled.
-    # This function does NOT pick the initial curve. It only returns the datasupport (likelihood) value for a randomly picked candidate.
-    cdef double getInitCandidate(self, double[:] initDir):
+    cdef double get_initial_candidate(self, double[:] init_dir):
+        """"Return the likelihood value for a randomly picked candidate.
 
+        After initial position is set, a random PTF (a walking frame, i.e.,
+        3 orthonormal vectors (F), plus 2 scalars, i.e., k1 and k2) is set
+        with this function. Optionally, the tangential component of PTF can be
+        user provided with the input initDir parameter.
+        A point + PTF parametrizes a curve that is named the "probe". Using
+        probe parameters (probe_length, probe_radius, probe_quality,
+        probe_count), a short fiber bundle segment is modelled.
+
+        Parameters
+        ----------
+        init_dir : np.array
+            Use initdir=[0,0,0] if initDir is not available.
+
+        Notes
+        -----
+        This function does NOT pick the initial curve. It only returns the
+        datasupport (likelihood) value for a randomly picked candidate.
+
+        """
         cdef double fodAmp
         cdef double[3] pp
 
-        self.getARandomFrame(initDir)
+        self.getARandomFrame(init_dir)
         (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.max_curvature)
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
@@ -203,7 +215,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.last_val = 0
 
         if self.params.probe_count==1:
-            # fodAmp = getFODamp(p,F[0])
             fodAmp = self.pmf_gen.get_pmf_value(self.p, self.F[0])
             self.last_val = fodAmp
         else:
@@ -219,10 +230,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         return self.calcDataSupport()
 
-
-    # Propagates the last position (p) by step_size amount, using the parameters of the last candidate.
     cdef void walk(self):
+        """Propagates the last position (p) by step_size amount.
 
+        The progation is using the parameters of the last candidate.
+
+        """
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
 
@@ -244,18 +257,24 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.likelihood = 0.0
 
-    # Using the current position, pick a random curve parametrization. The walking frame (F) is same, only the k1 and k2 are randomly picked. This was a smooth curve is sampled.
-    # This function does NOT pick the next curve. It only returns the datasupport (likelihood) value for the randomly picked candidate.
-    cdef double getCandidate(self):
-        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.max_curvature)
+    cdef double get_candidate(self):
+        """Pick a random curve parametrization by using current position.
+
+        The walking frame (F) is same, only the k1 and k2 are randomly picked.
+        This was a smooth curve is sampled. This function does NOT pick the
+        next curve. It only returns the datasupport (likelihood) value for the
+        randomly picked candidate.
+
+        """
+        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.params.max_curvature)
         return self.calcDataSupport()
 
-    # Check whether initialization was done before
-    cdef bint isInitialized(self):
-        return self.initialized
-
-    # Copies PTF parameters then flips the curve. This function can be used after the initial curve is picked in order to save a copy of the curve for tracking towards the other side.
     cdef void flip(self):
+        """"Copy PTF parameters then flips the curve.
+
+        This function can be used after the initial curve is picked in order
+        to save a copy of the curve for tracking towards the other side.
+        """
 
         for i in range(3):
             self.p[i] = self.init_p[i]
@@ -268,13 +287,15 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         return
 
-    # Randomly generate 3 unit vectors that are orthogonal to each other.
-    # This is used for initializing the moving frame of the tracker
-    # Optionally, the initial direction, i.e., tangent, can also be provided
-    # if norm(_dir.size)==0, then the tangent will also be a random vector
     cdef void getARandomFrame(self,double[:] _dir):
+        """Randomly generate 3 unit vectors that are orthogonal to each other.
 
-        if (norm(_dir)==0):
+        This is used for initializing the moving frame of the tracker
+        Optionally, the initial direction, i.e., tangent, can also be provided
+        if norm(_dir.size)==0, then the tangent will also be a random vector
+
+        """
+        if norm(_dir) == 0:
             getAUnitRandomVector(self.F[0])
         else:
             self.F[0][0] = _dir[0]
@@ -285,13 +306,16 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cross(self.F[1],self.F[2],self.F[0])
 
 
-    # Prepares the propagator, PP, that is used for transporting the moving frame forward
-    cdef void prepPropagator(self, double t):
+    cdef void prepare_propagator(self, double t):
+        """Prepare the propagator.
 
+        The propagator PP, that is used for transporting the moving frame
+        forward.
+
+        """
         cdef double tto2
 
-        if ( (abs(self.k1_cand)<0.0001) & (abs(self.k2_cand)<0.0001) ) :
-
+        if (abs(self.k1_cand)<0.0001) & (abs(self.k2_cand)<0.0001):
             self.PP[0] = t
             self.PP[1] = 0
             self.PP[2] = 0
@@ -301,11 +325,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.PP[6] = 0
             self.PP[7] = 0
             self.PP[8] = 1
-
-        else :
-
-            if (abs(self.k1_cand)<0.0001): self.k1_cand = 0.0001
-            if (abs(self.k2_cand)<0.0001): self.k2_cand = 0.0001
+        else:
+            if abs(self.k1_cand)<0.0001: self.k1_cand = 0.0001
+            if abs(self.k2_cand)<0.0001: self.k2_cand = 0.0001
 
             tto2  = t*t/2.0
 
@@ -319,8 +341,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.PP[7] = -self.k1_cand*self.k2_cand*tto2
             self.PP[8] = 1-self.k2_cand*self.k2_cand*tto2
 
-    # Calculates data support for the candidate probe
     cdef double calcDataSupport(self):
+        """Calculate data support for the candidate probe."""
 
         cdef double        fodAmp
         cdef double[3]    _p
@@ -330,7 +352,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3]    _N2     = [0,0,0]
         cdef double[3]     pp
 
-        self.prepPropagator(self.probe_step_size)
+        self.prepare_propagator(self.probe_step_size)
 
         for i in range(3):
             _p[i] = self.p[i]
@@ -360,18 +382,14 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     _F[2][i] = _N2[i]
 
 
-            if self.params.probe_count==1:
-
-                # fodAmp       = getFODamp(_p,_T)
+            if self.params.probe_count == 1:
                 fodAmp = self.pmf_gen.get_pmf_value(_p, _T)
                 self.last_val_cand = fodAmp
                 self.likelihood += self.last_val_cand
-
             else:
-
                 self.last_val_cand = 0
 
-                if (q == self.params.probe_quality-1):
+                if q == self.params.probe_quality-1:
                     for i in range(3):
                         _N2[i]  = self.PP[6]*_F[0][i] +  self.PP[7]*_F[1][i]  +  self.PP[8]*_F[2][i]
                     cross(_N1,_N2,_T)
@@ -381,7 +399,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     for i in range(3):
                         pp[i] = _p[i] + _N1[i]*self.params.probe_radius*cos(c*self.params.angular_separation) + _N2[i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
-                    # fodAmp = getFODamp(pp,_T)
                     fodAmp = self.pmf_gen.get_pmf_value(pp, _T)
                     self.last_val_cand += fodAmp
 
@@ -394,8 +411,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return self.likelihood
 
 
-    # Sample an initial curve by rejection sampling
     cdef StreamlineStatus reinitialize(self, double[:] _seed_point, double[:] _seed_direction):
+        """Sample an initial curve by rejection sampling."""
 
         # Reset initialization
         self.initialized = False
@@ -409,7 +426,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         cdef int tries
         for tries in range(1000):
-            dataSupport = self.getInitCandidate(_seed_direction)
+            dataSupport = self.get_initial_candidate(_seed_direction)
             if dataSupport > posteriorMax:
                 posteriorMax = dataSupport
 
@@ -418,7 +435,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if (uniform_01()*posteriorMax < self.getInitCandidate(_seed_direction) ):
+            if uniform_01()*posteriorMax < self.get_initial_candidate(_seed_direction):
 
                 self.last_val = self.last_val_cand
 
@@ -438,8 +455,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return NODATASUPPORT
 
     cdef StreamlineStatus propagate(self):
-
-        self.prepPropagator(self.params.step_size)
+        self.prepare_propagator(self.params.step_size)
 
         self.walk()
 
@@ -449,7 +465,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         cdef int tries
         for tries in range(20): # This is adaptively set in Trekker. But let's ignore it for now since implementation of that is challenging.
-            dataSupport = self.getCandidate()
+            dataSupport = self.get_candidate()
             if dataSupport > posteriorMax:
                 posteriorMax = dataSupport
 
@@ -458,7 +474,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if (uniform_01()*posteriorMax < self.getCandidate() ):
+            if uniform_01()*posteriorMax < self.get_candidate():
                 self.last_val = self.last_val_cand
                 return TRACKPOINT
 
@@ -503,7 +519,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         # This step only initializes or flips the frame at the seed point.
         # It does not do any propagation, i.e., tracker is at the seed point and it is ready to propagate
         # Initialization basically checks whether the tracker has data support to move or propagate forward (but it does not move it)
-        if (self.isInitialized()):
+        if self.initialized:
             self.flip()
         else:
             stream_status = self.reinitialize(seed_point,seed_direction)
