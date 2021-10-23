@@ -64,7 +64,7 @@ def test_io_fetch_fetcher_datanames():
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
                      'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
-                     'tissue_data']
+                     'tissue_data', 'ptt_minimal_dataset']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)

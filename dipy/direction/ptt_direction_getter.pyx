@@ -204,7 +204,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         datasupport (likelihood) value for a randomly picked candidate.
 
         """
-        cdef double fodAmp
+        cdef double fod_amp
         cdef double[3] pp
 
         self.getARandomFrame(init_dir)
@@ -215,16 +215,15 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.last_val = 0
 
         if self.params.probe_count==1:
-            fodAmp = self.pmf_gen.get_pmf_value(self.p, self.F[0])
-            self.last_val = fodAmp
+            fod_amp = self.pmf_gen.get_pmf_value(self.p, self.F[0])
+            self.last_val = fod_amp
         else:
             for c in range(self.params.probe_count):
                 for i in range(3):
                     pp[i] = self.p[i] + self.F[1][i]*self.params.probe_radius*cos(c*self.params.angular_separation) + self.F[2][i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
-                # fodAmp = getFODamp(pp,F[0])
-                fodAmp = self.pmf_gen.get_pmf_value(pp, self.F[0])
-                self.last_val += fodAmp
+                fod_amp = self.pmf_gen.get_pmf_value(pp, self.F[0])
+                self.last_val += fod_amp
 
         self.init_last_val = self.last_val
 
@@ -344,7 +343,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double calcDataSupport(self):
         """Calculate data support for the candidate probe."""
 
-        cdef double        fodAmp
+        cdef double        fod_amp
         cdef double[3]    _p
         cdef double[3][3] _F
         cdef double[3]    _T    = [0,0,0]
@@ -383,8 +382,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
 
             if self.params.probe_count == 1:
-                fodAmp = self.pmf_gen.get_pmf_value(_p, _T)
-                self.last_val_cand = fodAmp
+                fod_amp = self.pmf_gen.get_pmf_value(_p, _T)
+                self.last_val_cand = fod_amp
                 self.likelihood += self.last_val_cand
             else:
                 self.last_val_cand = 0
@@ -399,8 +398,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     for i in range(3):
                         pp[i] = _p[i] + _N1[i]*self.params.probe_radius*cos(c*self.params.angular_separation) + _N2[i]*self.params.probe_radius*sin(c*self.params.angular_separation)
 
-                    fodAmp = self.pmf_gen.get_pmf_value(pp, _T)
-                    self.last_val_cand += fodAmp
+                    fod_amp = self.pmf_gen.get_pmf_value(pp, _T)
+                    self.last_val_cand += fod_amp
 
                 self.likelihood += self.last_val_cand
 
