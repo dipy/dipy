@@ -1,26 +1,25 @@
+"""Test file for Parallel Transport Tracking Algorithm."""
 import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
-from dipy.reconst.shm import SphHarmFit, SphHarmModel
+from dipy.data import get_fnames, default_sphere
 from dipy.direction import PTTDirectionGetter
+from dipy.io.image import load_nifti
+from dipy.reconst.shm import SphHarmFit, SphHarmModel, sh_to_sf
+from dipy.tracking.local_tracking import LocalTracking
+from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
+from dipy.tracking.streamline import Streamlines
 
-def test_ptt(interactive=False):
-    from dipy.io.image import load_nifti
-    from dipy.reconst.shm import sh_to_sf
-    from dipy.data import default_sphere
-    from dipy.tracking.local_tracking import LocalTracking
-    from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
-    from dipy.tracking.streamline import Streamlines
-    from os.path import join as pjoin
-    folder = "/Users/koudoro/Software/dipy/tmp"
-    fod, affine = load_nifti(pjoin(folder, "FOD.nii"))
-    seed_image, affine_seed = load_nifti(pjoin(folder, "seedImage.nii"))
-    seed_coordinates = np.loadtxt(pjoin(folder, "seedCoordinates.txt"))
+
+def test_ptt_tracking(interactive=False):
+    fod_fname, seed_coordinates_fname, _ = get_fnames('ptt_minimal_dataset')
+    fod, affine = load_nifti(fod_fname)
+    seed_coordinates = np.loadtxt(seed_coordinates_fname)
 
     # check basis (should be mrtrix3)
     sph = sh_to_sf(fod, default_sphere, basis_type='tournier07', sh_order=8)
-    sph[sph <0] = 0
+    sph[sph < 0] = 0
     sc = BinaryStoppingCriterion(np.ones(fod.shape[:3]))
     dg = PTTDirectionGetter.from_pmf(sph, sphere=default_sphere, max_angle=1)
     streamline_generator = LocalTracking(direction_getter=dg,
@@ -29,8 +28,8 @@ def test_ptt(interactive=False):
                                          seeds=seed_coordinates,
                                          affine=affine)
 
-    # import ipdb; ipdb.set_trace()
     streamlines = Streamlines(streamline_generator)
+    npt.assert_equal(len(streamlines), 100)
 
     if interactive:
         from fury import actor, window
@@ -39,12 +38,6 @@ def test_ptt(interactive=False):
         scene.add(st)
         window.show(scene)
 
-    import ipdb; ipdb.set_trace()
-    print(streamlines)
-
-
-
-test_ptt()
 
 def test_PTTDirectionGetter():
     # Test the constructors and errors of the PTTDirectionGetter
@@ -106,4 +99,6 @@ def test_PTTDirectionGetter():
                           basis_type="not a basis")
 
 
-# test_PTTDirectionGetter()
+if __name__ == "__main__":
+    test_PTTDirectionGetter()
+    test_ptt_tracking(True)
