@@ -640,6 +640,19 @@ fetch_DiB_217_lte_pte_ste = _make_fetcher(
     data_size='166.3 MB')
 
 
+fetch_ptt_minimal_datatest = _make_fetcher(
+    "fetch_ptt_minimal_datatest",
+    pjoin(dipy_home, 'ptt_datatest'),
+    'https://raw.githubusercontent.com/dipy/dipy_datatest/main/',
+    ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
+    ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
+    ['6e454f8088b64e7b85218c71010d8dbe',
+     '8c2d71fb95020e2bb1743623eb11c2a6',
+     '9cb88f88d664019ba80c0b372c8bafec'],
+    doc="Download FOD and seeds for PTT testing and examples",
+    data_size="203KB")
+
+
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
 
@@ -865,6 +878,12 @@ def get_fnames(name='small_64D'):
         fbvec = pjoin(folder, 'bvec_DiB_217_lte_pte_ste.bvec')
         fmask = pjoin(folder, 'DiB_mask.nii.gz')
         return fdata_1, fdata_2, fbval, fbvec, fmask
+    if name == 'ptt_minimal_dataset':
+        files, folder = fetch_ptt_minimal_datatest()
+        fod_name = pjoin(folder, 'ptt_fod.nii')
+        seed_coords_name = pjoin(folder, 'ptt_seed_coords.txt')
+        seed_image_name = pjoin(folder, 'ptt_seed_image.nii')
+        return fod_name, seed_coords_name, seed_image_name
 
 
 def read_qtdMRI_test_retest_2subjects():
