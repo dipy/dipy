@@ -70,7 +70,7 @@ for modulename, other_sources, language in (
         ('dipy.core.interpolation', [], 'c'),
         ('dipy.direction.pmf', [], 'c'),
         ('dipy.direction.probabilistic_direction_getter', [], 'c'),
-	('dipy.direction.ptt_direction_getter', [], 'c'),
+        ('dipy.direction.ptt_direction_getter', [], 'c'),
         ('dipy.direction.closest_peak_direction_getter', [], 'c'),
         ('dipy.direction.bootstrap_direction_getter', [], 'c'),
         ('dipy.reconst.eudx_direction_getter', [], 'c'),
