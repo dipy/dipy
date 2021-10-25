@@ -160,6 +160,8 @@ def test_qti_signal():
                       np.eye(3)[np.newaxis, :], np.eye(6))
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6),
                       np.ones(2))
+    qti.qti_signal(gradient_table(bvals, bvecs, btens='LTE'),
+                   np.zeros((5, 6)), np.zeros((5, 21)))
 
     # Isotropic diffusion and no 2nd order effects
     D = np.eye(3)

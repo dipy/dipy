@@ -239,9 +239,9 @@ def qti_signal(gtab, D, C, S0=1):
     gtab : dipy.core.gradients.GradientTable
         Gradient table with b-tensors.
     D : numpy.ndarray
-        Diffusion tensors of shape (..., 3, 3) or (..., 6, 1).
+        Diffusion tensors of shape (..., 3, 3), (..., 6, 1), or (..., 6).
     C : numpy.ndarray
-        Covariance tensors of shape (..., 6, 6) or (..., 21, 1).
+        Covariance tensors of shape (..., 6, 6), (..., 21, 1), or (..., 21).
     S0 : numpy.ndarray, optional
         Signal magnitudes without diffusion-weighting. Must be a single number
         or an array of same shape as D and C without the last two dimensions.
@@ -268,24 +268,29 @@ def qti_signal(gtab, D, C, S0=1):
     if D.shape[-2::] != (6, 1):
         if D.shape[-2::] == (3, 3):
             D = from_3x3_to_6x1(D)
+        elif D.shape[-1] == 6:
+            D = D[..., np.newaxis]
         else:
             raise ValueError(
-                'The shape of D must be (..., 3, 3) or (..., 6, 1).')
+                'The shape of D must be (..., 3, 3), (..., 6, 1) or (..., 6).')
     if C.shape[-2::] != (21, 1):
         if C.shape[-2::] == (6, 6):
             C = from_6x6_to_21x1(C)
+        elif C.shape[-1] == 21:
+            C = C[..., np.newaxis]
         else:
             raise ValueError(
-                'The shape of C must be (..., 6, 6) or (..., 21, 1).')
+                'The shape of C must be (..., 6, 6), (..., 21, 1), or '
+                + '(..., 21).'
+            )
     if D.shape[0:-2] != C.shape[0:-2]:
-        raise ValueError(
-            'The shape of C and D must be the same until the last two '
-            + 'dimensions.')
+        raise ValueError('The shapes of C and D are not compatible')
     if not ((isinstance(S0, int) or isinstance(S0, float))):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
-                'S0 must be a single number or an array of the same shape as D '
-                + ' and C without the last two dimensions.')
+                'S0 must be a single number or an array of the same shape '
+                + ' compatible with D and C.'
+            )
 
     # Generate signals
     S = np.zeros(D.shape[0:-2] + (gtab.btens.shape[0],))
