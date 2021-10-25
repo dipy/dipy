@@ -5,18 +5,18 @@ Reconstruct with Q-space Trajectory Imaging (QTI)
 
 Q-space trajectory imaging (QTI) by Westin et al. [1]_ is a general framework
 for analyzing diffusion-weighted MRI data acquired with tensor-valued diffusion
-encoding. This tutorial briefly summarizes the theory and provides an example of
-how to estimate the diffusion and covariance tensors using Dipy.
+encoding. This tutorial briefly summarizes the theory and provides an example
+of how to estimate the diffusion and covariance tensors using DIPY.
 
 Theory
 ======
-
-QTI is based on a microstructural model, the diffusion tensor distribution
-(DTD), which represents the microscopic diffusion environments in the voxel.
-Here, DTD is denoted by $\mathbf{D}$ and the voxel-level diffusion tensor from
-DTI by $\langle\mathbf{D}\rangle$, where $\langle \ \rangle$ denotes averaging
-over the DTD. The covariance of $\mathbf{D}$ is given by a fourth-order
-covariance tensor $\mathbb{C}$ defined as
+ 
+In QTI, the tissue microstructure is represented by a diffusion tensor
+distribution (DTD). Here, DTD is denoted by $\mathbf{D}$ and the voxel-level
+diffusion tensor from DTI by $\langle\mathbf{D}\rangle$, where
+$\langle \ \rangle$ denotes averaging over the DTD. The covariance of
+$\mathbf{D}$ is given by a fourth-order covariance tensor $\mathbb{C}$ defined
+as
 
 .. math::
 
@@ -77,28 +77,33 @@ For details, please see [1]_.
 Usage example
 =============
 
-QTI can be fit to data using the module `dipy.reconst.qti`, which we import as
-follows:
+QTI can be fit to data using the module `dipy.reconst.qti`. Let's start by
+importing the required modules and functions:
 """
+from dipy.core.gradients import gradient_table
+from dipy.data import get_fnames
+from dipy.io.gradients import read_bvals_bvecs
+from dipy.io.image import load_nifti, load_nifti_data
 import matplotlib.pyplot as plt
+import nibabel as nib
 import numpy as np
-from dipy.data import read_qte_lte_pte
 import dipy.reconst.qti as qti
 """
 As QTI requires data with tensor-valued encoding, let's load an example dataset
 acquired with q-space trajectory encoding (QTE):
 """
-
-img, mask_img, gtab = read_qte_lte_pte()  # Data is fetched just once
-data = img.get_fdata()  # Diffusion-weighted data
-mask = mask_img.get_fdata().astype(bool)  # Brain mask
+fdata, fbvals, fbvecs, fmask = get_fnames('qte_lte_pte')
+data, affine = load_nifti(fdata)
+mask, _ = load_nifti(fmask)
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+gtab = gradient_table(bvals, bvecs, btens=btens)
 """
 The dataset contains 122 volumes of which the first half were acquired with
 linear tensor encoding (LTE) and the second half with planar tensor encoding
 (PTE). We can confirm this by calculating the ranks of the b-tensors in the
 gradient table.
 """
-
 ranks = np.array([np.linalg.matrix_rank(b) for b in gtab.btens])
 for i, l in enumerate(['b = 0', 'LTE', 'PTE']):
     print('%s volumes with %s' % (np.sum(ranks == i), l))
@@ -110,15 +115,16 @@ data as follows:
 qtimodel = qti.QtiModel(gtab)
 qtifit = qtimodel.fit(data, mask)
 """
-QTI parameter maps can accessed as the attributes of `qtifit`. For instance:
+QTI parameter maps can accessed as the attributes of `qtifit`. For instance,
+fractional anisotropy (FA) and microscopic fractional anisotropy (μFA) maps can
+be calculated as:
 """
-fa = qtifit.fa  # Conventional fractional anisotropy from DTI
-ufa = qtifit.ufa  # Microscopic fractional anisotropy
+fa = qtifit.fa
+ufa = qtifit.ufa
 """
-Finally, let's visualize the QTI parameter maps by reproducing Figure 9 from
-[1]_:
+Finally, let's reproduce Figure 9 from [1]_ to visualize more QTI parameter
+maps:
 """
-
 z = 36
 
 fig, ax = plt.subplots(3, 4, figsize=(12, 9))
@@ -165,6 +171,8 @@ ax[2, 3].set_title('K$_{μ}$')
 fig.tight_layout()
 plt.show()
 """
+For more information about QTI, please read the article by Westin et al. [1]_.
+
 References
 ----------
 .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
