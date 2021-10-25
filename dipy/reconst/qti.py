@@ -116,7 +116,7 @@ def from_6x6_to_21x1(T):
     """
     if T.shape[-2::] != (6, 6):
         raise ValueError('The shape of the input array must be (..., 6, 6).')
-    if not np.all(np.isclose(T, np.swapaxes(T, -1, -2))):
+    if not np.all(np.isclose(T, np.swapaxes(T, -1, -2), equal_nan=True)):
         warn('All matrices converted to Voigt notation are not symmetric.')
     C = np.sqrt(2)
     V = np.stack(([T[..., 0, 0], T[..., 1, 1], T[..., 2, 2],
@@ -204,12 +204,19 @@ def dtd_covariance(DTD):
 
     Notes
     -----
-    The covariance tensor is calculated as
+    The covariance tensor is calculated according to the following equation and
+    converted into a rank-2 tensor [1]_:
 
         .. math::
 
             \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle -
             \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
+
+    References
+    ----------
+    .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
+       multidimensional diffusion MRI of the human brain." Neuroimage 135
+       (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
     """
     dims = DTD.shape
     if len(dims) != 3 or (dims[1:3] != (3, 3) and dims[1:3] != (6, 1)):
@@ -520,7 +527,6 @@ class QtiFit(object):
             notation.
         """
         self.params = params
-        return
 
     def predict(self, gtab):
         """Generate signals from this model fit and a given gradient table.

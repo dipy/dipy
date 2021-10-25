@@ -1397,9 +1397,9 @@ def read_qte_lte_pte():
 
     Returns
     -------
-    data_img : nibabel.nifti1.Nifti1Image,
+    data_img : nibabel.nifti1.Nifti1Image
         dMRI data image.
-    mask_img : nibabel.nifti1.Nifti1Image,
+    mask_img : nibabel.nifti1.Nifti1Image
         Brain mask image.
     gtab : dipy.core.gradients.GradientTable
         Gradient table.

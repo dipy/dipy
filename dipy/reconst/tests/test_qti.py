@@ -137,7 +137,7 @@ def test_dtd_covariance():
 
 
 def test_qti_signal():
-    """Testi QTI signal generation."""
+    """Test QTI signal generation."""
 
     # Input validation
     bvals = np.ones(6)
@@ -156,6 +156,8 @@ def test_qti_signal():
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(5))
     npt.assert_raises(ValueError, qti.qti_signal, gtab,
                       np.stack((np.eye(3), np.eye(3))), np.eye(5))
+    npt.assert_raises(ValueError, qti.qti_signal, gtab,
+                      np.eye(3)[np.newaxis, :], np.eye(6))
     npt.assert_raises(ValueError, qti.qti_signal, gtab, np.eye(3), np.eye(6),
                       np.ones(2))
 
@@ -268,6 +270,11 @@ def test_ls_fits():
         mask = np.ones(1).astype(bool)
         npt.assert_almost_equal(qti._ols_fit(data, mask, X), params)
         npt.assert_almost_equal(qti._wls_fit(data, mask, X), params)
+        data = np.vstack((data, data))
+        mask = np.ones(2).astype(bool)
+        params = np.vstack((params, params))
+        npt.assert_almost_equal(qti._ols_fit(data, mask, X, step=1), params)
+        npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
     return
 
 
@@ -285,10 +292,6 @@ def test_qti_model():
     gtab = _qti_gtab()
     qtimodel = qti.QtiModel(gtab)
     npt.assert_almost_equal(qtimodel.X, qti.design_matrix(gtab.btens))
-
-    # Fit
-
-    # Prediction
 
     return
 
@@ -345,24 +348,29 @@ def test_qti_fit():
 
     # Fit QTI
     gtab = _qti_gtab()
-    qtimodel = qti.QtiModel(gtab)
-    data = qtimodel.predict(params)
-    qtifit = qtimodel.fit(data)
-
-    npt.assert_almost_equal(qtifit.predict(gtab), data)
-    npt.assert_almost_equal(qtifit.S0_hat, S0)
-    npt.assert_almost_equal(qtifit.md, md)
-    npt.assert_almost_equal(qtifit.v_md, v_md)
-    npt.assert_almost_equal(qtifit.v_shear, v_shear)
-    npt.assert_almost_equal(qtifit.v_iso, v_iso)
-    npt.assert_almost_equal(qtifit.c_md, c_md)
-    npt.assert_almost_equal(qtifit.c_mu, c_mu)
-    npt.assert_almost_equal(qtifit.ufa, ufa)
-    npt.assert_almost_equal(qtifit.c_m, c_m)
-    npt.assert_almost_equal(qtifit.fa, fa)
-    npt.assert_almost_equal(qtifit.c_c, c_c)
-    npt.assert_almost_equal(qtifit.mk, mk)
-    npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
-    npt.assert_almost_equal(qtifit.k_shear, k_shear)
+    for fit_method in ['OLS', 'WLS']:
+        qtimodel = qti.QtiModel(gtab, fit_method)
+        data = qtimodel.predict(params)
+        npt.assert_raises(ValueError, qtimodel.fit, params,
+                          np.zeros((2, data.shape[1])))
+        qtifit = qtimodel.fit(data)
+        npt.assert_raises(ValueError, qtifit.predict,
+                          gradient_table(np.zeros(3), np.zeros((3, 3))))
+        npt.assert_almost_equal(qtifit.predict(gtab), data)
+        npt.assert_almost_equal(qtifit.S0_hat, S0)
+        npt.assert_almost_equal(qtifit.md, md)
+        npt.assert_almost_equal(qtifit.v_md, v_md)
+        npt.assert_almost_equal(qtifit.v_shear, v_shear)
+        npt.assert_almost_equal(qtifit.v_iso, v_iso)
+        npt.assert_almost_equal(qtifit.c_md, c_md)
+        npt.assert_almost_equal(qtifit.c_mu, c_mu)
+        npt.assert_almost_equal(qtifit.ufa, ufa)
+        npt.assert_almost_equal(qtifit.c_m, c_m)
+        npt.assert_almost_equal(qtifit.fa, fa)
+        npt.assert_almost_equal(qtifit.c_c, c_c)
+        npt.assert_almost_equal(qtifit.mk, mk)
+        npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
+        npt.assert_almost_equal(qtifit.k_shear, k_shear)
+        npt.assert_almost_equal(qtifit.k_mu, k_mu)
 
     return

@@ -51,7 +51,8 @@ from dipy.data.fetcher import (get_fnames,
                                get_target_tractogram_hcp,
                                get_two_hcp842_bundles,
                                fetch_bundle_fa_hcp,
-                               fetch_gold_standard_io)
+                               fetch_gold_standard_io,
+                               read_qte_lte_pte)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti
