@@ -351,26 +351,29 @@ def test_qti_fit():
     for fit_method in ['OLS', 'WLS']:
         qtimodel = qti.QtiModel(gtab, fit_method)
         data = qtimodel.predict(params)
-        npt.assert_raises(ValueError, qtimodel.fit, params,
-                          np.zeros((2, data.shape[1])))
-        qtifit = qtimodel.fit(data)
-        npt.assert_raises(ValueError, qtifit.predict,
-                          gradient_table(np.zeros(3), np.zeros((3, 3))))
-        npt.assert_almost_equal(qtifit.predict(gtab), data)
-        npt.assert_almost_equal(qtifit.S0_hat, S0)
-        npt.assert_almost_equal(qtifit.md, md)
-        npt.assert_almost_equal(qtifit.v_md, v_md)
-        npt.assert_almost_equal(qtifit.v_shear, v_shear)
-        npt.assert_almost_equal(qtifit.v_iso, v_iso)
-        npt.assert_almost_equal(qtifit.c_md, c_md)
-        npt.assert_almost_equal(qtifit.c_mu, c_mu)
-        npt.assert_almost_equal(qtifit.ufa, ufa)
-        npt.assert_almost_equal(qtifit.c_m, c_m)
-        npt.assert_almost_equal(qtifit.fa, fa)
-        npt.assert_almost_equal(qtifit.c_c, c_c)
-        npt.assert_almost_equal(qtifit.mk, mk)
-        npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
-        npt.assert_almost_equal(qtifit.k_shear, k_shear)
-        npt.assert_almost_equal(qtifit.k_mu, k_mu)
+        npt.assert_raises(ValueError, qtimodel.fit, data,
+                          np.ones((2)))
+        npt.assert_raises(ValueError, qtimodel.fit, data,
+                          np.ones(data.shape))
+        for mask in [None, np.ones(data.shape[0:-1])]:
+            qtifit = qtimodel.fit(data, mask)
+            npt.assert_raises(ValueError, qtifit.predict,
+                              gradient_table(np.zeros(3), np.zeros((3, 3))))
+            npt.assert_almost_equal(qtifit.predict(gtab), data)
+            npt.assert_almost_equal(qtifit.S0_hat, S0)
+            npt.assert_almost_equal(qtifit.md, md)
+            npt.assert_almost_equal(qtifit.v_md, v_md)
+            npt.assert_almost_equal(qtifit.v_shear, v_shear)
+            npt.assert_almost_equal(qtifit.v_iso, v_iso)
+            npt.assert_almost_equal(qtifit.c_md, c_md)
+            npt.assert_almost_equal(qtifit.c_mu, c_mu)
+            npt.assert_almost_equal(qtifit.ufa, ufa)
+            npt.assert_almost_equal(qtifit.c_m, c_m)
+            npt.assert_almost_equal(qtifit.fa, fa)
+            npt.assert_almost_equal(qtifit.c_c, c_c)
+            npt.assert_almost_equal(qtifit.mk, mk)
+            npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
+            npt.assert_almost_equal(qtifit.k_shear, k_shear)
+            npt.assert_almost_equal(qtifit.k_mu, k_mu)
 
     return
