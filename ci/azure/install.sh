@@ -17,7 +17,7 @@ if [ "$INSTALL_TYPE" == "conda" ]; then
 else
     PIPI="pip install --timeout=60 "
 
-    if [ -n "$USE_PRE" ]; then
+    if [ "$USE_PRE" == "1" ]; then
         PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
     fi
 

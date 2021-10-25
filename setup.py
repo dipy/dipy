@@ -61,7 +61,10 @@ if using_setuptools:
 EXTS = []
 
 # We use some defs from npymath, but we don't want to link against npymath lib
-ext_kwargs = {'include_dirs': ['src']}  # We add np.get_include() later
+ext_kwargs = {
+    'include_dirs': ['src'],  # We add np.get_include() later
+    'define_macros': [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+    }
 
 for modulename, other_sources, language in (
         ('dipy.core.interpolation', [], 'c'),
@@ -126,8 +129,10 @@ int main(int argc, char** argv) { return(0); }"""
 msc_flag_defines = [[['/openmp'], [], omp_test_c, 'HAVE_VC_OPENMP'],
                     ]
 gcc_flag_defines = [[['-msse2', '-mfpmath=sse'], [], simple_test_c, 'USING_GCC_SSE2'],
-                    [['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP'],
                     ]
+
+if 'clang' not in platform.python_compiler().lower():
+    gcc_flag_defines += [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP'], ]
 
 # Test if it is a 32 bits version
 if not sys.maxsize > 2 ** 32:

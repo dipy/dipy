@@ -10,11 +10,10 @@ discrete distribution (pmf) at each step of the tracking.
 from random import random
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.direction.peaks import peak_directions, default_sphere
-from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 
@@ -32,8 +31,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         double[:, :] vertices
         dict _adj_matrix
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
-                 **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -97,10 +95,10 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         cdef:
-            size_t i, idx, _len
+            cnp.npy_intp i, idx, _len
             double[:] newdir, pmf
             double last_cdf, random_sample
-            np.uint8_t[:] bool_array
+            cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
@@ -141,8 +139,7 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
     function (pmf).
     """
 
-    def __init__(self, pmf_gen, max_angle, sphere=None, pmf_threshold=0.1,
-                 **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                               pmf_threshold, **kwargs)
 
@@ -162,10 +159,10 @@ cdef class DeterministicMaximumDirectionGetter(ProbabilisticDirectionGetter):
             1 otherwise.
         """
         cdef:
-            size_t _len, max_idx
+            cnp.npy_intp _len, max_idx
             double[:] newdir, pmf
             double max_value
-            np.uint8_t[:] bool_array
+            cnp.uint8_t[:] bool_array
 
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]

@@ -106,12 +106,12 @@ class LocalTracking(object):
 
     def __iter__(self):
         # Make tracks, move them to point space and return
-        track = self._generate_streamlines()
+        track = self._generate_tractogram()
 
         return utils.transform_tracking_output(track, self.affine,
                                                save_seeds=self.save_seeds)
 
-    def _generate_streamlines(self):
+    def _generate_tractogram(self):
         """A streamline generator"""
 
         # Get inverse transform (lin/offset) for seeds

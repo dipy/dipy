@@ -2,7 +2,7 @@
 import os
 import numpy as np
 from scipy.spatial import cKDTree
-from scipy.ndimage.interpolation import map_coordinates
+from scipy.ndimage import map_coordinates
 from scipy.spatial.distance import mahalanobis
 
 from dipy.utils.optpkg import optional_package
@@ -218,7 +218,7 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     return w / np.sum(w, 0)
 
 
-def afq_profile(data, bundle, affine, n_points=100,
+def afq_profile(data, bundle, affine, n_points=100, profile_stat=np.average,
                 orient_by=None, weights=None, **weights_kwarg):
     """
     Calculates a summarized profile of data for a bundle or tract
@@ -247,6 +247,11 @@ def afq_profile(data, bundle, affine, n_points=100,
         Weight each streamline (1D) or each node (2D) when calculating the
         tract-profiles. Must sum to 1 across streamlines (in each node if
         relevant). If callable, this is a function that calculates weights.
+    profile_stat : callable
+        The statistic used to average the profile across streamlines.
+        If weights is not None, this must take weights as a keyword argument.
+        The default, np.average, is the same as np.mean but takes weights
+        as a keyword argument.
     weights_kwarg : key-word arguments
         Additional key-word arguments to pass to the weight-calculating
         function. Only to be used if weights is a callable.
@@ -283,14 +288,16 @@ def afq_profile(data, bundle, affine, n_points=100,
     # Extract the values
     values = np.array(values_from_volume(data, fgarray, affine))
 
-    if weights is None:
-        weights = np.ones(values.shape) / values.shape[0]
-    elif callable(weights):
-        weights = weights(bundle, **weights_kwarg)
-    else:
-        # We check that weights *always sum to 1 across streamlines*:
-        if not np.allclose(np.sum(weights, 0), np.ones(n_points)):
-            raise ValueError("The sum of weights across streamlines must ",
-                             "be equal to 1")
+    if weights is not None:
+        if callable(weights):
+            weights = weights(bundle, **weights_kwarg)
+        else:
+            # We check that weights *always sum to 1 across streamlines*:
+            if not np.allclose(np.sum(weights, 0), np.ones(n_points)):
+                raise ValueError(
+                    "The sum of weights across streamlines",
+                    " must be equal to 1")
 
-    return np.sum(weights * values, 0)
+        return profile_stat(values, weights=weights, axis=0)
+    else:
+        return profile_stat(values, axis=0)

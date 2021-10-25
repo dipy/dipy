@@ -6,6 +6,7 @@ streamlines.
 
 """
 import collections
+from functools import partial
 import numbers
 import numpy as np
 import nibabel as nib
@@ -20,6 +21,8 @@ from dipy.align.imaffine import (transform_centers_of_mass,
 
 from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
+                                   RigidScalingTransform3D,
+                                   RigidIsoScalingTransform3D,
                                    AffineTransform3D)
 
 
@@ -34,7 +37,9 @@ from dipy.io.image import load_nifti, save_nifti
 
 __all__ = ["syn_registration", "register_dwi_to_template",
            "write_mapping", "read_mapping", "resample",
-           "center_of_mass", "translation", "rigid", "affine",
+           "center_of_mass", "translation",
+           "rigid_isoscaling", "rigid_scaling",
+           "rigid", "affine",
            "affine_registration", "register_series",
            "register_dwi_series", "streamline_registration"]
 
@@ -327,199 +332,6 @@ def resample(moving, static, moving_affine=None, static_affine=None,
     return nib.Nifti1Image(resampled, static_affine)
 
 
-def center_of_mass(moving, static, static_affine=None, moving_affine=None,
-                   starting_affine=None, reg=None):
-    """
-    Implements a center of mass transform
-
-    Parameters
-    ----------
-    moving : array, nifti image or str
-        Containing the data for the moving object, or full path to a nifti file
-        with the moving data.
-
-    moving_affine : 4x4 array, optional
-        An affine transformation associated with the moving object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
-
-    static_affine : 4x4 array, optional
-        An affine transformation associated with the static object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    starting_affine: 4x4 array, optional
-        Initial guess for the transformation between the spaces.
-
-    reg : not needed here. Use None
-
-    Returns
-    -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the center of mass transformation and the
-    affine 4x4 associated with the transformation.
-    """
-    static, static_affine, moving, moving_affine, starting_affine = \
-        _handle_pipeline_inputs(moving, static,
-                                moving_affine=moving_affine,
-                                static_affine=static_affine,
-                                starting_affine=starting_affine)
-    transform = transform_centers_of_mass(static, static_affine,
-                                          moving, moving_affine)
-    return transform.affine
-
-
-def translation(moving, static, static_affine=None, moving_affine=None,
-                starting_affine=None, reg=None):
-    """
-    Implements a translation transform
-
-    Parameters
-    ----------
-    moving : array, nifti image or str
-        Containing the data for the moving object, or full path to a nifti file
-        with the moving data.
-
-    moving_affine : 4x4 array, optional
-        An affine transformation associated with the moving object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
-
-    static_affine : 4x4 array, optional
-        An affine transformation associated with the static object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    starting_affine: 4x4 array, optional
-        Initial guess for the transformation between the spaces.
-
-    reg : AffineRegistration class instance.
-
-    Returns
-    -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the translation transformation and the
-    affine 4x4 associated with the transformation.
-    """
-    static, static_affine, moving, moving_affine, starting_affine = \
-        _handle_pipeline_inputs(moving, static,
-                                moving_affine=moving_affine,
-                                static_affine=static_affine,
-                                starting_affine=starting_affine)
-    transform = TranslationTransform3D()
-    translation = reg.optimize(static, moving, transform, None,
-                               static_affine, moving_affine,
-                               starting_affine=starting_affine)
-
-    return translation.affine
-
-
-def rigid(moving, static, static_affine=None, moving_affine=None,
-          starting_affine=None, reg=None):
-    """
-    Implements a rigid transform
-
-    Parameters
-    ----------
-    moving : array, nifti image or str
-        Containing the data for the moving object, or full path to a nifti file
-        with the moving data.
-
-    moving_affine : 4x4 array, optional
-        An affine transformation associated with the moving object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
-
-    static_affine : 4x4 array, optional
-        An affine transformation associated with the static object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    starting_affine: 4x4 array, optional
-        Initial guess for the transformation between the spaces.
-
-    reg : AffineRegistration class instance.
-
-    Returns
-    -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the rigid transformation and the affine 4x4
-    associated with the transformation.
-    """
-    static, static_affine, moving, moving_affine, starting_affine = \
-        _handle_pipeline_inputs(moving, static,
-                                moving_affine=moving_affine,
-                                static_affine=static_affine,
-                                starting_affine=starting_affine)
-    transform = RigidTransform3D()
-    rigid = reg.optimize(static, moving, transform, None,
-                         static_affine, moving_affine,
-                         starting_affine=starting_affine)
-    return rigid.affine
-
-
-def affine(moving, static, static_affine=None, moving_affine=None,
-           starting_affine=None, reg=None):
-    """
-    Implements a translation transform
-
-    Parameters
-    ----------
-    moving : array, nifti image or str
-        Containing the data for the moving object, or full path to a nifti file
-        with the moving data.
-
-    moving_affine : 4x4 array, optional
-        An affine transformation associated with the moving object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
-
-    static_affine : 4x4 array, optional
-        An affine transformation associated with the static object. Required if
-        data is provided as an array. If provided together with nifti/path,
-        will over-ride the affine that is in the nifti.
-
-    starting_affine: 4x4 array, optional
-        Initial guess for the transformation between the spaces.
-
-    reg : AffineRegistration class instance.
-
-    Returns
-    -------
-    transformed, transform.affine : array with moving data resampled to the
-    static space after computing the affine transformation and the affine
-    4x4 associated with the transformation.
-    """
-
-    static, static_affine, moving, moving_affine, starting_affine = \
-        _handle_pipeline_inputs(moving, static,
-                                moving_affine=moving_affine,
-                                static_affine=static_affine,
-                                starting_affine=starting_affine)
-    transform = AffineTransform3D()
-    xform = reg.optimize(static, moving, transform, None,
-                         static_affine, moving_affine,
-                         starting_affine=starting_affine)
-
-    return xform.affine
-
-
 def affine_registration(moving, static,
                         moving_affine=None,
                         static_affine=None,
@@ -529,10 +341,11 @@ def affine_registration(moving, static,
                         level_iters=None,
                         sigmas=None,
                         factors=None,
+                        ret_metric=False,
                         **metric_kwargs):
-
     """
-    Find the affine transformation between two 3D images.
+    Find the affine transformation between two 3D images. Alternatively, find
+    the combination of several linear transformations.
 
     Parameters
     ----------
@@ -540,24 +353,27 @@ def affine_registration(moving, static,
         Containing the data for the moving object, or full path to a nifti file
         with the moving data.
 
+    static : array, nifti image or str
+        Containing the data for the static object, or full path to a nifti file
+        with the moving data.
+
     moving_affine : 4x4 array, optional
         An affine transformation associated with the moving object. Required if
         data is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
-
-    static : array, nifti image or str
-        Containing the data for the static object, or full path to a nifti file
-        with the moving data.
 
     static_affine : 4x4 array, optional
         An affine transformation associated with the static object. Required if
         data is provided as an array. If provided together with nifti/path,
         will over-ride the affine that is in the nifti.
 
-    pipeline : sequence, optional
-        Sequence of transforms to use in the gradual fitting of the full
-        affine. Default: (executed from left to right):
-        `[center_of_mass, translation, rigid, affine]`
+    pipeline : list of str, optional
+        Sequence of transforms to use in the gradual fitting. Default: gradual
+        fit of the full affine (executed from left to right):
+        ``["center_of_mass", "translation", "rigid", "affine"]``
+        Alternatively, any other combination of the following registration
+        methods might be used: center_of_mass, translation, rigid,
+        rigid_isoscaling, rigid_scaling and affine.
 
     starting_affine: 4x4 array, optional
         Initial guess for the transformation between the spaces.
@@ -565,20 +381,6 @@ def affine_registration(moving, static,
 
     metric : str, optional.
         Currently only supports 'MI' for MutualInformationMetric.
-
-    nbins : int, optional
-        MutualInformationMetric key-word argument: the number of bins to be
-        used for computing the intensity histograms. The default is 32.
-
-    sampling_proportion : None or float in interval (0, 1], optional
-        MutualInformationMetric key-word argument: There are two types of
-        sampling: dense and sparse. Dense sampling uses all voxels for
-        estimating the (joint and marginal) intensity histograms, while
-        sparse sampling uses a subset of them. If `sampling_proportion` is
-        None, then dense sampling is used. If `sampling_proportion` is a
-        floating point value in (0,1] then sparse sampling is used,
-        where `sampling_proportion` specifies the proportion of voxels to
-        be used. The default is None (dense sampling).
 
     level_iters : sequence, optional
         AffineRegistration key-word argument: the number of iterations at each
@@ -597,12 +399,31 @@ def affine_registration(moving, static,
         scale space (one factor for each scale). By default, the sequence of
         factors will be [4, 2, 1].
 
+    ret_metric : boolean, optional
+        Set it to True to return the value of the optimized coefficients and
+        the optimization quality metric.
+
+    nbins : int, optional
+        MutualInformationMetric key-word argument: the number of bins to be
+        used for computing the intensity histograms. The default is 32.
+
+    sampling_proportion : None or float in interval (0, 1], optional
+        MutualInformationMetric key-word argument: There are two types of
+        sampling: dense and sparse. Dense sampling uses all voxels for
+        estimating the (joint and marginal) intensity histograms, while
+        sparse sampling uses a subset of them. If `sampling_proportion` is
+        None, then dense sampling is used. If `sampling_proportion` is a
+        floating point value in (0,1] then sparse sampling is used,
+        where `sampling_proportion` specifies the proportion of voxels to
+        be used. The default is None (dense sampling).
+
     Returns
     -------
-    transformed, affine : array with moving data resampled to the static space
-    after computing the affine transformation and the affine 4x4
-    associated with the transformation.
-
+    transformed : array with moving data resampled to the static space
+    after computing the affine transformation
+    affine : the affine 4x4 associated with the transformation.
+    xopt : the value of the optimized coefficients.
+    fopt : the value of the optimization quality metric.
 
     Notes
     -----
@@ -611,7 +432,7 @@ def affine_registration(moving, static,
     step (`affine`) is ommitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
     """
-    pipeline = pipeline or [center_of_mass, translation, rigid, affine]
+    pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
     level_iters = level_iters or [10000, 1000, 100]
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
@@ -631,13 +452,36 @@ def affine_registration(moving, static,
                                 sigmas=sigmas,
                                 factors=factors)
 
+    # Convert pipeline to sanitized list of str
+    pipeline = list(pipeline)
+    for fi, func in enumerate(pipeline):
+        if callable(func):
+            for key, val in _METHOD_DICT.items():
+                if func is val[0]:  # if they passed the callable equiv.
+                    pipeline[fi] = func = key
+                    break
+        if not isinstance(func, str) or func not in _METHOD_DICT:
+            raise ValueError(f'pipeline[{fi}] must be one of '
+                             f'{list(_METHOD_DICT)}, got {repr(func)}')
+
+    if pipeline == ["center_of_mass"] and ret_metric:
+        raise ValueError("center of mass registration cannot return any "
+                         "quality metric.")
+
     # Go through the selected transformation:
     for func in pipeline:
-        starting_affine = func(moving, static,
-                               static_affine=static_affine,
-                               moving_affine=moving_affine,
-                               starting_affine=starting_affine,
-                               reg=affreg)
+        if func == "center_of_mass":
+            transform = transform_centers_of_mass(static, static_affine,
+                                                  moving, moving_affine)
+            starting_affine = transform.affine
+        else:
+            transform = _METHOD_DICT[func][1]()
+            xform, xopt, fopt \
+                = affreg.optimize(static, moving, transform, None,
+                                  static_affine, moving_affine,
+                                  starting_affine=starting_affine,
+                                  ret_metric=True)
+            starting_affine = xform.affine
 
     # After doing all that, resample once at the end:
     affine_map = AffineMap(starting_affine,
@@ -646,7 +490,44 @@ def affine_registration(moving, static,
 
     resampled = affine_map.transform(moving)
 
+    # Return the optimization metric only if requested
+    if ret_metric:
+        return resampled, starting_affine, xopt, fopt
     return resampled, starting_affine
+
+
+center_of_mass = partial(affine_registration, pipeline=['center_of_mass'])
+center_of_mass.__doc__ = ("Implements a center of mass transform. "
+                          "Based on `affine_registration()`.")
+
+translation = partial(affine_registration, pipeline=['translation'])
+translation.__doc__ = ("Implements a translation transform. "
+                       "Based on `affine_registration()`.")
+
+rigid = partial(affine_registration, pipeline=['rigid'])
+rigid.__doc__ = ("Implements a rigid transform. "
+                 "Based on `affine_registration()`.")
+
+rigid_isoscaling = partial(affine_registration, pipeline=['rigid_isoscaling'])
+rigid_isoscaling.__doc__ = ("Implements a rigid isoscaling transform. "
+                            "Based on `affine_registration()`.")
+
+rigid_scaling = partial(affine_registration, pipeline=['rigid_scaling'])
+rigid_scaling.__doc__ = ("Implements a rigid scaling transform. "
+                         "Based on `affine_registration()`.")
+
+affine = partial(affine_registration, pipeline=['affine'])
+affine.__doc__ = ("Implements an affine transform. "
+                  "Based on `affine_registration()`.")
+
+
+_METHOD_DICT = dict(  # mapping from str key -> (callable, class) tuple
+    center_of_mass=(center_of_mass, None),
+    translation=(translation, TranslationTransform3D),
+    rigid_isoscaling=(rigid_isoscaling, RigidIsoScalingTransform3D),
+    rigid_scaling=(rigid_scaling, RigidScalingTransform3D),
+    rigid=(rigid, RigidTransform3D),
+    affine=(affine, AffineTransform3D))
 
 
 def register_series(series, ref, pipeline=None, series_affine=None,
@@ -679,7 +560,7 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     with 4x4 matrices associated with each of the volumes of the input moving
     data that was used to transform it into register with the static data.
     """
-    pipeline = pipeline or [center_of_mass, translation, rigid, affine]
+    pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
 
     series, series_affine = read_img_arr_or_path(series,
                                                  affine=series_affine)
@@ -742,7 +623,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
 
     pipeline : list of callables, optional.
         The transformations to perform in sequence (from left to right):
-        Default: `[center_of_mass, translation, rigid, affine]`
+        Default: ``[center_of_mass, translation, rigid, affine]``
 
 
     Returns
@@ -752,8 +633,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
     transforms associated with each of the
 
     """
-    if pipeline is None:
-        [center_of_mass, translation, rigid, affine]
+    pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
 
     data, affine = read_img_arr_or_path(data, affine=affine)
     if isinstance(gtab, collections.Sequence):

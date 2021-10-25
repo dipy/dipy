@@ -125,7 +125,7 @@ also be determined manually with a ROI in the background.
 One thus has to be careful how the noise ROI is defined].
 """
 
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
 mask_noise[..., :mask_noise.shape[-1]//2] = 1
 mask_noise = ~mask_noise

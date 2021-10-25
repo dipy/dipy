@@ -9,7 +9,7 @@ from scipy.special import genlaguerre, gamma, hyp2f1
 
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import real_sph_harm
+from dipy.reconst.shm import real_sh_descoteaux_from_index
 from dipy.core.geometry import cart2sphere
 
 from dipy.utils.optpkg import optional_package
@@ -152,21 +152,20 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
-        from dipy.data import get_fnames, default_sphere
-        fimg, fbvals, fbvecs = get_fnames('ISBI_testing_2shells_table')
-        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-        gtab = gradient_table(bvals, bvecs)
-        from dipy.sims.voxel import sticks_and_ball
-        data, golden_directions = sticks_and_ball(
-            gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
-            fractions=[50, 50], snr=None)
-        from dipy.reconst.canal import ShoreModel
-        radial_order = 4
-        zeta = 700
-        asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
-                         lambdaN=1e-8, lambdaL=1e-8)
-        asmfit = asm.fit(data)
-        odf= asmfit.odf(default_sphere)
+        >>> from dipy.data import get_isbi2013_2shell_gtab, default_sphere
+        >>> from dipy.sims.voxel import sticks_and_ball
+        >>> from dipy.reconst.shore import ShoreModel
+        >>> gtab = get_isbi2013_2shell_gtab()
+        >>> data, golden_directions = sticks_and_ball(
+        ...    gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
+        ...    fractions=[50, 50], snr=None)
+        ...
+        >>> radial_order = 4
+        >>> zeta = 700
+        >>> asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
+        ...                  lambdaN=1e-8, lambdaL=1e-8)
+        >>> asmfit = asm.fit(data)
+        >>> odf = asmfit.odf(default_sphere)
         """
 
         self.bvals = gtab.bvals
@@ -554,7 +553,8 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     for l in range(0, radial_order + 1, 2):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
-                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                M[:, counter] = real_sh_descoteaux_from_index(
+                    m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     _kappa(zeta, n, l) * \
@@ -595,7 +595,8 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
     for l in range(0, radial_order + 1, 2):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
-                psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                psi[:, counter] = real_sh_descoteaux_from_index(
+                    m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 *
                                                 zeta * r ** 2) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
@@ -643,7 +644,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
                 upsilon[:, counter] = (-1) ** (n - l / 2.0) * \
                     _kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
-                    real_sph_harm(m, l, theta, phi)
+                    real_sh_descoteaux_from_index(m, l, theta, phi)
                 counter += 1
 
     return upsilon

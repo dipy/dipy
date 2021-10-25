@@ -1,16 +1,14 @@
 import numpy as np
-cimport numpy as np
-
-from warnings import warn
+cimport numpy as cnp
+cimport cython
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
-from dipy.reconst.shm import order_from_ncoef, sph_harm_lookup
 from dipy.tracking.direction_getter cimport DirectionGetter
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
 
 
-cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
+cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
                       double* direction, double cos_similarity):
     """Update direction with the closest direction from peak_dirs.
 
@@ -33,8 +31,8 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
     1 : if no new direction is founded
     """
     cdef:
-        size_t _len=len(peak_dirs)
-        size_t i
+        cnp.npy_intp _len=len(peak_dirs)
+        cnp.npy_intp i
         int closest_peak_i=-1
         double _dot
         double closest_peak_dot=0
@@ -58,16 +56,6 @@ cdef int closest_peak(np.ndarray[np.float_t, ndim=2] peak_dirs,
             return 0
     return 1
 
-cdef class BaseDirectionGetter(BasePmfDirectionGetter):
-
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
-        warn(DeprecationWarning(
-            "class 'dipy.direction.BaseDirectionGetter'"
-            " is deprecated since version 1.2.0, use class"
-            " 'dipy.direction.BasePmfDirectionGetter'"
-            " instead"))
-        BasePmfDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                        pmf_threshold, **kwargs)
 
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
@@ -88,7 +76,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
                                                            double[::1] point):
         """Returns best directions at seed location to start tracking.
 
@@ -109,11 +97,11 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
 
     cdef _get_pmf(self, double* point):
         cdef:
-            size_t _len, i
+            cnp.npy_intp _len, i
             double[:] pmf
             double absolute_pmf_threshold
 
-        pmf = self.pmf_gen.get_pmf_c(point)
+        pmf = self.pmf_gen.get_pmf(<double[:3]>point)
         _len = pmf.shape[0]
 
         absolute_pmf_threshold = self.pmf_threshold*np.max(pmf)
@@ -127,8 +115,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
     """A base class for direction getter using a pmf"""
 
     @classmethod
-    def from_pmf(klass, pmf, max_angle, sphere=default_sphere,
-                 pmf_threshold=0.1, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere,
+                 pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -139,7 +127,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             The maximum allowed angle between incoming direction and new
             direction.
         sphere : Sphere
-            The set of directions to be used for tracking.
+            The set of directions on which the pmf is sampled and to be used
+            for tracking.
         pmf_threshold : float [0., 1.]
             Used to remove direction from the probability mass function for
             selecting the tracking direction.
@@ -162,7 +151,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
                    "points in sphere.")
             raise ValueError(msg)
 
-        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float))
+        pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
         return klass(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
 
     @classmethod
@@ -190,7 +179,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             selecting the tracking direction.
         basis_type : name of basis
             The basis that ``shcoeff`` are associated with.
-            ``dipy.reconst.shm.real_sym_sh_basis`` is used by default.
+            ``dipy.reconst.shm.real_sh_descoteaux`` is used by default.
         relative_peak_threshold : float in [0., 1.]
             Used for extracting initial tracking directions. Passed to
             peak_directions.
@@ -222,7 +211,7 @@ cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):
         """
         cdef:
             double[:] pmf
-            np.ndarray[np.float_t, ndim=2] peaks
+            cnp.ndarray[cnp.float_t, ndim=2] peaks
 
         pmf = self._get_pmf(point)
 

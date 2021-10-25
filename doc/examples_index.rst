@@ -175,6 +175,7 @@ Fiber tracking
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
 - :ref:`example_linear_fascicle_evaluation`
+- :ref:`example_surface_seed`
 
 ------------------------------------
 Streamline analysis and connectivity

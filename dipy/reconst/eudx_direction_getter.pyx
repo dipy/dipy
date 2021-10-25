@@ -1,5 +1,5 @@
 cimport cython
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 
 from dipy.tracking.propspeed cimport _propagation_direction
@@ -41,7 +41,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
 
         self.initialized = True
 
-    cpdef np.ndarray[np.float_t, ndim=2] initial_direction(self,
+    cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(self,
                                                            double[::1] point):
         """The best starting directions for fiber tracking from point
 
@@ -53,12 +53,12 @@ cdef class EuDXDirectionGetter(DirectionGetter):
             self._initialize()
 
         cdef:
-            np.npy_intp numpeaks, i
-            np.npy_intp ijk[3]
+            cnp.npy_intp numpeaks, i
+            cnp.npy_intp ijk[3]
 
         # ijk is the closest voxel to point
         for i in range(3):
-            ijk[i] = <np.npy_intp> dpy_rint(point[i])
+            ijk[i] = <cnp.npy_intp> dpy_rint(point[i])
             if ijk[i] < 0 or ijk[i] >= self._ind.shape[i]:
                 raise IndexError("point outside data")
 
@@ -75,7 +75,7 @@ cdef class EuDXDirectionGetter(DirectionGetter):
         res = np.empty((numpeaks, 3))
         for i in range(numpeaks):
             peak_index = self._ind[ijk[0], ijk[1], ijk[2], i]
-            res[i, :] = self._odf_vertices[<np.npy_intp> peak_index, :]
+            res[i, :] = self._odf_vertices[<cnp.npy_intp> peak_index, :]
 
         return res
 
@@ -94,10 +94,10 @@ cdef class EuDXDirectionGetter(DirectionGetter):
             self._initialize()
 
         cdef:
-            np.npy_intp s
+            cnp.npy_intp s
             double newdirection[3]
-            np.npy_intp qa_shape[4]
-            np.npy_intp qa_strides[4]
+            cnp.npy_intp qa_shape[4]
+            cnp.npy_intp qa_strides[4]
 
         for i in range(4):
             qa_shape[i] = self._qa.shape[i]

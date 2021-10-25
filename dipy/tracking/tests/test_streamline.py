@@ -521,15 +521,16 @@ def test_unlist_relist_streamlines():
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
-    # Specify stream2grid and grid2world
-    stream2grid = np.array([[np.random.randn(1)[0], 0, 0, 0],
-                            [0, np.random.randn(1)[0], 0, 0],
-                            [0, 0, np.random.randn(1)[0], 0],
-                            [0, 0, 0, 1]])
-    grid2world = np.array([[np.random.randn(1)[0], 0, 0, 0],
-                           [0, np.random.randn(1)[0], 0, 0],
-                           [0, 0, np.random.randn(1)[0], 0],
-                           [0, 0, 0, 1]])
+    stream2grid = np.array([
+        [-0.13152201, -0.52553149, -0.06759869, -0.80014208],
+        [1.01579851, 0.19840874, 0.18875411, 0.81826065],
+        [-0.07047617, -0.9290094, -0.55623385, 0.55165017],
+        [0., 0., 0., 1.]])
+    grid2world = np.array([
+        [0.83354727, 1.33876877, 1.0218087, 0.12809569],
+        [0.83571344, 0.63824941, 0.20564267, 0.82740437],
+        [-0.26574668, -0.66695577, 0.11636694, -0.02620037],
+        [0., 0., 0., 1.]])
     stream2world = np.dot(stream2grid, grid2world)
 
     # Deform streamlines (let two grid spaces be the same for simplicity)
@@ -559,7 +560,7 @@ def test_deform_streamlines():
                                              np.linalg.inv(stream2world))
     # All close because of floating pt imprecision
     for o, s in zip(orig_streamlines, streamlines):
-        assert_allclose(s, o, rtol=1e-6, atol=1e-6)
+        assert_allclose(s, o.astype(np.float32), rtol=1e-6, atol=1e-6)
 
 
 def test_center_and_transform():
@@ -730,6 +731,25 @@ def test_compress_streamlines():
             max_segment_length=np.inf)
         assert_equal(len(cspecial_streamline), len(cstreamline_python))
         assert_array_almost_equal(cspecial_streamline, cstreamline_python)
+
+
+def test_compress_streamlines_identical_points():
+
+    sl_1 = np.array([[1, 1, 1], [1, 1, 1], [2, 2, 2], [3, 3, 3], [3, 3, 3]])
+    sl_2 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2]])
+    sl_3 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1],
+                     [2, 2, 2], [2, 2, 2], [2, 2, 2], [3, 3, 3], [3, 3, 3]])
+    sl_4 = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [2, 2, 2],
+                    [3, 3, 3], [3, 3, 3], [1, 1, 1]])
+    new_sl_1 = compress_streamlines(sl_1)
+    new_sl_2 = compress_streamlines(sl_2)
+    new_sl_3 = compress_streamlines(sl_3)
+    new_sl_4 = compress_streamlines(sl_4)
+    npt.assert_array_equal(new_sl_1, np.array([[1, 1, 1], [3, 3, 3]]))
+    npt.assert_array_equal(new_sl_2, np.array([[1, 1, 1], [2, 2, 2]]))
+    npt.assert_array_equal(new_sl_3, new_sl_1)
+    npt.assert_array_equal(new_sl_4, np.array([[1, 1, 1], [3, 3, 3],
+                                               [1, 1, 1]]))
 
 
 def test_compress_streamlines_memory_leaks():
@@ -1193,11 +1213,10 @@ def test_cluster_confidence():
     test_streamlines.append(mysl+1)
     test_streamlines.append(mysl+2)
     test_streamlines.finalize_append()
-    with warnings.catch_warnings(record=True) as w:
-        cci = cluster_confidence(test_streamlines, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
-    assert_equal(cci[0], cci[2])
+
+    cci = cluster_confidence(test_streamlines, override=True)
+
+    assert_almost_equal(cci[0], cci[2])
     assert_true(cci[1] > cci[0])
 
     # 3 parallel streamlines
@@ -1229,11 +1248,8 @@ def test_cluster_confidence():
     test_streamlines_p3.append(mysl5)
     test_streamlines_p3.finalize_append()
 
-    with warnings.catch_warnings(record=True) as w:
-        cci_p1 = cluster_confidence(test_streamlines_p1, override=True)
-        cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    cci_p1 = cluster_confidence(test_streamlines_p1, override=True)
+    cci_p2 = cluster_confidence(test_streamlines_p2, override=True)
 
     # test relative distance
     assert_array_equal(cci_p1, cci_p2*2)
@@ -1245,11 +1261,8 @@ def test_cluster_confidence():
     assert_array_equal(expected_p2, cci_p2)
 
     # test power variable calculation (dropoff with distance)
-    with warnings.catch_warnings(record=True) as w:
-        cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
-                                         override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    cci_p1_pow2 = cluster_confidence(test_streamlines_p1, power=2,
+                                     override=True)
 
     expected_p1_pow2 = np.array([np.power(1./1, 2)+np.power(1./2, 2),
                                  np.power(1./1, 2)+np.power(1./1, 2),
@@ -1257,12 +1270,9 @@ def test_cluster_confidence():
 
     assert_array_equal(cci_p1_pow2, expected_p1_pow2)
 
-    with warnings.catch_warnings(record=True) as w:
-        # test max distance (ignore distant sls)
-        cci_dist = cluster_confidence(test_streamlines_p3,
-                                      max_mdf=5, override=True)
-        assert_true("do not have the same number of points" in
-                    str(w[0].message))
+    # test max distance (ignore distant sls)
+    cci_dist = cluster_confidence(test_streamlines_p3,
+                                  max_mdf=5, override=True)
 
     expected_cci_dist = np.concatenate([cci_p1, np.zeros(1)])
     assert_array_equal(cci_dist, expected_cci_dist)

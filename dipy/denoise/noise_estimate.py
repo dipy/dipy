@@ -2,7 +2,7 @@
 import numpy as np
 
 from scipy.special import gammainccinv
-from scipy.ndimage.filters import convolve
+from scipy.ndimage import convolve
 
 
 def _inv_nchi_cdf(N, K, alpha):
@@ -110,7 +110,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     if data.ndim == 4:
 
         sigma = np.zeros(data.shape[-2], dtype=np.float32)
-        mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
+        mask_noise = np.zeros(data.shape[:-1], dtype=bool)
 
         for idx in range(data.shape[-2]):
             sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :],
@@ -208,7 +208,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
 
     if np.all(data == 0):
         if return_mask:
-            return 0, np.zeros(data.shape[:-1], dtype=np.bool)
+            return 0, np.zeros(data.shape[:-1], dtype=bool)
 
         return 0
 
@@ -231,7 +231,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     sigma_prev = 0
     sigma = m
     prev_idx = 0
-    mask = np.zeros(data.shape[:-1], dtype=np.bool)
+    mask = np.zeros(data.shape[:-1], dtype=bool)
 
     lambda_minus = _inv_nchi_cdf(N, K, alpha/2)
     lambda_plus = _inv_nchi_cdf(N, K, 1 - alpha/2)
@@ -354,9 +354,9 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         raise ValueError("Array shape is not supported!", arr.shape)
 
     if disable_background_masking:
-        mask = arr[..., 0].astype(np.bool)
+        mask = arr[..., 0].astype(bool)
     else:
-        mask = np.ones_like(arr[..., 0], dtype=np.bool)
+        mask = np.ones_like(arr[..., 0], dtype=bool)
 
     conv_out = np.zeros(arr[..., 0].shape, dtype=np.float64)
 

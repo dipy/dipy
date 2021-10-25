@@ -3,9 +3,10 @@
 # cython: wraparound=False
 
 import numpy as np
-cimport numpy as np
+cimport numpy as cnp
 
 from dipy.core.geometry import cart2sphere
+from dipy.data import default_sphere
 from dipy.reconst import shm
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c
@@ -14,19 +15,26 @@ from dipy.core.interpolation cimport trilinear_interpolate4d_c
 cdef class PmfGen:
 
     def __init__(self,
-                 double[:, :, :, :] data):
-        self.data = np.asarray(data,  dtype=float)
+                 double[:, :, :, :] data,
+                 object sphere):
+        self.data = np.asarray(data, dtype=float)
+        self.sphere = sphere
 
     cpdef double[:] get_pmf(self, double[::1] point):
-        return self.get_pmf_c(&point[0])
-
-    cdef double[:] get_pmf_c(self, double* point):
         pass
+
+    cpdef double get_pmf_value(self, double[::1] point, double[::1] xyz):
+        """
+        Return the pmf value corresponding to the closest vertex to the
+        direction xyz.
+        """
+        cdef int idx = self.sphere.find_closest(xyz)
+        return self.get_pmf(point)[idx]
 
     cdef void __clear_pmf(self):
         cdef:
-            size_t len_pmf = self.pmf.shape[0]
-            size_t i
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp i
 
         for i in range(len_pmf):
             self.pmf[i] = 0.0
@@ -35,14 +43,18 @@ cdef class PmfGen:
 cdef class SimplePmfGen(PmfGen):
 
     def __init__(self,
-                 double[:, :, :, :] pmf_array):
-        PmfGen.__init__(self, pmf_array)
+                 double[:, :, :, :] pmf_array,
+                 object sphere):
+        PmfGen.__init__(self, pmf_array, sphere)
         self.pmf = np.empty(pmf_array.shape[3])
         if np.min(pmf_array) < 0:
             raise ValueError("pmf should not have negative values.")
+        if not pmf_array.shape[3] == sphere.vertices.shape[0]:
+            raise ValueError("pmf should have the same number of values as the"
+                             + " number of vertices of sphere.")
 
-    cdef double[:] get_pmf_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.pmf) != 0:
+    cpdef double[:] get_pmf(self, double[::1] point):
+        if trilinear_interpolate4d_c(self.data, &point[0], self.pmf) != 0:
             PmfGen.__clear_pmf(self)
         return self.pmf
 
@@ -56,9 +68,8 @@ cdef class SHCoeffPmfGen(PmfGen):
         cdef:
             int sh_order
 
-        PmfGen.__init__(self, shcoeff_array)
+        PmfGen.__init__(self, shcoeff_array, sphere)
 
-        self.sphere = sphere
         sh_order = shm.order_from_ncoef(shcoeff_array.shape[3])
         try:
             basis = shm.sph_harm_lookup[basis_type]
@@ -68,14 +79,14 @@ cdef class SHCoeffPmfGen(PmfGen):
         self.coeff = np.empty(shcoeff_array.shape[3])
         self.pmf = np.empty(self.B.shape[0])
 
-    cdef double[:] get_pmf_c(self, double* point):
+    cpdef double[:] get_pmf(self, double[::1] point):
         cdef:
-            size_t i, j
-            size_t len_pmf = self.pmf.shape[0]
-            size_t len_B = self.B.shape[1]
+            cnp.npy_intp i, j
+            cnp.npy_intp len_pmf = self.pmf.shape[0]
+            cnp.npy_intp len_B = self.B.shape[1]
             double _sum
 
-        if trilinear_interpolate4d_c(self.data, point, self.coeff) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.coeff) != 0:
             PmfGen.__clear_pmf(self)
         else:
             for i in range(len_pmf):
@@ -100,7 +111,7 @@ cdef class BootPmfGen(PmfGen):
             double[:] theta, phi
             double[:, :] B
 
-        PmfGen.__init__(self, dwi_array)
+        PmfGen.__init__(self, dwi_array, sphere)
         self.sh_order = sh_order
         if self.sh_order == 0:
             if hasattr(model, "sh_order"):
@@ -113,20 +124,18 @@ cdef class BootPmfGen(PmfGen):
         r, theta, phi = shm.cart2sphere(x, y, z)
         b_range = (r.max() - r.min()) / r.min()
         if b_range > tol:
-            raise ValueError("BootPmfGen only supports single shell data")
+            raise ValueError("BootPmfGen only supports single shell data.")
         B, _, _ = shm.real_sh_descoteaux(self.sh_order, theta, phi)
         self.H = shm.hat(B)
         self.R = shm.lcr_matrix(self.H)
         self.vox_data = np.empty(dwi_array.shape[3])
 
         self.model = model
-        self.sphere = sphere
         self.pmf = np.empty(len(sphere.theta))
 
-
-    cdef double[:] get_pmf_c(self, double* point):
+    cpdef double[:] get_pmf(self, double[::1] point):
         """Produces an ODF from a SH bootstrap sample"""
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
         else:
             self.vox_data[self.dwi_mask] = shm.bootstrap_data_voxel(
@@ -134,13 +143,8 @@ cdef class BootPmfGen(PmfGen):
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)
         return self.pmf
 
-
     cpdef double[:] get_pmf_no_boot(self, double[::1] point):
-        return self.get_pmf_no_boot_c(&point[0])
-
-
-    cdef double[:] get_pmf_no_boot_c(self, double* point):
-        if trilinear_interpolate4d_c(self.data, point, self.vox_data) != 0:
+        if trilinear_interpolate4d_c(self.data, &point[0], self.vox_data) != 0:
             self.__clear_pmf()
         else:
             self.pmf = self.model.fit(self.vox_data).odf(self.sphere)

@@ -118,6 +118,10 @@ def test_afq_profile():
                           weights=np.ones((2, 10)) * 0.5)
     npt.assert_equal(profile, np.ones(10))
 
+    profile = afq_profile(data, bundle, np.eye(4), n_points=10,
+                          stat=np.median)
+    npt.assert_equal(profile, np.ones(10))
+
     # Disallow setting weights that don't sum to 1 across fibers/nodes:
     npt.assert_raises(ValueError, afq_profile,
                       data, bundle, np.eye(4),

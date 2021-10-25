@@ -278,8 +278,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=50, atol=1e-2,
     GradientTable, gradient_table
 
     """
-    bvals = np.asarray(bvals, np.float)
-    bvecs = np.asarray(bvecs, np.float)
+    bvals = np.asarray(bvals, float)
+    bvecs = np.asarray(bvecs, float)
     dwi_mask = bvals > b0_threshold
 
     # check that bvals is (N,) array and bvecs is (N, 3) unit vectors
@@ -644,12 +644,9 @@ def reorient_bvecs(gtab, affines, atol=1e-2):
         if aff.shape == (4, 4):
             # This must be an affine!
             # Remove the translation component:
-            aff_no_trans = aff[:3, :3]
-            # Decompose into rotation and scaling components:
-            R, S = polar(aff_no_trans)
-        elif aff.shape == (3, 3):
-            # We assume this is a rotation matrix:
-            R = aff
+            aff = aff[:3, :3]
+        # Decompose into rotation and scaling components:
+        R, S = polar(aff)
         Rinv = inv(R)
         # Apply the inverse of the rotation to the corresponding gradient
         # direction:

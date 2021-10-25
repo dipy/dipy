@@ -14,6 +14,9 @@ from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      BundleMinDistanceAsymmetricMetric)
 
 from dipy.tracking.streamline import Streamlines, length
+
+from dipy.utils.deprecator import deprecated_params
+
 from nibabel.affines import apply_affine
 
 
@@ -73,8 +76,8 @@ def bundle_adjacency(dtracks0, dtracks1, threshold):
             pair21.append((i, j))
 
     pair21 = np.array(pair21)
-    A = len(pair12) / np.float(len(dtracks0))
-    B = len(pair21) / np.float(len(dtracks1))
+    A = len(pair12) / float(len(dtracks0))
+    B = len(pair21) / float(len(dtracks1))
     res = 0.5 * (A + B)
     return res
 
@@ -318,11 +321,13 @@ class RecoBundles(object):
                         % (self.nb_centroids,))
             logger.info(' Total duration %0.3f sec. \n' % (time() - t,))
 
+    @deprecated_params('slr_num_threads', 'num_threads', since='1.4',
+                       until='1.5')
     def recognize(self, model_bundle, model_clust_thr,
                   reduction_thr=10,
                   reduction_distance='mdf',
                   slr=True,
-                  slr_num_threads=None,
+                  num_threads=None,
                   slr_metric=None,
                   slr_x0=None,
                   slr_bounds=None,
@@ -346,6 +351,12 @@ class RecoBundles(object):
         slr : bool, optional
             Use Streamline-based Linear Registration (SLR) locally
             (default True)
+        num_threads : int, optional
+            Number of threads to be used for OpenMP parallelization. If None
+            (default) the value of OMP_NUM_THREADS environment variable is used
+            if it is set, otherwise all available threads are used. If < 0 the
+            maximal number of threads minus |num_threads + 1| is used (enter -1
+            to use as many threads as possible). 0 raises an error.
         slr_metric : BundleMinDistanceMetric
         slr_x0 : array or int or str, optional
             Transformation allowed. translation, rigid, similarity or scaling
@@ -432,7 +443,7 @@ class RecoBundles(object):
                 select_model=slr_select[0],
                 select_target=slr_select[1],
                 method=slr_method,
-                num_threads=slr_num_threads)
+                num_threads=num_threads)
         else:
             transf_streamlines = neighb_streamlines
 

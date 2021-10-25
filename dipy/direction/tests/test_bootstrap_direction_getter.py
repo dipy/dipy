@@ -71,7 +71,7 @@ def test_bdg_get_direction():
 
     pmf = np.zeros([1, 1, 1, len(sphere.vertices)])
     pmf[:, :, :, two_neighbors[0]] = 1
-    pmf_gen = SimplePmfGen(pmf)
+    pmf_gen = SimplePmfGen(pmf, sphere)
 
     # test case in which no valid direction is found with default maxdir
     boot_dg = BootDirectionGetter(pmf_gen, angle / 2., sphere=sphere)
@@ -109,7 +109,7 @@ def test_bdg_residual():
     bvals = np.insert(bvals, 0, 0)
     gtab = gradient_table(bvals, bvecs)
     r, theta, phi = cart2sphere(*vertices.T)
-    B, m, n = shm.real_sym_sh_basis(6, theta, phi)
+    B, m, n = shm.real_sh_descoteaux(6, theta, phi)
     shm_coeff = np.random.random(B.shape[1])
 
     # sphere_func is sampled of the spherical function for each point of

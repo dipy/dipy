@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import numpy.linalg as npl
 
-from dipy.testing import assert_true, assert_less
+from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, run_module_suite)
 from scipy.special import sph_harm as sph_harm_sp
@@ -20,7 +20,7 @@ from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
 
 
-from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
+from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sh_descoteaux,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
                               order_from_ncoef, OpdtModel,
@@ -63,7 +63,7 @@ def test_sph_harm_ind_list():
     assert_true(np.all(np.abs(m_list) <= n_list))
 
 
-def test_real_sph_harm():
+def test_real_sh_descoteaux_from_index():
     # Tests derived from tables in
     # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
     # where real spherical harmonic $Y^m_n$ is defined to be:
@@ -71,7 +71,7 @@ def test_real_sph_harm():
     #    $Y^m_n$                 if m == 0
     #    Imag($Y^m_n$) * sqrt(2) if m < 0
 
-    rsh = real_sph_harm
+    rsh = real_sh_descoteaux_from_index
     pi = np.pi
     sqrt = np.sqrt
     sin = np.sin
@@ -122,7 +122,7 @@ def test_real_sym_sh_mrtrix():
     assert_array_almost_equal(func, expected, 4)
 
 
-def test_real_sym_sh_basis():
+def test_real_sh_descoteaux():
     # This test should do for now
     # The tournier07 basis should be the same as re-ordering and re-scaling the
     # descoteaux07 basis
@@ -132,7 +132,7 @@ def test_real_sym_sh_basis():
     expected = basis[:, new_order]
     expected *= np.where(m == 0, 1., np.sqrt(2))
 
-    descoteaux07_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
+    descoteaux07_basis, m, n = real_sh_descoteaux(4, sphere.theta, sphere.phi)
     assert_array_almost_equal(descoteaux07_basis, expected)
 
 
@@ -202,7 +202,8 @@ def test_sh_to_sf_matrix():
 def test_smooth_pinv():
     hemi = hemi_icosahedron.subdivide(2)
     m, n = sph_harm_ind_list(4)
-    B = real_sph_harm(m, n, hemi.theta[:, None], hemi.phi[:, None])
+    B = real_sh_descoteaux_from_index(
+        m, n, hemi.theta[:, None], hemi.phi[:, None])
 
     L = np.zeros(len(m))
     C = smooth_pinv(B, L)
@@ -378,7 +379,8 @@ class TestCsaOdfModel(TestQballModel):
 def test_hat_and_lcr():
     hemi = hemi_icosahedron.subdivide(3)
     m, n = sph_harm_ind_list(8)
-    B = real_sph_harm(m, n, hemi.theta[:, None], hemi.phi[:, None])
+    B = real_sh_descoteaux_from_index(
+        m, n, hemi.theta[:, None], hemi.phi[:, None])
     H = hat(B)
     B_hat = np.dot(H, B)
     assert_array_almost_equal(B, B_hat)
