@@ -21,7 +21,6 @@ def test_from_3x3_to_6x1():
         qti.from_3x3_to_6x1(qti.from_6x1_to_3x3(V)), V)
     npt.assert_raises(ValueError, qti.from_3x3_to_6x1, T[0:1])
     npt.assert_warns(Warning, qti.from_3x3_to_6x1, T + np.arange(3))
-    return
 
 
 def test_from_6x1_to_3x3():
@@ -34,7 +33,6 @@ def test_from_6x1_to_3x3():
     npt.assert_array_almost_equal(
         qti.from_6x1_to_3x3(qti.from_3x3_to_6x1(T)), T)
     npt.assert_raises(ValueError, qti.from_6x1_to_3x3, T)
-    return
 
 
 def test_from_6x6_to_21x1():
@@ -52,7 +50,6 @@ def test_from_6x6_to_21x1():
         qti.from_6x6_to_21x1(qti.from_21x1_to_6x6(V)), V)
     npt.assert_raises(ValueError, qti.from_6x6_to_21x1, T[0:1])
     npt.assert_warns(Warning, qti.from_6x6_to_21x1, T + np.arange(6))
-    return
 
 
 def test_from_21x1_to_6x6():
@@ -69,7 +66,6 @@ def test_from_21x1_to_6x6():
     npt.assert_array_almost_equal(
         qti.from_21x1_to_6x6(qti.from_6x6_to_21x1(T)), T)
     npt.assert_raises(ValueError, qti.from_21x1_to_6x6, T)
-    return
 
 
 def test_helper_tensors():
@@ -82,7 +78,6 @@ def test_helper_tensors():
             qti.from_3x3_to_6x1(qti.e_iso).T))
     npt.assert_array_equal(qti.E_shear, qti.E_iso - qti.E_bulk)
     npt.assert_array_equal(qti.E_tsym, qti.E_bulk + .4 * qti.E_shear)
-    return
 
 
 def _anisotropic_DTD():
@@ -133,7 +128,6 @@ def test_dtd_covariance():
          [-2 / 45, 4 / 45, -2 / 45],
          [-2 / 45, -2 / 45, 4 / 45]])
     npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
-    return
 
 
 def test_qti_signal():
@@ -189,7 +183,6 @@ def test_qti_signal():
     npt.assert_almost_equal(
         qti.qti_signal(gradient_table(bvals, bvecs, btens='STE'), D, C),
         np.ones(6) * 0.71653131)
-    return
 
 
 def test_design_matrix():
@@ -228,7 +221,6 @@ def test_design_matrix():
          [0., 0., 0.],
          [0., 0., 0.],
          [0., 0., 0.]]).T)
-    return
 
 
 def _qti_gtab():
@@ -277,7 +269,6 @@ def test_ls_fits():
         params = np.vstack((params, params))
         npt.assert_almost_equal(qti._ols_fit(data, mask, X, step=1), params)
         npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
-    return
 
 
 def test_qti_model():
@@ -294,8 +285,6 @@ def test_qti_model():
     gtab = _qti_gtab()
     qtimodel = qti.QtiModel(gtab)
     npt.assert_almost_equal(qtimodel.X, qti.design_matrix(gtab.btens))
-
-    return
 
 
 def test_qti_fit():
@@ -377,5 +366,3 @@ def test_qti_fit():
             npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
             npt.assert_almost_equal(qtifit.k_shear, k_shear)
             npt.assert_almost_equal(qtifit.k_mu, k_mu)
-
-    return
