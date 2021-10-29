@@ -11,7 +11,7 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.reconst.dti import auto_attr
 
-
+# XXX Eventually to be replaced with `reconst.dti.lower_triangular`
 def from_3x3_to_6x1(T):
     """Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
 
