@@ -435,8 +435,10 @@ class QtiModel(ReconstModel):
             Gradient table with b-tensors.
         fit_method : str, optional
             Must be one of the followng:
-            'OLS' for ordinary least squares
-            'WLS' for weighted least squares
+                'OLS' for ordinary least squares
+                    :func:`qti._ols_fit`
+                'WLS' for weighted least squares
+                    :func:`qti._wls_fit`
 
         References
         ----------
@@ -458,12 +460,13 @@ class QtiModel(ReconstModel):
                 'tensor to be estimated (rank(X.T @ X) = %s < 28).' % rank
             )
 
-        if fit_method != 'OLS' and fit_method != 'WLS':
+        try:
+            self.fit_method = common_fit_methods[fit_method]
+        except KeyError:
             raise ValueError(
                 'Invalid value (%s) for \'fit_method\'.' % fit_method
                 + ' Options: \'OLS\', \'WLS\'.'
             )
-        self.fit_method = fit_method
 
     def fit(self, data, mask=None):
         """Fit QTI to data.
@@ -486,12 +489,7 @@ class QtiModel(ReconstModel):
             if mask.shape != data.shape[:-1]:
                 raise ValueError('Mask is not the same shape as data.')
             mask = np.array(mask, dtype=bool, copy=False)
-
-        if self.fit_method == 'OLS':
-            params = _ols_fit(data, mask, self.X)
-        elif self.fit_method == 'WLS':
-            params = _wls_fit(data, mask, self.X)
-
+        params = self.fit_method(data, mask, self.X)
         return QtiFit(params)
 
     def predict(self, params):
@@ -916,3 +914,6 @@ class QtiFit(object):
             np.swapaxes(from_6x6_to_21x1(self.d_sq), -1, -2),
             from_6x6_to_21x1(E_bulk)))[..., 0, 0]
         return k_mu
+
+
+common_fit_methods = {'OLS': _ols_fit, 'WLS': _wls_fit}
