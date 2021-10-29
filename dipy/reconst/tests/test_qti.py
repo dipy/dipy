@@ -125,7 +125,7 @@ def test_dtd_covariance():
     C[0:3, 0:3] = 0.98116667
     npt.assert_almost_equal(qti.dtd_covariance(DTD), C)
 
-    # Covariance of nisotropic tensors (Figure 1 in Westin's paper)
+    # Covariance of anisotropic tensors (Figure 1 in Westin's paper)
     DTD = _anisotropic_DTD()
     C = np.eye(6) * 2 / 15
     C[0:3, 0:3] = np.array(
