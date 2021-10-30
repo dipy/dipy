@@ -223,7 +223,7 @@ class ReconstDtiFlow(Workflow):
         return 'dti'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=50, bvecs_tol=0.01, save_metrics=[],
+            fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, save_metrics=[],
             out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -248,6 +248,12 @@ class ReconstDtiFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once.
+        fit_method : string, optional
+            can be one of the following:
+            'WLS' for weighted least squares
+            'LS' or 'OLS' for ordinary least squares
+            'NLLS' for non-linear least-squares
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -322,7 +328,8 @@ class ReconstDtiFlow(Workflow):
                 mask = load_nifti_data(mask).astype(bool)
 
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                               b0_threshold, bvecs_tol)
+                                               b0_threshold, bvecs_tol,
+                                               fit_method)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -385,18 +392,18 @@ class ReconstDtiFlow(Workflow):
                 logging.info(
                         'DTI metrics saved in {0}'.format(dname_))
 
-    def get_tensor_model(self, gtab):
-        return TensorModel(gtab, fit_method="WLS")
+    def get_tensor_model(self, gtab, fit_method):
+        return TensorModel(gtab, fit_method=fit_method)
 
-    def get_fitted_tensor(self, data, mask, bval, bvec,
-                          b0_threshold=50, bvecs_tol=0.01):
+    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
+                          bvecs_tol=0.01, fit_method='WLS'):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                               atol=bvecs_tol)
 
-        tenmodel = self.get_tensor_model(gtab)
+        tenmodel = self.get_tensor_model(gtab, fit_method=fit_method)
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
@@ -712,7 +719,7 @@ class ReconstDkiFlow(Workflow):
         return 'dki'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            b0_threshold=50.0, save_metrics=[],
+            fit_method='WLS', b0_threshold=50.0, save_metrics=[],
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -738,6 +745,12 @@ class ReconstDkiFlow(Workflow):
         mask_files : string
             Path to the input masks. This path may contain wildcards to use
             multiple masks at once. (default: No mask used)
+        fit_method : string, optional
+            can be one of the following:
+            'WLS' for weighted least squares
+            'LS' or 'OLS' for ordinary least squares
+            'NLLS' for non-linear least-squares
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         save_metrics : variable string, optional
@@ -798,7 +811,7 @@ class ReconstDkiFlow(Workflow):
                 mask = load_nifti_data(mask).astype(bool)
 
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                              b0_threshold)
+                                              b0_threshold, fit_method)
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
@@ -865,10 +878,11 @@ class ReconstDkiFlow(Workflow):
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
 
-    def get_dki_model(self, gtab):
-        return DiffusionKurtosisModel(gtab)
+    def get_dki_model(self, gtab, fit_method):
+        return DiffusionKurtosisModel(gtab, fit_method=fit_method)
 
-    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50):
+    def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
+                          fit_method="WLS"):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
@@ -877,7 +891,7 @@ class ReconstDkiFlow(Workflow):
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
-        dkmodel = self.get_dki_model(gtab)
+        dkmodel = self.get_dki_model(gtab, fit_method)
         dkfit = dkmodel.fit(data, mask)
 
         return dkfit, gtab
