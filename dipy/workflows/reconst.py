@@ -747,10 +747,8 @@ class ReconstDkiFlow(Workflow):
             multiple masks at once. (default: No mask used)
         fit_method : string, optional
             can be one of the following:
-            'WLS' for weighted least squares
-            'LS' or 'OLS' for ordinary least squares
-            'NLLS' for non-linear least-squares
-            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
+            'OLS' or 'ULLS' for ordinary least squares
+            'WLS' or 'UWLLS' for weighted ordinary least squares
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         save_metrics : variable string, optional
