@@ -116,7 +116,7 @@ jobs:
 - template: ci/azure/windows.yml
   parameters:
     name: Windows
-    vmImage: vs2017-win2016
+    vmImage: windows-latest
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
