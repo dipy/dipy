@@ -9,7 +9,7 @@ from dipy.align.imwarp import (SymmetricDiffeomorphicRegistration,
                                DiffeomorphicMap)
 from dipy.align.metrics import CCMetric, SSDMetric, EMMetric
 from dipy.align.reslice import reslice
-from dipy.align import affine_registration, register_dwi_series
+from dipy.align import affine_registration, motion_correction
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.core.gradients import gradient_table
 from dipy.io.image import save_nifti, load_nifti, save_qa_metric
@@ -745,16 +745,15 @@ class MotionCorrectionFlow(Workflow):
         """
 
         io_it = self.get_io_iterator()
-        pipeline = ["center_of_mass", "translation", "rigid", "affine"]
 
-        for dwi, bval, bvec in io_it:
+        for dwi, bval, bvec, omoved, oafffine in io_it:
 
             # Load the data from the input files and store into objects.
             logging.info('Loading {0}'.format(dwi))
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            print(b0_threshold, bvals.min())
+
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
                      "b0_threshold. It should be higher than the first "
@@ -762,11 +761,13 @@ class MotionCorrectionFlow(Workflow):
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
 
-            reg_img, reg_affines = register_dwi_series(data=data, gtab=gtab,
-                                                       affine=affine,
-                                                       pipeline=pipeline)
+            reg_img, reg_affines = motion_correction(data=data, gtab=gtab,
+                                                     affine=affine)
+
             """
             Saving the corrected image file and the affine matrix.
             """
-            save_nifti(out_moved, reg_img, reg_affines)
-            np.savetxt(out_affine, reg_affines)
+            # TODO: Check Saving
+            # import ipdb; ipdb.set_trace()
+            save_nifti(omoved, reg_img.get_fdata(), affine)
+            np.savetxt(oafffine, reg_affines)
