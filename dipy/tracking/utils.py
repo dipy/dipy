@@ -1,4 +1,4 @@
-"""Various tools related to creating and working with streamlines
+"""Various tools related to creating and working with streamlines.
 
 This module provides tools for targeting streamlines using ROIs, for making
 connectivity matrices from whole brain fiber tracking and some other tools that
@@ -47,20 +47,16 @@ And the letters A-D represent the following points in
 
 """
 
+from collections import defaultdict, OrderedDict
 from functools import wraps
+from itertools import combinations, groupby
 from warnings import warn
 
+import numpy as np
 from nibabel.affines import apply_affine
 from scipy.spatial.distance import cdist
-from numpy import ravel_multi_index
 
 from dipy.core.geometry import dist_to_corner
-
-from collections import defaultdict, OrderedDict
-from itertools import combinations, groupby
-
-import numpy as np
-from numpy import (asarray, ceil, empty, sqrt)
 from dipy.tracking import metrics
 from dipy.tracking.vox2track import _streamlines_in_mask
 
@@ -69,7 +65,7 @@ from dipy.tracking._utils import (_mapping_to_voxel, _to_voxel_coordinates)
 
 
 def density_map(streamlines, affine, vol_dims):
-    """Counts the number of unique streamlines that pass through each voxel.
+    """Count the number of unique streamlines that pass through each voxel.
 
     Parameters
     ----------
@@ -114,7 +110,7 @@ def density_map(streamlines, affine, vol_dims):
 def connectivity_matrix(streamlines, affine, label_volume, inclusive=False,
                         symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
-    """Counts the streamlines that start and end at each label pair.
+    """Count the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -263,7 +259,7 @@ def ndbincount(x, weights=None, shape=None):
     if shape is None:
         shape = x.max(1) + 1
 
-    x = ravel_multi_index(x, shape)
+    x = np.ravel_multi_index(x, shape)
     out = np.bincount(x, weights, minlength=np.prod(shape))
     out.shape = shape
 
@@ -271,7 +267,7 @@ def ndbincount(x, weights=None, shape=None):
 
 
 def reduce_labels(label_volume):
-    """Reduces an array of labels to the integers from 0 to n with smallest
+    """Reduce an array of labels to the integers from 0 to n with smallest
     possible n.
 
     Examples
@@ -288,6 +284,7 @@ def reduce_labels(label_volume):
            [0, 1, 2]]...)
     >>> (lookup[new_labels] == labels).all()
     True
+
     """
     lookup_table = np.unique(label_volume)
     label_volume = lookup_table.searchsorted(label_volume)
@@ -295,7 +292,7 @@ def reduce_labels(label_volume):
 
 
 def subsegment(streamlines, max_segment_length):
-    """Splits the segments of the streamlines into small segments.
+    """Split the segments of the streamlines into small segments.
 
     Replaces each segment of each of the streamlines with the smallest possible
     number of equally sized smaller segments such that no segment is longer
@@ -339,13 +336,14 @@ def subsegment(streamlines, max_segment_length):
            [ 2. ,  0. ,  0. ],
            [ 3.5,  0. ,  0. ],
            [ 5. ,  0. ,  0. ]])]
+
     """
     for sl in streamlines:
         diff = (sl[1:] - sl[:-1])
-        length = sqrt((diff*diff).sum(-1))
-        num_segments = ceil(length/max_segment_length).astype('int')
+        dist = np.sqrt((diff*diff).sum(-1))
+        num_segments = np.ceil(dist/max_segment_length).astype('int')
 
-        output_sl = empty((num_segments.sum()+1, 3), 'float')
+        output_sl = np.empty((num_segments.sum()+1, 3), 'float')
         output_sl[0] = sl[0]
 
         count = 1
@@ -407,12 +405,13 @@ def seeds_from_mask(mask, affine, density=[1, 1, 1]):
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, np.eye(4), [1,1,1])
     array([[ 0.,  0.,  0.]])
+
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
 
-    density = asarray(density, int)
+    density = np.asarray(density, int)
     if density.size == 1:
         d = density
         density = np.empty(3, dtype=int)
@@ -503,6 +502,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
            [-0.27800683,  1.37073231,  1.70671916],
            [ 0.0507979 ,  0.20814782, -0.20909526],
            [-0.48962585,  1.00187459,  1.99577329]])
+
     """
     mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
@@ -537,7 +537,7 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
             grid = np.random.random(3)
             seed = s + grid - .5
             seeds.append(seed)
-    seeds = asarray(seeds)
+    seeds = np.asarray(seeds)
 
     if not seed_count_per_voxel:
         # Select the requested amount
@@ -553,10 +553,11 @@ def random_seeds_from_mask(mask, affine, seeds_count=1,
 
 
 def _with_initialize(generator):
-    """Allows one to write a generator with initialization code.
+    """Allow one to write a generator with initialization code.
 
     All code up to the first yield is run as soon as the generator function is
     called and the first yield value is ignored.
+
     """
     @wraps(generator)
     def helper(*args, **kwargs):
@@ -569,7 +570,7 @@ def _with_initialize(generator):
 
 @_with_initialize
 def target(streamlines, affine, target_mask, include=True):
-    """Filters streamlines based on whether or not they pass through an ROI.
+    """Filter streamlines based on whether or not they pass through an ROI.
 
     Parameters
     ----------
@@ -599,6 +600,7 @@ def target(streamlines, affine, target_mask, include=True):
     See Also
     --------
     density_map
+
     """
     target_mask = np.array(target_mask, dtype=bool, copy=True)
     lin_T, offset = _mapping_to_voxel(affine)
@@ -618,7 +620,7 @@ def target(streamlines, affine, target_mask, include=True):
 
 @_with_initialize
 def target_line_based(streamlines, affine, target_mask, include=True):
-    """Filters streamlines based on whether or not they pass through a ROI,
+    """Filter streamlines based on whether or not they pass through a ROI,
     using a line-based algorithm. Mostly used as a replacement of `target`
     for compressed streamlines.
 
@@ -656,6 +658,7 @@ def target_line_based(streamlines, affine, target_mask, include=True):
     --------
     dipy.tracking.utils.density_map
     dipy.tracking.streamline.compress_streamlines
+
     """
     target_mask = np.array(target_mask, dtype=np.uint8, copy=True)
     lin_T, offset = _mapping_to_voxel(affine)
@@ -698,6 +701,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
     Returns
     -------
     out : boolean
+
     """
     if len(roi_coords) == 0:
         return False
@@ -723,7 +727,7 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
 def near_roi(streamlines, affine, region_of_interest, tol=None,
              mode="any"):
     """Provide filtering criteria for a set of streamlines based on whether
-    they fall within a tolerance distance from an ROI
+    they fall within a tolerance distance from an ROI.
 
     Parameters
     ----------
@@ -761,6 +765,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
     This contains `True` for indices corresponding to each streamline
     that passes within a tolerance distance from the target ROI, `False`
     otherwise.
+
     """
     dtc = dist_to_corner(affine)
     if tol is None:
@@ -792,8 +797,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
 
 
 def length(streamlines):
-    """
-    Calculate the lengths of many streamlines in a bundle.
+    """Calculate the lengths of many streamlines in a bundle.
 
     Parameters
     ----------
@@ -804,14 +808,13 @@ def length(streamlines):
     -------
     Iterator object which then computes the length of each
     streamline in the bundle, upon iteration.
-    """
 
+    """
     return map(metrics.length, streamlines)
 
 
 def unique_rows(in_array, dtype='f4'):
-    """
-    This (quickly) finds the unique rows in an array
+    """Find the unique rows in an array.
 
     Parameters
     ----------
@@ -844,7 +847,8 @@ def unique_rows(in_array, dtype='f4'):
 
 @_with_initialize
 def transform_tracking_output(tracking_output, affine, save_seeds=False):
-    """Applies a linear transformation, given by affine, to streamlines.
+    """Apply a linear transformation, given by affine, to streamlines.
+
     Parameters
     ----------
     streamlines : Streamlines generator
@@ -948,7 +952,7 @@ except AttributeError:
 
 
 def path_length(streamlines, affine, aoi, fill_value=-1):
-    """ Computes the shortest path, along any streamline, between aoi and
+    """Compute the shortest path, along any streamline, between aoi and
     each voxel.
 
     Parameters
@@ -970,6 +974,7 @@ def path_length(streamlines, affine, aoi, fill_value=-1):
     plm : array
         Same shape as aoi. The minimum distance between every point and aoi
         along the path of a streamline.
+
     """
     aoi = np.asarray(aoi, dtype=bool)
 
