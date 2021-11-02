@@ -6,7 +6,7 @@ streamlines.
 
 """
 import re
-import collections
+import collections.abc
 from functools import partial
 import numbers
 import numpy as np
@@ -637,7 +637,7 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
 
     data, affine = read_img_arr_or_path(data, affine=affine)
-    if isinstance(gtab, collections.Sequence):
+    if isinstance(gtab, collections.abc.Sequence):
         gtab = dpg.gradient_table(*gtab)
 
     if np.sum(gtab.b0s_mask) > 1:

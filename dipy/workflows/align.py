@@ -767,7 +767,10 @@ class MotionCorrectionFlow(Workflow):
             """
             Saving the corrected image file and the affine matrix.
             """
-            # TODO: Check Saving
-            # import ipdb; ipdb.set_trace()
             save_nifti(omoved, reg_img.get_fdata(), affine)
-            np.savetxt(oafffine, reg_affines)
+            # Write the array to disk
+            with open(oafffine, 'w') as outfile:
+                outfile.write('# Array shape: {0}\n'.format(reg_affines.shape))
+                for affine_slice in reg_affines:
+                    np.savetxt(outfile, affine_slice, fmt='%-7.2f')
+                    outfile.write('# New slice\n')
