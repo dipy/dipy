@@ -676,7 +676,7 @@ motion_correction = partial(register_dwi_series, pipeline=["center_of_mass",
                                                            "rigid", "affine"])
 motion_correction.__doc__ = re.sub('Register.*?volume', 'Apply a motion '
                                    'correction to a DWI dataset '
-                                   '(Between-Volumes Motion correction',
+                                   '(Between-Volumes Motion correction)',
                                    register_dwi_series.__doc__,
                                    flags=re.DOTALL)
 
