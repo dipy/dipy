@@ -1014,3 +1014,59 @@ def _as_segments(streamline, break_points):
         yield seg
     for seg in _part_segments(streamline[::-1], break_points[::-1]):
         yield seg
+
+
+def max_angle_from_curvature(curvature, step_size):
+    """Get the maximum deviation angle from the radius curvature.
+
+    Parameters
+    ----------
+    curvature: float
+        Minimum radius of curvature in mm.
+    step_size: float
+        The tracking step size in mm.
+
+    Return
+    ------
+    theta: float
+        The maximum deviation angle in radian,
+        given the radius curvature and the step size.
+
+    References
+    ----------
+    For more information:
+    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+
+    """
+    theta = 2. * np.arcsin(step_size / (2. * curvature))
+    if np.isnan(theta) or theta > np.pi / 2 or theta <= 0:
+        theta = np.pi / 2.0
+    return theta
+
+
+def min_curvature_from_angle(theta, step_size):
+    """Get minimum radius of curmature from a deviation angle.
+
+    Parameters
+    ----------
+    theta: float
+        The maximum deviation angle in radian.
+        theta should be between [0 - pi/2] otherwise default will be pi/2.
+    step_size: float
+        The tracking step size in mm.
+
+    Return
+    ------
+    curvature: float
+        Minimum radius of curvature in mm,
+        given the maximum deviation angle theta and the step size.
+
+    References
+    ----------
+    More information:
+    https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
+
+    """
+    if np.isnan(theta) or theta > np.pi / 2 or theta <= 0:
+        theta = np.pi / 2.0
+    return step_size / 2 / np.sin(theta / 2)

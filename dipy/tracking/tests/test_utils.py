@@ -7,7 +7,9 @@ from dipy.tracking.utils import (connectivity_matrix, density_map, length,
                                  ndbincount, reduce_labels, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
-                                 reduce_rois, path_length, _min_at)
+                                 reduce_rois, path_length, _min_at,
+                                 max_angle_from_curvature,
+                                 min_curvature_from_angle)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.vox2track import streamline_mapping
@@ -659,6 +661,24 @@ def test_min_at():
 
     _min_at(a, (i, j, k), values)
     npt.assert_array_equal(a, [[[100, 11, 1, 10]]])
+
+
+def test_curvature_angle():
+    angle = [0.0000001, np.pi/3, np.pi/2]
+    step_size = [0.2, 0.5, 1.5]
+    curvature = [2000000., 0.5, 1.060660171]
+
+    for theta, step, curve in zip(angle, step_size, curvature):
+        res_angle = max_angle_from_curvature(curve, step)
+        npt.assert_almost_equal(res_angle, theta)
+
+        res_curvature = min_curvature_from_angle(theta, step)
+        npt.assert_almost_equal(res_curvature, curve)
+
+    # special case
+    res = min_curvature_from_angle(0, 1) == min_curvature_from_angle(np.pi/2,
+                                                                     1)
+    npt.assert_equal(res, True)
 
 
 if __name__ == "__main__":
