@@ -6,7 +6,7 @@ streamlines.
 
 """
 import re
-import collections
+import collections.abc
 from functools import partial
 import numbers
 import numpy as np

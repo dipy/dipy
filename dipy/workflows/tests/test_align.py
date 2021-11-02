@@ -331,7 +331,6 @@ def test_motion_correction():
 
         motion_correction_flow = MotionCorrectionFlow()
 
-        # import ipdb; ipdb.set_trace()
         motion_correction_flow._force_overwrite = True
         motion_correction_flow.run(os.path.join(out_dir, 'data.nii.gz'),
                                    os.path.join(out_dir, 'bvals.txt'),
@@ -340,11 +339,9 @@ def test_motion_correction():
         out_path = motion_correction_flow.last_generated_outputs['out_moved']
         corrected = load_nifti_data(out_path)
 
-        npt.assert_equal(corrected.shape[0] > volume.shape[0], True)
-        npt.assert_equal(corrected.shape[1] > volume.shape[1], True)
-        npt.assert_equal(corrected.shape[2] > volume.shape[2], True)
-        npt.assert_equal(corrected.shape[-1], volume.shape[-1])
-
+        npt.assert_equal(corrected.shape, data.shape)
+        npt.assert_equal(corrected.min(), data.min())
+        npt.assert_equal(corrected.max(), data.max())
 
 
 def test_syn_registration_flow():
