@@ -711,8 +711,8 @@ class SynRegistrationFlow(Workflow):
 
 class MotionCorrectionFlow(Workflow):
     """
-    The Motion Correction workflow allows the user to use only one type of
-    registration (such as center of mass or rigid body registration only).
+    The Motion Correction workflow allows the user to align between-volumes
+    DWI dataset.
     """
 
     def run(self, input_files, bvalues_files, bvectors_files, b0_threshold=50,
@@ -756,7 +756,7 @@ class MotionCorrectionFlow(Workflow):
 
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
-                     "b0_threshold. It should be higher than the first "
+                     "b0_threshold. It should be higher than the lowest "
                      "b0 value ({1}).".format(b0_threshold, bvals.min()))
             gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                                   atol=bvecs_tol)
