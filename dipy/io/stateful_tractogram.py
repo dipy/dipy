@@ -548,6 +548,8 @@ class StatefulTractogram(object):
             indices_to_remove.append(bisect(
                 self._tractogram.streamlines._offsets, i) - 1)
 
+        indices_to_remove = sorted(set(indices_to_remove))
+
         indices_to_keep = np.setdiff1d(np.arange(len(self._tractogram)),
                                        np.array(indices_to_remove)).astype(int)
 

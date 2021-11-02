@@ -444,14 +444,15 @@ def remove_invalid_streamlines(resize):
     if resize:
         sft.dimensions[2] = 5
 
-    sft.remove_invalid_streamlines()
-    return len(sft)
+    indices_to_remove, indices_to_keep = sft.remove_invalid_streamlines()
+    return indices_to_remove, indices_to_keep, len(sft)
 
 
 def remove_invalid_streamlines_epsilon(epsilon):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
-    sft.remove_invalid_streamlines(epsilon=epsilon)
-    return len(sft)
+    indices_to_remove, indices_to_keep = \
+        sft.remove_invalid_streamlines(epsilon=epsilon)
+    return indices_to_remove, indices_to_keep, len(sft)
 
 
 def random_point_color():
@@ -829,16 +830,54 @@ def test_bounding_box():
 
 
 def test_invalid_streamlines():
-    assert_(remove_invalid_streamlines(True) == 5,
+
+    obtained_idx_to_remove, obtained_idx_to_keep, obtained_len_sft = \
+        remove_invalid_streamlines(True)
+    expected_idx_to_remove = [1, 3, 5, 7, 8, 9, 10, 11]
+    expected_idx_to_keep = np.asarray([0, 2, 4, 6, 12])
+    expected_len_sft = 5
+
+    assert obtained_idx_to_remove == expected_idx_to_remove
+    assert_array_equal(obtained_idx_to_keep, expected_idx_to_keep)
+    assert_(obtained_len_sft == expected_len_sft,
             msg='A shifted gold standard should have 8 invalid streamlines')
-    assert_(remove_invalid_streamlines(False) == 13,
+
+    obtained_idx_to_remove, obtained_idx_to_keep, obtained_len_sft = \
+        remove_invalid_streamlines(False)
+    expected_idx_to_keep = np.asarray(
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    )
+    expected_len_sft = 13
+
+    assert len(obtained_idx_to_remove) == 0
+    assert_array_equal(expected_idx_to_keep, obtained_idx_to_keep)
+    assert_(expected_len_sft == obtained_len_sft,
             msg='A unshifted gold standard should have 0 invalid streamlines')
 
 
 def test_invalid_streamlines_epsilon():
-    assert_(remove_invalid_streamlines_epsilon(1e-6) == 13,
+
+    obtained_idx_to_remove, obtained_idx_to_keep, obtained_len_sft = \
+        remove_invalid_streamlines_epsilon(1e-6)
+    expected_idx_to_keep = np.asarray(
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    )
+    expected_len_sft = 13
+
+    assert len(obtained_idx_to_remove) == 0
+    assert_array_equal(expected_idx_to_keep, obtained_idx_to_keep)
+    assert_(expected_len_sft == obtained_len_sft,
             msg='A small epsilon should not remove any streamlines')
-    assert_(remove_invalid_streamlines_epsilon(1.0) == 5,
+
+    obtained_idx_to_remove, obtained_idx_to_keep, obtained_len_sft = \
+        remove_invalid_streamlines_epsilon(1.0)
+    expected_idx_to_remove = [0, 1, 2, 3, 4, 5, 6, 7]
+    expected_idx_to_keep = np.asarray([8, 9, 10, 11, 12])
+    expected_len_sft = 5
+
+    assert obtained_idx_to_remove == expected_idx_to_remove
+    assert_array_equal(obtained_idx_to_keep, expected_idx_to_keep)
+    assert_(obtained_len_sft == expected_len_sft,
             msg='Too big of an epsilon (1mm) should remove the 8 streamlines '
                 '(8 corners)')
 
