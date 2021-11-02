@@ -1050,7 +1050,7 @@ def max_angle_from_curvature(curvature, step_size):
 
 
 def min_curvature_from_angle(theta, step_size):
-    """Get minimum radius of curmature from a deviation angle.
+    """Get minimum radius of curvature from a deviation angle.
 
     Parameters
     ----------

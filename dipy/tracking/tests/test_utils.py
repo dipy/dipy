@@ -676,10 +676,9 @@ def test_curvature_angle():
         npt.assert_almost_equal(res_curvature, curve)
 
     # special case
-    res = min_curvature_from_angle(0, 1) == min_curvature_from_angle(np.pi/2,
-                                                                     1)
-    npt.assert_equal(res, True)
+    npt.assert_equal(min_curvature_from_angle(0, 1),
+                     min_curvature_from_angle(np.pi/2, 1))
 
 
 if __name__ == "__main__":
-    npt.run_module_suite()
+    test_curvature_angle()
