@@ -312,22 +312,40 @@ def test_apply_affine_transform():
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
 
+
 def test_motion_correction():
-    with TemporaryDirectory() as temp_out_dir:
+    data_path, fbvals_path, fbvecs_path = get_fnames('small_64D')
+    volume = load_nifti_data(data_path)
 
-        static, moving, static_g2w, moving_g2w, smask, mmask, M\
-            = setup_random_transform(transform=regtransforms[('AFFINE', 3)],
-                                     rfactor=0.1)
-
-        save_nifti(pjoin(temp_out_dir, 'b0.nii.gz'), data=static,
-                   affine=static_g2w)
-        save_nifti(pjoin(temp_out_dir, 't1.nii.gz'), data=moving,
-                   affine=moving_g2w)
-
-        static_image_file = pjoin(temp_out_dir, 'b0.nii.gz')
-        moving_image_file = pjoin(temp_out_dir, 't1.nii.gz')
+    with TemporaryDirectory() as out_dir:
+        # Use an abbreviated data-set:
+        img = nib.load(data_path)
+        data = img.get_fdata()[..., :10]
+        nib.save(nib.Nifti1Image(data, img.affine),
+                 os.path.join(out_dir, 'data.nii.gz'))
+        # Save a subset:
+        bvals = np.loadtxt(fbvals_path)
+        bvecs = np.loadtxt(fbvecs_path)
+        np.savetxt(os.path.join(out_dir, 'bvals.txt'), bvals[:10])
+        np.savetxt(os.path.join(out_dir, 'bvecs.txt'), bvecs[:10])
 
         motion_correction_flow = MotionCorrectionFlow()
+
+        # import ipdb; ipdb.set_trace()
+        motion_correction_flow._force_overwrite = True
+        motion_correction_flow.run(os.path.join(out_dir, 'data.nii.gz'),
+                                   os.path.join(out_dir, 'bvals.txt'),
+                                   os.path.join(out_dir, 'bvecs.txt'),
+                                   out_dir=out_dir)
+        out_path = motion_correction_flow.last_generated_outputs['out_moved']
+        corrected = load_nifti_data(out_path)
+
+        npt.assert_equal(corrected.shape[0] > volume.shape[0], True)
+        npt.assert_equal(corrected.shape[1] > volume.shape[1], True)
+        npt.assert_equal(corrected.shape[2] > volume.shape[2], True)
+        npt.assert_equal(corrected.shape[-1], volume.shape[-1])
+
+
 
 def test_syn_registration_flow():
     moving_data, static_data = get_synthetic_warped_circle(40)
