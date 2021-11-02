@@ -14,6 +14,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         PmfGen pmf_gen
         double pmf_threshold
         double cos_similarity
+        double min_curvature
 
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self,

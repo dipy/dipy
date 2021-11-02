@@ -13,15 +13,21 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
         int max_attempts
 
     def __init__(self, pmfgen, maxangle, sphere=default_sphere,
-                 max_attempts=5, **kwargs):
+                 max_attempts=5, min_curvature=None, step_size=None,
+                 **kwargs):
         if max_attempts < 1:
              raise ValueError("max_attempts must be greater than 0.")
         self.max_attempts = max_attempts
-        BasePmfDirectionGetter.__init__(self, pmfgen, maxangle, sphere, **kwargs)
+        BasePmfDirectionGetter.__init__(self, pmfgen, maxangle, sphere,
+                                        min_curvature=min_curvature,
+                                        step_size=step_size, **kwargs)
 
     @classmethod
+    @deprecated_params('max_angle', since='1.14', until='1.15',
+                       alternative='use min_curvature instead.')
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
-                  sh_order=0, max_attempts=5, **kwargs):
+                  sh_order=0, max_attempts=5, min_curvature=None,
+                  step_size=None, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
         Parameters
@@ -51,7 +57,9 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
         """
         boot_gen = BootPmfGen(np.asarray(data, dtype=float), model, sphere,
                               sh_order=sh_order)
-        return cls(boot_gen, max_angle, sphere, max_attempts, **kwargs)
+        return cls(boot_gen, max_angle, sphere, max_attempts,
+                     min_curvature=min_curvature, step_size=step_size,
+                     **kwargs)
 
     cdef int get_direction_c(self, double* point, double* direction):
         """Attempt direction getting on a few bootstrap samples.

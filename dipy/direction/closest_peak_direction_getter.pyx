@@ -4,7 +4,10 @@ cimport numpy as cnp
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
 from dipy.tracking.direction_getter cimport DirectionGetter
+from dipy.tracking.utils import (max_angle_from_curvature,
+                                 min_curvature_from_angle)
 from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
+from dipy.utils.deprecator import deprecated_params
 
 
 cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
@@ -59,14 +62,22 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @deprecated_params('max_angle', since='1.14', until='1.15',
+                       alternative='use min_curvature instead.')
+    def __init__(self, pmf_gen, max_angle, sphere, min_curvature=None,
+                 step_size=None, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
+        self.step_size = step_size
+        _max_angle = deg2rad(max_angle)
+        self.min_curvature = min_curvature or min_curvature_from_angle(
+                                                _max_angle, step_size)
         self._pf_kwargs = kwargs
         self.pmf_gen = pmf_gen
         if pmf_threshold < 0:
             raise ValueError("pmf threshold must be >= 0.")
         self.pmf_threshold = pmf_threshold
-        self.cos_similarity = np.cos(np.deg2rad(max_angle))
+        self.cos_similarity = np.cos(max_angle_from_curvature(self.curvature,
+                                                              step_size))
 
     def _get_peak_directions(self, blob):
         """Gets directions using parameters provided at init.
@@ -114,8 +125,10 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
     """A base class for direction getter using a pmf"""
 
     @classmethod
-    def from_pmf(cls, pmf, max_angle, sphere,
-                 pmf_threshold=.1, **kwargs):
+    @deprecated_params('max_angle', since='1.14', until='1.15',
+                    alternative='use min_curvature instead.')
+    def from_pmf(cls, pmf, max_angle, sphere, min_curvature=None,
+                 step_size=None, pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -123,11 +136,15 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         pmf : array, 4d
             The pmf to be used for tracking at each voxel.
         max_angle : float, [0, 90]
-            The maximum allowed angle between incoming direction and new
-            direction.
+            Deprecated parameter. The maximum allowed angle between incoming
+            direction and new direction.
         sphere : Sphere
             The set of directions on which the pmf is sampled and to be used
             for tracking.
+        min_curvature : float
+            Minimum radius of curvature in mm.
+        step_size : float
+            The tracking step size in mm.
         pmf_threshold : float [0., 1.]
             Used to remove direction from the probability mass function for
             selecting the tracking direction.
@@ -151,11 +168,15 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             raise ValueError(msg)
 
         pmf_gen = SimplePmfGen(np.asarray(pmf,dtype=float), sphere)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold,
+                     min_curvature, step_size, **kwargs)
 
     @classmethod
+    @deprecated_params('max_angle', since='1.14', until='1.15',
+                       alternative='use min_curvature instead.')
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
-                     pmf_threshold=0.1, basis_type=None, **kwargs):
+                     min_curvature=None, step_size=None, pmf_threshold=0.1,
+                     basis_type=None, **kwargs):
         """Probabilistic direction getter from a distribution of directions
         on the sphere
 
@@ -169,10 +190,14 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             be discretized using ``sphere`` and tracking directions will be
             chosen from the vertices of ``sphere`` based on the distribution.
         max_angle : float, [0, 90]
-            The maximum allowed angle between incoming direction and new
-            direction.
+            Deprecated parameter. The maximum allowed angle between incoming
+            direction and new direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        min_curvature : float
+            Minimum radius of curvature in mm.
+        step_size : float
+            The tracking step size in mm.
         pmf_threshold : float [0., 1.]
             Used to remove direction from the probability mass function for
             selecting the tracking direction.
@@ -193,7 +218,8 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
         """
         pmf_gen = SHCoeffPmfGen(np.asarray(shcoeff,dtype=float), sphere,
                                 basis_type)
-        return cls(pmf_gen, max_angle, sphere, pmf_threshold, **kwargs)
+        return cls(pmf_gen, max_angle, sphere, pmf_threshold,
+                     min_curvature, step_size, **kwargs)
 
 
 cdef class ClosestPeakDirectionGetter(PmfGenDirectionGetter):

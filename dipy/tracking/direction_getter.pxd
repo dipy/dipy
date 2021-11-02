@@ -6,6 +6,9 @@ cimport numpy as cnp
 
 cdef class DirectionGetter:
 
+    cdef:
+        double step_size
+
     cpdef cnp.ndarray[cnp.float_t, ndim=2] initial_direction(
         self, double[::1] point)
 

@@ -7,13 +7,14 @@ from dipy.tracking.localtrack import local_tracker, pft_tracker
 from dipy.tracking.stopping_criterion import (AnatomicalStoppingCriterion,
                                               StreamlineStatus)
 from dipy.tracking import utils
+from dipy.utils.deprecator import deprecated_params
 
 
 class LocalTracking(object):
 
     @staticmethod
     def _get_voxel_size(affine):
-        """Computes the voxel sizes of an image from the affine.
+        """Compute the voxel sizes of an image from the affine.
 
         Checks that the affine does not have any shear because local_tracker
         assumes that the data is sampled on a regular grid.
@@ -29,10 +30,13 @@ class LocalTracking(object):
             raise ValueError(msg)
         return np.sqrt(dotlin.diagonal())
 
+    @deprecated_params(['step_size', 'fixedstep'], since='1.14', until='1.15',
+                       alternative='use min_curvature and step_size instead '
+                                   'inside the direction getter')
     def __init__(self, direction_getter, stopping_criterion, seeds, affine,
-                 step_size, max_cross=None, maxlen=500, fixedstep=True,
+                 step_size=None, max_cross=None, maxlen=500, fixedstep=True,
                  return_all=True, random_seed=None, save_seeds=False):
-        """Creates streamlines by using local fiber-tracking.
+        """Create streamlines by using local fiber-tracking.
 
         Parameters
         ----------
@@ -69,8 +73,8 @@ class LocalTracking(object):
             random.seed).
         save_seeds : bool
             If True, return seeds alongside streamlines
-        """
 
+        """
         self.direction_getter = direction_getter
         self.stopping_criterion = stopping_criterion
         self.seeds = seeds

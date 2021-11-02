@@ -100,40 +100,45 @@ cdef class DirectionGetter:
                                     StreamlineStatus stream_status,
                                     int fixedstep
                                     ):
-       cdef:
-           cnp.npy_intp i
-           cnp.npy_intp len_streamlines = streamline.shape[0]
-           double point[3]
-           double voxdir[3]
-           void (*step)(double*, double*, double) nogil
+        cdef:
+            cnp.npy_intp i
+            cnp.npy_intp len_streamlines = streamline.shape[0]
+            double point[3]
+            double voxdir[3]
+            void (*step)(double*, double*, double) nogil
 
-       if fixedstep > 0:
-           step = _fixed_step
-       else:
-           step = _step_to_boundary
+        if fixedstep > 0:
+            step = _fixed_step
+        else:
+            step = _step_to_boundary
 
-       copy_point(&seed[0], point)
-       copy_point(&seed[0], &streamline[0,0])
+        # Use step_size from DirectionGetter in priority.
+        # Otherwise use the deprecated one in LocalTracking
+        _step_size = self.step_size or step_size
 
-       stream_status = TRACKPOINT
-       for i in range(1, len_streamlines):
-           if self.get_direction_c(point, &direction[0]):
-               break
-           for j in range(3):
-               voxdir[j] = direction[j] / voxel_size[j]
-           step(point, voxdir, step_size)
-           copy_point(point, &streamline[i, 0])
-           stream_status = stopping_criterion.check_point_c(point)
-           if stream_status == TRACKPOINT:
-               continue
-           elif (stream_status == ENDPOINT or
-                 stream_status == INVALIDPOINT or
-                 stream_status == OUTSIDEIMAGE):
-               break
-       else:
-           # maximum length of streamline has been reached, return everything
-           i = streamline.shape[0]
-       return i, stream_status
+        copy_point(&seed[0], point)
+        copy_point(&seed[0], &streamline[0,0])
+
+        stream_status = TRACKPOINT
+        for i in range(1, len_streamlines):
+            if self.get_direction_c(point, &direction[0]):
+                break
+            for j in range(3):
+                voxdir[j] = direction[j] / voxel_size[j]
+            step(point, voxdir, _step_size)
+            copy_point(point, &streamline[i, 0])
+            stream_status = stopping_criterion.check_point_c(point)
+            if stream_status == TRACKPOINT:
+                continue
+            elif (stream_status == ENDPOINT or
+                    stream_status == INVALIDPOINT or
+                    stream_status == OUTSIDEIMAGE):
+                break
+        else:
+            # maximum length of streamline has been reached, return everything
+            i = streamline.shape[0]
+        return i, stream_status
+
 
     cpdef int get_direction(self,
                             double[::1] point,
