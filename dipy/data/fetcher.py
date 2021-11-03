@@ -555,8 +555,10 @@ def get_fnames(name='small_64D'):
         fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
         fimg = pjoin(DATA_DIR, 'small_64D.nii')
         return fimg, fbvals, fbvecs
-    if name == '55dir_grad.bvec':
-        return pjoin(DATA_DIR, '55dir_grad.bvec')
+    if name == '55dir_grad':
+        fbvals = pjoin(DATA_DIR, '55dir_grad.bval')
+        fbvecs = pjoin(DATA_DIR, '55dir_grad.bvec')
+        return fbvals, fbvecs
     if name == 'small_101D':
         fbvals = pjoin(DATA_DIR, 'small_101D.bval')
         fbvecs = pjoin(DATA_DIR, 'small_101D.bvec')
