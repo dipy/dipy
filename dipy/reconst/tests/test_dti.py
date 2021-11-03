@@ -6,6 +6,7 @@ import numpy.testing as npt
 import scipy.optimize as opt
 
 import dipy.reconst.dti as dti
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
                               geodesic_anisotropy, lower_triangular,
@@ -14,7 +15,6 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               sphericity, decompose_tensor,
                               _decompose_tensor_nan)
 
-from dipy.io.bvectxt import read_bvec_file
 from dipy.io.image import load_nifti_data
 from dipy.data import get_fnames, dsi_voxels, get_sphere
 
@@ -97,8 +97,8 @@ def test_tensor_model():
 
     # Make some synthetic data
     b0 = 1000.
-    bvecs, bvals = read_bvec_file(get_fnames('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    bvals, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     # The first b value is 0., so we take the second one:
     B = bvals[1]
     # Scale the eigenvalues and tensor by the B value so the units match
@@ -315,7 +315,7 @@ def test_wls_and_ls_fit():
     Tests the WLS and LS fitting functions to see if they returns the correct
     eigenvalues and eigenvectors.
 
-    Uses data/55dir_grad.bvec as the gradient table and 3by3by56.nii
+    Uses data/55dir_grad as the gradient table and 3by3by56.nii
     as the data.
 
     """
@@ -324,7 +324,7 @@ def test_wls_and_ls_fit():
 
     # Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
     b0 = 1000.
-    bvec, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
+    bval, bvec = read_bvals_bvecs(*get_fnames('55dir_grad'))
     B = bval[1]
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
@@ -383,8 +383,8 @@ def test_masked_array_with_tensor():
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
-    bvec, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
+    bval, bvec = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
 
     tensor_model = TensorModel(gtab)
     tensor = tensor_model.fit(data, mask=mask)
@@ -408,8 +408,8 @@ def test_masked_array_with_tensor():
 
 
 def test_fit_method_error():
-    bvec, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
+    bval, bvec = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec)
 
     # This should work (smoke-testing!):
     TensorModel(gtab, fit_method='WLS')
@@ -453,8 +453,8 @@ def test_from_lower_triangular():
 
 
 def test_all_constant():
-    bvecs, bvals = read_bvec_file(get_fnames('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    bvals, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for _ in fit_methods:
         dm = dti.TensorModel(gtab)
@@ -464,8 +464,8 @@ def test_all_constant():
 
 
 def test_all_zeros():
-    bvecs, bvals = read_bvec_file(get_fnames('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    bvals, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs)
     fit_methods = ['LS', 'OLS', 'NNLS', 'RESTORE']
     for _ in fit_methods:
         dm = dti.TensorModel(gtab)
@@ -512,7 +512,7 @@ def test_mask():
 
 def test_nnls_jacobian_fucn():
     b0 = 1000.
-    bvecs, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
+    bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
     B = bval[1]
 
@@ -549,7 +549,7 @@ def test_nlls_fit_tensor():
     """
 
     b0 = 1000.
-    bvecs, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
+    bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
     B = bval[1]
 
@@ -612,7 +612,7 @@ def test_restore():
     Test the implementation of the RESTORE algorithm
     """
     b0 = 1000.
-    bvecs, bval = read_bvec_file(get_fnames('55dir_grad.bvec'))
+    bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
     B = bval[1]
 
