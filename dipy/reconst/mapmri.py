@@ -1112,7 +1112,7 @@ def mapmri_phi_1d(n, q, mu):
 
     qn = 2 * np.pi * mu * q
     H = hermite(n)(qn)
-    i = np.complex(0, 1)
+    i = complex(0, 1)
     f = mfactorial(n)
 
     k = i ** (-n) / np.sqrt(2 ** (n) * f)
