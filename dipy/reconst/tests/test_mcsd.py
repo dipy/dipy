@@ -44,7 +44,7 @@ def get_test_data():
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]
     responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
-    return (gtab, data, masks, responses)
+    return gtab, data, masks, responses
 
 
 def _expand(m, iso, coeff):
