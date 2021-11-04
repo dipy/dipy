@@ -11,8 +11,9 @@ import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
 
-needs_sklearn = pytest.mark.skipif(not sfm.has_sklearn,
-                                   reason="Requires Scikit-Learn")
+needs_sklearn = pytest.mark.skipif(
+    not sfm.has_sklearn,
+    reason=sfm.sklearn._msg if not sfm.has_sklearn else "")
 
 
 def test_design_matrix():
