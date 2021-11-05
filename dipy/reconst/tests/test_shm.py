@@ -126,7 +126,7 @@ def test_real_sym_sh_mrtrix():
     npt.assert_equal(len(w), 2)
     npt.assert_(issubclass(w[0].category, DeprecationWarning))
     npt.assert_(
-        "dipy.reconst.shm.real_sym_sh_mrtix is deprecated, Please use "
+        "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, Please use "
         "dipy.reconst.shm.real_sh_tournier instead" in str(w[0].message))
     npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
     npt.assert_(
