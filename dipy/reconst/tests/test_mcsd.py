@@ -11,11 +11,8 @@ import pytest
 
 from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
 from dipy.reconst import shm
-from dipy.reconst.dti import fractional_anisotropy, mean_diffusivity
-from dipy.data import default_sphere, get_3shell_gtab, get_fnames
-from dipy.core.gradients import GradientTable, gradient_table
-
-from dipy.io.gradients import read_bvals_bvecs
+from dipy.data import default_sphere, get_3shell_gtab
+from dipy.core.gradients import GradientTable
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -44,12 +41,10 @@ def get_test_data():
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], 80, s0[0]) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
-    evals = [evals_list[tissue] for tissue in tissues]
-    evals = np.asarray(evals).reshape((3, 3, 1, 3))
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]
     responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
-    return (gtab, data, masks, responses)
+    return gtab, data, masks, responses
 
 
 def _expand(m, iso, coeff):
@@ -170,7 +165,7 @@ def test_MSDeconvFit():
 
 
 def test_multi_shell_fiber_response():
-    gtab = get_3shell_gtab()
+
     sh_order = 8
     response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
                                           wm_response,
