@@ -21,7 +21,7 @@ from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
 
 
-from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sh_descoteaux,
+from dipy.reconst.shm import (real_sh_descoteaux_from_index,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
                               order_from_ncoef, OpdtModel,
