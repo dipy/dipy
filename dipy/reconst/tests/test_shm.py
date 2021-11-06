@@ -21,7 +21,7 @@ from dipy.data import mrtrix_spherical_functions
 from dipy.reconst import odf
 
 
-from dipy.reconst.shm import (real_sh_descoteaux_from_index,
+from dipy.reconst.shm import (real_sh_descoteaux_from_index, real_sym_sh_basis,
                               real_sym_sh_mrtrix, real_sh_descoteaux,
                               real_sh_tournier, sph_harm_ind_list,
                               order_from_ncoef, OpdtModel,
@@ -32,7 +32,8 @@ from dipy.reconst.shm import (real_sh_descoteaux_from_index,
                               spherical_harmonics, anisotropic_power,
                               calculate_max_order, sh_to_sf_matrix, gen_dirac,
                               convert_sh_to_full_basis, convert_sh_from_legacy,
-                              convert_sh_to_legacy)
+                              convert_sh_to_legacy, descoteaux07_legacy_msg,
+                              tournier07_legacy_msg)
 
 
 def test_order_from_ncoeff():
@@ -129,13 +130,38 @@ def test_real_sym_sh_mrtrix():
         "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, Please use "
         "dipy.reconst.shm.real_sh_tournier instead" in str(w[0].message))
     npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
-    npt.assert_(
-        "The legacy tournier07 basis is outdated and will be deprecated "
-        "in a future release of DIPY. Consider using the new tournier07 "
-        "basis." in str(w[1].message))
+    npt.assert_(tournier07_legacy_msg in str(w[1].message))
 
     func = np.dot(coef, basis.T)
     assert_array_almost_equal(func, expected, 4)
+
+
+def test_real_sym_sh_basis():
+
+    new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
+    sphere = hemi_icosahedron.subdivide(2)
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+
+        basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
+
+    expected = basis[:, new_order]
+    expected *= np.where(m == 0, 1., np.sqrt(2))
+
+    with warnings.catch_warnings(record=True) as w:
+        descoteaux07_basis, m, n = real_sym_sh_basis(
+            4, sphere.theta, sphere.phi)
+
+    npt.assert_equal(len(w), 2)
+    npt.assert_(issubclass(w[0].category, DeprecationWarning))
+    npt.assert_(
+        "dipy.reconst.shm.real_sym_sh_basis is deprecated, Please use "
+        "dipy.reconst.shm.real_sh_descoteaux instead" in str(w[0].message))
+    npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
+    npt.assert_(descoteaux07_legacy_msg in str(w[1].message))
+
+    assert_array_almost_equal(descoteaux07_basis, expected)
 
 
 def test_real_sh_descoteaux():
