@@ -37,6 +37,17 @@ from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
 
+descoteaux07_legacy_msg = \
+    "The legacy descoteaux07 SH basis uses absolute values for negative " \
+    "harmonic degrees. It is outdated and will be deprecated in a future " \
+    "DIPY release. Consider using the new descoteaux07 basis by setting the " \
+    "`legacy` parameter to `False`."
+tournier07_legacy_msg = \
+    "The legacy tournier07 basis is not normalized. It is outdated and will " \
+    "be deprecated in a future release of DIPY. Consider using the new " \
+    "tournier07 basis by setting the `legacy` parameter to `False`."
+
+
 def _copydoc(obj):
     def bandit(f):
         f.__doc__ = obj.__doc__
@@ -288,9 +299,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
         # The Tournier basis from MRtrix3 is normalized
         real_sh *= np.where(m == 0, 1., np.sqrt(2))
     else:
-        warn('The legacy tournier07 basis is outdated and will be deprecated '
-             'in a future release of DIPY. Consider using the new tournier07 '
-             'basis.', category=PendingDeprecationWarning)
+        warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
 
     return real_sh
 
@@ -334,9 +343,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
-        warn('The legacy descoteaux07 SH basis is outdated and will be '
-             'deprecated in a future DIPY release. Consider using the new '
-             'descoteaux07 basis.', category=PendingDeprecationWarning)
+        warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
         sh = spherical_harmonics(np.abs(m), n, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
