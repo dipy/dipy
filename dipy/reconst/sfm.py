@@ -39,7 +39,7 @@ lm, _, _ = optional_package('sklearn.linear_model')
 # If sklearn is unavailable, we can fall back on nnls (but we also warn the
 # user that we are about to do that):
 if not has_sklearn:
-    w = "sklearn is not available, you can use 'nnls' method to fit"
+    w = sklearn._msg + "\nAlternatively, you can use 'nnls' method to fit"
     w += " the SparseFascicleModel"
     warnings.warn(w)
 

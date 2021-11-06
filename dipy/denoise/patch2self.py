@@ -8,8 +8,7 @@ sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
 
 if not has_sklearn:
-    w = "Scikit-Learn is required to denoise the data via Patch2Self."
-    warn(w)
+    warn(sklearn._msg)
 
 
 def _vol_split(train, vol_idx):

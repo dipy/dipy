@@ -13,8 +13,8 @@ from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow, Patch2SelfFlow)
 
 sklearn, has_sklearn, _ = optional_package('sklearn')
-needs_sklearn = pytest.mark.skipif(not has_sklearn,
-                                   reason="Requires Scikit-Learn")
+needs_sklearn = pytest.mark.skipif(
+    not has_sklearn, reason=sklearn._msg if not has_sklearn else "")
 
 
 def test_nlmeans_flow():
