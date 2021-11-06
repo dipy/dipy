@@ -193,14 +193,20 @@ def test_multi_shell_fiber_response():
 def test_mask_for_response_msmt():
     gtab, data, masks_gt, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
@@ -214,14 +220,20 @@ def test_mask_for_response_msmt():
 def test_mask_for_response_msmt_nvoxels():
     gtab, data, _, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)
