@@ -164,7 +164,7 @@ def test_real_sym_sh_basis():
     assert_array_almost_equal(descoteaux07_basis, expected)
 
 
-def test_real_sh_descoteaux():
+def test_real_sh_descoteaux1():
     # This test should do for now
     # The tournier07 basis should be the same as re-ordering and re-scaling the
     # descoteaux07 basis
@@ -203,7 +203,7 @@ def test_real_sh_tournier():
     assert_array_almost_equal(sf_approx, sf, 2)
 
 
-def test_real_sh_descoteaux():
+def test_real_sh_descoteaux2():
     vertices = hemi_icosahedron.subdivide(2).vertices
     mevals = np.array([[0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]])
     angles = [(0, 0), (60, 0)]
