@@ -38,9 +38,6 @@ long_description = """
 
 DIPY is a python toolbox for analysis of MR diffusion imaging.
 
-DIPY is for research only; please do not use results from DIPY for
-clinical decisions.
-
 Website
 =======
 

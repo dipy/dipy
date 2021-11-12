@@ -30,6 +30,8 @@ Neuroscience, 6 (175).
 [13] Rafael Neto Henriques, Ariel Rokem, Eleftherios Garyfallidis, Samuel St-Jean, Eric Thomas Peterson, Marta Morgado Correia, ReScience volume 3, issue 1, article number 2, 2017
 `[Re] Optimization of a free water elimination two-compartment model for diffusion tensor imaging. <https://www.biorxiv.org/content/early/2017/02/15/108795>`_
 
+[14] Henriques RN, Correia MM, Marrale M, et al. Diffusional Kurtosis Imaging in the Diffusion Imaging in Python Project. Front Hum Neurosci. 2021;15:390. https://www.frontiersin.org/articles/10.3389/fnhum.2021.675433/full
+
 
 A note on citing our work
 --------------------------
@@ -42,3 +44,4 @@ A note on citing our work
 
 * If you are using Generalized Q-sampling please also cite [7].
 
+* If you are using Diffusional Kurtosis Imaging, please also cite [13]
