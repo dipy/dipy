@@ -105,7 +105,7 @@ Practical
 2. **Which Python console do you recommend?**
 
   IPython_
-  
+
 3. **What do you use for visualization?**
 
   For 3D visualization, we use ``dipy.viz`` which depends in turn on ``FURY``::
@@ -148,7 +148,10 @@ Practical
 
 8. **Where can I find diffusion data?**
 
-  Have a look at Beijing Enhanced
-  http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html
+  There are many sources for openly available diffusion MRI. the :mod:`dipy.data` module can be used to download some sample datasets that we use in our examples. In addition there are a lot of large research-grade datasets available through the following sources:
+
+    - http://fcon_1000.projects.nitrc.org/
+    - https://www.humanconnectome.org/
+    - https://openneuro.org/
 
 .. include:: links_names.inc
