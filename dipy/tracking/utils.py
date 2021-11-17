@@ -1021,19 +1021,19 @@ def _as_segments(streamline, break_points):
         yield seg
 
 
-def max_angle_from_curvature(curvature, step_size):
-    """Get the maximum deviation angle from the radius curvature.
+def max_angle_from_curvature(min_radius_curvature, step_size):
+    """Get the maximum deviation angle from the minimum radius curvature.
 
     Parameters
     ----------
-    curvature: float
+    min_radius_curvature: float
         Minimum radius of curvature in mm.
     step_size: float
         The tracking step size in mm.
 
     Return
     ------
-    theta: float
+    max_angle: float
         The maximum deviation angle in radian,
         given the radius curvature and the step size.
 
@@ -1043,18 +1043,18 @@ def max_angle_from_curvature(curvature, step_size):
     https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
 
     """
-    theta = 2. * np.arcsin(step_size / (2. * curvature))
-    if np.isnan(theta) or theta > np.pi / 2 or theta <= 0:
-        theta = np.pi / 2.0
-    return theta
+    max_angle = 2. * np.arcsin(step_size / (2. * min_radius_curvature))
+    if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
+        max_angle = np.pi / 2.0
+    return max_angle
 
 
-def min_curvature_from_angle(theta, step_size):
+def min_radius_curvature_from_angle(max_angle, step_size):
     """Get minimum radius of curvature from a deviation angle.
 
     Parameters
     ----------
-    theta: float
+    max_angle: float
         The maximum deviation angle in radian.
         theta should be between [0 - pi/2] otherwise default will be pi/2.
     step_size: float
@@ -1062,7 +1062,7 @@ def min_curvature_from_angle(theta, step_size):
 
     Return
     ------
-    curvature: float
+    min_radius_curvature: float
         Minimum radius of curvature in mm,
         given the maximum deviation angle theta and the step size.
 
@@ -1072,6 +1072,7 @@ def min_curvature_from_angle(theta, step_size):
     https://onlinelibrary.wiley.com/doi/full/10.1002/ima.22005
 
     """
-    if np.isnan(theta) or theta > np.pi / 2 or theta <= 0:
-        theta = np.pi / 2.0
-    return step_size / 2 / np.sin(theta / 2)
+    if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
+        max_angle = np.pi / 2.0
+    min_radius_curvature = step_size / 2 / np.sin(max_angle / 2)
+    return min_radius_curvature
