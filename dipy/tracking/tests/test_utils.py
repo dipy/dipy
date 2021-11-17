@@ -1,6 +1,8 @@
 import warnings
 
 import numpy as np
+import pytest
+
 from dipy.tracking import metrics
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.utils import (connectivity_matrix, density_map, length,
@@ -664,9 +666,9 @@ def test_min_at():
 
 
 def test_curvature_angle():
-    angle = [0.0000001, np.pi/3, np.pi/2]
+    angle = [0.0000001, np.pi/3, np.pi/2.01]
     step_size = [0.2, 0.5, 1.5]
-    curvature = [2000000., 0.5, 1.060660171]
+    curvature = [2000000., 0.5, 1.064829060280437]
 
     for theta, step, curve in zip(angle, step_size, curvature):
         res_angle = max_angle_from_curvature(curve, step)
@@ -676,5 +678,6 @@ def test_curvature_angle():
         npt.assert_almost_equal(res_curvature, curve)
 
     # special case
-    npt.assert_equal(min_radius_curvature_from_angle(0, 1),
-                     min_radius_curvature_from_angle(np.pi/2, 1))
+    with pytest.warns(UserWarning):
+        npt.assert_equal(min_radius_curvature_from_angle(0, 1),
+                         min_radius_curvature_from_angle(np.pi/2, 1))

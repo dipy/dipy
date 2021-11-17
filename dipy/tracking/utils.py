@@ -1045,6 +1045,9 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
     """
     max_angle = 2. * np.arcsin(step_size / (2. * min_radius_curvature))
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
+        w_msg = "The max_angle found is outside the interval [0 ; pi/2]."
+        w_msg += "max_angle will be set to the default value pi/2"
+        warn(w_msg)
         max_angle = np.pi / 2.0
     return max_angle
 
@@ -1073,6 +1076,9 @@ def min_radius_curvature_from_angle(max_angle, step_size):
 
     """
     if np.isnan(max_angle) or max_angle > np.pi / 2 or max_angle <= 0:
+        w_msg = "The max_angle found is outside the interval [0 ; pi/2]."
+        w_msg += "max_angle will be set to the default value pi/2"
+        warn(w_msg)
         max_angle = np.pi / 2.0
     min_radius_curvature = step_size / 2 / np.sin(max_angle / 2)
     return min_radius_curvature
