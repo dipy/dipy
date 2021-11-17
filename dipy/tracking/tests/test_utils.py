@@ -678,7 +678,3 @@ def test_curvature_angle():
     # special case
     npt.assert_equal(min_radius_curvature_from_angle(0, 1),
                      min_radius_curvature_from_angle(np.pi/2, 1))
-
-
-if __name__ == "__main__":
-    test_curvature_angle()
