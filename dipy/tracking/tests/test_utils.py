@@ -9,7 +9,7 @@ from dipy.tracking.utils import (connectivity_matrix, density_map, length,
                                  target_line_based, unique_rows, near_roi,
                                  reduce_rois, path_length, _min_at,
                                  max_angle_from_curvature,
-                                 min_curvature_from_angle)
+                                 min_radius_curvature_from_angle)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.vox2track import streamline_mapping
@@ -672,12 +672,12 @@ def test_curvature_angle():
         res_angle = max_angle_from_curvature(curve, step)
         npt.assert_almost_equal(res_angle, theta)
 
-        res_curvature = min_curvature_from_angle(theta, step)
+        res_curvature = min_radius_curvature_from_angle(theta, step)
         npt.assert_almost_equal(res_curvature, curve)
 
     # special case
-    npt.assert_equal(min_curvature_from_angle(0, 1),
-                     min_curvature_from_angle(np.pi/2, 1))
+    npt.assert_equal(min_radius_curvature_from_angle(0, 1),
+                     min_radius_curvature_from_angle(np.pi/2, 1))
 
 
 if __name__ == "__main__":
