@@ -764,11 +764,9 @@ class MotionCorrectionFlow(Workflow):
             reg_img, reg_affines = motion_correction(data=data, gtab=gtab,
                                                      affine=affine)
 
-            """
-            Saving the corrected image file and the affine matrix.
-            """
+            # Saving the corrected image file
             save_nifti(omoved, reg_img.get_fdata(), affine)
-            # Write the array to disk
+            # Write the affine matrix array to disk
             with open(oafffine, 'w') as outfile:
                 outfile.write('# Array shape: {0}\n'.format(reg_affines.shape))
                 for affine_slice in reg_affines:
