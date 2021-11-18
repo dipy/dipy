@@ -20,7 +20,9 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 decompose_matrix,
                                 perpendicular_directions,
                                 dist_to_corner,
-                                is_hemispherical)
+                                is_hemispherical,
+                                generate_unit_determinant_matrix,
+                                generate_random_affine)
 
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_equal, assert_raises, assert_almost_equal,
@@ -364,6 +366,16 @@ def test_is_hemispherical():
 
     # Smoke test the ValueError for non unit-vectors
     assert_raises(ValueError, is_hemispherical, xyz * 2.0)
+
+
+def test_generate_unit_determinant_matrix():
+    mat = generate_unit_determinant_matrix()
+    assert_almost_equal(np.linalg.det(mat), 1)
+
+
+def test_generate_random_affine():
+    affine = generate_random_affine()
+    assert_raises(AssertionError, assert_array_equal, np.linalg.det(affine), 0)
 
 
 if __name__ == '__main__':
