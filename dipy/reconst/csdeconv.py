@@ -12,6 +12,8 @@ from dipy.data import small_sphere, get_sphere, default_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
+from dipy.reconst.utils import probabilistic_least_squares
+from dipy.utils.six.moves import range
 
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
@@ -288,9 +290,12 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
     @multi_voxel_fit
     def fit(self, data):
         dwi_data = data[self._where_dwi]
-        shm_coeff, _ = csdeconv(dwi_data, self._X, self.B_reg, self.tau,
-                                convergence=self.convergence, P=self._P)
-        return SphHarmFit(self, shm_coeff, None)
+        shm_coeff, _, uncertainty_params = csdeconv(dwi_data, self._X,
+                                                    self.B_reg, self.tau,
+                                                    convergence=self.convergence
+                                                    P=self._P)
+        return SphHarmFit(self, shm_coeff, None,
+                          uncertainty_params=uncertainty_params)
 
     def predict(self, sh_coeff, gtab=None, S0=1.):
         """Compute a signal prediction given spherical harmonic coefficients
@@ -672,7 +677,7 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         where_fodf_small = (fodf < threshold).nonzero()[0]
         # If the fodf still has no values less than threshold, return the fodf.
         if len(where_fodf_small) == 0:
-            return fodf_sh, 0
+            return fodf_sh, 0, None
 
     for num_it in range(1, convergence + 1):
         # This is the super-resolved trick.  Wherever there is a negative
@@ -699,7 +704,12 @@ def csdeconv(dwsignal, X, B_reg, tau=0.1, convergence=50, P=None):
         msg = 'maximum number of iterations exceeded - failed to converge'
         warnings.warn(msg)
 
-    return fodf_sh, num_it
+    # TODO: smoother integration that doesn't require recomputing
+    # the LS solution
+    fodf_sh, uncertainty_params = probabilistic_least_squares(
+        design_matrix=X, y=dwsignal, regularization_matrix=np.dot(H.T, H))
+
+    return fodf_sh, num_it, uncertainty_params
 
 
 def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):

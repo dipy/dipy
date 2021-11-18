@@ -8,12 +8,16 @@ import functools
 import numpy as np
 
 import scipy.optimize as opt
+from scipy.stats import t as tstats
 
 from dipy.utils.arrfuncs import pinv
 from dipy.data import get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import vector_norm
 from dipy.reconst.vec_val_sum import vec_val_vect
+from dipy.reconst.utils import (probabilistic_least_squares,
+                                sample_function,
+                                percentiles_of_function)
 from dipy.core.onetime import auto_attr
 from dipy.reconst.base import ReconstModel
 
@@ -87,6 +91,16 @@ def fractional_anisotropy(evals, axis=-1):
                  ((evals * evals).sum(0) + all_zero))
 
     return fa
+
+
+def fa_from_lo_tri(dti_params):
+    evals = eig_from_lo_tri(dti_params)[..., :3]
+    return fractional_anisotropy(evals)
+
+
+def md_from_lo_tri(dti_params):
+    evals = eig_from_lo_tri(dti_params)[..., :3]
+    return mean_diffusivity(evals)
 
 
 def geodesic_anisotropy(evals, axis=-1):
@@ -747,6 +761,7 @@ class TensorModel(ReconstModel):
                 raise ValueError(e_s)
         self.fit_method = fit_method
         self.return_S0_hat = return_S0_hat
+        # self.least_squares_quantities = None
         self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
@@ -792,21 +807,36 @@ class TensorModel(ReconstModel):
                 *self.args,
                 **self.kwargs)
         if self.return_S0_hat:
-            params_in_mask, model_S0 = params_in_mask
+            params_in_mask, uncertainty_quantities, model_S0 = params_in_mask
+        else:
+            params_in_mask, uncertainty_quantities = params_in_mask
 
         if mask is None:
             out_shape = data.shape[:-1] + (-1, )
             dti_params = params_in_mask.reshape(out_shape)
             if self.return_S0_hat:
                 S0_params = model_S0.reshape(out_shape[:-1])
+            if uncertainty_quantities is None:
+                uncertainty_params = None
+            else:
+                uncertainty_params = \
+                    uncertainty_quantities.reshape(out_shape[:-1])
         else:
             dti_params = np.zeros(data.shape[:-1] + (12,))
             dti_params[mask, :] = params_in_mask
             if self.return_S0_hat:
                 S0_params = np.zeros(data.shape[:-1])
                 S0_params[mask] = model_S0
+            uncertainty_params = None
+            # TODO: make uncertainties work with masking
+            # if uncertainty_quantities is None:
+            #     uncertainty_params = None
+            # else:
+            #     uncertainty_params = np.zeros(data.shape[:-1])
+            #     uncertainty_params[mask] = uncertainty_quantities
 
-        return TensorFit(self, dti_params, model_S0=S0_params)
+        return TensorFit(self, dti_params, model_S0=S0_params,
+                         uncertainty_params=uncertainty_params)
 
     def predict(self, dti_params, S0=1.):
         """
@@ -827,12 +857,14 @@ class TensorModel(ReconstModel):
 
 class TensorFit(object):
 
-    def __init__(self, model, model_params, model_S0=None):
+    def __init__(self, model, model_params, model_S0=None,
+                 uncertainty_params=None):
         """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
         self.model_S0 = model_S0
+        self.uncertainty_params = uncertainty_params
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -850,6 +882,118 @@ class TensorFit(object):
     @property
     def S0_hat(self):
         return self.model_S0
+
+    @auto_attr
+    def residual_variance(self):
+        out = np.zeros(self.uncertainty_params.shape)
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = val.residual_variance
+        return out
+
+    @auto_attr
+    def degrees_of_freedom(self):
+        out = np.zeros(self.uncertainty_params.shape)
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = val.degrees_of_freedom
+        return out
+
+    @auto_attr
+    def posterior_correlation(self):
+        # TODO: trigger warning if S0_hat is None.
+        out = np.zeros((self.uncertainty_params.shape
+                        + (7, 7)))
+        for (i, val) in np.ndenumerate(self.uncertainty_params):
+            out[i] = ((val.degrees_of_freedom - 2) / val.degrees_of_freedom
+                      * val.residual_variance
+                      * val.unscaled_posterior_covariance)
+        return out
+
+    @auto_attr
+    def covariates(self):
+        # TODO: trigger warning if S0_hat is None.
+        return self.lower_triangular(b0=self.S0_hat)
+
+    @property
+    def md_probabilistic(self):
+        return self.location_scale(md_matrix())
+
+    def md_interval_width(self, confidence=0.95):
+        return self.interval_width(md_matrix(), confidence=confidence)
+
+    def md_percentile(self, probability):
+        return self.quantile_function(md_matrix(), probability)
+
+    def md_interquartile_range(self):
+        return self.md_interval_width(confidence=0.5)
+
+    def fa_percentiles(self, probabilities=None, n_samples=1000):
+        return self.percentiles(fa_from_lo_tri,
+                                probabilities=probabilities,
+                                n_samples=n_samples)
+
+    def fa_samples(self, n_samples=1000):
+        return self.samples_of_scalar_index(fa_from_lo_tri,
+                                            n_samples=n_samples)
+
+    def samples_of_scalar_index(self, scalar_index_function, n_samples=1000):
+        samples = np.zeros(self.uncertainty_params.shape + (n_samples,))
+
+        # TODO: iterate over chunks instead
+        for (i, _) in np.ndenumerate(self.uncertainty_params):
+            samples[i] = sample_function(scalar_index_function,
+                                         self.covariates[i],
+                                         self.posterior_correlation[i],
+                                         self.degrees_of_freedom[i],
+                                         n_samples=n_samples)
+
+        return samples
+
+    def fa_interquartile_range(self, n_samples=1000):
+        percentiles = self.fa_percentiles(probabilities=np.array((0.25, 0.75)),
+                                          n_samples=n_samples)
+        width = percentiles[..., 1] - percentiles[..., 0]
+        return width
+
+    def location_scale(self, A):
+        mean = np.einsum('...i, i->...', self.covariates, A)
+        t_scale = np.sqrt(np.einsum('i, ...ij, j->...',
+                                    A,
+                                    self.posterior_correlation,
+                                    A))
+        return mean, t_scale
+
+    def quantile_function(self, A, probability):
+        mean, scale = self.location_scale(A)
+        percentile = tstats.ppf(probability,
+                                self.degrees_of_freedom,
+                                loc=mean,
+                                scale=scale)
+        return percentile
+
+    def interval_width(self, A, confidence=0.95):
+        mean, scale = self.location_scale(A)
+        interval = tstats.interval(confidence,
+                                   self.degrees_of_freedom,
+                                   loc=mean,
+                                   scale=scale)
+        width = interval[1] - interval[0]
+        return width
+
+    def percentiles(self, scalar_index_function,
+                    probabilities=None, n_samples=1000):
+        if probabilities is None:
+            probabilities = np.arange(0.05, 0.95, 0.05)
+
+        empirical_percentiles = np.zeros(self.uncertainty_params.shape
+                                         + probabilities.shape)
+        # TODO: iterate over chunks instead
+        for (i, _) in np.ndenumerate(self.uncertainty_params):
+            empirical_percentiles[i] = percentiles_of_function(
+                scalar_index_function, self.covariates[i],
+                self.posterior_correlation[i], self.degrees_of_freedom[i],
+                probabilities=probabilities, n_samples=n_samples)
+
+        return empirical_percentiles
 
     @property
     def shape(self):
@@ -1221,6 +1365,11 @@ class TensorFit(object):
         return predict.reshape(shape + (gtab.bvals.shape[0], ))
 
 
+def md_matrix():
+    A = 1 / 3 * np.array([1, 0, 1, 0, 0, 1, 0])
+    return A
+
+
 def iter_fit_tensor(step=1e4):
     """Wrap a fit_tensor func and iterate over chunks of data with given length
 
@@ -1288,24 +1437,31 @@ def iter_fit_tensor(step=1e4):
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
             dtiparams = np.empty((size, 12), dtype=np.float64)
+            uncertainty_quantitites = np.empty(size, dtype=object)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             for i in range(0, size, step):
                 if return_S0_hat:
-                    dtiparams[i:i + step], S0params[i:i + step] \
+                    dtiparams[i:i + step], \
+                        uncertainty_quantitites[i:i + step], \
+                        S0params[i:i + step] \
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      return_S0_hat=return_S0_hat,
                                      *args, **kwargs)
                 else:
-                    dtiparams[i:i + step] = fit_tensor(design_matrix,
-                                                       data[i:i + step],
-                                                       *args, **kwargs)
+                    dtiparams[i:i + step], \
+                        uncertainty_quantitites[i:i + step]\
+                        = fit_tensor(design_matrix,
+                                     data[i:i + step],
+                                     *args, **kwargs)
             if return_S0_hat:
                 return (dtiparams.reshape(shape + (12, )),
+                        uncertainty_quantitites.reshape(shape + (1, )),
                         S0params.reshape(shape + (1, )))
             else:
-                return dtiparams.reshape(shape + (12, ))
+                return (dtiparams.reshape(shape + (12, )),
+                        uncertainty_quantitites.reshape(shape + (1,)))
 
         return wrapped_fit_tensor
 
@@ -1379,16 +1535,18 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     ols_fit = _ols_fit_matrix(design_matrix)
     log_s = np.log(data)
     w = np.exp(np.einsum('...ij,...j', ols_fit, log_s))
-    fit_result = np.einsum('...ij,...j',
-                           pinv(design_matrix * w[..., None]),
-                           w * log_s)
+    fit_result, uncertainty_quantitites = probabilistic_least_squares(
+        design_matrix * w[..., None], w * log_s)
+
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
+                uncertainty_quantitites,
                 np.exp(-fit_result[:, -1]))
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                uncertainty_quantitites)
 
 
 @iter_fit_tensor()
@@ -1439,15 +1597,17 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False):
     """
     tol = 1e-6
     data = np.asarray(data)
-    fit_result = np.einsum('...ij,...j', np.linalg.pinv(design_matrix),
-                           np.log(data))
+    fit_result, uncertainty_quantitites = \
+        probabilistic_least_squares(design_matrix, np.log(data))
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
                                 min_diffusivity=tol / -design_matrix.min()),
+                uncertainty_quantitites,
                 np.exp(-fit_result[:, -1]))
     else:
-        return eig_from_lo_tri(fit_result,
-                               min_diffusivity=tol / -design_matrix.min())
+        return (eig_from_lo_tri(fit_result,
+                                min_diffusivity=tol / -design_matrix.min()),
+                uncertainty_quantitites)
 
 
 def _ols_fit_matrix(design_matrix):
@@ -1729,9 +1889,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return (params, None, model_S0)
     else:
-        return params
+        return (params, None)
 
 
 def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
@@ -1893,9 +2053,9 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return (params, None, model_S0)
     else:
-        return params
+        return (params, None)
 
 
 _lt_indices = np.array([[0, 1, 3],
