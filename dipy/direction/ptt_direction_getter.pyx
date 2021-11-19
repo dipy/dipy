@@ -30,44 +30,147 @@ from libc.math cimport sqrt, fabs, M_PI, pow, sin, cos
 cdef extern from "limits.h":
     int INT_MAX
 
-# Pick a random number between 0 and 1
 cdef double uniform_01():
+    """Picks a random number between 0 and 1
+
+    Returns
+    -------
+    double
+        random number
+    """
     return rand()/float(INT_MAX)
 
-# Pick a random number between -1 and 1
 cdef double unidis_m1_p1():
+    """Picks a random number between -1 and 1
+
+    Returns
+    -------
+    double
+        random number
+    """
     return 2.0 * uniform_01() - 1.0
 
 cdef double norm(double[:] v):
+    """Vector norm
+
+    Parameters
+    ----------
+    v : double[3]
+        input vector
+
+    Returns
+    -------
+    double
+        norm of the vector
+    """
     return sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])
 
 cdef void normalize(double[:] v):
+    """Vector normalization
+
+    Parameters
+    ----------
+    v : double[3]
+        input vector
+
+    Notes
+    -----
+    Overwrites the input vector
+    """
     cdef double scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])
     v[0] = v[0]*scale
     v[1] = v[1]*scale
     v[2] = v[2]*scale
 
 cdef double dot(double[:] v1, double[:] v2):
+    """Dot product
+
+    Parameters
+    ----------
+    v1 : double[3]
+        input vector 1
+    v2 : double[3]
+        input vector 2
+
+    Returns
+    -------
+    double
+        dot product of input vectors
+    """
     return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 
 cdef void cross(double[:] out, double[:] v1, double[:] v2):
+    """Cross product
+
+    Parameters
+    ----------
+    v1 : double[3]
+        input vector 1
+    v2 : double[3]
+        input vector 2
+
+    Notes
+    -----
+    Overwrites the first argument
+    """
     out[0] = v1[1]*v2[2] - v1[2]*v2[1]
     out[1] = v1[2]*v2[0] - v1[0]*v2[2]
     out[2] = v1[0]*v2[1] - v1[1]*v2[0]
 
 cdef void getAUnitRandomVector(double[:] out):
+    """Generate a unit random vector
+
+    Parameters
+    ----------
+    out : double[3]
+        input vector
+
+    Notes
+    -----
+    Overwrites the input
+    """
     out[0] = unidis_m1_p1()
     out[1] = unidis_m1_p1()
     out[2] = unidis_m1_p1()
     normalize(out)
 
 cdef void getAUnitRandomPerpVector(double[:] out,double[:] inp):
+    """Generate a unit random perpendicular vector
+
+    Parameters
+    ----------
+    out : double[3]
+        input vector
+
+    inp : double[3]
+        input vector
+
+    Notes
+    -----
+    Overwrites the first argument
+    """
     cdef double[3] tmp
     getAUnitRandomVector(tmp)
     cross(out,inp,tmp)
     normalize(out)
 
 cdef (double,double) getARandomPointWithinDisk(double r):
+    """Generate a random point within a disk
+
+    Parameters
+    ----------
+    r : double
+        The radius of the disk
+    
+    Returns
+    -------
+    x : double
+        x coordinate of the random point
+
+    y : double
+        y coordinate of the random point
+
+    """
     cdef double x = 1
     cdef double y = 1
     while ((x*x+y*y)>1):
@@ -75,12 +178,11 @@ cdef (double,double) getARandomPointWithinDisk(double r):
         y = unidis_m1_p1()
     return (r*x,r*y)
 
-
-# Tracking Parameters
-# (This might not be necessary but I am still putting it here for completeness. We can remove it later if we find it redundant.)
 cdef struct TP:
+    """PTT tracking parameters
+    """
     double step_size
-    double max_curvature
+    double min_radius_curvature
     double probe_length
     double probe_radius
     double probe_quality
@@ -98,7 +200,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     set to 0 and the result is normalized.
     """
 
-    cdef TP         params                # Tracking parameters for this frame.
+    cdef TP           params                # Tracking parameters for this frame.
     cdef double[3]    p                     # Last position
     cdef double[3][3] F                     # Frame
     cdef double       k1                    # k1 value of the current frame
@@ -107,12 +209,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       k2_cand               # Candidate k2 value for the next frame
     cdef double       likelihood            # Likelihood of the next candidate frame constructed with k1_cand and k2_cand
 
-    cdef bint       initialized           # True is initialization was done. This is used for flipping.
+    cdef bint         initialized           # True is initialization was done. This is used for flipping.
     cdef double[3]    init_p                # Initial position
     cdef double[3][3] init_F                # Initial frame
     cdef double       init_k1               # Initial k1 value of the current frame
     cdef double       init_k2               # Initial k2 value of the current frame
-
 
     # The following variables are mainly used for code optimization
     cdef double[9]    PP                    # Propagator
@@ -123,10 +224,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       last_val_cand
     cdef double       init_last_val
 
-
     # For each streamline, create a new PTF object with tracking parameters
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1,
-                 max_curvature=1/2, probe_length=1/2, probe_radius=0,
+    def __init__(self, pmf_gen, max_angle=None, sphere, pmf_threshold=None,
+                 min_radius_curvature=1/2, probe_length=1/2, probe_radius=0,
                  probe_quality=3, probe_count=1, data_support_exponent=1,
                  **kwargs):
         """Direction getter from a pmf generator.
@@ -136,31 +236,49 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         pmf_gen : PmfGen
             Used to get probability mass function for selecting tracking
             directions.
-        max_angle : double, [0, 90]
-            The maximum allowed angle between incoming direction and new
-            direction.
+        max_angle : None
+            Not used for PTT
         sphere : Sphere
             The set of directions to be used for tracking.
-        pmf_threshold : double [0., 1.]
-            Used to remove direction from the probability mass function for
-            selecting the tracking direction.
-        relative_peak_threshold : double in [0., 1.]
-            Used for extracting initial tracking directions. Passed to
-            peak_directions.
-        min_separation_angle : double in [0, 90]
-            Used for extracting initial tracking directions. Passed to
-            peak_directions.
+        pmf_threshold : None
+            Not used for PTT
+        min_radius_curvature : double
+            Is used to set the upper limits for the k1 and k2 parameters 
+            of parallel transport frame
+        probe_length : double
+            ptt uses probes for estimating future propagation steps. 
+            A probe is a short, cylinderical model of the connecting segment.
+            Shorter probe_length yields more dispersed fibers.
+        probe_radius : double
+            ptt uses probes for estimating future propagation steps. 
+            A probe is a short, cylinderical model of the connecting segment.
+            A large probe_radius helps mitigate noise in the fODF 
+            but it might make it harder to sample thin and intricate connections,
+            also the boundary of fiber bundles might be eroded.
+        probe_quality : integer
+            ptt uses probes for estimating future propagation steps. 
+            A probe is a short, cylinderical model of the connecting segment.
+            This parameter sets the number of segments to split the cylinder 
+            along the length of the probe.
+        probe_count : integer
+            ptt uses probes for estimating future propagation steps. 
+            A probe is a short, cylinderical model of the connecting segment.
+            This parameter sets the number of parallel lines used to model the cylinder.
+        data_support_exponent : double
+            Data support to the power dataSupportExponent is used for rejection sampling.
 
         See also
         --------
         dipy.direction.peaks.peak_directions
 
         """
+
+        
         # Set this PTF's parameters
         self.params = TP()
 
-        # TODO: review max_angle vs max_curvature.
-        self.params.max_curvature = max_curvature
+        # TODO: review max_angle vs min_radius_curvature.
+        self.params.min_radius_curvature = min_radius_curvature
         self.params.probe_length = probe_length
         self.params.probe_radius = probe_radius
         self.params.probe_quality = probe_quality
@@ -208,7 +326,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3] pp
 
         self.getARandomFrame(init_dir)
-        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.max_curvature)
+        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.min_radius_curvature)
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
 
@@ -265,7 +383,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         randomly picked candidate.
 
         """
-        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.params.max_curvature)
+        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.params.min_radius_curvature)
         return self.calcDataSupport()
 
     cdef void flip(self):
@@ -273,6 +391,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         This function can be used after the initial curve is picked in order
         to save a copy of the curve for tracking towards the other side.
+
         """
 
         for i in range(3):
@@ -293,6 +412,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         Optionally, the initial direction, i.e., tangent, can also be provided
         if norm(_dir.size)==0, then the tangent will also be a random vector
 
+        Parameters
+        ----------
+        _dir : double[3]
+            The optional initial direction (tangent) of the parallel transport frame
+
         """
         if norm(_dir) == 0:
             getAUnitRandomVector(self.F[0])
@@ -310,6 +434,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         The propagator PP, that is used for transporting the moving frame
         forward.
+
+        Parameters
+        ----------
+        t : double
+            Arclenth, which is equivalent to step size along the arc
 
         """
         cdef double tto2
@@ -341,7 +470,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.PP[8] = 1-self.k2_cand*self.k2_cand*tto2
 
     cdef double calcDataSupport(self):
-        """Calculate data support for the candidate probe."""
+        """Calculates data support for the candidate probe"""
 
         cdef double        fod_amp
         cdef double[3]    _p
@@ -411,7 +540,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
 
     cdef StreamlineStatus reinitialize(self, double[:] _seed_point, double[:] _seed_direction):
-        """Sample an initial curve by rejection sampling."""
+        """Sample an initial curve by rejection sampling.
+        
+        Parameters
+        ----------
+        _seed_point : double[3]
+            Initial point
+
+        _seed_direction : double[3]
+            Initial direction
+
+        """
 
         # Reset initialization
         self.initialized = False
@@ -434,7 +573,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if uniform_01()*posteriorMax < self.get_initial_candidate(_seed_direction):
+            if uniform_01()*posteriorMax <= self.get_initial_candidate(_seed_direction):
 
                 self.last_val = self.last_val_cand
 
@@ -454,6 +593,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return NODATASUPPORT
 
     cdef StreamlineStatus propagate(self):
+        """Takes a step forward along the chosen candidate"""
+
         self.prepare_propagator(self.params.step_size)
 
         self.walk()
@@ -473,7 +614,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if uniform_01()*posteriorMax < self.get_candidate():
+            if uniform_01()*posteriorMax <= self.get_candidate():
                 self.last_val = self.last_val_cand
                 return TRACKPOINT
 
@@ -486,7 +627,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cpdef tuple generate_streamline(self,
                                     double[::1] seed,
                                     double[::1] dir,
-                                    #TODO: Move step_size, voxel_size, fixed_Step variable
+                                    # TODO: Move step_size, voxel_size, fixed_Step variable
                                     # should be outside of generate_streamline
                                     # use it inside the init
                                     double[::1] voxel_size,
