@@ -17,7 +17,7 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.workflows.align import (ImageRegistrationFlow, SynRegistrationFlow,
                                   ApplyTransformFlow, ResliceFlow,
-                                  SlrWithQbxFlow)
+                                  SlrWithQbxFlow, MotionCorrectionFlow)
 
 
 def test_reslice():
@@ -311,6 +311,37 @@ def test_apply_affine_transform():
 
         # Checking for the transformed file.
         assert os.path.exists(pjoin(temp_out_dir, "transformed.nii.gz"))
+
+
+def test_motion_correction():
+    data_path, fbvals_path, fbvecs_path = get_fnames('small_64D')
+    volume = load_nifti_data(data_path)
+
+    with TemporaryDirectory() as out_dir:
+        # Use an abbreviated data-set:
+        img = nib.load(data_path)
+        data = img.get_fdata()[..., :10]
+        nib.save(nib.Nifti1Image(data, img.affine),
+                 os.path.join(out_dir, 'data.nii.gz'))
+        # Save a subset:
+        bvals = np.loadtxt(fbvals_path)
+        bvecs = np.loadtxt(fbvecs_path)
+        np.savetxt(os.path.join(out_dir, 'bvals.txt'), bvals[:10])
+        np.savetxt(os.path.join(out_dir, 'bvecs.txt'), bvecs[:10])
+
+        motion_correction_flow = MotionCorrectionFlow()
+
+        motion_correction_flow._force_overwrite = True
+        motion_correction_flow.run(os.path.join(out_dir, 'data.nii.gz'),
+                                   os.path.join(out_dir, 'bvals.txt'),
+                                   os.path.join(out_dir, 'bvecs.txt'),
+                                   out_dir=out_dir)
+        out_path = motion_correction_flow.last_generated_outputs['out_moved']
+        corrected = load_nifti_data(out_path)
+
+        npt.assert_equal(corrected.shape, data.shape)
+        npt.assert_equal(corrected.min(), data.min())
+        npt.assert_equal(corrected.max(), data.max())
 
 
 def test_syn_registration_flow():
