@@ -495,7 +495,7 @@ class SparseFascicleModel(ReconstModel, Cache):
                           backend='multiprocessing') as parallel:
                 out = parallel(
                     delayed(self.fit_solver2voxels)(isopredict,
-                                                           vox_data, vox,
+                                                    vox_data, vox,
                                                     True) for
                     vox, vox_data in enumerate(flat_S))
 
