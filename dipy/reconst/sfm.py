@@ -19,6 +19,7 @@ import warnings
 
 import numpy as np
 import gc
+from collections import OrderedDict
 
 try:
     from numpy import nanmean
@@ -34,7 +35,6 @@ import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from dipy.core.onetime import auto_attr
-from collections import OrderedDict
 
 joblib, has_joblib, _ = optional_package('joblib')
 sklearn, has_sklearn, _ = optional_package('sklearn')
@@ -490,7 +490,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         if not num_processes:
             num_processes = determine_num_processes(num_processes)
 
-        if num_processes > 1:
+        if num_processes > 1 and has_joblib:
             with joblib.Parallel(n_jobs=num_processes,
                                  backend='multiprocessing') as parallel:
                 out = parallel(
@@ -504,8 +504,8 @@ class SparseFascicleModel(ReconstModel, Cache):
             flat_params = {}
             for d in out:
                 flat_params.update(d)
-            flat_params = OrderedDict(sorted(
-                flat_params.items(), key=lambda x: int(x[0])))
+            flat_params = OrderedDict(
+                sorted(flat_params.items(), key=lambda x: int(x[0])))
             flat_params = np.array(list(flat_params.values()))
         else:
             for vox, vox_data in enumerate(flat_S):
