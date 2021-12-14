@@ -2,6 +2,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 import pytest
+import time
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.core.gradients as grad
@@ -10,6 +11,8 @@ import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
+import warnings
+warnings.filterwarnings('ignore')
 
 needs_sklearn = pytest.mark.skipif(not sfm.has_sklearn,
                                    reason="Requires Scikit-Learn")
@@ -32,16 +35,27 @@ def test_sfm():
     gtab = grad.gradient_table(fbvals, fbvecs)
     for n_threads in [1, 2]:
         for iso in [sfm.ExponentialIsotropicModel, None]:
+            print(f"\niso: {iso}")
             sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
-            sffit1 = sfmodel.fit(data[0, 0, 0], n_threads=n_threads)
+            start_time = time.time()
+            sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_threads)
+            print("%s%s%s%s" % ('sffit1: ',
+                              np.round(time.time() - start_time, 1),
+                                's. n_proc: ', n_threads))
             sphere = dpd.get_sphere()
             odf1 = sffit1.odf(sphere)
             pred1 = sffit1.predict(gtab)
             mask = np.ones(data.shape[:-1])
-            sffit2 = sfmodel.fit(data, mask, n_threads=n_threads)
+            sffit2 = sfmodel.fit(data, mask, num_processes=n_threads)
+            print("%s%s%s%s" % ('sffit2: ',
+                              np.round(time.time() - start_time, 1),
+                                's. n_proc: ', n_threads))
             pred2 = sffit2.predict(gtab)
             odf2 = sffit2.odf(sphere)
-            sffit3 = sfmodel.fit(data, n_threads=n_threads)
+            sffit3 = sfmodel.fit(data, num_processes=n_threads)
+            print("%s%s%s%s" % ('sffit3: ',
+                              np.round(time.time() - start_time, 1),
+                                's. n_proc: ', n_threads))
             pred3 = sffit3.predict(gtab)
             odf3 = sffit3.odf(sphere)
             npt.assert_almost_equal(pred3, pred2, decimal=2)
@@ -51,7 +65,7 @@ def test_sfm():
             # Fit zeros and you will get back zeros
             npt.assert_almost_equal(
                 sfmodel.fit(np.zeros(data[0, 0, 0].shape),
-                            n_threads=n_threads).beta,
+                            num_processes=n_threads).beta,
                 np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
