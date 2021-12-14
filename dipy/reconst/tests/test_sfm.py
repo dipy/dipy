@@ -36,27 +36,27 @@ def test_sfm():
     gtab = grad.gradient_table(fbvals, fbvecs)
     for n_threads in [1, 2]:
         for iso in [sfm.ExponentialIsotropicModel, None]:
-            print(f"\niso: {iso}")
+            # print(f"\niso: {iso}")
             sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
             start_time = time.time()
             sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_threads)
-            print("%s%s%s%s" % ('sffit1: ',
-                              np.round(time.time() - start_time, 1),
-                                's. n_proc: ', n_threads))
+            # print("%s%s%s%s" % ('sffit1: ',
+            #                     np.round(time.time() - start_time, 1),
+            #                     's. n_proc: ', n_threads))
             sphere = dpd.get_sphere()
             odf1 = sffit1.odf(sphere)
             pred1 = sffit1.predict(gtab)
             mask = np.ones(data.shape[:-1])
             sffit2 = sfmodel.fit(data, mask, num_processes=n_threads)
-            print("%s%s%s%s" % ('sffit2: ',
-                              np.round(time.time() - start_time, 1),
-                                's. n_proc: ', n_threads))
+            # print("%s%s%s%s" % ('sffit2: ',
+            #                     np.round(time.time() - start_time, 1),
+            #                     's. n_proc: ', n_threads))
             pred2 = sffit2.predict(gtab)
             odf2 = sffit2.odf(sphere)
             sffit3 = sfmodel.fit(data, num_processes=n_threads)
-            print("%s%s%s%s" % ('sffit3: ',
-                              np.round(time.time() - start_time, 1),
-                                's. n_proc: ', n_threads))
+            # print("%s%s%s%s" % ('sffit3: ',
+            #                     np.round(time.time() - start_time, 1),
+            #                     's. n_proc: ', n_threads))
             pred3 = sffit3.predict(gtab)
             odf3 = sffit3.odf(sphere)
             npt.assert_almost_equal(pred3, pred2, decimal=2)
