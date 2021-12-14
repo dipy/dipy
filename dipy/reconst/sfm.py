@@ -26,6 +26,7 @@ except ImportError:
     from scipy.stats import nanmean
 
 from dipy.utils.optpkg import optional_package
+from dipy.utils.multiproc import determine_num_processes
 import dipy.core.gradients as grad
 import dipy.core.optimize as opt
 import dipy.sims.voxel as sims
@@ -33,7 +34,9 @@ import dipy.data as dpd
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
 from dipy.core.onetime import auto_attr
+from collections import OrderedDict
 
+joblib, has_joblib, _ = optional_package('joblib')
 sklearn, has_sklearn, _ = optional_package('sklearn')
 lm, _, _ = optional_package('sklearn.linear_model')
 
@@ -43,7 +46,6 @@ if not has_sklearn:
     w = sklearn._msg + "\nAlternatively, you can use 'nnls' method to fit"
     w += " the SparseFascicleModel"
     warnings.warn(w)
-
 
 # Isotropic signal models: these are models of the part of the signal that
 # changes with b-value, but does not change with direction. This collection is
@@ -91,9 +93,9 @@ class IsotropicModel(ReconstModel):
         gtab : a GradientTable class instance
 
         """
-        super().__init__(self, gtab)
+        ReconstModel.__init__(self, gtab)
 
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, **kwargs):
         """Fit an IsotropicModel.
 
         This boils down to finding the mean diffusion-weighted signal in each
@@ -381,7 +383,8 @@ class SparseFascicleModel(ReconstModel, Cache):
         .. [Zou2005] Zou H, Hastie T (2005). Regularization and variable
            selection via the elastic net. J R Stat Soc B:301-320
         """
-        super().__init__(self, gtab)
+        ReconstModel.__init__(self, gtab)
+
         if sphere is None:
             sphere = dpd.get_sphere()
         self.sphere = sphere
@@ -428,7 +431,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
 
-        if parallel is True:
+        if parallel:
             return {vox: self.solver.fit(
                 self.design_matrix, vox_data - isopredict[vox]
             ).coef_}
@@ -437,7 +440,7 @@ class SparseFascicleModel(ReconstModel, Cache):
                 self.design_matrix, vox_data - isopredict[vox]
             ).coef_
 
-    def fit(self, data, mask=None, n_threads=1):
+    def fit(self, data, mask=None, num_processes=1):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -484,19 +487,16 @@ class SparseFascicleModel(ReconstModel, Cache):
         else:
             isopredict = isopredict[mask]
 
-        if n_threads > 1:
-            from collections import OrderedDict
-            try:
-                from joblib import Parallel, delayed
-            except ImportError as e:
-                print(e)
+        if not num_processes:
+            num_processes = determine_num_processes(num_processes)
 
-            with Parallel(n_jobs=n_threads,
-                          backend='multiprocessing') as parallel:
+        if num_processes > 1:
+            with joblib.Parallel(n_jobs=num_processes,
+                                 backend='multiprocessing') as parallel:
                 out = parallel(
-                    delayed(self.fit_solver2voxels)(isopredict,
-                                                    vox_data, vox,
-                                                    True) for
+                    joblib.delayed(self.fit_solver2voxels)(isopredict,
+                                                           vox_data, vox,
+                                                           True) for
                     vox, vox_data in enumerate(flat_S))
 
             del parallel
