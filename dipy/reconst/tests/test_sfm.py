@@ -34,29 +34,18 @@ def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = load_nifti_data(fdata)
     gtab = grad.gradient_table(fbvals, fbvecs)
-    for n_threads in [1, 2]:
+    for n_procs in [1, 2]:
         for iso in [sfm.ExponentialIsotropicModel, None]:
-            # print(f"\niso: {iso}")
             sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
-            start_time = time.time()
-            sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_threads)
-            # print("%s%s%s%s" % ('sffit1: ',
-            #                     np.round(time.time() - start_time, 1),
-            #                     's. n_proc: ', n_threads))
+            sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_procs)
             sphere = dpd.get_sphere()
             odf1 = sffit1.odf(sphere)
             pred1 = sffit1.predict(gtab)
             mask = np.ones(data.shape[:-1])
-            sffit2 = sfmodel.fit(data, mask, num_processes=n_threads)
-            # print("%s%s%s%s" % ('sffit2: ',
-            #                     np.round(time.time() - start_time, 1),
-            #                     's. n_proc: ', n_threads))
+            sffit2 = sfmodel.fit(data, mask, num_processes=n_procs)
             pred2 = sffit2.predict(gtab)
             odf2 = sffit2.odf(sphere)
-            sffit3 = sfmodel.fit(data, num_processes=n_threads)
-            # print("%s%s%s%s" % ('sffit3: ',
-            #                     np.round(time.time() - start_time, 1),
-            #                     's. n_proc: ', n_threads))
+            sffit3 = sfmodel.fit(data, num_processes=n_procs)
             pred3 = sffit3.predict(gtab)
             odf3 = sffit3.odf(sphere)
             npt.assert_almost_equal(pred3, pred2, decimal=2)
@@ -66,7 +55,7 @@ def test_sfm():
             # Fit zeros and you will get back zeros
             npt.assert_almost_equal(
                 sfmodel.fit(np.zeros(data[0, 0, 0].shape),
-                            num_processes=n_threads).beta,
+                            num_processes=n_procs).beta,
                 np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 

@@ -171,12 +171,17 @@ class ExponentialIsotropicModel(IsotropicModel):
     Representing the isotropic signal as a fit to an exponential decay function
     with b-values
     """
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, **kwargs):
         """
 
         Parameters
         ----------
         data : ndarray
+
+        mask : array, optional
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed. Has the shape `data.shape[:-1]`. Default: None,
+            which implies that all points should be analyzed.
 
         Returns
         -------
@@ -234,12 +239,15 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
     ----------
     gtab : GradientTable or Sphere
         Sets the rows of the matrix, if the mode is 'signal', this should be a
-        GradientTable. If mode is 'odf' this should be a Sphere
+        GradientTable. If mode is 'odf' this should be a Sphere.
+
     sphere : Sphere
         Sets the columns of the matrix
+
     response : list of 3 elements
         The eigenvalues of a tensor which will serve as a kernel
         function.
+
     mode : str {'signal' | 'odf'}, optional
         Choose the (default) 'signal' for a design matrix containing predicted
         signal in the measurements defined by the gradient table for putative
@@ -338,13 +346,16 @@ class SparseFascicleModel(ReconstModel, Cache):
         Parameters
         ----------
         gtab : GradientTable class instance
+
         sphere : Sphere class instance, optional
             A sphere on which coefficients will be estimated. Default:
-        symmetric sphere with 362 points (from :mod:`dipy.data`).
+            symmetric sphere with 362 points (from :mod:`dipy.data`).
+
         response : (3,) array-like, optional
             The eigenvalues of a canonical tensor to be used as the response
             function of single-fascicle signals.
             Default:[0.0015, 0.0005, 0.0005]
+
         solver : string, or initialized linear model object.
             This will determine the algorithm used to solve the set of linear
             equations underlying this model. If it is a string it needs to be
@@ -359,9 +370,11 @@ class SparseFascicleModel(ReconstModel, Cache):
         l1_ratio : float, optional
             Sets the balance betwee L1 and L2 regularization in ElasticNet
             [Zou2005]_. Default: 0.5
+
         alpha : float, optional
             Sets the balance between least-squares error and L1/L2
             regularization in ElasticNet [Zou2005]_. Default: 0.001
+
         isotropic : IsotropicModel class instance
             This is a class that implements the function that calculates the
             value of the isotropic signal. This is a value of the signal that
@@ -423,24 +436,30 @@ class SparseFascicleModel(ReconstModel, Cache):
         return sfm_design_matrix(self.gtab, self.sphere, self.response,
                                  'signal')
 
-    def fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
+    def _fit_solver2voxels(self, isopredict, vox_data, vox, parallel=False):
         # In voxels in which S0 is 0, we just want to keep the
         # parameters at all-zeros, and avoid nasty sklearn errors:
-        if not (np.any(~np.isfinite(vox_data)) or np.all(
-                vox_data == 0)):
+        if not (np.any(~np.isfinite(vox_data)) or np.all(vox_data == 0)):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
 
-        if parallel:
-            return {vox: self.solver.fit(
-                self.design_matrix, vox_data - isopredict[vox]
-            ).coef_}
+                if parallel:
+                    coef = {vox: self.solver.fit(
+                        self.design_matrix, vox_data - isopredict[vox]
+                    ).coef_}
+                else:
+                    coef = self.solver.fit(
+                        self.design_matrix, vox_data - isopredict[vox]
+                    ).coef_
         else:
-            return self.solver.fit(
-                self.design_matrix, vox_data - isopredict[vox]
-            ).coef_
+            if parallel:
+                return {vox: np.zeros(self.design_matrix.shape[-1])}
+            else:
+                return np.zeros(self.design_matrix.shape[-1])
+        return coef
 
-    def fit(self, data, mask=None, num_processes=1):
+    def fit(self, data, mask=None, num_processes=1,
+            parallel_backend='multiprocessing'):
         """
         Fit the SparseFascicleModel object to data.
 
@@ -454,11 +473,37 @@ class SparseFascicleModel(ReconstModel, Cache):
             should be analyzed. Has the shape `data.shape[:-1]`. Default: None,
             which implies that all points should be analyzed.
 
+        num_processes : int, optional
+            Split the `fit` calculation to a pool of children processes using
+            joblib. This only applies to 4D `data` arrays. Default is 1,
+            which does not require joblib and will run `fit` serially.
+            If < 0 the maximal number of cores minus |num_processes + 1| is
+            used (enter -1 to use as many cores as possible).
+            0 raises an error.
+
+        parallel_backend: str, ParallelBackendBase instance or None
+            Specify the parallelization backend implementation.
+            Supported backends are:
+            - "loky" used by default, can induce some
+              communication and memory overhead when exchanging input and
+              output data with the worker Python processes.
+            - "multiprocessing" previous process-based backend based on
+              `multiprocessing.Pool`. Less robust than `loky`.
+            - "threading" is a very low-overhead backend but it suffers
+              from the Python Global Interpreter Lock if the called function
+              relies a lot on Python objects. "threading" is mostly useful
+              when the execution bottleneck is a compiled extension that
+              explicitly releases the GIL (for instance a Cython loop wrapped
+              in a "with nogil" block or an expensive call to a library such
+              as NumPy).
+            Default: 'multiprocessing'.
+
         Returns
         -------
         SparseFascicleFit object
         """
-        if mask is None:
+
+        if not mask:
             # Flatten it to 2D either way:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
@@ -492,25 +537,29 @@ class SparseFascicleModel(ReconstModel, Cache):
 
         if num_processes > 1 and has_joblib:
             with joblib.Parallel(n_jobs=num_processes,
-                                 backend='multiprocessing') as parallel:
+                                 backend=parallel_backend,
+                                 mmap_mode='r+') as parallel:
                 out = parallel(
-                    joblib.delayed(self.fit_solver2voxels)(isopredict,
-                                                           vox_data, vox,
-                                                           True) for
+                    joblib.delayed(self._fit_solver2voxels)(isopredict,
+                                                            vox_data, vox,
+                                                            True) for
                     vox, vox_data in enumerate(flat_S))
 
             del parallel
 
-            flat_params = {}
+            flat_params_dict = {}
             for d in out:
-                flat_params.update(d)
-            flat_params = OrderedDict(
-                sorted(flat_params.items(), key=lambda x: int(x[0])))
-            flat_params = np.array(list(flat_params.values()))
+                flat_params_dict.update(d)
+            flat_params = np.concatenate(
+                [np.array(i).reshape(1, flat_params.shape[1])
+                 for i in list(OrderedDict(
+                    sorted(flat_params_dict.items(),
+                           key=lambda x: int(x[0]))).values())])
         else:
             for vox, vox_data in enumerate(flat_S):
-                flat_params[vox] = self.fit_solver2voxels(isopredict,
-                                                          vox_data, vox)
+                flat_params[vox] = self._fit_solver2voxels(isopredict,
+                                                           vox_data, vox,
+                                                           False)
 
         del isopredict, flat_S
         gc.collect()
@@ -538,10 +587,13 @@ class SparseFascicleFit(ReconstFit):
         Parameters
         ----------
         model : a SparseFascicleModel object.
+
         beta : ndarray
             The parameters of fit to data.
+
         S0 : ndarray
             The mean non-diffusion-weighted signal.
+
         iso : IsotropicFit class instance
             A representation of the isotropic signal, together with parameters
             of the isotropic signal in each voxel, that is capable of
@@ -588,10 +640,12 @@ class SparseFascicleFit(ReconstFit):
         gtab : GradientTable, optional
             The bvecs/bvals to predict the signal on. Default: the gtab from
             the model object.
+
         response : list of 3 elements, optional
             The eigenvalues of a tensor which will serve as a kernel
             function. Default: the response of the model object. Default to use
             `model.response`.
+
         S0 : float or array, optional
              The non-diffusion-weighted signal. Default: use the S0 of the data
 
