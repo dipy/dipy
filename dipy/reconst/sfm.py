@@ -503,7 +503,7 @@ class SparseFascicleModel(ReconstModel, Cache):
         SparseFascicleFit object
         """
 
-        if not mask:
+        if mask is None:
             # Flatten it to 2D either way:
             data_in_mask = np.reshape(data, (-1, data.shape[-1]))
         else:
