@@ -327,6 +327,8 @@ def test_odf_slicer(interactive=False):
     del odfs
 
 
+@pytest.mark.skipif(skip_it or not has_fury,
+                    reason="Needs xvfb")
 def test_tensor_slicer(interactive=False):
 
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)
@@ -431,10 +433,3 @@ def test_tensor_slicer(interactive=False):
                                            mask=mask, scalar_colors=cfa,
                                            sphere=sphere, scale=.3)
 
-
-
-# test_slicer()
-# test_contour_from_roi()
-test_bundle_maps()
-test_odf_slicer()
-test_tensor_slicer()
