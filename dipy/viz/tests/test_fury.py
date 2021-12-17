@@ -45,7 +45,7 @@ def test_slicer():
     scene.reset_camera()
     scene.reset_clipping_range()
 
-    window.show(scene, reset_camera=False)
+    # window.show(scene, reset_camera=False)
     arr = window.snapshot(scene, offscreen=True)
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
@@ -433,3 +433,4 @@ def test_tensor_slicer(interactive=False):
                                            mask=mask, scalar_colors=cfa,
                                            sphere=sphere, scale=.3)
 
+test_slicer()
