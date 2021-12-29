@@ -7,10 +7,14 @@ from warnings import warn
 
 import numpy as np
 
+from scipy.linalg import sqrtm
+
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.reconst.dti import auto_attr
+from dipy.utils.optpkg import optional_package
 
+cp, have_cvxpy, _ = optional_package("cvxpy")
 
 # XXX Eventually to be replaced with `reconst.dti.lower_triangular`
 def from_3x3_to_6x1(T):
@@ -180,6 +184,78 @@ def from_21x1_to_6x6(V):
     T = np.moveaxis(T, (0, 1), (-2, -1))
     return T
 
+def cvxpy_1x6_to_3x3(V):
+    """Convert a 1 x 6 vector into a symmetric 3 x 3 matrix and
+    returns a cvxpy block matrix object.
+    Parameters
+    ----------
+    V : numpy.ndarray
+        An array of size (1, 6).
+    Returns
+    -------
+    T : cvxpy.bmat
+        Converted matrix of size (3, 3).
+    Notes
+    -----
+    The conversion of a matrix into a vector is defined as
+        .. math::
+            \mathbf{t} = \begin{bmatrix}
+            T_{11} & T_{22} & T_{33} &
+            \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
+            \end{bmatrix}^T
+    """
+    if V.shape[0] == 6:
+        V = V.T
+
+    f = 1 / np.sqrt(2)
+
+    T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4]],
+                 [f * V[0, 5],     V[0, 1], f * V[0, 3]],
+                 [f * V[0, 4], f * V[0, 3],    V[0, 2]]])
+    return T
+
+
+def cvxpy_1x21_to_6x6(V):
+    """Convert 1 x 21 vector into a symmetric 6 x 6 matrix and 
+    return it as a cvxpy block matrix object
+    Parameters
+    ----------
+    V : numpy.ndarray
+        An array of size (1, 21).
+    Returns
+    -------
+    T : cvxpy.bmat
+        Converted matrices of size (6, 6).
+    Notes
+    -----
+    The conversion of a matrix into a vector is defined as
+        .. math::
+            \begin{matrix}
+            \mathbf{t} = & \big[
+            T_{11} & T_{22} & T_{33} \\
+            & \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12} \\
+            & \sqrt{2} T_{14} & \sqrt{2} T_{15} & \sqrt{2} T_{16} \\
+            & \sqrt{2} T_{24} & \sqrt{2} T_{25} & \sqrt{2} T_{26} \\
+            & \sqrt{2} T_{34} & \sqrt{2} T_{35} & \sqrt{2} T_{36} \\
+            & T_{44} & T_{55} & T_{66} \\
+            & \sqrt{2} T_{45} & \sqrt{2} T_{56} & \sqrt{2} T_{46} \big]^T
+            \end{matrix}
+    """
+    if V.shape[0] == 21:
+        V = V.T
+
+    f = 1 / np.sqrt(2)
+
+    T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4], f * V[0, 6],
+                  f * V[0, 7], f * V[0, 8]],[f * V[0, 5], V[0, 1], 
+                  f * V[0, 3], f * V[0, 9], f * V[0, 10], f * V[0, 11]],
+                 [f * V[0, 4], f * V[0, 3], V[0, 2], f * V[0, 12], 
+                  f * V[0, 13], f * V[0, 14]], [f * V[0, 6], f * V[0, 9],
+                  f * V[0, 12], V[0, 15], f * V[0, 18], f * V[0, 20]],
+                 [f * V[0, 7], f * V[0, 10], f * V[0, 13], f * V[0, 18], 
+                 V[0, 16], f * V[0, 19]], [f * V[0, 8], f * V[0, 11],
+                  f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
+    return T
 
 # These tensors are used in the calculation of the QTI parameters
 e_iso = np.eye(3) / 3
@@ -423,6 +499,90 @@ def _wls_fit(data, mask, X, step=int(1e4)):
     params = params.reshape((mask.shape + (28,)))
     return params
 
+def _sdpdc_fit(data, mask, X, step=int(20)):
+    """Estimate the model parameters using Semidefinite Programming (SDP), 
+        while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
+    Parameters
+    ----------
+    data : numpy.ndarray
+        Array of shape (..., number of acquisitions).
+    mask : numpy.ndarray
+        Array with the same shape as the data array of a single acquisition.
+    X : numpy.ndarray
+        Design matrix of shape (number of acquisitions, 28).
+    step : int, optional
+        The number of voxels over which the fit is calculated simultaneously.
+
+    Returns
+    -------
+    params : numpy.ndarray
+        Array of shape (..., 28) containing the estimated model parameters.
+        Element 0 is the natural logarithm of the estimated signal without
+        diffusion-weighting, elements 1-6 are the estimated diffusion tensor
+        elements in Voigt notation, and elements 7-27 are the estimated
+        covariance tensor elements in Voigt notation.
+        
+    References
+    ----------
+    .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
+        Özarslan E., "Q-space trajectory imaging with positivity constraints
+        (QTI+)" in Neuroimage, Volume 238, 2021.
+    """
+
+    if not have_cvxpy:
+                raise ValueError(
+                    'CVXPY package needed to enforce constraints')
+    
+    cvxpy_solver = 'MOSEK'
+    if have_cvxpy:
+        if cvxpy_solver not in cp.installed_solvers():
+            warn('The recommended solver Mosek is not installed, using '+
+            'SCS insted')
+            cvxpy_solver = 'SCS'
+
+    params = np.zeros((np.product(mask.shape), 28)) * np.nan
+    data_masked = data[mask]
+    size = len(data_masked)
+    scale = np.max(data_masked, axis=1, keepdims=True)
+    data_masked = data_masked / scale
+
+    params_masked = np.zeros((size, 28))
+    for i in range(0, size, step):
+
+        data_chunk = data_masked[i:i+step, :]
+        size_chunk, nvols = data_chunk.shape
+        constraints = []
+        t = cp.Variable((size_chunk, 1))
+        x = cp.Variable((28, size_chunk))
+        objective = cp.Minimize(cp.sum(t, axis=0))
+
+        for j in range(size_chunk):
+
+            dat = data_chunk[j, :]
+            A = np.diag(dat) @ X 
+            b = (dat * np.log(dat))[..., np.newaxis]
+            c = -2 * np.transpose(A) @ b
+            P = np.real(sqrtm(np.transpose(A) @ A))
+            xx = cp.reshape(x[:, j], (28, 1))
+            SDPprob = cp.bmat(
+                [[np.eye(28), P @ xx], [(P @ xx).T, t[j, 0] - c.T @ xx]])
+            constraints += [SDPprob >> 0,
+                            cvxpy_1x6_to_3x3(xx[1:7]) >> 0,  # d)
+                            cvxpy_1x21_to_6x6(xx[7::]) >> 0  # c)
+                            ]
+
+        prob = cp.Problem(objective, constraints)
+        prob.solve(solver=cvxpy_solver)
+
+        x = x.value
+        m = np.zeros((28, size_chunk))
+        m[0, :] = np.log(np.exp(x[0, :]) * scale[i:i+size_chunk, 0])
+        m[1::, :] = x[1::, :] 
+        params_masked[i:i+size_chunk, :] = m.T
+
+    params[np.where(mask.ravel())] = params_masked
+    params = params.reshape((mask.shape + (28,)))
+    return params
 
 class QtiModel(ReconstModel):
 
@@ -439,12 +599,18 @@ class QtiModel(ReconstModel):
                     :func:`qti._ols_fit`
                 'WLS' for weighted least squares
                     :func:`qti._wls_fit`
+                'SDPDc' for semidefinite programming with positivity 
+                        constraints applied [2]_
+                    :func:`qti._sdpdc_fit`
 
         References
         ----------
         .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
            multidimensional diffusion MRI of the human brain." Neuroimage 135
            (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
+        .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
+            Özarslan E., "Q-space trajectory imaging with positivity constraints
+            (QTI+)" in Neuroimage, Volume 238, 2021.
         """
         ReconstModel.__init__(self, gtab)
 
@@ -465,7 +631,7 @@ class QtiModel(ReconstModel):
         except KeyError:
             raise ValueError(
                 'Invalid value (%s) for \'fit_method\'.' % fit_method
-                + ' Options: \'OLS\', \'WLS\'.'
+                + ' Options: \'OLS\', \'WLS\', \'SDPdc\'.'
             )
 
     def fit(self, data, mask=None):
@@ -916,4 +1082,4 @@ class QtiFit(object):
         return k_mu
 
 
-common_fit_methods = {'OLS': _ols_fit, 'WLS': _wls_fit}
+common_fit_methods = {'OLS': _ols_fit, 'WLS': _wls_fit, 'SDPdc': _sdpdc_fit}
