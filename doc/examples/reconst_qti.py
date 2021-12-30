@@ -114,6 +114,22 @@ data as follows:
 """
 qtimodel = qti.QtiModel(gtab)
 qtifit = qtimodel.fit(data, mask)
+
+"""
+If desired, it is also possible to estimate the QTI model parameters using 
+part of the the QTI+ framework described in [2]_ . In this case, positivity 
+constraints are enforced on the $\mathbf{D}$ and $\mathbb{C}$ tensors while 
+estimating them. To do so, select the 'SDPdc' fit method when creating the 
+QtiModel object:
+
+qtimodel = qti.QtiModel(gtab, fit_method='SDPdc')
+qtifit = qtimodel.fit(data, mask)
+
+Note: this fit method is much slower compared to the defaults, and requires
+the cvxpy library to be installed. It is also recommended to install the 
+solver 'MOSEK' as opposed to using the free solver installed with cvxpy.
+"""
+
 """
 QTI parameter maps can accessed as the attributes of `qtifit`. For instance,
 fractional anisotropy (FA) and microscopic fractional anisotropy (μFA) maps can
@@ -178,4 +194,7 @@ References
 .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
    multidimensional diffusion MRI of the human brain." Neuroimage 135
    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
+.. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
+   Özarslan E., "Q-space trajectory imaging with positivity constraints
+   (QTI+)" in Neuroimage, Volume 238, 2021.
 """
