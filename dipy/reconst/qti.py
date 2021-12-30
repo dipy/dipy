@@ -502,6 +502,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
 def _sdpdc_fit(data, mask, X, step=int(20)):
     """Estimate the model parameters using Semidefinite Programming (SDP), 
         while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
+        
     Parameters
     ----------
     data : numpy.ndarray
