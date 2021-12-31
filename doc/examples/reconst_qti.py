@@ -128,6 +128,11 @@ qtifit = qtimodel.fit(data, mask)
 Note: this fit method is much slower compared to the defaults, and requires
 the cvxpy library to be installed. It is also recommended to install the 
 solver 'MOSEK' as opposed to using the free solver installed with cvxpy.
+Instructions on how to install cvxpy can be found at
+https://www.cvxpy.org/install/
+Instructions on how to install Mosek and setting up a licence can be found 
+at https://docs.mosek.com/latest/install/installation.html
+
 """
 
 """
