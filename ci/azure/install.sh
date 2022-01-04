@@ -4,11 +4,11 @@ set -ev
 if [ "$INSTALL_TYPE" == "conda" ]; then
 
     conda config --set always_yes yes --set changeps1 no
-    if [ "$AGENT_OS" == "Linux" ]; then
-        # Workaround: https://github.com/conda/conda/issues/9337
-        pip uninstall -y setuptools
-        conda install -yq setuptools
-    fi
+    # if [ "$AGENT_OS" == "Linux" ]; then
+    # Workaround: https://github.com/conda/conda/issues/9337
+    pip uninstall -y setuptools wheel
+    conda install -yq setuptools wheel
+    # fi
     conda update -yq conda
     conda install conda-build anaconda-client
     conda config --add channels conda-forge
@@ -27,9 +27,9 @@ else
     # just to check python version
     python --version
 
-    if [ "$AGENT_OS" == "Linux" ]; then
-        $PIPI --upgrade pip "setuptools<50.0"
-    fi
+    # if [ "$AGENT_OS" == "Linux" ]; then
+    $PIPI --upgrade pip setuptools wheel
+    # fi
 
     $PIPI pytest
     $PIPI numpy
