@@ -343,6 +343,9 @@ def affine_registration(moving, static,
                         sigmas=None,
                         factors=None,
                         ret_metric=False,
+                        *,
+                        method='L-BFGS-B',
+                        options=None,
                         **metric_kwargs):
     """
     Find the affine transformation between two 3D images. Alternatively, find
@@ -418,6 +421,21 @@ def affine_registration(moving, static,
         where `sampling_proportion` specifies the proportion of voxels to
         be used. The default is None (dense sampling).
 
+    method : str, optional
+        Type of solver. See :class:`dipy.core.optimize.Optimizer` for more
+        information.
+
+        .. versionadded:: 1.5
+
+    options : dict, optional
+        extra optimization options. The default is None, implying
+        no extra options are passed to the optimizer.
+
+        .. versionadded:: 1.5
+
+    **metric_kwargs : dict
+        Keyword arguments to pass to the metric.
+
     Returns
     -------
     transformed : array with moving data resampled to the static space
@@ -451,7 +469,9 @@ def affine_registration(moving, static,
     affreg = AffineRegistration(metric=use_metric,
                                 level_iters=level_iters,
                                 sigmas=sigmas,
-                                factors=factors)
+                                factors=factors,
+                                method=method,
+                                options=options)
 
     # Convert pipeline to sanitized list of str
     pipeline = list(pipeline)
