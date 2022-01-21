@@ -16,9 +16,13 @@ if has_fury:
 
 
 def apply_shader(hz, act):
-    # Todo:  Use fury.shaders API.
+    """ Apply a shader to an actor (act) that access shared memory
 
-    _caller, _event, calldata=None
+    Parameters
+    ----------
+    hz : GlobalHorizon instance
+    act : fury.actor object
+    """
 
     frag_decl = \
     """

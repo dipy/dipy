@@ -4,10 +4,8 @@ Advanced interactive visualization
 ==================================
 
 In DIPY_ we created a thin interface to access many of the capabilities
-available in the Visualization Toolkit framework (VTK) but tailored to the
-needs of structural and diffusion imaging. Initially the 3D visualization
-module was named ``fvtk``, meaning functions using vtk. This is not available
-anymore.
+available in the FURY 3D visualization library but tailored to the
+needs of structural and diffusion imaging.
 """
 
 import numpy as np
@@ -305,6 +303,14 @@ else:
 del show_m
 
 """
+
+References
+----------
+
+.. [Garyfallidis2021] Garyfallidis, Eleftherios, Serge Koudoro, Javier Guaje, Marc-Alexandre Côté, Soham Biswas,
+David Reagan, Nasim Anousheh, Filipi Silva, Geoffrey Fox, and Fury Contributors.
+"FURY: advanced scientific visualization." Journal of Open Source Software 6, no. 64 (2021): 3384.
+https://doi.org/10.21105/joss.03384
 
 .. include:: ../links_names.inc
 
