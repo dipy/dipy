@@ -228,7 +228,7 @@ def slicer_panel(scene, iren,
                                            auto=True)
         N = rgb.shape[0]
 
-        lut = colormap.vtk.vtkLookupTable()
+        lut = colormap.LookupTable()
         lut.SetNumberOfTableValues(N)
         lut.SetRange(r1, r2)
         for i in range(N):
