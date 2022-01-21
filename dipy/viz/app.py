@@ -21,7 +21,7 @@ def apply_shader(hz, act):
     Parameters
     ----------
     hz : GlobalHorizon instance
-    act : fury.actor object
+    act : fury.actor visual object
     """
 
     frag_decl = \
@@ -37,6 +37,7 @@ def apply_shader(hz, act):
         }
     """
 
+    shaders.shader_to_actor(act, "vertex", impl_code="\n", replace_first=False, replace_all=False)
     shaders.shader_to_actor(act, "fragment", decl_code=frag_decl, block="coincident")
     shaders.shader_to_actor(act, "fragment", impl_code=frag_impl, block="light")
 
