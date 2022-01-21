@@ -10,45 +10,65 @@ from dipy.io.streamline import save_tractogram
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz import actor, window, ui
-    from dipy.viz import vtk, HAVE_VTK_9_PLUS
+    from dipy.viz import actor, window, ui, lib, shaders
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
 
 
-def apply_shader(hz, actor):
+def apply_shader(hz, act):
     # Todo:  Use fury.shaders API.
-    sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
-    gl_mapper = actor.GetMapper()
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Vertex,
-        "//VTK::ValuePass::Impl",  # replace the normal block
-        False,
-        "//VTK::ValuePass::Impl\n",  # we still want the default
-        False)
+    _caller, _event, calldata=None
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Light::Impl",
-        True,
-        "//VTK::Light::Impl\n"
-        "if (selected == 1){\n"
-        " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
-        "}\n",
-        False)
+    frag_decl = \
+    """
+    uniform float selected;
+    uniform float opacity_level;
+    """
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Coincident::Dec",
-        True,
-        "//VTK::Coincident::Dec\n"
-        "uniform float selected;\n"
-        "uniform float opacity_level;\n",
-        False)
+    frag_impl = \
+    """
+    if (selected == 1){
+        fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
+        }
+    """
 
-    @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
-    def vtk_shader_callback(caller, event, calldata=None):
+    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl, block="coincident")
+    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl, block="light")
+
+    # sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
+    # gl_mapper = actor.GetMapper()
+
+    # sp.AddShaderReplacement(
+    #     vtk.vtkShader.Vertex,
+    #     "//VTK::ValuePass::Impl",  # replace the normal block
+    #     False,
+    #     "//VTK::ValuePass::Impl\n",  # we still want the default
+    #     False)
+
+    # sp.AddShaderReplacement(
+    #     vtk.vtkShader.Fragment,
+    #     "//VTK::Light::Impl",
+    #     True,
+    #     "//VTK::Light::Impl\n"
+    #     "if (selected == 1){\n"
+    #     " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
+    #     "}\n",
+    #     False)
+
+    # sp.AddShaderReplacement(
+    #     vtk.vtkShader.Fragment,
+    #     "//VTK::Coincident::Dec",
+    #     True,
+    #     "//VTK::Coincident::Dec\n"
+    #     "uniform float selected;\n"
+    #     "uniform float opacity_level;\n",
+    #     False)
+
+    # @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
+
+
+    def shader_selected_callback(caller, event, calldata=None):
         program = calldata
         if program is not None:
             try:
@@ -63,9 +83,10 @@ def apply_shader(hz, actor):
                 pass
             program.SetUniformf("opacity_level", 1)
 
-    gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
-                          vtk_shader_callback)
+    # gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
+    #                      vtk_shader_callback)
 
+    shaders.add_shader_callback(act, shader_selected_callback)
 
 HELP_MESSAGE = """
 >> left click: select centroid
