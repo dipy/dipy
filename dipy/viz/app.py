@@ -70,28 +70,39 @@ def apply_shader(hz, act):
     #     "uniform float opacity_level;\n",
     #     False)
 
+    #
     # @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
 
-
+    # @window.vtk.calldata_type(lib.VTK_OBJECT)
+    @lib.calldata_type(lib.VTK_OBJECT)
     def shader_selected_callback(caller, event, calldata=None):
         program = calldata
         if program is not None:
             try:
+                # print('cea', hz.cea[actor]['selected'])
+                print('cea')
+                print(hz.cea[actor]['selected'])
                 program.SetUniformf("selected",
                                     hz.cea[actor]['selected'])
             except KeyError:
                 pass
             try:
+                # print('cla', hz.cla[actor]['selected'])
+                print('cla')
+                print(hz.cla[actor]['selected'])
                 program.SetUniformf("selected",
                                     hz.cla[actor]['selected'])
             except KeyError:
                 pass
             program.SetUniformf("opacity_level", 1)
 
-    # gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
-    #                      vtk_shader_callback)
 
-    shaders.add_shader_callback(act, shader_selected_callback)
+    gl_mapper = act.GetMapper()
+    gl_mapper.AddObserver(lib.Command.UpdateShaderEvent,
+                          shader_selected_callback)
+
+
+    # shaders.add_shader_callback(act, shader_selected_callback, priority=100)
 
 HELP_MESSAGE = """
 >> left click: select centroid
