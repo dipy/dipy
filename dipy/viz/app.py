@@ -41,68 +41,22 @@ def apply_shader(hz, act):
     shaders.shader_to_actor(act, "fragment", decl_code=frag_decl, block="coincident")
     shaders.shader_to_actor(act, "fragment", impl_code=frag_impl, block="light")
 
-    # sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
-    # gl_mapper = actor.GetMapper()
-
-    # sp.AddShaderReplacement(
-    #     vtk.vtkShader.Vertex,
-    #     "//VTK::ValuePass::Impl",  # replace the normal block
-    #     False,
-    #     "//VTK::ValuePass::Impl\n",  # we still want the default
-    #     False)
-
-    # sp.AddShaderReplacement(
-    #     vtk.vtkShader.Fragment,
-    #     "//VTK::Light::Impl",
-    #     True,
-    #     "//VTK::Light::Impl\n"
-    #     "if (selected == 1){\n"
-    #     " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
-    #     "}\n",
-    #     False)
-
-    # sp.AddShaderReplacement(
-    #     vtk.vtkShader.Fragment,
-    #     "//VTK::Coincident::Dec",
-    #     True,
-    #     "//VTK::Coincident::Dec\n"
-    #     "uniform float selected;\n"
-    #     "uniform float opacity_level;\n",
-    #     False)
-
-    #
-    # @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
-
-    # @window.vtk.calldata_type(lib.VTK_OBJECT)
-    @lib.calldata_type(lib.VTK_OBJECT)
     def shader_selected_callback(caller, event, calldata=None):
         program = calldata
         if program is not None:
             try:
-                # print('cea', hz.cea[actor]['selected'])
-                print('cea')
-                print(hz.cea[actor]['selected'])
                 program.SetUniformf("selected",
-                                    hz.cea[actor]['selected'])
+                                    hz.cea[act]['selected'])
             except KeyError:
                 pass
             try:
-                # print('cla', hz.cla[actor]['selected'])
-                print('cla')
-                print(hz.cla[actor]['selected'])
                 program.SetUniformf("selected",
-                                    hz.cla[actor]['selected'])
+                                    hz.cla[act]['selected'])
             except KeyError:
                 pass
             program.SetUniformf("opacity_level", 1)
 
-
-    gl_mapper = act.GetMapper()
-    gl_mapper.AddObserver(lib.Command.UpdateShaderEvent,
-                          shader_selected_callback)
-
-
-    # shaders.add_shader_callback(act, shader_selected_callback, priority=100)
+    shaders.add_shader_callback(act, shader_selected_callback, priority=100)
 
 HELP_MESSAGE = """
 >> left click: select centroid
@@ -360,14 +314,12 @@ class Horizon(object):
             return
 
         def left_click_centroid_callback(obj, event):
-
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
             self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
                 self.cea[obj]['selected']
             self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
-
             if self.cla[obj]['selected']:
                 self.cla[obj]['centroid_actor'].VisibilityOn()
                 ca = self.cla[obj]['centroid_actor']
