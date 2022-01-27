@@ -25,21 +25,25 @@ def apply_shader(hz, act):
     """
 
     frag_decl = \
-    """
-    uniform float selected;
-    uniform float opacity_level;
-    """
+        """
+        uniform float selected;
+        uniform float opacity_level;
+        """
 
     frag_impl = \
-    """
-    if (selected == 1){
-        fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
-        }
-    """
+        """
+        if (selected == 1){
+            fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
+            }
+        """
 
-    shaders.shader_to_actor(act, "vertex", impl_code="\n", replace_first=False, replace_all=False)
-    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl, block="coincident")
-    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl, block="light")
+    shaders.shader_to_actor(act, "vertex", impl_code="\n",
+                            replace_first=False,
+                            replace_all=False)
+    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl,
+                            block="coincident")
+    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl,
+                            block="light")
 
     def shader_selected_callback(caller, event, calldata=None):
         program = calldata
