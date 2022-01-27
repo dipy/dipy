@@ -22,7 +22,7 @@ else:
         "You do not have FURY installed. "
         "Therefore, 3D visualization functions will not work for you. "
         "Please install or upgrade FURY using pip install -U fury"
-        "For detailed installation instructions, please visit: https://fury.gl/")
+        "For detailed installation instructions visit: https://fury.gl/")
 
 # We make the visualization requirements optional imports:
 _, has_mpl, _ = optional_package(
