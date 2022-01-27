@@ -12,8 +12,8 @@ fury, has_fury, _ = optional_package(
 
 
 if has_fury:
-    from fury import actor, window, colormap, interactor, ui, utils, shaders
-    from fury import lib
+    from fury import actor, window, colormap, lib
+    from fury import interactor, ui, utils, shaders
     from fury.data import (fetch_viz_icons, read_viz_icons,
                            DATA_DIR as FURY_DATA_DIR)
 
