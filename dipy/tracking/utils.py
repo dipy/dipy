@@ -703,6 +703,8 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
     out : boolean
 
     """
+    if not np.any(streamline):
+        return False
     if len(roi_coords) == 0:
         return False
     if mode == "any" or mode == "all":
