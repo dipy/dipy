@@ -13,6 +13,6 @@ on:
 
 jobs:
   test_template:
-    uses: test_template.yml
+    uses: skoudoro/dipy/.github/workflows/test_template.yml@v1
     with:
       environment: [ubuntu-latest, macos-latest, windows-latest]
