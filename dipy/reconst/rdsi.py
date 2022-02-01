@@ -1,9 +1,13 @@
+import os
 import numpy as np
 import numpy.matlib
 import pandas as pd
 
 import torch
 import torchkbnufft as tkbn
+
+from dipy.core.sphere import Sphere
+from dipy.core.dsi_sphere import dsiSphere8Fold
 
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
@@ -26,8 +30,9 @@ class RadialDsiModel(OdfModel, Cache):
         return np.array(shells)
 
 
-    def __init__(self, gtab, sampling_length=1.2):
+    def __init__(self, gtab, sampling_length=1.2, tessellation=dsiSphere8Fold()):
         self.gtab = gtab
+        self.tessellation = tessellation
 
         if self.gtab.big_delta is None:
             self.gtab.big_delta = 1
@@ -44,17 +49,29 @@ class RadialDsiModel(OdfModel, Cache):
         # Multiply by 2*np.pi for backward compatibility with the Matlab version
         self.qtable = np.vstack(self.gtab.qvals[self.dir_filter]) * self.gtab.bvecs[self.dir_filter] * 2 * np.pi
 
+        # Set the sampling length to determine max_displacement, then compute the transition matrix.
+        self.set_sampling_length(sampling_length)
+        
+        
+    def set_sampling_length(self, sampling_length):
         self.max_displacement = sampling_length / (2 * np.max(np.diff(np.sqrt(
             self.extract_shells(self.gtab.bvals)
         ))))
-            
+        self.compute_transition_matrix()
+        
+        
+    def compute_transition_matrix(self):
+        h = self._dcf_calc()
     
-    def fit(self, data):
-        return RadialDsiFit(self, data)
+        E = np.dot(self.tessellation.vertices, self.qtable.T)
+        F = np.multiply(
+            -self._sinc_second_derivative(2 * np.pi * E * self.max_displacement),
+            np.matlib.repmat(h.T, E.shape[0], 1)
+        )
     
-    
-class RadialDsiFit(OdfFit):
+        self.transition_matrix = F.T
 
+    
     def _sinc_second_derivative(self, x):
         result = np.zeros_like(x)
         
@@ -65,143 +82,58 @@ class RadialDsiFit(OdfFit):
         
         result[near_zero_filter] = -1/3 + x0 * x0 / 10
         result[~near_zero_filter] = 2 * np.sin(x1) / x1 / x1 / x1 - 2 * np.cos(x1) / x1 / x1 - np.sin(x1) / x1
-        
+
         return result
 
 
-    def __init__(self, model, data):
-        self._model = model
-        self._data = data
+    def _ir_mri_dcf_voronoi0(self, kspace):
     
-    
-    # function wi = ir_mri_dcf_voronoi0(kspace, fix_edge)
-    def ir_mri_dcf_voronoi0(self, kspace, fix_edge):
-    
-        # M = size(kspace, 1);
-        M = kspace.shape[0]
-    
-        # i0 = sum(abs(kspace), 2) == 0; % which points are at origin?
+        # Find the points at the origin
         i0 = np.sum(np.abs(kspace), 1) == 0
         
-        # if sum(i0) > 1 % multiple DC points?
+        # if multiple zero points found, keep the first one only
         if np.sum(i0) > 1:
         
-        #     i0f = find(i0);
-        #     i0f = i0f(1); % keep the first zero point only
+            # Find the first zero point
             i0f = np.nonzero(i0)[0][0]
-        
-        #     i0(i0f) = false; % trick
             i0[i0f] = False
         
-        #     wi = zeros(M, 1);
-            wi = np.zeros((M, 1))
-            
-        #     wi(~i0) = ir_mri_dcf_voronoi(kspace(~i0,:), fix_edge);
-            wi[~i0] = self.ir_mri_dcf_voronoi(kspace[~i0,:], fix_edge)
+            wi = np.zeros((kspace.shape[0], 1))
+            wi[~i0] = self._ir_mri_dcf_voronoi(kspace[~i0,:])
         
-        #     i0(i0f) = true; % trick
             i0[i0f] = True
         
-        #     wi(i0) = wi(i0f) / sum(i0); % distribute dcf equally
+            # Distribute DCF equally
             wi[i0] = wi[i0f] / np.sum(i0)
-        
-        # else
-        #     wi = ir_mri_dcf_voronoi(kspace, fix_edge);
-        # end    
+
         else:
-            wi = self.ir_mri_dcf_voronoi(kspace, fix_edge)
+            wi = self._ir_mri_dcf_voronoi(kspace)
         
         return wi
 
 
-    # % ir_mri_dcf_voronoi()
-    # %
-    # function wi = ir_mri_dcf_voronoi(kspace, fix_edge)
-    def ir_mri_dcf_voronoi(self, kspace, fix_edge):
+    def _ir_mri_dcf_voronoi(self, kspace):
     
-        # M = size(kspace, 1);
-        M = kspace.shape[0]
-
-        # wi = zeros(M,1);
-        wi = np.zeros((M, 1))
+        wi = np.zeros((kspace.shape[0], 1))
         
-        # [v, c] = voronoin(double(kspace));
         vor = Voronoi(kspace, qhull_options='Qbb')
         v = vor.vertices
         c = vor.regions
         
-        # nbad = 0;
-        nbad = 0
-        
-        # for mm=1:M
-        for mm in range(M):
-        
-            #     ticker([mfilename ' (voronoi)'], mm, M)
-            #     x = v(c{mm},:);
-            #     if ~any(isinf(x))
-            #         try
-            #             [~, wi(mm)] = convhulln(x); % cell area
-            #         catch
-            # %            printm('bad %d', mm)
-            #             nbad = nbad + 1;
-            #         end
-            #     end
+        for mm in range(len(wi)):
 
-
-            if -1 not in c[vor.point_region[mm]]:
-                x = v[c[vor.point_region[mm]],:]
-                try:
-                    conv_hull = ConvexHull(x)
-                    wi[mm] = conv_hull.volume
-                except:
-                    print('bad %d' % mm)
-                    nbad = nbad + 1
+            # Disregard infinite cells                    
+            if -1 in c[vor.point_region[mm]]:
+                continue
             
-        # end
-        # if nbad
-        #     printm('bad edge points %d of %d', nbad, M)
-        # end
-        #
-        # % points at the outer edges of k-space have infinite voronoi cell area
-        # % so are assigned wi=0 above.  to improve on 0, here we extrapolate
-        # % based on the points near the edge.
-        # switch fix_edge
-        # case 2
-        #     rho = sum(kspace.^2, 2); % radial frequency coordinate
-        #     igood = (rho > 0.6 * max(rho)) & (wi > 0);
-        #     pp = polyfit(rho(igood), wi(igood), 2);
-        #     wi(wi == 0) = polyval(pp, rho(wi == 0)); % extrapolate
-        #
-        # % old way: look for points close to convex hull and use max of other points?
-        # case 1
-        #     printm('trying to fix %d zeros of %d', sum(wi==0), M)
-        #     ii = logical(zeros(size(wi)));
-        #     fac = 0.98;
-        #     for id=1:ncol(kspace) % find cartesian edges of k-space
-        #         k = kspace(:,id);
-        #         ii = ii | (k > fac * max(k)) | (k < fac * min(k));
-        #     end
-        #     if ncol(kspace) >= 2
-        #         k = sqrt(kspace(:,1).^2 + kspace(:,2).^2);
-        #         ii = ii | (k > fac * max(k)); % cylindrical edge
-        #     end
-        #     if ncol(kspace) >= 3
-        #         k = sqrt(kspace(:,1).^2 + kspace(:,2).^2 + kspace(:,3).^2);
-        #         ii = ii | (k > fac * max(k)); % spherical edge
-        #     end
-        #
-        #     pn = jf_protected_names;
-        #     wmax = 2 * pn.prctile(wi(~ii), 95); % fix: this is not working well
-        #     wi = min(wi, wmax);
-        #     wi(wi==0) = max(wi);
-        #
-        # otherwise
-        #     if ~isequal(fix_edge, 0), error('bad fix_edge argument'), end
-        # end
-        #
-
+            try:
+                conv_hull = ConvexHull(v[c[vor.point_region[mm]],:])
+                wi[mm] = conv_hull.volume
+            except:
+                print("Couldn't compute convex hull of the cell %d." % mm)
+            
         return wi
-    
+
     
     def dcf_calc(self):
         
@@ -209,10 +141,10 @@ class RadialDsiFit(OdfFit):
         normalize = True
 
         # dimi = size(qtable,2);
-        dimi = self._model.qtable.shape[1]
+        dimi = self.qtable.shape[1]
         
         # qval = sqrt(sum(qtable.^2,2));
-        qval = self._model.gtab.qvals * 2 * np.pi
+        qval = self.gtab.qvals * 2 * np.pi
         
         # [qshells,nmeasshell,shell] = bval2shells(qval');
         qshells = RadialDsiModel.extract_shells(qval, 5)        
@@ -235,7 +167,7 @@ class RadialDsiFit(OdfFit):
         Rmax = 1 / dq
         FoV = 2 * Rmax * np.ones(3)
         res = (2 * len(qshells) + 1) * np.ones(3)
-        kspace = (self._model.qtable * FoV[0] * np.pi) / (2 * res[0])
+        kspace = (self.qtable * FoV[0] * np.pi) / (2 * res[0])
         kspace = np.vstack((kspace,-kspace))
         kspace = (kspace * np.pi) / np.max(kspace)
         
@@ -311,7 +243,9 @@ class RadialDsiFit(OdfFit):
         qvalextra = max(qshells) + np.mean(np.diff(qshells[1:]))
         
         #         dirextra = dlmread('dir1000uniform.txt');
-        dirextra = pd.read_csv('/home/patrykfi/matlab/odffingerprintingdev/utils/dir1000uniform.txt', sep=' ', header=None).values
+        dirextra = pd.read_csv(
+            os.path.join(os.path.dirname(__file__), "../data/files/rdsi_dir1000.txt"), sep=' ', header=None
+        ).values
 
         #         kspacet = [kspace;dirextra*1/2*2*pi*qvalextra/qshells(end)]*qshells(end)/qvalextra;
         kspacet = np.vstack((kspace,dirextra*1/2*2*np.pi*qvalextra/qshells[-1])) * qshells[-1]/qvalextra
@@ -328,7 +262,7 @@ class RadialDsiFit(OdfFit):
         #         H.arg.st = st3;
         #         Dest = ir_mri_density_comp_v2(kspacet, estmethod,...
         #           'G',H,'fix_edge',0);
-        Dest = self.ir_mri_dcf_voronoi0(kspacet, 0)
+        Dest = self._ir_mri_dcf_voronoi0(kspacet)
         
         #         Dest = Dest(1:(end-size(dirextra,1)));
         Dest = Dest[:-dirextra.shape[0]]
@@ -372,15 +306,71 @@ class RadialDsiFit(OdfFit):
         return dcf
     
     
-    def odf(self, sphere):
-        h = self.dcf_calc()
+    # Density compensation function
+    def _dcf_calc(self, normalize = True):
 
-        E = np.dot(sphere.vertices, self._model.qtable.T)
-        F = np.multiply(
-            -self._sinc_second_derivative(2 * np.pi * E * self._model.max_displacement),
-            np.matlib.repmat(h.T, E.shape[0], 1)
-        )
+        qshells = RadialDsiModel.extract_shells(self.gtab.qvals * 2 * np.pi, 5)        
+
+        dq = np.mean(np.diff(qshells * 1e3))
+        rmax = 1 / dq
+        fov = 2 * rmax * np.ones(3)
+        res = (2 * len(qshells) + 1) * np.ones(3)
+        kspace = (self.qtable * fov[0] * np.pi) / (2 * res[0])
+        kspace = np.vstack((kspace,-kspace))
+        kspace = (kspace * np.pi) / np.max(kspace)
         
-        odf = np.matmul(self._data[...,self._model.dir_filter], F.T)
+        # Add extra outside Q-shell
+        qvalextra = max(qshells) + np.mean(np.diff(qshells[1:]))
+        dirextra = pd.read_csv(
+            os.path.join(os.path.dirname(__file__), "../data/files/rdsi_dir1000.txt"), sep=' ', header=None
+        ).values
+
+        kspacet = np.vstack((kspace,dirextra*1/2*2*np.pi*qvalextra/qshells[-1])) * qshells[-1]/qvalextra
+
+        Dest = self._ir_mri_dcf_voronoi0(kspacet)
+        Dest = Dest[:-dirextra.shape[0]]
+
+        dcf = Dest[:int(Dest.shape[0]/2)]
         
-        return odf
+        if normalize:
+        
+            # Compute sparse Kaiser-Bessel interpolation matrix            
+            spmatrix = tkbn.calc_tensor_spmatrix(
+                torch.from_numpy(kspace.T), 
+                im_size=tuple(res.astype(int)), grid_size=tuple(2 * res.astype(int)), numpoints=5
+            )
+            stp = spmatrix[0] + 1j*spmatrix[1]
+            
+            ones_complex = torch.complex(
+                torch.from_numpy(np.ones((int(np.prod(2*res)), 1))), 
+                torch.from_numpy(np.zeros((int(np.prod(2*res)), 1)))
+            )
+            
+            out = torch.matmul(
+                stp.to_dense().T, 
+                torch.from_numpy(np.matlib.repmat(dcf, 2, 1)) * torch.matmul(stp, ones_complex)
+            )
+            dcf = dcf / torch.mean(torch.abs(out)).item()
+        
+        return dcf
+
+
+    def fit(self, data):
+        return RadialDsiFit(self, data)
+    
+    
+class RadialDsiFit(OdfFit):
+
+    def __init__(self, model, data):
+        self._model = model
+        self._data = data
+    
+    
+    def odf(self, sphere=None):
+        
+        if sphere is not None and sphere != self._model.tessellation:
+            self._model.tessellation = sphere
+            self._model.compute_transition_matrix()
+        
+        return np.matmul(self._data[...,self._model.dir_filter], self._model.transition_matrix)
+
