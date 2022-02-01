@@ -8,9 +8,21 @@ on:
         type: string
         required: false
         default: '"ubuntu-latest"'
-      username:
-        required: false
+      python-version:
+        description: "Select Python version"
         type: string
+        required: false
+        default: '"3.9"'
+      use-pre:
+        description: "bal"
+        type: boolean
+        required: false
+      install-type:
+        description: ""
+        type: string
+        required: false
+        default: "'pip'"
+
     secrets:
       token:
         required: false
@@ -21,30 +33,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6']
+        python-version: ${{fromJSON(inputs.python-version) }}
         os: ${{fromJSON(inputs.runs-on) }}
-
+        install-type: ${{fromJSON(inputs.install-type) }}
+    env:
+      # DEPENDS: ${{ matrix.depends }}
+      # OPTIONAL_DEPENDS: ${{ matrix.optional-depends }}
+      INSTALL_TYPE: ${{ matrix.install-type }}
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      # CHECK_TYPE: ${{ matrix.check }}
+      # EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest
-        pip install -r requirements.txt
-        pip install -r requirements-dev.txt
-    - name: Test with pytest
-      run: |
-        pip install -e .
-        pytest -svv dipy
-#   example_job:
-#     name: Pass input and secrets to my-action
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: ./.github/actions/my-action@v1
-#         with:
-#           username: ${{ inputs.username }}
-#           token: ${{ secrets.token }}
+    - name: Install Dependencies
+      run: tools/ci/install_dependencies.sh
+    - name: Install DIPY
+      run: tools/ci/install.sh
+    - name: Run the Tests
+      run: tools/ci/run_tests.sh
