@@ -339,7 +339,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 class SparseFascicleModel(ReconstModel, Cache):
     def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
                  solver='ElasticNet', l1_ratio=0.5, alpha=0.001,
-                 isotropic=None):
+                 isotropic=None, seed=42):
         """
         Initialize a Sparse Fascicle Model
 
@@ -408,7 +408,8 @@ class SparseFascicleModel(ReconstModel, Cache):
         self.isotropic = isotropic
         if solver == 'ElasticNet':
             self.solver = lm.ElasticNet(l1_ratio=l1_ratio, alpha=alpha,
-                                        positive=True, warm_start=True)
+                                        positive=True, warm_start=False,
+                                        random_state=seed)
         elif solver == 'NNLS' or solver == 'nnls':
             self.solver = opt.NonNegativeLeastSquares()
 
