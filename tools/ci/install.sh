@@ -2,45 +2,38 @@
 set -ev
 
 if [ "$INSTALL_TYPE" == "conda" ]; then
-
-    conda config --set always_yes yes --set changeps1 no
-    if [ "$AGENT_OS" == "Linux" ]; then
-        # Workaround: https://github.com/conda/conda/issues/9337
-        pip uninstall -y setuptools
-        conda install -yq setuptools
-    fi
-    conda update -yq conda
-    conda install conda-build anaconda-client
-    conda config --add channels conda-forge
-    conda create -n venv --yes python=$PYTHON_VERSION pip
-    conda install -yq --name venv $DEPENDS $EXTRA_DEPENDS pytest
+    source activate venv
 else
-    PIPI="pip install --timeout=60 "
-
-    if [ "$USE_PRE" == "1" ]; then
-        PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
-    fi
-
-    pip install --upgrade virtualenv
-    virtualenv $VENV_ARGS venv
     source venv/bin/activate
-    # just to check python version
-    python --version
+fi
 
-    if [ "$AGENT_OS" == "Linux" ]; then
-        $PIPI --upgrade pip "setuptools<50.0"
-    fi
+PIPI="pip install --timeout=60"
 
-    $PIPI pytest
-    $PIPI numpy
-    if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
-    if [ "$COVERAGE" == "1" ]; then pip install coverage coveralls codecov; fi
-    if [ "$VTK" == "1" ]; then
-        sudo apt-get update;
-        sudo apt-get install -y $VTK_VER;
-        sudo apt-get install -y xvfb;
-        sudo apt-get install -y python-tk;
-        sudo apt-get install -y python-imaging;
-        $PIPI xvfbwrapper;
-    fi
+if [ "$USE_PRE" == "1" ]; then
+    PIPI="$PIPI --extra-index-url=$PRE_WHEELS --pre";
+fi
+
+#---------- DIPY Installation -----------------
+
+if [ "$INSTALL_TYPE" == "setup" ]; then
+    python setup.py install
+elif [ "$INSTALL_TYPE" == "pip" ]; then
+    $PIPI .
+elif [ "$INSTALL_TYPE" == "sdist" ]; then
+    python setup_egg.py egg_info  # check egg_info while we're here
+    python setup_egg.py sdist
+    $PIPI dist/*.tar.gz
+elif [ "$INSTALL_TYPE" == "wheel" ]; then
+    pip install wheel
+    python setup_egg.py bdist_wheel
+    $PIPI dist/*.whl
+elif [ "$INSTALL_TYPE" == "requirements" ]; then
+    $PIPI -r requirements.txt
+    python setup.py install
+elif [ "$INSTALL_TYPE" == "conda" ]; then
+    python setup.py install
+fi
+
+if [ "$TEST_WITH_XVFB" == "1" ]; then
+    export DISPLAY=:99
 fi
