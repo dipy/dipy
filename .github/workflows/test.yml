@@ -15,4 +15,4 @@ jobs:
   test_template:
     uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
     with:
-      environment: ubuntu-latest, macos-latest, windows-latest
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
