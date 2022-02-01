@@ -6,6 +6,9 @@ import pandas as pd
 import torch
 import torchkbnufft as tkbn
 
+from dipy.core.sphere import Sphere
+from dipy.core.dsi_sphere import dsiSphere8Fold
+
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -27,8 +30,9 @@ class RadialDsiModel(OdfModel, Cache):
         return np.array(shells)
 
 
-    def __init__(self, gtab, sampling_length=1.2):
+    def __init__(self, gtab, sampling_length=1.2, tessellation=dsiSphere8Fold()):
         self.gtab = gtab
+        self.tessellation = tessellation
 
         if self.gtab.big_delta is None:
             self.gtab.big_delta = 1
@@ -45,17 +49,29 @@ class RadialDsiModel(OdfModel, Cache):
         # Multiply by 2*np.pi for backward compatibility with the Matlab version
         self.qtable = np.vstack(self.gtab.qvals[self.dir_filter]) * self.gtab.bvecs[self.dir_filter] * 2 * np.pi
 
+        # Set the sampling length to determine max_displacement, then compute the transition matrix.
+        self.set_sampling_length(sampling_length)
+        
+        
+    def set_sampling_length(self, sampling_length):
         self.max_displacement = sampling_length / (2 * np.max(np.diff(np.sqrt(
             self.extract_shells(self.gtab.bvals)
         ))))
-            
+        self.compute_transition_matrix()
+        
+        
+    def compute_transition_matrix(self):
+        h = self._dcf_calc()
     
-    def fit(self, data):
-        return RadialDsiFit(self, data)
+        E = np.dot(self.tessellation.vertices, self.qtable.T)
+        F = np.multiply(
+            -self._sinc_second_derivative(2 * np.pi * E * self.max_displacement),
+            np.matlib.repmat(h.T, E.shape[0], 1)
+        )
     
-    
-class RadialDsiFit(OdfFit):
+        self.transition_matrix = F.T
 
+    
     def _sinc_second_derivative(self, x):
         result = np.zeros_like(x)
         
@@ -66,15 +82,10 @@ class RadialDsiFit(OdfFit):
         
         result[near_zero_filter] = -1/3 + x0 * x0 / 10
         result[~near_zero_filter] = 2 * np.sin(x1) / x1 / x1 / x1 - 2 * np.cos(x1) / x1 / x1 - np.sin(x1) / x1
-        
+
         return result
 
 
-    def __init__(self, model, data):
-        self._model = model
-        self._data = data
-    
-    
     def _ir_mri_dcf_voronoi0(self, kspace):
     
         # Find the points at the origin
@@ -130,10 +141,10 @@ class RadialDsiFit(OdfFit):
         normalize = True
 
         # dimi = size(qtable,2);
-        dimi = self._model.qtable.shape[1]
+        dimi = self.qtable.shape[1]
         
         # qval = sqrt(sum(qtable.^2,2));
-        qval = self._model.gtab.qvals * 2 * np.pi
+        qval = self.gtab.qvals * 2 * np.pi
         
         # [qshells,nmeasshell,shell] = bval2shells(qval');
         qshells = RadialDsiModel.extract_shells(qval, 5)        
@@ -156,7 +167,7 @@ class RadialDsiFit(OdfFit):
         Rmax = 1 / dq
         FoV = 2 * Rmax * np.ones(3)
         res = (2 * len(qshells) + 1) * np.ones(3)
-        kspace = (self._model.qtable * FoV[0] * np.pi) / (2 * res[0])
+        kspace = (self.qtable * FoV[0] * np.pi) / (2 * res[0])
         kspace = np.vstack((kspace,-kspace))
         kspace = (kspace * np.pi) / np.max(kspace)
         
@@ -298,13 +309,13 @@ class RadialDsiFit(OdfFit):
     # Density compensation function
     def _dcf_calc(self, normalize = True):
 
-        qshells = RadialDsiModel.extract_shells(self._model.gtab.qvals * 2 * np.pi, 5)        
+        qshells = RadialDsiModel.extract_shells(self.gtab.qvals * 2 * np.pi, 5)        
 
         dq = np.mean(np.diff(qshells * 1e3))
         rmax = 1 / dq
         fov = 2 * rmax * np.ones(3)
         res = (2 * len(qshells) + 1) * np.ones(3)
-        kspace = (self._model.qtable * fov[0] * np.pi) / (2 * res[0])
+        kspace = (self.qtable * fov[0] * np.pi) / (2 * res[0])
         kspace = np.vstack((kspace,-kspace))
         kspace = (kspace * np.pi) / np.max(kspace)
         
@@ -343,16 +354,23 @@ class RadialDsiFit(OdfFit):
         
         return dcf
 
-    
-    def odf(self, sphere):
-        h = self._dcf_calc()
 
-        E = np.dot(sphere.vertices, self._model.qtable.T)
-        F = np.multiply(
-            -self._sinc_second_derivative(2 * np.pi * E * self._model.max_displacement),
-            np.matlib.repmat(h.T, E.shape[0], 1)
-        )
+    def fit(self, data):
+        return RadialDsiFit(self, data)
+    
+    
+class RadialDsiFit(OdfFit):
+
+    def __init__(self, model, data):
+        self._model = model
+        self._data = data
+    
+    
+    def odf(self, sphere=None):
         
-        odf = np.matmul(self._data[...,self._model.dir_filter], F.T)
+        if sphere is not None and sphere != self._model.tessellation:
+            self._model.tessellation = sphere
+            self._model.compute_transition_matrix()
         
-        return odf
+        return np.matmul(self._data[...,self._model.dir_filter], self._model.transition_matrix)
+
