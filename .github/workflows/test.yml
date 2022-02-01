@@ -13,6 +13,6 @@ on:
 
 jobs:
   test_template:
-    uses: .test_template.yml
+    uses: test_template.yml
     with:
       environment: [ubuntu-latest, macos-latest, windows-latest]
