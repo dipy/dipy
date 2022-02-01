@@ -2,7 +2,7 @@ import logging
 from dipy.align import floating
 import numpy as np
 import numpy.linalg as npl
-import scipy.ndimage.filters as filters
+from scipy.ndimage import gaussian_filter
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class ScaleSpace(object):
             sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
 
             # Filter along each direction with the appropriate sigma
-            filtered = filters.gaussian_filter(image, sigmas)
+            filtered = gaussian_filter(image, sigmas)
             filtered = ((filtered - filtered.min()) /
                         (filtered.max() - filtered.min()))
             if mask0:
@@ -408,8 +408,7 @@ class IsotropicScaleSpace(ScaleSpace):
             new_sigmas = np.ones(self.dim) * sigmas[self.num_levels - i - 1]
 
             # Filter along each direction with the appropriate sigma
-            filtered = filters.gaussian_filter(image.astype(np.float64),
-                                               new_sigmas)
+            filtered = gaussian_filter(image.astype(np.float64), new_sigmas)
             filtered = ((filtered.astype(np.float64) - filtered.min()) /
                         (filtered.max() - filtered.min()))
             if mask0:

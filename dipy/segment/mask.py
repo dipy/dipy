@@ -5,7 +5,7 @@ import numpy as np
 
 from dipy.reconst.dti import fractional_anisotropy, color_fa
 
-from scipy.ndimage.filters import median_filter
+from scipy.ndimage import median_filter
 try:
     from skimage.filters import threshold_otsu as otsu
 except Exception:
@@ -288,7 +288,7 @@ def clean_cc_mask(mask):
         Binary mask of the cleaned segmentation.
     """
 
-    from scipy.ndimage.measurements import label
+    from scipy.ndimage import label
 
     new_cc_mask = np.zeros(mask.shape)
 

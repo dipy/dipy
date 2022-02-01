@@ -3,7 +3,7 @@ import numpy as np
 import numpy.testing as npt
 import warnings
 
-from scipy.ndimage.interpolation import map_coordinates
+from scipy.ndimage import map_coordinates
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.interpolation import (trilinear_interpolate4d,
                                      interpolate_scalar_2d,
