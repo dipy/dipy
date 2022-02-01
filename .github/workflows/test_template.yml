@@ -1,0 +1,49 @@
+name: DIPY  Base Workflow Template
+
+on:
+  workflow_call:
+    inputs:
+      operating_systems:
+        description: "Select on which environment you want to run the workflow"
+        type: environment
+        required: true
+      username:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.6']
+        os: ${{ input.environment }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+    - name: Test with pytest
+      run: |
+        pip install -e .
+        pytest -svv dipy
+#   example_job:
+#     name: Pass input and secrets to my-action
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: ./.github/actions/my-action@v1
+#         with:
+#           username: ${{ inputs.username }}
+#           token: ${{ secrets.token }}
