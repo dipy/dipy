@@ -1,24 +1,34 @@
 # Powershell Install script
 
+# Useful function from https://stackoverflow.com/questions/50093582/powershell-not-recognizing-conda-as-cmdlet-function-or-operable-program
+function Invoke-CmdScript {
+  param(
+    [String] $scriptName
+  )
+  $cmdLine = """$scriptName"" $args & set"
+  & $Env:SystemRoot\system32\cmd.exe /c $cmdLine |
+  Select-String '^([^=]*)=(.*)$' | ForEach-Object {
+    $varName = $_.Matches[0].Groups[1].Value
+    $varValue = $_.Matches[0].Groups[2].Value
+    Set-Item Env:$varName $varValue
+  }
+}
+
 if($env:INSTALL_TYPE -match "conda")
 {
-  # Get Anaconda path
-  Write-Output "Conda path: $env:CONDA\Scripts"
-  #gci env:*
+    Write-Output "Activate testenv"
+    Invoke-CmdScript $env:CONDA\Scripts\activate.bat testenv
+}
 
-  Invoke-Expression "conda config --set always_yes yes --set changeps1 no"
-  Invoke-Expression "conda update -yq conda"
-  Invoke-Expression "conda install conda-build anaconda-client"
-  Invoke-Expression "conda config --add channels conda-forge"
-  Invoke-Expression "conda create -n testenv --yes python=$env:PYTHON_VERSION pip"
-  Invoke-Expression "conda install -yq --name testenv $env:DEPENDS $env:EXTRA_DEPENDS pytest"
-}
-else
-{
-  $env:PIPI = "pip install --timeout=60 --find-links=$env:EXTRA_WHEELS"
-  # Print and check this environment variable
-  Write-Output "Pip command: $env:PIPI"
-  Invoke-Expression "python -m pip install -U pip"
-  Invoke-Expression "pip --version"
-  Invoke-Expression "$env:PIPI $env:DEPENDS $env:EXTRA_DEPENDS pytest"
-}
+$env:PIPI = "pip install --timeout=60"
+# Print and check this environment variable
+Write-Output "Pip command: $env:PIPI"
+
+
+# Print and Install FURY
+Write-Output "======================== Install DIPY ========================"
+Invoke-Expression "$env:PIPI --user -e ."
+
+# Run tests
+Write-Output "======================== Run DIPY tests ========================"
+Invoke-Expression "pytest -svv dipy"
