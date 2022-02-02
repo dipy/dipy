@@ -24,8 +24,8 @@ from dipy.reconst.rdsi import RadialDsiModel
 
 from dipy.direction import peak_directions
 
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.odf import OdfFit
+from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
 from scipy.io import savemat
 
