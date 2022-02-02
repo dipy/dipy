@@ -2,7 +2,6 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 import pytest
-import time
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.core.gradients as grad
