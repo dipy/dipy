@@ -14,49 +14,27 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
 
-from scipy.io import loadmat, savemat
+from dipy.core.sphere import Sphere
+from dipy.core.dsi_sphere import dsiSphere8Fold
+from dipy.core.geometry import sphere2cart
 
-from dipy.data import Sphere
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.rdsi import RadialDsiModel
 
-from dipy.core.geometry import sphere2cart
 from dipy.direction import peak_directions
+
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.odf import OdfFit
+
+from scipy.io import savemat
 
 
 DEFAULT_RECON_EDGE = 1.2
 DEFAULT_DICT_EDGE = 1.2
 
-
-class _DsiSphere8Fold(Sphere):
-    _instance = None
-
-    @staticmethod 
-    def get_instance():
-        if _DsiSphere8Fold._instance == None:
-            _DsiSphere8Fold()
-        return _DsiSphere8Fold._instance
-    
-    
-    def __init__(self):
-        if _DsiSphere8Fold._instance != None:
-            raise Exception("The class _DsiSphere8Fold is a singleton. Call dsiSphere8Fold() function instead.")
-        else:
-            dsi_sphere = loadmat(os.path.join(
-                os.path.dirname(__file__), "../data/files/dsi_sphere_8fold.mat"
-            ))
-            Sphere.__init__(self,
-                xyz=dsi_sphere['odf_vertices'].T,
-                faces=dsi_sphere['odf_faces'].T
-            )
-            _DsiSphere8Fold._instance = self
-
-
-def dsiSphere8Fold():
-    return _DsiSphere8Fold.get_instance()
+DEFAULT_FIT_PENALTY = 0.001
+MAX_FIT_PENALTY = 0.25
 
 
 def plot_odf(odf, filename='odf.png', tessellation=dsiSphere8Fold()):
@@ -103,7 +81,6 @@ class OdffpDictionary(object):
 
         if dict_file is not None:
             self.load(dict_file)
-
    
            
     def _sort_peaks(self):
@@ -296,6 +273,9 @@ class OdffpDictionary(object):
         if not self._is_sorted:
             self._sort_peaks()
 
+        # Compute the number of peaks per voxel as the number of non-NaN fiber directions per voxel            
+        self.peaks_per_voxel = np.sum(~np.isnan(self._dict.peak_dirs[0,:,:]),axis=0)            
+
 
     def save(self, dict_file = 'odf_dict.mat'):
         odf_dict = {
@@ -319,12 +299,13 @@ class OdffpDictionary(object):
            
         dict_size = np.maximum(1, dict_size)
         self.max_peaks_num = np.maximum(1, max_peaks_num)
+        self.peaks_per_voxel = np.zeros(dict_size, dtype=int)
         p_iso, p_fib = self._validate_fraction_volumes(p_iso, p_fib)
         f_in, D_iso, D_a, D_e, D_r = self._validate_micro_parameters(f_in, D_iso, D_a, D_e, D_r)
    
         # Total number of directions allowed by the tessellation (k), by default k=321 
         total_dirs_num = len(self.tessellation.vertices) // 2
-           
+                   
         # Not used elements will be kept as NaNs for backward compatibility
         self.peak_dirs = np.nan * np.zeros((2, self.max_peaks_num, dict_size))        
         self.ratio = np.nan * np.zeros((self.max_peaks_num+1, dict_size))
@@ -335,6 +316,7 @@ class OdffpDictionary(object):
         # Generate the 0th element of the ODF-dictionary representing the 0 fibers case
         self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
         self.micro[1:3,0] = 3  # diffusivity of free water at 37C
+        self.peaks_per_voxel[0] = 0
         self.odf[:,0] = self._compute_odf_trace(gtab, odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
    
         for chunk_idx in np.split(range(1, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
@@ -345,30 +327,30 @@ class OdffpDictionary(object):
             peak_dirs_idx = np.zeros((self.max_peaks_num, chunk_size), dtype=int)
    
             # Draw the numbers of peaks per voxel randomly. The direction [0,0,1] is obligatory, hence 1 + np.sum(...)
-            peaks_per_voxel = 1 + np.sum(
+            self.peaks_per_voxel[chunk_idx] = 1 + np.sum(
                 np.random.uniform(size=(chunk_size,1)) > self._peaks_per_voxel_cdf(total_dirs_num), axis=1
             )
            
             for i, j in zip(range(chunk_size), chunk_idx):
         
                 # Obligatory direction [0,0,1] has index 0 in the tesselation, 
-                # hence 1:peaks_per_voxel[i] and later: peaks_per_voxel[i]-1
-                peak_dirs_idx[1:peaks_per_voxel[i],i] = np.random.choice(
-                    range(1,total_dirs_num), peaks_per_voxel[i]-1, replace=False
+                # hence 1:peaks_per_voxel[j] and later: peaks_per_voxel[j]-1
+                peak_dirs_idx[1:self.peaks_per_voxel[j],i] = np.random.choice(
+                    range(1,total_dirs_num), self.peaks_per_voxel[j]-1, replace=False
                 )
                    
                 # Store spherical coordinates of the directions in the Matlab format (azim,elev) for backward compatibility 
-                self.peak_dirs[:,:peaks_per_voxel[i],j] = np.array([
-                    self.tessellation.phi[peak_dirs_idx[:peaks_per_voxel[i],i]], 
-                    self.tessellation.theta[peak_dirs_idx[:peaks_per_voxel[i],i]] - np.pi/2
+                self.peak_dirs[:,:self.peaks_per_voxel[j],j] = np.array([
+                    self.tessellation.phi[peak_dirs_idx[:self.peaks_per_voxel[j],i]], 
+                    self.tessellation.theta[peak_dirs_idx[:self.peaks_per_voxel[j],i]] - np.pi/2
                 ])
                    
                 # Draw fraction volumes randomly
-                self.ratio[:peaks_per_voxel[i]+1,j] = self._random_fraction_volumes(p_iso, p_fib, peaks_per_voxel[i])
+                self.ratio[:self.peaks_per_voxel[j]+1,j] = self._random_fraction_volumes(p_iso, p_fib, self.peaks_per_voxel[j])
               
                 # Draw microstructure parameters randomly
-                self.micro[:,:peaks_per_voxel[i]+1,j] = self._random_micro_parameters(
-                    f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel[i], 
+                self.micro[:,:self.peaks_per_voxel[j]+1,j] = self._random_micro_parameters(
+                    f_in, D_iso, D_a, D_e, D_r, self.peaks_per_voxel[j], 
                     equal_fibers, assert_faster_D_a, tortuosity_approximation
                 )
                
@@ -380,14 +362,14 @@ class OdffpDictionary(object):
                  
             for i, j in zip(range(chunk_size), chunk_idx):
           
-                if peaks_per_voxel[i] < 2:
+                if self.peaks_per_voxel[j] < 2:
                     continue
                         
                 # Sort the peaks in the descending order, hence -self.odf
-                sorted_idx = np.argsort(-self.odf[peak_dirs_idx[:peaks_per_voxel[i],i],j])
+                sorted_idx = np.argsort(-self.odf[peak_dirs_idx[:self.peaks_per_voxel[j],i],j])
                         
                 # If peaks were not sorted, reorder the microstructure parameters accordingly
-                seq_idx = np.arange(peaks_per_voxel[i])
+                seq_idx = np.arange(self.peaks_per_voxel[j])
                 if np.any(sorted_idx != seq_idx):
                     self.micro[:,seq_idx+1,j] = self.micro[:,sorted_idx+1,j]
                     self.ratio[seq_idx+1,j] = self.ratio[sorted_idx+1,j]
@@ -498,9 +480,21 @@ class OdffpModel(object):
         output_matrix[mask] = vector
         return output_matrix
 
+
+    def _find_matching_odf_trace(self, input_odf_trace, dict_odf_trace, penalty, max_chunk_size):
+        dot_product = np.dot(input_odf_trace, dict_odf_trace)
+        
+        if penalty > 0.0:
+            dict_size = len(self._dict.peaks_per_voxel)
+            for chunk_idx in np.split(range(dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
+                dot_product[:,chunk_idx] = np.log(dot_product[:,chunk_idx]) - 2 * penalty * self._dict.peaks_per_voxel[chunk_idx]
+        
+        return np.argmax(dot_product, axis=1) 
+
    
-    def fit(self, data, mask=None, max_chunk_size=1000):
+    def fit(self, data, mask=None, max_chunk_size=1000, penalty = DEFAULT_FIT_PENALTY):
         max_chunk_size = np.maximum(1, max_chunk_size)
+        penalty = np.maximum(0.0, np.minimum(MAX_FIT_PENALTY, penalty))
  
         tessellation_size = len(self._dict.tessellation.vertices)
         tessellation_half_size = tessellation_size // 2
@@ -541,7 +535,7 @@ class OdffpModel(object):
                     self.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
                 )
  
-            dict_idx[chunk_idx] = np.argmax(np.dot(input_odf_trace, dict_odf_trace), axis=1)
+            dict_idx[chunk_idx] = self._find_matching_odf_trace(input_odf_trace, dict_odf_trace, penalty, max_chunk_size) 
          
             for i, j in zip(range(chunk_size), chunk_idx):
                 if self._output_dict_odf:
