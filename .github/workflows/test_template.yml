@@ -26,12 +26,11 @@ on:
         description: ""
         type: string
         required: false
-        default: '"cython" "numpy" "matplotlib" "h5py" "nibabel" "cvxpy" "tqdm"'
+        default: cython numpy matplotlib h5py nibabel cvxpy tqdm
       extra-depends:
         description: ""
         type: string
         required: false
-        default: '""'
 
     secrets:
       token:
@@ -47,8 +46,8 @@ jobs:
         os: ${{fromJSON(inputs.runs-on) }}
         install-type: ${{fromJSON(inputs.install-type) }}
     env:
-      DEPENDS: ${{fromJSON(inputs.depends) }}
-      EXTRA_DEPENDS: ${{fromJSON(inputs.extra-depends) }}
+      DEPENDS: ${{ inputs.depends }}
+      EXTRA_DEPENDS: ${{ inputs.extra-depends }}
       INSTALL_TYPE: ${{ matrix.install-type }}
       PYTHON_VERSION: ${{ matrix.python-version }}
       VENV_ARGS: "--python=python"
