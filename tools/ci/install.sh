@@ -1,10 +1,16 @@
 #!/bin/bash
 set -ev
 
-if [ "$INSTALL_TYPE" == "conda" ]; then
+if [ -e venv/bin/activate ]; then
+    source venv/bin/activate
+elif [ -e venv/Scripts/activate ]; then
+    source virtenv/Scripts/activate
+elif [ "$INSTALL_TYPE" == "conda" ]; then
     source activate venv
 else
-    source venv/bin/activate
+    echo Cannot activate virtual environment
+    ls -R venv
+    false
 fi
 
 PIPI="pip install --timeout=60"
