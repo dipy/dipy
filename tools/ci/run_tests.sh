@@ -1,6 +1,18 @@
 #!/bin/bash
 set -ev
 
+if [ -e venv/bin/activate ]; then
+    source venv/bin/activate
+elif [ -e venv/Scripts/activate ]; then
+    source virtenv/Scripts/activate
+elif [ "$INSTALL_TYPE" == "conda" ]; then
+    source activate venv
+else
+    echo Cannot activate virtual environment
+    ls -R venv
+    false
+fi
+
 # -------------- Run the tests -----------------
 
 # Change into an innocuous directory and find tests from installation
