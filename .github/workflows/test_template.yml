@@ -70,3 +70,6 @@ jobs:
       uses: mxschmitt/action-tmate@v3
     - name: Run the Tests
       run: tools/ci/run_tests.sh
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
