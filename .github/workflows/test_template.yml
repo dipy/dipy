@@ -28,10 +28,10 @@ on:
         required: false
         default: '"cython" "numpy" "matplotlib" "h5py" "nibabel" "cvxpy" "tqdm"'
       extra-depends:
-        description: '""'
+        description: ""
         type: string
         required: false
-        default: ""
+        default: '""'
 
     secrets:
       token:
