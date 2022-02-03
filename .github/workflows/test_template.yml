@@ -47,7 +47,7 @@ jobs:
         os: ${{fromJSON(inputs.runs-on) }}
         install-type: ${{fromJSON(inputs.install-type) }}
     env:
-      DEPENDS: ${{fromJSON(inputs..depends) }}
+      DEPENDS: ${{fromJSON(inputs.depends) }}
       EXTRA_DEPENDS: ${{fromJSON(inputs.extra-depends) }}
       INSTALL_TYPE: ${{ matrix.install-type }}
       PYTHON_VERSION: ${{ matrix.python-version }}
