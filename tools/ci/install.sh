@@ -6,7 +6,9 @@ if [ -e venv/bin/activate ]; then
 elif [ -e venv/Scripts/activate ]; then
     source virtenv/Scripts/activate
 elif [ "$INSTALL_TYPE" == "conda" ]; then
-    source activate venv
+    conda init bash
+    source ~/.bashrc
+    conda activate venv
 else
     echo Cannot activate virtual environment
     ls -R venv
