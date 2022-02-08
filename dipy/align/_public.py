@@ -25,7 +25,12 @@ from dipy.align.transforms import (TranslationTransform3D,
                                    RigidTransform3D,
                                    RigidScalingTransform3D,
                                    RigidIsoScalingTransform3D,
-                                   AffineTransform3D)
+                                   AffineTransform3D,
+                                   TranslationTransform2D,
+                                   RigidScalingTransform2D,
+                                   RigidIsoScalingTransform2D,
+                                   RigidTransform2D,
+                                   AffineTransform2D)
 
 
 import dipy.core.gradients as dpg
@@ -74,8 +79,9 @@ def _handle_pipeline_inputs(moving, static, static_affine=None,
                                                  affine=static_affine)
     moving, moving_affine = read_img_arr_or_path(moving,
                                                  affine=moving_affine)
+
     if starting_affine is None:
-        starting_affine = np.eye(4)
+        starting_affine = np.eye(static.ndim + 1)
 
     return static, static_affine, moving, moving_affine, starting_affine
 
@@ -347,6 +353,7 @@ def affine_registration(moving, static,
                         ret_metric=False,
                         moving_mask=None,
                         static_mask=None,
+                        verbosity=1,
                         **metric_kwargs):
     """
     Find the affine transformation between two 3D images. Alternatively, find
@@ -416,6 +423,9 @@ def affine_registration(moving, static,
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
 
+    verbosity : int, must be one of 0, 1, 2, 3, optional
+        Set the verbosity for the registration.
+
     nbins : int, optional
         MutualInformationMetric key-word argument: the number of bins to be
         used for computing the intensity histograms. The default is 32.
@@ -458,6 +468,8 @@ def affine_registration(moving, static,
                                 static_affine=static_affine,
                                 starting_affine=starting_affine)
 
+    _METHOD_DICT = _METHOD_DICT_3D if static.ndim == 3 else _METHOD_DICT_2D
+
     # Define the Affine registration object we'll use with the chosen metric.
     # For now, there is only one metric (mutual information)
     use_metric = affine_metric_dict[metric](**metric_kwargs)
@@ -465,7 +477,8 @@ def affine_registration(moving, static,
     affreg = AffineRegistration(metric=use_metric,
                                 level_iters=level_iters,
                                 sigmas=sigmas,
-                                factors=factors)
+                                factors=factors,
+                                verbosity=verbosity)
 
     # Convert pipeline to sanitized list of str
     pipeline = list(pipeline)
@@ -551,7 +564,7 @@ affine.__doc__ = ("Implements an affine transform. "
                   "Based on `affine_registration()`.")
 
 
-_METHOD_DICT = dict(  # mapping from str key -> (callable, class) tuple
+_METHOD_DICT_3D = dict(  # mapping from str key -> (callable, class) tuple
     center_of_mass=(center_of_mass, None),
     translation=(translation, TranslationTransform3D),
     rigid_isoscaling=(rigid_isoscaling, RigidIsoScalingTransform3D),
@@ -560,8 +573,18 @@ _METHOD_DICT = dict(  # mapping from str key -> (callable, class) tuple
     affine=(affine, AffineTransform3D))
 
 
+_METHOD_DICT_2D = dict(  # mapping from str key -> (callable, class) tuple
+    center_of_mass=(center_of_mass, None),
+    translation=(translation, TranslationTransform2D),
+    rigid_isoscaling=(rigid_isoscaling, RigidIsoScalingTransform2D),
+    rigid_scaling=(rigid_scaling, RigidScalingTransform2D),
+    rigid=(rigid, RigidTransform2D),
+    affine=(affine, AffineTransform2D))
+
+
 def register_series(series, ref, pipeline=None, series_affine=None,
-                    ref_affine=None, static_mask=None):
+                    ref_affine=None, static_mask=None, slice_index=None,
+                    verbosity=1):
     """Register a series to a reference image.
 
     Parameters
@@ -588,6 +611,14 @@ def register_series(series, ref, pipeline=None, series_affine=None,
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
 
+    slice_index: int, optional
+        If provided, then it is assumed that `series` is multi-slice data
+        with separate slices in the first dimension. 2D registration will be
+        perfomed for the 2D images in `series[slice_index]`.
+
+    verbosity : int, must be one of 0, 1, 2, 3, optional
+        Set the verbosity for the registration.
+
     Returns
     -------
     xformed, affines : 4D array with transformed data and a (4,4,n) array
@@ -608,33 +639,50 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     else:
         ref_as_idx = False
         ref, ref_affine = read_img_arr_or_path(ref, affine=ref_affine)
-        if len(ref.shape) != 3:
+        if ref.ndim != 3:
             raise ValueError("The reference image should be a single volume",
                              " or the index of one or more volumes")
 
+    # if third dimension is 1, this is a 2D series with 1 slice
+    if series.shape[2] == 1:
+        slice_index = 0
+
+    # if using a 2D series, extract only the slice requested by slice_index
+    if slice_index is not None:
+        series = series[:, :, slice_index]
+        ref = np.squeeze(ref)
+        if ref.ndim == series.ndim:
+            ref = ref[:, :, slice_index]
+        # simple solution for 2D slice registration
+        series_affine, ref_affine = np.eye(3), np.eye(3)
+
     xformed = np.zeros(series.shape)
-    affines = np.zeros((4, 4, series.shape[-1]))
+    affines = np.zeros((ref.ndim + 1, ref.ndim + 1, series.shape[-1]))
     for ii in range(series.shape[-1]):
         this_moving = series[..., ii]
         if isinstance(ref_as_idx, numbers.Number) and ii == ref_as_idx:
             # This is the reference! No need to move and the xform is I(4):
             xformed[..., ii] = this_moving
-            affines[..., ii] = np.eye(4)
+            affines[..., ii] = np.eye(ref.ndim + 1)
         else:
             transformed, reg_affine = affine_registration(
                 this_moving, ref,
                 moving_affine=series_affine,
                 static_affine=ref_affine,
                 pipeline=pipeline,
-                static_mask=static_mask)
+                static_mask=static_mask,
+                verbosity=verbosity)
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
+
+    if slice_index is not None:
+        xformed = np.expand_dims(xformed, axis=2)
 
     return xformed, affines
 
 
 def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
-                        static_mask=None):
+                        static_mask=None, slice_index=None, verbosity=1):
     """Register a DWI series to the mean of the B0 images in that series.
 
     all first registered to the first B0 volume
@@ -666,11 +714,19 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
         static image mask that defines which pixels in the static image
         are used to calculate the mutual information.
 
+    slice_index: int, optional
+        If provided, then it is assumed that `series` is multi-slice data
+        with separate slices in the first dimension. 2D registration will be
+        perfomed for the 2D images in `series[slice_index]`.
+
+    verbosity : int, must be one of 0, 1, 2, 3, optional
+        Set the verbosity for the registration.
+
     Returns
     -------
     xform_img, affine_array: a Nifti1Image containing the registered data and
     using the affine of the original data and a list containing the affine
-    transforms associated with each of the
+    transforms associated with each of the registrations.
 
     """
     pipeline = pipeline or ["center_of_mass", "translation", "rigid", "affine"]
@@ -681,31 +737,43 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
 
     if np.sum(gtab.b0s_mask) > 1:
         # First, register the b0s into one image and average:
-        b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
+        b0_img = data[..., gtab.b0s_mask]
         trans_b0, b0_affines = register_series(b0_img, ref=b0_ref,
                                                pipeline=pipeline,
-                                               static_mask=static_mask)
+                                               series_affine=affine,
+                                               ref_affine=affine,
+                                               static_mask=static_mask,
+                                               slice_index=slice_index,
+                                               verbosity=verbosity)
         ref_data = np.mean(trans_b0, -1)
     else:
         # There's only one b0 and we register everything to it
-        trans_b0 = ref_data = data[..., gtab.b0s_mask]
-        b0_affines = np.eye(4)[..., np.newaxis]
+        trans_b0 = data[..., gtab.b0s_mask]
+        b0_affines = np.eye(4 if slice_index is None else 3)[..., np.newaxis]
+        ref_data = np.squeeze(trans_b0, axis=-1)
+        if slice_index is not None and trans_b0.shape[2] > 1:
+            trans_b0 = trans_b0[:, :, [slice_index]]
 
     # Construct a series out of the DWI and the registered mean B0:
     moving_data = data[..., ~gtab.b0s_mask]
-    series_arr = np.concatenate([ref_data, moving_data], -1)
-    series = nib.Nifti1Image(series_arr, affine)
 
-    xformed, affines = register_series(series, ref=0, pipeline=pipeline,
-                                       static_mask=static_mask)
-    # Cut out the part pertaining to that first volume:
-    affines = affines[..., 1:]
-    xformed = xformed[..., 1:]
-    affine_array = np.zeros((4, 4, data.shape[-1]))
+    xformed, affines = register_series(moving_data, ref_data,
+                                       pipeline=pipeline,
+                                       series_affine=affine, ref_affine=affine,
+                                       static_mask=static_mask,
+                                       slice_index=slice_index,
+                                       verbosity=verbosity)
+
+    affine_array = np.zeros((affines.shape[0], affines.shape[1],
+                             data.shape[-1]))
     affine_array[..., gtab.b0s_mask] = b0_affines
     affine_array[..., ~gtab.b0s_mask] = affines
 
-    data_array = np.zeros(data.shape)
+    if slice_index is None:
+        data_array = np.zeros(data.shape)
+    else:
+        ds = data.shape
+        data_array = np.zeros([ds[0], ds[1], 1, ds[-1]])
     data_array[..., gtab.b0s_mask] = trans_b0
     data_array[..., ~gtab.b0s_mask] = xformed
 
