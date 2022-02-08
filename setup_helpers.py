@@ -7,9 +7,9 @@ from os.path import join as pjoin, split as psplit, splitext, dirname, exists
 import tempfile
 import shutil
 
-from distutils.version import LooseVersion
 from distutils.command.install_scripts import install_scripts
 from distutils.errors import CompileError, LinkError
+from packaging.version import Version
 
 from distutils import log
 
@@ -226,7 +226,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
     if found_ver == 'unknown':
         return 'We need {0} version {1}, but cannot get version'.format(
             pkg_name, min_ver)
-    if LooseVersion(found_ver) >= LooseVersion(min_ver):
+    if Version(found_ver) >= Version(min_ver):
         return None
     return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 

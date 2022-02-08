@@ -1,7 +1,6 @@
 """pytest initialization."""
 import numpy as np
-import scipy
-from distutils.version import LooseVersion
+from packaging.version import Version
 import warnings
 
 """ Set numpy print options to "legacy" for new versions of numpy
@@ -12,7 +11,7 @@ https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
 https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495
 https://github.com/nipy/nibabel/pull/556
 """
-if LooseVersion(np.__version__) >= LooseVersion('1.14'):
+if Version(np.__version__) >= Version('1.14'):
     np.set_printoptions(legacy='1.13')
 
 warnings.simplefilter(action="default", category=FutureWarning)

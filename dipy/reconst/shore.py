@@ -1,7 +1,7 @@
 
 from warnings import warn
 from math import factorial
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import numpy as np
 
@@ -244,7 +244,7 @@ class ShoreModel(Cache):
             M0 = M[self.gtab.b0s_mask, :]
 
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -255,7 +255,7 @@ class ShoreModel(Cache):
             )
 
             if not self.positive_constraint:
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [M0[0] * c == 1]
                 else:
                     constraints = [M0[0] @ c == 1]
@@ -270,7 +270,7 @@ class ShoreModel(Cache):
                     self.cache_set(
                         'shore_matrix_positive_constraint',
                         (self.pos_grid, self.pos_radius), psi)
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
                 else:
                     constraints = [(M0[0] @ c) == 1., (psi @ c) >= 1e-3]

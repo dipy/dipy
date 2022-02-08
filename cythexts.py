@@ -3,8 +3,7 @@ from os.path import splitext, sep as filesep, join as pjoin, relpath
 from hashlib import sha1
 
 from distutils.command.build_ext import build_ext
-from distutils.command.sdist import sdist
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 
 def derror_maker(klass, msg):
@@ -117,7 +116,7 @@ def cyproc_exts(exts, cython_min_version,
                             'Need cython>={0} to build extensions '
                             'but cannot import "Cython"'.format(
                             cython_min_version)), True
-    if LooseVersion(cyversion) >= cython_min_version:
+    if Version(cyversion) >= Version(cython_min_version):
         from Cython.Distutils import build_ext as extbuilder
         return extbuilder, True
     return derror_maker(build_ext,
