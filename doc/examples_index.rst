@@ -197,6 +197,7 @@ Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_affine_registration_3d`
+- :ref:`example_affine_registration_masks`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 - :ref:`example_register_binary_fuzzy`

@@ -6,7 +6,8 @@ from numpy.testing import (assert_array_equal,
                            assert_array_almost_equal,
                            assert_almost_equal,
                            assert_equal,
-                           assert_raises)
+                           assert_raises,
+                           assert_warns)
 from dipy.core import geometry as geometry
 from dipy.viz import regtools as rt
 from dipy.align import floating
@@ -216,8 +217,20 @@ def test_affreg_all_transforms():
                                              None,
                                              options=None)
         x0 = trans.get_identity_parameters()
-        affine_map = affreg.optimize(static, moving, trans, x0,
-                                     static_g2w, moving_g2w)
+
+        # test warning for using masks (even if all ones) with sparse sampling
+        if sampling_pc not in [1.0, None]:
+            affine_map = assert_warns(UserWarning, affreg.optimize,
+                                      static, moving, trans, x0,
+                                      static_g2w, moving_g2w,
+                                      None, None,
+                                      smask, mmask)
+        else:
+            affine_map = affreg.optimize(static, moving, trans, x0,
+                                         static_g2w, moving_g2w,
+                                         None, None,
+                                         smask, mmask)
+
         transformed = affine_map.transform(moving)
         # Sum of absolute differences
         end_sad = np.abs(static - transformed).sum()
@@ -228,6 +241,13 @@ def test_affreg_all_transforms():
     # Verify that exception is raised if level_iters is empty
     metric = imaffine.MutualInformationMetric(32)
     assert_raises(ValueError, imaffine.AffineRegistration, metric, [])
+
+    # Verify that exception is raised if masks are all zeros
+    affine_map = assert_warns(UserWarning, affreg.optimize,
+                              static, moving, trans, x0,
+                              static_g2w, moving_g2w,
+                              None, None,
+                              np.zeros_like(smask), np.zeros_like(mmask))
 
 
 def test_affreg_defaults():
@@ -258,6 +278,8 @@ def test_affreg_defaults():
         level_iters = None
         static_grid2world = None
         moving_grid2world = None
+        smask = None
+        mmask = None
         for ss_sigma_factor in [1.0, None]:
             affreg = imaffine.AffineRegistration(metric,
                                                  level_iters,
@@ -268,7 +290,8 @@ def test_affreg_defaults():
                                                  options=None)
             affine_map = affreg.optimize(static, moving, transform, x0,
                                          static_grid2world, moving_grid2world,
-                                         starting_affine)
+                                         starting_affine, None,
+                                         smask, mmask)
             transformed = affine_map.transform(moving)
             # Sum of absolute differences
             end_sad = np.abs(static - transformed).sum()
