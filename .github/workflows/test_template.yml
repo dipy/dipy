@@ -21,7 +21,7 @@ on:
         description: ""
         type: string
         required: false
-        default: "'pip'"
+        default: '"pip"'
       depends:
         description: ""
         type: string
