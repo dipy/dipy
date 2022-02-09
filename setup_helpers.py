@@ -9,7 +9,11 @@ import shutil
 import logging as log
 
 from setuptools.command.install_scripts import install_scripts
-from setuptools._distutils.errors import CompileError, LinkError
+try:
+    from setuptools.errors import CompileError, LinkError
+except ImportError:
+    # can remove this except case once we require setuptools>=59.0
+    from distutils.errors import CompileError, LinkError
 from packaging.version import Version
 
 
