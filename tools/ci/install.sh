@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ev
 
-source activate.sh
+source tools/ci/activate.sh
 
 PIPI="pip install --timeout=60"
 
