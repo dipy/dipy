@@ -21,7 +21,7 @@ on:
         description: ""
         type: string
         required: false
-        default: "'setup'"
+        default: "'pip'"
       depends:
         description: ""
         type: string
@@ -84,12 +84,9 @@ jobs:
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
       run: tools/ci/install.sh
-    # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    - name: Setup tmate session
-      if: ${{ failure() }}
-      uses: mxschmitt/action-tmate@v3
     - name: Run the Tests
       run: tools/ci/run_tests.sh
+    # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
