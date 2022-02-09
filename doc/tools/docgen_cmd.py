@@ -11,7 +11,7 @@ import importlib
 import inspect
 
 # version comparison
-from distutils.version import LooseVersion as V
+from packaging.version import Version
 
 # List of workflows to ignore
 SKIP_WORKFLOWS_LIST = ('Workflow', 'CombinedWorkflow')
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     # are not (re)generated. This avoids automatic generation of documentation
     # for older or newer versions if such versions are installed on the system.
 
-    installed_version = V(module.__version__)
+    installed_version = Version(module.__version__)
 
     info_file = pjoin('..', package, 'info.py')
     info_lines = open(info_file).readlines()

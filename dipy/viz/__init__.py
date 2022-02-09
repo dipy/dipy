@@ -1,7 +1,6 @@
 # Init file for visualization package
 import warnings
 
-from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have fury
 fury, has_fury, _ = optional_package(

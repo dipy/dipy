@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from packaging.version import Version
+
 import numpy as np
-from distutils.version import LooseVersion
+
 from dipy.reconst.cache import Cache
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -350,7 +352,7 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.laplacian_weighting):
                 lopt = self.laplacian_weighting
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -360,7 +362,7 @@ class QtdmriModel(Cache):
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [M0[0] * c == 1, M0[-1] * c == 1]
                 else:
                     constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
@@ -380,7 +382,7 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -390,7 +392,7 @@ class QtdmriModel(Cache):
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [M0[0] * c == 1, M0[-1] * c == 1]
                 else:
                     constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
@@ -431,7 +433,7 @@ class QtdmriModel(Cache):
             elif np.isscalar(self.l1_weighting):
                 alpha = self.l1_weighting
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -442,7 +444,7 @@ class QtdmriModel(Cache):
             )
             if self.constrain_q0:
                 # just constraint first and last, otherwise the solver fails
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [M0[0] * c == 1, M0[-1] * c == 1]
                 else:
                     constraints = [M0[0] @ c == 1, M0[-1] @ c == 1]
@@ -1981,7 +1983,7 @@ def l1_crossvalidation(b0s_mask, E, M, weight_array=np.linspace(0, .4, 21)):
         while cv_old >= cv_new and counter < weight_array.shape[0]:
             alpha = weight_array[counter]
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M[test]) * c
                 recovered_signal = cvxpy.Constant(M[sub]) * c
             else:
@@ -2043,7 +2045,7 @@ def elastic_crossvalidation(b0s_mask, E, M, L, lopt,
         cv_old = errorlist[i, 0]
         cv_new = errorlist[i, 0]
         c = cvxpy.Variable(M.shape[1])
-        if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+        if Version(cvxpy.__version__) < Version('1.1'):
             design_matrix = cvxpy.Constant(M[test]) * c
             recovered_signal = cvxpy.Constant(M[sub]) * c
         else:

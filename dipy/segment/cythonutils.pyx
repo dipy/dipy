@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
@@ -114,19 +113,19 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
 
 
 cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
-    """ Create a light version of cython memory view 
+    """ Create a light version of cython memory view
 
 
     Parameters
     ----------
     buffer_size : int
-        data size 
+        data size
     dims : array
-        desired memory view shape 
+        desired memory view shape
 
     Returns
     -------
-    Data2D* : memview pointer 
+    Data2D* : memview pointer
         floating pointer to memview
     """
     cdef Data2D* memview
@@ -149,7 +148,7 @@ cdef void free_memview_2d(Data2D* memview) nogil:
     ----------
     memview : Data2D*
         floating pointer to memory view pointer
-        
+
     """
     free(&(memview[0][0, 0]))
     memview[0] = None  # Necessary to decrease refcount

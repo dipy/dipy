@@ -1,11 +1,11 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 from dipy.utils.optpkg import optional_package
 
 tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
-    if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+    if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 

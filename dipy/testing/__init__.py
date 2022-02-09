@@ -5,7 +5,7 @@ from os.path import dirname, abspath, join as pjoin
 from numpy.testing import assert_array_equal
 import numpy as np
 import scipy
-from distutils.version import LooseVersion
+from packaging.version import Version
 import warnings
 
 # set path to example data
@@ -123,15 +123,15 @@ def setup_test():
     https://github.com/nipy/nibabel/pull/556
 
     """
-    if LooseVersion(np.__version__) >= LooseVersion('1.14'):
+    if Version(np.__version__) >= Version('1.14'):
         np.set_printoptions(legacy='1.13')
 
     # Temporary fix until scipy release in October 2018
     # must be removed after that
     # print the first occurrence of matching warnings for each location
     # (module + line number) where the warning is issued
-    if LooseVersion(np.__version__) >= LooseVersion('1.15') and \
-            LooseVersion(scipy.version.short_version) <= '1.1.0':
+    if Version(np.__version__) >= Version('1.15') and \
+            Version(scipy.version.short_version) <= '1.1.0':
         warnings.simplefilter(action="default", category=FutureWarning)
 
     warnings.simplefilter("always", category=UserWarning)

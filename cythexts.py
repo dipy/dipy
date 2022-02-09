@@ -2,13 +2,13 @@ import os
 from os.path import splitext, sep as filesep, join as pjoin, relpath
 from hashlib import sha1
 
-from distutils.command.build_ext import build_ext
-from distutils.command.sdist import sdist
-from distutils.version import LooseVersion
+from setuptools.command.build_ext import build_ext
+from setuptools.command.sdist import sdist
+from packaging.version import Version
 
 
 def derror_maker(klass, msg):
-    """ Decorate distutils class to make run method raise error """
+    """ Decorate setuptools class to make run method raise error """
     class K(klass):
         def run(self):
             raise RuntimeError(msg)
@@ -21,7 +21,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
     Parameters
     ----------
     exts : sequence of ``Extension``
-        distutils ``Extension`` instances, in fact only need to contain a
+        setuptools ``Extension`` instances, in fact only need to contain a
         ``sources`` sequence field.
     hash_stamp_fname : str
         filename of text file containing hash stamps
@@ -70,13 +70,13 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
 
 
 def cyproc_exts(exts, cython_min_version,
-                hash_stamps_fname = 'pyx-stamps',
+                hash_stamps_fname='pyx-stamps',
                 build_ext=build_ext):
     """ Process sequence of `exts` to check if we need Cython.  Return builder
 
     Parameters
     ----------
-    exts : sequence of distutils ``Extension``
+    exts : sequence of Setuptools ``Extension``
         If we already have good c files for any pyx or py sources, we replace
         the pyx or py files with their compiled up c versions inplace.
     cython_min_version : str
@@ -84,13 +84,13 @@ def cyproc_exts(exts, cython_min_version,
     hash_stamps_fname : str, optional
         filename with hashes for pyx/py and c files known to be in sync. Default
         is 'pyx-stamps'
-    build_ext : distutils command
-        default build_ext to return if not cythonizing.  Default is distutils
+    build_ext : Setuptools command
+        default build_ext to return if not cythonizing.  Default is setuptools
         ``build_ext`` class
 
     Returns
     -------
-    builder : ``distutils`` ``build_ext`` class or similar
+    builder : ``setuptools`` ``build_ext`` class or similar
         Can be ``build_ext`` input (if we have good c files) or cython
         ``build_ext`` if we have a good cython, or a class raising an informative
         error on ``run()``
@@ -117,7 +117,7 @@ def cyproc_exts(exts, cython_min_version,
                             'Need cython>={0} to build extensions '
                             'but cannot import "Cython"'.format(
                             cython_min_version)), True
-    if LooseVersion(cyversion) >= cython_min_version:
+    if Version(cyversion) >= Version(cython_min_version):
         from Cython.Distutils import build_ext as extbuilder
         return extbuilder, True
     return derror_maker(build_ext,
@@ -140,8 +140,8 @@ def build_stamp(pyxes, include_dirs=()):
     -------
     pyx_defs : dict
         dict has key, value pairs of <pyx_filename>, <pyx_info>, where
-        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
-        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file
+        SHA1 hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     """
     pyx_defs = {}
     from Cython.Compiler.Main import compile
@@ -169,8 +169,8 @@ def write_stamps(pyx_defs, stamp_fname='pyx-stamps'):
     ----------
     pyx_defs : dict
         dict has key, value pairs of <pyx_filename>, <pyx_info>, where
-        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
-        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file
+        SHA1 hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     stamp_fname : str
         filename to which to write stamp information
     """
@@ -214,8 +214,8 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps',
     Parameters
     ----------
     sdist_like : sdist command class, optional
-        command that will do work of ``distutils.command.sdist.sdist``.  By
-        default we use the distutils version
+        command that will do work of ``setuptools.command.sdist.sdist``.  By
+        default we use the setuptools version
     hash_stamps_fname : str, optional
         filename to which to write hashes of pyx / py and c files.  Default is
         ``pyx-stamps``
@@ -225,24 +225,28 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps',
     Returns
     -------
     modified_sdist : sdist-like command class
-        decorated `sdist_like` class, for compiling pyx / py files to c, putting
-        the .c files in the the source archive, and writing hashes for these
-        into the file named from `hash_stamps_fname`
+        decorated `sdist_like` class, for compiling pyx / py files to c,
+        putting the .c files in the the source archive, and writing hashes
+        for these into the file named from `hash_stamps_fname`
     """
     class PyxSDist(sdist_like):
-        """ Custom distutils sdist command to generate .c files from pyx files.
+        """Custom setuptools sdist command to generate .c files from pyx files.
 
-        Running the command object ``obj.run()`` will compile the pyx / py files
-        in any extensions, into c files, and add them to the list of files to
-        put into the source archive, as well as the usual behavior of distutils
-        ``sdist``.  It will also take the sha1 hashes of the pyx / py and c
-        files, and store them in a file ``pyx-stamps``, and put this file in the
-        release tree.  This allows someone who has the archive to know that the
-        pyx and c files that they have are the ones packed into the archive, and
-        therefore they may not need Cython at install time.  See
+        Running the command object ``obj.run()`` will compile the pyx-py
+        files in any extensions, into c files, and add them to the list of
+        files to put into the source archive, as well as the usual behavior of
+        distutils ``sdist``.  It will also take the sha1 hashes of the pyx-py
+        and c files, and store them in a file ``pyx-stamps``, and put this
+        file in the release tree.  This allows someone who has the archive
+        to know that the pyx and c files that they have are the ones packed
+        into the archive, and therefore they may not need Cython at
+        install time.
+
+        See Also
+        --------
         ``cython_process_exts`` for the build-time command.
-        """
 
+        """
         def make_distribution(self):
             """ Compile pyx to c files, add to sources, stamp sha1s """
             pyxes = []

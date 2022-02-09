@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from packaging.version import Version
+
 import numpy as np
-from distutils.version import LooseVersion
+
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.reconst.cache import Cache
@@ -398,7 +400,7 @@ class MapmriModel(ReconstModel, Cache):
 
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -413,7 +415,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt * cvxpy.quad_form(c, laplacian_matrix)
                 )
             M0 = M[self.gtab.b0s_mask, :]
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 constraints = [(M0[0] * c) == 1,
                                (K * c) >= -0.1]
             else:
