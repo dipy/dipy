@@ -30,7 +30,7 @@ elif [ "$INSTALL_TYPE" == "requirements" ]; then
     $PIPI -r requirements.txt
     python setup.py install
 elif [ "$INSTALL_TYPE" == "conda" ]; then
-    python setup.py install
+    $PIPI .
 fi
 
 if [ "$TEST_WITH_XVFB" == "1" ]; then
