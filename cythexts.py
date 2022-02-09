@@ -140,8 +140,8 @@ def build_stamp(pyxes, include_dirs=()):
     -------
     pyx_defs : dict
         dict has key, value pairs of <pyx_filename>, <pyx_info>, where
-        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
-        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file
+        SHA1 hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     """
     pyx_defs = {}
     from Cython.Compiler.Main import compile
@@ -169,8 +169,8 @@ def write_stamps(pyx_defs, stamp_fname='pyx-stamps'):
     ----------
     pyx_defs : dict
         dict has key, value pairs of <pyx_filename>, <pyx_info>, where
-        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
-        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file
+        SHA1 hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
     stamp_fname : str
         filename to which to write stamp information
     """
@@ -230,19 +230,23 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps',
         for these into the file named from `hash_stamps_fname`
     """
     class PyxSDist(sdist_like):
-        """ Custom setuptools sdist command to generate .c files from pyx files.
+        """Custom setuptools sdist command to generate .c files from pyx files.
 
-        Running the command object ``obj.run()`` will compile the pyx / py
+        Running the command object ``obj.run()`` will compile the pyx-py
         files in any extensions, into c files, and add them to the list of
         files to put into the source archive, as well as the usual behavior of
-        distutils ``sdist``.  It will also take the sha1 hashes of the pyx / py
-        and c files, and store them in a file ``pyx-stamps``, and put this file in
-        the release tree.  This allows someone who has the archive to know that
-        the pyx and c files that they have are the ones packed into the archive,
-        and therefore they may not need Cython at install time.
-        See ``cython_process_exts`` for the build-time command.
-        """
+        distutils ``sdist``.  It will also take the sha1 hashes of the pyx-py
+        and c files, and store them in a file ``pyx-stamps``, and put this
+        file in the release tree.  This allows someone who has the archive
+        to know that the pyx and c files that they have are the ones packed
+        into the archive, and therefore they may not need Cython at
+        install time.
 
+        See Also
+        --------
+        ``cython_process_exts`` for the build-time command.
+
+        """
         def make_distribution(self):
             """ Compile pyx to c files, add to sources, stamp sha1s """
             pyxes = []
