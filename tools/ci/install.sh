@@ -1,7 +1,9 @@
 #!/bin/bash
-set -ev
 
-source tools/ci/activate.sh
+echo "Activate virtual environment"
+source tools/ci/activate_env.sh
+
+set -ex
 
 PIPI="pip install --timeout=60"
 
@@ -33,3 +35,5 @@ fi
 if [ "$TEST_WITH_XVFB" == "1" ]; then
     export DISPLAY=:99
 fi
+
+set +ex

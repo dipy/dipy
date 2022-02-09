@@ -1,8 +1,9 @@
 #!/bin/bash
-set -ev
 
 echo "Activate virtual environment"
-source tools/ci/activate.sh
+source tools/ci/activate_env.sh
+
+set -ex
 
 echo "Display Python version"
 python -c "import sys; print(sys.version)"
@@ -25,4 +26,4 @@ else
     if [ "$COVERAGE" == "1" ]; then pip install coverage coveralls codecov; fi
 fi
 
-
+set +ex

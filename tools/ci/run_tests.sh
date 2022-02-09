@@ -1,10 +1,9 @@
 #!/bin/bash
-set -ev
-
 
 echo "Activate virtual environment"
-source tools/ci/activate.sh
+source tools/ci/activate_env.sh
 
+set -ex
 
 echo "Run the tests"
 
@@ -26,3 +25,5 @@ if [ "$COVERAGE" == "1" ]; then
 else
     pytest -svv --doctest-modules --verbose --durations=10 --pyargs dipy
 fi
+
+set +ex
