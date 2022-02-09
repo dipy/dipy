@@ -18,6 +18,7 @@ if [ "$INSTALL_TYPE" == "setup" ]; then
 elif [ "$INSTALL_TYPE" == "pip" ]; then
     $PIPI .
 elif [ "$INSTALL_TYPE" == "sdist" ]; then
+    # python -m pep517.build
     python setup_egg.py egg_info  # check egg_info while we're here
     python setup_egg.py sdist
     $PIPI dist/*.tar.gz
