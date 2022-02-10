@@ -10,7 +10,7 @@ from dipy.io.streamline import save_tractogram
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz import actor, window, ui, lib, shaders
+    from dipy.viz import actor, window, ui, shaders
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
 
@@ -61,6 +61,7 @@ def apply_shader(hz, act):
             program.SetUniformf("opacity_level", 1)
 
     shaders.add_shader_callback(act, shader_selected_callback, priority=100)
+
 
 HELP_MESSAGE = """
 >> left click: select centroid
@@ -845,7 +846,6 @@ class Horizon(object):
             window.record(scene, out_path=self.out_png,
                           size=(1200, 900),
                           reset_camera=False)
-
 
 
 def horizon(tractograms=None, images=None, pams=None,
