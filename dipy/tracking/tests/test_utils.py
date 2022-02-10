@@ -335,38 +335,40 @@ def test_target_line_based_out_of_bounds():
 
 
 def test_near_roi():
-    # streamlines = [np.array([[0., 0., 0.9],
-    #                          [1.9, 0., 0.],
-    #                          [3, 2., 2.]]),
-    #                np.array([[0.1, 0., 0],
-    #                          [0, 1., 1.],
-    #                          [0, 2., 2.]]),
-    #                np.array([[2, 2, 2],
-    #                          [3, 3, 3]])]
 
-    streamlines =   [np.array([[],
-                              [],
-                              []]).T,
-                      np.array([]),
-                               [],
-                    np.array([[0., 0., 0.9],
-                              [1.9, 0., 0.],
-                              [3, 2., 2.]]),
-                    np.array([[0.1, 0., 0],
-                              [0, 1., 1.],
-                              [0, 2., 2.]]),
-                    np.array([[2, 2, 2],
-                              [3, 3, 3]])]
-
+    streamlines = [np.array([[0., 0., 0.9],
+                             [1.9, 0., 0.],
+                             [3, 2., 2.]]),
+                   np.array([[0.1, 0., 0],
+                             [0, 1., 1.],
+                             [0, 2., 2.]]),
+                   np.array([[2, 2, 2],
+                             [3, 3, 3]])]
 
     mask = np.zeros((4, 4, 4), dtype=bool)
     mask[0, 0, 0] = True
     mask[1, 0, 0] = True
 
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=1),
-                           np.array([False, False, False, True, True, False]))
+                           np.array([True, True, False]))
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask),
-                           np.array([False, False, False, False, True, False]))
+                           np.array([False, True, False]))
+
+    # test for handling of various forms of null streamlines
+    # including a streamline from previous test because near_roi / tol
+    # can't handle completely empty streamline collections
+    streamlinesNULL = [np.array([[0., 0., 0.9],
+                                 [1.9, 0., 0.],
+                                 [3, 2., 2.]]),
+                       np.array([[],
+                                 [],
+                                 []]).T,
+                       np.array([]),
+                       []]
+    npt.assert_array_equal(near_roi(streamlinesNULL, np.eye(4), mask, tol=1),
+                           np.array([True, False, False, False]))
+    npt.assert_array_equal(near_roi(streamlinesNULL, np.eye(4), mask),
+                           np.array([False, False, False, False]))
 
     # If there is an affine, we need to use it:
     affine = np.eye(4)
@@ -408,17 +410,17 @@ def test_near_roi():
 
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=0.87,
                                     mode="either_end"),
-                           np.array([False, False, False, True, False, False]))
+                           np.array([True, False, False]))
 
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask, tol=0.87,
                                     mode="both_end"),
-                           np.array([False, False, False, False, False, False]))
+                           np.array([False, False, False]))
 
     mask[0, 0, 0] = True
     mask[0, 2, 2] = True
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask,
                                     mode="both_end"),
-                           np.array([False, False, False, False, True, False]))
+                           np.array([False, True, False]))
 
     # Test with a generator input:
     def generate_sl(streamlines):
@@ -427,7 +429,7 @@ def test_near_roi():
 
     npt.assert_array_equal(near_roi(generate_sl(streamlines), np.eye(4),
                                     mask, mode="both_end"),
-                           np.array([False, False, False, False, True, False]))
+                           np.array([False, True, False]))
 
 
 def test_streamline_mapping():
