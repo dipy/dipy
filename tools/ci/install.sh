@@ -33,8 +33,4 @@ elif [ "$INSTALL_TYPE" == "conda" ]; then
     $PIPI .
 fi
 
-if [ "$TEST_WITH_XVFB" == "1" ]; then
-    export DISPLAY=:99
-fi
-
 set +ex

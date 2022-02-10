@@ -17,6 +17,14 @@ on:
         description: "bal"
         type: boolean
         required: false
+      coverage:
+        description: "coverage"
+        type: boolean
+        required: false
+      enable-viz-tests:
+        description: "Activate viz tests and headless"
+        type: boolean
+        required: false
       install-type:
         description: ""
         type: string
@@ -33,7 +41,8 @@ on:
         required: false
 
     secrets:
-      token:
+      codecov-token:
+        description: "codecov token to send the report"
         required: false
 
 defaults:
@@ -56,6 +65,9 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python-version }}
       VENV_ARGS: "--python=python"
       USE_PRE: ${{ inputs.use-pre }}
+      COVERAGE: ${{ inputs.coverage }}
+      CODECOV_TOKEN: ${{ secrets.codecov-token }}
+      TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
       PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
     - uses: actions/checkout@v2
@@ -83,6 +95,13 @@ jobs:
       run: tools/ci/install_dependencies.sh
     - name: Install DIPY
       run: tools/ci/install.sh
+    - name: Setup Headless
+      if: ${{ inputs.enable-viz-tests }}
+      run: tools/ci/setup_headless.sh
+    # Enable tmate debugging of manually-triggered workflows if the input option was provided
+    # - name: Setup tmate session
+    #   if: ${{ failure() }}
+    #   uses: mxschmitt/action-tmate@v3
     - name: Run the Tests
       run: tools/ci/run_tests.sh
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
