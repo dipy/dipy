@@ -22,5 +22,5 @@ jobs:
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
       python-version: '["3.8", "3.9"]'
-      install-type: '"conda"'
+      install-type: '["conda", ]'
 
