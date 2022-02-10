@@ -3,14 +3,8 @@ name: PRE_WHEELS
 on:
   push:
     branches: [ master ]
-    paths:
-      - dipy/viz/**
-      - dipy/workflows/**
   pull_request:
     branches: [ master ]
-    paths:
-      - dipy/viz/**
-      - dipy/workflows/**
 
 jobs:
   PRE:
