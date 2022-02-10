@@ -55,8 +55,7 @@ jobs:
       INSTALL_TYPE: ${{ matrix.install-type }}
       PYTHON_VERSION: ${{ matrix.python-version }}
       VENV_ARGS: "--python=python"
-      # CHECK_TYPE: ${{ matrix.check }}
-      # EXTRA_PIP_FLAGS: ${{ matrix.pip-flags }}
+      USE_PRE: ${{ inputs.use-pre }}
       PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
     - uses: actions/checkout@v2
@@ -87,6 +86,6 @@ jobs:
     - name: Run the Tests
       run: tools/ci/run_tests.sh
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    - name: Setup tmate session
-      if: ${{ failure() }}
-      uses: mxschmitt/action-tmate@v3
+    # - name: Setup tmate session
+    #   if: ${{ failure() }}
+    #   uses: mxschmitt/action-tmate@v3
