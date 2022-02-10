@@ -19,7 +19,7 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 # TODO: Check why horizon is failing. Fow now, skipping
-temporary_skip = True
+temporary_skip = False
 
 
 @pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
