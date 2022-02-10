@@ -10,13 +10,13 @@ if [ "$RUNNER_OS" == "Linux" ]; then
     sleep 3
 elif [ "$RUNNER_OS" == "Windows" ]; then
     # Get Opengl Mesa from Vispy. We might need to move it in dipy-data
-	MESA_GL_URL = "https://github.com/vispy/demo-data/raw/master/mesa/"
-	ARCHITECTURE = 64
-	URL = $MESA_GL_URL + "opengl32_mingw_" + $ARCHITECTURE + ".dll"
+	export MESA_GL_URL="https://github.com/vispy/demo-data/raw/master/mesa/"
+	export ARCHITECTURE=64
+	export URL= $MESA_GL_URL + "opengl32_mingw_" + $ARCHITECTURE + ".dll"
 	if [ "$ARCHITECTURE" == "32"]; then
-        OPENGL_FILEPATH = "C:\Windows\SysWOW64\opengl32.dll"
+        export OPENGL_FILEPATH="C:\Windows\SysWOW64\opengl32.dll"
     else
-        OPENGL_FILEPATH = "C:\Windows\system32\opengl32.dll"
+        export OPENGL_FILEPATH="C:\Windows\system32\opengl32.dll"
     fi
 
 	mv $OPENGL_FILEPATH $OPENGL_FILEPATH.old.bak
