@@ -23,5 +23,5 @@ jobs:
   #   uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
   #   with:
   #     runs-on: '["ubuntu-latest", ]'
-  #     install-type: '["sdist", "wheel", requirements]'
+  #     install-type: '["sdist", "wheel", "requirements"]'
   #     extra-depends: scipy
