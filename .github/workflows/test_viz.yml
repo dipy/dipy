@@ -18,3 +18,4 @@ jobs:
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
       extra-depends: scikit_learn vtk fury scipy
+      enable-viz-tests: true

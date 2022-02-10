@@ -1,0 +1,17 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  cov:
+    uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      coverage: true
+      enable-viz-tests: true
+      extra-depends: scikit_learn scipy statsmodels pandas tables fury
+      codecov-token: ${{ secrets.codecov-token }}
