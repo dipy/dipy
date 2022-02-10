@@ -10,6 +10,8 @@ import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
+import warnings
+warnings.filterwarnings('ignore')
 
 needs_sklearn = pytest.mark.skipif(
     not sfm.has_sklearn,
@@ -31,27 +33,29 @@ def test_sfm():
     fdata, fbvals, fbvecs = dpd.get_fnames()
     data = load_nifti_data(fdata)
     gtab = grad.gradient_table(fbvals, fbvecs)
-    for iso in [sfm.ExponentialIsotropicModel, None]:
-        sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
-        sffit1 = sfmodel.fit(data[0, 0, 0])
-        sphere = dpd.get_sphere()
-        odf1 = sffit1.odf(sphere)
-        pred1 = sffit1.predict(gtab)
-        mask = np.ones(data.shape[:-1])
-        sffit2 = sfmodel.fit(data, mask)
-        pred2 = sffit2.predict(gtab)
-        odf2 = sffit2.odf(sphere)
-        sffit3 = sfmodel.fit(data)
-        pred3 = sffit3.predict(gtab)
-        odf3 = sffit3.odf(sphere)
-        npt.assert_almost_equal(pred3, pred2, decimal=2)
-        npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
-        npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
-        npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
-        # Fit zeros and you will get back zeros
-        npt.assert_almost_equal(
-            sfmodel.fit(np.zeros(data[0, 0, 0].shape)).beta,
-            np.zeros(sfmodel.design_matrix[0].shape[-1]))
+    for n_procs in [1, 2]:
+        for iso in [sfm.ExponentialIsotropicModel, None]:
+            sfmodel = sfm.SparseFascicleModel(gtab, isotropic=iso)
+            sffit1 = sfmodel.fit(data[0, 0, 0], num_processes=n_procs)
+            sphere = dpd.get_sphere()
+            odf1 = sffit1.odf(sphere)
+            pred1 = sffit1.predict(gtab)
+            mask = np.ones(data.shape[:-1])
+            sffit2 = sfmodel.fit(data, mask, num_processes=n_procs)
+            pred2 = sffit2.predict(gtab)
+            odf2 = sffit2.odf(sphere)
+            sffit3 = sfmodel.fit(data, num_processes=n_procs)
+            pred3 = sffit3.predict(gtab)
+            odf3 = sffit3.odf(sphere)
+            npt.assert_almost_equal(pred3, pred2, decimal=2)
+            npt.assert_almost_equal(pred3[0, 0, 0], pred1, decimal=2)
+            npt.assert_almost_equal(odf3[0, 0, 0], odf1, decimal=2)
+            npt.assert_almost_equal(odf3[0, 0, 0], odf2[0, 0, 0], decimal=2)
+            # Fit zeros and you will get back zeros
+            npt.assert_almost_equal(
+                sfmodel.fit(np.zeros(data[0, 0, 0].shape),
+                            num_processes=n_procs).beta,
+                np.zeros(sfmodel.design_matrix[0].shape[-1]))
 
 
 @needs_sklearn
