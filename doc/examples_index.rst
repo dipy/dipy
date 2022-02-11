@@ -161,7 +161,6 @@ Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_rumba`
-- :ref:`example_reconst_rumba_multishell`
 
 
 ----------------------
