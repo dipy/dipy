@@ -357,7 +357,7 @@ def test_near_roi():
     # test for handling of various forms of null streamlines
     # including a streamline from previous test because near_roi / tol
     # can't handle completely empty streamline collections
-    streamlinesNULL = [np.array([[0., 0., 0.9],
+    streamlines_null = [np.array([[0., 0., 0.9],
                                  [1.9, 0., 0.],
                                  [3, 2., 2.]]),
                        np.array([[],
@@ -365,16 +365,16 @@ def test_near_roi():
                                  []]).T,
                        np.array([]),
                        []]
-    npt.assert_array_equal(near_roi(streamlinesNULL, np.eye(4), mask, tol=1),
+    npt.assert_array_equal(near_roi(streamlines_null, np.eye(4), mask, tol=1),
                            np.array([True, False, False, False]))
-    npt.assert_array_equal(near_roi(streamlinesNULL, np.eye(4), mask),
+    npt.assert_array_equal(near_roi(streamlines_null, np.eye(4), mask),
                            np.array([False, False, False, False]))
 
     # If there is an affine, we need to use it:
     affine = np.eye(4)
     affine[:, 3] = [-1, 100, -20, 1]
     # Transform the streamlines:
-    x_streamlines = [sl + affine[:3, 3] for sl in streamlines[-3:]]
+    x_streamlines = [sl + affine[:3, 3] for sl in streamlines]
     npt.assert_array_equal(near_roi(x_streamlines, affine, mask, tol=1),
                            np.array([True, True, False]))
     npt.assert_array_equal(near_roi(x_streamlines, affine, mask,
