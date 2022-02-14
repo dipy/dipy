@@ -23,7 +23,7 @@ else
     $PIPI pytest
     $PIPI numpy
     if [ -n "$DEPENDS" ]; then $PIPI $DEPENDS $EXTRA_DEPENDS; fi
-    if [ "$COVERAGE" == "1" ]; then pip install coverage coveralls codecov; fi
+    if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" = true ]; then pip install coverage coveralls codecov; fi
 fi
 
 set +ex

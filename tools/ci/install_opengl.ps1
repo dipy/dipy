@@ -4,7 +4,7 @@
 
 # Adapted from VisPy
 
-$MESA_GL_URL = "https://github.com/vispy/demo-data/raw/master/mesa/"
+$MESA_GL_URL = "https://github.com/vispy/demo-data/raw/main/mesa/"
 
 # Mesa DLLs found linked from:
 #     http://qt-project.org/wiki/Cross-compiling-Mesa-for-Windows
