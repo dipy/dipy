@@ -177,23 +177,23 @@ cdef class FBCMeasures:
             Enable verbose mode.
         """
         cdef:
-            int num_fibers, max_length, dim
+            cnp.npy_intp num_fibers, max_length, dim
             double [:, :, :] streamlines
             int [:] streamlines_length
             double [:, :, :] streamlines_tangent
             int [:, :] streamlines_nearestp
             double [:, :] streamline_scores
-            int line_id = 0
-            int point_id = 0
-            int line_id2 = 0
-            int point_id2 = 0
-            int dims
+            cnp.npy_intp line_id = 0
+            cnp.npy_intp point_id = 0
+            cnp.npy_intp line_id2 = 0
+            cnp.npy_intp point_id2 = 0
+            cnp.npy_intp dims
             double score
             double [:] score_mp
             int [:] xd_mp, yd_mp, zd_mp
-            int xd, yd, zd, N, hn
+            cnp.npy_intp xd, yd, zd, N, hn
             double [:, :, :, :, ::1] lut
-            int threads_to_use = -1
+            cnp.npy_intp threads_to_use = -1
 
         threads_to_use = determine_num_threads(num_threads)
         set_num_threads(threads_to_use)
