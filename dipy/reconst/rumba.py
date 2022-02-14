@@ -482,7 +482,7 @@ class RumbaFit(OdfFit):
 
 
 def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
-    '''
+    r'''
     Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
 
     Deconvolves the kernel from the diffusion-weighted signal by computing a
@@ -522,13 +522,13 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     matter (WM) fiber populations in a given orientation as well as effects
     from GM and CSF. The equation governing these  contributions is:
 
-    $ S_i = S_0\left(\sum_{j=1}^{M}f_j\exp(-b_i\bold{v}_i^T\bold{D}_j
-      \bold{v}_i) + f_{GM}\exp(-b_iD_{GM})+f_{CSF}\exp(-b_iD_{CSF})\right) $
+    $S_i = S_0\left(\sum_{j=1}^{M}f_j\exp(-b_i\textbf{v}_i^T\textbf{D}_j
+    \textbf{v}_i) + f_{GM}\exp(-b_iD_{GM})+f_{CSF}\exp(-b_iD_{CSF})\right)$
 
     Where $S_i$ is the resultant signal along the diffusion-sensitizing
-    gradient unit vector $\bold{v_i}; i = 1, ..., N$ with a b-value of $b_i$.
+    gradient unit vector $\textbf{v_i}; i = 1, ..., N$ with a b-value of $b_i$.
     $f_j; j = 1, ..., M$ is the volume fraction of the $j^{th}$ fiber
-    population with an anisotropic diffusion tensor $\bold{D_j}$.
+    population with an anisotropic diffusion tensor $\textbf{D_j}$.
 
     $f_{GM}$ and $f_{CSF}$ are the volume fractions and $D_{GM}$ and $D_{CSF}$
     are the mean diffusivities of GM and CSF respectively.
@@ -536,50 +536,50 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     This equation is linear in $f_j, f_{GM}, f_{CSF}$ and can be simplified to
     a single matrix multiplication:
 
-    $\bold{S} = \bold{Hf}$
+    $\textbf{S} = \textbf{Hf}$
 
-    Where $\bold{S}$ is the signal vector at a certain voxel, $\bold{H}$ is
-    the deconvolution kernel, and $\bold{f}$ is the vector of volume fractions
-    for each compartment.
+    Where $\textbf{S}$ is the signal vector at a certain voxel, $\textbf{H}$ is
+    the deconvolution kernel, and $\textbf{f}$ is the vector of volume
+    fractions for each compartment.
 
     Modern MRI scanners produce noise following a Rician or Noncentral Chi
     distribution, depending on their signal reconstruction technique [2]_.
     Using this linear model, it can be shown that the likelihood of a signal
     under a Noncentral Chi noise model is:
 
-    $ P(\bold{S}|\bold{H}, \bold{f}, \sigma^2, n) = \prod_{i=1}^{N}\left(
-      \frac{S_i}{\bar{S_i}}\right)^n\exp\left\{-\frac{1}{2\sigma^2}\left[
-      S_i^2 + \bar{S}_i^2\right]\right\}I_{n-1}\left(\frac{S_i\bar{S}_i}
-      {\sigma^2}\right)u(S_i) $
+    $P(\textbf{S}|\textbf{H}, \textbf{f}, \sigma^2, n) = \prod_{i=1}^{N}\left(
+    \frac{S_i}{\bar{S_i}}\right)^n\exp\left\{-\frac{1}{2\sigma^2}\left[
+    S_i^2 + \bar{S}_i^2\right]\right\}I_{n-1}\left(\frac{S_i\bar{S}_i}
+    {\sigma^2}\right)u(S_i)$
 
-    Where $S_i$ and $\bar{S}_i = \bold{Hf}$ are the measured and expected
+    Where $S_i$ and $\bar{S}_i = \textbf{Hf}$ are the measured and expected
     signals respectively, and $n$ is the number of coils in the scanner, and
     $I_{n-1}$ is the modified Bessel function of first kind of order $n-1$.
     This gives the likelihood under a Rician distribution when $n$ is set to 1.
 
-    By taking the negative log of this with respect to $\bold{f}$ and setting
-    the derivative to 0, the $\bold{f}$ maxmizing likelihood is found to be:
+    By taking the negative log of this with respect to $\textbf{f}$ and setting
+    the derivative to 0, the $\textbf{f}$ maxmizing likelihood is found to be:
 
-    $ \bold{f} = \bold{f} \circ \frac{\bold{H}^T\left[\bold{S}\circ \frac{I_n(
-      \bold{S}\circ \bold{Hf}/\sigma^2)} {I_{n-1}(\bold{S}\circ\bold{Hf}/
-      \sigma^2)} \right ]} {\bold{H}^T\bold{Hf}} $
+    $\textbf{f} = \textbf{f} \circ \frac{\textbf{H}^T\left[\textbf{S}\circ
+    \frac{I_n(\textbf{S}\circ \textbf{Hf}/\sigma^2)} {I_{n-1}(\textbf{S}
+    \circ\textbf{Hf}\sigma^2)} \right ]} {\textbf{H}^T\textbf{Hf}}$
 
     The solution can be found using an iterative scheme, just as in the
     Richardson-Lucy algorithm:
 
-    $ \bold{f}^{k+1} = \bold{f}^k \circ \frac{\bold{H}^T\left[\bold{S}\circ
-      \frac{I_n(\bold{S}\circ\bold{Hf}^k/\sigma^2)} {I_{n-1}(\bold{S}\circ
-      \bold{Hf}^k/\sigma^2)} \right ]} {\bold{H}^T\bold{Hf}^k} $
+    $\textbf{f}^{k+1} = \textbf{f}^k \circ \frac{\textbf{H}^T\left[\textbf{S}
+    \circ\frac{I_n(\textbf{S}\circ\textbf{Hf}^k/\sigma^2)} {I_{n-1}(\textbf{S}
+    \circ\textbf{Hf}^k/\sigma^2)} \right ]} {\textbf{H}^T\textbf{Hf}^k}$
 
     In order to apply this, a reasonable estimate of $\sigma^2$ is required.
     To find this, a separate iterative scheme is found using the derivative
     of the negative log with respect to $\sigma^2$, and is run in parallel.
     This is shown here:
 
-    $ \alpha^{k+1} = \frac{1}{nN}\left\{ \frac{\bold{S}^T\bold{S} + \bold{f}^T
-      \bold{H}^T\bold{Hf}}{2} - \bold{1}^T_N\left[(\bold{S}\circ\bold{Hf})
-      \circ\frac{I_n(\bold{S}\circ\bold{Hf}/\alpha^k)}{I_{n-1}(\bold{S}\circ
-      \bold{Hf}/\alpha^k)} \right ]\right \} $
+    $\alpha^{k+1} = \frac{1}{nN}\left\{ \frac{\textbf{S}^T\textbf{S} +
+    \textbf{f}^T\textbf{H}^T\textbf{Hf}}{2} - \textbf{1}^T_N\left[(\textbf{S}
+    \circ\textbf{Hf})\circ\frac{I_n(\textbf{S}\circ\textbf{Hf}/\alpha^k)}
+    {I_{n-1}(\textbf{S}\circ\textbf{Hf}/\alpha^k)} \right ]\right \}$
 
     For more details, see [1]_.
 
@@ -655,7 +655,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
 
 def mbessel_ratio(n, x):
-    '''
+    r'''
     Fast computation of modified Bessel function ratio (first kind).
 
     Computes:
@@ -810,7 +810,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                         n_coils=1, R=1, use_tv=True, verbose=False):
-    '''
+    r'''
     Fit fODF for all voxels simultaneously using RUMBA-SD.
 
     Deconvolves the kernel from the diffusion-weighted signal at each voxel by
@@ -863,23 +863,24 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     -----
     TV modifies our cost function as follows:
 
-    $ J(\bold{f}) = -\log{P(\bold{S}|\bold{H}, \bold{f}, \sigma^2, n)}) +
-      \alpha_{TV}TV(\bold{f}) $
+    $J(\textbf{f}) = -\log{P(\textbf{S}|\textbf{H}, \textbf{f}, \sigma^2, n)})+
+    \alpha_{TV}TV(\textbf{f})$
 
     where the first term is the negative log likelihood described in the notes
     of `rumba_deconv`, and the second term is the TV energy, or the sum of
     gradient absolute values for the fODF across the entire brain. This results
     in a new multiplicative factor in the iterative scheme, now becoming:
 
-    $ \bold{f}^{k+1} = \bold{f}^k \circ \frac{\bold{H}^T\left[\bold{S}\circ
-      \frac{I_n(\bold{S}\circ\bold{Hf}^k/\sigma^2)} {I_{n-1}(\bold{S}\circ
-      \bold{Hf}^k/\sigma^2)} \right ]} {\bold{H}^T\bold{Hf}^k}\circ\bold{R}^k $
+    $\textbf{f}^{k+1} = \textbf{f}^k \circ \frac{\textbf{H}^T\left[\textbf{S}
+    \circ\frac{I_n(\textbf{S}\circ\textbf{Hf}^k/\sigma^2)} {I_{n-1}(\textbf{S}
+    \circ\textbf{Hf}^k/\sigma^2)} \right ]} {\textbf{H}^T\textbf{Hf}^k}\circ
+    \textbf{R}^k$
 
-    where $\bold{R}^k$ is computed voxelwise by:
+    where $\textbf{R}^k$ is computed voxelwise by:
 
-    $ (\bold{R}^k)_j = \frac{1}{1 - \alpha_{TV}div\left(\frac{\triangledown[
-        \bold{f}^k_{3D}]_j}{\lvert\triangledown[\bold{f}^k_{3D}]_j \rvert}
-        \right)\biggr\rvert_{x, y, z}} $
+    $(\textbf{R}^k)_j = \frac{1}{1 - \alpha_{TV}div\left(\frac{\triangledown[
+    \textbf{f}^k_{3D}]_j}{\lvert\triangledown[\textbf{f}^k_{3D}]_j \rvert}
+    \right)\biggr\rvert_{x, y, z}}$
 
     Here, $\triangledown$ is the symbol for the 3D gradient at any voxel.
 
