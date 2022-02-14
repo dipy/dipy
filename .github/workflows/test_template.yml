@@ -103,7 +103,12 @@ jobs:
       if: ${{ failure() }}
       uses: mxschmitt/action-tmate@v3
     - name: Run the Tests
-      run: tools/ci/run_tests.sh
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/run_tests.sh || echo "::warning::Job Experimental Job so failure ignored!"
+        else
+          tools/ci/run_tests.sh
+        fi
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session
       if: ${{ failure() && inputs.enable-viz-tests }}
