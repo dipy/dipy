@@ -350,7 +350,8 @@ rumba_peaks = peaks_from_model(model=rumba,
                                relative_peak_threshold=.5,
                                min_separation_angle=25,
                                normalize_peaks=False,
-                               parallel=True)
+                               parallel=True,
+                               num_processes=4)
 
 """
 For visualization, we scale up the peak values.
