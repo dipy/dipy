@@ -156,7 +156,7 @@ def test_roi_images():
                 out_png=tmp_fname)
         npt.assert_equal(os.path.exists(tmp_fname), True)
         ss = load_image(tmp_fname)
-        npt.assert_equal(ss[150, 800, :], [147, 0, 0])
+        npt.assert_equal(ss[650, 800, :], [147, 0, 0])
 
 
 if __name__ == '__main__':
