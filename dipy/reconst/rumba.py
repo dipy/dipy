@@ -34,14 +34,14 @@ class RumbaSDModel(OdfModel):
         and Noncentral Chi noise distributions, which more accurately
         represent MRI noise. Computes a maximum likelihood estimation of the
         fiber orientation density function (fODF) at each voxel. Includes
-        optional GM and CSF compartments to account for partial volume
-        effects. This fit can be performed voxelwise or globally. The global
-        fit will proceed more quickly than the voxelwise fit provided that the
-        computer has adequate RAM (>= 16 GB should be sufficient for most
-        datasets).
+        white matter compartments alongside optional GM and CSF compartments
+        to account for partial volume effects. This fit can be performed
+        voxelwise or globally. The global fit will proceed more quickly than
+        the voxelwise fit provided that the computer has adequate RAM (>= 16 GB
+        should be sufficient for most datasets).
 
         Kernel for deconvolution constructed using a priori knowledge of white
-        matter resposne function, as well as the mean diffusivity of GM and/or
+        matter response function, as well as the mean diffusivity of GM and/or
         CSF. RUMBA-SD is robust against impulse response imprecision, and thus
         the default diffusivity values are often adequate [2]_.
 
