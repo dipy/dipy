@@ -18,12 +18,9 @@ from dipy.core.sphere import Sphere
 from dipy.core.dsi_sphere import dsiSphere8Fold
 from dipy.core.geometry import sphere2cart
 
-from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.reconst.rdsi import RadialDsiModel
-
 from dipy.direction import peak_directions
 
+from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.odf import OdfFit
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 
@@ -289,10 +286,10 @@ class OdffpDictionary(object):
  
     
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
-                 p_iso=[0.0,0.2], p_fib=[0.2,0.5], f_in=[0.3,0.8], 
-                 D_iso=[2.0,3.0], D_a=[1.5,2.5], D_e=[1.5,2.5], D_r=[0.5,1.5],
+                 p_iso=[0.0,1.0], p_fib=[0.0,1.0], f_in=[0.0,1.0], 
+                 D_iso=[2.0,3.0], D_a=[0.5,2.5], D_e=[0.5,2.5], D_r=[0.0,2.0],
                  max_chunk_size=10000, odf_recon_model=None, 
-                 assert_faster_D_a=True, tortuosity_approximation=False):
+                 assert_faster_D_a=False, tortuosity_approximation=False):
            
         if odf_recon_model is None:
             odf_recon_model = GeneralizedQSamplingModel(gtab, sampling_length=DEFAULT_DICT_EDGE)
