@@ -8,11 +8,11 @@ on:
 
 jobs:
   cov:
-    uses: ./.github/workflows/test_template.yml@gh-actions
-    with:
-      runs-on: '["ubuntu-latest", ]'
-      coverage: true
-      enable-viz-tests: true
-      extra-depends: scikit_learn scipy statsmodels pandas tables fury
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+      uses: ./.github/workflows/test_template.yml
+      with:
+        runs-on: '["ubuntu-latest", ]'
+        coverage: true
+        enable-viz-tests: true
+        extra-depends: scikit_learn scipy statsmodels pandas tables fury
+      secrets:
+        codecov-token: ${{ secrets.CODECOV_TOKEN }}

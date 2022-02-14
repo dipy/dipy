@@ -105,6 +105,6 @@ jobs:
     - name: Run the Tests
       run: tools/ci/run_tests.sh
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
-    # - name: Setup tmate session
-    #   if: ${{ failure() }}
-    #   uses: mxschmitt/action-tmate@v3
+    - name: Setup tmate session
+      if: ${{ failure() && inputs.enable-viz-tests }}
+      uses: mxschmitt/action-tmate@v3
