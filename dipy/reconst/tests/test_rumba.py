@@ -109,8 +109,7 @@ def test_predict():
     rumba_fit = rumba.fit(data)
     data_pred = rumba_fit.predict()
 
-    # Assert reconstructed signal value within 0.01 of original
-    assert_allclose(data, data_pred, atol=0.01, rtol=1.0)
+    assert_allclose(data_pred, data, atol=0.01, rtol=0.05)
 
 
 def test_recursive_rumba():
