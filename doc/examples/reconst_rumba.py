@@ -117,8 +117,8 @@ scene.rm(response_actor)
 """
 **Strategy 2: estimate from local brain region**
 The `csdeconv` module contains functions for estimating this response.
-`auto_response_sst` extracts a ROI in the center of the brain and isolates
-single fiber populations from the corpus callosum using a FA mask with a
+`auto_response_sst` extracts an ROI in the center of the brain and isolates
+single fiber populations from the corpus callosum using an FA mask with a
 threshold of 0.7. These voxels are used to estimate the response function.
 """
 
