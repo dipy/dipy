@@ -271,6 +271,15 @@ fetch_stanford_hardi = _make_fetcher(
      '4c63a586f29afc6a48a5809524a76cb4'],
     doc="Download a HARDI dataset with 160 gradient directions")
 
+fetch_resdnn_weights = _make_fetcher(
+    "fetch_resdnn_weights",
+    pjoin(dipy_home, 'resdnn_weights'),
+    'https://ndownloader.figshare.com/files/',
+    ['22736240'],
+    ['resdnn_weights_mri_2018.h5'],
+    ['f0e118d72ab804a464494bd9015227f4'],
+    doc="Download ResDNN model weights for Nath et. al 2018")
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     pjoin(dipy_home, 'stanford_hardi'),
@@ -681,6 +690,10 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
         return surface_name
+    if name == 'fetch_resdnn_weights':
+        files, folder = fetch_resdnn_weights()
+        wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
+        return wraw
 
 
 def read_qtdMRI_test_retest_2subjects():
