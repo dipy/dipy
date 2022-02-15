@@ -313,6 +313,9 @@ cdef class FBCMeasures:
 
         # Save LFBC as class member
         self.streamlines_lfbc = streamline_scores
+        if verbose:
+            print(np.asarray(self.streamlines_lfbc))
+            print(np.asarray(streamlines_length))
 
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length,

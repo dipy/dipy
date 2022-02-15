@@ -34,12 +34,14 @@ def test_fbc():
     k = EnhancementKernel(D33, D44, t, orientations=sphere,
                           force_recompute=True)
 
+    # print(np.asarray(k.get_lookup_table()))
+    print(np.asarray(k.get_orientations()))
     # run FBC
     fbc = FBCMeasures(streamlines, k, verbose=True)
 
     # get FBC values
     fbc_sl_orig, clrs_orig, rfbc_orig = \
-        fbc.get_points_rfbc_thresholded(0, emphasis=0.01)
+        fbc.get_points_rfbc_thresholded(0, emphasis=0.01, verbose=True)
 
     # check mean RFBC against tested value
     npt.assert_almost_equal(np.mean(rfbc_orig), 1.0500466494329224)
