@@ -270,6 +270,15 @@ fetch_stanford_hardi = _make_fetcher(
      '4c63a586f29afc6a48a5809524a76cb4'],
     doc="Download a HARDI dataset with 160 gradient directions")
 
+fetch_resdnn_weights = _make_fetcher(
+    "fetch_resdnn_weights",
+    pjoin(dipy_home, 'resdnn_weights'),
+    'https://ndownloader.figshare.com/files/',
+    ['22736240'],
+    ['resdnn_weights_mri_2018.h5'],
+    ['f0e118d72ab804a464494bd9015227f4'],
+    doc="Download ResDNN model weights for Nath et. al 2018")
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     pjoin(dipy_home, 'stanford_hardi'),
@@ -677,20 +686,14 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
-<<<<<<< HEAD
     if name == 'fury_surface':
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
         return surface_name
-=======
-    if name == 'qte_lte_pte':
-        _, folder = fetch_qte_lte_pte()
-        fdata = pjoin(folder, 'lte-pte.nii.gz')
-        fbval = pjoin(folder, 'lte-pte.bval')
-        fbvec = pjoin(folder, 'lte-pte.bvec')
-        fmask = pjoin(folder, 'mask.nii.gz')
-        return fdata, fbval, fbvec, fmask
->>>>>>> a9cf4bfe3 (NF - data fetcher for QTE data with LTE and PTE)
+    if name == 'fetch_resdnn_weights':
+        files, folder = fetch_resdnn_weights()
+        wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
+        return wraw
 
 
 def read_qtdMRI_test_retest_2subjects():
