@@ -13,6 +13,7 @@ import nibabel as nib
 
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
+import scipy.stats
 
 from dipy.core.sphere import Sphere
 from dipy.core.dsi_sphere import dsiSphere8Fold
@@ -70,6 +71,13 @@ class OdffpDictionary(object):
     peak_dirs = None
     max_peaks_num = 0    
         
+    MICRO_DA  = 0
+    MICRO_DE  = 1
+    MICRO_DR  = 2
+    MICRO_FIN = 3    
+    
+    MICRO_PARAMS_NUM = len((MICRO_DA, MICRO_DE, MICRO_DR, MICRO_FIN)) 
+
         
     def __init__(self, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
         
@@ -179,7 +187,7 @@ class OdffpDictionary(object):
     def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, 
                                  equal_fibers, assert_faster_D_a, tortuosity_approximation):
         
-        micro_params = np.zeros((4, peaks_per_voxel+1))
+        micro_params = np.zeros((self.MICRO_PARAMS_NUM, peaks_per_voxel+1))
         
         # Free water compartment has D_a=0, f_in=0, and D_a=D_e
         micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
@@ -202,12 +210,12 @@ class OdffpDictionary(object):
                     np.random.uniform(f_in[0], f_in[1], size=peaks_per_voxel)
                 ])
                 
-            if assert_faster_D_a and np.any(micro_params[0,1:] < micro_params[1,1:]):
+            if assert_faster_D_a and np.any(micro_params[self.MICRO_DA,1:] < micro_params[self.MICRO_DE,1:]):
                 continue
 
             if tortuosity_approximation:
-                micro_params[2,1:] = (1 - micro_params[3,1:]) * micro_params[0,1:]
-                if np.any(micro_params[2,1:] < D_r[0]) or np.any(micro_params[2,1:] > D_r[1]):
+                micro_params[self.MICRO_DR,1:] = (1 - micro_params[self.MICRO_FIN,1:]) * micro_params[self.MICRO_DA,1:]
+                if np.any(micro_params[self.MICRO_DR,1:] < D_r[0]) or np.any(micro_params[self.MICRO_DR,1:] > D_r[1]):
                     continue
                 
             break
@@ -224,7 +232,7 @@ class OdffpDictionary(object):
         bvals = np.vstack(1e-3 * gtab.bvals)
            
         # First, compute the diffusion signal of free water
-        dwi = ratio[0] * np.exp(-bvals * micro[1,0])
+        dwi = ratio[0] * np.exp(-bvals * micro[self.MICRO_DE,0])
            
         # Then, add the diffusion signal of fibers
         for j in range(len(peak_dirs_idx)):
@@ -232,10 +240,10 @@ class OdffpDictionary(object):
             # Squared dot product of the b-vectors and the j-th peak directions
             dir_prod_sqr = np.dot(gtab.bvecs, self.tessellation.vertices[peak_dirs_idx[j]].T) ** 2
                
-            dwi_intra = np.exp(-bvals * micro[0,j+1] * dir_prod_sqr)
-            dwi_extra = np.exp(-bvals * (micro[1,j+1] * dir_prod_sqr + micro[2,j+1] * (1 - dir_prod_sqr)))
+            dwi_intra = np.exp(-bvals * micro[self.MICRO_DA,j+1] * dir_prod_sqr)
+            dwi_extra = np.exp(-bvals * (micro[self.MICRO_DE,j+1] * dir_prod_sqr + micro[self.MICRO_DR,j+1] * (1 - dir_prod_sqr)))
                
-            dwi += ratio[j+1] * (micro[3,j+1] * dwi_intra + (1 - micro[3,j+1]) * dwi_extra)
+            dwi += ratio[j+1] * (micro[self.MICRO_FIN,j+1] * dwi_intra + (1 - micro[self.MICRO_FIN,j+1]) * dwi_extra)
            
         return dwi.T
 
@@ -380,6 +388,102 @@ class OdffpDictionary(object):
                 gtab, odf_recon_model, self.ratio[:,chunk_idx[recompute_filter]], 
                 self.micro[:,:,chunk_idx[recompute_filter]], peak_dirs_idx[:,recompute_filter]
             )
+
+
+class PosteriorOdffpDictionary(OdffpDictionary):
+    
+    def __init__(self, odffp_fit, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
+        self._micro_pdf = {}
+        self._ratio_pdf = {} 
+
+        for peak_id in range(odffp_fit.get_max_peaks_num()+1):
+
+            self._ratio_pdf[peak_id] = self._estimate_pdf(
+                odffp_fit.get_compartment_volume(peak_id)
+            )
+
+            self._micro_pdf[peak_id] = {}
+
+            # Diffusivity parameters of the free water compartment aren't estimated
+            if peak_id < 1:
+                continue
+            
+            for parameter_id in range(self.MICRO_PARAMS_NUM):
+                self._micro_pdf[peak_id][parameter_id] = self._estimate_pdf(
+                    odffp_fit.get_micro_parameter(parameter_id, peak_id)
+                )
+
+        OdffpDictionary.__init__(self, dict_file, is_sorted, tessellation)
+    
+
+    def _estimate_pdf(self, samples):
+        return scipy.stats.gaussian_kde(samples[np.isfinite(samples)])
+
+
+    def _random_from_pdf(self, pdf, min_value, max_value):
+        while True:
+            value = float(pdf.resample(1))
+            if value < min_value or value > max_value:
+                continue
+
+            break
+        
+        return value
+                
+
+    def _random_fraction_volumes(self, p_iso, p_fib, peaks_per_voxel):        
+        fraction_volumes = np.zeros(peaks_per_voxel+1)
+
+        fraction_volumes[0] = self._random_from_pdf(self._ratio_pdf[0], p_iso[0], p_iso[1])
+
+        for peak_id in range(1,peaks_per_voxel+1):
+            fraction_volumes[peak_id] = self._random_from_pdf(self._ratio_pdf[peak_id], p_fib[0], p_fib[1])
+                     
+        return fraction_volumes / np.maximum(1e-8, np.sum(fraction_volumes))
+
+
+    def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, 
+                                 equal_fibers, assert_faster_D_a, tortuosity_approximation):
+        
+        micro_params = np.zeros((self.MICRO_PARAMS_NUM, peaks_per_voxel+1))
+        
+        # Free water compartment has D_a=0, f_in=0, and D_a=D_e
+        micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
+        
+        # Repeat until the microstructure parameters are valid
+        while True:
+
+            # Equal fibers means that all fibers have the same diffusivities and f_in
+            if equal_fibers:
+                micro_params[:,1:] = np.tile(
+                    [
+                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DA], D_a[0], D_a[1])],
+                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DE], D_e[0], D_e[1])],
+                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DR], D_r[0], D_r[1])],
+                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_FIN], f_in[0], f_in[1])]
+                    ], 
+                    peaks_per_voxel
+                )
+            else:
+                for peak_id in range(1,peaks_per_voxel+1):
+                    micro_params[:,peak_id] = np.array([
+                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DA], D_a[0], D_a[1]),
+                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DE], D_e[0], D_e[1]),
+                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DR], D_r[0], D_r[1]),
+                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_FIN], f_in[0], f_in[1])
+                    ])
+                
+            if assert_faster_D_a and np.any(micro_params[self.MICRO_DA,1:] < micro_params[self.MICRO_DE,1:]):
+                continue
+
+            if tortuosity_approximation:
+                micro_params[self.MICRO_DR,1:] = (1 - micro_params[self.MICRO_FIN,1:]) * micro_params[self.MICRO_DA,1:]
+                if np.any(micro_params[self.MICRO_DR,1:] < D_r[0]) or np.any(micro_params[self.MICRO_DR,1:] > D_r[1]):
+                    continue
+                
+            break
+        
+        return micro_params
 
 
 class OdffpModel(object):
@@ -575,18 +679,16 @@ class OdffpFit(OdfFit):
         self._dict_idx = dict_idx
     
         
-    def odf(self, sphere=None):
-        if sphere is None or sphere == self._dict.tessellation:
-            output_odf = self._odf
-        else:
-            output_odf = OdffpModel.resample_odf(self._odf, self._dict.tessellation, sphere)
-        
-        return output_odf / np.maximum(1e-8, np.max(output_odf))
+    def _nonzero_dict_idx(self):
+        return self._dict_idx[self._dict_idx > 0]
+
     
-    
-    def peak_dirs(self):
-        return self._peak_dirs
-    
+    def _export_dict_var(self, dict_var, peak_id):
+        if peak_id > self._dict.max_peaks_num:
+            raise Exception("Argument peak_id=%d exceeds the maximum number of peaks." % peak_id)
+            
+        return dict_var[peak_id,self._nonzero_dict_idx()]
+
     
     def _fib_reshape(self, matrix, new_size, orientation_agreement=True):
         if not np.all(orientation_agreement):
@@ -600,6 +702,31 @@ class OdffpFit(OdfFit):
         index_map[fa_filter] = var_data[dict_idx[fa_filter]]
         return self._fib_reshape(index_map, slice_size)
 
+
+    def odf(self, sphere=None):
+        if sphere is None or sphere == self._dict.tessellation:
+            output_odf = self._odf
+        else:
+            output_odf = OdffpModel.resample_odf(self._odf, self._dict.tessellation, sphere)
+        
+        return output_odf / np.maximum(1e-8, np.max(output_odf))
+    
+    
+    def peak_dirs(self):
+        return self._peak_dirs
+    
+    
+    def get_max_peaks_num(self):
+        return self._dict.max_peaks_num
+    
+    
+    def get_micro_parameter(self, parameter_id, peak_id):
+        return self._export_dict_var(self._dict.micro[parameter_id], peak_id)
+    
+    
+    def get_compartment_volume(self, peak_id):
+        return self._export_dict_var(self._dict.ratio, peak_id)
+    
     
     def save_as_fib(self, affine, voxel_size, output_file_name='output.fib'):
         fib = {}
@@ -611,7 +738,6 @@ class OdffpFit(OdfFit):
         voxels_num = np.prod(fib['dimension'])
         slice_size = [fib['dimension'][0] * fib['dimension'][1], fib['dimension'][2]]
 
-        max_peaks_num = self._peak_dirs.shape[-2]
         tessellation_half_size = len(self._dict.tessellation.vertices) // 2
 
         try:
@@ -622,7 +748,7 @@ class OdffpFit(OdfFit):
                 
         # Reorient maps to LPS and reshape them to voxels_num x N (requirements of the FIB format)
         output_odf = self._fib_reshape(self._odf, (voxels_num, tessellation_half_size), orientation_agreement)
-        output_peak_dirs = self._fib_reshape(self._peak_dirs, (voxels_num, max_peaks_num, 3), orientation_agreement)
+        output_peak_dirs = self._fib_reshape(self._peak_dirs, (voxels_num, self._dict.max_peaks_num, 3), orientation_agreement)
         dict_idx = self._fib_reshape(self._dict_idx, voxels_num, orientation_agreement)
 
         # Resample output ODFs to the LPS coordinates     
@@ -638,7 +764,7 @@ class OdffpFit(OdfFit):
         else:
             fib_tessellation = self._dict.tessellation
   
-        for i in range(max_peaks_num):
+        for i in range(self._dict.max_peaks_num):
             fib['fa%d' % i] = np.zeros(voxels_num)
             fib['index%d' % i] = np.zeros(voxels_num)
         
@@ -654,7 +780,7 @@ class OdffpFit(OdfFit):
                 fib['index%d' % i][j] = np.mod(peak_vertex_idx[i], tessellation_half_size)
                 fib['fa%d' % i][j] = peak_vertex_values[i] - np.min(output_odf[j])
 
-        for i in range(max_peaks_num):
+        for i in range(self._dict.max_peaks_num):
             fib['fa%d' % i] -= np.min(fib['fa%d' % i])
             fib['nqa%d' % i] = fib['fa%d' % i] / np.maximum(1e-8, np.max(fib['fa%d' % i]))
 
@@ -675,7 +801,7 @@ class OdffpFit(OdfFit):
         fib['D_iso'] = self._fib_index_map(self._dict.micro[1,0], dict_idx, slice_size, fa_filter)
         fib['p_iso'] = self._fib_index_map(self._dict.ratio[0], dict_idx, slice_size, fa_filter)
 
-        for i in range(1, max_peaks_num+1):
+        for i in range(1, self._dict.max_peaks_num+1):
             index_maps = {
                 'fib%d_Da' % i: self._dict.micro[0,i], 'fib%d_De' % i: self._dict.micro[1,i],
                 'fib%d_Dr' % i: self._dict.micro[2,i], 'fib%d_fin' % i: self._dict.micro[3,i],
@@ -684,7 +810,7 @@ class OdffpFit(OdfFit):
             for index_name in index_maps:
                 fib[index_name] = self._fib_index_map(index_maps[index_name], dict_idx, slice_size, fa_filter)
 
-        for i in range(max_peaks_num):
+        for i in range(self._dict.max_peaks_num):
             fib['fa%d' % i] = self._fib_reshape(fib['fa%d' % i], slice_size)
             fib['nqa%d' % i] = self._fib_reshape(fib['nqa%d' % i], slice_size)
             fib['index%d' % i] = self._fib_reshape(fib['index%d' % i], (1, voxels_num))
