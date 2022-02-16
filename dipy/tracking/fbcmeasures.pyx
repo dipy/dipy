@@ -252,9 +252,11 @@ cdef class FBCMeasures:
         tree = KDTree(kernel.get_orientations())
         for line_id in range(num_fibers):
             for point_id in range(streamlines_length[line_id] - 1):
+                # print(np.asarray(streamlines[line_id, point_id]), tree.query(streamlines[line_id, point_id])[1])
                 streamlines_nearestp[line_id, point_id] = \
                     tree.query(streamlines[line_id, point_id])[1]
 
+        # print(np.asarray(streamlines_nearestp))
         # arrays for parallel computing
         score_mp = np.zeros(num_fibers)
         xd_mp = np.zeros(num_fibers, dtype=np.int32)
@@ -313,9 +315,6 @@ cdef class FBCMeasures:
 
         # Save LFBC as class member
         self.streamlines_lfbc = streamline_scores
-        if verbose:
-            print(np.asarray(self.streamlines_lfbc))
-            print(np.asarray(streamlines_length))
 
         # compute RFBC for each fiber
         self.streamlines_rfbc = compute_rfbc(streamlines_length,
