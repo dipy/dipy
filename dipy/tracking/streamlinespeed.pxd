@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 ctypedef float[:, :] float2d

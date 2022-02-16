@@ -11,11 +11,8 @@ import pytest
 
 from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
 from dipy.reconst import shm
-from dipy.reconst.dti import fractional_anisotropy, mean_diffusivity
-from dipy.data import default_sphere, get_3shell_gtab, get_fnames
-from dipy.core.gradients import GradientTable, gradient_table
-
-from dipy.io.gradients import read_bvals_bvecs
+from dipy.data import default_sphere, get_3shell_gtab
+from dipy.core.gradients import GradientTable
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -44,12 +41,10 @@ def get_test_data():
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], 80, s0[0]) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
-    evals = [evals_list[tissue] for tissue in tissues]
-    evals = np.asarray(evals).reshape((3, 3, 1, 3))
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]
     responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
-    return (gtab, data, masks, responses)
+    return gtab, data, masks, responses
 
 
 def _expand(m, iso, coeff):
@@ -170,7 +165,7 @@ def test_MSDeconvFit():
 
 
 def test_multi_shell_fiber_response():
-    gtab = get_3shell_gtab()
+
     sh_order = 8
     response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
                                           wm_response,
@@ -198,14 +193,20 @@ def test_multi_shell_fiber_response():
 def test_mask_for_response_msmt():
     gtab, data, masks_gt, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
@@ -219,14 +220,20 @@ def test_mask_for_response_msmt():
 def test_mask_for_response_msmt_nvoxels():
     gtab, data, _, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)

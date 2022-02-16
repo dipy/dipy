@@ -462,7 +462,7 @@ def real_sh_descoteaux(sh_order, theta, phi,
     return real_sh, m, n
 
 
-@deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtix is deprecated, '
+@deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_tournier instead',
                         since='1.3', until='2.0')
 def real_sym_sh_mrtrix(sh_order, theta, phi):

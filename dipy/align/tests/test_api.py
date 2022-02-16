@@ -12,7 +12,7 @@ import dipy.core.gradients as dpg
 
 from dipy.align import (syn_registration, register_series, register_dwi_series,
                         center_of_mass, translation, rigid_isoscaling,
-                        rigid_scaling, rigid, affine,
+                        rigid_scaling, rigid, affine, motion_correction,
                         affine_registration, streamline_registration,
                         write_mapping, read_mapping, register_dwi_to_template)
 
@@ -221,7 +221,7 @@ def test_register_series():
     npt.assert_(np.all(xformed[..., ref_idx] == img.get_fdata()[..., ref_idx]))
 
 
-def test_register_dwi_series():
+def test_register_dwi_series_and_motion_correction():
     fdata, fbval, fbvec = dpd.get_fnames('small_64D')
     with nbtmp.InTemporaryDirectory() as tmpdir:
         # Use an abbreviated data-set:
@@ -237,7 +237,11 @@ def test_register_dwi_series():
         gtab = dpg.gradient_table(op.join(tmpdir, 'bvals.txt'),
                                   op.join(tmpdir, 'bvecs.txt'))
         reg_img, reg_affines = register_dwi_series(data, gtab, img.affine)
+        reg_img_2, reg_affines_2 = motion_correction(data, gtab, img.affine)
         npt.assert_(isinstance(reg_img, nib.Nifti1Image))
+
+        npt.assert_array_equal(reg_img.get_fdata(), reg_img_2.get_fdata())
+        npt.assert_array_equal(reg_affines, reg_affines_2)
 
 
 def test_streamline_registration():

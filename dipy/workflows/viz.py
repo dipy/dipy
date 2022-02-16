@@ -9,15 +9,15 @@ from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
+
 fury, has_fury, setup_module = optional_package('fury')
-vtk, has_vtk, _ = optional_package('vtk')
+
 
 if has_fury:
     from fury.colormap import line_colors
     from fury.utils import numpy_to_vtk_colors
+    from fury.lib import numpy_support
 
-if has_vtk:
-    from vtk.util import numpy_support
 
 class HorizonFlow(Workflow):
 

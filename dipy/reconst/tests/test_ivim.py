@@ -74,8 +74,8 @@ def setup_module():
                             120., 140., 160., 180., 200., 300., 400.,
                             500., 600., 700., 800., 900., 1000.])
 
-    _ = generate_bvecs(N)  # bvecs_no_b0
-    gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
+    with pytest.warns(UserWarning):
+        gtab_no_b0 = gradient_table(bvals_no_b0, bvecs.T, b0_threshold=0)
 
     bvals_with_multiple_b0 = np.array([0., 0., 0., 0., 40., 60., 80., 100.,
                                        120., 140., 160., 180., 200., 300.,
