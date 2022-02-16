@@ -1,0 +1,27 @@
+name: Compat
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  minimal-py37:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.7", ]'
+      depends: cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm
+  minimal-py38:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      python-version: '["3.8", ]'
+      depends: cython==0.29 numpy==1.17.5 scipy==1.3.2 nibabel==3.0.0 h5py==3.0.0 tqdm
+  # install-type:
+  #   uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
+  #   with:
+  #     runs-on: '["ubuntu-latest", ]'
+  #     install-type: '["sdist", "wheel", "requirements"]'
+  #     extra-depends: scipy
