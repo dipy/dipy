@@ -252,7 +252,6 @@ cdef class FBCMeasures:
         tree = KDTree(kernel.get_orientations())
         for line_id in range(num_fibers):
             for point_id in range(streamlines_length[line_id] - 1):
-                # print(np.asarray(streamlines[line_id, point_id]), tree.query(streamlines[line_id, point_id])[1])
                 streamlines_nearestp[line_id, point_id] = \
                     tree.query(streamlines[line_id, point_id])[1]
 
