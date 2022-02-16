@@ -80,6 +80,7 @@ Usage example
 QTI can be fit to data using the module `dipy.reconst.qti`. Let's start by
 importing the required modules and functions:
 """
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
@@ -88,43 +89,53 @@ import matplotlib.pyplot as plt
 import nibabel as nib
 import numpy as np
 import dipy.reconst.qti as qti
+
 """
 As QTI requires data with tensor-valued encoding, let's load an example dataset
 acquired with q-space trajectory encoding (QTE):
 """
+
 fdata, fbvals, fbvecs, fmask = get_fnames('qte_lte_pte')
 data, affine = load_nifti(fdata)
 mask, _ = load_nifti(fmask)
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
 gtab = gradient_table(bvals, bvecs, btens=btens)
+
 """
 The dataset contains 122 volumes of which the first half were acquired with
 linear tensor encoding (LTE) and the second half with planar tensor encoding
 (PTE). We can confirm this by calculating the ranks of the b-tensors in the
 gradient table.
 """
+
 ranks = np.array([np.linalg.matrix_rank(b) for b in gtab.btens])
 for i, l in enumerate(['b = 0', 'LTE', 'PTE']):
     print('%s volumes with %s' % (np.sum(ranks == i), l))
+
 """
 Now that we have data acquired with tensor-valued diffusion encoding and the
 corresponding gradient table containing the b-tensors, we can fit QTI to the
 data as follows:
 """
+
 qtimodel = qti.QtiModel(gtab)
 qtifit = qtimodel.fit(data, mask)
+
 """
 QTI parameter maps can accessed as the attributes of `qtifit`. For instance,
 fractional anisotropy (FA) and microscopic fractional anisotropy (μFA) maps can
 be calculated as:
 """
+
 fa = qtifit.fa
 ufa = qtifit.ufa
+
 """
 Finally, let's reproduce Figure 9 from [1]_ to visualize more QTI parameter
 maps:
 """
+
 z = 36
 
 fig, ax = plt.subplots(3, 4, figsize=(12, 9))
@@ -170,6 +181,7 @@ ax[2, 3].set_title('K$_{μ}$')
 
 fig.tight_layout()
 plt.show()
+
 """
 For more information about QTI, please read the article by Westin et al. [1]_.
 
