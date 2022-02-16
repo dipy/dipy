@@ -256,7 +256,6 @@ cdef class FBCMeasures:
                 streamlines_nearestp[line_id, point_id] = \
                     tree.query(streamlines[line_id, point_id])[1]
 
-        # print(np.asarray(streamlines_nearestp))
         # arrays for parallel computing
         score_mp = np.zeros(num_fibers)
         xd_mp = np.zeros(num_fibers, dtype=np.int32)
