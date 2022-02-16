@@ -8,12 +8,12 @@ on:
 
 jobs:
   pip:
-    uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
+    uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
       extra-depends: scikit_learn pandas statsmodels tables scipy
   conda:
-    uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
+    uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
