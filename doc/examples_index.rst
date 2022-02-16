@@ -156,6 +156,11 @@ Intra-Voxel Signal Reconstruction
 
 - :ref:`example_reconst_sh`
 
+Q-space Trajectory Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qti`
+
 ----------------------
 Contextual enhancement
 ----------------------
