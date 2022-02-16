@@ -8,7 +8,7 @@ on:
 
 jobs:
   PRE:
-    uses: skoudoro/dipy/.github/workflows/test_template.yml@gh-actions
+    uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", ]'
       use-pre: true
