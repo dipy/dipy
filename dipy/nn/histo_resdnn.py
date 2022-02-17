@@ -145,6 +145,11 @@ class HistoResDNN(object):
             Predicted fODF (as SH)
         """
 
+        if x_test.shape[-1] != self.sh_size:
+            raise ValueError('Expected input for the provided model weights '
+                             'do not match the declared model ({})'
+                             .format(self.sh_size))
+
         return self.model.predict(x_test)
 
     def fit(self, data, gtab, mask=None):
