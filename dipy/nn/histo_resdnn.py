@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Classes and functions for fitting the Histological ResDNN model.
+Class and helper functions for fitting the Histological ResDNN model.
 """
 
 
