@@ -1,55 +1,28 @@
+#!/usr/bin/python
 """
-This script is intended for the model object
-of ResDNN Histology Network.
-The model was re-trained for usage with different basis function ('mrtrix') set
-as per the proposed model from the paper:
-[1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
-C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
-Deep learning reveals untapped information for local white-matter
-fiber reconstruction in diffusion-weighted MRI.
-Magnetic resonance imaging, 62, 220-227.
-[2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
-P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
-Deep learning captures more accurate diffusion fiber orientations
-distributions than constrained spherical deconvolution.
-arXiv preprint arXiv:1911.07927.
+Classes and functions for fitting the Histological ResDNN model.
 """
-from tensorflow.keras.layers import Input, Dense, Add
+
+
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.layers import Input, Dense, Add
+from distutils.version import LooseVersion
 import logging
 
 from dipy.core.sphere import HemiSphere
 from dipy.data import get_sphere
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
-import numpy as np
-
-from distutils.version import LooseVersion
 from dipy.utils.optpkg import optional_package
+import numpy as np
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
+
 logging.basicConfig()
 logger = logging.getLogger('histo_resdnn')
-
-
-def custom_accuracy_sh(y_true, y_pred):
-    y_true = y_true
-    y_pred = y_pred
-
-    comp_true = tf.math.conj(y_true)
-    norm_true = y_true / tf.sqrt(tf.reduce_sum(tf.multiply(y_true, comp_true)))
-
-    comp_pred = tf.math.conj(y_pred)
-    norm_pred = y_pred / tf.sqrt(tf.reduce_sum(tf.multiply(y_pred, comp_pred)))
-
-    comp_p2 = tf.math.conj(norm_pred)
-    acc = tf.math.real(tf.reduce_sum(tf.multiply(norm_true, comp_p2)))
-
-    return acc
 
 
 def set_logger_level(log_level):
@@ -65,19 +38,60 @@ def set_logger_level(log_level):
 
 
 class HistoResDNN(object):
-    def __init__(self, sh_order=8, sh_basis='descoteaux07', verbose=False):
+    """
+    This class is intended for the ResDNN Histology Network model.
+    """
+
+    def __init__(self, sh_order=8, basis_type='tournier07', verbose=False):
+        r"""
+        The model was re-trained for usage with a different basis function
+        ('tournier07') like the proposed model in [1, 2].
+
+        To obtain the pre-trained model, use:
+        >>> resdnn_model = HistoResDNN()
+        >>> fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+        >>> resdnn_model.load_model_weights(fetch_model_weights_path)
+
+        This model is designed to take as input raw DWI signal on a sphere
+        (ODF) represented as SH of order 8 in the tournier basis and predict
+        fODF of order 8 in the tournier basis. Effectively, this model is
+        mimicking CSD.
+
+        Parameters
+        ----------
+        sh_order : int, optional
+            Maximum SH order in the SH fit.  For ``sh_order``, there will be
+            ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a
+            symmetric basis.
+        basis_type : {'tournier07', 'descoteaux07'}, optional
+            ``tournier07`` (default) or ``descoteaux07``.
+        verbose : bool (optional)
+            Whether to show information about the processing.
+            Default: False
+
+        References
+        ----------
+        ..  [1] Nath, V., Schilling, K. G., Parvathaneni, P., Hansen,
+            C. B., Hainline, A. E., Huo, Y., ... & Stepniewska, I. (2019).
+            Deep learning reveals untapped information for local white-matter
+            fiber reconstruction in diffusion-weighted MRI.
+            Magnetic resonance imaging, 62, 220-227.
+        ..  [2] Nath, V., Schilling, K. G., Hansen, C. B., Parvathaneni,
+            P., Hainline, A. E., Bermudez, C., ... & Stępniewska, I. (2019).
+            Deep learning captures more accurate diffusion fiber orientations
+            distributions than constrained spherical deconvolution.
+            arXiv preprint arXiv:1911.07927.
         """
-        Single Layer Perceptron with Dropout
-        """
+
         self.sh_order = sh_order
         self.sh_size = len(sph_harm_ind_list(sh_order)[0])
-        self.sh_basis = sh_basis
+        self.basis_type = basis_type
 
         log_level = 'INFO' if verbose else 'CRITICAL'
         set_logger_level(log_level)
-        if self.sh_basis != 'descoteaux07':
+        if self.basis_type != 'tournier07':
             logger.warning('Be careful, original weights were obtained '
-                           'from training on the descoteaux07 basis, '
+                           'from training on the tournier07 basis, '
                            'unless you re-trained the network, do not '
                            'change basis!')
 
@@ -92,16 +106,21 @@ class HistoResDNN(object):
         x5 = Dense(200, activation='relu')(res_add)
         x6 = Dense(num_hidden)(x5)
 
-        model = Model(inputs=inputs, outputs=x6)
-        opt_func = RMSprop(learning_rate=0.0001)
-        model.compile(optimizer=opt_func,
-                      loss='mse',
-                      metrics=[custom_accuracy_sh])
-
-        self.model = model
+        self.model = Model(inputs=inputs, outputs=x6)
 
     def load_model_weights(self, weights_path):
-        """
+        r"""
+        Load the model pre-training weights to use for the fitting.
+        Will not work if the declared SH_ORDER does not match the weights
+        expected input.
+
+        The weights for a sh_order of 8 can be obtained via the function:
+        >>> get_fnames('fetch_resdnn_weights').
+
+        Parameters
+        ----------
+        weights_path : str
+            Path to the file containing the weights (hdf5, saved by tensorflow)
         """
         try:
             self.model.load_weights(weights_path)
@@ -111,19 +130,58 @@ class HistoResDNN(object):
                              .format(self.sh_size))
 
     def predict(self, x_test):
+        r"""
+        Predict fODF (as SH) from input raw DWI signal (as SH)
+
+        Parameters
+        ----------
+        x_test : np.ndarray
+            Array of size (N, M) where M is ``(sh_order + 1) * (sh_order + 2) / 2``.
+            N should not be too big as to limit memory usage.
+
+        Returns
+        -------
+        _ : np.ndarray (N, M)
+            Predicted fODF (as SH)
+        """
+
         return self.model.predict(x_test)
 
     def fit(self, data, gtab, mask=None):
-        """
+        """ Wrapper function to faciliate prediction of larger dataset.
+        The function will mask, normalize, split, predict and 're-assemble'
+        the data as a volume.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            DWI signal in a 4D array
+        gtab : GradientTable class instance
+            The acquisition scheme matching the data (must contain at least
+            one b0)
+        mask : np.ndarray (optional)
+            Binary mask of the brain to avoid unnecessary computation and
+            unreliable prediction outside the brain.
+
+        Returns
+        -------
+        pred_sh_coef : np.ndarray (x, y, z, M)
+            Predicted fODF (as SH). The volume has matching shape to the input
+            data, but with ``(sh_order + 1) * (sh_order + 2) / 2`` as a last
+            dimension.
+
         """
         if mask is None:
             logger.warning('Mask should be provided to accelerate '
                            'computation, and because predictions are '
                            'not reliable outside of the brain.')
-            mask = np.sum(data, axis=-1).astype(bool)
+            mask = np.sum(data, axis=-1)
+        mask = mask.astype(bool)
 
         # Extract B0's and obtain a mean B0
-        b0_indices = np.where(gtab.bvals == 0)[0]
+        b0_indices = np.where(gtab.bvals < 1)[0]
+        if not len(b0_indices) > 0:
+            raise ValueError('b0 must be present for DWI normalization.')
         logger.info('b0 indices found are: {}'.format(b0_indices))
 
         mean_b0 = data[..., b0_indices]
@@ -147,7 +205,7 @@ class HistoResDNN(object):
         # Fit SH to the raw DWI signal
         h_sphere = HemiSphere(xyz=dw_bvecs)
         dw_sh_coef = sf_to_sh(norm_dw_data, h_sphere, smooth=0.0006,
-                              basis_type=self.sh_basis,
+                              basis_type=self.basis_type,
                               sh_order=self.sh_order)
 
         # Flatten and mask the data (N, SH_SIZE) to facilitate chunks
@@ -164,11 +222,11 @@ class HistoResDNN(object):
             # Removing negative values from the SF
             sphere = get_sphere('repulsion724')
             tmp_sf = sh_to_sf(sh=tmp_sh, sphere=sphere,
-                              basis_type=self.sh_basis,
+                              basis_type=self.basis_type,
                               sh_order=self.sh_order)
             tmp_sf[tmp_sf < 0] = 0
             tmp_sh = sf_to_sh(tmp_sf, sphere, smooth=0.0006,
-                              basis_type=self.sh_basis,
+                              basis_type=self.basis_type,
                               sh_order=self.sh_order)
             flat_pred_sh_coef[(i)*1000:(i+1)*1000] = tmp_sh
 
