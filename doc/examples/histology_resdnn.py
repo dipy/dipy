@@ -80,7 +80,7 @@ The ODF slicer and the background image are added as actors and a mid-coronal
 slice is selected.
 """
 
-interactive = True  # False
+interactive = False
 sphere = get_sphere('repulsion724')
 predicted_sf = sh_to_sf(sh=predicted_sh, sphere=sphere,
                         basis_type=resdnn_model.basis_type,
