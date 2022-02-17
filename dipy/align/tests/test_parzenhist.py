@@ -295,7 +295,7 @@ def setup_random_transform(transform, rfactor, nslices=45, sigma=1):
         moving = np.zeros(shape=moving_slice.shape + (nslices,))
         moving[..., zero_slices:(2 * zero_slices)] = moving_slice[..., None]
 
-    moving = sp.ndimage.filters.gaussian_filter(moving, sigma)
+    moving = sp.ndimage.gaussian_filter(moving, sigma)
 
     moving_g2w = np.eye(dim + 1)
     mmask = np.ones_like(moving, dtype=np.int32)

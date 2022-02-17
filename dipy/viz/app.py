@@ -10,61 +10,57 @@ from dipy.io.streamline import save_tractogram
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz import actor, window, ui
-    from dipy.viz import vtk, HAVE_VTK_9_PLUS
+    from dipy.viz import actor, window, ui, shaders
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
 
 
-def apply_shader(hz, actor):
-    # Todo:  Use fury.shaders API.
-    sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
-    gl_mapper = actor.GetMapper()
+def apply_shader(hz, act):
+    """ Apply a shader to an actor (act) that access shared memory
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Vertex,
-        "//VTK::ValuePass::Impl",  # replace the normal block
-        False,
-        "//VTK::ValuePass::Impl\n",  # we still want the default
-        False)
+    Parameters
+    ----------
+    hz : GlobalHorizon instance
+    act : fury.actor visual object
+    """
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Light::Impl",
-        True,
-        "//VTK::Light::Impl\n"
-        "if (selected == 1){\n"
-        " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
-        "}\n",
-        False)
+    frag_decl = \
+        """
+        uniform float selected;
+        uniform float opacity_level;
+        """
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Coincident::Dec",
-        True,
-        "//VTK::Coincident::Dec\n"
-        "uniform float selected;\n"
-        "uniform float opacity_level;\n",
-        False)
+    frag_impl = \
+        """
+        if (selected == 1){
+            fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
+            }
+        """
 
-    @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
-    def vtk_shader_callback(caller, event, calldata=None):
+    shaders.shader_to_actor(act, "vertex", impl_code="\n",
+                            replace_first=False,
+                            replace_all=False)
+    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl,
+                            block="coincident")
+    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl,
+                            block="light")
+
+    def shader_selected_callback(caller, event, calldata=None):
         program = calldata
         if program is not None:
             try:
                 program.SetUniformf("selected",
-                                    hz.cea[actor]['selected'])
+                                    hz.cea[act]['selected'])
             except KeyError:
                 pass
             try:
                 program.SetUniformf("selected",
-                                    hz.cla[actor]['selected'])
+                                    hz.cla[act]['selected'])
             except KeyError:
                 pass
             program.SetUniformf("opacity_level", 1)
 
-    gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
-                          vtk_shader_callback)
+    shaders.add_shader_callback(act, shader_selected_callback, priority=100)
 
 
 HELP_MESSAGE = """
@@ -81,15 +77,13 @@ HELP_MESSAGE = """
 
 class Horizon(object):
 
-
-    def __init__(self, tractograms=None, images=None, pams=None,
-                 cluster=False, cluster_thr=15.0,
-                 random_colors=False, length_gt=0, length_lt=1000,
-                 clusters_gt=0, clusters_lt=10000,
-                 world_coords=True, interactive=True,
-                 out_png='tmp.png', recorded_events=None, return_showm=False,
-                 bg_color=(0, 0, 0), order_transparent=True, buan=False,
-                 buan_colors=None):
+    def __init__(self, tractograms=None, images=None, pams=None, cluster=False,
+                 cluster_thr=15.0, random_colors=None, length_gt=0,
+                 length_lt=1000, clusters_gt=0, clusters_lt=10000,
+                 world_coords=True, interactive=True, out_png='tmp.png',
+                 recorded_events=None, return_showm=False, bg_color=(0, 0, 0),
+                 order_transparent=True, buan=False, buan_colors=None,
+                 roi_images=False, roi_colors=(1, 0, 0)):
         """Interactive medical visualization - Invert the Horizon!
 
 
@@ -109,9 +103,14 @@ class Horizon(object):
             small animal data you may need to use something smaller such
             as 2.0. The threshold is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : bool
-            Given multiple tractograms have been included then each tractogram
-            will be shown with different color
+        random_colors : string, optional
+            Given multiple tractograms and/or ROIs then each tractogram and/or
+            ROI will be shown with a different color. If no value is provided,
+            both the tractograms and the ROIs will have a different random
+            color generated from a distinguishable colormap. If the effect
+            should only be applied to one of the 2 types, then use the
+            options 'tracts' and 'rois' for the tractograms and the ROIs
+            respectively.
         length_gt : float
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
@@ -146,6 +145,10 @@ class Horizon(object):
             Enables BUAN framework visualization. Default is False.
         buan_colors : list, optional
             List of colors for bundles.
+        roi_images : bool, optional
+            Displays binary images as contours. Default is False.
+        roi_colors : ndarray or list or tuple, optional
+            Define the colors of the roi images. Default is red (1, 0, 0)
 
 
         References
@@ -182,6 +185,15 @@ class Horizon(object):
         self.order_transparent = order_transparent
         self.buan = buan
         self.buan_colors = buan_colors
+        self.roi_images = roi_images
+        self.roi_colors = roi_colors
+
+        if self.random_colors is not None:
+            self.color_gen = distinguishable_colormap()
+            if not self.random_colors:
+                self.random_colors = ['tracts', 'rois']
+        else:
+            self.random_colors = []
 
     def build_scene(self):
 
@@ -218,13 +230,12 @@ class Horizon(object):
         enable_callbacks : bool
             Enable callbacks for selecting clusters
         """
-        color_gen = distinguishable_colormap()
         color_ind = 0
         for (t, sft) in enumerate(tractograms):
             streamlines = sft.streamlines
 
-            if self.random_colors:
-                colors = next(color_gen)
+            if 'tracts' in self.random_colors:
+                colors = next(self.color_gen)
             else:
                 colors = None
 
@@ -308,14 +319,12 @@ class Horizon(object):
             return
 
         def left_click_centroid_callback(obj, event):
-
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
             self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
                 self.cea[obj]['selected']
             self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
-
             if self.cla[obj]['selected']:
                 self.cla[obj]['centroid_actor'].VisibilityOn()
                 ca = self.cla[obj]['centroid_actor']
@@ -349,11 +358,11 @@ class Horizon(object):
             sizes = np.array(szs)
 
             # global self.panel2, slider_length, slider_size
-            self.panel2 = ui.Panel2D(size=(400, 200),
-                                     position=(850, 670),
-                                     color=(1, 1, 1),
-                                     opacity=0.1,
+            self.panel2 = ui.Panel2D(size=(320, 200), position=(870, 520),
+                                     color=(1, 1, 1), opacity=0.1,
                                      align="right")
+
+            cluster_panel_label = build_label(text="Cluster panel", bold=True)
 
             slider_label_threshold = build_label(text="Threshold")
             print("Cluster threshold", self.cluster_thr)
@@ -445,16 +454,18 @@ class Horizon(object):
             slider_length.on_change = hide_clusters_length
 
             # Clustering panel
-            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.26))
-            self.panel2.add_element(slider_threshold, coords=(0.4, 0.26))
+            self.panel2.add_element(slider_label_threshold, coords=(0.1, 0.15))
+            self.panel2.add_element(slider_threshold, coords=(0.42, 0.15))
 
-            self.panel2.add_element(slider_label_length, coords=(0.1, 0.52))
-            self.panel2.add_element(slider_length, coords=(0.4, 0.52))
+            self.panel2.add_element(slider_label_length, coords=(0.1, 0.4))
+            self.panel2.add_element(slider_length, coords=(0.42, 0.4))
 
             slider_size.on_change = hide_clusters_size
 
-            self.panel2.add_element(slider_label_size, coords=(0.1, 0.78))
-            self.panel2.add_element(slider_size, coords=(0.4, 0.78))
+            self.panel2.add_element(slider_label_size, coords=(0.1, 0.65))
+            self.panel2.add_element(slider_size, coords=(0.42, 0.65))
+
+            self.panel2.add_element(cluster_panel_label, coords=(0.05, 0.85))
 
             scene.add(self.panel2)
 
@@ -462,26 +473,90 @@ class Horizon(object):
             text_block = build_label(HELP_MESSAGE, 18)
             text_block.message = HELP_MESSAGE
 
-            self.help_panel = ui.Panel2D(size=(320, 200),
-                                         color=(0.8, 0.8, 1),
-                                         opacity=0.2,
+            self.help_panel = ui.Panel2D(size=(320, 200), position=(10, 10),
+                                         color=(0.8, 0.8, 1), opacity=0.2,
                                          align="left")
 
             self.help_panel.add_element(text_block, coords=(0.05, 0.1))
             scene.add(self.help_panel)
 
         if len(self.images) > 0:
-            # !!Only first image loading supported for now')
-            data, affine = self.images[0]
-            self.vox2ras = affine
+            # Only first non-binary image loading supported for now
+            first_img = True
+            first_roi = True
+            if self.roi_images:
+                roi_color = self.roi_colors
+                for img in self.images:
+                    img_data, img_affine = img
+                    dim = np.unique(img_data).shape[0]
+                    if dim == 2:
+                        if 'rois' in self.random_colors:
+                            roi_color = next(self.color_gen)
+                        roi_actor = actor.contour_from_roi(
+                            img_data, affine=img_affine,
+                            color=roi_color, opacity=self.mem.roi_opacity)
+                        self.mem.slicer_roi_actor.append(roi_actor)
+                        scene.add(roi_actor)
 
-            if len(self.pams) > 0:
-                pam = self.pams[0]
+                        if first_roi:
+                            self.panel3 = ui.Panel2D(
+                                size=(320, 100), position=(870, 730),
+                                color=(1, 1, 1), opacity=0.1, align="right")
+
+                            rois_panel_label = build_label(text="ROIs panel",
+                                                           bold=True)
+
+                            slider_label_opacity = build_label(text="Opacity")
+                            slider_opacity = ui.LineSlider2D(
+                                min_value=0.0, max_value=1.0,
+                                initial_value=self.mem.roi_opacity, length=140,
+                                text_template="{ratio:.0%}")
+                            _color_slider(slider_opacity)
+
+                            def change_opacity(slider):
+                                roi_opacity = slider.value
+                                self.mem.roi_opacity = roi_opacity
+                                for contour in self.mem.slicer_roi_actor:
+                                    contour.GetProperty().SetOpacity(
+                                        roi_opacity)
+
+                            slider_opacity.on_change = change_opacity
+
+                            self.panel3.add_element(slider_label_opacity,
+                                                    coords=(0.1, 0.3))
+                            self.panel3.add_element(slider_opacity,
+                                                    coords=(0.42, 0.3))
+
+                            self.panel3.add_element(rois_panel_label,
+                                                    coords=(0.05, 0.7))
+
+                            scene.add(self.panel3)
+
+                            first_roi = False
+                    else:
+                        if first_img:
+                            data, affine = img
+                            self.vox2ras = affine
+
+                            if len(self.pams) > 0:
+                                pam = self.pams[0]
+                            else:
+                                pam = None
+                            self.panel = slicer_panel(
+                                scene, self.show_m.iren, data, affine,
+                                self.world_coords, pam=pam, mem=self.mem)
+                            first_img = False
             else:
-                pam = None
-            self.panel = slicer_panel(scene, self.show_m.iren, data, affine,
-                                      self.world_coords,
-                                      pam=pam, mem=self.mem)
+                data, affine = self.images[0]
+                self.vox2ras = affine
+
+                if len(self.pams) > 0:
+                    pam = self.pams[0]
+                else:
+                    pam = None
+                self.panel = slicer_panel(scene, self.show_m.iren, data,
+                                          affine, self.world_coords, pam=pam,
+                                          mem=self.mem)
         else:
             data = None
             affine = None
@@ -499,6 +574,8 @@ class Horizon(object):
                 if self.cluster:
                     self.panel2.re_align(size_change)
                     self.help_panel.re_align(size_change)
+                if self.roi_images:
+                    self.panel3.re_align(size_change)
 
         self.show_m.initialize()
 
@@ -771,13 +848,13 @@ class Horizon(object):
                           reset_camera=False)
 
 
-
 def horizon(tractograms=None, images=None, pams=None,
             cluster=False, cluster_thr=15.0,
-            random_colors=False, bg_color=(0, 0, 0), order_transparent=True,
+            random_colors=None, bg_color=(0, 0, 0), order_transparent=True,
             length_gt=0, length_lt=1000, clusters_gt=0, clusters_lt=10000,
             world_coords=True, interactive=True, buan=False, buan_colors=None,
-            out_png='tmp.png', recorded_events=None, return_showm=False):
+            roi_images=False, roi_colors=(1, 0, 0), out_png='tmp.png',
+            recorded_events=None, return_showm=False):
     """Interactive medical visualization - Invert the Horizon!
 
 
@@ -797,9 +874,13 @@ def horizon(tractograms=None, images=None, pams=None,
         small animal data you may need to use something smaller such
         as 2.0. The threshold is in mm. For this parameter to be active
         ``cluster`` should be enabled.
-    random_colors : bool
-        Given multiple tractograms have been included then each tractogram
-        will be shown with different color
+    random_colors : string
+        Given multiple tractograms and/or ROIs then each tractogram and/or
+        ROI will be shown with different color. If no value is provided both
+        the tractograms and the ROIs will have a different random color
+        generated from a distinguishable colormap. If the effect should only be
+        applied to one of the 2 objects, then use the options 'tracts' and
+        'rois' for the tractograms and the ROIs respectively.
     bg_color : ndarray or list or tuple
         Define the background color of the scene. Default is black (0, 0, 0)
     order_transparent : bool
@@ -825,6 +906,10 @@ def horizon(tractograms=None, images=None, pams=None,
         Enables BUAN framework visualization. Default is False.
     buan_colors : list, optional
         List of colors for bundles.
+    roi_images : bool, optional
+        Displays binary images as contours. Default is False.
+    roi_colors : ndarray or list or tuple, optional
+        Define the color of the roi images. Default is red (1, 0, 0)
     out_png : string
         Filename of saved picture.
     recorded_events : string
@@ -844,12 +929,12 @@ def horizon(tractograms=None, images=None, pams=None,
     """
 
     hz = Horizon(tractograms, images, pams, cluster, cluster_thr,
-                 random_colors, length_gt, length_lt,
-                 clusters_gt, clusters_lt,
-                 world_coords, interactive,
-                 out_png, recorded_events, return_showm, bg_color=bg_color,
+                 random_colors, length_gt, length_lt, clusters_gt, clusters_lt,
+                 world_coords, interactive, out_png, recorded_events,
+                 return_showm, bg_color=bg_color,
                  order_transparent=order_transparent, buan=buan,
-                 buan_colors=buan_colors)
+                 buan_colors=buan_colors, roi_images=roi_images,
+                 roi_colors=roi_colors)
 
     scene = hz.build_scene()
 

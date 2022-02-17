@@ -8,8 +8,7 @@ sklearn, has_sklearn, _ = optional_package('sklearn')
 linear_model, _, _ = optional_package('sklearn.linear_model')
 
 if not has_sklearn:
-    w = "Scikit-Learn is required to denoise the data via Patch2Self."
-    warn(w)
+    warn(sklearn._msg)
 
 
 def _vol_split(train, vol_idx):
@@ -244,7 +243,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
                          data.shape)
 
     if data.shape[3] < 10:
-        warn("The intput data has less than 10 3D volumes. Patch2Self may not",
+        warn("The input data has less than 10 3D volumes. Patch2Self may not "
              "give denoising performance.")
 
     if out_dtype is None:

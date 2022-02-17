@@ -1,8 +1,9 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
+import numbers
 import warnings
 
 import numpy as np
-import numbers
+
 from dipy.core import geometry as geo
 from dipy.core.gradients import (GradientTable, gradient_table,
                                  unique_bvals_tolerance, get_bval_indices)
@@ -380,7 +381,7 @@ def solve_qp(P, Q, G, H):
     """
     x = cvxpy.Variable(Q.shape[0])
     P = cvxpy.Constant(P)
-    if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+    if Version(cvxpy.__version__) < Version('1.1'):
         objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P) + Q * x)
         constraints = [G * x <= H]
     else:
@@ -455,7 +456,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     MultiShellResponse
         MultiShellResponse object.
     """
-    NUMPY_1_14_PLUS = LooseVersion(np.__version__) >= LooseVersion('1.14.0')
+    NUMPY_1_14_PLUS = Version(np.__version__) >= Version('1.14.0')
     rcond_value = None if NUMPY_1_14_PLUS else -1
 
     bvals = np.array(bvals, copy=True)

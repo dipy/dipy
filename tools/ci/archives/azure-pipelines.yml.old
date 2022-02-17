@@ -19,7 +19,7 @@ jobs:
 - template: ci/azure/linux.yml
   parameters:
     name: Linux
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-latest
     matrix:
       Python36-64bit:
         python.version: '3.6'
@@ -29,12 +29,12 @@ jobs:
         python.version: '3.8'
       Python39-64bit:
         python.version: '3.9'
-      Python36-64bit + MIN_DEPS:
-        python.version: '3.6'
-        DEPENDS: "cython==0.29 numpy==1.12.0 scipy==1.0 nibabel==3.0.0 h5py==2.5.0 nose tqdm"
       Python37-64bit + MIN_DEPS:
         python.version: '3.7'
         DEPENDS: "cython==0.29 numpy==1.15.0 scipy==1.1 nibabel==3.0.0 h5py==2.8.0 tqdm"
+      Python38-64bit + MIN_DEPS:
+        python.version: '3.8'
+        DEPENDS: "cython==0.29 numpy==1.17.5 scipy==1.3.2 nibabel==3.0.0 h5py==3.0.0 tqdm"
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'
         EXTRA_DEPENDS: "scikit_learn pandas statsmodels tables scipy"
@@ -44,7 +44,7 @@ jobs:
         python.version: '3.7'
         MESA_GL_VERSION_OVERRIDE: '3.3'
         LIBGL_ALWAYS_INDIRECT: 'y'
-        EXTRA_DEPENDS: "scikit_learn vtk fury scipy pandas statsmodels tables xvfbwrapper"
+        EXTRA_DEPENDS: "scikit_learn vtk==8.1.2 fury scipy pandas statsmodels tables xvfbwrapper"
       Python37-64bit + SDIST:
         python.version: '3.7'
         INSTALL_TYPE: "sdist"
@@ -116,7 +116,7 @@ jobs:
 - template: ci/azure/windows.yml
   parameters:
     name: Windows
-    vmImage: vs2017-win2016
+    vmImage: windows-latest
     matrix:
       Python37-64bit + OPTIONAL_DEPS:
         python.version: '3.7'

@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
@@ -115,7 +114,6 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
 
 cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
     """ Create a light version of cython memory view.
-
 
     Parameters
     ----------

@@ -5,7 +5,7 @@ import os
 import json
 import warnings
 from time import time
-from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import binary_dilation
 from dipy.utils.optpkg import optional_package
 from dipy.io import read_bvals_bvecs
 from dipy.io.image import load_nifti, save_nifti

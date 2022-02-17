@@ -3,6 +3,7 @@
 import warnings
 import numpy as np
 import numpy.linalg as npl
+import numpy.testing as npt
 
 from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
@@ -117,7 +118,22 @@ def test_gen_dirac():
 
 def test_real_sym_sh_mrtrix():
     coef, expected, sphere = mrtrix_spherical_functions()
-    basis, m, n = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        basis, m, n = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
+
+    npt.assert_equal(len(w), 2)
+    npt.assert_(issubclass(w[0].category, DeprecationWarning))
+    npt.assert_(
+        "dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, Please use "
+        "dipy.reconst.shm.real_sh_tournier instead" in str(w[0].message))
+    npt.assert_(issubclass(w[1].category, PendingDeprecationWarning))
+    npt.assert_(
+        "The legacy tournier07 basis is outdated and will be deprecated "
+        "in a future release of DIPY. Consider using the new tournier07 "
+        "basis." in str(w[1].message))
+
     func = np.dot(coef, basis.T)
     assert_array_almost_equal(func, expected, 4)
 

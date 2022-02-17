@@ -1,9 +1,11 @@
 """ Classes and functions for fitting ivim model """
 
-from distutils.version import LooseVersion
+from packaging.version import Version
+import warnings
+
 import numpy as np
 from scipy.optimize import least_squares, differential_evolution
-import warnings
+
 from dipy.reconst.base import ReconstModel
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.utils.optpkg import optional_package
@@ -736,7 +738,7 @@ class IvimModelVP(ReconstModel):
                        f[1] <= 0.89]
 
         # Form objective.
-        if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+        if Version(cvxpy.__version__) < Version('1.1'):
             obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi * f - signal)))
         else:
             obj = cvxpy.Minimize(cvxpy.sum(cvxpy.square(phi @ f - signal)))

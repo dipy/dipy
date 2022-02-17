@@ -9,15 +9,15 @@ from dipy.io.utils import create_nifti_header
 from dipy.stats.analysis import assignment_map
 from dipy.utils.optpkg import optional_package
 
+
 fury, has_fury, setup_module = optional_package('fury')
-vtk, has_vtk, _ = optional_package('vtk')
+
 
 if has_fury:
     from fury.colormap import line_colors
     from fury.utils import numpy_to_vtk_colors
+    from fury.lib import numpy_support
 
-if has_vtk:
-    from vtk.util import numpy_support
 
 class HorizonFlow(Workflow):
 
@@ -26,11 +26,12 @@ class HorizonFlow(Workflow):
         return 'horizon'
 
     def run(self, input_files, cluster=False, cluster_thr=15.,
-            random_colors=False, length_gt=0, length_lt=1000,
+            random_colors=None, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
             stealth=False, emergency_header='icbm_2009a', bg_color=(0, 0, 0),
             disable_order_transparency=False, buan=False, buan_thr=0.5,
-            buan_highlight=(1, 0, 0), out_dir='', out_stealth_png='tmp.png'):
+            buan_highlight=(1, 0, 0), roi_images=False, roi_colors=(1, 0, 0),
+            out_dir='', out_stealth_png='tmp.png'):
         """ Interactive medical visualization - Invert the Horizon!
 
         Interact with any number of .trk, .tck or .dpy tractograms and anatomy
@@ -46,9 +47,14 @@ class HorizonFlow(Workflow):
             small animal brains you may need to use something smaller such
             as 2.0. The distance is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : bool, optional
-            Given multiple tractograms have been included then each tractogram
-            will be shown with different color.
+        random_colors : str, optional
+            Given multiple tractograms and/or ROIs then each tractogram and/or
+            ROI will be shown with different color. If no value is provided,
+            both the tractograms and the ROIs will have a different random
+            color generated from a distinguishable colormap. If the effect
+            should only be applied to one of the 2 types, then use the
+            options 'tracts' and 'rois' for the tractograms and the ROIs
+            respectively.
         length_gt : float, optional
             Clusters with average length greater than ``length_gt`` amount
             in mm will be shown.
@@ -81,6 +87,12 @@ class HorizonFlow(Workflow):
             Define the bundle highlight area color. Colors can be defined
             with 1 or 3 values and should be between [0-1].
             For example, a value of (1, 0, 0) would mean the red color.
+        roi_images : bool, optional
+            Displays binary images as contours.
+        roi_colors : variable float, optional
+            Define the color for the roi images. Colors can be defined
+            with 1 or 3 values and should be between [0-1]. For example, a
+            value of (1, 0, 0) would mean the red color.
         out_dir : str, optional
             Output directory. (default current directory)
         out_stealth_png : str, optional
@@ -213,8 +225,14 @@ class HorizonFlow(Workflow):
         if len(bg_color) == 1:
             bg_color *= 3
         elif len(bg_color) != 3:
-            raise ValueError('You need 3 values to set up backgound color. '
+            raise ValueError('You need 3 values to set up background color. '
                              'e.g --bg_color 0.5 0.5 0.5')
+
+        if len(roi_colors) == 1:
+            roi_colors *= 3
+        elif len(roi_colors) != 3:
+            raise ValueError('You need 3 values to set up ROI color. '
+                             'e.g. --roi_colors 0.5 0.5 0.5')
 
         order_transparent = not disable_order_transparency
         horizon(tractograms=tractograms, images=images, pams=pams,
@@ -225,4 +243,5 @@ class HorizonFlow(Workflow):
                 clusters_gt=clusters_gt, clusters_lt=clusters_lt,
                 world_coords=world_coords,
                 interactive=interactive, buan=buan, buan_colors=bundle_colors,
+                roi_images=roi_images, roi_colors=roi_colors,
                 out_png=pjoin(out_dir, out_stealth_png))

@@ -1,8 +1,13 @@
 
-import numpy as np
 from os.path import splitext
+import numpy as np
+
+from dipy.utils.deprecator import deprecate_with_version
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def read_bvec_file(filename, atol=.001):
     """
     Read gradient table information from a pair of files with extentions
@@ -55,6 +60,9 @@ def read_bvec_file(filename, atol=.001):
     return (grad_table, b_values)
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def ornt_mapping(ornt1, ornt2):
     """Calculates the mapping needing to get from orn1 to orn2"""
 
@@ -69,6 +77,9 @@ def ornt_mapping(ornt1, ornt2):
     return mapping
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     """Changes the orientation of a gradients or other vectors
 
@@ -118,6 +129,9 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     return output
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
@@ -140,6 +154,9 @@ def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     return output
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def orientation_from_string(string_ornt):
     """Returns an array representation of an ornt string"""
     orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
@@ -152,6 +169,9 @@ def orientation_from_string(string_ornt):
     return ornt
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def orientation_to_string(ornt):
     """Returns a string representation of a 3d ornt"""
     if _check_ornt(ornt):
@@ -165,6 +185,9 @@ def orientation_to_string(ornt):
     return ornt_string
 
 
+@deprecate_with_version("dipy.io.bvectxt module is deprecated, "
+                        "Please use dipy.core.gradients module instead",
+                        since='1.4', until='1.5')
 def _check_ornt(ornt):
     uniq = np.unique(ornt[:, 0])
     if len(uniq) != len(ornt):

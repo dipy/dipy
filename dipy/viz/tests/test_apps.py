@@ -8,11 +8,13 @@ from dipy.io.utils import create_nifti_header
 from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
 from dipy.data import DATA_DIR
+from nibabel.tmpdirs import TemporaryDirectory
 
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from dipy.viz.app import horizon
+    from fury.io import load_image
 
 skip_it = use_xvfb == 'skip'
 
@@ -127,7 +129,32 @@ def test_horizon():
             world_coords=True, interactive=False)
 
 
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
+def test_roi_images():
+    np.random.seed(42)
+    img1 = np.random.rand(5, 5, 5)
+    img2 = np.zeros((5, 5, 5))
+    img2[1, 1, 1] = 1
+    img3 = np.zeros((5, 5, 5))
+    img3[3, 3, 3] = 1
+    images = [(img1, np.eye(4)), (img2, np.eye(4)), (img3, np.eye(4))]
+    with TemporaryDirectory() as out_dir:
+        tmp_fname = os.path.join(out_dir, 'tmp_x.png')
+
+        # If roi_images=False, only the first non-binary image is loaded
+        horizon(images=images, interactive=False, out_png=tmp_fname)
+        npt.assert_equal(os.path.exists(tmp_fname), True)
+
+        # If roi_images=True, all th binary images are shown as contours
+        horizon(images=images, roi_images=True, interactive=False,
+                out_png=tmp_fname)
+        npt.assert_equal(os.path.exists(tmp_fname), True)
+        ss = load_image(tmp_fname)
+        npt.assert_equal(ss[650, 800, :], [147, 0, 0])
+
+
 if __name__ == '__main__':
 
     test_horizon_events()
     test_horizon()
+    test_roi_images()

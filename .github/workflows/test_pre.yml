@@ -1,0 +1,15 @@
+name: PRE_WHEELS
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  PRE:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", ]'
+      use-pre: true
+      extra-depends: scikit_learn scipy statsmodels pandas tables

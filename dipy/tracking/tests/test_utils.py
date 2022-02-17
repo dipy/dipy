@@ -1,13 +1,17 @@
 import warnings
 
 import numpy as np
+import pytest
+
 from dipy.tracking import metrics
 from dipy.tracking.streamline import transform_streamlines
 from dipy.tracking.utils import (connectivity_matrix, density_map, length,
                                  ndbincount, reduce_labels, seeds_from_mask,
                                  random_seeds_from_mask, target,
                                  target_line_based, unique_rows, near_roi,
-                                 reduce_rois, path_length, _min_at)
+                                 reduce_rois, path_length, _min_at,
+                                 max_angle_from_curvature,
+                                 min_radius_curvature_from_angle)
 
 from dipy.tracking._utils import _to_voxel_coordinates
 from dipy.tracking.vox2track import streamline_mapping
@@ -331,6 +335,7 @@ def test_target_line_based_out_of_bounds():
 
 
 def test_near_roi():
+
     streamlines = [np.array([[0., 0., 0.9],
                              [1.9, 0., 0.],
                              [3, 2., 2.]]),
@@ -348,6 +353,22 @@ def test_near_roi():
                            np.array([True, True, False]))
     npt.assert_array_equal(near_roi(streamlines, np.eye(4), mask),
                            np.array([False, True, False]))
+
+    # test for handling of various forms of null streamlines
+    # including a streamline from previous test because near_roi / tol
+    # can't handle completely empty streamline collections
+    streamlines_null = [np.array([[0., 0., 0.9],
+                                 [1.9, 0., 0.],
+                                 [3, 2., 2.]]),
+                        np.array([[],
+                                 [],
+                                 []]).T,
+                        np.array([]),
+                        []]
+    npt.assert_array_equal(near_roi(streamlines_null, np.eye(4), mask, tol=1),
+                           np.array([True, False, False, False]))
+    npt.assert_array_equal(near_roi(streamlines_null, np.eye(4), mask),
+                           np.array([False, False, False, False]))
 
     # If there is an affine, we need to use it:
     affine = np.eye(4)
@@ -596,6 +617,11 @@ def test_reduce_rois():
                                            [True, True])
     npt.assert_equal(include_roi, roi1 + roi2)
     npt.assert_equal(exclude_roi, np.zeros((4, 4, 4)))
+    # Int and float input
+    roi1 = np.zeros((4, 4, 4), dtype=int)
+    roi2 = np.zeros((4, 4, 4), dtype=float)
+    npt.assert_warns(UserWarning, reduce_rois, [roi1], [True])
+    npt.assert_warns(UserWarning, reduce_rois, [roi2], [True])
 
 
 def test_path_length():
@@ -656,5 +682,19 @@ def test_min_at():
     npt.assert_array_equal(a, [[[100, 11, 1, 10]]])
 
 
-if __name__ == "__main__":
-    npt.run_module_suite()
+def test_curvature_angle():
+    angle = [0.0000001, np.pi/3, np.pi/2.01]
+    step_size = [0.2, 0.5, 1.5]
+    curvature = [2000000., 0.5, 1.064829060280437]
+
+    for theta, step, curve in zip(angle, step_size, curvature):
+        res_angle = max_angle_from_curvature(curve, step)
+        npt.assert_almost_equal(res_angle, theta)
+
+        res_curvature = min_radius_curvature_from_angle(theta, step)
+        npt.assert_almost_equal(res_curvature, curve)
+
+    # special case
+    with pytest.warns(UserWarning):
+        npt.assert_equal(min_radius_curvature_from_angle(0, 1),
+                         min_radius_curvature_from_angle(np.pi/2, 1))
