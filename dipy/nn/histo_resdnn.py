@@ -4,9 +4,7 @@ Class and helper functions for fitting the Histological ResDNN model.
 """
 
 
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Add
-from distutils.version import LooseVersion
+from packaging.version import Version
 import logging
 
 from dipy.core.sphere import HemiSphere
@@ -17,7 +15,9 @@ import numpy as np
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
-    if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import Input, Dense, Add
+    if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
@@ -83,6 +83,9 @@ class HistoResDNN(object):
             arXiv preprint arXiv:1911.07927.
         """
 
+        if not have_tf:
+            raise tf()
+
         self.sh_order = sh_order
         self.sh_size = len(sph_harm_ind_list(sh_order)[0])
         self.basis_type = basis_type
@@ -136,7 +139,8 @@ class HistoResDNN(object):
         Parameters
         ----------
         x_test : np.ndarray
-            Array of size (N, M) where M is ``(sh_order + 1) * (sh_order + 2) / 2``.
+            Array of size (N, M) where M is
+            ``(sh_order + 1) * (sh_order + 2) / 2``.
             N should not be too big as to limit memory usage.
 
         Returns
