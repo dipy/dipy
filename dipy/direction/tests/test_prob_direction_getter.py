@@ -1,8 +1,11 @@
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import unit_octahedron
-from dipy.reconst.shm import SphHarmFit, SphHarmModel
+from dipy.reconst.shm import (
+    descoteaux07_legacy_msg, tournier07_legacy_msg, SphHarmFit, SphHarmModel)
 from dipy.direction import (DeterministicMaximumDirectionGetter,
                             ProbabilisticDirectionGetter)
 
@@ -30,8 +33,13 @@ def test_ProbabilisticDirectionGetter():
         dir = unit_octahedron.vertices[0].copy()
 
         # make a dg from a fit
-        dg = ProbabilisticDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
-                                                       unit_octahedron)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            dg = ProbabilisticDirectionGetter.from_shcoeff(
+                fit.shm_coeff, 90, unit_octahedron)
+
         state = dg.get_direction(point, dir)
         npt.assert_equal(state, 1)
 
@@ -57,9 +65,13 @@ def test_ProbabilisticDirectionGetter():
                           pmf, 90, unit_octahedron)
 
         # Check basis_type keyword
-        dg = ProbabilisticDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
-                                                       unit_octahedron,
-                                                       basis_type="tournier07")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=tournier07_legacy_msg,
+                category=PendingDeprecationWarning)
+
+            dg = ProbabilisticDirectionGetter.from_shcoeff(
+                fit.shm_coeff, 90, unit_octahedron, basis_type="tournier07")
 
         npt.assert_raises(ValueError,
                           ProbabilisticDirectionGetter.from_shcoeff,

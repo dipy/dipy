@@ -37,6 +37,17 @@ from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
 
+descoteaux07_legacy_msg = \
+    "The legacy descoteaux07 SH basis uses absolute values for negative " \
+    "harmonic degrees. It is outdated and will be deprecated in a future " \
+    "DIPY release. Consider using the new descoteaux07 basis by setting the " \
+    "`legacy` parameter to `False`."
+tournier07_legacy_msg = \
+    "The legacy tournier07 basis is not normalized. It is outdated and will " \
+    "be deprecated in a future release of DIPY. Consider using the new " \
+    "tournier07 basis by setting the `legacy` parameter to `False`."
+
+
 def _copydoc(obj):
     def bandit(f):
         f.__doc__ = obj.__doc__
@@ -184,7 +195,7 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     scipy.special.sph_harm, where `theta` represents the azimuthal coordinate
     and `phi` represents the polar coordinate.
 
-    Altough scipy uses a naming convention where ``m`` is the order and ``n``
+    Although scipy uses a naming convention where ``m`` is the order and ``n``
     is the degree of the SH, the opposite of DIPY's, their definition for both
     parameters is the same as ours, with ``n >= 0`` and ``|m| <= n``.
     """
@@ -288,9 +299,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
         # The Tournier basis from MRtrix3 is normalized
         real_sh *= np.where(m == 0, 1., np.sqrt(2))
     else:
-        warn('The legacy tournier07 basis is outdated and will be deprecated '
-             'in a future release of DIPY. Consider using the new tournier07 '
-             'basis.', category=PendingDeprecationWarning)
+        warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
 
     return real_sh
 
@@ -334,9 +343,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
-        warn('The legacy descoteaux07 SH basis is outdated and will be '
-             'deprecated in a future DIPY release. Consider using the new '
-             'descoteaux07 basis.', category=PendingDeprecationWarning)
+        warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
         sh = spherical_harmonics(np.abs(m), n, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
@@ -1326,7 +1333,7 @@ def calculate_max_order(n_coeffs, full_basis=False):
 
     Finally, the positive value is chosen between the two options.
 
-    For a full SH basis, the calcultation consists in solving the equation
+    For a full SH basis, the calculation consists in solving the equation
     $n = (L + 1)^2$ for $L$, which gives $L = sqrt(n) - 1$.
     """
 
@@ -1381,7 +1388,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
 
     Where the last dimension, C, is made of a flattened array of $l$x$m$
     coefficients, where $l$ are the SH orders, and $m = 2l+1$,
-    So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
+    So l=1 has 1 coefficient, l=2 has 5, ... l=8 has 17 and so on.
     A l=2 SH coefficient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 
