@@ -204,7 +204,7 @@ print("The result saved in denoised_dki.png")
 
 In the above figure, the DKI maps obtained from the original data are shown in
 the upper panels, while the DKI maps from the denoised data are shown in the
-lower panels. Substantial improvements on measurement robustness can be
+lower panels. Substantial improvements in measurement robustness can be
 visually appreciated, particularly for the FA and MK estimates.
 
 Noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
@@ -244,7 +244,7 @@ mean_sigma = np.mean(sigma[mask])
 print(mean_sigma)
 
 """
-Below we use this mean noise level estimate to compute the data nominal SNR
+Below we use this mean noise level estimate to compute the nominal SNR of the data
 (i.e. SNR at b-value=0):
 """
 

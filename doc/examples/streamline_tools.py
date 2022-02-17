@@ -156,7 +156,7 @@ if interactive:
    **Corpus Callosum Sagittal**
 """
 """
-Once we've targeted th corpus callosum ROI, we might want to find out which
+Once we've targeted the corpus callosum ROI, we might want to find out which
 regions of the brain are connected by these streamlines. To do this we can use
 the ``connectivity_matrix`` function. This function takes a set of streamlines
 and an array of labels as arguments. It returns the number of streamlines that

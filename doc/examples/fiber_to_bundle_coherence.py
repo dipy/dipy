@@ -19,7 +19,7 @@ poorly aligned with their neighbors, as shown in the figure below.
    On the left this figure illustrates (in 2D) the contribution of two fiber
    points to the kernel density estimator. The kernel density estimator is the
    sum over all such locally aligned kernels. The local fiber to bundle
-   coherence, shown on the right color-code for each fiber, is obtained by
+   coherence, shown on the right, color-coded for each fiber, is obtained by
    evaluating the kernel density estimator along the fibers. One spurious
    fiber is present which is isolated and badly aligned with the other fibers,
    and can be identified by a low LFBC value in the region where it deviates
