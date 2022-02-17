@@ -6,13 +6,12 @@
 Local reconstruction using the Histological ResDNN
 ==========================================
 
-Data-driven approach to model the non-linear mapping between observed
-DW-MRI signals and ground truth structures using a sequential deep neural
-network regression using residual block deep neural network (ResDNN)  [1, 2].
+A data-driven approach to modeling the non-linear mapping between observed
+DW-MRI signals and ground truth structures using sequential deep neural network
+regression with residual block deep neural network (ResDNN) [1, 2].
 
 Training was performed on two 3-D histology datasets of squirrel monkey brains
 and validated on a third. A second validation was performed on HCP datasets.
-
 """
 
 import os
@@ -45,9 +44,9 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 """
-The accelerate computation a brain mask must be computed. A median-otsu filter
-isolates the main signal and then using a floodfill the main 'blob' is picked.
-The resulting mask is saved for visual inspection.
+To accelerate computation a brain mask must be computed. A median-otsu filter
+isolates the main signal and then, using a floodfill, the main 'blob' is
+picked. The resulting mask is saved for visual inspection.
 """
 
 # Masking to accelerate processing
@@ -66,6 +65,7 @@ nib.save(nib.Nifti1Image(mask.astype(np.uint8), dwi_img.affine),
 
 """
 Using a ResDNN for sh_order 8 (default) and load the appropriate weights.
+Fit the data and save the resulting fODF.
 """
 
 resdnn_model = HistoResDNN(verbose=True)
@@ -76,7 +76,7 @@ predicted_sh = resdnn_model.fit(data, gtab, mask=mask)
 nib.save(nib.Nifti1Image(predicted_sh, dwi_img.affine), 'predicted_sh.nii.gz')
 
 """
-Preparing the VTK scene using Fury. The ODF slicer expect spherical function
+Preparing the VTK scene using Fury. The ODF slicer expects spherical function
 and the mean spherical harmonic amplitude is used as background.
 The ODF slicer and the background image are added as actors and a mid-coronal
 slice is selected.
