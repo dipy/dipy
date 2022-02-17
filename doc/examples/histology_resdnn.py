@@ -49,12 +49,11 @@ isolates the main signal and then, using a floodfill, the main 'blob' is
 picked. The resulting mask is saved for visual inspection.
 """
 
-# Masking to accelerate processing
 b0_indices = np.where(gtab.bvals == 0)[0]
 mean_b0 = data[..., b0_indices]
 mean_b0 = np.mean(mean_b0, axis=-1)
 _, mask = median_otsu(mean_b0)
-# Picking only the biggest 'blob'
+
 mask_labeled, _ = ndi.label(mask)
 unique, count = np.unique(mask_labeled, return_counts=True)
 val = unique[np.argmax(count[1:])+1]
