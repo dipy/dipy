@@ -88,7 +88,7 @@ inputs is considered valid (as long as they are in the same share space)
 - Stateful Tractogram
 
 The reason why this parameter is required is to guarantee all information
-related to space attributes are always present.
+related to space attributes is always present.
 """
 
 affine, dimensions, voxel_sizes, voxel_order = get_reference_info(
