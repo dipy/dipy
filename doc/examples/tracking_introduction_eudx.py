@@ -113,7 +113,7 @@ from dipy.tracking.stopping_criterion import ThresholdStoppingCriterion
 stopping_criterion = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
 """
-Again, for quality assurance we can also visualize slice of the GFA and the
+Again, for quality assurance, we can also visualize a slice of the GFA and the
 resulting tracking mask.
 """
 
