@@ -9,7 +9,7 @@ deconvolution in the diffusion propagator with the goal to create sharper ODFs
 with higher angular resolution.
 
 In this example we will show with simulated data how this method's ODF
-performance against standard DSI ODF and a ground truth multi tensor ODF.
+performs against standard DSI ODF and a ground truth multi tensor ODF.
 """
 
 import numpy as np

@@ -97,7 +97,7 @@ bundle_downsampled = set_number_of_points(bundle, 12)
 n_pts_ds = [len(s) for s in bundle_downsampled]
 
 """
-Alternatively, the function ``approx_polygon_track`` allow reduces the number
+Alternatively, the function ``approx_polygon_track`` allows reducing the number
 of points so that there are more points in curvy regions and less points in
 less curvy regions. In contrast with ``set_number_of_points`` it does not
 enforce that segments should be of equal size.
