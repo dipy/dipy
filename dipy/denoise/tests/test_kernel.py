@@ -2,7 +2,6 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 from dipy.core.sphere import Sphere
-from dipy.data import get_sphere
 
 import numpy as np
 import numpy.testing as npt
