@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: '["pip", ]'
+      timeout:
+        description: "Maximum duration of jobs before cancellation"
+        type: number
+        required: false
+        default: 90
       depends:
         description: ""
         type: string
@@ -49,9 +54,14 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ inputs.timeout }}
     strategy:
       fail-fast: false
       matrix:
