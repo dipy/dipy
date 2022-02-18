@@ -72,7 +72,7 @@ beta = 0.1
 
 """
 We could also set the number of iterations. By default this parameter is set to
-100 iterations, but most of the times the ICM (Iterated Conditional Modes)
+100 iterations, but most of the time the ICM (Iterated Conditional Modes)
 loop will converge before reaching the 100th iteration.
 After setting the necessary parameters we can now call an instance of the class
 "TissueClassifierHMRF" and its method called "classify" and input the

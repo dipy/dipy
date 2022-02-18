@@ -86,8 +86,8 @@ n_pts = [len(streamline) for streamline in bundle]
 
 """
 Often, streamlines are represented with more points than what is actually
-necessary for specific applications. Also, sometimes every streamline has
-different number of points which could be of a trouble for some algorithms.
+necessary for specific applications. Also, sometimes every streamline has a
+different number of points, which could be a problem for some algorithms.
 The function ``set_number_of_points`` can be used to set the number of points
 of a streamline at a specific number and at the same time enforce that all the
 segments of the streamline will have equal length.
@@ -97,8 +97,8 @@ bundle_downsampled = set_number_of_points(bundle, 12)
 n_pts_ds = [len(s) for s in bundle_downsampled]
 
 """
-Alternatively, the function ``approx_polygon_track`` allows to reduce the number
-of points so that they are more points in curvy regions and less points in
+Alternatively, the function ``approx_polygon_track`` allows reducing the number
+of points so that there are more points in curvy regions and less points in
 less curvy regions. In contrast with ``set_number_of_points`` it does not
 enforce that segments should be of equal size.
 """
@@ -139,7 +139,7 @@ if interactive:
    :align: center
 
    Initial bundle (down), downsampled at 12 equidistant points (middle),
-   downsampled not equidistantly (up).
+   downsampled with points that are not equidistant (up).
 
 From the figure above we can see that all 3 bundles look quite similar. However,
 when we plot the histogram of the number of points used for each streamline, it
