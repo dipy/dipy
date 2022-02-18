@@ -49,7 +49,7 @@ class HistoResDNN(object):
 
         To obtain the pre-trained model, use:
         >>> resdnn_model = HistoResDNN()
-        >>> fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+        >>> fetch_model_weights_path = get_fnames('histo_resdnn_weights')
         >>> resdnn_model.load_model_weights(fetch_model_weights_path)
 
         This model is designed to take as input raw DWI signal on a sphere
@@ -115,7 +115,7 @@ class HistoResDNN(object):
         expected input.
 
         The weights for a sh_order of 8 can be obtained via the function:
-        >>> get_fnames('fetch_resdnn_weights').
+        >>> get_fnames('histo_resdnn_weights').
 
         Parameters
         ----------

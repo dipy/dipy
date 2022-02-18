@@ -55,7 +55,6 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-
     dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
                      'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
                      'file_formats', 'fury_surface',
@@ -64,7 +63,7 @@ def test_io_fetch_fetcher_datanames():
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
                      'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
-                     'tissue_data']
+                     'tissue_data', 'resdnn_weights']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)

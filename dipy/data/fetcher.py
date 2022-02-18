@@ -273,7 +273,7 @@ fetch_stanford_hardi = _make_fetcher(
 
 fetch_resdnn_weights = _make_fetcher(
     "fetch_resdnn_weights",
-    pjoin(dipy_home, 'resdnn_weights'),
+    pjoin(dipy_home, 'histo_resdnn_weights'),
     'https://ndownloader.figshare.com/files/',
     ['22736240'],
     ['resdnn_weights_mri_2018.h5'],
@@ -690,7 +690,7 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
         return surface_name
-    if name == 'fetch_resdnn_weights':
+    if name == 'histo_resdnn_weights':
         files, folder = fetch_resdnn_weights()
         wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
         return wraw
