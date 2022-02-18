@@ -28,7 +28,7 @@ def test_default_mnist_sequential():
         tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dropout(0.2),
         tf.keras.layers.Dense(10, activation='softmax')
-        ])
+    ])
 
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
@@ -69,7 +69,7 @@ def test_default_mnist_mlp():
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     x_train, x_test = x_train / 255.0, x_test / 255.0
 
-    mlp = MultipleLayerPercepton(input_shape=(28, 28),num_hidden=[128,128])
+    mlp = MultipleLayerPercepton(input_shape=(28, 28), num_hidden=[128, 128])
     hist = mlp.fit(x_train, y_train, epochs=epochs)
     mlp.evaluate(x_test, y_test, verbose=2)
     x_test_prob = mlp.predict(x_test)
@@ -79,7 +79,6 @@ def test_default_mnist_mlp():
     assert_(mlp.loss < 0.4)
     assert_equal(mlp.accuracy, accuracy)
     assert_equal(x_test_prob.shape, (10000, 10))
-
 
 
 if __name__ == "__main__":
