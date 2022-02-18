@@ -14,7 +14,7 @@ response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
 def test_pmf_val():
-    sphere = sphere = get_sphere('symmetric724')
+    sphere = get_sphere('symmetric724')
     pmfgen = SHCoeffPmfGen(np.random.random([2, 2, 2, 28]), sphere, None)
     point = np.array([1, 1, 1], dtype='float')
 
@@ -99,7 +99,7 @@ def test_boot_pmf():
         # the CSD model  constructor
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("Number of parameters required " in str(w[0].message))
-        # Tests that additionnal warnings are raised for outdated SH basis
+        # Tests that additional warnings are raised for outdated SH basis
         npt.assert_(len(w) > 1)
 
     boot_pmf_gen_sh4 = BootPmfGen(data, sphere=hsph_updated, model=csd_model,

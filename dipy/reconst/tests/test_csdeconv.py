@@ -320,7 +320,7 @@ def test_odfdeconv():
         ConstrainedSDTModel(gtab, ratio, sh_order=10)
         w_count = len(w)
         # A warning is expected from the ConstrainedSDTModel constructor
-        # and additionnal warnings should be raised where legacy SH bases
+        # and additional warnings should be raised where legacy SH bases
         # are used
         assert_equal(w_count > 1, True)
 
