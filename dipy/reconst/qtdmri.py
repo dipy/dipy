@@ -1884,7 +1884,7 @@ def qtdmri_anisotropic_scaling(data, q, bvecs, tau):
     return us, ut, R
 
 
-def design_matrix_spatial(bvecs, qvals, dtype=None):
+def design_matrix_spatial(bvecs, qvals):
     """  Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
