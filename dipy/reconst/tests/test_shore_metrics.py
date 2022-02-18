@@ -59,7 +59,7 @@ def test_shore_metrics():
 
     # test if the analytical integral of the pdf is equal to one
     integral = 0
-    for n in range(int((radial_order)/2 + 1)):
+    for n in range(int(radial_order/2 + 1)):
         integral += c_shore[n] * (np.pi**(-1.5) * zeta ** (-1.5) *
                                   genlaguerre(n, 0.5)(0)) ** 0.5
 
