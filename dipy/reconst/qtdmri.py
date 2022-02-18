@@ -1332,8 +1332,6 @@ def qtdmri_isotropic_signal_matrix(radial_order, time_order, us, ut, q, tau):
 
 def qtdmri_eap_matrix_(radial_order, time_order, us, ut, grid,
                        normalization=False):
-    sqrtC = 1.
-    sqrtut = 1.
     sqrtCut = 1.
     if normalization:
         sqrtC = qtdmri_mapmri_normalization(us)
@@ -1585,7 +1583,6 @@ def qtdmri_isotropic_laplacian_reg_matrix(ind_mat, us, ut,
 
     if normalization:
         temporal_normalization = qtdmri_temporal_normalization(ut) ** 2
-        spatial_normalization = np.zeros_like(regularization_matrix)
         j, ll = ind_mat[:, :2].T
         pre_spatial_norm = qtdmri_mapmri_isotropic_normalization(j, ll, us[0])
         spatial_normalization = np.outer(pre_spatial_norm, pre_spatial_norm)
