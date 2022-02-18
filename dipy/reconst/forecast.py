@@ -21,7 +21,7 @@ class ForecastModel(OdfModel, Cache):
     r"""Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
     (FORECAST) [1,2,3]_. FORECAST is a Spherical Deconvolution reconstruction
     model for multi-shell diffusion data which enables the calculation of a
-    voxel adaptive response function using the Spherical Mean Tecnique (SMT)
+    voxel adaptive response function using the Spherical Mean Technique (SMT)
     [2,3]_.
 
     With FORECAST it is possible to calculate crossing invariant parallel
