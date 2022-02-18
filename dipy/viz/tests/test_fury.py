@@ -5,7 +5,6 @@ from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
 from dipy.data import DATA_DIR, get_sphere
 from dipy.align.reslice import reslice
-from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import read_stanford_labels
 from dipy.reconst.shm import CsaOdfModel
 from dipy.data import default_sphere
@@ -22,9 +21,7 @@ from dipy.reconst.dti import color_fa, fractional_anisotropy
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from fury.io import load_image
-    from fury import actor, window
-    from fury.colormap import line_colors
+    from dipy.viz import actor, window, colormap
 
 skip_it = use_xvfb == 'skip'
 
@@ -36,7 +33,7 @@ def test_slicer():
     data = (255 * np.random.rand(50, 50, 50))
     affine = np.diag([1, 3, 2, 1])
     data2, affine2 = reslice(data, affine, zooms=(1, 3, 2),
-                                new_zooms=(1, 1, 1))
+                             new_zooms=(1, 1, 1))
 
     slicer = actor.slicer(data2, affine2, interpolation='linear')
     slicer.display(None, None, 25)
@@ -50,7 +47,7 @@ def test_slicer():
     report = window.analyze_snapshot(arr, find_objects=True)
     npt.assert_equal(report.objects, 1)
     npt.assert_array_equal([1, 3, 2] * np.array(data.shape),
-                            np.array(slicer.shape))
+                           np.array(slicer.shape))
 
 
 @pytest.mark.skipif(skip_it or not has_fury,
@@ -64,16 +61,17 @@ def test_contour_from_roi():
     white_matter = (labels == 1) | (labels == 2)
 
     csa_model = CsaOdfModel(gtab, sh_order=6)
+
     csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                                    relative_peak_threshold=.8,
-                                    min_separation_angle=45,
-                                    mask=white_matter)
+                                 relative_peak_threshold=.8,
+                                 min_separation_angle=45,
+                                 mask=white_matter)
 
     classifier = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
     seed_mask = labels == 2
     seeds = utils.seeds_from_mask(seed_mask, density=[1, 1, 1],
-                                    affine=affine)
+                                  affine=affine)
 
     # Initialization of LocalTracking.
     # The computation happens in the next step.
@@ -84,9 +82,10 @@ def test_contour_from_roi():
     streamlines = list(streamlines)
 
     # Prepare the display objects.
-    streamlines_actor = actor.line(streamlines, line_colors(streamlines))
+    streamlines_actor = actor.line(
+        streamlines, colormap.line_colors(streamlines))
     seedroi_actor = actor.contour_from_roi(seed_mask, affine,
-                                            [0, 1, 1], 0.5)
+                                           [0, 1, 1], 0.5)
 
     # Create the 3d display.
     sc = window.Scene()
@@ -341,7 +340,7 @@ def test_tensor_slicer(interactive=False):
     mevecs[..., :, :] = evecs
 
     sphere = get_sphere('symmetric724')
-    
+
     affine = np.eye(4)
     scene = window.Scene()
 
@@ -432,5 +431,3 @@ def test_tensor_slicer(interactive=False):
         tensor_actor = actor.tensor_slicer(mevals, mevecs, affine=affine,
                                            mask=mask, scalar_colors=cfa,
                                            sphere=sphere, scale=.3)
-
-test_slicer()
