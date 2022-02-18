@@ -18,13 +18,13 @@ import os
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
+from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.nn.histo_resdnn import HistoResDNN
 from dipy.reconst.shm import sh_to_sf
 from dipy.segment.mask import median_otsu
-from fury import window, actor
+from dipy.viz import window, actor
 import numpy as np
-import nibabel as nib
 import scipy.ndimage as ndi
 
 
@@ -38,8 +38,8 @@ and a gradient table is constructed from bvals/bvecs.
 
 # Fetch DWI and GTAB
 hardi_fname, hardi_bval_fname, hardi_bvec_fname = get_fnames('stanford_hardi')
-dwi_img = nib.load(hardi_fname)
-data = np.squeeze(dwi_img.get_fdata())
+data, affine = load_nifti(hardi_fname)
+data = np.squeeze(data)
 bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
@@ -59,8 +59,7 @@ unique, count = np.unique(mask_labeled, return_counts=True)
 val = unique[np.argmax(count[1:])+1]
 mask[mask_labeled != val] = 0
 
-nib.save(nib.Nifti1Image(mask.astype(np.uint8), dwi_img.affine),
-         'mask.nii.gz')
+save_nifti('mask.nii.gz', mask.astype(np.uint8), affine)
 
 """
 Using a ResDNN for sh_order 8 (default) and load the appropriate weights.
@@ -72,10 +71,10 @@ fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
 resdnn_model.load_model_weights(fetch_model_weights_path)
 predicted_sh = resdnn_model.fit(data, gtab, mask=mask)
 
-nib.save(nib.Nifti1Image(predicted_sh, dwi_img.affine), 'predicted_sh.nii.gz')
+save_nifti('predicted_sh.nii.gz', predicted_sh, affine)
 
 """
-Preparing the VTK scene using Fury. The ODF slicer expects spherical function
+Preparing the scene using Fury. The ODF slicer expects spherical function
 and the mean spherical harmonic amplitude is used as background.
 The ODF slicer and the background image are added as actors and a mid-coronal
 slice is selected.
@@ -153,4 +152,7 @@ References
     Deep learning captures more accurate diffusion fiber orientations
     distributions than constrained spherical deconvolution.
     arXiv preprint arXiv:1911.07927.
+
+.. include:: ../links_names.inc
+
 """
