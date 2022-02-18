@@ -88,11 +88,11 @@ def test_shore_metrics():
     rtop_shore_pdf = asmfit.rtop_pdf()
     npt.assert_almost_equal(rtop_shore_signal, rtop_shore_pdf, 9)
     rtop_mt = multi_tensor_rtop([.5, .5], mevals=mevals)
-    npt.assert_equal(rtop_mt / rtop_shore_signal < 1.10 and
-                     rtop_mt / rtop_shore_signal > 0.95, True)
+    npt.assert_(rtop_mt / rtop_shore_signal > 0.95)
+    npt.assert_(rtop_mt / rtop_shore_signal < 1.10)
 
     # compare the shore msd with the ground truth multi_tensor msd
     msd_mt = multi_tensor_msd([.5, .5], mevals=mevals)
     msd_shore = asmfit.msd()
-    npt.assert_equal(msd_mt / msd_shore < 1.05 and msd_mt / msd_shore > 0.95,
-                     True)
+    npt.assert_(msd_mt / msd_shore > 0.95)
+    npt.assert_(msd_mt / msd_shore < 1.05)
