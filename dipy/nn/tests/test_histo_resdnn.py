@@ -45,7 +45,7 @@ def test_default_weights():
                   -0.01433261]), axis=0)
 
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     resdnn_model.load_model_weights(fetch_model_weights_path)
     results_arr = resdnn_model.predict(input_arr)
     assert_almost_equal(results_arr, target_arr)
@@ -54,7 +54,7 @@ def test_default_weights():
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_wrong_sh_order_weights():
     resdnn_model = HistoResDNN(sh_order=6)
-    fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     assert_raises(ValueError, resdnn_model.load_model_weights,
                   fetch_model_weights_path)
 
@@ -62,7 +62,7 @@ def test_wrong_sh_order_weights():
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_wrong_sh_order_input():
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames('fetch_resdnn_weights')
+    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     resdnn_model.load_model_weights(fetch_model_weights_path)
     assert_raises(ValueError, resdnn_model.predict,
                   np.zeros((1, 28)))
