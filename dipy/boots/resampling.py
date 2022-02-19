@@ -12,8 +12,7 @@ warnings.warn(warningMsg, FutureWarning)
 
 
 def bs_se(bs_pdf):
-    """
-    Calculates the bootstrap standard error estimate of a statistic
+    """ Calculate the bootstrap standard error estimate of a statistic.
     """
     N = len(bs_pdf)
     return np.std(bs_pdf) * np.sqrt(N / (N - 1))
@@ -21,12 +20,13 @@ def bs_se(bs_pdf):
 
 def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     """
+
     Bootstrap resampling [1]_ to accurately estimate the standard error and
     confidence interval of a desired statistic of a probability distribution
     function (pdf).
 
     Parameters
-    ------------
+    ----------
     x : ndarray (N, 1)
         Observable sample to resample. N should be reasonably large.
     statistic : method (optional)
@@ -38,7 +38,7 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
         Percentile for confidence interval of the statistic. (Default: 0.05)
 
     Returns
-    ---------
+    -------
     bs_pdf : ndarray (M, 1)
         Jackknife probabilisty distribution function of the statistic.
     se : float
@@ -47,11 +47,11 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
         Confidence interval of the statistic.
 
     See Also
-    -----------
+    --------
     numpy.std, numpy.random.random
 
     Notes
-    --------
+    -----
     Bootstrap resampling is non parametric. It is quite powerful in
     determining the standard error and the confidence interval of a sample
     distribution. The key characteristics of bootstrap is:
@@ -67,6 +67,7 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     ----------
     ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
         look at the jackknife. Ann. Stat. 7, 1-26.
+
     """
     N = len(x)
     bs_pdf = np.empty((B,))
@@ -80,8 +81,7 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
 
 
 def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
-    """
-    Calculates the bootstrap confidence interval by approximating the BCa.
+    """Calculate the bootstrap confidence interval by approximating the BCa.
 
     Parameters
     ----------
@@ -114,6 +114,7 @@ def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
     ----------
     ..  [2] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals.
         Statistical Science. 11, 3, 189-228.
+
     """
     # define base variables -- n, p_0, sigma_hat, delta_hat
     n = len(x)
@@ -139,20 +140,18 @@ def abc(x, statistic=bs_se, alpha=0.05, eps=1e-5):
 
 
 def __calc_z_alpha(alpha):
-    """
-    Classic "quantile function" that calculates inverse of cdf of standard
-    normal.
+    """ Calculate inverse of cdf of standard normal (quantile function).
     """
     return 2**0.5 * sp.special.erfinv(2 * alpha - 1)
 
 
 def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
-    """
-    Function that calculates the bias z_0 for abc method.
+    """ calculate the bias z_0 for abc method.
 
     See Also
-    ----------
+    --------
     abc, __tt, __tt_dot, __tt_dot_dot
+
     """
     n = len(x)
     b_hat = np.ones(x.shape)
@@ -170,12 +169,11 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
 
 
 def __tt(x, p_0, statistic=bs_se):
-    """
-    Function that calculates desired statistic from observable data and a
+    """Calculate desired statistic from observable data and a
     given proportional weighting.
 
     Parameters
-    ------------
+    ----------
     x : np.ndarray
         Observable data (e.g. from gold standard).
     p_0 : np.ndarray
@@ -187,15 +185,14 @@ def __tt(x, p_0, statistic=bs_se):
         Desired statistic of the observable data.
 
     See Also
-    -----------
+    --------
     abc, __tt_dot, __tt_dot_dot
     """
     return statistic(x / p_0)
 
 
 def __tt_dot(i, x, p_0, statistic, eps):
-    """
-    First numerical derivative of __tt
+    """First numerical derivative of __tt.
     """
     e = np.zeros(x.shape)
     e[i] = 1
@@ -204,8 +201,7 @@ def __tt_dot(i, x, p_0, statistic, eps):
 
 
 def __tt_dot_dot(i, x, p_0, statistic, eps):
-    """
-    Second numerical derivative of __tt
+    """Second numerical derivative of __tt.
     """
     e = np.zeros(x.shape)
     e[i] = 1
@@ -220,7 +216,7 @@ def jackknife(pdf, statistic=np.std, M=None):
     error of a desired statistic in a probability distribution function (pdf).
 
     Parameters
-    ------------
+    ----------
     pdf : ndarray (N, 1)
         Probability distribution function to resample. N should be reasonably
         large.
@@ -231,7 +227,7 @@ def jackknife(pdf, statistic=np.std, M=None):
         Total number of samples in jackknife pdf. (Default: M == N)
 
     Returns
-    ---------
+    -------
     jk_pdf : ndarray (M, 1)
         Jackknife probabilisty distribution function of the statistic.
     bias : float
@@ -240,11 +236,11 @@ def jackknife(pdf, statistic=np.std, M=None):
         Standard error of the statistic.
 
     See Also
-    -----------
+    --------
     numpy.std, numpy.mean, numpy.random.random
 
     Notes
-    --------
+    -----
     Jackknife resampling like bootstrap resampling is non parametric. However,
     it requires a large distribution to be accurate and in some ways can be
     considered deterministic (if one removes the same set of samples,
@@ -263,9 +259,10 @@ def jackknife(pdf, statistic=np.std, M=None):
     mean[true population])
 
     References
-    -------------
+    ----------
     .. [3] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
            look at the jackknife. Ann. Stat. 7, 1-26.
+
     """
     N = len(pdf)
     pdf_mask = np.ones((N,), dtype='int16')  # keeps track of all n - 1 indexes

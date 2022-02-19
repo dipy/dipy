@@ -218,11 +218,10 @@ class AffineMap(object):
 
     def __repr__(self):
         """Reloadable representation - relies on ndarray's implementation."""
-
         return self.affine.__repr__()
 
     def __format__(self, format_spec):
-        """Implementation various formatting options"""
+        """ Implementation various formatting options."""
 
         if format_spec is None or self.affine is None:
             return str(self.affine)

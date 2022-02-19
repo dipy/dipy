@@ -78,7 +78,7 @@ def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
 
     Parameters
-    ------------
+    ----------
     name : str, which file?
         'fib0', 'fib1' or 'fib2'
 
@@ -88,7 +88,7 @@ def get_sim_voxels(name='fib1'):
         where every row is a simulated voxel with different orientation
 
     Examples
-    ----------
+    --------
     >>> from dipy.data import get_sim_voxels
     >>> sv=get_sim_voxels('fib1')
     >>> sv['data'].shape == (100, 102)
@@ -108,8 +108,9 @@ def get_sim_voxels(name='fib1'):
     '80'
 
     Notes
-    -------
+    -----
     These sim voxels were provided by M.M. Correia using Rician noise.
+
     """
     if name == 'fib0':
         fname = pjoin(DATA_DIR, 'fib0.pkl.gz')
@@ -121,10 +122,10 @@ def get_sim_voxels(name='fib1'):
 
 
 def get_skeleton(name='C1'):
-    """ provide skeletons generated from Local Skeleton Clustering (LSC)
+    """ Provide skeletons generated from Local Skeleton Clustering (LSC).
 
     Parameters
-    -----------
+    ----------
     name : str, 'C1' or 'C3'
 
     Returns
@@ -132,7 +133,7 @@ def get_skeleton(name='C1'):
     dix : dictionary
 
     Examples
-    ---------
+    --------
     >>> from dipy.data import get_skeleton
     >>> C=get_skeleton('C1')
     >>> len(C.keys())
@@ -140,6 +141,7 @@ def get_skeleton(name='C1'):
     >>> for c in C: break
     >>> sorted(C[c].keys())
     ['N', 'hidden', 'indices', 'most']
+
     """
     if name == 'C1':
         fname = pjoin(DATA_DIR, 'C1.pkl.gz')
@@ -152,7 +154,7 @@ def get_sphere(name='symmetric362'):
     """ provide triangulated spheres
 
     Parameters
-    ------------
+    ----------
     name : str
         which sphere - one of:
         * 'symmetric362'
@@ -180,6 +182,7 @@ def get_sphere(name='symmetric362'):
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"
+
     """
     fname = SPHERE_FILES.get(name)
     if fname is None:
