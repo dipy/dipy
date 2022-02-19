@@ -33,7 +33,7 @@ def WichmannHill2006(ix=100001, iy=200002, iz=300003, it=400004):
         pseudo-random number uniformly distributed between [0-1]
 
     Examples
-    ----------
+    --------
     >>> from dipy.core import rng
     >>> N = 1000
     >>> a = [rng.WichmannHill2006() for i in range(N)]
@@ -102,7 +102,7 @@ def WichmannHill1982(ix=100001, iy=200002, iz=300003):
         pseudo-random number uniformly distributed between [0-1]
 
     Examples
-    ----------
+    --------
     >>> from dipy.core import rng
     >>> N = 1000
     >>> a = [rng.WichmannHill1982() for i in range(N)]
@@ -157,7 +157,7 @@ def LEcuyer(s1=100001, s2=200002):
         pseudo-random number uniformly distributed between [0-1]
 
     Examples
-    ----------
+    --------
     >>> from dipy.core import rng
     >>> N = 1000
     >>> a = [rng.LEcuyer() for i in range(N)]

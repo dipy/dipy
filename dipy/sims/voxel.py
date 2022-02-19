@@ -92,7 +92,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
         'rayleigh' for a Rayleigh distribution.
 
     Returns
-    --------
+    -------
     signal : array, same shape as the input
         Signal with added noise.
 

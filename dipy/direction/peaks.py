@@ -551,12 +551,12 @@ def reshape_peaks_for_visualization(peaks):
     or the fibernavigator.
 
     Parameters
-    -----------
+    ----------
     peaks: nd array (..., N, 3) or PeaksAndMetrics object
         The peaks to be reshaped and converted to float32.
 
     Returns
-    --------
+    -------
     peaks : nd array (..., 3*N)
     """
     if isinstance(peaks, PeaksAndMetrics):

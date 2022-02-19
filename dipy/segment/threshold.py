@@ -49,7 +49,7 @@ def upper_bound_by_rate(data, rate=0.05):
     every bins and the bins with highest pixel amount
 
     Parameters
-    -----------
+    ----------
     data : float
         Input intensity value data
     rate : float

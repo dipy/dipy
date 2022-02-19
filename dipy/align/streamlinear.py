@@ -1025,7 +1025,7 @@ def compose_matrix44(t, dtype=np.double):
     """ Compose a 4x4 transformation matrix.
 
     Parameters
-    -----------
+    ----------
     t : ndarray
         This is a 1D vector of affine transformation parameters with
         size at least 3.
@@ -1071,7 +1071,7 @@ def decompose_matrix44(mat, size=12):
     """ Given a 4x4 homogeneous matrix return the parameter vector.
 
     Parameters
-    -----------
+    ----------
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int

@@ -447,7 +447,7 @@ def norm(q_form):
     :math:
         ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
 
-    See also
+    See Also
     --------
     np.linalg.norm
     """
@@ -1456,8 +1456,8 @@ def _ols_fit_matrix(design_matrix):
     fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
     be used to calculate regression coefficients in OLS but not recommended.
 
-    See Also:
-    ---------
+    See Also
+    --------
     wls_fit_tensor, ols_fit_tensor
 
     Examples

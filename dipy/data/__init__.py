@@ -82,7 +82,7 @@ def get_sim_voxels(name='fib1'):
         'fib0', 'fib1' or 'fib2'
 
     Returns
-    ---------
+    -------
     dix : dictionary, where dix['data'] returns a 2d array
         where every row is a simulated voxel with different orientation
 

@@ -57,7 +57,7 @@ class ParzenJointHistogram(object):
                    Imaging, 22(1), 120-8, 2003.
 
         Notes
-        --------
+        -----
         We need this class in cython to allow _joint_pdf_gradient_dense_2d and
         _joint_pdf_gradient_dense_3d to use a nogil Jacobian function (obtained
         from an instance of the Transform class), which allows us to evaluate

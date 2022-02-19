@@ -13,12 +13,12 @@ def winding(xyz):
     angle between each line segment and the previous one.
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
         Array representing x,y,z of N points in a track.
 
     Returns
-    ---------
+    -------
     a : scalar
         Total turning angle in degrees.
 
@@ -45,7 +45,7 @@ def length(xyz, along=False):
     This will give length in mm if tracks are expressed in world coordinates.
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     along : bool, optional
@@ -53,13 +53,13 @@ def length(xyz, along=False):
        otherwise (default) return scalar giving total length.
 
     Returns
-    ---------
+    -------
     L : scalar or array shape (N-1,)
        scalar in case of `along` == False, giving total length, array if
        `along` == True, giving cumulative lengths.
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.metrics import length
     >>> xyz = np.array([[1,1,1],[2,3,4],[0,0,0]])
     >>> expected_lens = np.sqrt([1+2**2+3**2, 2**2+3**2+4**2])
@@ -90,12 +90,12 @@ def bytes(xyz):
     """Size of track in bytes.
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        Array representing x,y,z of N points in a track.
 
     Returns
-    ---------
+    -------
     b : int
         Number of bytes.
 
@@ -112,7 +112,7 @@ def midpoint(xyz):
        array representing x,y,z of N points in a track
 
     Returns
-    ---------
+    -------
     mp : array shape (3,)
        Middle point of line, such that, if L is the line length then
        `np` is the point such that the length xyz[0] to `mp` and from
@@ -190,17 +190,17 @@ def center_of_mass(xyz):
     """ Center of mass of streamline
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
 
     Returns
-    ---------
+    -------
     com : array shape (3,)
        center of mass of streamline
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.metrics import center_of_mass
     >>> center_of_mass([])
     Traceback (most recent call last):
@@ -274,7 +274,7 @@ def frenet_serret(xyz):
         array representing the torsion of the curve xyz
 
     Examples
-    ----------
+    --------
     Create a helix and calculate its tangent, normal, binormal, curvature
     and torsion
 
@@ -316,12 +316,12 @@ def mean_curvature(xyz):
     """ Calculates the mean curvature of a curve
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a curve
 
     Returns
-    -----------
+    -------
     m : float
         Mean curvature.
 
@@ -362,7 +362,7 @@ def mean_orientation(xyz):
     Calculates the mean orientation of a curve
 
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a curve
 
@@ -385,12 +385,12 @@ def generate_combinations(items, n):
     """ Combine sets of size n from items
 
     Parameters
-    ------------
+    ----------
     items : sequence
     n : int
 
     Returns
-    --------
+    -------
     ic : iterator
 
     Examples
@@ -540,7 +540,7 @@ def inside_sphere(xyz, center, radius):
     center of the sphere and $r$ the radius of the sphere.
 
     Parameters
-    -------------
+    ----------
     xyz : array, shape (N,3)
        representing x,y,z of the N points of the track
     center : array, shape (3,)
@@ -549,7 +549,7 @@ def inside_sphere(xyz, center, radius):
        radius of the sphere
 
     Returns
-    ----------
+    -------
     tf : {True,False}
         Whether point is inside sphere.
 
@@ -573,7 +573,7 @@ def inside_sphere_points(xyz, center, radius):
     sphere.
 
     Parameters
-    ------------
+    ----------
     xyz : array, shape (N,3)
        representing x,y,z of the N points of the track
     center : array, shape (3,)
@@ -582,12 +582,12 @@ def inside_sphere_points(xyz, center, radius):
        radius of the sphere
 
     Returns
-    ---------
+    -------
     xyzn : array, shape(M,3)
        array representing x,y,z of the M points inside the sphere
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.metrics import inside_sphere_points
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
@@ -608,7 +608,7 @@ def spline(xyz, s=3, k=2, nest=-1):
     example, it need not be so to use this routine.
 
     Parameters
-    ---------------
+    ----------
     xyz : array, shape (N,3)
         array representing x,y,z of N points in 3d space
     s : float, optional
@@ -657,8 +657,8 @@ def spline(xyz, s=3, k=2, nest=-1):
     >>> len(xyzn) > len(xyz)
     True
 
-    See also
-    ----------
+    See Also
+    --------
     scipy.interpolate.splprep
     scipy.interpolate.splev
     """
@@ -673,17 +673,17 @@ def startpoint(xyz):
     """ First point of the track
 
     Parameters
-    -------------
+    ----------
     xyz : array, shape(N,3)
         Track.
 
     Returns
-    ---------
+    -------
     sp : array, shape(3,)
         First track point.
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.metrics import startpoint
     >>> import numpy as np
     >>> theta=np.pi*np.linspace(0,1,100)
@@ -712,7 +712,7 @@ def endpoint(xyz):
         First track point.
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.metrics import endpoint
     >>> import numpy as np
     >>> theta=np.pi*np.linspace(0,1,100)
@@ -824,7 +824,7 @@ def midpoint2point(xyz, p):
     """ Calculate distance from midpoint of a curve to arbitrary point p
 
     Parameters
-    -------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     p : array shape (3,)
@@ -832,12 +832,12 @@ def midpoint2point(xyz, p):
        space.
 
     Returns
-    ---------
+    -------
     d : float
        a float number representing Euclidean distance
 
     Examples
-    -----------
+    --------
     >>> import numpy as np
     >>> from dipy.tracking.metrics import midpoint2point, midpoint
     >>> theta=np.pi*np.linspace(0,1,100)

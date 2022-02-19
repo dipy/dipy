@@ -6,14 +6,14 @@ def save_pickle(fname, dix):
     """Save `dix` to `fname` as pickle.
 
     Parameters
-    ------------
+    ----------
     fname : str
        filename to save object e.g. a dictionary
     dix : str
        dictionary or other object
 
     Examples
-    ----------
+    --------
     >>> import os
     >>> from tempfile import mkstemp
     >>> fd, fname = mkstemp() # make temporary file (opened, attached to fh)
@@ -26,8 +26,8 @@ def save_pickle(fname, dix):
     >>> os.close(fd) # the file is still open, we need to close the fh
     >>> os.remove(fname)
 
-    See also
-    ----------
+    See Also
+    --------
     dipy.io.pickles.load_pickle
 
     """
@@ -40,17 +40,17 @@ def load_pickle(fname):
     """Load object from pickle file `fname`.
 
     Parameters
-    ------------
+    ----------
     fname : str
        filename to load dict or other python object
 
     Returns
-    ---------
+    -------
     dix : object
        dictionary or other object
 
     Examples
-    ----------
+    --------
     dipy.io.pickles.save_pickle
 
     """

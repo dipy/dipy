@@ -53,7 +53,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
             Used for extracting initial tracking directions. Passed to
             peak_directions.
 
-        See also
+        See Also
         --------
         dipy.direction.peaks.peak_directions
 

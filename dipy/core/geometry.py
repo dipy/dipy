@@ -372,7 +372,7 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
        Distances between corresponding points in `pts1` and `pts2`
        across the spherical surface, i.e. the great circle distance
 
-    See also
+    See Also
     --------
     cart_distance : cartesian distance between points
     vector_cosine : cosine of angle between vectors
@@ -425,7 +425,7 @@ def cart_distance(pts1, pts2):
        Cartesian distances between corresponding points in `pts1` and
        `pts2`
 
-    See also
+    See Also
     --------
     sphere_distance : distance between points on sphere surface
 
@@ -919,7 +919,7 @@ def perpendicular_directions(v, num=30, half=False):
     vector v
 
     Parameters
-    -----------
+    ----------
     v : array (3,)
         Array containing the three cartesian coordinates of vector v
     num : int, optional
