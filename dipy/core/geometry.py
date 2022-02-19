@@ -89,6 +89,7 @@ def sphere2cart(r, theta, phi):
     name, because the Matlab function uses an unusual convention for the
     angles that we did not want to replicate.  The Matlab function is
     trivial to implement with the formulae given in the Matlab help.
+
     """
     sin_theta = np.sin(theta)
     x = r * np.cos(phi) * sin_theta
@@ -123,6 +124,7 @@ def cart2sphere(x, y, z):
        inclination (polar) angle
     phi : array
        azimuth angle
+
     """
     r = np.sqrt(x * x + y * y + z * z)
     theta = np.arccos(np.divide(z, r, where=r > 0))
@@ -170,6 +172,7 @@ def normalized_vector(vec, axis=-1):
     True
     >>> normalized_vector(vec).shape == (1, 3)
     True
+
     """
     return vec / vector_norm(vec, axis, keepdims=True)
 
@@ -206,6 +209,7 @@ def vector_norm(vec, axis=-1, keepdims=False):
            [ 85.]])
     >>> vector_norm(vec, axis=0)
     array([  8.,  39.,  77.])
+
     """
     vec = np.asarray(vec)
     vec_norm = np.sqrt((vec * vec).sum(axis))
@@ -265,8 +269,8 @@ def rodrigues_axis_rotation(r, theta):
     >>> ur=np.dot(R,u)
     >>> np.round(np.rad2deg(np.arccos(np.dot(ur,u))))
     40.0
-    """
 
+    """
     theta = np.deg2rad(theta)
     if theta > 1e-30:
         n = r / np.linalg.norm(r)
