@@ -1,3 +1,4 @@
+import warnings
 
 import nibabel as nib
 import numpy as np
@@ -12,6 +13,7 @@ from dipy.direction import (BootDirectionGetter,
                             PeaksAndMetrics,
                             ProbabilisticDirectionGetter)
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.tracking.local_tracking import (LocalTracking,
                                           ParticleFilteringTracking)
 from dipy.tracking.streamline import Streamlines
@@ -572,17 +574,29 @@ def test_bootstap_peak_tracker():
     data[simple_image == 2] = voxel2
 
     response = (np.array(mevals[1]), 1)
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
 
     seeds = [np.array([0., 1., 0.]), np.array([2., 4., 0.])]
 
     sc = BinaryStoppingCriterion((simple_image > 0).astype(float))
     sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
-    boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
-                                            sphere=sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter.from_data(data, csd_model, 60,
+                                                sphere=sphere)
 
     streamlines_generator = LocalTracking(boot_dg, sc, seeds, np.eye(4), 1.)
-    streamlines = Streamlines(streamlines_generator)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        streamlines = Streamlines(streamlines_generator)
     expected = [np.array([[0., 1., 0.],
                           [1., 1., 0.],
                           [2., 1., 0.],

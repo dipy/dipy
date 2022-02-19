@@ -18,6 +18,7 @@ from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.sims.voxel import sticks_and_ball, multi_tensor
 from dipy.direction.peaks import peak_directions
+from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 def test_rumba():

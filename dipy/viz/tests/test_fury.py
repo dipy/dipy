@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 import numpy as np
 import numpy.testing as npt
@@ -13,7 +15,7 @@ from dipy.tracking import utils
 from dipy.tracking.stopping_criterion import \
     ThresholdStoppingCriterion
 from dipy.tracking.local_tracking import LocalTracking
-from dipy.reconst.shm import sh_to_sf_matrix
+from dipy.reconst.shm import descoteaux07_legacy_msg, sh_to_sf_matrix
 from dipy.align.tests.test_streamlinear import fornix_streamlines
 from dipy.tracking.streamline import (center_streamlines,
                                       transform_streamlines)
@@ -60,12 +62,16 @@ def test_contour_from_roi():
 
     white_matter = (labels == 1) | (labels == 2)
 
-    csa_model = CsaOdfModel(gtab, sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csa_model = CsaOdfModel(gtab, sh_order=6)
 
-    csa_peaks = peaks_from_model(csa_model, data, default_sphere,
-                                 relative_peak_threshold=.8,
-                                 min_separation_angle=45,
-                                 mask=white_matter)
+        csa_peaks = peaks_from_model(csa_model, data, default_sphere,
+                                     relative_peak_threshold=.8,
+                                     min_separation_angle=45,
+                                     mask=white_matter)
 
     classifier = ThresholdStoppingCriterion(csa_peaks.gfa, .25)
 
@@ -280,7 +286,11 @@ def test_odf_slicer(interactive=False):
         window.show(scene)
 
     # Test that SH coefficients input works
-    B = sh_to_sf_matrix(sphere, sh_order=4, return_inv=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        B = sh_to_sf_matrix(sphere, sh_order=4, return_inv=False)
     odfs = np.zeros((11, 11, 11, B.shape[0]))
     odfs[..., 0] = 1.0
     odf_actor = actor.odf_slicer(odfs, sphere=sphere, B_matrix=B)
@@ -317,7 +327,11 @@ def test_odf_slicer(interactive=False):
 
     # Test that we can change the sphere on an active actor
     new_sphere = get_sphere('symmetric362')
-    new_B = sh_to_sf_matrix(new_sphere, sh_order=4, return_inv=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        new_B = sh_to_sf_matrix(new_sphere, sh_order=4, return_inv=False)
     odf_actor.update_sphere(new_sphere.vertices, new_sphere.faces, new_B)
     if interactive:
         window.show(scene)

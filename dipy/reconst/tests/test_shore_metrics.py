@@ -1,8 +1,11 @@
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 from scipy.special import genlaguerre
 
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
@@ -46,10 +49,18 @@ def test_shore_metrics():
     lambdaL = 1e-12
     asm = ShoreModel(gtab, radial_order=radial_order,
                      zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
-    asmfit = asm.fit(S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        asmfit = asm.fit(S)
     c_shore = asmfit.shore_coeff
 
-    cmat = shore_matrix(radial_order, zeta, gtab)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        cmat = shore_matrix(radial_order, zeta, gtab)
     S_reconst = np.dot(cmat, c_shore)
 
     # test the signal reconstruction
@@ -67,7 +78,11 @@ def test_shore_metrics():
 
     # test if the integral of the pdf calculated on a discrete grid is
     # equal to one
-    pdf_discrete = asmfit.pdf_grid(17, 40e-3)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf_discrete = asmfit.pdf_grid(17, 40e-3)
     integral = pdf_discrete.sum()
     npt.assert_almost_equal(integral, 1.0, 1)
 
@@ -76,7 +91,11 @@ def test_shore_metrics():
     sphere = get_sphere('symmetric724')
     v = sphere.vertices
     radius = 10e-3
-    pdf_shore = asmfit.pdf(v * radius)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,
                               angles=angl, fractions=[50, 50])
 
