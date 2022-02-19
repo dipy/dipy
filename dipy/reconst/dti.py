@@ -1911,7 +1911,7 @@ def from_lower_triangular(D):
     ignored.
 
     Parameters
-    -----------
+    ----------
     D : array_like, (..., >6)
         Unique elements of the tensors
 
