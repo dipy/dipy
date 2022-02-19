@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import scipy.integrate as integrate
 
@@ -10,6 +12,7 @@ import pytest
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
 from dipy.reconst import qtdmri, mapmri
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor, add_noise
 
 needs_cvxpy = pytest.mark.skipif(not qtdmri.have_cvxpy,
@@ -177,17 +180,29 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
                                         anisotropic_scaling=False)
 
     # both implementations fit the same signal
-    qtdmri_fit_cart = qtdmri_mod_aniso.fit(S)
-    qtdmri_fit_sphere = qtdmri_mod_iso.fit(S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qtdmri_fit_cart = qtdmri_mod_aniso.fit(S)
+        qtdmri_fit_sphere = qtdmri_mod_iso.fit(S)
 
     # same signal fit
-    assert_array_almost_equal(qtdmri_fit_cart.fitted_signal(),
-                              qtdmri_fit_sphere.fitted_signal())
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        assert_array_almost_equal(qtdmri_fit_cart.fitted_signal(),
+                                  qtdmri_fit_sphere.fitted_signal())
 
     # same PDF reconstruction
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, .05)
     pdf_aniso = qtdmri_fit_cart.pdf(rt_grid)
-    pdf_iso = qtdmri_fit_sphere.pdf(rt_grid)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf_iso = qtdmri_fit_sphere.pdf(rt_grid)
     assert_array_almost_equal(pdf_aniso / pdf_aniso.max(),
                               pdf_iso / pdf_aniso.max())
 
@@ -200,15 +215,25 @@ def test_anisotropic_isotropic_equivalence(radial_order=4, time_order=2):
     # all q-space index is the same for arbitrary tau
     tau = 0.02
     assert_almost_equal(qtdmri_fit_cart.rtop(tau), qtdmri_fit_sphere.rtop(tau))
-    assert_almost_equal(qtdmri_fit_cart.rtap(tau), qtdmri_fit_sphere.rtap(tau))
-    assert_almost_equal(qtdmri_fit_cart.rtpp(tau), qtdmri_fit_sphere.rtpp(tau))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        assert_almost_equal(
+            qtdmri_fit_cart.rtap(tau), qtdmri_fit_sphere.rtap(tau))
+        assert_almost_equal(
+            qtdmri_fit_cart.rtpp(tau), qtdmri_fit_sphere.rtpp(tau))
     assert_almost_equal(qtdmri_fit_cart.msd(tau), qtdmri_fit_sphere.msd(tau))
     assert_almost_equal(qtdmri_fit_cart.qiv(tau), qtdmri_fit_sphere.qiv(tau))
 
     # ODF estimation is the same
     sphere = get_sphere()
-    assert_array_almost_equal(qtdmri_fit_cart.odf(sphere, tau, s=0),
-                              qtdmri_fit_sphere.odf(sphere, tau, s=0))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        assert_array_almost_equal(qtdmri_fit_cart.odf(sphere, tau, s=0),
+                                  qtdmri_fit_sphere.odf(sphere, tau, s=0))
 
 
 def test_cartesian_normalization(radial_order=4, time_order=2):
@@ -254,14 +279,22 @@ def test_spherical_normalization(radial_order=4, time_order=2):
                                                time_order=time_order,
                                                cartesian=False,
                                                normalization=True)
-    qtdmri_fit = qtdmri_mod_aniso.fit(S)
-    qtdmri_fit_norm = qtdmri_mod_aniso_norm.fit(S)
-    assert_array_almost_equal(qtdmri_fit.fitted_signal(),
-                              qtdmri_fit_norm.fitted_signal())
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qtdmri_fit = qtdmri_mod_aniso.fit(S)
+        qtdmri_fit_norm = qtdmri_mod_aniso_norm.fit(S)
+        assert_array_almost_equal(qtdmri_fit.fitted_signal(),
+                                  qtdmri_fit_norm.fitted_signal())
 
     rt_grid = qtdmri.create_rt_space_grid(5, 20e-3, 5, 0.02, .05)
-    pdf = qtdmri_fit.pdf(rt_grid)
-    pdf_norm = qtdmri_fit_norm.pdf(rt_grid)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf = qtdmri_fit.pdf(rt_grid)
+        pdf_norm = qtdmri_fit_norm.pdf(rt_grid)
     assert_array_almost_equal(pdf / pdf.max(),
                               pdf_norm / pdf.max())
 
@@ -393,8 +426,12 @@ def test_q0_constraint_and_unity_of_ODFs(radial_order=6, time_order=2):
         laplacian_regularization=True, laplacian_weighting=1e-4,
         cartesian=False
     )
-    qtdmri_fit_lap = qtdmri_mod_lap.fit(S)
-    fitted_signal = qtdmri_fit_lap.fitted_signal()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qtdmri_fit_lap = qtdmri_mod_lap.fit(S)
+        fitted_signal = qtdmri_fit_lap.fitted_signal()
     E_q0_first_tau = fitted_signal[
         np.all([tau == tau.min(), gtab_4d.b0s_mask], axis=0)
     ]
@@ -453,8 +490,12 @@ def test_spherical_laplacian_reduces_laplacian_norm(radial_order=4,
         laplacian_weighting=1e-4
     )
 
-    qtdmri_fit_no_laplacian = qtdmri_mod_no_laplacian.fit(S)
-    qtdmri_fit_laplacian = qtdmri_mod_laplacian.fit(S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qtdmri_fit_no_laplacian = qtdmri_mod_no_laplacian.fit(S)
+        qtdmri_fit_laplacian = qtdmri_mod_laplacian.fit(S)
 
     laplacian_norm_no_reg = qtdmri_fit_no_laplacian.norm_of_laplacian_signal()
     laplacian_norm_reg = qtdmri_fit_laplacian.norm_of_laplacian_signal()
@@ -524,8 +565,12 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
         l1_weighting=.1
     )
 
-    qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
-    qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
+        qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
 
     sparsity_abs_no_reg = qtdmri_fit_no_l1.sparsity_abs()
     sparsity_abs_reg = qtdmri_fit_l1.sparsity_abs()

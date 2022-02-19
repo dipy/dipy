@@ -1,3 +1,4 @@
+import warnings
 
 import logging
 import numpy as np
@@ -12,16 +13,24 @@ from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
 from dipy.workflows.reconst import ReconstCSDFlow, ReconstCSAFlow
-from dipy.reconst.shm import sph_harm_ind_list
+from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
 logging.getLogger().setLevel(logging.INFO)
 
 
 def test_reconst_csa():
-    reconst_flow_core(ReconstCSAFlow)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        reconst_flow_core(ReconstCSAFlow)
 
 
 def test_reconst_csd():
-    reconst_flow_core(ReconstCSDFlow)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        reconst_flow_core(ReconstCSDFlow)
 
 
 def reconst_flow_core(flow):
