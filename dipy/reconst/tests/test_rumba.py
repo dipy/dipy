@@ -385,7 +385,7 @@ def test_generate_kernel():
     kernel_multi = generate_kernel(
         gtab, sphere, wm_response_multi, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices) + 2))
-    assert_array_equal(kernel, kernel_multi)
+    assert_almost_equal(kernel, kernel_multi)
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
