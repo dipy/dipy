@@ -5,19 +5,18 @@ import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
-                           assert_allclose,
                            assert_raises,
                            run_module_suite)
-from numpy.testing import assert_
+from numpy.testing._private.utils import assert_
 
-from dipy.reconst.rumba import RumbaSDModel, generate_kernel
+from dipy.reconst.rumba import RumbaSD, generate_kernel
 from dipy.reconst.csdeconv import AxSymShResponse
-from dipy.data import get_fnames, dsi_voxels, default_sphere, get_sphere
+from dipy.data import get_fnames, dsi_voxels, default_sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.geometry import cart2sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.sims.voxel import sticks_and_ball, multi_tensor, single_tensor
+from dipy.sims.voxel import sticks_and_ball, multi_tensor
 from dipy.direction.peaks import peak_directions
 
 
@@ -27,7 +26,6 @@ def test_rumba():
     '''
 
     sphere = default_sphere  # repulsion 724
-    sphere2 = get_sphere('symmetric362')
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
     bvals = btable[:, 0]
@@ -38,35 +36,32 @@ def test_rumba():
                                               fractions=[50, 50], snr=None)
 
     # Testing input validation
-    gtab_broken = gradient_table(
-        bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
-    assert_raises(ValueError, RumbaSDModel, gtab_broken)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        gtab_broken = gradient_table(
+            bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+        assert_raises(ValueError, RumbaSD, gtab_broken)
 
     with warnings.catch_warnings(record=True) as w:
-        _ = RumbaSDModel(gtab, verbose=True)
-        assert_equal(len(w), 1)
+        _ = RumbaSD(gtab, use_tv=True, verbose=True)
+        assert_equal(len(w), 2)
         assert_(w[0].category, UserWarning)
+        assert_(w[1].category, UserWarning)
 
-    assert_raises(ValueError, RumbaSDModel, gtab, use_tv=True)
-    assert_raises(ValueError, RumbaSDModel, gtab, n_iter=0)
-    rumba_broken = RumbaSDModel(gtab, recon_type='test')
+    assert_raises(ValueError, RumbaSD, gtab, n_iter=0)
+    rumba_broken = RumbaSD(gtab, recon_type='test')
     assert_raises(ValueError, rumba_broken.fit, data)
 
     # Models to validate
-    rumba_smf = RumbaSDModel(gtab, n_iter=20, recon_type='smf', n_coils=1,
-                             sphere=sphere)
-    rumba_sos = RumbaSDModel(gtab, n_iter=20, recon_type='sos', n_coils=32,
-                             sphere=sphere)
+    rumba_smf = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1,
+                        sphere=sphere)
+    rumba_sos = RumbaSD(gtab, n_iter=20, recon_type='sos', n_coils=32,
+                        sphere=sphere)
     model_list = [rumba_smf, rumba_sos]
 
     # Test on repulsion724 sphere
     for model in model_list:
-        model_fit = model.fit(data)
-
-        # Verify only works on original sphere
-        assert_raises(ValueError, model_fit.odf, sphere2)
-        odf = model_fit.odf(sphere)
-
+        odf = model.fit(data).odf(sphere)
         directions, _, _ = peak_directions(odf, sphere, .35, 25)
         assert_equal(len(directions), 2)
         assert_almost_equal(angular_similarity(directions, golden_directions),
@@ -83,33 +78,11 @@ def test_rumba():
                 odf, sphere, .35, 25)
             if len(directions) <= 3:
                 # Verify small isotropic fraction in anisotropic case
-                assert_equal(model_fit.f_iso < 0.1, True)
+                assert_equal(model_fit.f_iso() < 0.1, True)
                 assert_equal(len(directions), len(golden_directions))
             if len(directions) > 3:
                 # Verify large isotropic fraction in isotropic case
-                assert_equal(model_fit.f_iso > 0.8, True)
-
-
-def test_predict():
-    '''
-    Test signal reconstruction on ideal example
-    '''
-
-    sphere = default_sphere
-
-    btable = np.loadtxt(get_fnames('dsi515btable'))
-    bvals = btable[:, 0]
-    bvecs = btable[:, 1:]
-    gtab = gradient_table(bvals, bvecs)
-
-    rumba = RumbaSDModel(gtab, n_iter=600, sphere=sphere)
-
-    # Simulated data
-    data = single_tensor(gtab, S0=1, evals=rumba.wm_response)
-    rumba_fit = rumba.fit(data)
-    data_pred = rumba_fit.predict()
-
-    assert_allclose(data_pred, data, atol=0.01, rtol=0.05)
+                assert_equal(model_fit.f_iso() > 0.8, True)
 
 
 def test_recursive_rumba():
@@ -131,7 +104,7 @@ def test_recursive_rumba():
                                                  80.23104069,
                                                  -16.93940972,
                                                  2.57628738]))
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSD(gtab, wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
     # Test peaks
@@ -157,7 +130,7 @@ def test_multishell_rumba():
                                               fractions=[50, 50], snr=None)
 
     wm_response = np.tile(np.array([1.7E-3, 0.2E-3, 0.2E-3]), (22, 1))
-    model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
+    model = RumbaSD(gtab, wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
     # Test peaks
@@ -176,27 +149,28 @@ def test_mvoxel_rumba():
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
-    rumba_smf = RumbaSDModel(gtab, n_iter=5, recon_type='smf', n_coils=1,
-                             sphere=sphere)
-    rumba_sos = RumbaSDModel(gtab, n_iter=5, recon_type='sos', n_coils=32,
-                             sphere=sphere)
+    rumba_smf = RumbaSD(gtab, n_iter=5, recon_type='smf', n_coils=1,
+                        sphere=sphere)
+    rumba_sos = RumbaSD(gtab, n_iter=5, recon_type='sos', n_coils=32,
+                        sphere=sphere)
     model_list = [rumba_smf, rumba_sos]
 
     for model in model_list:
         model_fit = model.fit(data)
 
         odf = model_fit.odf(sphere)
-        f_iso = model_fit.f_iso
-        f_wm = model_fit.f_wm
-        f_gm = model_fit.f_gm
-        f_csf = model_fit.f_csf
-        combined = model_fit.combined_odf_iso
+        f_iso = model_fit.f_iso()
+        f_wm = model_fit.f_wm()
+        f_gm = model_fit.f_gm()
+        f_csf = model_fit.f_csf()
+        combined = model_fit.combined_odf_iso()
 
         # Verify prediction properties
-        pred_sig_1 = model_fit.predict()
-        pred_sig_2 = model_fit.predict(S0=1)
-        pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
-        pred_sig_4 = model_fit.predict(gtab=gtab)
+        pred_sig_1 = model_fit.predict(model_fit.model_params)
+        pred_sig_2 = model_fit.predict(model_fit.model_params, S0=1)
+        pred_sig_3 = model_fit.predict(model_fit.model_params,
+                                       S0=np.ones(odf.shape[:-1]))
+        pred_sig_4 = model_fit.predict(model_fit.model_params, gtab=gtab)
 
         assert_equal(pred_sig_1, pred_sig_2)
         assert_equal(pred_sig_3, pred_sig_4)
@@ -243,10 +217,10 @@ def test_global_fit():
     data_mvoxel = np.tile(data, (2, 2, 2, 1))
 
     # Model to validate
-    rumba = RumbaSDModel(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2,
-                         voxelwise=False, sphere=sphere)
-    rumba_tv = RumbaSDModel(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2,
-                            voxelwise=False, use_tv=True, sphere=sphere)
+    rumba = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2,
+                    voxelwise=False, sphere=sphere)
+    rumba_tv = RumbaSD(gtab, n_iter=20, recon_type='smf', n_coils=1, R=2,
+                       voxelwise=False, use_tv=True, sphere=sphere)
 
     # Testing input validation
     assert_raises(ValueError, rumba.fit, data[:, :, :, 0])  # Must be 4D
@@ -255,7 +229,7 @@ def test_global_fit():
     # Mask must match first 3 dimensions of data
     assert_raises(ValueError, rumba.fit, data, mask=np.ones(data.shape))
     # Recon type validation
-    rumba_broken = RumbaSDModel(gtab, recon_type='test', voxelwise=False)
+    rumba_broken = RumbaSD(gtab, recon_type='test', voxelwise=False)
     assert_raises(ValueError, rumba_broken.fit, data)
 
     # Test on repulsion 724 sphere, with/wihout TV regularization
@@ -282,7 +256,7 @@ def test_global_fit():
 
         rumba_fit = rumba.fit(data)
         odf = rumba_fit.odf(sphere)
-        f_iso = rumba_fit.f_iso
+        f_iso = rumba_fit.f_iso()
 
         directions, _, _ = peak_directions(
             odf[0, 0, 0], sphere, .35, 25)
@@ -303,26 +277,25 @@ def test_mvoxel_global_fit():
     sphere = default_sphere  # repulsion 724
 
     # Models to validate
-    rumba_sos = RumbaSDModel(gtab, recon_type='sos', n_iter=5, n_coils=32, R=1,
-                             voxelwise=False, verbose=True, sphere=sphere)
-    rumba_sos_tv = RumbaSDModel(gtab, recon_type='sos', n_iter=5, n_coils=32,
-                                R=1, voxelwise=False, use_tv=True,
-                                sphere=sphere)
-    rumba_r = RumbaSDModel(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2,
-                           voxelwise=False, sphere=sphere)
-    rumba_r_tv = RumbaSDModel(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2,
-                              voxelwise=False, use_tv=True, sphere=sphere)
+    rumba_sos = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32, R=1,
+                        voxelwise=False, verbose=True, sphere=sphere)
+    rumba_sos_tv = RumbaSD(gtab, recon_type='sos', n_iter=5, n_coils=32, R=1,
+                           voxelwise=False, use_tv=True, sphere=sphere)
+    rumba_r = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2,
+                      voxelwise=False, sphere=sphere)
+    rumba_r_tv = RumbaSD(gtab, recon_type='smf', n_iter=5, n_coils=1, R=2,
+                         voxelwise=False, use_tv=True, sphere=sphere)
     model_list = [rumba_sos, rumba_sos_tv, rumba_r, rumba_r_tv]
 
     # Test each model with/without TV regularization
     for model in model_list:
         model_fit = model.fit(data)
         odf = model_fit.odf(sphere)
-        f_iso = model_fit.f_iso
-        f_wm = model_fit.f_wm
-        f_gm = model_fit.f_gm
-        f_csf = model_fit.f_csf
-        combined = model_fit.combined_odf_iso
+        f_iso = model_fit.f_iso()
+        f_wm = model_fit.f_wm()
+        f_gm = model_fit.f_gm()
+        f_csf = model_fit.f_csf()
+        combined = model_fit.combined_odf_iso()
 
         # Verify shape, positivity, realness of results
         assert_equal(data.shape[:-1] + (len(sphere.vertices),), odf.shape)
@@ -379,7 +352,6 @@ def test_generate_kernel():
                         [fi],
                         None)
     assert_almost_equal(kernel[:, 0], S)
-<<<<<<< HEAD
 
     # Multi-shell version
     wm_response_multi = np.tile(wm_response, (22, 1))
@@ -387,8 +359,6 @@ def test_generate_kernel():
         gtab, sphere, wm_response_multi, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices) + 2))
     assert_array_equal(kernel, kernel_multi)
-=======
->>>>>>> db57297c5 (Fix `generate_kernel` test)
 
     # Test optional isotropic compartment; should cause last column of zeroes
     kernel = generate_kernel(
