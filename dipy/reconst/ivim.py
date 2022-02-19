@@ -674,7 +674,7 @@ class IvimModelVP(ReconstModel):
         (signal -  S)^T(signal -  S)
 
         Notes
-        --------
+        -----
         to make cost function for Differential Evolution algorithm:
         .. math::
 
@@ -719,7 +719,7 @@ class IvimModelVP(ReconstModel):
         f1, f2 (volume fractions)
 
         Notes
-        --------
+        -----
         cost function for differential evolution algorithm:
 
         .. math::
@@ -769,7 +769,7 @@ class IvimModelVP(ReconstModel):
         sum{(signal -  phi*f)^2}
 
         Notes
-        --------
+        -----
         cost function for the least square problem.
 
         .. math::
@@ -854,16 +854,19 @@ class IvimFit(object):
 
     def __init__(self, model, model_params):
         """ Initialize a IvimFit class instance.
-            Parameters
-            ----------
-            model : Model class
-            model_params : array
-                The parameters of the model. In this case it is an
-                array of ivim parameters. If the fitting is done
-                for multi_voxel data, the multi_voxel decorator will
-                run the fitting on all the voxels and model_params
-                will be an array of the dimensions (data[:-1], 4),
-                i.e., there will be 4 parameters for each of the voxels.
+
+        Parameters
+        ----------
+        model : Model class
+
+        model_params : array
+            The parameters of the model. In this case it is an
+            array of ivim parameters. If the fitting is done
+            for multi_voxel data, the multi_voxel decorator will
+            run the fitting on all the voxels and model_params
+            will be an array of the dimensions (data[:-1], 4),
+            i.e., there will be 4 parameters for each of the voxels.
+
         """
         self.model = model
         self.model_params = model_params

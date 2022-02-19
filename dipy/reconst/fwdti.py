@@ -40,7 +40,7 @@ def fwdti_prediction(params, gtab, S0=1, Diso=3.0e-3):
         units of diffusion.
 
     Returns
-    --------
+    -------
     S : (..., N) ndarray
         Simulated signal based on the free water DTI model
 
@@ -111,6 +111,7 @@ class FreeWaterTensorModel(ReconstModel):
                Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free
                water elimination two-compartment model for diffusion tensor
                imaging. ReScience volume 3, issue 1, article number 2
+
         """
         ReconstModel.__init__(self, gtab)
 
@@ -233,7 +234,7 @@ class FreeWaterTensorFit(TensorFit):
            all voxels.
 
         Returns
-        --------
+        -------
         S : (..., N) ndarray
             Simulated signal based on the free water DTI model
         """

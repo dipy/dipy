@@ -20,19 +20,19 @@ def create_unit_sphere(recursion_level=2):
     resulting points onto the surface of a unit sphere.
 
     Parameters
-    ------------
+    ----------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere. The sphere will
         have $4^recursion_level+2$ vertices.
 
     Returns
-    ---------
+    -------
     Sphere :
         The unit sphere.
 
     See Also
-    ----------
+    --------
     create_unit_hemisphere, Sphere
     """
     if recursion_level > 7 or recursion_level < 1:
@@ -45,19 +45,19 @@ def create_unit_hemisphere(recursion_level=2):
     the sphere.
 
     Parameters
-    -------------
+    ----------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere. The sphere will
         have $(4^recursion_level+2)/2$ vertices.
 
     Returns
-    ---------
+    -------
     HemiSphere :
         Half of a unit sphere.
 
     See Also
-    ----------
+    --------
     create_unit_sphere, Sphere, HemiSphere
     """
     sphere = create_unit_sphere(recursion_level)

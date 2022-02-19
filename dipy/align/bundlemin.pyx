@@ -39,7 +39,7 @@ cdef double min_direct_flip_dist(double *a,double *b,
         minimum of direct and flipped average distances
 
     References
-    -----------
+    ----------
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
@@ -82,7 +82,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static: array
         Static streamlines
     moving: array
@@ -141,7 +141,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array
@@ -247,7 +247,7 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array

@@ -92,11 +92,13 @@ def cmp_pkg_version(version_str, pkg_version_str=__version__):
         Version string to compare to current package version
     pkg_version_str : str, optional
         Version of our package.  Optional, set fom ``__version__`` by default.
+
     Returns
     -------
     version_cmp : int
         1 if `version_str` is a later version than `pkg_version_str`, 0 if
         same, -1 if earlier.
+
     Examples
     --------
     >>> cmp_pkg_version('1.2.1', '1.2.0')

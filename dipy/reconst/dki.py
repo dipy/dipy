@@ -144,7 +144,7 @@ def carlson_rd(x, y, z, errtol=1e-4):
         Value of the incomplete second order elliptic integral
 
     Notes
-    ------
+    -----
     x, y, and z have to be nonnegative and at most x or y is zero.
 
     """
@@ -511,7 +511,7 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
         a single voxel.
 
     Returns
-    --------
+    -------
     akc : ndarray (g,)
         Apparent kurtosis coefficient (AKC) in all g directions of a sphere for
         a single voxel.
@@ -1198,7 +1198,7 @@ def _kt_maximum_converge(ang, dt, md, kt):
     -----
     This function is used to refine the kurtosis maximum estimate
 
-    See also
+    See Also
     --------
     dipy.reconst.dki.kurtosis_maximum
 

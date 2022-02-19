@@ -948,7 +948,6 @@ class ReconstIvimFlow(Workflow):
 
         References
         ----------
-
         .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                         "Spin Diffusion Measurements: Spin Echoes in the
                         Presence of a Time-Dependent Field Gradient". The

@@ -159,7 +159,7 @@ class ConstantObservationModel(object):
         r""" Conditional probability of the label given the image
 
         Parameters
-        -----------
+        ----------
         img : ndarray
             3D structural gray-scale image
         nclasses : int
@@ -175,7 +175,7 @@ class ConstantObservationModel(object):
         Previously computed by function prob_neighborhood
 
         Returns
-        --------
+        -------
         P_L_Y : ndarray
             4D probability of the label given the input image
         """
@@ -201,7 +201,7 @@ class ConstantObservationModel(object):
         IEEE Trans. Med. Imag, Vol. 20, No. 1, Jan 2001.
 
         Parameters
-        -----------
+        ----------
         image : ndarray
             3D structural gray-scale image
         P_L_Y : ndarray
@@ -214,7 +214,7 @@ class ConstantObservationModel(object):
             number of tissue classes
 
         Returns
-        --------
+        -------
         mu_upd : ndarray
                 1 x nclasses, updated mean of each tissue class
         var_upd : ndarray
@@ -342,7 +342,7 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
     r""" Conditional probability of the label given the image
 
     Parameters
-    -----------
+    ----------
     image : array
         3D structural gray-scale image
     gaussian : array
@@ -362,7 +362,7 @@ cdef void _prob_image(double[:, :, :] image, double[:, :, :] gaussian,
         4D buffer to hold P(L|Y)
 
     Returns
-    --------
+    -------
     P_L_Y : array
         4D probability of the label given the input image P(L|Y)
     """
@@ -413,7 +413,7 @@ class IteratedConditionalModes(object):
             for voxel (x, y, z)
 
         Returns
-        --------
+        -------
         seg : ndarray
             3D initial segmentation
         """
@@ -466,7 +466,7 @@ class IteratedConditionalModes(object):
         Series, Springer Verlag 2009.)
 
         Parameters
-        -----------
+        ----------
         seg : ndarray
             3D tissue segmentation derived from the ICM model
         beta : float
@@ -477,7 +477,7 @@ class IteratedConditionalModes(object):
             number of tissue classes
 
         Returns
-        --------
+        -------
         PLN : ndarray
             4D probability map of the label given the neighborhood of the
             voxel.
@@ -522,7 +522,8 @@ cdef void _initialize_maximum_likelihood(double[:,:,:,:] nloglike,
     seg : array
         3D buffer for the initial segmentation
 
-    Returns :
+    Returns
+    -------
     seg : array,
         3D initial segmentation
     """
@@ -635,7 +636,7 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
     Equation 2.18 of the Stan Z. Li book.
 
     Parameters
-    -----------
+    ----------
     image : array
         3D structural gray-scale image
     seg : array
@@ -649,7 +650,7 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
         buffer array for P(L|N)
 
     Returns
-    --------
+    -------
     P_L_N : array
         3D map of the probability of the label (l) given the neighborhood
         of the voxel P(L|N)

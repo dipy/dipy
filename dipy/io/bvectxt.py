@@ -18,7 +18,7 @@ def read_bvec_file(filename, atol=.001):
     volumes.
 
     Parameters
-    ------------
+    ----------
     filename :
         The path to the either the bvec or bval file
     atol : float, optional

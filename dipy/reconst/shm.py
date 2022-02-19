@@ -238,7 +238,7 @@ def real_sph_harm(m, n, theta, phi):
         The azimuthal (longitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
@@ -485,7 +485,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
     against each other.
 
     Parameters
-    -----------
+    ----------
     sh_order : int
         The maximum order or the spherical harmonic basis.
     theta : float [0, pi]
@@ -494,7 +494,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
         The azimuthal (longitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi`` as
         implemented in mrtrix. Warning: the basis is Tournier et al.
@@ -538,7 +538,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
     against each other.
 
     Parameters
-    -----------
+    ----------
     sh_order : int
         even int > 0, max spherical harmonic order
     theta : float [0, 2*pi]
@@ -547,7 +547,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
         The polar (colatitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``
     m : array
@@ -592,7 +592,7 @@ def sph_harm_ind_list(sh_order, full_basis=False):
     n_list : array
         orders of even spherical harmonics
 
-    See also
+    See Also
     --------
     shm.real_sh_descoteaux_from_index, shm.real_sh_tournier_from_index
     """
@@ -756,7 +756,7 @@ class QballBaseModel(SphHarmModel):
         """Creates a model that can be used to fit or sample diffusion data
 
         Parameters
-        ------------
+        ----------
         gtab : GradientTable
             Diffusion gradients used to acquire data
         sh_order : even int >= 0

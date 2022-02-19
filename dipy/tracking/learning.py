@@ -8,7 +8,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     where tracks1 & tracks2 are lists of tracks
 
     Parameters
-    ------------
+    ----------
     indices : sequence
        of indices of tracks1 that are to be detected in tracks2
     tracks1 : sequence
@@ -17,7 +17,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
        of tracks as arrays, shape (M1,3) .. (Mm,3)
 
     Returns
-    ---------
+    -------
     track2track : array (N,2) where N is len(indices) of int
        it shows the correspondance in the following way:
        the first column is the current index in tracks1
@@ -61,7 +61,7 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     sequences of tracks
 
     Parameters
-    ------------
+    ----------
     indices : sequence
             of indices of tracks1 that are to be detected in tracks2
     tracks1 : sequence
@@ -72,14 +72,14 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
             of tracks as arrays, shape (M1,3) .. (Mm,3)
 
     Returns
-    ---------
+    -------
     track2track : array (N,2) where N is len(indices)
        of int showing the correspondance in th following way
        the first colum is the current index of tracks1
        the second column is the corresponding index in tracks2
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
     >>> import dipy.tracking.learning as tl
     >>> A = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
@@ -98,8 +98,8 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     for every index. (See 3rd column of arr in the example given below.)
 
 
-    See also
-    ----------
+    See Also
+    --------
     distances.mam_distances
 
     """

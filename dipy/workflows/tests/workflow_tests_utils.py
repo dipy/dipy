@@ -23,7 +23,7 @@ class DummyWorkflow1(Workflow):
             fake out file (default out_combined.txt)
 
         References
-        -----------
+        ----------
         dummy references
         """
         return param1
