@@ -24,13 +24,13 @@ def _check_directions(angles):
     and are in cartesian coordinates
 
     Parameters
-    -----------
+    ----------
     angles : array (K,2) or (K, 3)
         List of K polar angles (in degrees) for the sticks or array of K
         sticks as unit vectors.
 
     Returns
-    --------
+    -------
     sticks : (K,3)
         Sticks in cartesian coordinates.
     """
@@ -78,7 +78,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     r""" Add noise of specified distribution to the signal from a single voxel.
 
     Parameters
-    -----------
+    ----------
     signal : 1-d ndarray
         The signal in the voxel.
     snr : float
@@ -139,7 +139,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
         Signal measurement directions.
     d : float
@@ -157,7 +157,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
         noise is added.
 
     Returns
-    --------
+    -------
     S : (N,) ndarray
         Simulated signal.
     sticks : (M,3)
@@ -211,6 +211,7 @@ def callaghan_perpendicular(q, radius):
     .. [1] Söderman, Olle, and Bengt Jönsson. "Restricted diffusion in
            cylindrical geometry." Journal of Magnetic Resonance, Series A
            117.1 (1995): 94-97.
+
     """
     # Eq. [6] in the paper
     numerator = (2 * jn(1, 2 * np.pi * q * radius)) ** 2
@@ -236,6 +237,7 @@ def gaussian_parallel(q, tau, D=0.7e-3):
     -------
     E : array, shape (N,)
         signal attenuation
+
     """
     return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
 
@@ -285,6 +287,7 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
     .. [2] Assaf, Yaniv, et al. "New modeling and experimental framework to
            characterize hindered and restricted water diffusion in brain white
            matter." Magnetic Resonance in Medicine 52.5 (2004): 965-978.
+
     """
     qvals = np.sqrt(gtab.bvals / tau) / (2 * np.pi)
     qvecs = qvals[:, None] * gtab.bvecs
@@ -315,7 +318,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     """ Simulate diffusion-weighted signals with a single tensor.
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
         Table with information of b-values and gradient directions g.
         Note that if gtab has a btens attribute, simulations will be performed
@@ -334,7 +337,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
-    --------
+    -------
     S : (N,) ndarray
         Simulated signal:
             ``S(b, g) = S_0 e^(-b g^T R D R.T g)``, if gtab.tens=None
@@ -380,7 +383,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     r""" Simulate a Multi-Tensor signal.
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
         Table with information of b-values and gradient directions.
         Note that if gtab has a btens attribute, simulations will be performed
@@ -400,7 +403,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
         noise is added.
 
     Returns
-    --------
+    -------
     S : (N,) ndarray
         Simulated signal.
     sticks : (M,3)
@@ -445,7 +448,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
     based on the DKI model
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
     mevals : array (K, 3)
         eigenvalues of the diffusion tensor for each individual compartment
@@ -462,7 +465,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
         noise is added.
 
     Returns
-    --------
+    -------
     S : (N,) ndarray
         Simulated signal based on the DKI model.
     dt : (6,)
@@ -499,8 +502,8 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
-    """
 
+    """
     if np.round(np.sum(fractions), 2) != 100.0:
         raise ValueError('Fractions should sum to 100')
 
@@ -556,7 +559,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
     multicompartmental model.
 
     Parameters
-    -----------
+    ----------
     D_comps : (K,3,3) ndarray
         Diffusion tensors for all K individual compartment of the
         multicompartmental model.
@@ -577,12 +580,12 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
         Voxel's global mean diffusivity.
 
     Returns
-    --------
+    -------
     wijkl : float
             kurtosis tensor element of index i, j, k, l
 
     Notes
-    --------
+    -----
     wijkl is calculated using equation 8 given in [1]_
 
     References
@@ -591,6 +594,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
+
     """
     if DT is None:
         DT = np.zeros((3, 3))
@@ -621,7 +625,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
     model.
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
         Measurement directions.
     dt : (6,) ndarray
@@ -634,7 +638,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
-    --------
+    -------
     S : (N,) ndarray
         Simulated signal based on the DKI model:
 
@@ -648,6 +652,7 @@ def dki_signal(gtab, dt, kt, S0=150, snr=None):
            diffusion kurtosis tensor - Impact on the development of robust
            tractography procedures and novel biomarkers", NeuroImage (2015)
            111, 85-99.
+
     """
     dt = np.array(dt)
     kt = np.array(kt)

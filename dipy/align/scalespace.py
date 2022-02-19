@@ -12,7 +12,7 @@ class ScaleSpace(object):
                  input_spacing=None,
                  sigma_factor=0.2,
                  mask0=False):
-        """ ScaleSpace
+        """ ScaleSpace.
 
         Computes the Scale Space representation of an image. The scale space is
         simply a list of images produced by smoothing the input image with a
@@ -112,7 +112,7 @@ class ScaleSpace(object):
             self.sigmas.append(sigmas)
 
     def get_expand_factors(self, from_level, to_level):
-        """Ratio of voxel size from pyramid level from_level to to_level
+        """Ratio of voxel size from pyramid level from_level to to_level.
 
         Given two scale space resolutions a = from_level, b = to_level,
         returns the ratio of voxels size at level b to voxel size at level a
@@ -137,7 +137,7 @@ class ScaleSpace(object):
         return factors
 
     def print_level(self, level):
-        """Prints properties of a pyramid level
+        """Prints properties of a pyramid level.
 
         Prints the properties of a level of this scale space to standard output
 
@@ -145,6 +145,7 @@ class ScaleSpace(object):
         ----------
         level : int, 0 <= from_level < L, (L = number of resolutions)
             the scale space level to be printed
+
         """
         logger.info('Domain shape: ' + str(self.get_domain_shape(level)))
         logger.info('Spacing: ' + str(self.get_spacing(level)))
@@ -153,7 +154,7 @@ class ScaleSpace(object):
         logger.info('Sigmas: ' + str(self.get_sigmas(level)))
 
     def _get_attribute(self, attribute, level):
-        """Returns an attribute from the Scale Space at a given level
+        """Return an attribute from the Scale Space at a given level.
 
         Returns the level-th element of attribute if level is a valid level
         of this scale space. Otherwise, returns None.
@@ -170,13 +171,14 @@ class ScaleSpace(object):
         attribute[level] : object
             the requested attribute if level is valid, else it raises
             a ValueError
+
         """
         if 0 <= level < self.num_levels:
             return attribute[level]
         raise ValueError('Invalid pyramid level: '+str(level))
 
     def get_image(self, level):
-        """Smoothed image at a given level
+        """Smoothed image at a given level.
 
         Returns the smoothed image at the requested level in the Scale Space.
 
@@ -189,11 +191,12 @@ class ScaleSpace(object):
         -------
             the smooth image at the requested resolution or None if an invalid
             level was requested
+
         """
         return self._get_attribute(self.images, level)
 
     def get_domain_shape(self, level):
-        """Shape the sub-sampled image must have at a particular level
+        """Shape the sub-sampled image must have at a particular level.
 
         Returns the shape the sub-sampled image must have at a particular
         resolution of the scale space (note that this object does not
@@ -209,11 +212,12 @@ class ScaleSpace(object):
         -------
             the sub-sampled shape at the requested resolution or None if an
             invalid level was requested
+
         """
         return self._get_attribute(self.domain_shapes, level)
 
     def get_spacing(self, level):
-        """Spacings the sub-sampled image must have at a particular level
+        """Spacings the sub-sampled image must have at a particular level.
 
         Returns the spacings (voxel sizes) the sub-sampled image must have at a
         particular resolution of the scale space (note that this object does
@@ -229,11 +233,12 @@ class ScaleSpace(object):
         -------
         the spacings (voxel sizes) at the requested resolution or None if an
         invalid level was requested
+
         """
         return self._get_attribute(self.spacings, level)
 
     def get_scaling(self, level):
-        """Adjustment factor for input-spacing to reflect voxel sizes at level
+        """Adjustment factor for input-spacing to reflect voxel sizes at level.
 
         Returns the scaling factor that needs to be applied to the input
         spacing (the voxel sizes of the image at level 0 of the scale space) to
@@ -253,7 +258,7 @@ class ScaleSpace(object):
         return self._get_attribute(self.scalings, level)
 
     def get_affine(self, level):
-        """Voxel-to-space transformation at a given level
+        """Voxel-to-space transformation at a given level.
 
         Returns the voxel-to-space transformation associated with the
         sub-sampled image at a particular resolution of the scale space (note
@@ -273,7 +278,7 @@ class ScaleSpace(object):
         return self._get_attribute(self.affines, level)
 
     def get_affine_inv(self, level):
-        """Space-to-voxel transformation at a given level
+        """Space-to-voxel transformation at a given level.
 
         Returns the space-to-voxel transformation associated with the
         sub-sampled image at a particular resolution of the scale space (note
@@ -289,11 +294,12 @@ class ScaleSpace(object):
         -------
         the inverse (space-to-voxel) transform at the requested resolution or
         None if an invalid level was requested
+
         """
         return self._get_attribute(self.affine_invs, level)
 
     def get_sigmas(self, level):
-        """Smoothing parameters used at a given level
+        """Smoothing parameters used at a given level.
 
         Returns the smoothing parameters (a scalar for each axis) used at the
         requested level of the scale space
@@ -316,7 +322,7 @@ class IsotropicScaleSpace(ScaleSpace):
                  image_grid2world=None,
                  input_spacing=None,
                  mask0=False):
-        """ IsotropicScaleSpace
+        """ IsotropicScaleSpace.
 
         Computes the Scale Space representation of an image using isotropic
         smoothing kernels for all scales. The scale space is simply a list
@@ -346,6 +352,7 @@ class IsotropicScaleSpace(ScaleSpace):
         mask0 : Boolean, optional
             if True, all smoothed images will be zero at all voxels that are
             zero in the input image. The default is False.
+
         """
         self.dim = len(image.shape)
         self.num_levels = len(factors)

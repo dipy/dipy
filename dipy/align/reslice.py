@@ -15,7 +15,7 @@ def _affine_transform(kwargs):
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
             num_processes=1):
-    """Reslice data with new voxel resolution defined by ``new_zooms``
+    """ Reslice data with new voxel resolution defined by ``new_zooms``.
 
     Parameters
     ----------
@@ -67,6 +67,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2, affine2 = reslice(data, affine, zooms, new_zooms)
     >>> data2.shape == (77, 77, 40)
     True
+
     """
     num_processes = determine_num_processes(num_processes)
 
