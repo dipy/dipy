@@ -30,8 +30,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib._pylab_helpers import Gcf
 
-import dipy
-
 # -----------------------------------------------------------------------------
 # Function defintions
 # -----------------------------------------------------------------------------

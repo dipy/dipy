@@ -10,7 +10,7 @@ import dipy.core.optimize as opt
 import dipy.reconst.cross_validation as xval
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti_data
-import warnings
+
 warnings.filterwarnings('ignore')
 
 needs_sklearn = pytest.mark.skipif(

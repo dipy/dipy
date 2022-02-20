@@ -1,6 +1,5 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
-import cython
 import numpy as np
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free

@@ -1,7 +1,6 @@
 # -*- python -*- or rather like
 
-from python_string cimport PyString_FromStringAndSize, \
-    PyString_AS_STRING, PyString_Size
+from python_string cimport PyString_FromStringAndSize, PyString_AS_STRING
 
 
 # Function to allocate, wrap memory via Python string creation

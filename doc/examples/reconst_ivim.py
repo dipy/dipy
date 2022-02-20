@@ -34,7 +34,7 @@ coefficients. First, we import all relevant modules:
 """
 
 import matplotlib.pyplot as plt
-import numpy as np
+
 from dipy.reconst.ivim import IvimModel
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames

@@ -17,12 +17,9 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 
-from dipy.tracking.streamline import (set_number_of_points,
-                                      length,
-                                      compress_streamlines)
+from dipy.tracking.streamline import set_number_of_points, length
 from dipy.tracking.tests.test_streamline import (set_number_of_points_python,
-                                                 length_python,
-                                                 compress_streamlines_python)
+                                                 length_python,)
 
 from dipy.tracking import Streamlines
 

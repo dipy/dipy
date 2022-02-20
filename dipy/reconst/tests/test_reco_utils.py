@@ -5,9 +5,7 @@ import numpy as np
 from dipy.reconst.recspeed import (adj_to_countarrs,
                                    argmax_from_countarrs)
 
-from dipy.testing import assert_true, assert_false
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises)
+from numpy.testing import assert_array_equal, assert_equal
 
 
 def test_adj_countarrs():

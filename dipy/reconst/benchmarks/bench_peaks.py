@@ -11,9 +11,7 @@ With Pytest, Run this benchmark with:
 """
 import numpy as np
 
-from dipy.reconst.recspeed import local_maxima
 from dipy.data import default_sphere
-from dipy.core.sphere import unique_edges
 
 from numpy.testing import measure
 

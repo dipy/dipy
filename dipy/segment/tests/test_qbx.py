@@ -4,8 +4,9 @@ from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
 from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
-from dipy.segment.metric import AveragePointwiseEuclideanMetric
-from dipy.segment.metric import MinimumAverageDirectFlipMetric
+from dipy.segment.metricspeed import (
+    AveragePointwiseEuclideanMetric, MinimumAverageDirectFlipMetric,
+)
 from dipy.tracking.streamline import set_number_of_points
 from dipy.tracking.streamline import Streamlines
 
