@@ -4,8 +4,7 @@ import pickle
 from io import BytesIO
 
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite,
-                           assert_equal, assert_)
+                           assert_almost_equal, assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
 from dipy.direction.peaks import (peaks_from_model,
@@ -648,8 +647,3 @@ def test_reshape_peaks_for_visualization():
     assert_array_equal(data1_reshape.reshape(10, 5, 3), data1)
     assert_array_equal(data2_reshape.reshape(10, 2, 5, 3), data2)
     assert_array_equal(data3_reshape.reshape(10, 2, 12, 5, 3), data3)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

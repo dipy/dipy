@@ -1,7 +1,6 @@
 import numpy as np
 import nibabel as nib
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_almost_equal,
                            assert_raises)
@@ -65,8 +64,3 @@ def test_resample():
     # test invalid values of num_threads
     assert_raises(ValueError, reslice, data, affine, zooms, new_zooms,
                   num_processes=0)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

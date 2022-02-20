@@ -1,8 +1,7 @@
 import numpy as np
 import itertools
 
-from numpy.testing import (assert_array_equal, run_module_suite,
-                           assert_equal, assert_raises)
+from numpy.testing import assert_array_equal, assert_equal, assert_raises
 from dipy.testing.memory import get_type_refcount
 from dipy.testing import assert_arrays_equal
 
@@ -203,7 +202,3 @@ def test_quickbundles_memory_leaks():
     qb.cluster(data)
     # At this point, all memoryviews created during clustering should be freed.
     assert_equal(get_type_refcount(type_name_pattern), initial_types_refcount)
-
-
-if __name__ == '__main__':
-    run_module_suite()

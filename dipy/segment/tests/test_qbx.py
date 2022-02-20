@@ -1,7 +1,6 @@
 import itertools
 import numpy as np
-from numpy.testing import (assert_array_equal, assert_equal, assert_raises,
-                           run_module_suite)
+from numpy.testing import assert_array_equal, assert_equal, assert_raises
 
 from dipy.segment.clustering import QuickBundlesX, QuickBundles, qbx_and_merge
 from dipy.segment.featurespeed import ResampleFeature
@@ -232,7 +231,3 @@ def test_qbx_and_merge():
     qbx_centroids = tree.get_clusters(3).centroids
 
     assert_equal(len(qbx_centroids) > len(qbxm_centroids), True)
-
-
-if __name__ == '__main__':
-    run_module_suite()

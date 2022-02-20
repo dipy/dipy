@@ -510,6 +510,3 @@ class_doc_txt = """
     --------
     For usage examples, see `ode`.
 """
-
-if __name__ == "__main__":
-    npt.run_module_suite()

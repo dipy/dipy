@@ -141,7 +141,3 @@ def test_bdg_residual():
     gtab = gradient_table(bvals, bvecs)
     csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
     npt.assert_raises(ValueError, BootPmfGen, data, csd_model, hsph_updated, 6)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -135,7 +135,3 @@ def test_search_descending():
 
     # Test very small array
     npt.assert_equal(search_descending(a[:0], 1.), 0)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

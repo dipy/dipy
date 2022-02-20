@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_array_almost_equal,
                            assert_raises)
@@ -83,7 +82,3 @@ def test_nlmeans_dtype():
     mask[10:14, 10:14, 10:14] = 1
     S0n = non_local_means(S0, sigma=1, mask=mask, rician=True)
     assert_equal(S0.dtype, S0n.dtype)
-
-
-if __name__ == '__main__':
-    run_module_suite()

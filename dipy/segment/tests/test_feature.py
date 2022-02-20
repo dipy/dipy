@@ -5,7 +5,7 @@ from dipy.segment.featurespeed import extract
 
 from dipy.testing import assert_true, assert_false
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_equal, run_module_suite)
+                           assert_raises, assert_equal,)
 
 
 dtype = "float32"
@@ -314,7 +314,3 @@ def test_using_python_feature_with_cython_metric():
     features2 = metric.feature.extract(s2)
     d2 = metric.dist(features1, features2)
     assert_equal(d1, d2)
-
-
-if __name__ == '__main__':
-    run_module_suite()
