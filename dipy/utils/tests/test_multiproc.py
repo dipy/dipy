@@ -2,7 +2,7 @@
 """
 
 from dipy.utils.multiproc import determine_num_processes
-from numpy.testing import assert_equal, assert_raises, run_module_suite
+from numpy.testing import assert_equal, assert_raises
 
 
 def test_determine_num_processs():
@@ -30,8 +30,3 @@ def test_determine_num_processs():
     if determine_num_processes(-1) > 1:
         assert_equal(determine_num_processes(-1),
                      determine_num_processes(-2) + 1)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

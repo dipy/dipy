@@ -365,7 +365,3 @@ def test_generate_kernel():
         gtab, sphere, wm_response, gm_response=None, csf_response=None)
     assert_array_equal(kernel[:, -2], np.zeros(len(gtab.bvals)))
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
-
-
-if __name__ == '__main__':
-    run_module_suite()

@@ -4,7 +4,7 @@ import itertools
 
 from dipy.testing import (assert_true, assert_false,
                           assert_greater_equal, assert_less_equal)
-from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
+from numpy.testing import (assert_array_equal, assert_raises,
                            assert_almost_equal, assert_equal)
 
 
@@ -253,7 +253,3 @@ def test_distance_matrix():
             for j in range(len(data2)):
                 assert_equal(D[i, j], dipymetric.dist(metric, data[i],
                                                       data2[j]))
-
-
-if __name__ == '__main__':
-    run_module_suite()

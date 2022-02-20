@@ -6,9 +6,7 @@ from dipy.data import get_sphere, default_sphere, get_3shell_gtab
 from dipy.reconst.forecast import ForecastModel
 from dipy.sims.voxel import multi_tensor
 
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite)
+from numpy.testing import assert_almost_equal, assert_equal
 import pytest
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
@@ -209,7 +207,3 @@ def test_multivox_forecast():
 
     mse3 = np.sum((S_predict[2, 0, 0]-S[2, 0, 0])**2) / len(gtab.bvals)
     assert_almost_equal(mse3, 0.0, 3)
-
-
-if __name__ == '__main__':
-    run_module_suite()

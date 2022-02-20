@@ -50,7 +50,3 @@ def test_mask_from_roi():
     mask_gt[2, 0:5, 0:5] = 1
     roi_mask = _mask_from_roi(data_shape, roi_center, roi_radii)
     npt.assert_array_equal(roi_mask, mask_gt)
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

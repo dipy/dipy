@@ -253,7 +253,3 @@ def test_io_trk_save():
                 msg='trk_saver should not be able to save a fib')
     npt.assert_(not trk_saver(filepath_dix['gs.dpy']),
                 msg='trk_saver should not be able to save a dpy')
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
-                           run_module_suite,
                            assert_array_equal,
                            assert_raises)
 from dipy.data import get_fnames, dsi_voxels, default_sphere
@@ -116,7 +115,3 @@ def sticks_and_ball_dummies(gtab):
                                 fractions=[0, 0, 0], snr=None)
     sb_dummies['isotropic'] = (S, sticks)
     return sb_dummies
-
-
-if __name__ == '__main__':
-    run_module_suite()

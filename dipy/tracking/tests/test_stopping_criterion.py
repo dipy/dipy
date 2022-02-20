@@ -204,6 +204,3 @@ def test_cmc_stopping_criterion():
         npt.assert_equal(cmc_tc.get_exclude(pts), 0)
         npt.assert_equal(cmc_tc.get_include(pts), 0)
 
-
-if __name__ == '__main__':
-    npt.run_module_suite()

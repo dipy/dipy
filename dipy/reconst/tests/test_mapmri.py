@@ -9,7 +9,6 @@ import numpy as np
 from numpy.testing import (assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal, assert_,
-                           run_module_suite,
                            assert_raises)
 import pytest
 from dipy.core.sphere_stats import angular_similarity
@@ -838,7 +837,3 @@ def test_mapmri_odf(radial_order=6):
     odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None,
                            legacy=True)
     assert_almost_equal(odf, odf_from_sh, 10)
-
-
-if __name__ == '__main__':
-    run_module_suite()

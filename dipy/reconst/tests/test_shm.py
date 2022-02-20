@@ -7,7 +7,7 @@ import numpy.testing as npt
 
 from dipy.testing import assert_true
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises, run_module_suite)
+                           assert_equal, assert_raises,)
 from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron, Sphere
@@ -990,7 +990,3 @@ def test_convert_sh_to_legacy():
 
     assert_array_almost_equal(converted_coeffs, expected_coeffs, 2)
     assert_raises(ValueError, convert_sh_to_legacy, sh_coeffs, '', True)
-
-
-if __name__ == "__main__":
-    run_module_suite()
