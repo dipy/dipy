@@ -8,9 +8,7 @@
 cimport cython
 
 from libc.stdlib cimport calloc, realloc, free
-from libc.string cimport memcpy
 
-import time
 import numpy as np
 from warnings import warn
 cimport numpy as cnp

@@ -4,8 +4,6 @@
 import os
 import sys
 
-from distutils.dir_util import remove_tree
-
 # Useful shorthands
 pjoin = os.path.join
 cd = os.chdir

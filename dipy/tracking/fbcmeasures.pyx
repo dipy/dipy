@@ -2,19 +2,13 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 from cython.parallel import parallel, prange, threadid
 
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
-from math import sqrt, log
 
-from dipy.data import get_sphere
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.core.ndindex import ndindex
-
-from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef class FBCMeasures:

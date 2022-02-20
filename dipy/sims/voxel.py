@@ -5,9 +5,7 @@ from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.core.gradients import GradientTable
-from dipy.data import default_sphere
 from dipy.reconst.utils import dki_design_matrix
-from dipy.reconst import shm
 from scipy.special import jn
 
 # Diffusion coefficients for white matter tracts, in mm^2/s

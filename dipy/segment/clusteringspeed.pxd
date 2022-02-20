@@ -1,4 +1,4 @@
-from dipy.segment.cythonutils cimport Data2D, Shape, shape2tuple, tuple2shape
+from dipy.segment.cythonutils cimport Data2D, Shape
 from dipy.segment.metricspeed cimport Metric
 cimport numpy as cnp
 

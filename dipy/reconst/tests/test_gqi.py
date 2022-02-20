@@ -1,7 +1,6 @@
 import numpy as np
 
 from dipy.data import get_fnames, dsi_voxels, get_sphere, default_sphere
-from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity

@@ -1,14 +1,12 @@
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
-                           assert_array_equal,
                            assert_raises)
 from dipy.data import get_fnames, dsi_deconv_voxels, default_sphere
 from dipy.reconst.dsi import DiffusionSpectrumDeconvModel
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
 from dipy.sims.voxel import sticks_and_ball
-from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity

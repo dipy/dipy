@@ -5,7 +5,6 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 cdef extern from "dpy_math.h" nogil:
     double cos(double)

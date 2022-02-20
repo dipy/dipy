@@ -19,8 +19,8 @@ trajectory of the bundle at that location.
 import dipy.stats.analysis as dsa
 import dipy.tracking.streamline as dts
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import (AveragePointwiseEuclideanMetric,
-                                 ResampleFeature)
+from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+from dipy.segment.featurespeed import ResampleFeature
 from dipy.data.fetcher import get_two_hcp842_bundles
 import dipy.data as dpd
 from dipy.io.streamline import load_trk

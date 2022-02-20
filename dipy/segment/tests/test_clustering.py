@@ -8,8 +8,7 @@ from dipy.segment.clustering import ClusterMap, ClusterMapCentroid
 from dipy.segment.clustering import Clustering
 
 from dipy.testing import assert_true, assert_false, assert_arrays_equal
-from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
-                           assert_equal)
+from numpy.testing import assert_array_equal, assert_raises, assert_equal
 
 
 features_shape = (1, 10)

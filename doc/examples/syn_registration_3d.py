@@ -12,13 +12,9 @@ We will register two 3D volumes from the same modality using SyN with the Cross
 
 import numpy as np
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align.metrics import CCMetric
-from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti, save_nifti
-from dipy.io.gradients import read_bvals_bvecs
-import os.path
+from dipy.io.image import load_nifti
 from dipy.viz import regtools
 
 """
