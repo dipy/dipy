@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
-                           run_module_suite,
                            assert_array_equal,
                            assert_raises)
 from dipy.data import get_fnames, dsi_deconv_voxels, default_sphere
@@ -67,7 +66,3 @@ def test_multivox_dsi():
     PDF = DSfit.pdf()
     assert_equal(data.shape[:-1] + (35, 35, 35), PDF.shape)
     assert_equal(np.alltrue(np.isreal(PDF)), True)
-
-
-if __name__ == '__main__':
-    run_module_suite()

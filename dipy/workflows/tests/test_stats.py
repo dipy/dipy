@@ -317,7 +317,3 @@ def test_bundle_shape_analysis_flow():
         sm_flow.run(sub, out_dir=out_dir)
 
         assert_true(os.path.exists(os.path.join(out_dir, "temp.npy")))
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

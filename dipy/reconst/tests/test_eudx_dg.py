@@ -80,7 +80,3 @@ def test_EuDXDirectionGetter():
     # it should have one direction
     npt.assert_array_almost_equal(len(peaks1.initial_direction(point)), 1)
     npt.assert_array_almost_equal(len(peaks.initial_direction(point)), 1)
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

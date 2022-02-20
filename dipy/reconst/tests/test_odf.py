@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite, assert_equal, assert_almost_equal,
-                           assert_)
+from numpy.testing import assert_equal, assert_almost_equal, assert_
 from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize, gfa)
 
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
@@ -84,8 +83,3 @@ def test_gfa():
     # All-zeros returns a nan with no warning:
     g = gfa(np.zeros(10))
     assert_(np.isnan(g))
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

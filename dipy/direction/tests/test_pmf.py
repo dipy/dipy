@@ -113,7 +113,3 @@ def test_boot_pmf():
     pmf_sh8 = boot_pmf_gen_sh8.get_pmf(point)
     npt.assert_equal(len(hsph_updated.vertices), pmf_sh8.shape[0])
     npt.assert_(np.sum(pmf_sh8.shape) > 0)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

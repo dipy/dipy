@@ -2,7 +2,7 @@ import numpy as np
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.data import get_fnames
 from dipy.core.gradients import gradient_table
-from numpy.testing import assert_almost_equal, run_module_suite
+from numpy.testing import assert_almost_equal
 from dipy.sims.voxel import sticks_and_ball, multi_tensor
 
 
@@ -29,7 +29,3 @@ def test_dsi_metrics():
     MSD_norm_0 = dsmodel.fit(S_0).msd_discrete(normalized=True)
     MSD_norm_1 = dsmodel.fit(S_1).msd_discrete(normalized=True)
     assert_almost_equal(MSD_norm_0, 0.5 * MSD_norm_1, 4)
-
-
-if __name__ == '__main__':
-    run_module_suite()

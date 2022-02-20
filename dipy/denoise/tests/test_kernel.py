@@ -116,6 +116,3 @@ def test_kernel_input():
 
     k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
-
-if __name__ == '__main__':
-    npt.run_module_suite()

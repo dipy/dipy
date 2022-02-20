@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
@@ -488,8 +487,3 @@ def test_wrong_num_threads():
 
     slr = StreamlineLinearRegistration(num_threads=0)
     assert_raises(ValueError, slr.optimize, A, B)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

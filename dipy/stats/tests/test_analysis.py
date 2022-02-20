@@ -143,7 +143,3 @@ def test_afq_profile():
     # Test for error-handling:
     empty_bundle = Streamlines([])
     npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_array_almost_equal,
                            assert_raises)
@@ -137,8 +136,3 @@ def test_nlmeans_4d_3dsigma_and_threads():
     if cpu_count() == 2:
 
         assert_equal(duration_2core < duration_1core, True)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

@@ -6,8 +6,7 @@ from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
                            assert_allclose,
-                           assert_raises,
-                           run_module_suite)
+                           assert_raises,)
 from numpy.testing import assert_
 
 from dipy.reconst.rumba import RumbaSDModel, generate_kernel
@@ -392,7 +391,3 @@ def test_generate_kernel():
         gtab, sphere, wm_response, gm_response=None, csf_response=None)
     assert_array_equal(kernel[:, -2], np.zeros(len(gtab.bvals)))
     assert_array_equal(kernel[:, -1], np.zeros(len(gtab.bvals)))
-
-
-if __name__ == '__main__':
-    run_module_suite()
