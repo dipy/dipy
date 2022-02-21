@@ -199,5 +199,5 @@ References
 .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber bundle
                     alignment for group comparisons", ISMRM, 2014.
 
-"""
 
+"""
