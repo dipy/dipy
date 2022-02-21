@@ -11,3 +11,5 @@ fury
 scikit-learn
 scikit-image
 statsmodels
+numpydoc
+sphinx!=4.4
