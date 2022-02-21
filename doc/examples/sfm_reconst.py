@@ -14,7 +14,7 @@ First, we import the modules we will use in this example:
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.direction.peaks as dpp
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.viz import window, actor

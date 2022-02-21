@@ -5,9 +5,8 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                TRACKPOINT,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
-                                               INVALIDPOINT,
-                                               PYERROR)
-from dipy.utils.fast_numpy cimport copy_point, scalar_muliplication_point
+                                               INVALIDPOINT,)
+from dipy.utils.fast_numpy cimport copy_point
 
 
 cimport numpy as cnp

@@ -3,7 +3,7 @@ import numpy as np
 import numpy.testing as npt
 from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
-from dipy.data import DATA_DIR, get_sphere
+from dipy.data import get_sphere
 from dipy.align.reslice import reslice
 from dipy.data import read_stanford_labels
 from dipy.reconst.shm import CsaOdfModel

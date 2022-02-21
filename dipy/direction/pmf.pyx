@@ -5,8 +5,6 @@
 import numpy as np
 cimport numpy as cnp
 
-from dipy.core.geometry import cart2sphere
-from dipy.data import default_sphere
 from dipy.reconst import shm
 
 from dipy.core.interpolation cimport trilinear_interpolate4d_c

@@ -1,10 +1,7 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import default_sphere, peaks_from_model
-import dipy.reconst.eudx_direction_getter
 
 
 def test_EuDXDirectionGetter():

@@ -10,9 +10,6 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
-
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     double fabs(double x)
