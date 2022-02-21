@@ -21,6 +21,7 @@ from warnings import warn
 from dipy.core.gradients import gradient_table
 from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer
+from dipy.data import mapmri_sdp_constraints
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
@@ -72,6 +73,10 @@ class MapmriModel(ReconstModel, Cache):
     .. [8] Avram et al. "Clinical feasibility of using mean apparent
            propagator (MAP) MRI to characterize brain tissue microstructure".
            NeuroImage 2015, in press.
+
+    .. [9] Dela Haije et al. "Enforcing necessary non-negativity constraints
+           for common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
     """
 
     def __init__(self,
@@ -105,7 +110,7 @@ class MapmriModel(ReconstModel, Cache):
         q-space indices, the PDF and the ODF.
 
         The fitting procedure can be constrained using the positivity
-        constraint proposed in [1]_ and/or the laplacian regularization
+        constraint proposed in [1]_ or [6]_ and/or the laplacian regularization
         proposed in [4]_.
 
         For the estimation of q-space indices we recommend using the 'regular'
@@ -143,7 +148,8 @@ class MapmriModel(ReconstModel, Cache):
             If set to a float, the maximum distance the the positivity
             constraint constrains to posivity is that value. If set to
             `adaptive', the maximum distance is dependent on the estimated
-            tissue diffusivity.
+            tissue diffusivity. If set to `infinity' the global constraints
+            of [6]_ are used.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -195,6 +201,10 @@ class MapmriModel(ReconstModel, Cache):
         .. [5] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
                estimation via Compressive Sensing in diffusion MRI", Medical
                Image Analysis, 2013.
+
+        .. [6] Dela Haije et al. "Enforcing necessary non-negativity
+               constraints for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
 
         Examples
         --------
@@ -252,7 +262,8 @@ class MapmriModel(ReconstModel, Cache):
             if not have_cvxpy:
                 raise ValueError(
                     'CVXPY package needed to enforce constraints')
-            msg = "pos_radius must be 'adaptive' or a positive float"
+            msg = "pos_radius must be 'adaptive', 'infinity' or a positive"
+            msg += " float"
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
@@ -260,7 +271,10 @@ class MapmriModel(ReconstModel, Cache):
                     msg += " was expected."
                     raise ValueError(msg)
             if isinstance(pos_radius, str):
-                if pos_radius != 'adaptive':
+                if pos_radius == 'infinity':
+                    #Currently only available for radial_order 0, 2, 4, 6, 8, 10
+                    self.sdp_constraints = mapmri_sdp_constraints(radial_order)
+                elif pos_radius != 'adaptive':
                     raise ValueError(msg)
             elif isinstance(pos_radius, float) or isinstance(pos_radius, int):
                 if pos_radius <= 0:
@@ -379,25 +393,6 @@ class MapmriModel(ReconstModel, Cache):
                                         self.ind_mat.shape[0]))
 
         if self.positivity_constraint:
-            if self.pos_radius == 'adaptive':
-                # custom constraint grid based on scale factor [Avram2015]
-                constraint_grid = create_rspace(self.pos_grid,
-                                                np.sqrt(5) * mu_max)
-            else:
-                constraint_grid = self.constraint_grid
-            if self.anisotropic_scaling:
-                K = mapmri_psi_matrix(self.radial_order, mu, constraint_grid)
-            else:
-                if self.pos_radius == 'adaptive':
-                    # grid changes per voxel. Recompute entire K matrix.
-                    K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0],
-                                                    constraint_grid)
-                else:
-                    # grid is static. Only compute mu-dependent part of K.
-                    K_dependent = mapmri_isotropic_K_mu_dependent(
-                        self.radial_order, mu[0], constraint_grid)
-                    K = K_dependent * self.pos_K_independent
-
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             c = cvxpy.Variable(M.shape[1])
             if Version(cvxpy.__version__) < Version('1.1'):
@@ -414,13 +409,46 @@ class MapmriModel(ReconstModel, Cache):
                     cvxpy.sum_squares(design_matrix - data_norm) +
                     lopt * cvxpy.quad_form(c, laplacian_matrix)
                 )
-            M0 = M[self.gtab.b0s_mask, :]
-            if Version(cvxpy.__version__) < Version('1.1'):
-                constraints = [(M0[0] * c) == 1,
-                               (K * c) >= -0.1]
+
+            if self.pos_radius == 'infinity':
+                A = self.sdp_constraints
+                m = M.shape[1]
+                n = A.shape[0] - m - 1
+                s = cvxpy.Variable(n)
+                X = A[0]
+                for i in range(m):
+                    X = X + c[i] * A[i+1]
+                for i in range(n):
+                    X = X + s[i] * A[m+i+1]
+                constraints = [X >> 0]
             else:
-                constraints = [(M0[0] @ c) == 1,
-                               (K @ c) >= -0.1]
+                if self.pos_radius == 'adaptive':
+                    # custom constraint grid based on scale factor [Avram2015]
+                    constraint_grid = create_rspace(self.pos_grid,
+                                                    np.sqrt(5) * mu_max)
+                else:
+                    constraint_grid = self.constraint_grid
+                if self.anisotropic_scaling:
+                    K = mapmri_psi_matrix(self.radial_order, mu,
+                                          constraint_grid)
+                else:
+                    if self.pos_radius == 'adaptive':
+                        # grid changes per voxel. Recompute entire K matrix.
+                        K = mapmri_isotropic_psi_matrix(self.radial_order,
+                                                        mu[0], constraint_grid)
+                    else:
+                        # grid is static. Only compute mu-dependent part of K.
+                        K_dependent = mapmri_isotropic_K_mu_dependent(
+                            self.radial_order, mu[0], constraint_grid)
+                        K = K_dependent * self.pos_K_independent
+
+                M0 = M[self.gtab.b0s_mask, :]
+                if Version(cvxpy.__version__) < Version('1.1'):
+                    constraints = [(M0[0] * c) == 1,
+                                   (K * c) >= -0.1]
+                else:
+                    constraints = [(M0[0] @ c) == 1,
+                                   (K @ c) >= -0.1]
             prob = cvxpy.Problem(objective, constraints)
             try:
                 prob.solve(solver=self.cvxpy_solver)
@@ -549,7 +577,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """

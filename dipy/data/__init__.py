@@ -312,3 +312,37 @@ def matlab_life_results():
     matlab_rmse = np.load(pjoin(DATA_DIR, 'life_matlab_rmse.npy'))
     matlab_weights = np.load(pjoin(DATA_DIR, 'life_matlab_weights.npy'))
     return matlab_rmse, matlab_weights
+
+
+def mapmri_sdp_constraints(radial_order):
+    """Import semidefinite programming constraint matrices for MAP-MRI,
+    generated as described in [1]_.
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        An even integer that represent the order of the basis
+
+    Returns
+    -------
+    sdp_constraints : array
+        Constraint matrices
+
+    References
+    ----------
+    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
+           for common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
+
+    """
+
+    mf = 'mapmri_constraint_' + str(radial_order) + '.csv'
+    coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
+    pos = coo[:, :3].astype(int)
+    val = coo[:, 3]
+    dim = list(map(max, zip(*(pos + 1))))
+    sdp_constraints = np.zeros(dim)
+    for i in range(coo.shape[0]):
+        sdp_constraints[tuple(pos[i])] = val[i]
+
+    return sdp_constraints
