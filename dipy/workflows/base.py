@@ -206,7 +206,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         as sub workflows.
 
         Parameters
-        -----------
+        ----------
         sub_flows : array of dipy.workflows.workflow.Workflow
             Workflows to inspect.
 
@@ -277,7 +277,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         type.
 
         Parameters
-        -----------
+        ----------
         text : string
             Parameter text line to inspect.
 

@@ -478,8 +478,8 @@ class SparseFascicleModel(ReconstModel, Cache):
             Split the `fit` calculation to a pool of children processes using
             joblib. This only applies to 4D `data` arrays. Default is 1,
             which does not require joblib and will run `fit` serially.
-            If < 0 the maximal number of cores minus |num_processes + 1| is
-            used (enter -1 to use as many cores as possible).
+            If < 0 the maximal number of cores minus ``num_processes + 1``
+            is used (enter -1 to use as many cores as possible).
             0 raises an error.
 
         parallel_backend: str, ParallelBackendBase instance or None

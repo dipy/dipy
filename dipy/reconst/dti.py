@@ -623,7 +623,8 @@ def apparent_diffusion_coef(q_form, sphere):
     The calculation of ADC, relies on the following relationship:
 
     .. math ::
-            ADC = \vec{b} Q \vec{b}^T
+
+        ADC = \vec{b} Q \vec{b}^T
 
     Where Q is the quadratic form of the tensor.
 
@@ -1152,6 +1153,7 @@ class TensorFit(object):
             ADC = \vec{b} Q \vec{b}^T
 
         Where Q is the quadratic form of the tensor.
+
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 

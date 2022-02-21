@@ -40,7 +40,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     num_processes : int, optional
         Split the calculation to a pool of children processes. This only
         applies to 4D `data` arrays. Default is 1. If < 0 the maximal number
-        of cores minus |num_processes + 1| is used (enter -1 to use as many
+        of cores minus ``num_processes + 1`` is used (enter -1 to use as many
         cores as possible). 0 raises an error.
 
     Returns

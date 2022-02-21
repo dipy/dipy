@@ -328,8 +328,8 @@ class GibbsRingingFlow(Workflow):
         num_processes : int or None, optional
             Split the calculation to a pool of children processes. Only
             applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
-            number of cores minus |num_processes + 1| is used (enter -1 to use
-            as many cores as possible). 0 raises an error.
+            number of cores minus ``num_processes + 1`` is used (enter -1 to
+            use as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
         out_unrig : string, optional

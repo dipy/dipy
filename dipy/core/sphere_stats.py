@@ -29,12 +29,12 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     .. [1] http://mathworld.wolfram.com/SpherePointPicking.html.
 
     Returns
-    --------
+    -------
     X : array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
         Uniformly distributed vectors on the unit sphere.
 
     Examples
-    ---------
+    --------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
     >>> X = random_uniform_on_sphere(4, 'radians')
     >>> X.shape == (4, 2)

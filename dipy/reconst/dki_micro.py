@@ -45,7 +45,7 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
         analyzed that has the shape dki_params.shape[:-1]
 
     Returns
-    --------
+    -------
     awf : ndarray (x, y, z) or (n)
         Axonal Water Fraction
 
@@ -196,7 +196,7 @@ def dkimicro_prediction(params, gtab, S0=1):
         voxels. Default: 1
 
     Returns
-    --------
+    -------
     S : (..., N) ndarray
         Simulated signal based on the DKI microstructure model
 

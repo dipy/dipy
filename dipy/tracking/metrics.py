@@ -638,12 +638,12 @@ def spline(xyz, s=3, k=2, nest=-1):
 
 
     Returns
-    ----------
+    -------
     xyzn : array, shape (M,3)
         array representing x,y,z of the M points inside the sphere
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
     >>> t=np.linspace(0,1.75*2*np.pi,100)# make ascending spiral in 3-space
     >>> x = np.sin(t)

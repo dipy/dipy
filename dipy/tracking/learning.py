@@ -24,7 +24,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
        the second column is the corresponding index in tracks2
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
     >>> import dipy.tracking.learning as tl
     >>> A = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
@@ -36,7 +36,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     >>> arr = tl.detect_corresponding_tracks(indices, bundle1, bundle2)
 
     Notes
-    -------
+    -----
     To find the corresponding tracks we use mam_distances with 'avg' option.
     Then we calculate the argmin of all the calculated distances and return it
     for every index. (See 3rd column of arr in the example given below.)
@@ -92,7 +92,7 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     >>> arr = tl.detect_corresponding_tracks_plus(indices, bundle1, indices2, bundle2)
 
     Notes
-    -------
+    -----
     To find the corresponding tracks we use mam_distances with 'avg' option.
     Then we calculate the argmin of all the calculated distances and return it
     for every index. (See 3rd column of arr in the example given below.)

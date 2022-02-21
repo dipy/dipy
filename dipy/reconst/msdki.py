@@ -103,8 +103,8 @@ def _msk_from_awf_error(f, msk):
     msk : float
         Measured mean signal kurtosis.
 
-    Return
-    ------
+    Returns
+    -------
     error : float
        Error computed by subtracting msk with fun(f), where fun is the function
        described in equation 17 of [1]_
@@ -294,6 +294,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
                Analysis and their Application to the Healthy Ageing Brain
                (Doctoral thesis). Downing College, University of Cambridge.
                https://doi.org/10.17863/CAM.29356
+
         """
         ReconstModel.__init__(self, gtab)
 
@@ -357,7 +358,7 @@ class MeanDiffusionKurtosisModel(ReconstModel):
             voxels. Default: 1
 
         Returns
-        --------
+        -------
         S : (..., N) ndarray
             Simulated mean signal based on the mean signal diffusion kurtosis
             model
@@ -412,7 +413,7 @@ class MeanDiffusionKurtosisFit(object):
         Diffusion Kurtosis Model.
 
         Returns
-        ---------
+        -------
         msd : ndarray
             Calculated signal mean diffusitivity.
 
@@ -432,7 +433,7 @@ class MeanDiffusionKurtosisFit(object):
         Diffusion Kurtosis Model.
 
         Returns
-        ---------
+        -------
         msk : ndarray
             Calculated signal mean kurtosis.
 
@@ -452,7 +453,7 @@ class MeanDiffusionKurtosisFit(object):
         assuming the 2-compartmental spherical mean technique model [1]_, [2]_
 
         Returns
-        ---------
+        -------
         smt2f : ndarray
             Axonal volume fraction calculated from MSK.
 
@@ -480,7 +481,7 @@ class MeanDiffusionKurtosisFit(object):
         technique model [1]_, [2]_
 
         Returns
-        ---------
+        -------
         smt2di : ndarray
             Intrisic diffusivity computed by converting MSDKI to SMT2.
 
@@ -507,7 +508,7 @@ class MeanDiffusionKurtosisFit(object):
         mean technique model [1]_, [2]_
 
         Returns
-        ---------
+        -------
         smt2uFA : ndarray
             Microscopic fractional anisotropy computed by converting MSDKI to
             SMT2.
@@ -546,7 +547,7 @@ class MeanDiffusionKurtosisFit(object):
            all voxels.
 
         Returns
-        --------
+        -------
         S : (..., N) ndarray
             Simulated mean signal based on the mean signal kurtosis model
 

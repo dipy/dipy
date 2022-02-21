@@ -489,7 +489,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """
@@ -581,7 +581,7 @@ def bundles_distances_mdf(tracksA, tracksB):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """

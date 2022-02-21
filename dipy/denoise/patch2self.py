@@ -221,7 +221,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
 
 
     Returns
-    --------
+    -------
     denoised array : ndarray
         This is the denoised array of the same size as that of the input data,
         clipped to non-negative values.
