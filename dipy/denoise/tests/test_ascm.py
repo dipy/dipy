@@ -1,13 +1,11 @@
 import numpy as np
 import dipy.data as dpd
 import nibabel as nib
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_array_almost_equal)
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.data import fetch_stanford_t1, read_stanford_t1
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 
 
@@ -129,8 +127,3 @@ def test_ascm_accuracy():
                                           den_small, den_large, sigma[0]))
 
     assert_array_almost_equal(S0n, test_ascm_data_ref)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

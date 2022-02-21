@@ -6,7 +6,6 @@ PCA Based Local Noise Estimation
 """
 
 import numpy as np
-import nibabel as nib
 import scipy.special as sps
 from scipy import ndimage
 cimport cython

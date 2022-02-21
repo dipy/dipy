@@ -5,8 +5,7 @@ from numpy.testing import (assert_,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_equal,
-                           assert_raises,
-                           run_module_suite)
+                           assert_raises,)
 import pytest
 from dipy.core.gradients import gradient_table_from_qvals_bvecs
 from dipy.data import get_gtab_taiwan_dsi, get_sphere

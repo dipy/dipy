@@ -41,7 +41,7 @@ gtab = gradient_table(bvals, bvecs)
 
 """
 You can verify the b-values of the dataset by looking at the attribute
-``gtab.bvals``. Now that a datasets with multiple gradient directions is
+``gtab.bvals``. Now that a dataset with multiple gradient directions is
 loaded, we can proceed with the two steps of CSD.
 
 Step 1. Estimation of the fiber response function
@@ -68,12 +68,12 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 """
 Note that the ``auto_response_ssst`` function calls two functions that can be
-used separatly. First, the function ``mask_for_response_ssst`` creates a mask
-of voxels within the cuboid ROI and that meet the FA threshold constraint. This
+used separately. First, the function ``mask_for_response_ssst`` creates a mask
+of voxels within the cuboid ROI that meet the FA threshold constraint. This
 mask can be used to calculate the number of voxels that were kept, or to also
 apply an external mask (a WM mask for example). Second, the function
 ``response_from_mask_ssst`` takes the mask and returns the response function
-calculated within the mask. If no changes are made to the mask between the to
+calculated within the mask. If no changes are made to the mask between the two
 calls, the resulting responses should be identical.
 """
 

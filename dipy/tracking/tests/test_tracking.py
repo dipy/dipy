@@ -821,7 +821,3 @@ def test_affine_transformations():
         npt.assert_(np.allclose(streamlines_inv[0], expected[0], atol=0.3))
         npt.assert_equal(len(streamlines_inv[1]), len(expected[1]))
         npt.assert_(np.allclose(streamlines_inv[1], expected[1], atol=0.3))
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

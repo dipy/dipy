@@ -1,0 +1,111 @@
+name: DIPY  Base Workflow Template
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: "Select on which environment you want to run the workflow"
+        type: string
+        required: false
+        default: '"ubuntu-latest"'
+      python-version:
+        description: "Select Python version"
+        type: string
+        required: false
+        default: '["3.9", ]'
+      use-pre:
+        description: "bal"
+        type: boolean
+        required: false
+      coverage:
+        description: "coverage"
+        type: boolean
+        required: false
+      enable-viz-tests:
+        description: "Activate viz tests and headless"
+        type: boolean
+        required: false
+      install-type:
+        description: ""
+        type: string
+        required: false
+        default: '["pip", ]'
+      depends:
+        description: ""
+        type: string
+        required: false
+        default: cython numpy matplotlib h5py nibabel cvxpy tqdm
+      extra-depends:
+        description: ""
+        type: string
+        required: false
+
+    secrets:
+      codecov-token:
+        description: "codecov token to send the report"
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{fromJSON(inputs.python-version) }}
+        os: ${{fromJSON(inputs.runs-on) }}
+        install-type: ${{fromJSON(inputs.install-type) }}
+    env:
+      DEPENDS: ${{ inputs.depends }}
+      EXTRA_DEPENDS: ${{ inputs.extra-depends }}
+      INSTALL_TYPE: ${{ matrix.install-type }}
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      VENV_ARGS: "--python=python"
+      USE_PRE: ${{ inputs.use-pre }}
+      COVERAGE: ${{ inputs.coverage }}
+      CODECOV_TOKEN: ${{ secrets.codecov-token }}
+      TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
+      PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      if: ${{ matrix.install-type != 'conda' }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Set up Virtualenv
+      if: ${{ matrix.install-type != 'conda' }}
+      run: |
+        python -m pip install --upgrade pip virtualenv
+        virtualenv $VENV_ARGS venv
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      if: ${{ matrix.install-type == 'conda' }}
+      with:
+        auto-update-conda: true
+        auto-activate-base: false
+        activate-environment: venv
+        python-version: ${{ matrix.python-version }}
+        channels: defaults, conda-forge
+        use-only-tar-bz2: true
+    - name: Install Dependencies
+      run: tools/ci/install_dependencies.sh
+    - name: Install DIPY
+      run: tools/ci/install.sh
+    - name: Setup Headless
+      if: ${{ inputs.enable-viz-tests }}
+      run: tools/ci/setup_headless.sh
+    - name: Run the Tests
+      run: |
+        if [ "${{ inputs.use-pre }}" == "true" ]; then
+          tools/ci/run_tests.sh || echo "::warning::Experimental Job so failure ignored!"
+        else
+          tools/ci/run_tests.sh
+        fi
+    # Enable tmate debugging of manually-triggered workflows if the input option was provided
+    # - name: Setup tmate session
+    #   if: ${{ failure() }}
+    #   uses: mxschmitt/action-tmate@v3

@@ -3,8 +3,7 @@ import numpy as np
 from dipy.data import default_sphere
 from dipy.tracking.propspeed import ndarray_offset, eudx_both_directions
 
-from numpy.testing import (assert_array_almost_equal, assert_equal,
-                           assert_raises, run_module_suite)
+from numpy.testing import assert_equal, assert_raises
 
 
 def stepped_1d(arr_1d):
@@ -49,7 +48,3 @@ def test_eudx_both_directions_errors():
     assert_raises(ValueError, eudx_both_directions,
                   seed, 0, qa, ind, sphere.vertices[::2], 0.5, 0.1,
                   1., 1., 2)
-
-
-if __name__ == '__main__':
-    run_module_suite()

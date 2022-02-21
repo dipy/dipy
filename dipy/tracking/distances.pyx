@@ -8,9 +8,7 @@
 cimport cython
 
 from libc.stdlib cimport calloc, realloc, free
-from libc.string cimport memcpy
 
-import time
 import numpy as np
 from warnings import warn
 cimport numpy as cnp
@@ -759,7 +757,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
     -----
     Algorithmic description
 
-    Lets say we have curves A and B.
+    Let's say we have curves A and B.
 
     For every point in A calculate the minimum distance from every point
     in B stored in minAB
@@ -834,7 +832,7 @@ def minimum_closest_distance(xyz1,xyz2):
     -----
     Algorithmic description
 
-    Lets say we have curves A and B
+    Let's say we have curves A and B
 
     for every point in A calculate the minimum distance from every point in B stored in minAB
     for every point in B calculate the minimum distance from every point in A stored in minBA

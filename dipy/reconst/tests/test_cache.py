@@ -1,7 +1,7 @@
 from dipy.reconst.cache import Cache
 from dipy.core.sphere import Sphere
 
-from numpy.testing import assert_, assert_equal, run_module_suite
+from numpy.testing import assert_, assert_equal
 
 
 class DummyModel(Cache):
@@ -22,7 +22,3 @@ def test_basic_cache():
 
     t.cache_clear()
     assert_(t.cache_get("design_matrix", s) is None)
-
-
-if __name__ == "__main__":
-    run_module_suite()

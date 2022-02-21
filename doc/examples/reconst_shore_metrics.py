@@ -11,11 +11,10 @@ dataset like multi-shell or DSI.
 First import the necessary modules:
 """
 
-import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames, get_sphere, dsi_voxels
+from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.reconst.shore import ShoreModel

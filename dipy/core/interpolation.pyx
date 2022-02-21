@@ -4,7 +4,6 @@ cimport cython
 cimport numpy as cnp
 
 import numpy as np
-import time
 import warnings
 
 from libc.math cimport floor

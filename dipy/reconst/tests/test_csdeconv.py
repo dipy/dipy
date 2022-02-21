@@ -2,8 +2,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
-                           assert_array_almost_equal, run_module_suite,
-                           assert_array_equal)
+                           assert_array_almost_equal, assert_array_equal)
 from dipy.testing import assert_greater, assert_greater_equal
 from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
@@ -320,7 +319,7 @@ def test_odfdeconv():
         ConstrainedSDTModel(gtab, ratio, sh_order=10)
         w_count = len(w)
         # A warning is expected from the ConstrainedSDTModel constructor
-        # and additionnal warnings should be raised where legacy SH bases
+        # and additional warnings should be raised where legacy SH bases
         # are used
         assert_equal(w_count > 1, True)
 
@@ -631,7 +630,3 @@ def test_csd_convergence():
                                                     sh_order=8)
 
     assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)
-
-
-if __name__ == '__main__':
-    run_module_suite()

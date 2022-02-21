@@ -5,7 +5,6 @@ from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
                                    search_descending)
 from dipy.data import default_sphere
 from dipy.core.sphere import unique_edges, HemiSphere
-from dipy.sims.voxel import all_tensor_evecs
 
 
 def test_local_maxima():
@@ -135,7 +134,3 @@ def test_search_descending():
 
     # Test very small array
     npt.assert_equal(search_descending(a[:0], 1.), 0)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

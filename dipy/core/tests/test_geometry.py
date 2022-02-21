@@ -23,8 +23,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 is_hemispherical)
 
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_raises, assert_almost_equal,
-                           run_module_suite)
+                           assert_equal, assert_raises, assert_almost_equal,)
 
 from dipy.testing.spherepoints import sphere_points
 from dipy.core.sphere_stats import random_uniform_on_sphere
@@ -364,7 +363,3 @@ def test_is_hemispherical():
 
     # Smoke test the ValueError for non unit-vectors
     assert_raises(ValueError, is_hemispherical, xyz * 2.0)
-
-
-if __name__ == '__main__':
-    run_module_suite()

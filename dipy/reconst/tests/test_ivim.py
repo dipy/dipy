@@ -14,8 +14,8 @@ References
 import warnings
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_raises, assert_array_less, run_module_suite,
-                           assert_, assert_equal)
+                           assert_raises, assert_array_less, assert_,
+                           assert_equal)
 from dipy.testing import assert_greater_equal
 import pytest
 
@@ -505,7 +505,3 @@ def test_D_vp():
     """
     ivim_fit_VP = ivim_model_VP.fit(data_single)
     assert_array_almost_equal(ivim_fit_VP.D, D_VP, decimal=4)
-
-
-if __name__ == '__main__':
-    run_module_suite()

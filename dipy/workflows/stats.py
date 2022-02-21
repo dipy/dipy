@@ -12,11 +12,9 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import TensorModel
 from dipy.io.peaks import load_peaks
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.io.streamline import load_tractogram
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
-# from dipy.io.streamline import load_trk, save_trk
 from dipy.tracking.streamline import transform_streamlines
 from glob import glob
 from dipy.workflows.workflow import Workflow

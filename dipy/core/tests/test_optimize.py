@@ -108,7 +108,3 @@ def test_sparse_nnls():
     # We should be able to get back the right answer for this simple case
     npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
     npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

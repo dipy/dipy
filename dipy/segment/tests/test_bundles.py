@@ -2,9 +2,7 @@ import sys
 import numpy as np
 import pytest
 
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
+from numpy.testing import assert_equal, assert_almost_equal
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.segment.bundles import RecoBundles
@@ -252,8 +250,3 @@ def test_rb_reduction_mam():
     # check if the bundle is recognized correctly
     for row in D:
         assert_equal(row.min(), 0)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

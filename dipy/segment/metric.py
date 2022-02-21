@@ -1,19 +1,7 @@
-from dipy.segment.featurespeed import (Feature,
-                                       IdentityFeature,
-                                       ResampleFeature,
-                                       CenterOfMassFeature,
-                                       MidpointFeature,
-                                       ArcLengthFeature,
-                                       VectorOfEndpointsFeature)
+from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
+                                      MinimumAverageDirectFlipMetric,)
 
-from dipy.segment.metricspeed import (Metric,
-                                      SumPointwiseEuclideanMetric,
-                                      AveragePointwiseEuclideanMetric,
-                                      MinimumAverageDirectFlipMetric,
-                                      CosineMetric)
-
-from dipy.segment.metricspeed import (dist,
-                                      distance_matrix)
+from dipy.segment.metricspeed import dist
 
 # Creates aliases
 EuclideanMetric = SumPointwiseEuclideanMetric

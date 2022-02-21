@@ -18,12 +18,8 @@ if has_fury:
 
 skip_it = use_xvfb == 'skip'
 
-# TODO: Check why horizon is failing. Fow now, skipping
-temporary_skip = True
 
-
-@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
-                    reason="Needs xvfb")
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_horizon_events():
     # using here MNI template affine 2009a
     affine = np.array([[1., 0., 0., -98.],
@@ -60,8 +56,7 @@ def test_horizon_events():
             recorded_events=fname)
 
 
-@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
-                    reason="Needs xvfb")
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_horizon():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -134,8 +129,7 @@ def test_horizon():
             world_coords=True, interactive=False)
 
 
-@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
-                    reason="Needs xvfb")
+@pytest.mark.skipif(skip_it or not has_fury, reason="Needs xvfb")
 def test_roi_images():
     np.random.seed(42)
     img1 = np.random.rand(5, 5, 5)
@@ -156,7 +150,7 @@ def test_roi_images():
                 out_png=tmp_fname)
         npt.assert_equal(os.path.exists(tmp_fname), True)
         ss = load_image(tmp_fname)
-        npt.assert_equal(ss[150, 800, :], [147, 0, 0])
+        npt.assert_equal(ss[650, 800, :], [147, 0, 0])
 
 
 if __name__ == '__main__':

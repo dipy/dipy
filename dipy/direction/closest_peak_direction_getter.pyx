@@ -1,6 +1,5 @@
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen

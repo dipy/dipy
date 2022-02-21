@@ -1,10 +1,7 @@
-import warnings
-
 import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import default_sphere, peaks_from_model
-import dipy.reconst.eudx_direction_getter
 
 
 def test_EuDXDirectionGetter():
@@ -80,7 +77,3 @@ def test_EuDXDirectionGetter():
     # it should have one direction
     npt.assert_array_almost_equal(len(peaks1.initial_direction(point)), 1)
     npt.assert_array_almost_equal(len(peaks.initial_direction(point)), 1)
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

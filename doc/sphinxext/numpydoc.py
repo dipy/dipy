@@ -27,8 +27,7 @@ import collections
 if sphinx.__version__ < '1.0.1':
     raise RuntimeError("Sphinx 1.0.1 or newer is required")
 
-from docscrape_sphinx import get_doc_object, SphinxDocString
-from sphinx.util.compat import Directive
+from docscrape_sphinx import SphinxDocString
 
 if sys.version_info[0] >= 3:
     sixu = lambda s: s
