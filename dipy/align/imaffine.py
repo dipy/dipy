@@ -81,7 +81,7 @@ class AffineMap(object):
 
     def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
                  codomain_grid_shape=None, codomain_grid2world=None):
-        """ AffineMap
+        """ AffineMap.
 
         Implements an affine transformation whose domain is given by
         `domain_grid` and `domain_grid2world`, and whose co-domain is

@@ -167,7 +167,7 @@ class FreeWaterTensorModel(ReconstModel):
             voxels. Default: 1
 
         Returns
-        --------
+        -------
         S : (..., N) ndarray
             Simulated signal based on the free water DTI model
         """

@@ -2,14 +2,15 @@
 
 References
 ----------
-Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
-Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
-Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-Tristan-Vega, A., et al. 2009. Estimation of fiber orientation probability
-    density functions in high angular resolution diffusion imaging.
+.. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+       Angle Consideration.
+.. [2] Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
+       Q-ball imaging.
+.. [3] Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
+       populations in white matter of the brain with Funk-Radon transform.
+.. [4] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
+       probability density functions in high angular resolution diffusion
+       imaging.
 
 
 Note about the Transpose:
@@ -595,6 +596,7 @@ def sph_harm_ind_list(sh_order, full_basis=False):
     See Also
     --------
     shm.real_sh_descoteaux_from_index, shm.real_sh_tournier_from_index
+
     """
     if full_basis:
         n_range = np.arange(0, sh_order + 1, dtype=int)

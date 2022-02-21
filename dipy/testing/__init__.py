@@ -79,8 +79,8 @@ class clear_and_catch_warnings(warnings.catch_warnings):
     ...     warnings.simplefilter('always')
     ...     # do something that raises a warning in np.core.fromnumeric
 
-    Note
-    ----
+    Notes
+    -----
     this class is copied (with minor modifications) from Nibabel.
     https://github.com/nipy/nibabel. See COPYING file distributed along with
     the Nibabel package for the copyright and license terms.
@@ -117,7 +117,7 @@ def setup_test():
     If imported into a file, pytest will run this before any doctests.
 
     References
-    -----------
+    ----------
     https://github.com/numpy/numpy/commit/710e0327687b9f7653e5ac02d222ba62c657a718
     https://github.com/numpy/numpy/commit/734b907fc2f7af6e40ec989ca49ee6d87e21c495
     https://github.com/nipy/nibabel/pull/556
