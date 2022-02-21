@@ -1,12 +1,8 @@
 """Read test or example data."""
 
-import os
-import sys
 import json
-import warnings
 import pickle
 
-from nibabel import load
 from os.path import join as pjoin, dirname
 
 import gzip
