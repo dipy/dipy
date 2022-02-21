@@ -87,8 +87,10 @@ show_both_bundles([cb_subj1, cb_subj2_aligned],
    :align: center
 
    After bundle registration.
+"""
 
 
+r"""
 As you can see the two cingulum bundles are well aligned although they contain
 many streamlines of different lengths and shapes.
 
