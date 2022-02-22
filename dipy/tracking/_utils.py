@@ -1,6 +1,5 @@
 """This is a helper module for dipy.tracking.utils."""
 
-from warnings import warn
 import numpy as np
 
 
