@@ -283,12 +283,3 @@ def test_invalid_transform():
 
     actual = transform.get_dim()
     assert_equal(actual, expected)
-
-
-if __name__ == '__main__':
-    test_number_of_parameters()
-    test_jacobian_functions()
-    test_param_to_matrix_2d()
-    test_param_to_matrix_3d()
-    test_identity_parameters()
-    test_invalid_transform()

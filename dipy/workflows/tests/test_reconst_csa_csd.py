@@ -131,8 +131,3 @@ def reconst_flow_core(flow):
             reconst_flow.run(data_path, bval_path, bvec_path, mask_path,
                              out_dir=out_dir,
                              parallel=True, num_processes=2)
-
-
-if __name__ == '__main__':
-    test_reconst_csa()
-    test_reconst_csd()
