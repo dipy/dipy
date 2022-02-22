@@ -143,12 +143,3 @@ def inputs_from_results(results, keys=None, optional=False):
         inputs.append(str(result))
 
     return inputs
-
-
-if __name__ == '__main__':
-    # test_iap()
-    # test_flow_runner()
-    # test_variable_type()
-    # test_iap_epilog_and_description()
-    test_iap()
-    test_none_or_dtype()

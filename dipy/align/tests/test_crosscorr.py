@@ -212,10 +212,3 @@ def test_compute_cc_steps_3d():
         expected[:, :, -radius::, ...] = 0
         actual, energy = cc.compute_cc_backward_step_3d(gradG, factors, radius)
         assert_array_almost_equal(actual, expected)
-
-
-if __name__ == '__main__':
-    test_cc_factors_2d()
-    test_cc_factors_3d()
-    test_compute_cc_steps_2d()
-    test_compute_cc_steps_3d()

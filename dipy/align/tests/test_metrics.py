@@ -246,10 +246,3 @@ def test_em_demons_step_3d():
 
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
-
-
-if __name__ == '__main__':
-    test_em_demons_step_2d()
-    test_em_demons_step_3d()
-    test_exceptions()
-    test_EMMetric_image_dynamics()

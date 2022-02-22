@@ -225,8 +225,3 @@ def seeds_are_same_space_as_streamlines(tractogram_path):
             return False
 
     return True
-
-
-if __name__ == '__main__':
-    test_local_fiber_tracking_workflow()
-    test_particle_filtering_traking_workflows()

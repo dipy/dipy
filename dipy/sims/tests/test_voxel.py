@@ -356,8 +356,3 @@ def test_multi_tensor_btens():
                         fractions=[50, 50], snr=None)
 
     assert_array_almost_equal(S, Ssingle)
-
-
-if __name__ == "__main__":
-
-    test_multi_tensor()
