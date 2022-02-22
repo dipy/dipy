@@ -79,10 +79,3 @@ def test_default_mnist_mlp():
     assert_(mlp.loss < 0.4)
     assert_equal(mlp.accuracy, accuracy)
     assert_equal(x_test_prob.shape, (10000, 10))
-
-
-
-if __name__ == "__main__":
-    test_default_mnist_sequential()
-    test_default_mnist_slp()
-    test_default_mnist_mlp()

@@ -151,10 +151,3 @@ def test_roi_images():
         npt.assert_equal(os.path.exists(tmp_fname), True)
         ss = load_image(tmp_fname)
         npt.assert_equal(ss[650, 800, :], [147, 0, 0])
-
-
-if __name__ == '__main__':
-
-    test_horizon_events()
-    test_horizon()
-    test_roi_images()

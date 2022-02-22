@@ -134,8 +134,3 @@ def test_horizon_flow():
                     out_dir=out_dir, out_stealth_png='tmp_x.png')
         npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
                          True)
-
-
-if __name__ == '__main__':
-
-    test_horizon_flow()

@@ -117,11 +117,3 @@ def test_gibbs_flow():
         gibbs_flow.run(data_path, out_dir=out_dir)
         assert_true(os.path.isfile(
                 gibbs_flow.last_generated_outputs['out_unring']))
-
-
-if __name__ == '__main__':
-    test_gibbs_flow()
-    test_mppca_flow()
-    test_patch2self_flow()
-    test_lpca_flow()
-    test_nlmeans_flow()

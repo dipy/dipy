@@ -70,10 +70,3 @@ def test_missing_file():
     with TemporaryDirectory() as tempdir:
         npt.assert_raises(IOError, dummyflow.run,
                           pjoin(tempdir, 'dummy_file.txt'))
-
-
-if __name__ == '__main__':
-    test_force_overwrite()
-    test_get_sub_runs()
-    test_run()
-    test_missing_file()
