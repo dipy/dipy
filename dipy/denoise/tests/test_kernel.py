@@ -1,6 +1,8 @@
+import warnings
+
 from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
-from dipy.reconst.shm import sh_to_sf, sf_to_sh
+from dipy.reconst.shm import sh_to_sf, sf_to_sh, descoteaux07_legacy_msg
 from dipy.core.sphere import Sphere
 
 import numpy as np
@@ -89,13 +91,19 @@ def test_normalization():
     spike = np.ones((7, 7, 7, numorientations), dtype=np.float64)
 
     # convert dataset to SH
-    spike_sh = sf_to_sh(spike, k.get_sphere(), sh_order=8)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        spike_sh = sf_to_sh(spike, k.get_sphere(), sh_order=8)
 
-    # convolve kernel with delta spike and apply normalization
-    csd_enh = convolve(spike_sh, k, sh_order=8, test_mode=True, normalize=True)
+        # convolve kernel with delta spike and apply normalization
+        csd_enh = convolve(
+            spike_sh, k, sh_order=8, test_mode=True, normalize=True)
 
-    # convert dataset to DSF
-    csd_enh_dsf = sh_to_sf(csd_enh, k.get_sphere(), sh_order=8, basis_type=None)
+        # convert dataset to DSF
+        csd_enh_dsf = sh_to_sf(
+            csd_enh, k.get_sphere(), sh_order=8, basis_type=None)
 
     # test if the normalization is performed correctly
     npt.assert_almost_equal(np.amax(csd_enh_dsf), np.amax(spike))
