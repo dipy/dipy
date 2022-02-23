@@ -2,7 +2,6 @@ from dipy.denoise.enhancement_kernel import EnhancementKernel
 from dipy.denoise.shift_twist_convolution import convolve, convolve_sf
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 from dipy.core.sphere import Sphere
-from dipy.data import get_sphere
 
 import numpy as np
 import numpy.testing as npt
@@ -117,6 +116,3 @@ def test_kernel_input():
 
     k = EnhancementKernel(D33, D44, t, orientations=0, force_recompute=True)
     npt.assert_equal(k.get_lookup_table().shape, (0, 0, 7, 7, 7))
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -13,7 +13,6 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
-from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
 
 

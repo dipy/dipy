@@ -1,6 +1,5 @@
 import numpy as np
-from numpy.testing import (assert_equal, run_module_suite,
-                           assert_array_almost_equal)
+from numpy.testing import assert_equal, assert_array_almost_equal
 
 from dipy.align.streamlinear import (compose_matrix44, decompose_matrix44,
                                      transform_streamlines, whole_brain_slr,
@@ -67,7 +66,3 @@ def test_whole_brain_slr():
     # we can also check the quality by looking at the decomposed transform
 
     assert_array_almost_equal(decompose_matrix44(transform)[3], -15, 2)
-
-if __name__ == '__main__':
-    # run_module_suite()
-    test_whole_brain_slr()

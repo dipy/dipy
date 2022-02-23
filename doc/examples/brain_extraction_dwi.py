@@ -9,7 +9,6 @@ We show how to extract brain information and mask from a b0 image using DIPY_'s
 First import the necessary modules:
 """
 
-from os.path import join as pjoin
 import numpy as np
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti, save_nifti

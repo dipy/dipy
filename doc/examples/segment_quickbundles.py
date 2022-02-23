@@ -11,7 +11,6 @@ First import the necessary modules.
 
 import numpy as np
 from dipy.io.streamline import load_tractogram
-from dipy.tracking.streamline import Streamlines
 from dipy.segment.clustering import QuickBundles
 from dipy.io.pickles import save_pickle
 from dipy.data import get_fnames
@@ -85,10 +84,10 @@ print("Centroid of the last cluster:\n", clusters[-1].centroid)
            [  64.02451324,   88.43942261,   75.0697403 ]], dtype=float32)
 
 
-`clusters` has also attributes like `centroids` (cluster representatives), and
+`clusters` also has attributes such as `centroids` (cluster representatives), and
 methods like `add`, `remove`, and `clear` to modify the clustering result.
 
-Lets first show the initial dataset.
+Let's first show the initial dataset.
 """
 
 # Enables/disables interactive visualization

@@ -7,7 +7,6 @@ from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
-from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 

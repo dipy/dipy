@@ -5,16 +5,15 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
-from libc.math cimport sqrt, sin, cos
+from libc.math cimport sqrt
 
-from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)

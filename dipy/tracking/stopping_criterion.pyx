@@ -3,9 +3,6 @@
 # cython: initializedcheck=False
 # cython: wraparound=False
 
-cimport cython
-cimport numpy as np
-
 cdef extern from "dpy_math.h" nogil:
     int dpy_rint(double)
 

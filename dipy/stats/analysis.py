@@ -8,11 +8,10 @@ from scipy.spatial.distance import mahalanobis
 from dipy.utils.optpkg import optional_package
 from dipy.io.utils import save_buan_profiles_hdf5
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
 from dipy.tracking.streamline import (set_number_of_points,
                                       values_from_volume,
                                       orient_by_streamline,
-                                      transform_streamlines,
                                       Streamlines)
 
 pd, have_pd, _ = optional_package("pandas")

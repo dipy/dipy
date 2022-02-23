@@ -48,7 +48,7 @@ Instantiate the Model and apply it to the data.
 dsmodel = DiffusionSpectrumModel(gtab)
 
 """
-Lets just use one slice only from the data.
+Let's just use one slice only from the data.
 """
 
 dataslice = data[:, :, data.shape[2] // 2]

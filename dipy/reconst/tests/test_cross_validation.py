@@ -62,7 +62,6 @@ def test_csd_xval():
     gtab = gt.gradient_table(fbval, fbvec)
     S0 = np.mean(data[..., gtab.b0s_mask])
     response = ([0.0015, 0.0003, 0.0001], S0)
-    csdm = csd.ConstrainedSphericalDeconvModel(gtab, response)
 
     # In simulation, it should work rather well (high COD):
     psphere = dpd.get_sphere('symmetric362')

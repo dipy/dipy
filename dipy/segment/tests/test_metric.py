@@ -1,10 +1,12 @@
 import numpy as np
+import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metric as dipymetric
+import dipy.segment.metricspeed as dipysmetric
 import itertools
 
 from dipy.testing import (assert_true, assert_false,
                           assert_greater_equal, assert_less_equal)
-from numpy.testing import (assert_array_equal, assert_raises, run_module_suite,
+from numpy.testing import (assert_array_equal, assert_raises,
                            assert_almost_equal, assert_equal)
 
 
@@ -35,9 +37,9 @@ streamlines = [s, s1, s2, s3, s4]
 
 
 def test_metric_minimum_average_direct_flip():
-    feature = dipymetric.IdentityFeature()
+    feature = dipysfeature.IdentityFeature()
 
-    class MinimumAverageDirectFlipMetric(dipymetric.Metric):
+    class MinimumAverageDirectFlipMetric(dipysmetric.Metric):
         def __init__(self, feature):
             super(MinimumAverageDirectFlipMetric, self).__init__(
                     feature=feature)
@@ -57,7 +59,7 @@ def test_metric_minimum_average_direct_flip():
             return min(dist_direct, dist_flipped)
 
     for metric in [MinimumAverageDirectFlipMetric(feature),
-                   dipymetric.MinimumAverageDirectFlipMetric(feature)]:
+                   dipysmetric.MinimumAverageDirectFlipMetric(feature)]:
 
         # Test special cases of the MDF distance.
         assert_equal(metric.dist(s, s), 0.)
@@ -108,7 +110,7 @@ def test_metric_minimum_average_direct_flip():
                 if np.all(f1 == f2):
                     assert_equal(distance, 0.)
 
-                assert_almost_equal(distance, dipymetric.dist(metric, s1, s2))
+                assert_almost_equal(distance, dipysmetric.dist(metric, s1, s2))
                 assert_almost_equal(distance, dipymetric.mdf(s1, s2))
                 assert_greater_equal(distance, 0.)
 
@@ -134,9 +136,9 @@ def test_metric_minimum_average_direct_flip():
 
 
 def test_metric_cosine():
-    feature = dipymetric.VectorOfEndpointsFeature()
+    feature = dipysfeature.VectorOfEndpointsFeature()
 
-    class CosineMetric(dipymetric.Metric):
+    class CosineMetric(dipysmetric.Metric):
         def __init__(self, feature):
             super(CosineMetric, self).__init__(feature=feature)
 
@@ -157,7 +159,7 @@ def test_metric_cosine():
             cos_theta = np.maximum(cos_theta, -1.)
             return np.arccos(cos_theta) / np.pi  # Normalized cosine distance
 
-    for metric in [CosineMetric(feature), dipymetric.CosineMetric(feature)]:
+    for metric in [CosineMetric(feature), dipysmetric.CosineMetric(feature)]:
         # Test special cases of the cosine distance.
         v0 = np.array([[0, 0, 0]], dtype=np.float32)
         v1 = np.array([[1, 2, 3]], dtype=np.float32)
@@ -189,7 +191,7 @@ def test_metric_cosine():
                 if np.all(f1 == f2):
                     assert_almost_equal(distance, 0.)
 
-                assert_almost_equal(distance, dipymetric.dist(metric, s1, s2))
+                assert_almost_equal(distance, dipysmetric.dist(metric, s1, s2))
                 assert_greater_equal(distance, 0.)
                 assert_less_equal(distance, 1.)
 
@@ -215,7 +217,7 @@ def test_metric_cosine():
 
 
 def test_subclassing_metric():
-    class EmptyMetric(dipymetric.Metric):
+    class EmptyMetric(dipysmetric.Metric):
         pass
 
     metric = EmptyMetric()
@@ -224,13 +226,13 @@ def test_subclassing_metric():
 
 
 def test_distance_matrix():
-    metric = dipymetric.SumPointwiseEuclideanMetric()
+    metric = dipysmetric.SumPointwiseEuclideanMetric()
 
     for dtype in [np.int32, np.int64, np.float32, np.float64]:
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with itself.
         data = (np.random.rand(4, 10, 3)*10).astype(dtype)
-        D = dipymetric.distance_matrix(metric, data)
+        D = dipysmetric.distance_matrix(metric, data)
         assert_equal(D.shape, (len(data), len(data)))
         assert_array_equal(np.diag(D), np.zeros(len(data)))
 
@@ -240,20 +242,16 @@ def test_distance_matrix():
 
         for i in range(len(data)):
             for j in range(len(data)):
-                assert_equal(D[i, j], dipymetric.dist(metric, data[i],
-                                                      data[j]))
+                assert_equal(D[i, j], dipysmetric.dist(metric, data[i],
+                                                       data[j]))
 
         # Compute distances of all tuples spawn by the Cartesian product
         # of `data` with `data2`.
         data2 = (np.random.rand(3, 10, 3)*10).astype(dtype)
-        D = dipymetric.distance_matrix(metric, data, data2)
+        D = dipysmetric.distance_matrix(metric, data, data2)
         assert_equal(D.shape, (len(data), len(data2)))
 
         for i in range(len(data)):
             for j in range(len(data2)):
-                assert_equal(D[i, j], dipymetric.dist(metric, data[i],
-                                                      data2[j]))
-
-
-if __name__ == '__main__':
-    run_module_suite()
+                assert_equal(D[i, j], dipysmetric.dist(metric, data[i],
+                                                       data2[j]))

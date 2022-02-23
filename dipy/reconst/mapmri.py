@@ -508,6 +508,8 @@ class MapmriFit(ReconstFit):
 
         Parameters
         ----------
+        sphere : Sphere
+            A Sphere instance with vertices, edges and faces attributes.
         s : unsigned int
             radial moment of the ODF
 

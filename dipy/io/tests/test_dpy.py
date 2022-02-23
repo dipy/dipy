@@ -31,7 +31,3 @@ def test_dpy():
         dpr.close()
         npt.assert_array_equal(A, T[0])
         npt.assert_array_equal(C, T[5])
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -914,7 +914,3 @@ def test_create_from_sft():
     sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
     if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()
