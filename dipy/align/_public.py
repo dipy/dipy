@@ -5,6 +5,7 @@ streamlines.
 
 
 """
+from warnings import warn
 import re
 import collections.abc
 from functools import partial
@@ -343,6 +344,8 @@ def affine_registration(moving, static,
                         sigmas=None,
                         factors=None,
                         ret_metric=False,
+                        moving_mask=None,
+                        static_mask=None,
                         **metric_kwargs):
     """
     Find the affine transformation between two 3D images. Alternatively, find
@@ -403,6 +406,14 @@ def affine_registration(moving, static,
     ret_metric : boolean, optional
         Set it to True to return the value of the optimized coefficients and
         the optimization quality metric.
+
+    moving_mask : array, shape (S', R', C') or (R', C'), optional
+        moving image mask that defines which pixels in the moving image
+        are used to calculate the mutual information.
+
+    static_mask : array, shape (S, R, C) or (R, C), optional
+        static image mask that defines which pixels in the static image
+        are used to calculate the mutual information.
 
     nbins : int, optional
         MutualInformationMetric key-word argument: the number of bins to be
@@ -472,16 +483,31 @@ def affine_registration(moving, static,
     # Go through the selected transformation:
     for func in pipeline:
         if func == "center_of_mass":
-            transform = transform_centers_of_mass(static, static_affine,
-                                                  moving, moving_affine)
+
+            if starting_affine is not None:
+                wm = "starting_affine overwritten by centre_of_mass transform"
+                warn(wm, UserWarning)
+
+            # multiply images by masks for transform_centers_of_mass
+            static_masked, moving_masked = static, moving
+            if static_mask is not None:
+                static_masked = static*static_mask
+            if moving_mask is not None:
+                moving_masked = moving*moving_mask
+
+            transform = transform_centers_of_mass(static_masked, static_affine,
+                                                  moving_masked, moving_affine)
             starting_affine = transform.affine
+
         else:
             transform = _METHOD_DICT[func][1]()
             xform, xopt, fopt \
                 = affreg.optimize(static, moving, transform, None,
                                   static_affine, moving_affine,
                                   starting_affine=starting_affine,
-                                  ret_metric=True)
+                                  ret_metric=True,
+                                  static_mask=static_mask,
+                                  moving_mask=moving_mask)
             starting_affine = xform.affine
 
     # After doing all that, resample once at the end:
@@ -532,7 +558,7 @@ _METHOD_DICT = dict(  # mapping from str key -> (callable, class) tuple
 
 
 def register_series(series, ref, pipeline=None, series_affine=None,
-                    ref_affine=None):
+                    ref_affine=None, static_mask=None):
     """Register a series to a reference image.
 
     Parameters
@@ -554,6 +580,10 @@ def register_series(series, ref, pipeline=None, series_affine=None,
     series_affine, ref_affine : 4x4 arrays, optional.
         The affine. If provided, this input will over-ride the affine provided
         together with the nifti img or file.
+
+    static_mask : array, shape (S, R, C) or (R, C), optional
+        static image mask that defines which pixels in the static image
+        are used to calculate the mutual information.
 
     Returns
     -------
@@ -591,14 +621,16 @@ def register_series(series, ref, pipeline=None, series_affine=None,
                 this_moving, ref,
                 moving_affine=series_affine,
                 static_affine=ref_affine,
-                pipeline=pipeline)
+                pipeline=pipeline,
+                static_mask=static_mask)
             xformed[..., ii] = transformed
             affines[..., ii] = reg_affine
 
     return xformed, affines
 
 
-def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
+def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None,
+                        static_mask=None):
     """
     Register a DWI series to the mean of the B0 images in that series (all
     first registered to the first B0 volume)
@@ -626,6 +658,9 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
         The transformations to perform in sequence (from left to right):
         Default: ``[center_of_mass, translation, rigid, affine]``
 
+    static_mask : array, shape (S, R, C) or (R, C), optional
+        static image mask that defines which pixels in the static image
+        are used to calculate the mutual information.
 
     Returns
     -------
@@ -644,7 +679,8 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
         # First, register the b0s into one image and average:
         b0_img = nib.Nifti1Image(data[..., gtab.b0s_mask], affine)
         trans_b0, b0_affines = register_series(b0_img, ref=b0_ref,
-                                               pipeline=pipeline)
+                                               pipeline=pipeline,
+                                               static_mask=static_mask)
         ref_data = np.mean(trans_b0, -1)
     else:
         # There's only one b0 and we register everything to it
@@ -656,7 +692,8 @@ def register_dwi_series(data, gtab, affine=None, b0_ref=0, pipeline=None):
     series_arr = np.concatenate([ref_data, moving_data], -1)
     series = nib.Nifti1Image(series_arr, affine)
 
-    xformed, affines = register_series(series, ref=0, pipeline=pipeline)
+    xformed, affines = register_series(series, ref=0, pipeline=pipeline,
+                                       static_mask=static_mask)
     # Cut out the part pertaining to that first volume:
     affines = affines[..., 1:]
     xformed = xformed[..., 1:]
