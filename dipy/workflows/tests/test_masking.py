@@ -23,7 +23,3 @@ def test_mask():
         mask_data, mask_affine = load_nifti(mask_path)
         npt.assert_equal(mask_data.shape, volume.shape)
         npt.assert_array_almost_equal(mask_affine, affine)
-
-
-if __name__ == '__main__':
-    test_mask()

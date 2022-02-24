@@ -1,18 +1,9 @@
-import os
-
 import numpy as np
 import numpy.testing as npt
-import pytest
 
-from dipy.data import get_fnames
-from dipy.io.image import save_nifti
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.stats.analysis import (gaussian_weights, afq_profile)
-from dipy.testing import assert_true
 from dipy.tracking.streamline import Streamlines
 from dipy.utils.optpkg import optional_package
-from nibabel.tmpdirs import TemporaryDirectory
 
 _, have_pd, _ = optional_package("pandas")
 _, have_smf, _ = optional_package("statsmodels")
@@ -143,7 +134,3 @@ def test_afq_profile():
     # Test for error-handling:
     empty_bundle = Streamlines([])
     npt.assert_raises(ValueError, afq_profile, data, empty_bundle, np.eye(4))
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

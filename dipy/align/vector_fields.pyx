@@ -5,7 +5,7 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
+
 from dipy.align.fused_types cimport floating, number
 from dipy.core.interpolation cimport (_interpolate_scalar_2d,
                                       _interpolate_scalar_3d,

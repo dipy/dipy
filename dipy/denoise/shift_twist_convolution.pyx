@@ -3,15 +3,11 @@ cimport numpy as cnp
 cimport cython
 
 cimport safe_openmp as openmp
-from safe_openmp cimport have_openmp
-from cython.parallel import parallel, prange, threadid
-from libc.stdlib cimport malloc, free
+from cython.parallel import prange
 
-from dipy.denoise.enhancement_kernel import EnhancementKernel
-from dipy.data import get_sphere
 from dipy.reconst.shm import sh_to_sf, sf_to_sh
 
-from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 def convolve(odfs_sh, kernel, sh_order, test_mode=False, num_threads=None, normalize=True):

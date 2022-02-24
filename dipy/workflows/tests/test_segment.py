@@ -101,7 +101,3 @@ def test_recobundles_flow():
         bmd_value = BMD.distance(x0.tolist())
 
         npt.assert_equal(bmd_value < 1, True)
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

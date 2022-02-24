@@ -15,7 +15,7 @@ that the point at the center of voxel ``[i, j, k]`` is represented by the point
 phrase "voxel coordinates" is used, it is understood to be the same as ``affine
 = eye(4)``.
 
-As an example, lets take a 2d image where the affine is::
+As an example, let's take a 2d image where the affine is::
 
     [[1., 0., 0.],
      [0., 2., 0.],
@@ -703,6 +703,8 @@ def streamline_near_roi(streamline, roi_coords, tol, mode='any'):
     out : boolean
 
     """
+    if not np.any(streamline):
+        return False
     if len(roi_coords) == 0:
         return False
     if mode == "any" or mode == "all":

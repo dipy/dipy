@@ -95,7 +95,7 @@ of diffusion-weighted volumes. Since our data has a total of 67 volumes, the
 patch_radius is set to 2 which corresponds to a 5x5x5 sliding window
 comprising a total of 125 voxels.
 
-To assess the performance of the Marcenko-Pastur PCA denosing algorithm,
+To assess the performance of the Marcenko-Pastur PCA denoising algorithm,
 an axial slice of the original data, denoised data, and residuals are plotted
 below:
 """
@@ -129,7 +129,7 @@ print("The result saved in denoised_mppca.png")
 .. figure:: denoised_mppca.png
    :align: center
 
-The noise suppressing can be visually appreciated by comparing the original
+The noise suppression can be visually appreciated by comparing the original
 data slice (left panel) to its denoised version (middle panel). The difference
 between original and denoised data showing only random noise indicates that
 the data's structural information is preserved by the PCA denoising algorithm
@@ -204,7 +204,7 @@ print("The result saved in denoised_dki.png")
 
 In the above figure, the DKI maps obtained from the original data are shown in
 the upper panels, while the DKI maps from the denoised data are shown in the
-lower panels. Substantial improvements on measurements robustness can be
+lower panels. Substantial improvements in measurement robustness can be
 visually appreciated, particularly for the FA and MK estimates.
 
 Noise standard deviation estimation using the Marcenko-Pastur PCA algorithm
@@ -244,7 +244,7 @@ mean_sigma = np.mean(sigma[mask])
 print(mean_sigma)
 
 """
-Below we use this mean noise level estimate to compute the data's nominal SNR
+Below we use this mean noise level estimate to compute the nominal SNR of the data
 (i.e. SNR at b-value=0):
 """
 

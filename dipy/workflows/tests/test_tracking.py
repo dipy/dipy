@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from numpy.testing import assert_equal
 from dipy.testing import assert_false, assert_true
@@ -9,6 +11,7 @@ from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti
 from dipy.io.streamline import load_tractogram
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.workflows.mask import MaskFlow
 from dipy.workflows.reconst import ReconstCSDFlow
 from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
@@ -71,8 +74,12 @@ def test_particle_filtering_traking_workflows():
 
         # CSD Reconstruction
         reconst_csd_flow = ReconstCSDFlow()
-        reconst_csd_flow.run(dwi_path, bval_path, bvec_path, mask_path,
-                             out_dir=out_dir, extract_pam_values=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            reconst_csd_flow.run(dwi_path, bval_path, bvec_path, mask_path,
+                                 out_dir=out_dir, extract_pam_values=True)
 
         pam_path = reconst_csd_flow.last_generated_outputs['out_pam']
         gfa_path = reconst_csd_flow.last_generated_outputs['out_gfa']
@@ -85,7 +92,11 @@ def test_particle_filtering_traking_workflows():
         # Test tracking
         pf_track_pam = PFTrackingPAMFlow()
         assert_equal(pf_track_pam.get_short_name(), 'track_pft')
-        pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pf_track_pam.run(pam_path, wm_path, gm_path, csf_path, seeds_path)
         tractogram_path = \
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -93,12 +104,16 @@ def test_particle_filtering_traking_workflows():
         # Test that tracking returns seeds
         pf_track_pam = PFTrackingPAMFlow()
         pf_track_pam._force_overwrite = True
-        pf_track_pam.run(pam_path,
-                         wm_path,
-                         gm_path,
-                         csf_path,
-                         seeds_path,
-                         save_seeds=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pf_track_pam.run(pam_path,
+                             wm_path,
+                             gm_path,
+                             csf_path,
+                             seeds_path,
+                             save_seeds=True)
         tractogram_path = \
             pf_track_pam.last_generated_outputs['out_tractogram']
         assert_true(tractogram_has_seeds(tractogram_path))
@@ -114,8 +129,12 @@ def test_local_fiber_tracking_workflow():
         save_nifti(mask_path, mask, affine)
 
         reconst_csd_flow = ReconstCSDFlow()
-        reconst_csd_flow.run(data_path, bval_path, bvec_path, mask_path,
-                             out_dir=out_dir, extract_pam_values=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            reconst_csd_flow.run(data_path, bval_path, bvec_path, mask_path,
+                                 out_dir=out_dir, extract_pam_values=True)
 
         pam_path = reconst_csd_flow.last_generated_outputs['out_pam']
         gfa_path = reconst_csd_flow.last_generated_outputs['out_gfa']
@@ -160,8 +179,12 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and deterministic getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path,
-                         tracking_method="deterministic")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                             tracking_method="deterministic")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -169,8 +192,12 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and probabilistic getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path,
-                         tracking_method="probabilistic")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                             tracking_method="probabilistic")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -178,8 +205,12 @@ def test_local_fiber_tracking_workflow():
         # Test tracking with pam with sh and closest peaks getter
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path,
-                         tracking_method="closestpeaks")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                             tracking_method="closestpeaks")
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_false(is_tractogram_empty(tractogram_path))
@@ -187,9 +218,13 @@ def test_local_fiber_tracking_workflow():
         # Test that tracking returns seeds
         lf_track_pam = LocalFiberTrackingPAMFlow()
         lf_track_pam._force_overwrite = True
-        lf_track_pam.run(pam_path, gfa_path, seeds_path,
-                         tracking_method="deterministic",
-                         save_seeds=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            lf_track_pam.run(pam_path, gfa_path, seeds_path,
+                             tracking_method="deterministic",
+                             save_seeds=True)
         tractogram_path = \
             lf_track_pam.last_generated_outputs['out_tractogram']
         assert_true(tractogram_has_seeds(tractogram_path))
@@ -225,8 +260,3 @@ def seeds_are_same_space_as_streamlines(tractogram_path):
             return False
 
     return True
-
-
-if __name__ == '__main__':
-    test_local_fiber_tracking_workflow()
-    test_particle_filtering_traking_workflows()

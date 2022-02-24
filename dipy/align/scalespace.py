@@ -51,7 +51,7 @@ class ScaleSpace(object):
             mask = np.asarray(image > 0, dtype=np.int32)
 
         # Normalize input image to [0,1]
-        img = (image - image.min())/(image.max() - image.min())
+        img = (image - np.min(image))/(np.max(image) - np.min(image))
         if mask0:
             img *= mask
 
@@ -97,8 +97,8 @@ class ScaleSpace(object):
 
             # Filter along each direction with the appropriate sigma
             filtered = gaussian_filter(image, sigmas)
-            filtered = ((filtered - filtered.min()) /
-                        (filtered.max() - filtered.min()))
+            filtered = ((filtered - np.min(filtered)) /
+                        (np.max(filtered) - np.min(filtered)))
             if mask0:
                 filtered *= mask
 
@@ -356,8 +356,8 @@ class IsotropicScaleSpace(ScaleSpace):
             mask = np.asarray(image > 0, dtype=np.int32)
 
         # Normalize input image to [0,1]
-        img = ((image.astype(np.float64) - image.min()) /
-               (image.max() - image.min()))
+        img = ((image.astype(np.float64) - np.min(image)) /
+               (np.max(image) - np.min(image)))
         if mask0:
             img *= mask
 
@@ -409,8 +409,8 @@ class IsotropicScaleSpace(ScaleSpace):
 
             # Filter along each direction with the appropriate sigma
             filtered = gaussian_filter(image.astype(np.float64), new_sigmas)
-            filtered = ((filtered.astype(np.float64) - filtered.min()) /
-                        (filtered.max() - filtered.min()))
+            filtered = ((filtered.astype(np.float64) - np.min(filtered)) /
+                        (np.max(filtered) - np.min(filtered)))
             if mask0:
                 filtered *= mask
 

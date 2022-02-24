@@ -66,9 +66,3 @@ def test_wrong_sh_order_input():
     resdnn_model.load_model_weights(fetch_model_weights_path)
     assert_raises(ValueError, resdnn_model.predict,
                   np.zeros((1, 28)))
-
-
-if __name__ == "__main__":
-    test_default_weights()
-    test_wrong_sh_order_weights()
-    test_wrong_sh_order_input()

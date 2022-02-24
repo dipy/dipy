@@ -20,11 +20,9 @@ if has_fury:
 
 
 skip_it = use_xvfb == 'skip'
-# TODO: Check why horizon is failing. Fow now, skipping
-temporary_skip = True
 
 
-@pytest.mark.skipif(temporary_skip or skip_it or not has_fury,
+@pytest.mark.skipif(skip_it or not has_fury,
                     reason='Requires FURY')
 def test_horizon_flow():
 
@@ -136,8 +134,3 @@ def test_horizon_flow():
                     out_dir=out_dir, out_stealth_png='tmp_x.png')
         npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
                          True)
-
-
-if __name__ == '__main__':
-
-    test_horizon_flow()

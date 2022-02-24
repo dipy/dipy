@@ -410,7 +410,3 @@ def test_classify():
     npt.assert_(seg_final.min() == 0.0)
 
     npt.assert_(imgseg.energies_sum[0] > imgseg.energies_sum[-1])
-
-if __name__ == '__main__':
-
-    npt.run_module_suite()

@@ -700,7 +700,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
     Currently, the gradient of the static image is not being used, but some
     authors suggest that symmetrizing the gradient by including both, the
     moving and static gradients may improve the registration quality. We are
-    leaving this parameters as a placeholder for future investigation
+    leaving this parameter as a placeholder for future investigation
 
     References
     ----------

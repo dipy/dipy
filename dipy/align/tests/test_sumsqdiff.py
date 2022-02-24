@@ -742,12 +742,3 @@ def test_compute_ssd_demons_step_3d():
                                        actual)
 
         assert_array_almost_equal(actual, expected)
-
-
-if __name__ == '__main__':
-    test_compute_residual_displacement_field_ssd_2d()
-    test_compute_residual_displacement_field_ssd_3d()
-    test_compute_energy_ssd_2d()
-    test_compute_energy_ssd_3d()
-    test_compute_ssd_demons_step_2d()
-    test_compute_ssd_demons_step_3d()

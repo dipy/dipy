@@ -156,6 +156,13 @@ Intra-Voxel Signal Reconstruction
 
 - :ref:`example_reconst_sh`
 
+
+Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_rumba`
+
+
 ----------------------
 Contextual enhancement
 ----------------------
@@ -174,6 +181,7 @@ Fiber tracking
 - :ref:`example_tracking_stopping_criterion`
 - :ref:`example_tracking_pft`
 - :ref:`example_tracking_sfm`
+- :ref:`example_tracking_rumba`
 - :ref:`example_linear_fascicle_evaluation`
 - :ref:`example_surface_seed`
 
@@ -197,6 +205,7 @@ Image-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_affine_registration_3d`
+- :ref:`example_affine_registration_masks`
 - :ref:`example_syn_registration_2d`
 - :ref:`example_syn_registration_3d`
 - :ref:`example_register_binary_fuzzy`

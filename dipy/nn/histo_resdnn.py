@@ -48,9 +48,9 @@ class HistoResDNN(object):
         ('tournier07') like the proposed model in [1, 2].
 
         To obtain the pre-trained model, use:
-        >>> resdnn_model = HistoResDNN()
-        >>> fetch_model_weights_path = get_fnames('histo_resdnn_weights')
-        >>> resdnn_model.load_model_weights(fetch_model_weights_path)
+            resdnn_model = HistoResDNN()
+            fetch_model_weights_path = get_fnames('histo_resdnn_weights')
+            resdnn_model.load_model_weights(fetch_model_weights_path)
 
         This model is designed to take as input raw DWI signal on a sphere
         (ODF) represented as SH of order 8 in the tournier basis and predict
@@ -118,7 +118,7 @@ class HistoResDNN(object):
         expected input.
 
         The weights for a sh_order of 8 can be obtained via the function:
-        >>> get_fnames('histo_resdnn_weights').
+            get_fnames('histo_resdnn_weights').
 
         Parameters
         ----------

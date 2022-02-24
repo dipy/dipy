@@ -3,10 +3,7 @@
 #cython: wraparound=False
 #cython: cdivision=True
 import numpy as np
-from dipy.segment.mask import applymask
-from dipy.core.ndindex import ndindex
-from dipy.sims.voxel import add_noise
-cimport cython
+
 cimport numpy as cnp
 cdef extern from "dpy_math.h" nogil:
     cdef double NPY_PI

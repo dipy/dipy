@@ -3,12 +3,10 @@ from random import random
 
 cimport cython
 cimport numpy as cnp
-import numpy as np
 from .direction_getter cimport DirectionGetter
 from .stopping_criterion cimport(
     StreamlineStatus, StoppingCriterion, AnatomicalStoppingCriterion,
-    TRACKPOINT, ENDPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
-from dipy.core.interpolation cimport trilinear_interpolate4d_c
+    TRACKPOINT, OUTSIDEIMAGE, INVALIDPOINT, PYERROR)
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
 
 

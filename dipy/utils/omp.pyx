@@ -1,7 +1,7 @@
 #!python
 
 import os
-cimport cython
+
 cimport safe_openmp as openmp
 have_openmp = <int> openmp.have_openmp
 
