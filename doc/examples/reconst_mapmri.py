@@ -227,29 +227,29 @@ fig = plt.figure(figsize=(18, 3))
 
 ax1 = fig.add_subplot(1, 5, 1, title=r'Laplacian norm - Laplacian')
 ax1.set_axis_off()
-laplacian_norm_laplacian = np.array(mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                                    dtype=float)
+laplacian_norm_laplacian = np.array(
+    mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
 ind = ax1.imshow(laplacian_norm_laplacian, interpolation='nearest',
                  origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
 
 ax2 = fig.add_subplot(1, 5, 2, title=r'Laplacian norm - Discrete positivity')
 ax2.set_axis_off()
-laplacian_norm_positivity = np.array(mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                                     dtype=float)
+laplacian_norm_positivity = np.array(
+    mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
 ind = ax2.imshow(laplacian_norm_positivity, interpolation='nearest',
                  origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
 
 ax3 = fig.add_subplot(1, 5, 3, title=r'Laplacian norm - Both')
 ax3.set_axis_off()
-laplacian_norm_both = np.array(mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                               dtype=float)
+laplacian_norm_both = np.array(
+    mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
 ind = ax3.imshow(laplacian_norm_both, interpolation='nearest', origin='lower',
                  cmap=plt.cm.gray, vmin=0, vmax=3)
 
 ax4 = fig.add_subplot(1, 5, 4, title=r'Laplacian norm - Global positivity')
 ax4.set_axis_off()
-laplacian_norm_plus = np.array(mapfit_plus_aniso.norm_of_laplacian_signal()[:, 0, :].T,
-                               dtype=float)
+laplacian_norm_plus = np.array(
+    mapfit_plus_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
 ind = ax4.imshow(laplacian_norm_plus, interpolation='nearest', origin='lower',
                  cmap=plt.cm.gray, vmin=0, vmax=3)
 
