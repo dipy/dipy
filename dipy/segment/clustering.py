@@ -695,6 +695,7 @@ def qbx_and_merge(streamlines, thresholds,
         If None then RandomState is initialized internally.
     verbose : bool, optional.
         If True, log information. Default False.
+
     Returns
     -------
     clusters : obj

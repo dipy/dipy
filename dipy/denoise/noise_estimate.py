@@ -29,7 +29,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     Probabilistic Identification and Estimation of Noise (PIESNO).
 
     Parameters
-    -----------
+    ----------
     data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
         same realisation of the volume, such as dMRI or fMRI data.
@@ -60,7 +60,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         that were found.
 
     Returns
-    --------
+    -------
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
@@ -68,7 +68,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         A boolean mask indicating the voxels identified as pure noise.
 
     Notes
-    ------
+    -----
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
     along the last axis, i.e. dMRI or fMRI data, not structural data like
@@ -79,7 +79,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     spinal cord imaging for example.
 
     References
-    ------------
+    ----------
 
     .. [1] Koay CG, Ozarslan E and Pierpaoli C.
     "Probabilistic Identification and Estimation of Noise (PIESNO):
@@ -145,7 +145,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
     This is the slice by slice version for working on a 4D array.
 
     Parameters
-    -----------
+    ----------
     data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
         same realisation of the volume, such as dMRI or fMRI data.
@@ -178,7 +178,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         which computes the optimal quantile for N.
 
     Returns
-    --------
+    -------
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
@@ -186,14 +186,14 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5,
         A boolean mask indicating the voxels identified as pure noise.
 
     Notes
-    ------
+    -----
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
     along the last axis, i.e. dMRI or fMRI data, not structural data like
     T1/T2.
 
     References
-    ------------
+    ----------
 
     .. [1] Koay CG, Ozarslan E and Pierpaoli C.
     "Probabilistic Identification and Estimation of Noise (PIESNO):
@@ -294,7 +294,7 @@ def estimate_sigma(arr, disable_background_masking=False, N=0):
         standard deviation of the noise, one estimation per volume.
 
     Notes
-    -------
+    -----
     This function is the same as manually taking the standard deviation of the
     background and gives one value for the whole 3D array.
     It also includes the coil-dependent correction factor of Koay 2006

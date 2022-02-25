@@ -19,7 +19,7 @@ def load_nifti_data(fname, as_ndarray=True):
     -------
     data: np.ndarray or nib.ArrayProxy
 
-    See also
+    See Also
     --------
     load_nifti
 
@@ -56,7 +56,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     A tuple, with (at the most, if all keyword args are set to True):
     (data, img.affine, img, vox_size, nib.aff2axcodes(img.affine))
 
-    See also
+    See Also
     --------
     load_nifti_data
 

@@ -447,7 +447,7 @@ def norm(q_form):
     :math:
         ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
 
-    See also
+    See Also
     --------
     np.linalg.norm
     """
@@ -623,7 +623,8 @@ def apparent_diffusion_coef(q_form, sphere):
     The calculation of ADC, relies on the following relationship:
 
     .. math ::
-            ADC = \vec{b} Q \vec{b}^T
+
+        ADC = \vec{b} Q \vec{b}^T
 
     Where Q is the quadratic form of the tensor.
 
@@ -1152,6 +1153,7 @@ class TensorFit(object):
             ADC = \vec{b} Q \vec{b}^T
 
         Where Q is the quadratic form of the tensor.
+
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
@@ -1456,8 +1458,8 @@ def _ols_fit_matrix(design_matrix):
     fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
     be used to calculate regression coefficients in OLS but not recommended.
 
-    See Also:
-    ---------
+    See Also
+    --------
     wls_fit_tensor, ols_fit_tensor
 
     Examples
@@ -1911,7 +1913,7 @@ def from_lower_triangular(D):
     ignored.
 
     Parameters
-    -----------
+    ----------
     D : array_like, (..., >6)
         Unique elements of the tensors
 

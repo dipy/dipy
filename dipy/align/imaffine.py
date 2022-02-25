@@ -81,7 +81,7 @@ class AffineMap(object):
 
     def __init__(self, affine, domain_grid_shape=None, domain_grid2world=None,
                  codomain_grid_shape=None, codomain_grid2world=None):
-        """ AffineMap
+        """ AffineMap.
 
         Implements an affine transformation whose domain is given by
         `domain_grid` and `domain_grid2world`, and whose co-domain is
@@ -218,11 +218,10 @@ class AffineMap(object):
 
     def __repr__(self):
         """Reloadable representation - relies on ndarray's implementation."""
-
         return self.affine.__repr__()
 
     def __format__(self, format_spec):
-        """Implementation various formatting options"""
+        """ Implementation various formatting options."""
 
         if format_spec is None or self.affine is None:
             return str(self.affine)

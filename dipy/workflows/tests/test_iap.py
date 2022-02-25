@@ -5,9 +5,9 @@ from os.path import join as pjoin
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
 from dipy.workflows.flow_runner import run_flow
-from dipy.workflows.tests.workflow_tests_utils import DummyFlow, \
-    DummyCombinedWorkflow, DummyWorkflow1, DummyVariableTypeWorkflow, \
-    DummyVariableTypeErrorWorkflow
+from dipy.workflows.tests.workflow_tests_utils import (
+    DummyFlow, DummyCombinedWorkflow, DummyWorkflow1, DummyWorkflowOptionalStr,
+    DummyVariableTypeWorkflow, DummyVariableTypeErrorWorkflow)
 
 
 def test_none_or_dtype():
@@ -89,6 +89,53 @@ def test_iap():
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow.run(**args)
     npt.assert_array_equal(return_values, all_results + [2.0])
+
+
+def test_optional_str():
+    # Test optional and variable str argument exists but does not have a value
+    sys.argv = [sys.argv[0]]
+    inputs = ['--optional_str_1']
+    sys.argv.extend(inputs)
+    parser = IntrospectiveArgumentParser()
+    dummy_flow = DummyWorkflowOptionalStr()
+    parser.add_workflow(dummy_flow)
+    args = parser.get_flow_args()
+    all_keys = ['optional_str_1']
+    all_results = [[]]
+    # Test if types and order are respected
+    for k, v in zip(all_keys, all_results):
+        npt.assert_equal(args[k], v)
+    # Test if **args really fits dummy_flow's arguments
+    return_values = dummy_flow.run(**args)
+    npt.assert_array_equal(return_values, all_results + ['default'])
+
+    # Test optional and variable str argument exists and has a value
+    sys.argv = [sys.argv[0]]
+    inputs = ['--optional_str_1', 'test']
+    sys.argv.extend(inputs)
+    parser = IntrospectiveArgumentParser()
+    dummy_flow = DummyWorkflowOptionalStr()
+    parser.add_workflow(dummy_flow)
+    args = parser.get_flow_args()
+    all_keys = ['optional_str_1']
+    all_results = [['test']]
+    # Test if types and order are respected
+    for k, v in zip(all_keys, all_results):
+        npt.assert_equal(args[k], v)
+    # Test if **args really fits dummy_flow's arguments
+    return_values = dummy_flow.run(**args)
+    npt.assert_array_equal(return_values, all_results + ['default'])
+
+    # Test optional str empty arguments
+    sys.argv = [sys.argv[0]]
+    inputs = ['--optional_str_2']
+    sys.argv.extend(inputs)
+    parser = IntrospectiveArgumentParser()
+    dummy_flow = DummyWorkflowOptionalStr()
+    parser.add_workflow(dummy_flow)
+    with npt.assert_raises(SystemExit) as cm:
+        parser.get_flow_args()
+    npt.assert_equal(cm.exception.code, 2)
 
 
 def test_iap_epilog_and_description():

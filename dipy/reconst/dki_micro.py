@@ -45,7 +45,7 @@ def axonal_water_fraction(dki_params, sphere='repulsion100', gtol=1e-2,
         analyzed that has the shape dki_params.shape[:-1]
 
     Returns
-    --------
+    -------
     awf : ndarray (x, y, z) or (n)
         Axonal Water Fraction
 
@@ -89,7 +89,7 @@ def diffusion_components(dki_params, sphere='repulsion100', awf=None,
         analyzed that has the shape dki_params.shape[:-1]
 
     Returns
-    --------
+    -------
     edt : ndarray (x, y, z, 6) or (n, 6)
         Parameters of the hindered diffusion tensor.
     idt : ndarray (x, y, z, 6) or (n, 6)
@@ -196,7 +196,7 @@ def dkimicro_prediction(params, gtab, S0=1):
         voxels. Default: 1
 
     Returns
-    --------
+    -------
     S : (..., N) ndarray
         Simulated signal based on the DKI microstructure model
 
@@ -255,7 +255,7 @@ def tortuosity(hindered_ad, hindered_rd):
         Array containing the values of the hindered radial diffusivity.
 
     Returns
-    --------
+    -------
     Tortuosity of the hindered diffusion compartment
     """
     if not isinstance(hindered_rd, np.ndarray):
@@ -459,7 +459,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
                 6) Axonal water fraction
 
         Notes
-        ------
+        -----
         In the original article of DKI microstructural model [1]_, the hindered
         and restricted tensors were definde as the intra-cellular and
         extra-cellular diffusion compartments respectively.
@@ -478,7 +478,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         also known as axonal water fraction.
 
         Notes
-        ------
+        -----
         The volume fraction of the restricted diffusion compartment can be seem
         as the volume fraction of the intra-cellular compartment [1]_.
 
@@ -495,7 +495,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the eigenvalues of the restricted diffusion compartment.
 
         Notes
-        ------
+        -----
         The restricted diffusion tensor can be seem as the tissue's
         intra-cellular diffusion compartment [1]_.
 
@@ -513,7 +513,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the eigenvalues of the hindered diffusion compartment.
 
         Notes
-        ------
+        -----
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -544,7 +544,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the axial diffusivity of the hindered compartment.
 
         Notes
-        ------
+        -----
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -561,7 +561,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         """ Returns the radial diffusivity of the hindered compartment.
 
         Notes
-        ------
+        -----
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 
@@ -580,7 +580,7 @@ class KurtosisMicrostructuralFit(DiffusionKurtosisFit):
         of the hindered compartment [1]_.
 
         Notes
-        ------
+        -----
         The hindered diffusion tensor can be seem as the tissue's
         extra-cellular diffusion compartment [1]_.
 

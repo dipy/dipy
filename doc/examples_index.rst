@@ -157,6 +157,12 @@ Intra-Voxel Signal Reconstruction
 - :ref:`example_reconst_sh`
 
 
+Q-space Trajectory Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qti`
+
+
 Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -489,7 +489,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """
@@ -581,7 +581,7 @@ def bundles_distances_mdf(tracksA, tracksB):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """
@@ -1474,7 +1474,7 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
     Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
 
-    See also
+    See Also
     --------
     dipy.tracking.distances.local_skeleton_clustering
     """

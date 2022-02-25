@@ -328,7 +328,7 @@ def compute_rfbc(streamlines_length, streamline_scores, max_windowsize=7):
         The maximal window size used to calculate the average LFBC region
 
     Returns
-    ----------
+    -------
     output: normalized lowest average LFBC region along the fiber
     """
 
@@ -360,7 +360,7 @@ def min_moving_average(a, n):
         Length of the segment
 
     Returns
-    ----------
+    -------
     output: normalized lowest average LFBC region along the fiber
     """
     ret = np.cumsum(np.extract(a >= 0, a))
