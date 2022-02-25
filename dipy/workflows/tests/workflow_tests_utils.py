@@ -121,6 +121,21 @@ class DummyFlow(Workflow):
                 optional_float_3)
 
 
+class DummyWorkflowOptionalStr(Workflow):
+    def run(self, optional_str_1=None, optional_str_2='default'):
+        """ Workflow used to test optional string parameters in the
+        introspective argument parser.
+
+        Parameters
+        ----------
+        optional_str_1 : variable str, optional
+            optional string argument 1
+        optional_str_2 : str, optional
+            optional string argument 2 (default 'default')
+        """
+        return optional_str_1, optional_str_2
+
+
 class DummyVariableTypeWorkflow(Workflow):
 
     @classmethod
