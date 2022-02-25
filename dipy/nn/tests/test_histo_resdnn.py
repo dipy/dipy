@@ -1,11 +1,14 @@
 import pytest
 from packaging.version import Version
 
+from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
+from dipy.io.image import load_nifti
+from dipy.io.gradients import read_bvals_bvecs
 from dipy.nn.histo_resdnn import HistoResDNN
 from dipy.utils.optpkg import optional_package
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_raises
+from numpy.testing import assert_almost_equal, assert_raises, assert_equal
 
 tf, have_tf, _ = optional_package('tensorflow')
 
@@ -49,6 +52,27 @@ def test_default_weights():
     resdnn_model.load_model_weights(fetch_model_weights_path)
     results_arr = resdnn_model.predict(input_arr)
     assert_almost_equal(results_arr, target_arr)
+
+
+@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
+def test_fit_shape_and_masking():
+    resdnn_model = HistoResDNN()
+    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
+    resdnn_model.load_model_weights(fetch_model_weights_path)
+
+    dwi_fname, bval_fname, bvec_fname = get_fnames('stanford_hardi')
+    data, _ = load_nifti(dwi_fname)
+    data = np.squeeze(data)
+    bvals, bvecs = read_bvals_bvecs(bval_fname, bvec_fname)
+    gtab = gradient_table(bvals, bvecs)
+
+    mask = np.zeros(data.shape[0:3], dtype=bool)
+    mask[38:40, 45:50, 35:40] = 1
+
+    results_arr = resdnn_model.fit(data, gtab, mask=mask)
+    results_pos = np.sum(results_arr, axis=-1, dtype=bool)
+    assert_equal(mask, results_pos)
+    assert_equal(results_arr.shape[-1], 45)
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
