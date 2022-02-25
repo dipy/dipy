@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 
@@ -34,8 +36,12 @@ def test_bdg_initial_direction():
     sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     voxel = single_tensor(gtab).reshape([1, 1, 1, -1])
     dti_model = dti.TensorModel(gtab)
-    boot_dg = BootDirectionGetter.from_data(voxel, dti_model, 30,
-                                            sphere=sphere, sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_dg = BootDirectionGetter.from_data(voxel, dti_model, 30,
+                                                sphere=sphere, sh_order=6)
     initial_direction = boot_dg.initial_direction(np.zeros(3))
     npt.assert_equal(len(initial_direction), 1)
     npt.assert_allclose(initial_direction[0], [1, 0, 0], atol=0.1)
@@ -47,11 +53,15 @@ def test_bdg_initial_direction():
                                         snr=None)
     voxel = voxel.reshape([1, 1, 1, -1])
     response = (np.array([0.0015, 0.0004, 0.0004]), 1)
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response=response,
-                                                sh_order=4)
-    boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30,
-                                            sphere=sphere,)
-    initial_direction = boot_dg.initial_direction(np.zeros(3))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response=response,
+                                                    sh_order=4)
+        boot_dg = BootDirectionGetter.from_data(voxel, csd_model, 30,
+                                                sphere=sphere,)
+        initial_direction = boot_dg.initial_direction(np.zeros(3))
 
     npt.assert_equal(len(initial_direction), 2)
     npt.assert_allclose(initial_direction, primary_evecs, atol=0.1)
@@ -109,7 +119,11 @@ def test_bdg_residual():
     bvals = np.insert(bvals, 0, 0)
     gtab = gradient_table(bvals, bvecs)
     r, theta, phi = cart2sphere(*vertices.T)
-    B, m, n = shm.real_sh_descoteaux(6, theta, phi)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        B, m, n = shm.real_sh_descoteaux(6, theta, phi)
     shm_coeff = np.random.random(B.shape[1])
 
     # sphere_func is sampled of the spherical function for each point of
@@ -119,19 +133,27 @@ def test_bdg_residual():
     voxel = np.concatenate((np.zeros(1), sphere_func))
     data = np.tile(voxel, (3, 3, 3, 1))
 
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
-    boot_pmf_gen = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
-                              sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+        boot_pmf_gen = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
+                                  sh_order=6)
 
-    # Two boot samples should be the same
-    odf1 = boot_pmf_gen.get_pmf(np.array([1.5, 1.5, 1.5]))
+        # Two boot samples should be the same
+        odf1 = boot_pmf_gen.get_pmf(np.array([1.5, 1.5, 1.5]))
     odf2 = boot_pmf_gen.get_pmf(np.array([1.5, 1.5, 1.5]))
     npt.assert_array_almost_equal(odf1, odf2)
 
     # A boot sample with less sh coeffs should have residuals, thus the two
     # should be different
-    boot_pmf_gen2 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
-                               sh_order=4)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        boot_pmf_gen2 = BootPmfGen(data, model=csd_model, sphere=hsph_updated,
+                                   sh_order=4)
     odf1 = boot_pmf_gen2.get_pmf(np.array([1.5, 1.5, 1.5]))
     odf2 = boot_pmf_gen2.get_pmf(np.array([1.5, 1.5, 1.5]))
     npt.assert_(np.any(odf1 != odf2))
@@ -139,5 +161,9 @@ def test_bdg_residual():
     # test with a gtab with two shells and assert you get an error
     bvals[-1] = 2000
     gtab = gradient_table(bvals, bvecs)
-    csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=6)
     npt.assert_raises(ValueError, BootPmfGen, data, csd_model, hsph_updated, 6)

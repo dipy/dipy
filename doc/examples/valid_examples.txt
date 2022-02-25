@@ -55,6 +55,7 @@
  tracking_rumba.py
  tracking_sfm.py
  affine_registration_3d.py
+ affine_registration_masks.py
  syn_registration_2d.py
  syn_registration_3d.py
  tissue_classification.py

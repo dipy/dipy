@@ -19,7 +19,7 @@ from dipy.reconst.mapmri import MapmriModel, mapmri_index_matrix
 from dipy.reconst import dti, mapmri
 from dipy.reconst.odf import gfa
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.reconst.shm import sh_to_sf
+from dipy.reconst.shm import sh_to_sf, descoteaux07_legacy_msg
 from dipy.sims.voxel import (multi_tensor, multi_tensor_pdf, add_noise,
                              single_tensor, cylinders_and_ball_soderman)
 
@@ -174,11 +174,19 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 3)
 
     # do the same for isotropic implementation
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.0001,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=0.0001,
+                           anisotropic_scaling=False)
     mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S_reconst = mapfit.predict(gtab, 1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -186,13 +194,21 @@ def test_mapmri_signal_fitting(radial_order=6):
     assert_almost_equal(nmse_signal, 0.0, 3)
 
     # do the same without the positivity constraint:
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.0001,
-                       positivity_constraint=False,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=0.0001,
+                           positivity_constraint=False,
+                           anisotropic_scaling=False)
 
     mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S_reconst = mapfit.predict(gtab, 1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -202,13 +218,21 @@ def test_mapmri_signal_fitting(radial_order=6):
     # Repeat with a gtab with big_delta and small_delta:
     gtab.big_delta = 5
     gtab.small_delta = 3
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.0001,
-                       positivity_constraint=False,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=0.0001,
+                           positivity_constraint=False,
+                           anisotropic_scaling=False)
 
     mapfit = mapm.fit(S)
-    S_reconst = mapfit.predict(gtab, 1.0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S_reconst = mapfit.predict(gtab, 1.0)
 
     # test the signal reconstruction
     S = S / S[0]
@@ -217,14 +241,22 @@ def test_mapmri_signal_fitting(radial_order=6):
 
     if mapmri.have_cvxpy:
         # Positivity constraint and anisotropic scaling:
-        mapm = MapmriModel(gtab, radial_order=radial_order,
-                           laplacian_weighting=0.0001,
-                           positivity_constraint=True,
-                           anisotropic_scaling=False,
-                           pos_radius=2)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            mapm = MapmriModel(gtab, radial_order=radial_order,
+                               laplacian_weighting=0.0001,
+                               positivity_constraint=True,
+                               anisotropic_scaling=False,
+                               pos_radius=2)
 
         mapfit = mapm.fit(S)
-        S_reconst = mapfit.predict(gtab, 1.0)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            S_reconst = mapfit.predict(gtab, 1.0)
 
         # test the signal reconstruction
         S = S / S[0]
@@ -232,14 +264,22 @@ def test_mapmri_signal_fitting(radial_order=6):
         assert_almost_equal(nmse_signal, 0.0, 3)
 
         # Positivity constraint and anisotropic scaling:
-        mapm = MapmriModel(gtab, radial_order=radial_order,
-                           laplacian_weighting=None,
-                           positivity_constraint=True,
-                           anisotropic_scaling=False,
-                           pos_radius=2)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            mapm = MapmriModel(gtab, radial_order=radial_order,
+                               laplacian_weighting=None,
+                               positivity_constraint=True,
+                               anisotropic_scaling=False,
+                               pos_radius=2)
 
         mapfit = mapm.fit(S)
-        S_reconst = mapfit.predict(gtab, 1.0)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            S_reconst = mapfit.predict(gtab, 1.0)
 
         # test the signal reconstruction
         S = S / S[0]
@@ -258,19 +298,24 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
     S_array = np.tile(S, (5, 1))
 
     stat_weight = 0.1
-    mapm_scale_stat_reg_stat = MapmriModel(gtab,
-                                           radial_order=radial_order,
-                                           anisotropic_scaling=False,
-                                           dti_scale_estimation=False,
-                                           static_diffusivity=D,
-                                           laplacian_regularization=True,
-                                           laplacian_weighting=stat_weight)
-    mapm_scale_adapt_reg_stat = MapmriModel(gtab,
-                                            radial_order=radial_order,
-                                            anisotropic_scaling=False,
-                                            dti_scale_estimation=True,
-                                            laplacian_regularization=True,
-                                            laplacian_weighting=stat_weight)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm_scale_stat_reg_stat = MapmriModel(gtab,
+                                               radial_order=radial_order,
+                                               anisotropic_scaling=False,
+                                               dti_scale_estimation=False,
+                                               static_diffusivity=D,
+                                               laplacian_regularization=True,
+                                               laplacian_weighting=stat_weight)
+        mapm_scale_adapt_reg_stat = MapmriModel(
+            gtab,
+            radial_order=radial_order,
+            anisotropic_scaling=False,
+            dti_scale_estimation=True,
+            laplacian_regularization=True,
+            laplacian_weighting=stat_weight)
 
     start = time.time()
     mapf_scale_stat_reg_stat = mapm_scale_stat_reg_stat.fit(S_array)
@@ -294,8 +339,12 @@ def test_mapmri_isotropic_static_scale_factor(radial_order=6):
                                          time_scale_adapt_reg_stat))
 
     # check if the fitted signal is the same
-    assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
-                        mapf_scale_adapt_reg_stat.fitted_signal())
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        assert_almost_equal(mapf_scale_stat_reg_stat.fitted_signal(),
+                            mapf_scale_adapt_reg_stat.fitted_signal())
 
 
 def test_mapmri_signal_fitting_over_radial_order(order_max=8):
@@ -347,18 +396,30 @@ def test_mapmri_pdf_integral_unity(radial_order=6):
     radius_max = 0.04  # 40 microns
     gridsize = 17
     r_points = mapmri.create_rspace(gridsize, radius_max)
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_weighting=0.02,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_weighting=0.02,
+                           anisotropic_scaling=False)
     mapfit = mapm.fit(S)
-    pdf = mapfit.pdf(r_points)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf = mapfit.pdf(r_points)
     pdf[r_points[:, 2] == 0.] /= 2  # for antipodal symmetry on z-plane
 
     point_volume = (radius_max / (gridsize // 2)) ** 3
     integral = pdf.sum() * point_volume * 2
     assert_almost_equal(integral, 1.0, 3)
 
-    odf = mapfit.odf(sphere, s=0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odf = mapfit.odf(sphere, s=0)
     odf_sum = odf.sum() / sphere.vertices.shape[0] * (4 * np.pi)
     assert_almost_equal(odf_sum, 1.0, 2)
 
@@ -442,9 +503,13 @@ def test_mapmri_metrics_isotropic(radial_order=6):
 
     # test MAPMRI q-space indices
 
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_regularization=False,
+                           anisotropic_scaling=False)
     mapfit = mapm.fit(S)
 
     tau = 1 / (4 * np.pi ** 2)
@@ -462,8 +527,12 @@ def test_mapmri_metrics_isotropic(radial_order=6):
         ((l2 * l3 + l1 * (l2 + l3)) * tau ** 2)
     )
 
-    assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
-    assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        assert_almost_equal(mapfit.rtap(), rtap_gt, 5)
+        assert_almost_equal(mapfit.rtpp(), rtpp_gt, 5)
     assert_almost_equal(mapfit.rtop(), rtop_gt, 4)
     assert_almost_equal(mapfit.msd(), msd_gt, 5)
     assert_almost_equal(mapfit.qiv(), qiv_gt, 5)
@@ -502,9 +571,13 @@ def test_mapmri_laplacian_isotropic(radial_order=6):
     l1, l2, l3 = [0.0003, 0.0003, 0.0003]  # isotropic diffusivities
     S = single_tensor(gtab, evals=np.r_[l1, l2, l3])
 
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_regularization=False,
+                           anisotropic_scaling=False)
     mapfit = mapm.fit(S)
     tau = 1 / (4 * np.pi ** 2)
 
@@ -547,8 +620,12 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
     M_aniso = mapmri.mapmri_phi_matrix(radial_order, mu, q)
     K_aniso = mapmri.mapmri_psi_matrix(radial_order, mu, r_points)
 
-    M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, u0, q)
-    K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, u0, r_points)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        M_iso = mapmri.mapmri_isotropic_phi_matrix(radial_order, u0, q)
+        K_iso = mapmri.mapmri_isotropic_psi_matrix(radial_order, u0, r_points)
 
     coef_aniso = np.dot(np.linalg.pinv(M_aniso), S)
     coef_iso = np.dot(np.linalg.pinv(M_iso), S)
@@ -566,10 +643,14 @@ def test_signal_fitting_equality_anisotropic_isotropic(radial_order=6):
                               np.ones_like(pdf_fitted_aniso), 3)
 
     # test if the implemented version also produces the same result
-    mapm = MapmriModel(gtab, radial_order=radial_order,
-                       laplacian_regularization=False,
-                       anisotropic_scaling=False)
-    s_fitted_implemented_isotropic = mapm.fit(S).fitted_signal()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapm = MapmriModel(gtab, radial_order=radial_order,
+                           laplacian_regularization=False,
+                           anisotropic_scaling=False)
+        s_fitted_implemented_isotropic = mapm.fit(S).fitted_signal()
 
     # normalize non-implemented fitted signal with b0 value
     s_fitted_aniso_norm = s_fitted_aniso / s_fitted_aniso.max()
@@ -597,8 +678,13 @@ def test_mapmri_isotropic_design_matrix_separability(radial_order=6):
     q = gtab.bvecs * qvals[:, None]
     mu = 0.0003  # random value
 
-    M = mapmri.mapmri_isotropic_phi_matrix(radial_order, mu, q)
-    M_independent = mapmri.mapmri_isotropic_M_mu_independent(radial_order, q)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        M = mapmri.mapmri_isotropic_phi_matrix(radial_order, mu, q)
+        M_independent = mapmri.mapmri_isotropic_M_mu_independent(
+            radial_order, q)
     M_dependent = mapmri.mapmri_isotropic_M_mu_dependent(radial_order, mu,
                                                          qvals)
     M_reconstructed = M_independent * M_dependent
@@ -625,12 +711,20 @@ def test_estimate_radius_with_rtap(radius_gt=5e-3):
     # estimate radius using isotropic MAP-MRI.
     # note that the radial order is higher and the precision is lower due to
     # less accurate signal extrapolation.
-    mapmod = mapmri.MapmriModel(gtab, radial_order=8,
-                                laplacian_regularization=True,
-                                laplacian_weighting=0.01,
-                                anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapmod = mapmri.MapmriModel(gtab, radial_order=8,
+                                    laplacian_regularization=True,
+                                    laplacian_weighting=0.01,
+                                    anisotropic_scaling=False)
     mapfit = mapmod.fit(E)
-    radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        radius_estimated = np.sqrt(1 / (np.pi * mapfit.rtap()))
     assert_almost_equal(radius_estimated, radius_gt, 4)
 
 
@@ -669,22 +763,34 @@ def test_positivity_constraint(radial_order=6):
                  True)
 
     # the same for isotropic scaling
-    mapmod_no_constraint = MapmriModel(gtab, radial_order=radial_order,
-                                       laplacian_regularization=False,
-                                       positivity_constraint=False,
-                                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapmod_no_constraint = MapmriModel(gtab, radial_order=radial_order,
+                                           laplacian_regularization=False,
+                                           positivity_constraint=False,
+                                           anisotropic_scaling=False)
     mapfit_no_constraint = mapmod_no_constraint.fit(S_noise)
-    pdf = mapfit_no_constraint.pdf(r_grad)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf = mapfit_no_constraint.pdf(r_grad)
     pdf_negative_no_constraint = pdf[pdf < 0].sum()
 
-    mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
-                                    laplacian_regularization=False,
-                                    positivity_constraint=True,
-                                    anisotropic_scaling=False,
-                                    pos_grid=gridsize,
-                                    pos_radius='adaptive')
-    mapfit_constraint = mapmod_constraint.fit(S_noise)
-    pdf = mapfit_constraint.pdf(r_grad)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
+                                        laplacian_regularization=False,
+                                        positivity_constraint=True,
+                                        anisotropic_scaling=False,
+                                        pos_grid=gridsize,
+                                        pos_radius='adaptive')
+        mapfit_constraint = mapmod_constraint.fit(S_noise)
+        pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()
 
     assert_equal((pdf_negative_constraint / pdf_negative_no_constraint) < 0.1,
@@ -740,18 +846,22 @@ def test_laplacian_regularization(radial_order=6):
     assert_equal(laplacian_norm_laplacian < laplacian_norm_unreg, True)
 
     # the same for isotropic scaling
-    mapmod_unreg = MapmriModel(gtab, radial_order=radial_order,
-                               laplacian_regularization=False,
-                               laplacian_weighting=weight_array,
-                               anisotropic_scaling=False)
-    mapmod_laplacian_array = MapmriModel(gtab, radial_order=radial_order,
-                                         laplacian_regularization=True,
-                                         laplacian_weighting=weight_array,
-                                         anisotropic_scaling=False)
-    mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
-                                       laplacian_regularization=True,
-                                       laplacian_weighting="GCV",
-                                       anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapmod_unreg = MapmriModel(gtab, radial_order=radial_order,
+                                   laplacian_regularization=False,
+                                   laplacian_weighting=weight_array,
+                                   anisotropic_scaling=False)
+        mapmod_laplacian_array = MapmriModel(gtab, radial_order=radial_order,
+                                             laplacian_regularization=True,
+                                             laplacian_weighting=weight_array,
+                                             anisotropic_scaling=False)
+        mapmod_laplacian_gcv = MapmriModel(gtab, radial_order=radial_order,
+                                           laplacian_regularization=True,
+                                           laplacian_weighting="GCV",
+                                           anisotropic_scaling=False)
 
     # test the Generalized Cross Validation
     # test if GCV gives zero if there is no noise
@@ -827,13 +937,25 @@ def test_mapmri_odf(radial_order=6):
 
     # for the isotropic implementation check if the odf spherical harmonics
     # actually represent the discrete sphere function.
-    mapmod = MapmriModel(gtab, radial_order=radial_order,
-                         laplacian_regularization=True,
-                         laplacian_weighting=0.01,
-                         anisotropic_scaling=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        mapmod = MapmriModel(gtab, radial_order=radial_order,
+                             laplacian_regularization=True,
+                             laplacian_weighting=0.01,
+                             anisotropic_scaling=False)
     mapfit = mapmod.fit(data)
-    odf = mapfit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odf = mapfit.odf(sphere)
     odf_sh = mapfit.odf_sh()
-    odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None,
-                           legacy=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odf_from_sh = sh_to_sf(odf_sh, sphere, radial_order, basis_type=None,
+                               legacy=True)
     assert_almost_equal(odf, odf_from_sh, 10)

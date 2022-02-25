@@ -1,6 +1,5 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
-cimport cython
 import numpy as np
 cimport numpy as cnp
 
@@ -9,7 +8,7 @@ from dipy.segment.clustering import TreeCluster, TreeClusterMap
 
 
 from libc.math cimport fabs
-from dipy.segment.cythonutils cimport Data2D, Shape, shape2tuple,\
+from dipy.segment.cythonutils cimport Data2D, Shape,\
     tuple2shape, same_shape, create_memview_2d, free_memview_2d
 
 cdef extern from "math.h" nogil:

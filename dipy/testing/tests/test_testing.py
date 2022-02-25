@@ -64,8 +64,3 @@ def test_clear_and_catch_warnings():
         warnings.warn('Another warning')
     assert_warn_len_equal(my_mod, 2)
     warnings.simplefilter("always", category=UserWarning)
-
-
-if __name__ == '__main__':
-    test_clear_and_catch_warnings()
-    test_assert()

@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.direction.peaks import default_sphere, peaks_from_model
-import dipy.reconst.eudx_direction_getter
+from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 def test_EuDXDirectionGetter():
@@ -30,9 +30,13 @@ def test_EuDXDirectionGetter():
         return (state, np.array(newdir))
 
     data = np.random.random((3, 4, 5, 2))
-    peaks = peaks_from_model(SillyModel(), data, default_sphere,
-                             relative_peak_threshold=.5,
-                             min_separation_angle=25)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        peaks = peaks_from_model(SillyModel(), data, default_sphere,
+                                 relative_peak_threshold=.5,
+                                 min_separation_angle=25)
     peaks._initialize()
 
     up = np.zeros(3)
@@ -70,10 +74,14 @@ def test_EuDXDirectionGetter():
                 # It should be a (1, 3) array
                 npt.assert_array_almost_equal(initial_dir, [expected_dir])
 
-    peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
-                              relative_peak_threshold=.5,
-                              min_separation_angle=25,
-                              npeaks=1)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        peaks1 = peaks_from_model(SillyModel(), data, default_sphere,
+                                  relative_peak_threshold=.5,
+                                  min_separation_angle=25,
+                                  npeaks=1)
     peaks1._initialize()
     point = np.array([1, 1, 1], dtype=float)
 

@@ -7,7 +7,6 @@ from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
-from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 
@@ -87,10 +86,3 @@ def test_split_flow():
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_affine, affine)
-
-
-if __name__ == '__main__':
-    test_io_fetch()
-    test_io_fetch_fetcher_datanames()
-    test_io_info()
-    test_split_flow()

@@ -1,4 +1,5 @@
 # Tests for shore fitting
+import warnings
 from math import factorial
 
 import numpy as np
@@ -7,6 +8,7 @@ import numpy.testing as npt
 from scipy.special import genlaguerre, gamma
 
 from dipy.data import get_gtab_taiwan_dsi
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.reconst.shore import ShoreModel
 from dipy.sims.voxel import multi_tensor
 
@@ -56,8 +58,12 @@ def test_shore_positive_constrain():
                      positive_constraint=True,
                      pos_grid=11,
                      pos_radius=20e-03)
-    asmfit = asm.fit(data.S)
-    eap = asmfit.pdf_grid(11, 20e-03)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        asmfit = asm.fit(data.S)
+        eap = asmfit.pdf_grid(11, 20e-03)
     npt.assert_almost_equal(eap[eap < 0].sum(), 0, 3)
 
 
@@ -65,7 +71,11 @@ def test_shore_fitting_no_constrain_e0():
     asm = ShoreModel(data.gtab, radial_order=data.radial_order,
                      zeta=data.zeta, lambdaN=data.lambdaN,
                      lambdaL=data.lambdaL)
-    asmfit = asm.fit(data.S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        asmfit = asm.fit(data.S)
     npt.assert_almost_equal(compute_e0(asmfit), 1)
 
 
@@ -75,7 +85,11 @@ def test_shore_fitting_constrain_e0():
                      zeta=data.zeta, lambdaN=data.lambdaN,
                      lambdaL=data.lambdaL,
                      constrain_e0=True)
-    asmfit = asm.fit(data.S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        asmfit = asm.fit(data.S)
     npt.assert_almost_equal(compute_e0(asmfit), 1)
 
 

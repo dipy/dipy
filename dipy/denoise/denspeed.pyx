@@ -3,12 +3,9 @@ import numpy as np
 cimport numpy as cnp
 
 cimport cython
-cimport safe_openmp as openmp
-from safe_openmp cimport have_openmp
 
 from cython.parallel import parallel, prange
-# import cpu_count for backwards compatibility
-from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 from libc.math cimport sqrt, exp

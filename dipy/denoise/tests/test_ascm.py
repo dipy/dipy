@@ -6,7 +6,6 @@ from numpy.testing import (assert_,
                            assert_array_almost_equal)
 from dipy.denoise.non_local_means import non_local_means
 from dipy.denoise.noise_estimate import estimate_sigma
-from dipy.data import fetch_stanford_t1, read_stanford_t1
 from dipy.denoise.adaptive_soft_matching import adaptive_soft_matching
 
 

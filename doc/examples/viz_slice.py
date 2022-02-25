@@ -9,7 +9,7 @@ Here we present an example for visualizing slices from 3D images.
 """
 
 import os
-import nibabel as nib
+
 from dipy.data import fetch_bundles_2_subjects
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.viz import window, actor, ui

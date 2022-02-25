@@ -16,7 +16,7 @@ from dipy.viz import window, actor
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.image import load_nifti
 
 """
 Download and read the data for this tutorial.

@@ -2,7 +2,6 @@
 from multiprocessing import Pool
 from itertools import repeat
 from os import path
-from warnings import warn
 
 from nibabel.tmpdirs import InTemporaryDirectory
 

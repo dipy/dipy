@@ -459,12 +459,3 @@ def test_compute_masked_class_stats_3d():
     means, vars = em.compute_masked_class_stats_3d(mask, values, 10, labels)
     assert_array_almost_equal(means, expected_means, decimal=4)
     assert_array_almost_equal(vars, expected_vars, decimal=4)
-
-
-if __name__ == '__main__':
-    test_compute_em_demons_step_2d()
-    test_compute_em_demons_step_3d()
-    test_quantize_positive_2d()
-    test_quantize_positive_3d()
-    test_compute_masked_class_stats_2d()
-    test_compute_masked_class_stats_3d()

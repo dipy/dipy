@@ -13,15 +13,15 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_raises, assert_allclose,
                            assert_almost_equal, assert_equal)
 
+from dipy.tracking.streamlinespeed import (
+    compress_streamlines, length, set_number_of_points,
+)
 from dipy.tracking.streamline import Streamlines
-from dipy.tracking.streamline import (set_number_of_points,
-                                      length,
-                                      relist_streamlines,
+from dipy.tracking.streamline import (relist_streamlines,
                                       unlist_streamlines,
                                       center_streamlines,
                                       transform_streamlines,
                                       select_random_set_of_streamlines,
-                                      compress_streamlines,
                                       select_by_rois,
                                       orient_by_rois,
                                       orient_by_streamline,
