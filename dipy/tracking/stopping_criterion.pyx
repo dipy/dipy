@@ -175,6 +175,7 @@ cdef class ActStoppingCriterion(AnatomicalStoppingCriterion):
         double interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
         double[:, :, :] include_map, exclude_map
+
     References
     ----------
     .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.

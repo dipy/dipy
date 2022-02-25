@@ -137,7 +137,7 @@ class AxSymShResponse(object):
     symmetric, even spherical harmonic functions (ie, m == 0 and n even).
 
     Parameters
-    -----------
+    ----------
     S0 : float
         Signal with no diffusion weighting.
     dwi_response : array
@@ -922,8 +922,8 @@ def mask_for_response_ssst(gtab, data, roi_center=None, roi_radii=10,
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
     fiber orientation density function from diffusion-weighted MRI
     data using spherical deconvolution
-    """
 
+    """
     if len(data.shape) < 4:
         msg = """Data must be 4D (3D image + directions). To use a 2D image,
         please reshape it into a (N, N, 1, ndirs) array."""
@@ -1109,8 +1109,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     num_processes : int, optional
         If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()). If < 0 the maximal number of
-        cores minus |num_processes + 1| is used (enter -1 to use as many cores
-        as possible). 0 raises an error.
+        cores minus ``num_processes + 1`` is used (enter -1 to use as many
+        cores as possible). 0 raises an error.
     sphere : Sphere, optional.
         The sphere used for peak finding. Default: default_sphere.
 

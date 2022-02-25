@@ -107,10 +107,13 @@ if __name__ == '__main__':
         [v.split('=')[1].strip(" '\n.")
          for v in info_lines
          if re.match('^_version_(major|minor|micro|extra)', v)])
+    source_version = Version(source_version)
     print('***', source_version)
 
     if source_version != installed_version:
+        print('***', installed_version)
         abort("Installed version does not match source version")
+
 
     # generate docs
     command_list = []

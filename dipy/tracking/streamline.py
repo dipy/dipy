@@ -48,7 +48,7 @@ def relist_streamlines(points, offsets):
     an offsets array return the streamlines as a list of shorter arrays.
 
     Parameters
-    -----------
+    ----------
     points : array
     offsets : array
 
@@ -684,7 +684,7 @@ def values_from_volume(data, streamlines, affine):
         The voxel_to_rasmm matrix, typically from a NIFTI file.
 
     Returns
-    ---------
+    -------
     array or list (depending on the input) : values interpolate to each
         coordinate along the length of each streamline.
 

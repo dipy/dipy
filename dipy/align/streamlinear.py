@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
     def __init__(self, num_threads=None):
-        """ An abstract class for the metric used for streamline registration
+        """ An abstract class for the metric used for streamline registration.
 
         If the two sets of streamlines match exactly then method ``distance``
         of this object should be minimum.
@@ -43,6 +43,7 @@ class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
             maximal number of threads minus |num_threads + 1| is used (enter -1
             to use as many threads as possible). 0 raises an error. Only
             metrics using OpenMP will use this variable.
+
         """
         self.static = None
         self.moving = None
@@ -54,7 +55,7 @@ class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def distance(self, xopt):
-        """ calculate distance for current set of parameters
+        """ calculate distance for current set of parameters.
         """
         pass
 
@@ -62,7 +63,7 @@ class StreamlineDistanceMetric(object, metaclass=abc.ABCMeta):
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
     """ Bundle-based Minimum Distance aka BMD
 
-    This is the cost function used by the StreamlineLinearRegistration
+    This is the cost function used by the StreamlineLinearRegistration.
 
     Methods
     -------
@@ -77,7 +78,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
     """
 
     def setup(self, static, moving):
-        """ Setup static and moving sets of streamlines
+        """ Setup static and moving sets of streamlines.
 
         Parameters
         ----------
@@ -104,7 +105,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
         self.moving_centered_pts, _ = unlist_streamlines(moving)
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric
+        """ Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -137,7 +138,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
     """
 
     def setup(self, static, moving):
-        """ Setup static and moving sets of streamlines
+        """ Setup static and moving sets of streamlines.
 
         Parameters
         ----------
@@ -152,12 +153,13 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
         Num_threads is not used in this class. Use ``BundleMinDistanceMetric``
         for a faster, threaded and less memory hungry metric
+
         """
         self.static = static
         self.moving = moving
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric
+        """ Distance calculated from this Metric.
 
         Parameters
         ----------
@@ -168,7 +170,7 @@ class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
 
 
 class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
-    """ Asymmetric Bundle-based Minimum distance
+    """ Asymmetric Bundle-based Minimum distance.
 
     This is a cost function that can be used by the
     StreamlineLinearRegistration class.
@@ -176,12 +178,13 @@ class BundleMinDistanceAsymmetricMetric(BundleMinDistanceMetric):
     """
 
     def distance(self, xopt):
-        """ Distance calculated from this Metric
+        """ Distance calculated from this Metric.
 
         Parameters
         ----------
         xopt : sequence
             List of affine parameters as an 1D vector
+
         """
         return bundle_min_distance_asymmetric_fast(xopt,
                                                    self.static_centered_pts,
@@ -306,8 +309,8 @@ class StreamlineLinearRegistration(object):
         .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
            bundles using local and global streamline-based
            registration and clustering, Neuroimage, 2017.
-        """
 
+        """
         self.x0 = self._set_x0(x0)
         self.metric = metric
 
@@ -342,7 +345,6 @@ class StreamlineLinearRegistration(object):
         map : StreamlineRegistrationMap
 
         """
-
         msg = 'need to have the same number of points. Use '
         msg += 'set_number_of_points from dipy.tracking.streamline'
 
@@ -415,7 +417,7 @@ class StreamlineLinearRegistration(object):
         return srm
 
     def _set_x0(self, x0):
-        """ check if input is of correct type"""
+        """ check if input is of correct type."""
 
         if hasattr(x0, 'ndim'):
 
@@ -470,7 +472,6 @@ class StreamlineRegistrationMap(object):
 
         Parameters
         ----------
-
         matrix : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
@@ -489,8 +490,8 @@ class StreamlineRegistrationMap(object):
 
         iterations : int
             Number of iterations of the optimizer
-        """
 
+        """
         self.matrix = matopt
         self.xopt = xopt
         self.fopt = fopt
@@ -511,21 +512,20 @@ class StreamlineRegistrationMap(object):
 
         Notes
         -----
-
         All this does is apply ``self.matrix`` to the input streamlines.
-        """
 
+        """
         return transform_streamlines(moving, self.matrix)
 
 
 def bundle_sum_distance(t, static, moving, num_threads=None):
-    """ MDF distance optimization function (SUM)
+    """ MDF distance optimization function (SUM).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     t : ndarray
         t is a vector of affine transformation parameters with
         size at least 6.
@@ -558,13 +558,13 @@ def bundle_sum_distance(t, static, moving, num_threads=None):
 
 
 def bundle_min_distance(t, static, moving):
-    """ MDF-based pairwise distance optimization function (MIN)
+    """ MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     t : ndarray
         t is a vector of affine transformation parameters with
         size at least 6.
@@ -595,13 +595,13 @@ def bundle_min_distance(t, static, moving):
 
 
 def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
-    """ MDF-based pairwise distance optimization function (MIN)
+    """ MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     t : array
         1D array. t is a vector of affine transformation parameters with
         size at least 6.
@@ -661,13 +661,13 @@ def bundle_min_distance_fast(t, static, moving, block_size, num_threads=None):
 
 
 def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
-    """ MDF-based pairwise distance optimization function (MIN)
+    """ MDF-based pairwise distance optimization function (MIN).
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     t : array
         1D array. t is a vector of affine transformation parameters with
         size at least 6.
@@ -694,8 +694,8 @@ def bundle_min_distance_asymmetric_fast(t, static, moving, block_size):
     Returns
     -------
     cost: float
-    """
 
+    """
     aff = compose_matrix44(t)
     moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
     moving = np.ascontiguousarray(moving, dtype=np.float64)
@@ -721,7 +721,7 @@ def remove_clusters_by_size(clusters, min_size=0):
 
 def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
                     verbose=False, num_threads=None):
-    """ Progressive SLR
+    """ Progressive SLR.
 
     This is an utility function that allows for example to do affine
     registration using Streamline-based Linear Registration (SLR)
@@ -760,6 +760,7 @@ def progressive_slr(static, moving, metric, x0, bounds, method='L-BFGS-B',
     .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
         registration of white-matter fascicles in the space of streamlines",
         NeuroImage, 117, 124--140, 2015
+
     """
     if verbose:
         logger.info('Progressive Registration is Enabled')
@@ -926,6 +927,7 @@ def slr_with_qbx(static, moving,
     .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
     bundles using local and global streamline-based registration and
     clustering, Neuroimage, 2017.
+
     """
     if rng is None:
         rng = np.random.RandomState()
@@ -1020,10 +1022,10 @@ def _threshold(x, th):
 
 
 def compose_matrix44(t, dtype=np.double):
-    """ Compose a 4x4 transformation matrix
+    """ Compose a 4x4 transformation matrix.
 
     Parameters
-    -----------
+    ----------
     t : ndarray
         This is a 1D vector of affine transformation parameters with
         size at least 3.
@@ -1066,10 +1068,10 @@ def compose_matrix44(t, dtype=np.double):
 
 
 def decompose_matrix44(mat, size=12):
-    """ Given a 4x4 homogeneous matrix return the parameter vector
+    """ Given a 4x4 homogeneous matrix return the parameter vector.
 
     Parameters
-    -----------
+    ----------
     mat : array
         Homogeneous 4x4 transformation matrix
     size : int

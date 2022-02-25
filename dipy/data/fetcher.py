@@ -73,7 +73,7 @@ def check_md5(filename, stored_md5=None):
     string md5
 
     Parameters
-    -----------
+    ----------
     filename : string
         Path to a file.
     md5 : string
@@ -524,6 +524,7 @@ def get_fnames(name='small_64D'):
     ----------
     name : str
         the filename/s of which dataset to return, one of:
+
         - 'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         - 'small_101D' small region of interest nifti, bvecs, bvals
           101 directions

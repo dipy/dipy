@@ -470,7 +470,7 @@ class ReconstCSDFlow(Workflow):
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus |num_processes + 1| is used (enter -1 to use as
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
@@ -636,7 +636,7 @@ class ReconstCSAFlow(Workflow):
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus |num_processes + 1| is used (enter -1 to use as
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
@@ -948,7 +948,6 @@ class ReconstIvimFlow(Workflow):
 
         References
         ----------
-
         .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                         "Spin Diffusion Measurements: Spin Echoes in the
                         Presence of a Time-Dependent Field Gradient". The

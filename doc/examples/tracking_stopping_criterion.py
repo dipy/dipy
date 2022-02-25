@@ -349,7 +349,7 @@ expected regions (e.g. gray matter) and allows the user to get only
 streamlines stopping in those regions.
 
 Notes
-------
+-----
 Currently,the proposed method that cuts streamlines going through
 subcortical gray matter regions is not implemented. The
 backtracking technique for streamlines reaching INVALIDPOINT is not

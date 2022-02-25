@@ -13,7 +13,7 @@ def determine_num_processes(num_processes):
     - For ``num_processes > 0``, return this value.
 
     - For ``num_processes < 0``, return the maximal number of cores minus
-    ``|num_processes + 1|``. In particular ``num_processes = -1`` will use as
+    ``num_processes + 1``. In particular ``num_processes = -1`` will use as
     many cores as possible.
 
     - For ``num_processes = 0`` a ValueError is raised.

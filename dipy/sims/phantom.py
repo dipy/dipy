@@ -12,7 +12,7 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
     """ Add noise of specified distribution to a 4D array.
 
     Parameters
-    -----------
+    ----------
     vol : array, shape (X,Y,Z,W)
         Diffusion measurements in `W` directions at each ``(X, Y, Z)`` voxel
         position.
@@ -26,7 +26,7 @@ def add_noise(vol, snr=1.0, S0=None, noise_type='rician'):
         'rayleigh' for a Rayleigh distribution.
 
     Returns
-    --------
+    -------
     vol : array, same shape as vol
         Volume with added noise.
 
@@ -93,7 +93,7 @@ def orbital_phantom(gtab=None,
     """Create a phantom based on a 3-D orbit ``f(t) -> (x,y,z)``.
 
     Parameters
-    -----------
+    ----------
     gtab : GradientTable
         Gradient table of measurement directions.
     evals : array, shape (3,)
@@ -131,7 +131,7 @@ def orbital_phantom(gtab=None,
     add_noise
 
     Examples
-    ---------
+    --------
 
     >>> def f(t):
     ...    x = np.sin(t)
