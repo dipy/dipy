@@ -6,6 +6,7 @@ from dipy.utils.optpkg import optional_package
 joblib, has_joblib, _ = optional_package('joblib')
 dask, has_dask, _ = optional_package('dask')
 
+
 def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
            backend="threading", func_args=[], func_kwargs={},
            **kwargs):
@@ -16,13 +17,13 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     ----------
     func : callable
         The function to apply to each item in the array. Must have the form:
-        func(arr, idx, *args, *kwargs) where arr is an ndarray and idx is an
+        ``func(arr, idx, *args, *kwargs)`` where arr is an ndarray and idx is an
         index into that array (a tuple). The Return of `func` needs to be one
         item (e.g. float, int) per input item.
     in_list : list
-       All legitimate inputs to the function to operate over.
+       A sequence of items each of which can be an input to ``func``.
     n_jobs : integer, optional
-        The number of jobs to perform in parallel. -1 to use all cpus.
+        The number of jobs to perform in parallel. -1 to use all but one cpu.
         Default: 1
     engine : str
         {"dask", "joblib", "serial"}
@@ -45,6 +46,12 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
 
     Examples
     --------
+    >>> def power_it(num, n=2):
+        ...     return num ** n
+    >>> arr = np.arange(100).reshape(10, 10)
+    >>> out = parfor(power_it, arr, n_jobs=2)
+    >>> out[0, 0] == power_it(arr[0, 0])
+    True
 
     """
     if engine == "joblib":
