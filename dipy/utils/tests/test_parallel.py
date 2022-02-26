@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-import AFQ.utils.parallel as para
+import dipy.utils.parallel as para
 
 
 def power_it(num, n=2):
