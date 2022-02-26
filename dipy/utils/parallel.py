@@ -1,6 +1,7 @@
 import numpy as np
 import multiprocessing
 from tqdm.auto import tqdm
+from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package('joblib')
 dask, has_dask, _ = optional_package('dask')
