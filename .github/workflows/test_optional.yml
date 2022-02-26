@@ -17,4 +17,4 @@ jobs:
     with:
       runs-on: '["macos-latest", "windows-latest"]'
       install-type: '["conda"]'
-      extra-depends: scikit-learn pandas statsmodels pytables scipy
+      extra-depends: scikit-learn pandas statsmodels pytables scipy dask joblib
