@@ -1,9 +1,9 @@
 import numpy as np
 import multiprocessing
-import joblib
-import dask
 from tqdm.auto import tqdm
 
+joblib, has_joblib, _ = optional_package('joblib')
+dask, has_dask, _ = optional_package('dask')
 
 def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
            backend="threading", func_args=[], func_kwargs={},
