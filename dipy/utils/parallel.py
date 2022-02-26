@@ -2,7 +2,7 @@ import numpy as np
 import multiprocessing
 import joblib
 import dask
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
