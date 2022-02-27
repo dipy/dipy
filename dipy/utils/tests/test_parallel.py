@@ -8,12 +8,17 @@ def power_it(num, n=2):
     # We define a function of the right form for parallelization
     return num ** n
 
-
 def test_parfor():
+    engines = ["serial"]
+    if para.has_dask:
+        engines.append("dask")
+    if para.has_joblib:
+        engines.append("joblib")
+
     my_array = np.arange(100).reshape(10, 10)
     i, j = np.random.randint(0, 9, 2)
     my_list = list(my_array.ravel())
-    for engine in ["joblib", "dask", "serial"]:
+    for engine in engines:
         for backend in ["threading", "multiprocessing"]:
             npt.assert_equal(para.parfor(power_it,
                                          my_list,
