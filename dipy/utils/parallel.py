@@ -50,9 +50,7 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     ...     return num ** n
     >>> arr = np.arange(100).reshape(10, 10)
     >>> out = parfor(power_it, arr, n_jobs=2)
-    >>> out[0, 0] == power_it(arr[0, 0])
-    True
-
+    >>> out[0, 0] == power_it(arr[0, 0]) # doctest: +SKIP
     """
     if engine == "joblib":
         p = joblib.Parallel(
