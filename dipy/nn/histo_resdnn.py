@@ -7,8 +7,9 @@ Class and helper functions for fitting the Histological ResDNN model.
 from packaging.version import Version
 import logging
 
+from dipy.core.gradients import unique_bvals_magnitude, get_bval_indices
 from dipy.core.sphere import HemiSphere
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_fnames
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
 from dipy.utils.optpkg import optional_package
 import numpy as np
@@ -37,7 +38,7 @@ def set_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
-class HistoResDNN(object):
+class HistoResDNN():
     """
     This class is intended for the ResDNN Histology Network model.
     """
@@ -47,7 +48,7 @@ class HistoResDNN(object):
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in [1, 2].
 
-        To obtain the pre-trained model, use:
+        To obtain the pre-trained model, use::
             resdnn_model = HistoResDNN()
             fetch_model_weights_path = get_fnames('histo_resdnn_weights')
             resdnn_model.load_model_weights(fetch_model_weights_path)
@@ -55,14 +56,14 @@ class HistoResDNN(object):
         This model is designed to take as input raw DWI signal on a sphere
         (ODF) represented as SH of order 8 in the tournier basis and predict
         fODF of order 8 in the tournier basis. Effectively, this model is
-        mimicking CSD.
+        mimicking a CSD fit.
 
         Parameters
         ----------
         sh_order : int, optional
             Maximum SH order in the SH fit.  For ``sh_order``, there will be
             ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients for a
-            symmetric basis.
+            symmetric basis. Default: 8
         basis_type : {'tournier07', 'descoteaux07'}, optional
             ``tournier07`` (default) or ``descoteaux07``.
         verbose : bool (optional)
@@ -111,9 +112,18 @@ class HistoResDNN(object):
 
         self.model = Model(inputs=inputs, outputs=x6)
 
-    def load_model_weights(self, weights_path):
+    def fetch_default_weights(self):
         r"""
         Load the model pre-training weights to use for the fitting.
+        Will not work if the declared SH_ORDER does not match the weights
+        expected input.
+        """
+        fetch_model_weights_path = get_fnames('histo_resdnn_weights')
+        self.load_model_weights(fetch_model_weights_path)
+
+    def load_model_weights(self, weights_path):
+        r"""
+        Load the custom pre-training weights to use for the fitting.
         Will not work if the declared SH_ORDER does not match the weights
         expected input.
 
@@ -132,7 +142,7 @@ class HistoResDNN(object):
                              'do not match the declared model ({})'
                              .format(self.sh_size))
 
-    def predict(self, x_test):
+    def __predict(self, x_test):
         r"""
         Predict fODF (as SH) from input raw DWI signal (as SH)
 
@@ -145,7 +155,7 @@ class HistoResDNN(object):
 
         Returns
         -------
-        _ : np.ndarray (N, M)
+        np.ndarray (N, M)
             Predicted fODF (as SH)
         """
 
@@ -156,7 +166,7 @@ class HistoResDNN(object):
 
         return self.model.predict(x_test)
 
-    def fit(self, data, gtab, mask=None):
+    def predict(self, data, gtab, mask=None, chunk_size=1000):
         """ Wrapper function to faciliate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
@@ -171,6 +181,8 @@ class HistoResDNN(object):
         mask : np.ndarray (optional)
             Binary mask of the brain to avoid unnecessary computation and
             unreliable prediction outside the brain.
+            Default: Compute prediction only for nonzero voxels (with at least
+            one nonzero SH coefficient).
 
         Returns
         -------
@@ -188,20 +200,20 @@ class HistoResDNN(object):
         mask = mask.astype(bool)
 
         # Extract B0's and obtain a mean B0
-        b0_indices = np.where(gtab.bvals < 1)[0]
+        b0_indices = gtab.b0s_mask
         if not len(b0_indices) > 0:
             raise ValueError('b0 must be present for DWI normalization.')
-        logger.info('b0 indices found are: {}'.format(b0_indices))
+        logger.info('b0 indices found are: {}'.format(
+            np.argwhere(b0_indices).ravel()))
 
-        mean_b0 = data[..., b0_indices]
-        mean_b0 = np.mean(mean_b0, axis=-1)
+        mean_b0 = np.mean(data[..., b0_indices], axis=-1)
 
         # Detect number of b-values and extract a single shell of DW-MRI Data
-        unique_shells = np.sort(np.unique(gtab.bvals))
+        unique_shells = np.sort(unique_bvals_magnitude(gtab.bvals))
         logger.info('Number of b-values: {}'.format(unique_shells))
 
         # Extract DWI only
-        dw_indices = np.where(gtab.bvals == unique_shells[1])[0]
+        dw_indices = get_bval_indices(gtab.bvals, unique_shells[1])
         dw_data = data[..., dw_indices]
         dw_bvecs = gtab.bvecs[dw_indices, :]
 
@@ -222,11 +234,12 @@ class HistoResDNN(object):
         flat_dw_sh_coef = dw_sh_coef[mask > 0]
         flat_pred_sh_coef = np.zeros(flat_dw_sh_coef.shape)
 
-        count = len(flat_dw_sh_coef) // 1000
+        count = len(flat_dw_sh_coef) // chunk_size
         for i in range(count+1):
             if i % 100 == 0 or i == count:
                 logger.info('Chunk #{} out of {}'.format(i, count))
-            tmp_sh = self.predict(flat_dw_sh_coef[(i)*1000:(i+1)*1000])
+            tmp_sh = self.__predict(
+                flat_dw_sh_coef[(i)*chunk_size:(i+1)*chunk_size])
 
             # Removing negative values from the SF
             sphere = get_sphere('repulsion724')
@@ -237,7 +250,7 @@ class HistoResDNN(object):
             tmp_sh = sf_to_sh(tmp_sf, sphere, smooth=0.0006,
                               basis_type=self.basis_type,
                               sh_order=self.sh_order)
-            flat_pred_sh_coef[(i)*1000:(i+1)*1000] = tmp_sh
+            flat_pred_sh_coef[(i)*chunk_size:(i+1)*chunk_size] = tmp_sh
 
         pred_sh_coef = np.zeros(ori_shape)
         pred_sh_coef[mask > 0] = flat_pred_sh_coef
