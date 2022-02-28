@@ -14,6 +14,8 @@ def test_parfor():
         engines.append("dask")
     if para.has_joblib:
         engines.append("joblib")
+    if para.has_ray:
+        engines.append("ray")
 
     my_array = np.arange(100).reshape(10, 10)
     i, j = np.random.randint(0, 9, 2)

@@ -5,6 +5,7 @@ from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package('joblib')
 dask, has_dask, _ = optional_package('dask')
+ray, has_ray, _ = optional_package('ray')
 
 
 def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
@@ -29,7 +30,7 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
         The number of jobs to perform in parallel. -1 to use all but one cpu.
         Default: -1.
     engine : str
-        {"dask", "joblib", "serial"}
+        {"dask", "joblib", "ray", "serial"}
         The last one is useful for debugging -- runs the code without any
         parallelization. Default: "joblib"
     backend : str, optional
@@ -61,14 +62,12 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
             raise joblib()
         if backend is None:
             backend = "loky"
-        p = joblib.Parallel(
+        pp = joblib.Parallel(
             n_jobs=n_jobs, backend=backend,
             **kwargs)
-        d = joblib.delayed(func)
-        d_l = []
-        for in_element in in_list:
-            d_l.append(d(in_element, *func_args, **func_kwargs))
-        results = p(tqdm(d_l))
+        dd = joblib.delayed(func)
+        d_l = [dd(ii, *func_args, **func_kwargs) for ii in in_list]
+        results = pp(tqdm(d_l))
 
     elif engine == "dask":
         if not has_dask:
@@ -84,16 +83,24 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
             def newfunc(in_arg):
                 return func(in_arg, *args, **keywords)
             return newfunc
-        p = partial(func, *func_args, **func_kwargs)
-        d = [dask.delayed(p)(i) for i in in_list]
+        pp = partial(func, *func_args, **func_kwargs)
+        dd = [dask.delayed(pp)(ii) for ii in in_list]
         if backend == "multiprocessing":
-            results = dask.compute(*d, scheduler="processes",
+            results = dask.compute(*dd, scheduler="processes",
                                    workers=n_jobs, **kwargs)
         elif backend == "threading":
-            results = dask.compute(*d, scheduler="threads",
+            results = dask.compute(*dd, scheduler="threads",
                                    workers=n_jobs, **kwargs)
         else:
             raise ValueError("%s is not a backend for dask" % backend)
+
+    if engine == "ray":
+        if not has_ray:
+            raise ray()
+
+        func = ray.remote(func)
+        results = ray.get([func.remote(ii, *func_args, **func_kwargs)
+                           for ii in in_list])
 
     elif engine == "serial":
         results = []
