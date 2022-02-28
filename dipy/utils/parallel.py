@@ -53,6 +53,8 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     >>> out[0, 0] == power_it(arr[0, 0]) # doctest: +SKIP
     """
     if engine == "joblib":
+        if not has_joblib:
+            raise joblib()
         p = joblib.Parallel(
             n_jobs=n_jobs, backend=backend,
             **kwargs)
@@ -63,6 +65,8 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
         results = p(tqdm(d_l))
 
     elif engine == "dask":
+        if not has_dask:
+            raise dask()
         if n_jobs == -1:
             n_jobs = multiprocessing.cpu_count()
             n_jobs = n_jobs - 1
