@@ -48,17 +48,15 @@ def test_default_weights():
                   -0.01433261]), axis=0)
 
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
-    resdnn_model.load_model_weights(fetch_model_weights_path)
-    results_arr = resdnn_model.predict(input_arr)
+    resdnn_model.fetch_default_weights()
+    results_arr = resdnn_model._HistoResDNN__predict(input_arr)
     assert_almost_equal(results_arr, target_arr)
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
-def test_fit_shape_and_masking():
+def test_predict_shape_and_masking():
     resdnn_model = HistoResDNN()
-    fetch_model_weights_path = get_fnames('histo_resdnn_weights')
-    resdnn_model.load_model_weights(fetch_model_weights_path)
+    resdnn_model.fetch_default_weights()
 
     dwi_fname, bval_fname, bvec_fname = get_fnames('stanford_hardi')
     data, _ = load_nifti(dwi_fname)
@@ -69,7 +67,7 @@ def test_fit_shape_and_masking():
     mask = np.zeros(data.shape[0:3], dtype=bool)
     mask[38:40, 45:50, 35:40] = 1
 
-    results_arr = resdnn_model.fit(data, gtab, mask=mask)
+    results_arr = resdnn_model.predict(data, gtab, mask=mask)
     results_pos = np.sum(results_arr, axis=-1, dtype=bool)
     assert_equal(mask, results_pos)
     assert_equal(results_arr.shape[-1], 45)
@@ -88,7 +86,7 @@ def test_wrong_sh_order_input():
     resdnn_model = HistoResDNN()
     fetch_model_weights_path = get_fnames('histo_resdnn_weights')
     resdnn_model.load_model_weights(fetch_model_weights_path)
-    assert_raises(ValueError, resdnn_model.predict,
+    assert_raises(ValueError, resdnn_model._HistoResDNN__predict,
                   np.zeros((1, 28)))
 
 

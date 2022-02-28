@@ -2,9 +2,9 @@
 """
 .. histology_resdnn:
 
-==========================================
+==================================================
 Local reconstruction using the Histological ResDNN
-==========================================
+==================================================
 
 A data-driven approach to modeling the non-linear mapping between observed
 DW-MRI signals and ground truth structures using sequential deep neural network
@@ -69,12 +69,12 @@ Fit the data and save the resulting fODF.
 resdnn_model = HistoResDNN(verbose=True)
 fetch_model_weights_path = get_fnames('histo_resdnn_weights')
 resdnn_model.load_model_weights(fetch_model_weights_path)
-predicted_sh = resdnn_model.fit(data, gtab, mask=mask)
+predicted_sh = resdnn_model.predict(data, gtab, mask=mask)
 
 save_nifti('predicted_sh.nii.gz', predicted_sh, affine)
 
 """
-Preparing the scene using Fury. The ODF slicer expects spherical function
+Preparing the scene using FURY. The ODF slicer expects spherical function
 and the mean spherical harmonic amplitude is used as background.
 The ODF slicer and the background image are added as actors and a mid-coronal
 slice is selected.
