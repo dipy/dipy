@@ -8,7 +8,7 @@ dask, has_dask, _ = optional_package('dask')
 
 
 def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
-           backend="threading", func_args=[], func_kwargs={},
+           backend=None, func_args=[], func_kwargs={},
            **kwargs):
     """
     Parallel for loop for numpy arrays
@@ -22,19 +22,23 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
         item (e.g. float, int) per input item.
     in_list : list
        A sequence of items each of which can be an input to ``func``.
+    out_shape : tuple, optional
+         The shape of the output array. If not specified, the output shape will
+         be `(len(in_list),)`.
     n_jobs : integer, optional
         The number of jobs to perform in parallel. -1 to use all but one cpu.
-        Default: 1
+        Default: -1.
     engine : str
         {"dask", "joblib", "serial"}
         The last one is useful for debugging -- runs the code without any
-        parallelization.
-    backend : str
-        What joblib or dask backend to use. Irrelevant for other engines.
+        parallelization. Default: "joblib"
+    backend : str, optional
+        What joblib or dask backend to use. For joblib, the default is "loky".
+        For dask the default is "threading".
     func_args : list, optional
-        Positional arguments to `func`.
+        Positional arguments to `func`. Default: []
     func_kwargs : list, optional
-        Keyword arguments to `func`.
+        Keyword arguments to `func`. Default: {}
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute depending on the engine used.
@@ -55,6 +59,8 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     if engine == "joblib":
         if not has_joblib:
             raise joblib()
+        if backend is None:
+            backend = "loky"
         p = joblib.Parallel(
             n_jobs=n_jobs, backend=backend,
             **kwargs)
@@ -67,6 +73,9 @@ def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     elif engine == "dask":
         if not has_dask:
             raise dask()
+        if backend is None:
+            backend = "threading"
+
         if n_jobs == -1:
             n_jobs = multiprocessing.cpu_count()
             n_jobs = n_jobs - 1
