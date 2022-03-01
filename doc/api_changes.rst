@@ -9,6 +9,14 @@ DIPY 1.5.0 changes
 ------------------
 **General**
 
+- FURY minimum version is 0.8.0
+- Distutils has been dropped
+- ``dipy.io.bvectxt`` module is deprecated and will be removed
+
+**Denoising**
+
+- The default option in the command line for Patch2Self 'ridge' -> 'ols'
+
 **Tracking**
 
 - Change in ``dipy.tracking.pmf``
