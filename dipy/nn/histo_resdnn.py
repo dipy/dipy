@@ -11,6 +11,7 @@ from dipy.core.gradients import unique_bvals_magnitude, get_bval_indices
 from dipy.core.sphere import HemiSphere
 from dipy.data import get_sphere, get_fnames
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
+from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 import numpy as np
 
@@ -43,6 +44,7 @@ class HistoResDNN():
     This class is intended for the ResDNN Histology Network model.
     """
 
+    @doctest_skip_parser
     def __init__(self, sh_order=8, basis_type='tournier07', verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
