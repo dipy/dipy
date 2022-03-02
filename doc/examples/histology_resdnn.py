@@ -67,8 +67,7 @@ Fit the data and save the resulting fODF.
 """
 
 resdnn_model = HistoResDNN(verbose=True)
-fetch_model_weights_path = get_fnames('histo_resdnn_weights')
-resdnn_model.load_model_weights(fetch_model_weights_path)
+resdnn_model.fetch_default_weights()
 predicted_sh = resdnn_model.predict(data, gtab, mask=mask)
 
 save_nifti('predicted_sh.nii.gz', predicted_sh, affine)

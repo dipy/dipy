@@ -11,6 +11,7 @@ from dipy.core.gradients import unique_bvals_magnitude, get_bval_indices
 from dipy.core.sphere import HemiSphere
 from dipy.data import get_sphere, get_fnames
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, sph_harm_ind_list
+from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 import numpy as np
 
@@ -43,15 +44,16 @@ class HistoResDNN():
     This class is intended for the ResDNN Histology Network model.
     """
 
+    @doctest_skip_parser
     def __init__(self, sh_order=8, basis_type='tournier07', verbose=False):
         r"""
         The model was re-trained for usage with a different basis function
         ('tournier07') like the proposed model in [1, 2].
 
         To obtain the pre-trained model, use::
-            resdnn_model = HistoResDNN()
-            fetch_model_weights_path = get_fnames('histo_resdnn_weights')
-            resdnn_model.load_model_weights(fetch_model_weights_path)
+        >>> resdnn_model = HistoResDNN()
+        >>> fetch_model_weights_path = get_fnames('histo_resdnn_weights')
+        >>> resdnn_model.load_model_weights(fetch_model_weights_path)
 
         This model is designed to take as input raw DWI signal on a sphere
         (ODF) represented as SH of order 8 in the tournier basis and predict
