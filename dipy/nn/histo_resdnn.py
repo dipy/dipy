@@ -184,7 +184,7 @@ class HistoResDNN():
             Binary mask of the brain to avoid unnecessary computation and
             unreliable prediction outside the brain.
             Default: Compute prediction only for nonzero voxels (with at least
-            one nonzero SH coefficient).
+            one nonzero DWI value).
 
         Returns
         -------
