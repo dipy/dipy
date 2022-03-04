@@ -335,9 +335,13 @@ class ReconstDtiFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
+            optional_args = {}
+            if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
+                optional_args['sigma'] = sigma
+
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                                b0_threshold, bvecs_tol,
-                                               fit_method, sigma=sigma)
+                                               fit_method, optional_args)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -401,14 +405,15 @@ class ReconstDtiFlow(Workflow):
                         'DTI metrics saved in {0}'.format(dname_))
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          bvecs_tol=0.01, fit_method='WLS', sigma=None):
+                          bvecs_tol=0.01, fit_method='WLS',
+                          optional_args=None):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                               atol=bvecs_tol)
 
-        tenmodel = TensorModel(gtab, fit_method=fit_method, sigma=sigma)
+        tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
@@ -821,9 +826,13 @@ class ReconstDkiFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
+            optional_args = {}
+            if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
+                optional_args['sigma'] = sigma
+
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                               b0_threshold, fit_method,
-                                              sigma=sigma)
+                                              optional_args=optional_args)
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
@@ -891,7 +900,7 @@ class ReconstDkiFlow(Workflow):
                          format(os.path.dirname(oevals)))
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          fit_method="WLS", sigma=None):
+                          fit_method="WLS", optional_args=None):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
@@ -901,7 +910,7 @@ class ReconstDkiFlow(Workflow):
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
         dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method,
-                                         sigma=sigma)
+                                         **optional_args)
         dkfit = dkmodel.fit(data, mask)
 
         return dkfit, gtab
