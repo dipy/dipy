@@ -5,7 +5,7 @@ Signal Reconstruction Using Spherical Harmonics
 
 This example shows how you can use a spherical harmonics (SH) function to
 reconstruct any spherical function using DIPY_. In order to generate a
-signal, we will generate a sphere. using spherical polar coordinates.
+signal, we will need to generate an evenly distributed sphere.
 Let's import some standard packages.
 """
 
