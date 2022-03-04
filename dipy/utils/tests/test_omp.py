@@ -5,6 +5,9 @@ import os
 from dipy.utils.omp import (cpu_count, thread_count, default_threads,
                             _set_omp_threads, _restore_omp_threads,
                             have_openmp, determine_num_threads)
+
+import pytest
+from dipy.utils.parallel import has_ray, has_joblib
 from numpy.testing import assert_equal, assert_raises
 
 
@@ -27,6 +30,7 @@ def test_set_omp_threads():
         assert_equal(cpu_count(), 1)
 
 
+@pytest.mark.skipif(has_joblib or has_ray):
 def test_default_threads():
     if have_openmp:
         try:

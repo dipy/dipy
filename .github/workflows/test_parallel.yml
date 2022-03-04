@@ -1,4 +1,4 @@
-name: Parallelization | Joblib
+name: Parallelization
 
 on:
   push:
@@ -11,4 +11,4 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      extra-depends: ray
+      extra-depends: dask joblib ray
