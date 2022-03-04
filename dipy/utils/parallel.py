@@ -8,11 +8,11 @@ dask, has_dask, _ = optional_package('dask')
 ray, has_ray, _ = optional_package('ray')
 
 
-def parfor(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
-           backend=None, func_args=[], func_kwargs={},
-           **kwargs):
+def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
+            backend=None, func_args=[], func_kwargs={},
+            **kwargs):
     """
-    Parallel for loop for numpy arrays
+    Maps a function to a list of inputs in parallel.
 
     Parameters
     ----------
