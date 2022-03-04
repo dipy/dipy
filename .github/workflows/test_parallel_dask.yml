@@ -1,0 +1,14 @@
+name: Parallelization
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  pip:
+    uses: ./.github/workflows/test_template.yml
+    with:
+      runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
+      extra-depends: dask
