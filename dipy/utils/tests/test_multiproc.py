@@ -49,5 +49,3 @@ def test_np_threads():
     assert_equal(os.environ.get('OPENBLAS_NUM_THREADS', ''),
                  openblas_num_threads)
     assert_equal(os.environ.get('MKL_NUM_THREADS', ''), mkl_num_threads)
-
-
