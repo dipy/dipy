@@ -50,7 +50,7 @@ odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 from dipy.viz import window, actor
 
 # Enables/disables interactive visualization
-interactive = True
+interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
