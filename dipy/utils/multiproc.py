@@ -1,5 +1,6 @@
 """Function for determining the effective number of processes to be used."""
 
+import os
 from multiprocessing import cpu_count
 from warnings import warn
 
@@ -40,3 +41,40 @@ def determine_num_processes(num_processes):
         return 1
 
     return num_processes
+
+
+def disable_np_threads():
+    """Reduce OPENBLAS and MKL thread numbers.
+
+    Notes
+    -----
+    The goal of this function is to avoid oversubscription by spawning too
+    many threads when you use multiprocessing module.
+
+    See Also
+    --------
+    ``enable_np_threads``
+    """
+    current_openblas = os.environ.get('OPENBLAS_NUM_THREADS', '')
+    current_mkl = os.environ.get('MKL_NUM_THREADS', '')
+
+    # import ipdb; ipdb.set_trace()
+    os.environ['DIPY_OPENBLAS_NUM_THREADS'] = current_openblas
+    os.environ['DIPY_MKL_NUM_THREADS'] = current_mkl
+    os.environ['OPENBLAS_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+
+
+def enable_np_threads():
+    """Reactivate OPENBLAS and MKL thread numbers."""
+    if 'DIPY_OPENBLAS_NUM_THREADS' in os.environ:
+        os.environ['OPENBLAS_NUM_THREADS'] = \
+            os.environ.pop('DIPY_OPENBLAS_NUM_THREADS', '')
+        if os.environ['OPENBLAS_NUM_THREADS'] in ['', None]:
+            os.environ.pop('OPENBLAS_NUM_THREADS', '')
+
+    if 'DIPY_MKL_NUM_THREADS' in os.environ:
+        os.environ['MKL_NUM_THREADS'] = \
+            os.environ.pop('DIPY_MKL_NUM_THREADS', '')
+        if os.environ['MKL_NUM_THREADS'] in ['', None]:
+            os.environ.pop('MKL_NUM_THREADS', '')

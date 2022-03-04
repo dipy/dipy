@@ -1,7 +1,9 @@
 """ Testing multiproc utilities
 """
+import os
 
-from dipy.utils.multiproc import determine_num_processes
+from dipy.utils.multiproc import (determine_num_processes, disable_np_threads,
+                                  enable_np_threads)
 from numpy.testing import assert_equal, assert_raises
 
 
@@ -30,3 +32,22 @@ def test_determine_num_processs():
     if determine_num_processes(-1) > 1:
         assert_equal(determine_num_processes(-1),
                      determine_num_processes(-2) + 1)
+
+
+def test_np_threads():
+    openblas_num_threads = os.environ.get('OPENBLAS_NUM_THREADS', '')
+    mkl_num_threads = os.environ.get('MKL_NUM_THREADS', '')
+
+    disable_np_threads()
+    assert_equal(os.environ.get('OPENBLAS_NUM_THREADS', ''), '1')
+    assert_equal(os.environ.get('MKL_NUM_THREADS', ''), '1')
+    assert_equal(os.environ.get('DIPY_OPENBLAS_NUM_THREADS', ''),
+                 openblas_num_threads)
+    assert_equal(os.environ.get('DIPY_MKL_NUM_THREADS', ''), mkl_num_threads)
+
+    enable_np_threads()
+    assert_equal(os.environ.get('OPENBLAS_NUM_THREADS', ''),
+                 openblas_num_threads)
+    assert_equal(os.environ.get('MKL_NUM_THREADS', ''), mkl_num_threads)
+
+

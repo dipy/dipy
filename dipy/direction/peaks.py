@@ -17,7 +17,8 @@ from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.reconst.eudx_direction_getter import EuDXDirectionGetter
 
-from dipy.utils.multiproc import determine_num_processes
+from dipy.utils.multiproc import (determine_num_processes, enable_np_threads,
+                                  disable_np_threads)
 from dipy.utils.deprecator import deprecated_params
 
 
@@ -245,6 +246,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             mask_file_name = None
 
+        disable_np_threads()
         pool = Pool(num_processes)
 
         pam_res = pool.map(_peaks_from_model_parallel_sub,
@@ -334,6 +336,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         # Make sure all worker processes have exited before leaving context
         # manager in order to prevent temporary file deletion errors in windows
         pool.join()
+        enable_np_threads()
 
     return pam
 
