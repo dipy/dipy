@@ -1,4 +1,4 @@
-name: Parallelization
+name: Parallelization | Joblib
 
 on:
   push:

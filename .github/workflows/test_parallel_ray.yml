@@ -1,4 +1,4 @@
-name: Parallelization
+name: Parallelization | Ray
 
 on:
   push:

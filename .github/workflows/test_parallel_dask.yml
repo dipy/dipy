@@ -1,4 +1,4 @@
-name: Parallelization
+name: Parallelization | Dask
 
 on:
   push:
