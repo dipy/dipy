@@ -393,11 +393,11 @@ class StatefulTractogram(object):
 
     def get_data_per_point_keys(self):
         """ Return a list of the data_per_point attribute names """
-        return list(self.data_per_point.keys())
+        return list(set(self.data_per_point.keys()))
 
     def get_data_per_streamline_keys(self):
         """ Return a list of the data_per_streamline attribute names """
-        return list(self.data_per_streamline.keys())
+        return list(set(self.data_per_streamline.keys()))
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
