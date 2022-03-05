@@ -30,7 +30,8 @@ def test_set_omp_threads():
         assert_equal(cpu_count(), 1)
 
 
-@pytest.mark.skipif(has_joblib or has_ray)
+@pytest.mark.skipif(has_joblib or has_ray,
+                    reason="joblib and/or ray are installed")
 def test_default_threads():
     if have_openmp:
         try:
