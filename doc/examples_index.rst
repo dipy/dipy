@@ -226,6 +226,7 @@ Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_registration`
+- :ref:`example_bundle_group_registration`
 - :ref:`example_streamline_registration`
 
 ------------
