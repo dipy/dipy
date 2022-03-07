@@ -674,6 +674,8 @@ def get_fnames(name='small_64D'):
         return pjoin(DATA_DIR, 'circle.npy')
     if name == 'cb_2':
         return pjoin(DATA_DIR, 'cb_2.npz')
+    if name == 'minimal_bundles':
+        return pjoin(DATA_DIR, 'minimal_bundles.zip')
     if name == "t1_coronal_slice":
         return pjoin(DATA_DIR, 't1_coronal_slice.npy')
     if name == "t-design":
