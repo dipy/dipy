@@ -1,16 +1,20 @@
+import zipfile
 import numpy as np
 from numpy.testing import (assert_,
                            assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_raises)
+from nibabel.tmpdirs import TemporaryDirectory
 from dipy.align.streamlinear import (compose_matrix44,
                                      decompose_matrix44,
                                      BundleSumDistanceMatrixMetric,
                                      BundleMinDistanceMatrixMetric,
                                      BundleMinDistanceMetric,
                                      StreamlineLinearRegistration,
-                                     StreamlineDistanceMetric)
+                                     StreamlineDistanceMetric,
+                                     groupwise_slr,
+                                     get_unique_pairs)
 
 from dipy.tracking.streamline import (center_streamlines,
                                       unlist_streamlines,
@@ -486,3 +490,51 @@ def test_wrong_num_threads():
 
     slr = StreamlineLinearRegistration(num_threads=0)
     assert_raises(ValueError, slr.optimize, A, B)
+
+
+def test_get_unique_pairs():
+
+    # Regular case
+    pairs, exclude = get_unique_pairs(6)
+    assert_equal(len(np.unique(pairs)), 6)
+    assert_equal(exclude, None)
+
+    # Odd case
+    pairs, exclude = get_unique_pairs(5)
+    assert_equal(len(np.unique(pairs)), 4)
+    assert_equal(isinstance(exclude, (int, np.int64, np.int32)), True)
+
+    # Iterative case
+    new_pairs, new_exclude = get_unique_pairs(5, pairs, exclude)
+    assert_equal(len(np.unique(pairs)), 4)
+    assert_equal(exclude != new_exclude, True)
+
+    # Check errors
+    assert_raises(TypeError, get_unique_pairs, 2.7)
+    assert_raises(ValueError, get_unique_pairs, 1)
+
+
+def test_groupwise_slr():
+    with TemporaryDirectory() as in_dir:
+        # Extract and load example dataset with 5 AF_L bundles
+        example_tracts = get_fnames('minimal_bundles')
+        with zipfile.ZipFile(example_tracts, 'r') as zip_ref:
+            zip_ref.extractall(in_dir)
+
+        bundles = []
+        for i in range(5):
+            file = f'{in_dir}/sub_{i+1}/CC_ForcepsMajor.trk'
+            bundles_obj = load_tractogram(file, 'same', bbox_valid_check=False)
+            bundles.append(bundles_obj.streamlines)
+
+        # Test regular use case with convergence
+        new_bundles, T, d = groupwise_slr(bundles, verbose=True)
+
+        assert_equal(len(new_bundles), len(bundles))
+        assert_equal(type(new_bundles), list)
+        assert_equal(len(T), len(bundles))
+        assert_equal(type(T), list)
+
+        # Test regular use case without convergence (few iterations)
+        new_bundles, T, d = groupwise_slr(bundles, max_iter=3, tol=-10,
+                                          verbose=True)
