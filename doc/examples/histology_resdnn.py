@@ -16,24 +16,25 @@ and validated on a third. A second validation was performed on HCP datasets.
 
 import os
 
+import numpy as np
+import scipy.ndimage as ndi
+
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames, get_sphere
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.nn.histo_resdnn import HistoResDNN
-from dipy.reconst.shm import sh_to_sf
+from dipy.reconst.shm import sh_to_sf_matrix
 from dipy.segment.mask import median_otsu
 from dipy.viz import window, actor
-import numpy as np
-import scipy.ndimage as ndi
 
 
 # Disable oneDNN warning
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 """
-This ResDNN model requires single-shell data with b0, the data is fetched
-and a gradient table is constructed from bvals/bvecs.
+This ResDNN model requires single-shell data with one or more b0s, the data is
+fetched and a gradient table is constructed from bvals/bvecs.
 """
 
 # Fetch DWI and GTAB
@@ -44,13 +45,11 @@ bvals, bvecs = read_bvals_bvecs(hardi_bval_fname, hardi_bvec_fname)
 gtab = gradient_table(bvals, bvecs)
 
 """
-To accelerate computation a brain mask must be computed. A median-otsu filter
-isolates the main signal and then, using a floodfill, the main 'blob' is
-picked. The resulting mask is saved for visual inspection.
+To accelerate computation, a brain mask must be computed. The resulting mask is
+saved for visual inspection.
 """
 
-b0_indices = np.where(gtab.bvals == 0)[0]
-mean_b0 = data[..., b0_indices]
+mean_b0 = data[..., gtab.b0s_mask]
 mean_b0 = np.mean(mean_b0, axis=-1)
 _, mask = median_otsu(mean_b0)
 
@@ -73,19 +72,17 @@ predicted_sh = resdnn_model.predict(data, gtab, mask=mask)
 save_nifti('predicted_sh.nii.gz', predicted_sh, affine)
 
 """
-Preparing the scene using FURY. The ODF slicer expects spherical function
-and the mean spherical harmonic amplitude is used as background.
-The ODF slicer and the background image are added as actors and a mid-coronal
-slice is selected.
+Preparing the scene using FURY. The ODF slicer and the background image are
+added as actors and a mid-coronal slice is selected.
 """
 
 interactive = False
 sphere = get_sphere('repulsion724')
-predicted_sf = sh_to_sf(sh=predicted_sh, sphere=sphere,
-                        basis_type=resdnn_model.basis_type,
-                        sh_order=resdnn_model.sh_order)
-fod_spheres = actor.odf_slicer(predicted_sf, sphere=sphere,
-                               scale=0.6, norm=True, mask=mask)
+B, invB = sh_to_sf_matrix(sphere, sh_order=8,
+                          basis_type=resdnn_model.basis_type, smooth=0.0006)
+fod_spheres = actor.odf_slicer(predicted_sh, sphere=sphere,
+                               scale=0.6, norm=True, mask=mask, B_matrix=B)
+
 mean_sh = np.mean(predicted_sh, axis=-1)
 background_img = actor.slicer(mean_sh, opacity=0.5,
                               interpolation='nearest')
@@ -125,11 +122,11 @@ scene.set_camera(position=camera['view_position'],
                  view_up=camera['up_vector'])
 scene.zoom(camera['zoom_factor'])
 
+if interactive:
+    window.show(scene, reset_camera=False)
 
 window.record(scene, out_path='pred_fODF.png', size=(1000, 1000),
               reset_camera=False)
-if interactive:
-    window.show(scene, reset_camera=False)
 
 """
 .. figure:: pred_fODF.png
