@@ -53,8 +53,8 @@ in the clustering framework.*
 """
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import IdentityFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.featurespeed import IdentityFeature
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
@@ -102,7 +102,7 @@ setting the number of points too high will slow down the clustering process.
 """
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import ResampleFeature
+from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 # Get some streamlines.
@@ -144,7 +144,7 @@ streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import CenterOfMassFeature
+from dipy.segment.featurespeed import CenterOfMassFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Enables/disables interactive visualization
@@ -203,7 +203,7 @@ spatial position of a streamline. This can also be an alternative to the
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import MidpointFeature
+from dipy.segment.featurespeed import MidpointFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Get some streamlines.
@@ -257,7 +257,7 @@ length of a streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import ArcLengthFeature
+from dipy.segment.featurespeed import ArcLengthFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Get some streamlines.
@@ -309,7 +309,7 @@ using this feature.
 import numpy as np
 from dipy.viz import window, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorOfEndpointsFeature
+from dipy.segment.featurespeed import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Get some streamlines.

@@ -84,7 +84,8 @@ pnm = peaks_from_model(sf_model, data, sphere,
                        relative_peak_threshold=.5,
                        min_separation_angle=25,
                        mask=white_matter,
-                       parallel=True)
+                       parallel=True,
+                       num_processes=2)
 
 """
 A ThresholdStoppingCriterion object is used to segment the data to track only
