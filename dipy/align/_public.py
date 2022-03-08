@@ -489,7 +489,7 @@ def affine_registration(moving, static,
 
             if starting_affine is not None and starting_was_supplied:
                 wm = "starting_affine overwritten by center_of_mass transform"
-                warn(wm, UserWarning)
+                warn(wm, UserWarning, stacklevel=2)
 
             # multiply images by masks for transform_centers_of_mass
             static_masked, moving_masked = static, moving
