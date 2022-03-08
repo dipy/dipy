@@ -451,6 +451,7 @@ def affine_registration(moving, static,
     sigmas = sigmas or [3, 1, 0.0]
     factors = factors or [4, 2, 1]
 
+    starting_was_supplied = starting_affine is not None
     static, static_affine, moving, moving_affine, starting_affine = \
         _handle_pipeline_inputs(moving, static,
                                 moving_affine=moving_affine,
@@ -486,7 +487,7 @@ def affine_registration(moving, static,
     for func in pipeline:
         if func == "center_of_mass":
 
-            if starting_affine is not None:
+            if starting_affine is not None and starting_was_supplied:
                 wm = "starting_affine overwritten by centre_of_mass transform"
                 warn(wm, UserWarning)
 
