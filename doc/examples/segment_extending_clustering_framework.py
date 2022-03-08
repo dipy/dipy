@@ -59,17 +59,16 @@ arc length (i.e. the sum of the length of each segment for a given streamline).
 Let's start by importing the necessary modules.
 """
 
-from dipy.segment.featurespeed import Feature
-from dipy.tracking.streamline import length
 import numpy as np
+
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
 from dipy.tracking.streamline import Streamlines
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metricspeed import (
-    Metric, SumPointwiseEuclideanMetric, VectorOfEndpointsFeature,
-)
+from dipy.segment.featurespeed import Feature, VectorOfEndpointsFeature
+from dipy.segment.metric import Metric, SumPointwiseEuclideanMetric
+from dipy.tracking.streamline import length
 
 """
 We now define the class ``ArcLengthFeature`` that will perform the desired
