@@ -138,7 +138,7 @@ DSI with Deconvolution
 Sparse Fascicle Model
 ~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`example_sfm_reconst`
+- :ref:`example_reconst_sfm`
 
 Intravoxel incoherent motion (IVIM)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
