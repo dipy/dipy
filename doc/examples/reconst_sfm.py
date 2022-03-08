@@ -1,5 +1,5 @@
 """
-.. _sfm-reconst:
+.. _reconst_sfm:
 
 ==============================================
 Reconstruction with the Sparse Fascicle Model
@@ -88,7 +88,7 @@ The ``response`` return value contains two entries. The first is an array with
 the eigenvalues of the response function and the second is the average S0 for
 this response.
 
-It is a very good practice to always validate the result of 
+It is a very good practice to always validate the result of
 ``auto_response_ssst``. For, this purpose we can print it and have a look
 at its values.
 """

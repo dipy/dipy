@@ -19,6 +19,7 @@
  reconst_mcsd.py
  reconst_qtdmri.py
  reconst_rumba.py
+ reconst_sfm.py
  reconst_sh.py
  reconst_shore.py
  reconst_shore_metrics.py
@@ -31,7 +32,6 @@
  segment_clustering_metrics.py
  snr_in_cc.py
  streamline_formats.py
- sfm_reconst.py
  gradients_spheres.py
  simulate_multi_tensor.py
  simulate_dki.py
