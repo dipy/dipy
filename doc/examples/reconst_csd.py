@@ -268,7 +268,8 @@ csd_peaks = peaks_from_model(model=csd_model,
                              sphere=default_sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
-                             parallel=True)
+                             parallel=True,
+                             num_processes=2)
 
 scene.clear()
 fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values)
