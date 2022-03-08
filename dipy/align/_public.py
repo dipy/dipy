@@ -488,7 +488,7 @@ def affine_registration(moving, static,
         if func == "center_of_mass":
 
             if starting_affine is not None and starting_was_supplied:
-                wm = "starting_affine overwritten by centre_of_mass transform"
+                wm = "starting_affine overwritten by center_of_mass transform"
                 warn(wm, UserWarning)
 
             # multiply images by masks for transform_centers_of_mass
