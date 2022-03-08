@@ -1,7 +1,14 @@
-from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
-                                      MinimumAverageDirectFlipMetric,)
 
-from dipy.segment.metricspeed import dist
+__all__ = ["MinimumAverageDirectFlipMetric", "Metric",
+           "AveragePointwiseEuclideanMetric", "CosineMetric", "dist",
+           "EuclideanMetric", "mdf"]
+
+
+from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
+                                      MinimumAverageDirectFlipMetric,
+                                      AveragePointwiseEuclideanMetric,
+                                      CosineMetric, Metric,
+                                      dist)
 
 # Creates aliases
 EuclideanMetric = SumPointwiseEuclideanMetric
@@ -32,4 +39,3 @@ def mdf(s1, s2):
                         vol 6, no 175, 2012.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
- 
