@@ -181,7 +181,7 @@ b0_mask, mask = median_otsu(data, median_radius=2,
 rec_response = recursive_response(gtab, data, mask=mask, sh_order=8,
                                   peak_thr=0.01, init_fa=0.08,
                                   init_trace=0.0021, iter=4, convergence=0.001,
-                                  parallel=True)
+                                  parallel=True, num_processes=2)
 
 
 """

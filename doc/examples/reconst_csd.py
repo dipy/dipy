@@ -180,7 +180,7 @@ wm_mask = (np.logical_or(FA >= 0.4, (np.logical_and(FA >= 0.15, MD >= 0.0011))))
 response = recursive_response(gtab, data, mask=wm_mask, sh_order=8,
                               peak_thr=0.01, init_fa=0.08,
                               init_trace=0.0021, iter=8, convergence=0.001,
-                              parallel=True)
+                              parallel=True, num_processes=2)
 
 
 """
