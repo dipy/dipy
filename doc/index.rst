@@ -20,16 +20,17 @@ Highlights
 
 - New reconstruction model added: Q-space Trajectory Imaging (QTI).
 - New reconstruction model added: Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
+- New reconstruction model added: Residual block Deep Neural Network (ResDNN).
 - Masking management in Affine Registration added.
-- Multiple Workflows updated (DTIFlow, ImageRegistrationFlow) and added (MotionCorrectionFlow).
-- Compatibility with python 3.10 added.
+- Multiple Workflows updated (DTIFlow, DKIFlow, ImageRegistrationFlow) and added (MotionCorrectionFlow).
+- Compatibility with Python 3.10 added.
 - Migrations from Azure Pipeline to Github Actions.
 - Large codebase cleaning.
 - New parallelisation module added.
-- Deprecation dipy.io.bvectxt module.
-- New Functionnalities (ROI Visualizer, random colors flag) on DIPY Horizon.
+- ``dipy.io.bvectxt`` module deprecated.
+- New DIPY Horizon features (ROI Visualizer, random colors flag).
 - Large documentation update.
-- Closed 108 issues and merged 59 pull requests.
+- Closed 129 issues and merged 72 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -37,7 +38,7 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
-- :doc:`DIPY 1.5.0 <release_notes/release1.5.0>` released March 6, 2022.
+- :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 6, 2022.
 - :doc:`DIPY 1.4.1 <release_notes/release1.4.1>` released May 6, 2021.
 - :doc:`DIPY 1.4.0 <release_notes/release1.4>` released March 13, 2021.
 
