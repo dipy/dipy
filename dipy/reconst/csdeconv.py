@@ -1076,7 +1076,7 @@ def _get_response(S0s, lambdas):
 @deprecated_params('nbr_processes', 'num_processes', since='1.4', until='1.5')
 def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001, parallel=True, num_processes=None,
+                       convergence=0.001, parallel=False, num_processes=None,
                        sphere=default_sphere):
     """ Recursive calibration of response function using peak threshold
 
