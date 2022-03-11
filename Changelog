@@ -24,7 +24,7 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.5.0 (Thursday, March 10, 2022)
+* 1.5.0 (Thursday, March 11, 2022)
 
 - New reconstruction model added: Q-space Trajectory Imaging (QTI).
 - New reconstruction model added: Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
