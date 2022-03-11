@@ -9,8 +9,8 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 _version_major = 1
 _version_minor = 5
 _version_micro = 0
-_version_extra = 'dev0'
-# _version_extra = ''
+# _version_extra = 'dev0'
+_version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
 __version__ = "%s.%s.%s%s" % (_version_major,
