@@ -211,6 +211,22 @@
         <td><a href=''>Anderson 2005</a></td>
     </tr>
     <tr>
+        <td><a href='#robust-and-unbiased-model-based-spherical-deconvolution-(rumba-sd)'>RUMBA-SD</a></td>
+        <td class='green'>Yes</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='https://doi.org/10.1371/journal.pone.0138910'>Canales-Rodríguez 2015</a></td>
+    </tr>
+    <tr>
+        <td><a href='#q-space-trajectory-imaging'>QTI</a></td>
+        <td class='red'>No</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='https://doi.org/10.1016/j.neuroimage.2016.02.039'>Westin 2016</a></td>
+    </tr>
+    <tr>
         <td>Ball & Stick</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
