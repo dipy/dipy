@@ -2,14 +2,15 @@
 
 References
 ----------
-Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
-Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
-Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-Tristan-Vega, A., et al. 2009. Estimation of fiber orientation probability
-    density functions in high angular resolution diffusion imaging.
+.. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+       Angle Consideration.
+.. [2] Descoteaux, M., et al. 2007. Regularized, fast, and robust analytical
+       Q-ball imaging.
+.. [3] Tristan-Vega, A., et al. 2010. A new methodology for estimation of fiber
+       populations in white matter of the brain with Funk-Radon transform.
+.. [4] Tristan-Vega, A., et al. 2009. Estimation of fiber orientation
+       probability density functions in high angular resolution diffusion
+       imaging.
 
 
 Note about the Transpose:
@@ -35,6 +36,17 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
+
+
+descoteaux07_legacy_msg = \
+    "The legacy descoteaux07 SH basis uses absolute values for negative " \
+    "harmonic degrees. It is outdated and will be deprecated in a future " \
+    "DIPY release. Consider using the new descoteaux07 basis by setting the " \
+    "`legacy` parameter to `False`."
+tournier07_legacy_msg = \
+    "The legacy tournier07 basis is not normalized. It is outdated and will " \
+    "be deprecated in a future release of DIPY. Consider using the new " \
+    "tournier07 basis by setting the `legacy` parameter to `False`."
 
 
 def _copydoc(obj):
@@ -184,7 +196,7 @@ def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     scipy.special.sph_harm, where `theta` represents the azimuthal coordinate
     and `phi` represents the polar coordinate.
 
-    Altough scipy uses a naming convention where ``m`` is the order and ``n``
+    Although scipy uses a naming convention where ``m`` is the order and ``n``
     is the degree of the SH, the opposite of DIPY's, their definition for both
     parameters is the same as ours, with ``n >= 0`` and ``|m| <= n``.
     """
@@ -227,7 +239,7 @@ def real_sph_harm(m, n, theta, phi):
         The azimuthal (longitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
@@ -288,9 +300,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
         # The Tournier basis from MRtrix3 is normalized
         real_sh *= np.where(m == 0, 1., np.sqrt(2))
     else:
-        warn('The legacy tournier07 basis is outdated and will be deprecated '
-             'in a future release of DIPY. Consider using the new tournier07 '
-             'basis.', category=PendingDeprecationWarning)
+        warn(tournier07_legacy_msg, category=PendingDeprecationWarning)
 
     return real_sh
 
@@ -334,9 +344,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
     """
     if legacy:
         # In the case where m < 0, legacy descoteaux basis considers |m|
-        warn('The legacy descoteaux07 SH basis is outdated and will be '
-             'deprecated in a future DIPY release. Consider using the new '
-             'descoteaux07 basis.', category=PendingDeprecationWarning)
+        warn(descoteaux07_legacy_msg, category=PendingDeprecationWarning)
         sh = spherical_harmonics(np.abs(m), n, phi, theta)
     else:
         # In the cited paper, the basis is defined without the absolute value
@@ -462,7 +470,7 @@ def real_sh_descoteaux(sh_order, theta, phi,
     return real_sh, m, n
 
 
-@deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtix is deprecated, '
+@deprecate_with_version('dipy.reconst.shm.real_sym_sh_mrtrix is deprecated, '
                         'Please use dipy.reconst.shm.real_sh_tournier instead',
                         since='1.3', until='2.0')
 def real_sym_sh_mrtrix(sh_order, theta, phi):
@@ -478,7 +486,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
     against each other.
 
     Parameters
-    -----------
+    ----------
     sh_order : int
         The maximum order or the spherical harmonic basis.
     theta : float [0, pi]
@@ -487,7 +495,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
         The azimuthal (longitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi`` as
         implemented in mrtrix. Warning: the basis is Tournier et al.
@@ -531,7 +539,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
     against each other.
 
     Parameters
-    -----------
+    ----------
     sh_order : int
         even int > 0, max spherical harmonic order
     theta : float [0, 2*pi]
@@ -540,7 +548,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
         The polar (colatitudinal) coordinate.
 
     Returns
-    --------
+    -------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at ``theta`` and ``phi``
     m : array
@@ -585,9 +593,10 @@ def sph_harm_ind_list(sh_order, full_basis=False):
     n_list : array
         orders of even spherical harmonics
 
-    See also
+    See Also
     --------
     shm.real_sh_descoteaux_from_index, shm.real_sh_tournier_from_index
+
     """
     if full_basis:
         n_range = np.arange(0, sh_order + 1, dtype=int)
@@ -749,7 +758,7 @@ class QballBaseModel(SphHarmModel):
         """Creates a model that can be used to fit or sample diffusion data
 
         Parameters
-        ------------
+        ----------
         gtab : GradientTable
             Diffusion gradients used to acquire data
         sh_order : even int >= 0
@@ -1326,7 +1335,7 @@ def calculate_max_order(n_coeffs, full_basis=False):
 
     Finally, the positive value is chosen between the two options.
 
-    For a full SH basis, the calcultation consists in solving the equation
+    For a full SH basis, the calculation consists in solving the equation
     $n = (L + 1)^2$ for $L$, which gives $L = sqrt(n) - 1$.
     """
 
@@ -1381,7 +1390,7 @@ def anisotropic_power(sh_coeffs, norm_factor=0.00001, power=2,
 
     Where the last dimension, C, is made of a flattened array of $l$x$m$
     coefficients, where $l$ are the SH orders, and $m = 2l+1$,
-    So l=1 has 1 coeffecient, l=2 has 5, ... l=8 has 17 and so on.
+    So l=1 has 1 coefficient, l=2 has 5, ... l=8 has 17 and so on.
     A l=2 SH coefficient matrix will then be composed of a IxJxKx6 volume.
     The power, $n$ is usually set to $n=2$.
 

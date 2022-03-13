@@ -407,7 +407,3 @@ def test_interp_rbf():
         npt.assert_(len(w) == 1)
         npt.assert_(issubclass(w[-1].category, PendingDeprecationWarning))
         npt.assert_("deprecated" in str(w[-1].message))
-
-
-if __name__ == "__main__":
-    npt.run_module_suite()

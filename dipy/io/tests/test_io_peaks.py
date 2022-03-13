@@ -119,9 +119,3 @@ def test_io_save_peaks_error():
         pam.gfa = np.zeros((10, 10, 10))
         pam.qa = np.zeros((10, 10, 10, 5))
         pam.odf = np.zeros((10, 10, 10, default_sphere.vertices.shape[0]))
-
-
-if __name__ == '__main__':
-    # npt.run_module_suite()
-    test_io_peaks()
-    test_io_save_peaks_error()

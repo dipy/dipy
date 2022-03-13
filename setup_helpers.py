@@ -6,12 +6,16 @@ import sys
 from os.path import join as pjoin, split as psplit, splitext, dirname, exists
 import tempfile
 import shutil
+import logging as log
 
-from distutils.version import LooseVersion
-from distutils.command.install_scripts import install_scripts
-from distutils.errors import CompileError, LinkError
+from setuptools.command.install_scripts import install_scripts
+try:
+    from setuptools.errors import CompileError, LinkError
+except ImportError:
+    # can remove this except case once we require setuptools>=59.0
+    from distutils.errors import CompileError, LinkError
+from packaging.version import Version
 
-from distutils import log
 
 BAT_TEMPLATE = \
     r"""@echo off
@@ -84,7 +88,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
     Parameters
     ----------
     build_ext_class : class
-        Class implementing ``distutils.command.build_ext.build_ext`` interface,
+        Class implementing ``setuptools.command.build_ext.build_ext`` interface,
         with a ``build_extensions`` method.
     flag_defines : sequence
         A sequence of elements, where the elements are sequences of length 4
@@ -110,7 +114,7 @@ def add_flag_checking(build_ext_class, flag_defines, top_package_dir=''):
     -------
     checker_class : class
         A class with similar interface to
-        ``distutils.command.build_ext.build_ext``, that adds all working
+        ``setuptools.command.build_ext.build_ext``, that adds all working
         ``compile_flags`` values to the ``extra_compile_args`` and working
         ``link_flags`` to ``extra_link_args`` attributes of extensions, before
         compiling.
@@ -226,7 +230,7 @@ def version_error_msg(pkg_name, found_ver, min_ver):
     if found_ver == 'unknown':
         return 'We need {0} version {1}, but cannot get version'.format(
             pkg_name, min_ver)
-    if LooseVersion(found_ver) >= LooseVersion(min_ver):
+    if Version(found_ver) >= Version(min_ver):
         return None
     return 'We need {0} version {1}, but found version {2}'.format(pkg_name, min_ver, found_ver)
 
@@ -239,7 +243,7 @@ class SetupDependency(object):
     import_name : str
         Name with which required package should be ``import``ed.
     min_ver : str
-        Distutils version string giving minimum version for package.
+        Version string giving minimum version for package.
     req_type : {'install_requires', 'setup_requires'}, optional
         Setuptools dependency type.
     heavy : {False, True}, optional
@@ -338,14 +342,14 @@ def make_np_ext_builder(build_ext_class):
     Parameters
     ----------
     build_ext_class : class
-        Class implementing ``distutils.command.build_ext.build_ext`` interface,
+        Class implementing ``setuptools.command.build_ext.build_ext`` interface,
         with a ``build_extensions`` method.
 
     Returns
     -------
     np_build_ext_class : class
         A class with similar interface to
-        ``distutils.command.build_ext.build_ext``, that adds libraries in
+        ``setuptools.command.build_ext.build_ext``, that adds libraries in
         ``np.get_include()`` to include directories of extension.
     """
 

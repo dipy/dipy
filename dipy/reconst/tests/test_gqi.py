@@ -1,7 +1,6 @@
 import numpy as np
 
 from dipy.data import get_fnames, dsi_voxels, get_sphere, default_sphere
-from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
@@ -11,9 +10,7 @@ from dipy.sims.voxel import sticks_and_ball
 from dipy.reconst.odf import gfa
 from dipy.direction.peaks import peak_directions
 
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           run_module_suite)
+from numpy.testing import assert_equal, assert_almost_equal
 
 
 
@@ -74,7 +71,3 @@ def test_mvoxel_gqi():
     odf = all_odfs[-1, -1, -1]
     directions, values, indices = peak_directions(odf, sphere, .35, 25)
     assert_equal(directions.shape[0], 2)
-
-
-if __name__ == "__main__":
-    run_module_suite()

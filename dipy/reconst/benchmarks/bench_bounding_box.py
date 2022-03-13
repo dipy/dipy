@@ -11,7 +11,6 @@ With Pytest, Run this benchmark with:
 """
 import numpy as np
 from numpy.testing import measure
-from dipy.segment.mask import bounding_box
 
 
 def bench_bounding_box():

@@ -19,9 +19,9 @@ try:
 except ImportError:
     raise RuntimeError('Cannot import dipy, please investigate')
 
-from distutils.version import LooseVersion
+from packaging.version import Version
 import sphinx
-if LooseVersion(sphinx.__version__) < LooseVersion('2'):
+if Version(sphinx.__version__) < Version('2'):
     raise RuntimeError('Need sphinx >= 2 for numpydoc to work correctly')
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -70,7 +70,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'dipy'
-copyright = u'2008-2021, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
+copyright = u'2008-2022, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

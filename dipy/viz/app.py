@@ -10,61 +10,57 @@ from dipy.io.streamline import save_tractogram
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz import actor, window, ui
-    from dipy.viz import vtk, HAVE_VTK_9_PLUS
+    from dipy.viz import actor, window, ui, shaders
     from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
 
 
-def apply_shader(hz, actor):
-    # Todo:  Use fury.shaders API.
-    sp = actor.GetShaderProperty() if HAVE_VTK_9_PLUS else actor.GetMapper()
-    gl_mapper = actor.GetMapper()
+def apply_shader(hz, act):
+    """ Apply a shader to an actor (act) that access shared memory
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Vertex,
-        "//VTK::ValuePass::Impl",  # replace the normal block
-        False,
-        "//VTK::ValuePass::Impl\n",  # we still want the default
-        False)
+    Parameters
+    ----------
+    hz : GlobalHorizon instance
+    act : fury.actor visual object
+    """
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Light::Impl",
-        True,
-        "//VTK::Light::Impl\n"
-        "if (selected == 1){\n"
-        " fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);\n"
-        "}\n",
-        False)
+    frag_decl = \
+        """
+        uniform float selected;
+        uniform float opacity_level;
+        """
 
-    sp.AddShaderReplacement(
-        vtk.vtkShader.Fragment,
-        "//VTK::Coincident::Dec",
-        True,
-        "//VTK::Coincident::Dec\n"
-        "uniform float selected;\n"
-        "uniform float opacity_level;\n",
-        False)
+    frag_impl = \
+        """
+        if (selected == 1){
+            fragOutput0 = fragOutput0 + vec4(0.2, 0.2, 0, opacity_level);
+            }
+        """
 
-    @window.vtk.calldata_type(window.vtk.VTK_OBJECT)
-    def vtk_shader_callback(caller, event, calldata=None):
+    shaders.shader_to_actor(act, "vertex", impl_code="\n",
+                            replace_first=False,
+                            replace_all=False)
+    shaders.shader_to_actor(act, "fragment", decl_code=frag_decl,
+                            block="coincident")
+    shaders.shader_to_actor(act, "fragment", impl_code=frag_impl,
+                            block="light")
+
+    def shader_selected_callback(caller, event, calldata=None):
         program = calldata
         if program is not None:
             try:
                 program.SetUniformf("selected",
-                                    hz.cea[actor]['selected'])
+                                    hz.cea[act]['selected'])
             except KeyError:
                 pass
             try:
                 program.SetUniformf("selected",
-                                    hz.cla[actor]['selected'])
+                                    hz.cla[act]['selected'])
             except KeyError:
                 pass
             program.SetUniformf("opacity_level", 1)
 
-    gl_mapper.AddObserver(window.vtk.vtkCommand.UpdateShaderEvent,
-                          vtk_shader_callback)
+    shaders.add_shader_callback(act, shader_selected_callback, priority=100)
 
 
 HELP_MESSAGE = """
@@ -323,14 +319,12 @@ class Horizon(object):
             return
 
         def left_click_centroid_callback(obj, event):
-
             self.cea[obj]['selected'] = not self.cea[obj]['selected']
             self.cla[self.cea[obj]['cluster_actor']]['selected'] = \
                 self.cea[obj]['selected']
             self.show_m.render()
 
         def left_click_cluster_callback(obj, event):
-
             if self.cla[obj]['selected']:
                 self.cla[obj]['centroid_actor'].VisibilityOn()
                 ca = self.cla[obj]['centroid_actor']
@@ -852,7 +846,6 @@ class Horizon(object):
             window.record(scene, out_path=self.out_png,
                           size=(1200, 900),
                           reset_camera=False)
-
 
 
 def horizon(tractograms=None, images=None, pams=None,

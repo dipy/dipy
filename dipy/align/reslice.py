@@ -15,7 +15,7 @@ def _affine_transform(kwargs):
 
 def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
             num_processes=1):
-    """Reslice data with new voxel resolution defined by ``new_zooms``
+    """ Reslice data with new voxel resolution defined by ``new_zooms``.
 
     Parameters
     ----------
@@ -40,7 +40,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     num_processes : int, optional
         Split the calculation to a pool of children processes. This only
         applies to 4D `data` arrays. Default is 1. If < 0 the maximal number
-        of cores minus |num_processes + 1| is used (enter -1 to use as many
+        of cores minus ``num_processes + 1`` is used (enter -1 to use as many
         cores as possible). 0 raises an error.
 
     Returns
@@ -67,6 +67,7 @@ def reslice(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0,
     >>> data2, affine2 = reslice(data, affine, zooms, new_zooms)
     >>> data2.shape == (77, 77, 40)
     True
+
     """
     num_processes = determine_num_processes(num_processes)
 

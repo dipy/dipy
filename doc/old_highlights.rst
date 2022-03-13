@@ -4,6 +4,18 @@
 Older Highlights
 ****************
 
+**DIPY 1.4.1** is now available. New features include:
+
+- Patch2Self and its documentation updated.
+- BUAN and Recobundles documentation updated.
+- Standardization and improvement of the multiprocessing / multithreading rules.
+- Community and governance information added.
+- New surface seeding module for tractography named `mesh`.
+- Large update of Cython code in respect of the last standard.
+- Large documentation update.
+- Closed 61 issues and merged 28 pull requests.
+
+
 **DIPY 1.4.0** is now available. New features include:
 
 - New self-supervised denoising algorithm Patch2Self added.

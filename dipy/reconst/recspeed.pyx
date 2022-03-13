@@ -10,9 +10,6 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy
-
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     double fabs(double x)
@@ -77,6 +74,7 @@ def remove_similar_vertices(
         `vertices` that is less than theta degrees from `unique_vertices[j]`,
         return the first (lowest index) matching value.  Only return if
         `return_indices` is True.
+
     """
     if vertices.shape[1] != 3:
         raise ValueError('Vertices should be 2D with second dim length 3')
@@ -177,6 +175,7 @@ def search_descending(cython.floating[::1] a, double relative_threshold):
     0
     >>> search_descending(a, 0)
     10
+
     """
     if a.shape[0] == 0:
         return 0
@@ -437,13 +436,13 @@ def adj_to_countarrs(adj_inds):
     We use this to provide expected input to ``argmax_from_countarrs``
 
     Parameters
-    ------------
+    ----------
     adj_indices : sequence
        length V sequence of sequences, where sequence ``i`` contains the
        neighbors of a particular vertex.
 
     Returns
-    ---------
+    -------
     counts : (V,) array
        Number of neighbors for each vertex
     adj_inds : (n,) array

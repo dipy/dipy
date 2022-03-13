@@ -19,7 +19,7 @@ poorly aligned with their neighbors, as shown in the figure below.
    On the left this figure illustrates (in 2D) the contribution of two fiber
    points to the kernel density estimator. The kernel density estimator is the
    sum over all such locally aligned kernels. The local fiber to bundle
-   coherence shown on the right color-coded for each fiber, is obtained by
+   coherence, shown on the right, color-coded for each fiber, is obtained by
    evaluating the kernel density estimator along the fibers. One spurious
    fiber is present which is isolated and badly aligned with the other fibers,
    and can be identified by a low LFBC value in the region where it deviates
@@ -76,7 +76,7 @@ selectionmask = np.zeros(dshape, 'bool')
 selectionmask[xa:xb, ya:yb, za:zb] = True
 
 """
-The data is first fitted to Constant Solid Angle (CDA) ODF Model. CSA is a
+The data is first fitted to the Constant Solid Angle (CDA) ODF Model. CSA is a
 good choice to estimate general fractional anisotropy (GFA), which the stopping
 criterion can use to restrict fiber tracking to those areas where the ODF
 shows significant restricted diffusion, thus creating a region-of-interest in
@@ -183,8 +183,8 @@ rotated over a discrete set of orientations. See the
 `Contextual enhancement example <https://dipy.org/documentation/latest/examples_built/contextual_enhancement/#example-contextual-enhancement>`_
 for more details regarding the kernel. In order to ensure rotationally
 invariant processing, the discrete orientations are required to be equally
-distributed over a sphere. By default, a sphere with 100 directions is used
-obtained from electrostatic repulsion in DIPY.
+distributed over a sphere. By default, a sphere with 100 directions is obtained
+from electrostatic repulsion in DIPY.
 """
 
 # Compute lookup table

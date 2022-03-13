@@ -1,7 +1,9 @@
 
 from warnings import warn
+from packaging.version import Version
+
 import numpy as np
-from distutils.version import LooseVersion
+
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.csdeconv import csdeconv
@@ -19,7 +21,7 @@ class ForecastModel(OdfModel, Cache):
     r"""Fiber ORientation Estimated using Continuous Axially Symmetric Tensors
     (FORECAST) [1,2,3]_. FORECAST is a Spherical Deconvolution reconstruction
     model for multi-shell diffusion data which enables the calculation of a
-    voxel adaptive response function using the Spherical Mean Tecnique (SMT)
+    voxel adaptive response function using the Spherical Mean Technique (SMT)
     [2,3]_.
 
     With FORECAST it is possible to calculate crossing invariant parallel
@@ -113,6 +115,7 @@ class ForecastModel(OdfModel, Cache):
         with respect to the FORECAST and compute the fODF, parallel and
         perpendicular diffusivity.
 
+        >>> import warnings
         >>> from dipy.data import default_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
         >>> from dipy.sims.voxel import multi_tensor
@@ -126,11 +129,20 @@ class ForecastModel(OdfModel, Cache):
         ...                             fractions=[50, 50],
         ...                             snr=None)
         >>> from dipy.reconst.forecast import ForecastModel
-        >>> fm = ForecastModel(gtab, sh_order=6)
+        >>> from dipy.reconst.shm import descoteaux07_legacy_msg
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     fm = ForecastModel(gtab, sh_order=6)
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
-        >>> fodf = f_fit.odf(default_sphere)
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     fodf = f_fit.odf(default_sphere)
         """
         OdfModel.__init__(self, gtab)
 
@@ -250,7 +262,7 @@ class ForecastModel(OdfModel, Cache):
 
             if self.pos:
                 c = cvxpy.Variable(M.shape[1])
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     design_matrix = cvxpy.Constant(M) * c
                 else:
                     design_matrix = cvxpy.Constant(M) @ c
@@ -258,7 +270,7 @@ class ForecastModel(OdfModel, Cache):
                     cvxpy.sum_squares(design_matrix - data_single_b0) +
                     self.lambda_lb * cvxpy.quad_form(c, self.lb_matrix))
 
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [c[0] == c0, self.fod * c >= 0]
                 else:
                     constraints = [c[0] == c0, self.fod @ c >= 0]

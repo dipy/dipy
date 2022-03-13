@@ -8,7 +8,7 @@ from copy import deepcopy
 from os.path import join as pjoin, dirname, exists
 from glob import glob
 
-# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
+# BEFORE importing setuptools, remove MANIFEST. setuptools doesn't properly
 # update it when the contents of directories change.
 if exists('MANIFEST'):
     os.remove('MANIFEST')
@@ -26,10 +26,10 @@ if 'force_setuptools' not in globals():
 if force_setuptools:
     import setuptools
 
-# Import distutils _after_ potential setuptools import above, and after
+# Import setuptools _after_ potential setuptools import above, and after
 # removing MANIFEST
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup
+from setuptools.extension import Extension
 
 from cythexts import cyproc_exts, get_pyx_sdist
 from setup_helpers import (install_scripts_bat, add_flag_checking,
@@ -229,13 +229,6 @@ def main(**extra_args):
                     'dipy.nn.tests'],
 
           ext_modules=EXTS,
-          # The package_data spec has no effect for me (on python 2.6) -- even
-          # changing to data_files doesn't get this stuff included in the
-          # source distribution -- not sure if it has something to do with the
-          # magic above, but distutils is surely the worst piece of code in
-          # all of python -- duplicating things into MANIFEST.in but this is
-          # admittedly only a workaround to get things started -- not a
-          # solution
           package_data={'dipy': [pjoin('data', 'files', '*')],
                         },
           data_files=[('share/doc/dipy/examples',

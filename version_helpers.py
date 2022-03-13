@@ -13,7 +13,7 @@ try:
 except ImportError:
     from configparser import ConfigParser
 
-from distutils.command.build_py import build_py
+from setuptools.command.build_py import build_py
 
 
 def get_comrec_build(pkg_dir, build_cmd=build_py):

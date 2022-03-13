@@ -15,7 +15,7 @@ from dipy.io.utils import (get_reference_info,
                            is_reference_info_valid,
                            is_header_compatible)
 
-
+logging.basicConfig()
 logger = logging.getLogger('StatefulTractogram')
 
 
@@ -393,11 +393,11 @@ class StatefulTractogram(object):
 
     def get_data_per_point_keys(self):
         """ Return a list of the data_per_point attribute names """
-        return list(self.data_per_point.keys())
+        return list(set(self.data_per_point.keys()))
 
     def get_data_per_streamline_keys(self):
         """ Return a list of the data_per_streamline attribute names """
-        return list(self.data_per_streamline.keys())
+        return list(set(self.data_per_streamline.keys()))
 
     def to_vox(self):
         """ Safe function to transform streamlines and update state """
@@ -548,8 +548,11 @@ class StatefulTractogram(object):
             indices_to_remove.append(bisect(
                 self._tractogram.streamlines._offsets, i) - 1)
 
-        indices_to_keep = np.setdiff1d(np.arange(len(self._tractogram)),
-                                       np.array(indices_to_remove)).astype(int)
+        indices_to_remove = sorted(set(indices_to_remove))
+
+        indices_to_keep = list(
+            np.setdiff1d(np.arange(len(self._tractogram)),
+                         np.array(indices_to_remove)).astype(int))
 
         tmp_streamlines = self.streamlines[indices_to_keep]
         tmp_dpp = self._tractogram.data_per_point[indices_to_keep]

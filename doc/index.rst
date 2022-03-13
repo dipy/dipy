@@ -16,16 +16,21 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.4.1** is now available. New features include:
+**DIPY 1.5.0** is now available. New features include:
 
-- Patch2Self and its documentation updated.
-- BUAN and Recobundles documentation updated.
-- Standardization and improvement of the multiprocessing / multithreading rules.
-- Community and governance information added.
-- New surface seeding module for tractography named `mesh`.
-- Large update of Cython code in respect of the last standard.
+- New reconstruction model added: Q-space Trajectory Imaging (QTI).
+- New reconstruction model added: Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
+- New reconstruction model added: Residual block Deep Neural Network (ResDNN).
+- Masking management in Affine Registration added.
+- Multiple Workflows updated (DTIFlow, DKIFlow, ImageRegistrationFlow) and added (MotionCorrectionFlow).
+- Compatibility with Python 3.10 added.
+- Migrations from Azure Pipeline to Github Actions.
+- Large codebase cleaning.
+- New parallelisation module added.
+- ``dipy.io.bvectxt`` module deprecated.
+- New DIPY Horizon features (ROI Visualizer, random colors flag).
 - Large documentation update.
-- Closed 61 issues and merged 28 pull requests.
+- Closed 129 issues and merged 72 pull requests.
 
 
 See :ref:`Older Highlights <old_highlights>`.
@@ -33,9 +38,10 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 11, 2022.
 - :doc:`DIPY 1.4.1 <release_notes/release1.4.1>` released May 6, 2021.
 - :doc:`DIPY 1.4.0 <release_notes/release1.4>` released March 13, 2021.
-- :doc:`DIPY 1.3.0 <release_notes/release1.3>` released November 3, 2020.
+
 
 
 

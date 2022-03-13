@@ -63,7 +63,7 @@ fully covered are very welcome!
 
 ### Code style
 
-Code contributions should be formatted according to the [DIPY Coding Style Guideline](./doc/devel/coding_style_guideline.rst).
+Code contributions should be formatted according to the [DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst).
 Please, read the document to conform your code contributions to the DIPY standard.
 
 
@@ -71,5 +71,5 @@ Please, read the document to conform your code contributions to the DIPY standar
 
 DIPY uses [Sphinx](http://www.sphinx-doc.org/en/stable/index.html) to generate
 documentation. The
-[DIPY Coding Style Guideline](https://dipy.org/documentation/latest/devel/coding_style_guideline/)
+[DIPY Coding Style Guideline](../doc/devel/coding_style_guideline.rst)
 contains details about documenting the contributions.

@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 cdef extern from "cythonutils.h":

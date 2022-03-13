@@ -47,7 +47,7 @@ import dipy.data as dpd
 ``dipy.io.gradients`` is for loading / saving our bvals and bvecs
 """
 
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 

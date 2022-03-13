@@ -1,8 +1,11 @@
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 from scipy.special import genlaguerre
 
 from dipy.data import get_gtab_taiwan_dsi, get_sphere
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.reconst.shore import (ShoreModel,
                                 shore_matrix,
                                 shore_indices,
@@ -46,10 +49,18 @@ def test_shore_metrics():
     lambdaL = 1e-12
     asm = ShoreModel(gtab, radial_order=radial_order,
                      zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
-    asmfit = asm.fit(S)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        asmfit = asm.fit(S)
     c_shore = asmfit.shore_coeff
 
-    cmat = shore_matrix(radial_order, zeta, gtab)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        cmat = shore_matrix(radial_order, zeta, gtab)
     S_reconst = np.dot(cmat, c_shore)
 
     # test the signal reconstruction
@@ -59,7 +70,7 @@ def test_shore_metrics():
 
     # test if the analytical integral of the pdf is equal to one
     integral = 0
-    for n in range(int((radial_order)/2 + 1)):
+    for n in range(int(radial_order/2 + 1)):
         integral += c_shore[n] * (np.pi**(-1.5) * zeta ** (-1.5) *
                                   genlaguerre(n, 0.5)(0)) ** 0.5
 
@@ -67,7 +78,11 @@ def test_shore_metrics():
 
     # test if the integral of the pdf calculated on a discrete grid is
     # equal to one
-    pdf_discrete = asmfit.pdf_grid(17, 40e-3)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf_discrete = asmfit.pdf_grid(17, 40e-3)
     integral = pdf_discrete.sum()
     npt.assert_almost_equal(integral, 1.0, 1)
 
@@ -76,7 +91,11 @@ def test_shore_metrics():
     sphere = get_sphere('symmetric724')
     v = sphere.vertices
     radius = 10e-3
-    pdf_shore = asmfit.pdf(v * radius)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,
                               angles=angl, fractions=[50, 50])
 
@@ -88,11 +107,11 @@ def test_shore_metrics():
     rtop_shore_pdf = asmfit.rtop_pdf()
     npt.assert_almost_equal(rtop_shore_signal, rtop_shore_pdf, 9)
     rtop_mt = multi_tensor_rtop([.5, .5], mevals=mevals)
-    npt.assert_equal(rtop_mt / rtop_shore_signal < 1.10 and
-                     rtop_mt / rtop_shore_signal > 0.95, True)
+    npt.assert_(rtop_mt / rtop_shore_signal > 0.95)
+    npt.assert_(rtop_mt / rtop_shore_signal < 1.10)
 
     # compare the shore msd with the ground truth multi_tensor msd
     msd_mt = multi_tensor_msd([.5, .5], mevals=mevals)
     msd_shore = asmfit.msd()
-    npt.assert_equal(msd_mt / msd_shore < 1.05 and msd_mt / msd_shore > 0.95,
-                     True)
+    npt.assert_(msd_mt / msd_shore > 0.95)
+    npt.assert_(msd_mt / msd_shore < 1.05)

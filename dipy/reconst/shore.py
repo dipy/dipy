@@ -1,7 +1,7 @@
 
 from warnings import warn
 from math import factorial
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import numpy as np
 
@@ -152,8 +152,10 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
+        >>> import warnings
         >>> from dipy.data import get_isbi2013_2shell_gtab, default_sphere
         >>> from dipy.sims.voxel import sticks_and_ball
+        >>> from dipy.reconst.shm import descoteaux07_legacy_msg
         >>> from dipy.reconst.shore import ShoreModel
         >>> gtab = get_isbi2013_2shell_gtab()
         >>> data, golden_directions = sticks_and_ball(
@@ -164,8 +166,12 @@ class ShoreModel(Cache):
         >>> zeta = 700
         >>> asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
         ...                  lambdaN=1e-8, lambdaL=1e-8)
-        >>> asmfit = asm.fit(data)
-        >>> odf = asmfit.odf(default_sphere)
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     asmfit = asm.fit(data)
+        ...     odf = asmfit.odf(default_sphere)
         """
 
         self.bvals = gtab.bvals
@@ -244,7 +250,7 @@ class ShoreModel(Cache):
             M0 = M[self.gtab.b0s_mask, :]
 
             c = cvxpy.Variable(M.shape[1])
-            if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+            if Version(cvxpy.__version__) < Version('1.1'):
                 design_matrix = cvxpy.Constant(M) * c
             else:
                 design_matrix = cvxpy.Constant(M) @ c
@@ -255,7 +261,7 @@ class ShoreModel(Cache):
             )
 
             if not self.positive_constraint:
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [M0[0] * c == 1]
                 else:
                     constraints = [M0[0] @ c == 1]
@@ -270,7 +276,7 @@ class ShoreModel(Cache):
                     self.cache_set(
                         'shore_matrix_positive_constraint',
                         (self.pos_grid, self.pos_radius), psi)
-                if LooseVersion(cvxpy.__version__) < LooseVersion('1.1'):
+                if Version(cvxpy.__version__) < Version('1.1'):
                     constraints = [(M0[0] * c) == 1., (psi * c) >= 1e-3]
                 else:
                     constraints = [(M0[0] @ c) == 1., (psi @ c) >= 1e-3]

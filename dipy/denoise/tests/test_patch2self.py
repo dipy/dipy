@@ -8,8 +8,9 @@ import pytest
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
 
-needs_sklearn = pytest.mark.skipif(not p2s.has_sklearn,
-                                   reason="Requires Scikit-Learn")
+needs_sklearn = pytest.mark.skipif(
+    not p2s.has_sklearn,
+    reason=p2s.sklearn._msg if not p2s.has_sklearn else "")
 
 
 @needs_sklearn

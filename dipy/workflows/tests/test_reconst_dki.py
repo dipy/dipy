@@ -101,7 +101,3 @@ def test_reconst_dki():
         npt.assert_warns(UserWarning, dki_flow.run, data_path,
                          tmp_bval_path, tmp_bvec_path, mask_path,
                          out_dir=out_dir, b0_threshold=0)
-
-
-if __name__ == '__main__':
-    test_reconst_dki()

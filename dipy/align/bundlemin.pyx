@@ -5,16 +5,15 @@
 
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 cimport safe_openmp as openmp
 from safe_openmp cimport have_openmp
 
 from cython.parallel import prange
 from libc.stdlib cimport malloc, free
-from libc.math cimport sqrt, sin, cos
+from libc.math cimport sqrt
 
-from dipy.utils.omp import cpu_count, determine_num_threads
+from dipy.utils.omp import determine_num_threads
 from dipy.utils.omp cimport set_num_threads, restore_default_num_threads
 
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
@@ -40,7 +39,7 @@ cdef double min_direct_flip_dist(double *a,double *b,
         minimum of direct and flipped average distances
 
     References
-    -----------
+    ----------
     .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
                         tractography simplification, Frontiers in Neuroscience,
                         vol 6, no 175, 2012.
@@ -83,7 +82,7 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static: array
         Static streamlines
     moving: array
@@ -142,7 +141,7 @@ def _bundle_minimum_distance(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array
@@ -248,7 +247,7 @@ def _bundle_minimum_distance_asymmetric(double [:, ::1] static,
     points as they align with the static streamlines.
 
     Parameters
-    -----------
+    ----------
     static : array
         Static streamlines
     moving : array

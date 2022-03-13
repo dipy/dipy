@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.special as sps
-from numpy.testing import (run_module_suite,
-                           assert_,
+from numpy.testing import (assert_,
                            assert_equal,
                            assert_raises,
                            assert_array_almost_equal)
@@ -332,7 +331,3 @@ def test_mppca_returned_sigma():
     rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
     rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
     assert_(rmse_den < rmse_ref)
-
-
-if __name__ == '__main__':
-    run_module_suite()

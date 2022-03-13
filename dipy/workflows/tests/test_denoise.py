@@ -13,8 +13,8 @@ from dipy.workflows.denoise import (NLMeansFlow, LPCAFlow, MPPCAFlow,
                                     GibbsRingingFlow, Patch2SelfFlow)
 
 sklearn, has_sklearn, _ = optional_package('sklearn')
-needs_sklearn = pytest.mark.skipif(not has_sklearn,
-                                   reason="Requires Scikit-Learn")
+needs_sklearn = pytest.mark.skipif(
+    not has_sklearn, reason=sklearn._msg if not has_sklearn else "")
 
 
 def test_nlmeans_flow():
@@ -117,11 +117,3 @@ def test_gibbs_flow():
         gibbs_flow.run(data_path, out_dir=out_dir)
         assert_true(os.path.isfile(
                 gibbs_flow.last_generated_outputs['out_unring']))
-
-
-if __name__ == '__main__':
-    test_gibbs_flow()
-    test_mppca_flow()
-    test_patch2self_flow()
-    test_lpca_flow()
-    test_nlmeans_flow()

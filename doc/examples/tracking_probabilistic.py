@@ -146,7 +146,8 @@ model to the spherical harmonic basis using the ``peaks_from_model`` function.
 from dipy.direction import peaks_from_model
 
 peaks = peaks_from_model(csd_model, data, default_sphere, .5, 25,
-                         mask=white_matter, return_sh=True, parallel=True)
+                         mask=white_matter, return_sh=True, parallel=True,
+                         num_processes=2)
 fod_coeff = peaks.shm_coeff
 
 prob_dg = ProbabilisticDirectionGetter.from_shcoeff(fod_coeff, max_angle=30.,

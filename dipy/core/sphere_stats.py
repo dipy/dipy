@@ -10,7 +10,7 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     r"""Random unit vectors from a uniform distribution on the sphere.
 
     Parameters
-    -----------
+    ----------
     n : int
         Number of random vectors
     coords : {'xyz', 'radians', 'degrees'}
@@ -19,22 +19,22 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
         'degrees' for spherical form in degrees
 
     Notes
-    ------
+    -----
     The uniform distribution on the sphere, parameterized by spherical
     coordinates $(\theta, \phi)$, should verify $\phi\sim U[0,2\pi]$, while
     $z=\cos(\theta)\sim U[-1,1]$.
 
     References
-    -----------
+    ----------
     .. [1] http://mathworld.wolfram.com/SpherePointPicking.html.
 
     Returns
-    --------
+    -------
     X : array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
         Uniformly distributed vectors on the unit sphere.
 
     Examples
-    ---------
+    --------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
     >>> X = random_uniform_on_sphere(4, 'radians')
     >>> X.shape == (4, 2)
@@ -161,19 +161,19 @@ def compare_orientation_sets(S, T):
     points of two sets of vectors S and T (angular similarity)
 
     Parameters
-    -----------
+    ----------
     S : array, shape (m,d)
         First set of vectors.
     T : array, shape (n,d)
         Second set of vectors.
 
     Returns
-    --------
+    -------
     max_mean_cosine : float
         Maximum mean cosine distance.
 
     Examples
-    ---------
+    --------
     >>> from dipy.core.sphere_stats import compare_orientation_sets
     >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
     >>> T=np.array([[1,0,0],[0,0,1]])
@@ -211,16 +211,16 @@ def angular_similarity(S, T):
     points of two sets of vectors S and T
 
     Parameters
-    -----------
+    ----------
     S : array, shape (m,d)
     T : array, shape (n,d)
 
     Returns
-    --------
+    -------
     max_cosine_distance:float
 
     Examples
-    ---------
+    --------
     >>> import numpy as np
     >>> from dipy.core.sphere_stats import angular_similarity
     >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])

@@ -22,7 +22,7 @@ class Dpy(object):
         """ Advanced storage system for tractography based on HDF5
 
         Parameters
-        ------------
+        ----------
         fname : str, full filename
         mode : 'r' read
          'w' write
@@ -30,7 +30,7 @@ class Dpy(object):
         compression : 0 no compression to 9 maximum compression
 
         Examples
-        ----------
+        --------
         >>> import os
         >>> from tempfile import mkstemp #temp file
         >>> from dipy.io.dpy import Dpy

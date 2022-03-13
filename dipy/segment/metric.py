@@ -1,19 +1,14 @@
-from dipy.segment.featurespeed import (Feature,
-                                       IdentityFeature,
-                                       ResampleFeature,
-                                       CenterOfMassFeature,
-                                       MidpointFeature,
-                                       ArcLengthFeature,
-                                       VectorOfEndpointsFeature)
 
-from dipy.segment.metricspeed import (Metric,
-                                      SumPointwiseEuclideanMetric,
-                                      AveragePointwiseEuclideanMetric,
+__all__ = ["MinimumAverageDirectFlipMetric", "Metric",
+           "AveragePointwiseEuclideanMetric", "CosineMetric", "dist",
+           "EuclideanMetric", "mdf"]
+
+
+from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
                                       MinimumAverageDirectFlipMetric,
-                                      CosineMetric)
-
-from dipy.segment.metricspeed import (dist,
-                                      distance_matrix)
+                                      AveragePointwiseEuclideanMetric,
+                                      CosineMetric, Metric,
+                                      dist)
 
 # Creates aliases
 EuclideanMetric = SumPointwiseEuclideanMetric
@@ -44,4 +39,3 @@ def mdf(s1, s2):
                         vol 6, no 175, 2012.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
- 

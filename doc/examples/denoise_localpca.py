@@ -56,7 +56,7 @@ Estimate the noise standard deviation
 =====================================
 
 We use the ``pca_noise_estimate`` method to estimate the value of sigma to be
-used in local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
+used in the local PCA algorithm proposed by Manjon et al. [Manjon2013]_.
 It takes both data and the gradient table object as input and returns an
 estimate of local noise standard deviation as a 3D array. We return a smoothed
 version, where a Gaussian filter with radius 3 voxels has been applied to the
@@ -76,7 +76,7 @@ Perform the localPCA using the function `localpca`
 ==================================================
 
 The localpca algorithm takes into account the multi-dimensional information of
-the diffusion MR data. It performs PCA on local 4D patch and
+the diffusion MR data. It performs PCA on a local 4D patch and
 then removes the noise components by thresholding the lowest eigenvalues.
 The eigenvalue threshold will be computed from the local variance estimate
 performed by the ``pca_noise_estimate`` function, if this is inputted in the
@@ -95,7 +95,7 @@ print("Time taken for local PCA (slow)", -t + time())
 """
 The ``localpca`` function returns the denoised data which is plotted below
 (middle panel) together with the original version of the data (left panel) and
-the algorithm residual (right panel) .
+the algorithm residual image (right panel) .
 """
 
 sli = data.shape[2] // 2
