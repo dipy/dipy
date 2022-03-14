@@ -276,9 +276,9 @@ def _qti_gtab():
     return gtab
 
 
-def test_ls_fits():
-    """Test ordinary and weighted least squares QTI fits by comparing the
-    estimated parameters to the ground-truth values."""
+def test_ls_sdp_fits():
+    """Test ordinary and weighted least squares and semidefinite programming
+    QTI fits by comparing the estimated parameters to the ground-truth values."""
     gtab = _qti_gtab()
     X = qti.design_matrix(gtab.btens)
     DTDs = [
@@ -303,7 +303,8 @@ def test_ls_fits():
         npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
 
         if have_cvxpy:
-            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, step=1), params, decimal=4)
+            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, step=1),
+                                    params, decimal=4)
 
 
 def test_qti_model():
