@@ -303,8 +303,8 @@ def test_ls_sdp_fits():
         npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
 
         if have_cvxpy:
-            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, step=1),
-                                    params, decimal=4)
+            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, 'SCS', 
+                                    step=1), params, decimal=2)
 
 
 def test_qti_model():

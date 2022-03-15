@@ -140,6 +140,12 @@ https://www.cvxpy.org/install/
 Instructions on how to install Mosek and setting up a licence can be found 
 at https://docs.mosek.com/latest/install/installation.html
 
+Once mosek is installed, it can be specified as the solver to be used
+as follows:
+
+qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
+qtifit = qtimodel.fit(data, mask)
+
 """
 
 """
