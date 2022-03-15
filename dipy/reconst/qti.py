@@ -413,7 +413,7 @@ def design_matrix(btens):
     return X
 
 
-def _ols_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
+def _ols_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
@@ -454,7 +454,7 @@ def _ols_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
     return params
 
 
-def _wls_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
+def _wls_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -499,7 +499,7 @@ def _wls_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
     params = params.reshape((mask.shape + (28,)))
     return params
 
-def _sdpdc_fit(data, mask, X, step=int(20), cvxpy_solver=None):
+def _sdpdc_fit(data, mask, X, cvxpy_solver, step=int(20)):
     """Estimate the model parameters using Semidefinite Programming (SDP), 
         while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
         
@@ -511,10 +511,10 @@ def _sdpdc_fit(data, mask, X, step=int(20), cvxpy_solver=None):
         Array with the same shape as the data array of a single acquisition.
     X : numpy.ndarray
         Design matrix of shape (number of acquisitions, 28).
-    step : int, optional
-        The number of voxels over which the fit is calculated simultaneously.
     cvxpy_solver: string, required
-        The name of the SDP solver to be used. Default: 'SCS'    
+        The name of the SDP solver to be used. Default: 'SCS'
+    step : int, optional
+        The number of voxels over which the fit is calculated simultaneously.    
 
     Returns
     -------
@@ -535,9 +535,6 @@ def _sdpdc_fit(data, mask, X, step=int(20), cvxpy_solver=None):
     if not have_cvxpy:
                 raise ValueError(
                     'CVXPY package needed to enforce constraints')
-
-    if cvxpy_solver == None:
-        cvxpy_solver = 'SCS'
     
     if cvxpy_solver not in cp.installed_solvers():
            raise ValueError(
@@ -589,8 +586,7 @@ def _sdpdc_fit(data, mask, X, step=int(20), cvxpy_solver=None):
 
 class QtiModel(ReconstModel):
 
-    def __init__(self, gtab, fit_method='WLS', 
-                 step=int(1e4), cvxpy_solver=None):
+    def __init__(self, gtab, fit_method='WLS', cvxpy_solver='SCS'):
         """Covariance tensor model of q-space trajectory imaging [1]_.
 
         Parameters
@@ -598,7 +594,7 @@ class QtiModel(ReconstModel):
         gtab : dipy.core.gradients.GradientTable
             Gradient table with b-tensors.
         fit_method : str, optional
-            Must be one of the followng:
+            Must be one of the following:
                 'OLS' for ordinary least squares
                     :func:`qti._ols_fit`
                 'WLS' for weighted least squares
@@ -606,6 +602,8 @@ class QtiModel(ReconstModel):
                 'SDPDc' for semidefinite programming with positivity 
                         constraints applied [2]_
                     :func:`qti._sdpdc_fit`
+        cvxpy_solver: str, optionals
+            solver for the SDP formulation. default: 'SCS'
 
         References
         ----------
@@ -637,8 +635,12 @@ class QtiModel(ReconstModel):
                 'Invalid value (%s) for \'fit_method\'.' % fit_method
                 + ' Options: \'OLS\', \'WLS\', \'SDPdc\'.'
             )
+            
+        
+        self.cvxpy_solver = cvxpy_solver
+        self.fit_method_name = fit_method
 
-    def fit(self, data, mask=None, step=int(1e4), cvxpy_solver=None):
+    def fit(self, data, mask=None):
         """Fit QTI to data.
 
         Parameters
@@ -659,7 +661,10 @@ class QtiModel(ReconstModel):
             if mask.shape != data.shape[:-1]:
                 raise ValueError('Mask is not the same shape as data.')
             mask = np.array(mask, dtype=bool, copy=False)
-        params = self.fit_method(data, mask, self.X, step, cvxpy_solver)
+        if self.fit_method_name == 'SDPdc':
+            params = self.fit_method(data, mask, self.X, self.cvxpy_solver)  
+        else:
+            params = self.fit_method(data, mask, self.X)
         return QtiFit(params)
 
     def predict(self, params):
