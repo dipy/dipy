@@ -413,7 +413,7 @@ def design_matrix(btens):
     return X
 
 
-def _ols_fit(data, mask, X, step=int(1e4)):
+def _ols_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
     """Estimate the model parameters using ordinary least squares.
 
     Parameters
@@ -454,7 +454,7 @@ def _ols_fit(data, mask, X, step=int(1e4)):
     return params
 
 
-def _wls_fit(data, mask, X, step=int(1e4)):
+def _wls_fit(data, mask, X, step=int(1e4), cvxpy_solver=None):
     """Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
 
@@ -499,7 +499,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
     params = params.reshape((mask.shape + (28,)))
     return params
 
-def _sdpdc_fit(data, mask, X, step=int(20)):
+def _sdpdc_fit(data, mask, X, step=int(20), cvxpy_solver=None):
     """Estimate the model parameters using Semidefinite Programming (SDP), 
         while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
         
@@ -513,6 +513,8 @@ def _sdpdc_fit(data, mask, X, step=int(20)):
         Design matrix of shape (number of acquisitions, 28).
     step : int, optional
         The number of voxels over which the fit is calculated simultaneously.
+    cvxpy_solver: string, required
+        The name of the SDP solver to be used. Default: 'SCS'    
 
     Returns
     -------
@@ -533,13 +535,13 @@ def _sdpdc_fit(data, mask, X, step=int(20)):
     if not have_cvxpy:
                 raise ValueError(
                     'CVXPY package needed to enforce constraints')
+
+    if cvxpy_solver == None:
+        cvxpy_solver = 'SCS'
     
-    cvxpy_solver = 'MOSEK'
-    if have_cvxpy:
-        if cvxpy_solver not in cp.installed_solvers():
-            warn('The recommended solver Mosek is not installed, using '+
-            'SCS insted')
-            cvxpy_solver = 'SCS'
+    if cvxpy_solver not in cp.installed_solvers():
+           raise ValueError(
+                    'The selected solver is not available')
 
     params = np.zeros((np.product(mask.shape), 28)) * np.nan
     data_masked = data[mask]
@@ -587,7 +589,8 @@ def _sdpdc_fit(data, mask, X, step=int(20)):
 
 class QtiModel(ReconstModel):
 
-    def __init__(self, gtab, fit_method='WLS'):
+    def __init__(self, gtab, fit_method='WLS', 
+                 step=int(1e4), cvxpy_solver=None):
         """Covariance tensor model of q-space trajectory imaging [1]_.
 
         Parameters
@@ -635,7 +638,7 @@ class QtiModel(ReconstModel):
                 + ' Options: \'OLS\', \'WLS\', \'SDPdc\'.'
             )
 
-    def fit(self, data, mask=None):
+    def fit(self, data, mask=None, step=int(1e4), cvxpy_solver=None):
         """Fit QTI to data.
 
         Parameters
@@ -656,7 +659,7 @@ class QtiModel(ReconstModel):
             if mask.shape != data.shape[:-1]:
                 raise ValueError('Mask is not the same shape as data.')
             mask = np.array(mask, dtype=bool, copy=False)
-        params = self.fit_method(data, mask, self.X)
+        params = self.fit_method(data, mask, self.X, step, cvxpy_solver)
         return QtiFit(params)
 
     def predict(self, params):
