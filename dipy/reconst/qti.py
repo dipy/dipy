@@ -499,7 +499,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
     params = params.reshape((mask.shape + (28,)))
     return params
 
-def _sdpdc_fit(data, mask, X, cvxpy_solver, step=int(20)):
+def _sdpdc_fit(data, mask, X, cvxpy_solver, step=int(5)):
     """Estimate the model parameters using Semidefinite Programming (SDP), 
         while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
         
