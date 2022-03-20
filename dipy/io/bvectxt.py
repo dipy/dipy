@@ -93,24 +93,6 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     P: Posterior
     I: Inferior
 
-    Examples
-    --------
-    >>> gtab = np.array([[1, 1, 1], [1, 2, 3]])
-    >>> reorient_vectors(gtab, 'ras', 'asr', axis=1)
-    array([[1, 1, 1],
-           [2, 3, 1]])
-    >>> reorient_vectors(gtab, 'ras', 'lps', axis=1)
-    array([[-1, -1,  1],
-           [-1, -2,  3]])
-    >>> bvec = gtab.T
-    >>> reorient_vectors(bvec, 'ras', 'lps', axis=0)
-    array([[-1, -1],
-           [-1, -2],
-           [ 1,  3]])
-    >>> reorient_vectors(bvec, 'ras', 'lsp')
-    array([[-1, -1],
-           [ 1,  3],
-           [-1, -2]])
     """
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
