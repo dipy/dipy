@@ -691,6 +691,39 @@ def test_positivity_constraint(radial_order=6):
                  True)
 
 
+@pytest.mark.skipif(not mapmri.have_cvxpy, reason="Requires CVXPY")
+def test_plus_constraint(radial_order=6):
+    gtab = get_gtab_taiwan_dsi()
+    l1, l2, l3 = [0.0015, 0.0003, 0.0003]
+    S, _ = generate_signal_crossing(gtab, l1, l2, l3, angle2=60)
+    S_noise = add_noise(S, snr=20, S0=100.)
+
+    gridsize = 20
+    max_radius = 15e-3  # 20 microns maximum radius
+    r_grad = mapmri.create_rspace(gridsize, max_radius)
+
+    # The positivity constraint should make the pdf positive everywhere
+    # We test if the amount of negative pdf has decreased by 100%
+
+    mapmod_no_constraint = MapmriModel(gtab, radial_order=radial_order,
+                                       laplacian_regularization=False,
+                                       positivity_constraint=False)
+    mapfit_no_constraint = mapmod_no_constraint.fit(S_noise)
+    pdf = mapfit_no_constraint.pdf(r_grad)
+    pdf_negative_no_constraint = pdf[pdf < 0].sum()
+
+    mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
+                                    laplacian_regularization=False,
+                                    positivity_constraint=True,
+                                    pos_radius='infinity')
+    mapfit_constraint = mapmod_constraint.fit(S_noise)
+    pdf = mapfit_constraint.pdf(r_grad)
+    pdf_negative_constraint = pdf[pdf < 0].sum()
+
+    assert_equal((pdf_negative_constraint / pdf_negative_no_constraint) == 0.0,
+                 True)
+
+
 def test_laplacian_regularization(radial_order=6):
     gtab = get_gtab_taiwan_dsi()
     l1, l2, l3 = [0.0015, 0.0003, 0.0003]
