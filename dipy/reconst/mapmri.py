@@ -272,7 +272,10 @@ class MapmriModel(ReconstModel, Cache):
                     raise ValueError(msg)
             if isinstance(pos_radius, str):
                 if pos_radius == 'infinity':
-                    # This is only defined for radial_order up to 10
+                    if radial_order > 10:
+                        msg = 'Global constraints are currently supported for '
+                        msg += 'radial_order <= 10'
+                        warn(msg)
                     self.sdp_constraints = mapmri_sdp_constraints(radial_order)
                 elif pos_radius != 'adaptive':
                     raise ValueError(msg)
