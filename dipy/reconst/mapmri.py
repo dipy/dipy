@@ -148,8 +148,9 @@ class MapmriModel(ReconstModel, Cache):
             If set to a float, the maximum distance the the positivity
             constraint constrains to posivity is that value. If set to
             `adaptive', the maximum distance is dependent on the estimated
-            tissue diffusivity. If set to `infinity' the global constraints
-            of [6]_ are used.
+            tissue diffusivity. For the standard anisotropic MAP-MRI basis
+            (anistropic_scaling=False), this parameter can be set to `infinity'
+            to use the global constraints of [6]_.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -274,7 +275,7 @@ class MapmriModel(ReconstModel, Cache):
                 if pos_radius == 'infinity':
                     if radial_order > 10:
                         msg = 'Global constraints are currently supported for '
-                        msg += 'radial_order <= 10'
+                        msg += 'radial_order <= 10.'
                         warn(msg)
                     self.sdp_constraints = mapmri_sdp_constraints(radial_order)
                 elif pos_radius != 'adaptive':
@@ -414,16 +415,22 @@ class MapmriModel(ReconstModel, Cache):
                 )
 
             if self.pos_radius == 'infinity':
-                A = self.sdp_constraints
-                m = M.shape[1]
-                n = A.shape[0] - m - 1
-                s = cvxpy.Variable(n)
-                X = A[0]
-                for i in range(m):
-                    X = X + c[i] * A[i+1]
-                for i in range(n):
-                    X = X + s[i] * A[m+i+1]
-                constraints = [X >> 0]
+                if self.anisotropic_scaling:
+                    A = self.sdp_constraints
+                    m = M.shape[1]
+                    n = A.shape[0] - m - 1
+                    s = cvxpy.Variable(n)
+                    X = A[0]
+                    for i in range(m):
+                        X = X + c[i] * A[i+1]
+                    for i in range(n):
+                        X = X + s[i] * A[m+i+1]
+                    constraints = [X >> 0]
+                else:
+                    msg = 'Global constraints only available for '
+                    msg += 'anistropic_scaling=True.'
+                    warn(msg)
+                    constraints = []
             else:
                 if self.pos_radius == 'adaptive':
                     # custom constraint grid based on scale factor [Avram2015]
