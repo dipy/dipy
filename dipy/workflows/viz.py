@@ -47,7 +47,7 @@ class HorizonFlow(Workflow):
             small animal brains you may need to use something smaller such
             as 2.0. The distance is in mm. For this parameter to be active
             ``cluster`` should be enabled.
-        random_colors : str, optional
+        random_colors : variable str, optional
             Given multiple tractograms and/or ROIs then each tractogram and/or
             ROI will be shown with different color. If no value is provided,
             both the tractograms and the ROIs will have a different random

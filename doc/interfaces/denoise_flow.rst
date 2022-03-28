@@ -142,7 +142,7 @@ We will create a directory where to save the denoised image (e.g.:
 The NLMEANS denoising is performed using the ``dipy_denoise_nlmeans`` command,
 e.g.::
 
-    dipy_denoise_nlmeans data/cfin_multib/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii --sigma 2 --patch_radius 2 --out_dir "denoise_nlmeans_output"
+   dipy_denoise_nlmeans data/cfin_multib/__DTI_AX_ep2d_2_5_iso_33d_20141015095334_4.nii --sigma 2 --patch_radius 2 --out_dir "denoise_nlmeans_output"
 
 The command will denoise the input diffusion volume and write the result to the
 specified output directory.

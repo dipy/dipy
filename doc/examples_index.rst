@@ -138,7 +138,7 @@ DSI with Deconvolution
 Sparse Fascicle Model
 ~~~~~~~~~~~~~~~~~~~~~
 
-- :ref:`example_sfm_reconst`
+- :ref:`example_reconst_sfm`
 
 Intravoxel incoherent motion (IVIM)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -155,6 +155,12 @@ Intra-Voxel Signal Reconstruction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_sh`
+
+
+Q-space Trajectory Imaging
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qti`
 
 
 Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)

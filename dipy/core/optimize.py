@@ -106,8 +106,8 @@ class Optimizer(object):
             save history of x for each iteration. Only available using Scipy
             >= 0.12.
 
-        See also
-        ---------
+        See Also
+        --------
         scipy.optimize.minimize
 
         """

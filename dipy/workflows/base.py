@@ -42,7 +42,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         arguments from workflows
 
         Parameters
-        -----------
+        ----------
         prog : None
             The name of the program. (default: sys.argv[0])
         usage : None
@@ -96,7 +96,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         of its sub workflows will also be added.
 
         Parameters
-        -----------
+        ----------
         workflow : dipy.workflows.workflow.Workflow
             Workflow from which to infer parameters.
 
@@ -206,7 +206,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         as sub workflows.
 
         Parameters
-        -----------
+        ----------
         sub_flows : array of dipy.workflows.workflow.Workflow
             Workflows to inspect.
 
@@ -277,7 +277,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         type.
 
         Parameters
-        -----------
+        ----------
         text : string
             Parameter text line to inspect.
 

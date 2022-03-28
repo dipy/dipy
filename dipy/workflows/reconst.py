@@ -223,11 +223,12 @@ class ReconstDtiFlow(Workflow):
         return 'dti'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, save_metrics=[],
-            out_dir='', out_tensor='tensors.nii.gz', out_fa='fa.nii.gz',
-            out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
-            out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
-            out_evec='evecs.nii.gz', out_eval='evals.nii.gz', nifti_tensor=True):
+            fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, sigma=None,
+            save_metrics=[], out_dir='', out_tensor='tensors.nii.gz',
+            out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
+            out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
+            out_mode='mode.nii.gz', out_evec='evecs.nii.gz',
+            out_eval='evals.nii.gz', nifti_tensor=True):
         """ Workflow for tensor reconstruction and for computing DTI metrics.
         using Weighted Least-Squares.
         Performs a tensor reconstruction on the files by 'globing'
@@ -254,6 +255,10 @@ class ReconstDtiFlow(Workflow):
             'LS' or 'OLS' for ordinary least squares
             'NLLS' for non-linear least-squares
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
+        sigma : float, optional
+            An estimate of the variance. [5]_ recommend to use
+            1.5267 * std(background_noise), where background_noise is estimated
+            from some part of the image known to contain no signal (only noise)
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
@@ -315,6 +320,9 @@ class ReconstDtiFlow(Workflow):
            approaches for estimation of uncertainties of DTI parameters.
            NeuroImage 33, 531-541.
 
+        .. [5] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
+           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+
         """
         io_it = self.get_io_iterator()
 
@@ -327,9 +335,13 @@ class ReconstDtiFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
+            optional_args = {}
+            if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
+                optional_args['sigma'] = sigma
+
             tenfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
                                                b0_threshold, bvecs_tol,
-                                               fit_method)
+                                               fit_method, optional_args)
 
             if not save_metrics:
                 save_metrics = ['fa', 'md', 'rd', 'ad', 'ga', 'rgb', 'mode',
@@ -392,18 +404,16 @@ class ReconstDtiFlow(Workflow):
                 logging.info(
                         'DTI metrics saved in {0}'.format(dname_))
 
-    def get_tensor_model(self, gtab, fit_method):
-        return TensorModel(gtab, fit_method=fit_method)
-
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          bvecs_tol=0.01, fit_method='WLS'):
+                          bvecs_tol=0.01, fit_method='WLS',
+                          optional_args=None):
 
         logging.info('Tensor estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold,
                               atol=bvecs_tol)
 
-        tenmodel = self.get_tensor_model(gtab, fit_method=fit_method)
+        tenmodel = TensorModel(gtab, fit_method=fit_method, **optional_args)
         tenfit = tenmodel.fit(data, mask)
 
         return tenfit, gtab
@@ -470,7 +480,7 @@ class ReconstCSDFlow(Workflow):
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus |num_processes + 1| is used (enter -1 to use as
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
@@ -636,7 +646,7 @@ class ReconstCSAFlow(Workflow):
         num_processes : int, optional
             If `parallel` is True, the number of subprocesses to use
             (default multiprocessing.cpu_count()). If < 0 the maximal number
-            of cores minus |num_processes + 1| is used (enter -1 to use as
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
             many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
@@ -657,6 +667,7 @@ class ReconstCSAFlow(Workflow):
         ----------
         .. [1] Aganj, I., et al. 2009. ODF Reconstruction in Q-Ball Imaging
            with Solid Angle Consideration.
+
         """
         io_it = self.get_io_iterator()
 
@@ -719,7 +730,7 @@ class ReconstDkiFlow(Workflow):
         return 'dki'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50.0, save_metrics=[],
+            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=[],
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -751,6 +762,10 @@ class ReconstDkiFlow(Workflow):
             'WLS' or 'UWLLS' for weighted ordinary least squares
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
+        sigma : float, optional
+            An estimate of the variance. [3]_ recommend to use
+            1.5267 * std(background_noise), where background_noise is estimated
+            from some part of the image known to contain no signal (only noise)
         save_metrics : variable string, optional
             List of metrics to save.
             Possible values: fa, ga, rgb, md, ad, rd, mode, tensor, evec, eval
@@ -787,7 +802,6 @@ class ReconstDkiFlow(Workflow):
 
         References
         ----------
-
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
            Estimation of tensors and tensor-derived measures in diffusional
            kurtosis imaging. Magn Reson Med. 65(3), 823-836
@@ -796,6 +810,10 @@ class ReconstDkiFlow(Workflow):
            and Kyle Kaczynski. 2005. Diffusional Kurtosis Imaging: The
            Quantification of Non-Gaussian Water Diffusion by Means of Magnetic
            Resonance Imaging. MRM 53 (6):1432-40.
+
+        .. [3] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
+           estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+
         """
         io_it = self.get_io_iterator()
 
@@ -808,8 +826,13 @@ class ReconstDkiFlow(Workflow):
             if mask is not None:
                 mask = load_nifti_data(mask).astype(bool)
 
+            optional_args = {}
+            if fit_method in ["RT", "restore", "RESTORE", "NLLS"]:
+                optional_args['sigma'] = sigma
+
             dkfit, _ = self.get_fitted_tensor(data, mask, bval, bvec,
-                                              b0_threshold, fit_method)
+                                              b0_threshold, fit_method,
+                                              optional_args=optional_args)
 
             if not save_metrics:
                 save_metrics = ['mk', 'rk', 'ak', 'fa', 'md', 'rd', 'ad', 'ga',
@@ -876,11 +899,8 @@ class ReconstDkiFlow(Workflow):
             logging.info('DKI metrics saved in {0}'.
                          format(os.path.dirname(oevals)))
 
-    def get_dki_model(self, gtab, fit_method):
-        return DiffusionKurtosisModel(gtab, fit_method=fit_method)
-
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
-                          fit_method="WLS"):
+                          fit_method="WLS", optional_args=None):
         logging.info('Diffusion kurtosis estimation...')
         bvals, bvecs = read_bvals_bvecs(bval, bvec)
         if b0_threshold < bvals.min():
@@ -889,7 +909,8 @@ class ReconstDkiFlow(Workflow):
                  "({1}).".format(b0_threshold, bvals.min()))
 
         gtab = gradient_table(bvals, bvecs, b0_threshold=b0_threshold)
-        dkmodel = self.get_dki_model(gtab, fit_method)
+        dkmodel = DiffusionKurtosisModel(gtab, fit_method=fit_method,
+                                         **optional_args)
         dkfit = dkmodel.fit(data, mask)
 
         return dkfit, gtab
@@ -948,7 +969,6 @@ class ReconstIvimFlow(Workflow):
 
         References
         ----------
-
         .. [Stejskal65] Stejskal, E. O.; Tanner, J. E. (1 January 1965).
                         "Spin Diffusion Measurements: Spin Echoes in the
                         Presence of a Time-Dependent Field Gradient". The

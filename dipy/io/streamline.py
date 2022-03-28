@@ -16,7 +16,7 @@ from dipy.io.utils import (create_tractogram_header,
 
 
 def save_tractogram(sft, filename, bbox_valid_check=True):
-    """ Save the stateful tractogram in any format (trk, tck, vtk, fib, dpy)
+    """ Save the stateful tractogram in any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -66,7 +66,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         fileobj = tractogram_type(new_tractogram, header=header)
         nib.streamlines.save(fileobj, filename)
 
-    elif extension in ['.vtk', '.fib']:
+    elif extension in ['.vtk', '.vtp', '.fib']:
         save_vtk_streamlines(sft.streamlines, filename, binary=True)
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='w')
@@ -85,7 +85,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
 def load_tractogram(filename, reference, to_space=Space.RASMM,
                     to_origin=Origin.NIFTI, bbox_valid_check=True,
                     trk_header_check=True):
-    """ Load the stateful tractogram from any format (trk, tck, vtk, fib, dpy)
+    """ Load the stateful tractogram from any format (trk/tck/vtk/vtp/fib/dpy)
 
     Parameters
     ----------
@@ -115,7 +115,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
@@ -147,7 +147,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
             data_per_point = tractogram_obj.data_per_point
             data_per_streamline = tractogram_obj.data_per_streamline
 
-    elif extension in ['.vtk', '.fib']:
+    elif extension in ['.vtk', '.vtp', '.fib']:
         streamlines = load_vtk_streamlines(filename)
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='r')
@@ -192,8 +192,9 @@ def load_generator(ttype):
               trk_header_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
-            raise ValueError('This function can only load {} files, for a more'
-                             ' general purpose, use load_tractogram instead.'.format(ttype))
+            msg = f"This function can only load {ttype} files, "
+            msg += "for a more general purpose, use load_tractogram instead."
+            raise ValueError(msg)
 
         sft = load_tractogram(filename, reference,
                               to_space=Space.RASMM,
@@ -203,8 +204,7 @@ def load_generator(ttype):
         return sft
 
     f_gen.__doc__ = load_tractogram.__doc__.replace(
-        'from any format (trk, tck, vtk, fib, dpy)',
-        'of the {} format'.format(ttype))
+        'from any format (trk/tck/vtk/vtp/fib/dpy)', f"of the {ttype} format")
     return f_gen
 
 
@@ -224,23 +224,25 @@ def save_generator(ttype):
     def f_gen(sft, filename, bbox_valid_check=True):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
-            raise ValueError('This function can only save {} file, for more'
-                             ' generability use save_tractogram instead.'.format(ttype))
+            msg = f"This function can only save {ttype} file, "
+            msg += "for more generability use save_tractogram instead."
+            raise ValueError(msg)
         save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
 
     f_gen.__doc__ = save_tractogram.__doc__.replace(
-        'in any format (trk, tck, vtk, fib, dpy)',
-        'of the {} format'.format(ttype))
+        'in any format (trk/tck/vtk/vtp/fib/dpy)', f"of the {ttype} format")
     return f_gen
 
 
 load_trk = load_generator('.trk')
 load_tck = load_generator('.tck')
 load_vtk = load_generator('.vtk')
+load_vtp = load_generator('.vtp')
 load_fib = load_generator('.fib')
 load_dpy = load_generator('.dpy')
 save_trk = save_generator('.trk')
 save_tck = save_generator('.tck')
 save_vtk = save_generator('.vtk')
+save_vtp = save_generator('.vtp')
 save_fib = save_generator('.fib')
 save_dpy = save_generator('.dpy')

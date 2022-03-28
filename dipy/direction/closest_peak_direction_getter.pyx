@@ -138,7 +138,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             Used for extracting initial tracking directions. Passed to
             peak_directions.
 
-        See also
+        See Also
         --------
         dipy.direction.peaks.peak_directions
 
@@ -186,7 +186,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             Used for extracting initial tracking directions. Passed to
             peak_directions.
 
-        See also
+        See Also
         --------
         dipy.direction.peaks.peak_directions
 

@@ -228,7 +228,7 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     Segment the cfa inside roi using the values from threshold as bounds.
 
     Parameters
-    -------------
+    ----------
     tensor_fit : TensorFit object
         TensorFit object
 
@@ -244,7 +244,7 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
         If True, the cfa is also returned.
 
     Returns
-    ----------
+    -------
     mask : ndarray
         Binary mask of the segmentation.
 

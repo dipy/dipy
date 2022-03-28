@@ -56,9 +56,9 @@ cdef print_node(CentroidNode* node, prepend=""):
 cdef void aabb_creation(Data2D streamline, float* aabb) nogil:
     """ Creates AABB enveloping the given streamline.
 
-        Notes
-        -----
-        This currently assumes streamline is made of 3D points.
+    Notes
+    -----
+    This currently assumes streamline is made of 3D points.
     """
     cdef:
         int N = streamline.shape[0], D = streamline.shape[1]

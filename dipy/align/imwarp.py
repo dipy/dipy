@@ -213,7 +213,7 @@ class DiffeomorphicMap(object):
             any object
 
         Returns
-        ----------
+        -------
         obj : object
             the same object given as argument if `obj` is None or a numpy
             array. None if `obj` is the 'identity' string.
@@ -309,7 +309,6 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
         each voxel with (discrete) coordinates i in I to (floating-point) voxel
@@ -421,7 +420,6 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
         each voxel with (discrete) coordinates i in I to (floating-point) voxel

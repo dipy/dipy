@@ -7,9 +7,9 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 1
-_version_minor = 5
+_version_minor = 6
 _version_micro = 0
-_version_extra = 'dev'
+_version_extra = 'dev0'
 # _version_extra = ''
 
 # Format expected by setup.py and doc/source/conf.py: string of form "X.Y.Z"
@@ -74,11 +74,11 @@ MIT licenses.
 
 # versions for dependencies
 # Check these versions against .travis.yml and requirements.txt
-CYTHON_MIN_VERSION = '0.29'
-NUMPY_MIN_VERSION = '1.12.0'
-SCIPY_MIN_VERSION = '1.0'
+CYTHON_MIN_VERSION = '0.29.24'
+NUMPY_MIN_VERSION = '1.14.5'
+SCIPY_MIN_VERSION = '1.1'
 NIBABEL_MIN_VERSION = '3.0.0'
-H5PY_MIN_VERSION = '2.5.0'
+H5PY_MIN_VERSION = '2.8.0'
 PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
 
@@ -125,13 +125,13 @@ EXTRAS_REQUIRE = {
         "pandas",
         "tables",
         "matplotlib",
-        "fury>=0.6"
+        "fury>=0.8.0"
         "scikit-learn",
         "scikit-image",
         "statsmodels",
     ],
     "viz": [
-        "fury>=0.6",
+        "fury>=0.8.0",
         "matplotlib"
     ],
     "ml": [

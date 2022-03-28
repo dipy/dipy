@@ -133,7 +133,7 @@ orientation of a streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorOfEndpointsFeature
+from dipy.segment.featurespeed import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Enables/disables interactive visualization
