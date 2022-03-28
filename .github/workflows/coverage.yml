@@ -13,6 +13,6 @@ jobs:
         runs-on: '["ubuntu-latest", ]'
         coverage: true
         enable-viz-tests: true
-        extra-depends: scikit_learn scipy statsmodels pandas tables fury
+        extra-depends: scikit_learn scipy statsmodels pandas tables fury tensorflow
       secrets:
         codecov-token: ${{ secrets.CODECOV_TOKEN }}

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import sys
 import contextlib
 import logging
 
@@ -74,7 +73,7 @@ def check_md5(filename, stored_md5=None):
     string md5
 
     Parameters
-    -----------
+    ----------
     filename : string
         Path to a file.
     md5 : string
@@ -270,6 +269,15 @@ fetch_stanford_hardi = _make_fetcher(
      '4e08ee9e2b1d2ec3fddb68c70ae23c36',
      '4c63a586f29afc6a48a5809524a76cb4'],
     doc="Download a HARDI dataset with 160 gradient directions")
+
+fetch_resdnn_weights = _make_fetcher(
+    "fetch_resdnn_weights",
+    pjoin(dipy_home, 'histo_resdnn_weights'),
+    'https://ndownloader.figshare.com/files/',
+    ['22736240'],
+    ['resdnn_weights_mri_2018.h5'],
+    ['f0e118d72ab804a464494bd9015227f4'],
+    doc="Download ResDNN model weights for Nath et. al 2018")
 
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
@@ -495,6 +503,18 @@ fetch_gold_standard_io = _make_fetcher(
     data_size="47.KB")
 
 
+fetch_qte_lte_pte = _make_fetcher(
+    'fetch_qte_lte_pte',
+    pjoin(dipy_home, 'qte_lte_pte'),
+    'https://zenodo.org/record/4624866/files/',
+    ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
+    ['lte-pte.nii.gz', 'lte-pte.bval', 'lte-pte.bvec', 'mask.nii.gz'],
+    ['f378b2cd9f57625512002b9e4c0f1660', '5c25d24dd3df8590582ed690507a8769',
+     '31abe55dfda7ef5fdf5015d0713be9b0', '1b7b83b8a60295f52d80c3855a12b275'],
+    doc='Download QTE data with linear and planar tensor encoding.',
+    data_size='41.5 MB')
+
+
 fetch_fury_surface = _make_fetcher(
     "fetch_fury_surface",
     pjoin(dipy_home, 'fury_surface'),
@@ -513,6 +533,7 @@ def get_fnames(name='small_64D'):
     ----------
     name : str
         the filename/s of which dataset to return, one of:
+
         - 'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         - 'small_101D' small region of interest nifti, bvecs, bvals
           101 directions
@@ -677,10 +698,21 @@ def get_fnames(name='small_64D'):
     if name == 'bundle_atlas_hcp842':
         files, folder = fetch_bundle_atlas_hcp842()
         return get_bundle_atlas_hcp842()
+    if name == 'qte_lte_pte':
+        _, folder = fetch_qte_lte_pte()
+        fdata = pjoin(folder, 'lte-pte.nii.gz')
+        fbval = pjoin(folder, 'lte-pte.bval')
+        fbvec = pjoin(folder, 'lte-pte.bvec')
+        fmask = pjoin(folder, 'mask.nii.gz')
+        return fdata, fbval, fbvec, fmask
     if name == 'fury_surface':
         files, folder = fetch_fury_surface()
         surface_name = pjoin(folder, '100307_white_lh.vtk')
         return surface_name
+    if name == 'histo_resdnn_weights':
+        files, folder = fetch_resdnn_weights()
+        wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
+        return wraw
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -1387,3 +1419,26 @@ def get_target_tractogram_hcp():
                   'streamlines.trk')
 
     return file1
+
+
+def read_qte_lte_pte():
+    """Read q-space trajectory encoding data with linear and planar tensor
+    encoding.
+
+    Returns
+    -------
+    data_img : nibabel.nifti1.Nifti1Image
+        dMRI data image.
+    mask_img : nibabel.nifti1.Nifti1Image
+        Brain mask image.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table.
+    """
+    fdata, fbval, fbvec, fmask = get_fnames('qte_lte_pte')
+    data_img = nib.load(fdata)
+    mask_img = nib.load(fmask)
+    bvals = np.loadtxt(fbval)
+    bvecs = np.loadtxt(fbvec)
+    btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+    gtab = gradient_table(bvals, bvecs, btens=btens)
+    return data_img, mask_img, gtab

@@ -5,11 +5,32 @@ Signal Reconstruction Using Spherical Harmonics
 
 This example shows how you can use a spherical harmonics (SH) function to
 reconstruct any spherical function using DIPY_. In order to generate a
-signal, we will use the sphere created in :ref:`example_gradients_spheres`.
+signal, we will need to generate an evenly distributed sphere.
+Let's import some standard packages.
 """
 
 import numpy as np
-from gradients_spheres import sph
+from dipy.core.sphere import disperse_charges, Sphere, HemiSphere
+
+"""
+We can first create some random points on a ``HemiSphere`` using spherical
+polar coordinates.
+"""
+
+n_pts = 64
+theta = np.pi * np.random.rand(n_pts)
+phi = 2 * np.pi * np.random.rand(n_pts)
+hsph_initial = HemiSphere(theta=theta, phi=phi)
+
+"""
+Next, we call ``disperse_charges`` which will iteratively move the points so
+that the electrostatic potential energy is minimized. In ``hsph_updated`` we
+have the updated ``HemiSphere`` with the points nicely distributed on the
+hemisphere.
+"""
+
+hsph_updated, potential = disperse_charges(hsph_initial, 5000)
+sphere = Sphere(xyz=np.vstack((hsph_updated.vertices, -hsph_updated.vertices)))
 
 """
 We now need to create our initial signal. To do so, we will use our sphere's
@@ -23,7 +44,7 @@ from dipy.sims.voxel import multi_tensor_odf
 mevals = np.array([[0.0015, 0.00015, 0.00015],
                    [0.0015, 0.00015, 0.00015]])
 angles = [(0, 0), (60, 0)]
-odf = multi_tensor_odf(sph.vertices, mevals, angles, [50, 50])
+odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
 
 from dipy.viz import window, actor
@@ -34,7 +55,7 @@ interactive = False
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 
-odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sph)
+odf_actor = actor.odf_slicer(odf[None, None, None, :], sphere=sphere)
 odf_actor.RotateX(90)
 scene.add(odf_actor)
 
@@ -64,7 +85,7 @@ sh_basis = 'descoteaux07'
 # Change this value to try other maximum orders
 sh_order = 8
 
-sh_coeffs = sf_to_sh(odf, sph, sh_order, sh_basis)
+sh_coeffs = sf_to_sh(odf, sphere, sh_order, sh_basis)
 
 """
 ``sh_coeffs`` is an array containing the SH coefficients multiplying the SH
@@ -103,13 +124,13 @@ different ODF for each hemisphere of our sphere.
 
 mevals = np.array([[0.0015, 0.0003, 0.0003]])
 angles = [(0, 0)]
-odf2 = multi_tensor_odf(sph.vertices, mevals, angles, [100])
+odf2 = multi_tensor_odf(sphere.vertices, mevals, angles, [100])
 
-n_pts_hemisphere = int(sph.vertices.shape[0] / 2)
+n_pts_hemisphere = int(sphere.vertices.shape[0] / 2)
 asym_odf = np.append(odf[:n_pts_hemisphere], odf2[n_pts_hemisphere:])
 
 scene.clear()
-odf_actor = actor.odf_slicer(asym_odf[None, None, None, :], sphere=sph)
+odf_actor = actor.odf_slicer(asym_odf[None, None, None, :], sphere=sphere)
 odf_actor.RotateX(90)
 scene.add(odf_actor)
 
@@ -128,7 +149,7 @@ if interactive:
 Let's try to reconstruct this SF using a symmetric SH basis.
 """
 
-sh_coeffs = sf_to_sh(asym_odf, sph, sh_order, sh_basis)
+sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order, sh_basis)
 reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order, sh_basis)
 
 scene.clear()
@@ -153,7 +174,7 @@ as well as asymmetric signals. For this tutorial, we will demonstrate it using
 the ``descoteaux07`` full SH basis by setting ``full_basis=true``.
 """
 
-sh_coeffs = sf_to_sh(asym_odf, sph, sh_order,
+sh_coeffs = sf_to_sh(asym_odf, sphere, sh_order,
                      sh_basis, full_basis=True)
 reconst = sh_to_sf(sh_coeffs, high_res_sph, sh_order,
                    sh_basis, full_basis=True)
@@ -177,4 +198,5 @@ if interactive:
 As we can see, a full SH basis properly reconstruct asymmetric signal.
 
 .. include:: ../links_names.inc
+
 """

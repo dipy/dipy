@@ -1,6 +1,5 @@
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
-import cython
 import numpy as np
 from libc.math cimport sqrt
 from libc.stdlib cimport malloc, free
@@ -59,7 +58,7 @@ def length(streamlines):
     Length is in mm only if streamlines are expressed in world coordinates.
 
     Parameters
-    ------------
+    ----------
     streamlines : ndarray or a list or :class:`dipy.tracking.Streamlines`
         If ndarray, must have shape (N,3) where N is the number of points
         of the streamline.
@@ -68,7 +67,7 @@ def length(streamlines):
         If :class:`dipy.tracking.Streamlines`, its `common_shape` must be 3.
 
     Returns
-    ---------
+    -------
     lengths : scalar or ndarray shape (N,)
        If there is only one streamline, a scalar representing the length of the
        streamline.
@@ -76,7 +75,7 @@ def length(streamlines):
        streamline.
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.streamline import length
     >>> import numpy as np
     >>> streamline = np.array([[1, 1, 1], [2, 3, 4], [0, 0, 0]])

@@ -115,6 +115,7 @@ class ForecastModel(OdfModel, Cache):
         with respect to the FORECAST and compute the fODF, parallel and
         perpendicular diffusivity.
 
+        >>> import warnings
         >>> from dipy.data import default_sphere, get_3shell_gtab
         >>> gtab = get_3shell_gtab()
         >>> from dipy.sims.voxel import multi_tensor
@@ -128,11 +129,20 @@ class ForecastModel(OdfModel, Cache):
         ...                             fractions=[50, 50],
         ...                             snr=None)
         >>> from dipy.reconst.forecast import ForecastModel
-        >>> fm = ForecastModel(gtab, sh_order=6)
+        >>> from dipy.reconst.shm import descoteaux07_legacy_msg
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     fm = ForecastModel(gtab, sh_order=6)
         >>> f_fit = fm.fit(data)
         >>> d_par = f_fit.dpar
         >>> d_perp = f_fit.dperp
-        >>> fodf = f_fit.odf(default_sphere)
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     fodf = f_fit.odf(default_sphere)
         """
         OdfModel.__init__(self, gtab)
 

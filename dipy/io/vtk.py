@@ -12,7 +12,7 @@ if have_fury:
 def load_polydata(file_name):
     """Load a vtk polydata to a supported format file.
 
-    Supported file formats are OBJ, VTK, FIB, PLY, STL and XML
+    Supported file formats are OBJ, VTK, VTP, FIB, PLY, STL and XML
 
     Parameters
     ----------
@@ -29,7 +29,7 @@ def load_polydata(file_name):
 def save_polydata(polydata, file_name, binary=False, color_array_name=None):
     """Save a vtk polydata to a supported format file.
 
-    Save formats can be VTK, FIB, PLY, STL and XML.
+    Save formats can be VTK, VTP, FIB, PLY, STL and XML.
 
     Parameters
     ----------
@@ -45,7 +45,7 @@ def save_vtk_streamlines(streamlines, filename,
                          to_lps=True, binary=False):
     """Save streamlines as vtk polydata to a supported format file.
 
-    File formats can be OBJ, VTK, FIB, PLY, STL and XML
+    File formats can be OBJ, VTK, VTP, FIB, PLY, STL and XML
 
     Parameters
     ----------

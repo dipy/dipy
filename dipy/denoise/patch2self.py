@@ -23,7 +23,7 @@ def _vol_split(train, vol_idx):
         The volume number that needs to be held out for training.
 
     Returns
-    --------
+    -------
     cur_x : 2D-array (nvolumes*patch_size) x (nvoxels)
         Array of patches corresponding to all the volumes except for the
         held-out volume.
@@ -75,7 +75,7 @@ def _vol_denoise(train, vol_idx, model, data_shape, alpha):
         default: 1.0
 
     Returns
-    --------
+    -------
     model prediction : ndarray
         Denoised array of all 3D patches flattened out to be 2D corresponding
         to the held out volume `vol_idx`.
@@ -122,7 +122,7 @@ def _extract_3d_patches(arr, patch_radius):
         voxels).
 
     Returns
-    --------
+    -------
     all_patches : ndarray
         All 3D patches flattened out to be 2D corresponding to the each 3D
         volume of the 4D DWI data.
@@ -166,7 +166,7 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                b0_denoising=True, clip_negative_vals=False,
                shift_intensity=True):
-    """ Patch2Self Denoiser
+    """ Patch2Self Denoiser.
 
     Parameters
     ----------
@@ -221,17 +221,17 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
 
 
     Returns
-    --------
+    -------
     denoised array : ndarray
         This is the denoised array of the same size as that of the input data,
         clipped to non-negative values.
 
     References
     ----------
-
     [Fadnavis20] S. Fadnavis, J. Batson, E. Garyfallidis, Patch2Self:
                     Denoising Diffusion MRI with Self-supervised Learning,
                     Advances in Neural Information Processing Systems 33 (2020)
+
     """
     if isinstance(patch_radius, int):
         patch_radius = np.ones(3, dtype=int) * patch_radius

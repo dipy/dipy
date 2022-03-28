@@ -81,7 +81,7 @@ The Mean Apparent Propagator reconstruction method requires the paths to the
 diffusion input file, b-values file, b-vectors file, small delta value, big
 delta value. The optional parameters can also be provided. In this case, we
 will be specifying the threshold used to find b0 volumes (``b0_threshold``)
-and the output directory (``out_dir``). 
+and the output directory (``out_dir``).
 
 To run the MAP-MRI reconstruction method on the data, execute the
 ``dipy_fit_mapmri`` command, e.g.::
@@ -133,7 +133,7 @@ your own data!
 
 We will first create a directory in which to save the output volumes(e.g.:
 ``recons_dti_output``)::
-    
+
     mkdir recons_dti_output
 
 To run the Diffusion Tensor Imaging reconstruction method, we need to specify
@@ -160,14 +160,15 @@ the kurtosis tensor (KT) [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
 interest because they can be used to charaterize tissue microstructural
-heterogeneity [Jensen2010]_. 
+heterogeneity [Jensen2010]_.
 
 Moreover, DKI can be used to:
 
 * Derive concrete biophysical parameters, such as the density of axonal fibers
-and diffusion tortuosity [Fierem2011]_.
+  and diffusion tortuosity [Fierem2011]_.
+
 * Resolve crossing fibers in tractography and to obtain invariant rotational
-measures not limited to well-aligned fiber populations [NetoHe2015]_.
+  measures not limited to well-aligned fiber populations [NetoHe2015]_.
 
 We will use the ``cfin_multib`` dataset in DIPY to showcase this reconstruction
 method. You can also use your own data!
@@ -181,7 +182,7 @@ The Diffusion Kurtosis Imaging reconstruction method requires the paths to the
 diffusion input file, b-values file, b-vectors file and mask file. The optional
 parameters can also be provided. In this case, we will be specifying the threshold
 used to find b0 volumes (``b0_threshold``) and the output
-directory (``out_dir``). 
+directory (``out_dir``).
 
 To get the mask file, we will use the median Otsu thresholding method by calling
 the ``dipy_median_otsu`` command::

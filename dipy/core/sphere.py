@@ -99,7 +99,7 @@ def unique_sets(sets, return_inverse=False):
         preserved).
 
     Returns
-    ---------
+    -------
     unique_sets : array
         Unique sets.
     inverse : array (N,)
@@ -270,7 +270,7 @@ class Sphere(object):
             A unit vector
 
         Returns
-        --------
+        -------
         idx : int
             The index into the Sphere.vertices array that gives the closest
             vertex (in angle).
@@ -382,7 +382,7 @@ class HemiSphere(Sphere):
             A unit vector
 
         Returns
-        ---------
+        -------
         idx : int
             The index into the Sphere.vertices array that gives the closest
             vertex (in angle).
@@ -465,7 +465,7 @@ def disperse_charges(hemi, iters, const=.2):
         check if the repulsion converged to a minimum.
 
     Notes
-    ------
+    -----
     This function is meant to be used with diffusion imaging so antipodal
     symmetry is assumed. Therefor each charge must not only be unique, but if
     there is a charge at +x, there cannot be a charge at -x. These are treated

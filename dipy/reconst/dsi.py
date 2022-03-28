@@ -84,7 +84,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         0.11
 
         Notes
-        ------
+        -----
         A. Have in mind that DSI expects gradients on both hemispheres. If your
         gradients span only one hemisphere you need to duplicate the data and
         project them to the other hemisphere before calling this class. The
@@ -466,7 +466,7 @@ def project_hemisph_bvecs(gtab):
             GradientTable
 
     Notes
-    -------
+    -----
     Useful only when working with some types of dsi data.
     """
     bvals = gtab.bvals

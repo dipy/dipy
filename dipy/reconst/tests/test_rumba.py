@@ -18,6 +18,7 @@ from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.sims.voxel import sticks_and_ball, multi_tensor, single_tensor
 from dipy.direction.peaks import peak_directions
+from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 def test_rumba():
@@ -131,7 +132,11 @@ def test_recursive_rumba():
                                                  -16.93940972,
                                                  2.57628738]))
     model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
-    model_fit = model.fit(data)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_fit = model.fit(data)
 
     # Test peaks
     odf = model_fit.odf(sphere)

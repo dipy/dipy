@@ -1,6 +1,5 @@
 """This is a helper module for dipy.tracking.utils."""
 
-from warnings import warn
 import numpy as np
 
 
@@ -16,7 +15,7 @@ def _mapping_to_voxel(affine):
         The inverse of this mapping is used unless `affine` is None.
 
     Returns
-    --------
+    -------
     lin_T : array (3, 3)
         Transpose of the linear part of the mapping to voxel space, (ie
         ``inv(affine)[:3, :3].T``)

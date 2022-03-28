@@ -31,9 +31,3 @@ def test_LEcuyer():
     # that it is uniformly distributed. This is what we want to check here
     npt.assert_almost_equal(pvalue, 1.0)
     npt.assert_raises(ValueError, rng.LEcuyer, s2=0)
-
-
-if __name__ == "__main__":
-    test_LEcuyer()
-    test_wichmann_hill2006()
-    test_wichmann_hill1982()

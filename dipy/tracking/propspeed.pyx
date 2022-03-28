@@ -82,7 +82,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
     """ Give the nearest direction to a point, checking threshold and angle
 
     Parameters
-    ------------
+    ----------
     dx : double array shape (3,)
         Moving direction of the current tracking.
     qa : double array shape (Np,)
@@ -101,7 +101,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
         gets modified in-place.
 
     Returns
-    --------
+    -------
     delta : bool
         Delta funtion: if 1 we give it weighting, if it is 0 we don't give any
         weighting.
@@ -273,7 +273,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
                          cnp.npy_intp max_points):
     """
     Parameters
-    ------------
+    ----------
     seed : array, float64 shape (3,)
         Point where the tracking starts.
     ref : cnp.npy_intp int

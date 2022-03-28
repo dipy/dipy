@@ -2,7 +2,6 @@
 
 import abc
 import numpy as np
-import scipy as sp
 from numpy import gradient
 from scipy import ndimage
 from dipy.align import vector_fields as vfu

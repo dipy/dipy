@@ -152,8 +152,10 @@ class ShoreModel(Cache):
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
+        >>> import warnings
         >>> from dipy.data import get_isbi2013_2shell_gtab, default_sphere
         >>> from dipy.sims.voxel import sticks_and_ball
+        >>> from dipy.reconst.shm import descoteaux07_legacy_msg
         >>> from dipy.reconst.shore import ShoreModel
         >>> gtab = get_isbi2013_2shell_gtab()
         >>> data, golden_directions = sticks_and_ball(
@@ -164,8 +166,12 @@ class ShoreModel(Cache):
         >>> zeta = 700
         >>> asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
         ...                  lambdaN=1e-8, lambdaL=1e-8)
-        >>> asmfit = asm.fit(data)
-        >>> odf = asmfit.odf(default_sphere)
+        >>> with warnings.catch_warnings():
+        ...     warnings.filterwarnings(
+        ...         "ignore", message=descoteaux07_legacy_msg,
+        ...         category=PendingDeprecationWarning)
+        ...     asmfit = asm.fit(data)
+        ...     odf = asmfit.odf(default_sphere)
         """
 
         self.bvals = gtab.bvals

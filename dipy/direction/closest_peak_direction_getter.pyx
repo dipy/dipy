@@ -1,6 +1,5 @@
 import numpy as np
 cimport numpy as cnp
-cimport cython
 
 from dipy.direction.peaks import peak_directions, default_sphere
 from dipy.direction.pmf cimport SimplePmfGen, SHCoeffPmfGen
@@ -139,7 +138,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             Used for extracting initial tracking directions. Passed to
             peak_directions.
 
-        See also
+        See Also
         --------
         dipy.direction.peaks.peak_directions
 
@@ -187,7 +186,7 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
             Used for extracting initial tracking directions. Passed to
             peak_directions.
 
-        See also
+        See Also
         --------
         dipy.direction.peaks.peak_directions
 

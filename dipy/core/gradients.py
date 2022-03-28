@@ -40,7 +40,7 @@ def unique_bvals(bvals, bmag=None, rbvals=False):
         Default: False
 
     Returns
-    ------
+    -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """
@@ -88,7 +88,7 @@ class GradientTable(object):
     gradient_table
 
     Notes
-    --------
+    -----
     The GradientTable object is immutable. Do NOT assign attributes.
     If you have your gradient table in a bval & bvec format, we recommend
     using the factory function gradient_table
@@ -702,7 +702,7 @@ def round_bvals(bvals, bmag=None):
         larger b-value.
 
     Returns
-    ------
+    -------
     rbvals : ndarray
         Array containing the rounded b-values
     """
@@ -730,7 +730,7 @@ def unique_bvals_tolerance(bvals, tol=20):
         and the actual b-values.
 
     Returns
-    ------
+    -------
     ubvals : ndarray
         Array containing the unique b-values using the median value
         for each cluster
@@ -785,7 +785,7 @@ def get_bval_indices(bvals, bval, tol=20):
         and the actual b-values.
 
     Returns
-    ------
+    -------
     Array of indices where the b-value is `bval`
     """
     return np.where(np.logical_and(bvals <= bval + tol,
@@ -811,7 +811,7 @@ def unique_bvals_magnitude(bvals, bmag=None, rbvals=False):
         Default: False
 
     Returns
-    ------
+    -------
     ubvals : ndarray
         Array containing the rounded unique b-values
     """

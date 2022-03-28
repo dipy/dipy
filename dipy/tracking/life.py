@@ -49,7 +49,7 @@ def gradient(f):
            [ 1. ,  1. ,  1. ]])]
 
     Notes
-    ------
+    -----
     This is a simplified implementation of gradient that is part of numpy
     1.8. In order to mitigate the effects of changes added to this
     implementation in version 1.9 of numpy, we include this implementation
@@ -158,7 +158,7 @@ def streamline_tensors(streamline, evals=[0.001, 0, 0]):
     An n_nodes by 3 by 3 array with the tensor for each node in the fiber.
 
     Notes
-    ------
+    -----
     Estimates of the radial/axial diffusivities may rely on
     empirical measurements (for example, the AD in the Corpus Callosum), or
     may be based on a biophysical model of some kind.

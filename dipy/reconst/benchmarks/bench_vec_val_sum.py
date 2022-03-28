@@ -9,10 +9,6 @@ With Pytest, Run this benchmark with:
 
     pytest -svv -c bench.ini /path/to/bench_vec_val_sum.py
 """
-import numpy as np
-from numpy.random import randn
-
-from dipy.reconst.vec_val_sum import vec_val_vect
 
 from numpy.testing import measure
 

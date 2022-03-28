@@ -7,7 +7,6 @@ from dipy.testing import assert_true
 from dipy.data.fetcher import dipy_home
 from dipy.workflows.io import IoInfoFlow, FetchFlow, SplitFlow
 from nibabel.tmpdirs import TemporaryDirectory
-from os.path import join as pjoin
 from tempfile import mkstemp
 fname_log = mkstemp()[1]
 
@@ -55,7 +54,6 @@ def test_io_fetch():
 
 def test_io_fetch_fetcher_datanames():
     available_data = FetchFlow.get_fetcher_datanames()
-
     dataset_names = ['bundle_atlas_hcp842', 'bundle_fa_hcp',
                      'bundles_2_subjects', 'cenir_multib', 'cfin_multib',
                      'file_formats', 'fury_surface',
@@ -64,7 +62,7 @@ def test_io_fetch_fetcher_datanames():
                      'scil_b0', 'sherbrooke_3shell', 'stanford_hardi',
                      'stanford_labels', 'stanford_pve_maps', 'stanford_t1',
                      'syn_data', 'taiwan_ntu_dsi', 'target_tractogram_hcp',
-                     'tissue_data']
+                     'tissue_data', 'qte_lte_pte', 'resdnn_weights']
 
     num_expected_fetch_methods = len(dataset_names)
     npt.assert_equal(len(available_data), num_expected_fetch_methods)
@@ -79,7 +77,7 @@ def test_split_flow():
         volume, affine = load_nifti(data_path)
         split_flow.run(data_path, out_dir=out_dir)
         assert_true(os.path.isfile(
-         split_flow.last_generated_outputs['out_split']))
+            split_flow.last_generated_outputs['out_split']))
         split_flow._force_overwrite = True
         split_flow.run(data_path, vol_idx=0, out_dir=out_dir)
         split_path = split_flow.last_generated_outputs['out_split']
@@ -87,10 +85,3 @@ def test_split_flow():
         split_data, split_affine = load_nifti(split_path)
         npt.assert_equal(split_data.shape, volume[..., 0].shape)
         npt.assert_array_almost_equal(split_affine, affine)
-
-
-if __name__ == '__main__':
-    test_io_fetch()
-    test_io_fetch_fetcher_datanames()
-    test_io_info()
-    test_split_flow()

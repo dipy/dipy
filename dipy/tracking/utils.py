@@ -1033,8 +1033,8 @@ def max_angle_from_curvature(min_radius_curvature, step_size):
     step_size: float
         The tracking step size in mm.
 
-    Return
-    ------
+    Returns
+    -------
     max_angle: float
         The maximum deviation angle in radian,
         given the radius curvature and the step size.
@@ -1065,8 +1065,8 @@ def min_radius_curvature_from_angle(max_angle, step_size):
     step_size: float
         The tracking step size in mm.
 
-    Return
-    ------
+    Returns
+    -------
     min_radius_curvature: float
         Minimum radius of curvature in mm,
         given the maximum deviation angle theta and the step size.

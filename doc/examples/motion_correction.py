@@ -63,7 +63,7 @@ data_corrected, reg_afines = motion_correction(data, gtab, affine)
 Save our DWI dataset corrected to a new Nifti file.
 """
 
-save_nifti('motion_correction.nii.gz', data_corrected, affine)
+save_nifti('motion_correction.nii.gz', data_corrected.get_fdata(), affine)
 
 """
 References
