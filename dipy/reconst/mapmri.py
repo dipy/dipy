@@ -248,8 +248,8 @@ class MapmriModel(ReconstModel, Cache):
             raise ValueError(msg)
         self.radial_order = radial_order
 
-        self.bval_threshold = bval_threshold #Only for isotropic scaling with estimation
-        self.dti_scale_estimation = dti_scale_estimation #Only for anisotropic_scaling=False
+        self.bval_threshold = bval_threshold
+        self.dti_scale_estimation = dti_scale_estimation
 
         if laplacian_regularization:
             msg = "Laplacian Regularization weighting must be 'GCV', "
