@@ -233,9 +233,9 @@ def write_mapping(mapping, fname):
 
     Notes
     -----
-    The data in the file is organized with shape (X, Y, Z, 2, 3, 3), such
-    that the forward mapping in each voxel is in `data[i, j, k, 0, :, :]` and
-    the backward mapping in each voxel is in `data[i, j, k, 0, :, :]`.
+    The data in the file is organized with shape (X, Y, Z, 3, 2), such
+    that the forward mapping in each voxel is in `data[i, j, k, :, 0]` and
+    the backward mapping in each voxel is in `data[i, j, k, :, 1]`.
 
     """
     mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
