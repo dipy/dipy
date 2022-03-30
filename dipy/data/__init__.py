@@ -314,9 +314,10 @@ def matlab_life_results():
     return matlab_rmse, matlab_weights
 
 
-def mapmri_sdp_constraints(radial_order):
-    """Import semidefinite programming constraint matrices for MAP-MRI,
-    generated as described in [1]_.
+def hermite_sdp_constraints(radial_order):
+    """Import semidefinite programming constraint matrices to enforce
+    sum-of-squares constraints on Hermite polynomials, used for example in the
+    case of MAP-MRI, and generated as described in [1]_.
 
     Parameters
     ----------
@@ -336,7 +337,7 @@ def mapmri_sdp_constraints(radial_order):
 
     """
 
-    mf = 'mapmri_constraint_' + str(radial_order) + '.csv'
+    mf = 'hermite_constraint_' + str(radial_order) + '.csv'
     coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
     pos = coo[:, :3].astype(int)
     val = coo[:, 3]
