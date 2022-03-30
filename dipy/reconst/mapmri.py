@@ -21,7 +21,7 @@ from warnings import warn
 from dipy.core.gradients import gradient_table
 from dipy.utils.optpkg import optional_package
 from dipy.core.optimize import Optimizer
-from dipy.data import mapmri_sdp_constraints
+from dipy.data import hermite_sdp_constraints
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
@@ -277,12 +277,12 @@ class MapmriModel(ReconstModel, Cache):
             self.cvxpy_solver = cvxpy_solver
             if constraint_type == 'global':
                 if radial_order > 10:
-                    self.sdp_constraints = mapmri_sdp_constraints(10)
+                    self.sdp_constraints = hermite_sdp_constraints(10)
                     msg = 'Global constraints are currently supported for'
                     msg += ' radial_order <= 10.'
                     warn(msg)
                 else:
-                    self.sdp_constraints = mapmri_sdp_constraints(radial_order)
+                    self.sdp_constraints = hermite_sdp_constraints(radial_order)
             elif constraint_type == 'local':
                 msg = "pos_radius must be 'adaptive' or a positive float"
                 if isinstance(pos_radius, str):
