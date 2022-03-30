@@ -105,9 +105,9 @@ basis fitting.
   set of discrete points [Ozarslan2013]_, since negative values should not
   exist.
 
-    - The ``pos_grid`` and ``pos_radius`` affect the location and number of
-      constrained points in the diffusion propagator. Setting
-      ``pos_radius='infinite'`` enforces positivity everywhere.
+    - Setting ``constraint_type='global'`` enforces positivity everywhere.
+      With the setting ``constraint_type='local'`` positivity is enforced on
+      a grid determined by ``pos_grid`` and ``pos_radius``.
 
 Both methods do a good job of producing viable solutions to the signal fitting
 in practice. The difference is that the Laplacian regularization imposes
@@ -123,7 +123,7 @@ solution. Higher Laplacian weights are recommended when the data is very noisy.
 
 We use the package CVXPY (https://www.cvxpy.org/) to solve convex optimization
 problems when ``positivity_constraint=True``, so we need to first install CVXPY.
-When using ``pos_radius='infinite'`` to ensure global positivity, it is
+When using ``constraint_type='global'`` to ensure global positivity, it is
 recommended to use the MOSEK solver (https://www.mosek.com/) together with CVXPY
 by setting ``cvxpy_solver='MOSEK'``.
 
@@ -150,7 +150,7 @@ map_model_plus_aniso = mapmri.MapmriModel(gtab,
                                           radial_order=radial_order,
                                           laplacian_regularization=False,
                                           positivity_constraint=True,
-                                          pos_radius='infinity',
+                                          constraint_type='global',
                                           cvxpy_solver='MOSEK')
 
 """
@@ -388,7 +388,7 @@ map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
 
 map_model_plus_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                        positivity_constraint=True,
-                                       pos_radius='infinity',
+                                       constraint_type='global',
                                        cvxpy_solver='MOSEK',
                                        bval_threshold=2000)
 

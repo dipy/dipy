@@ -85,6 +85,7 @@ class MapmriModel(ReconstModel, Cache):
                  laplacian_regularization=True,
                  laplacian_weighting=0.2,
                  positivity_constraint=False,
+                 constraint_type='local',
                  pos_grid=15,
                  pos_radius='adaptive',
                  anisotropic_scaling=True,
@@ -141,16 +142,20 @@ class MapmriModel(ReconstModel, Cache):
             optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
+        constraint_type : string,
+            If set to 'local', positivity is enforced on a grid determined by
+            pos_grid and pos_radius. If set to 'global', positivity is enforced
+            everywhere using the constraints of [6]_. Global constraints are
+            currently available supported for standard MAP-MRI, i.e., when
+            anisotropic_scaling=True, and for radial_order <= 10.
         pos_grid : integer,
-            The number of points in the grid that is used in the positivity
-            constraint.
+            The number of points in the grid that is used in the local
+            positivity constraint.
         pos_radius : float or string,
-            If set to a float, the maximum distance the the positivity
+            If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
-            `adaptive', the maximum distance is dependent on the estimated
-            tissue diffusivity. For the standard anisotropic MAP-MRI basis
-            (anistropic_scaling=False), this parameter can be set to `infinity'
-            to use the global constraints of [6]_.
+            'adaptive', the maximum distance is dependent on the estimated
+            tissue diffusivity.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
             uses the isotropic MAP-MRI basis (equal to 3D-SHORE).
@@ -242,11 +247,11 @@ class MapmriModel(ReconstModel, Cache):
             msg = "radial_order must be a positive, even number."
             raise ValueError(msg)
         self.radial_order = radial_order
-        self.bval_threshold = bval_threshold
-        self.dti_scale_estimation = dti_scale_estimation
 
-        self.laplacian_regularization = laplacian_regularization
-        if self.laplacian_regularization:
+        self.bval_threshold = bval_threshold #Only for isotropic scaling with estimation
+        self.dti_scale_estimation = dti_scale_estimation #Only for anisotropic_scaling=False
+
+        if laplacian_regularization:
             msg = "Laplacian Regularization weighting must be 'GCV', "
             msg += "a positive float or an array of positive floats."
             if isinstance(laplacian_weighting, str):
@@ -257,40 +262,49 @@ class MapmriModel(ReconstModel, Cache):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
+        self.laplacian_regularization = laplacian_regularization
 
         self.positivity_constraint = positivity_constraint
         if self.positivity_constraint:
             if not have_cvxpy:
-                raise ValueError(
-                    'CVXPY package needed to enforce constraints')
-            msg = "pos_radius must be 'adaptive', 'infinity' or a positive"
-            msg += " float"
+                raise ValueError('CVXPY package needed to enforce constraints.')
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
                     msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
                     msg += " was expected."
                     raise ValueError(msg)
-            if isinstance(pos_radius, str):
-                if pos_radius == 'infinity':
-                    if radial_order > 10:
-                        msg = 'Global constraints are currently supported for '
-                        msg += 'radial_order <= 10.'
-                        warn(msg)
+            self.cvxpy_solver = cvxpy_solver
+            if constraint_type == 'global':
+                if radial_order > 10:
+                    self.sdp_constraints = mapmri_sdp_constraints(10)
+                    msg = 'Global constraints are currently supported for'
+                    msg += ' radial_order <= 10.'
+                    warn(msg)
+                else:
                     self.sdp_constraints = mapmri_sdp_constraints(radial_order)
-                elif pos_radius != 'adaptive':
+            elif constraint_type == 'local':
+                msg = "pos_radius must be 'adaptive' or a positive float"
+                if isinstance(pos_radius, str):
+                    if pos_radius != 'adaptive':
+                        raise ValueError(msg)
+                elif isinstance(pos_radius, float) or isinstance(pos_radius,
+                                                                 int):
+                    if pos_radius <= 0:
+                        raise ValueError(msg)
+                    self.constraint_grid = create_rspace(pos_grid, pos_radius)
+                    if not anisotropic_scaling:
+                        self.pos_K_independent = \
+                            mapmri_isotropic_K_mu_independent(
+                                radial_order, self.constraint_grid)
+                else:
                     raise ValueError(msg)
-            elif isinstance(pos_radius, float) or isinstance(pos_radius, int):
-                if pos_radius <= 0:
-                    raise ValueError(msg)
-                self.constraint_grid = create_rspace(pos_grid, pos_radius)
-                if not anisotropic_scaling:
-                    self.pos_K_independent = mapmri_isotropic_K_mu_independent(
-                        radial_order, self.constraint_grid)
+                self.pos_grid = pos_grid
+                self.pos_radius = pos_radius
             else:
+                msg = "constraint_type must be 'local' or 'global'."
                 raise ValueError(msg)
-            self.pos_grid = pos_grid
-            self.pos_radius = pos_radius
+            self.constraint_type = constraint_type
 
         self.anisotropic_scaling = anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
@@ -299,7 +313,6 @@ class MapmriModel(ReconstModel, Cache):
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
 
-        self.cvxpy_solver = cvxpy_solver
         self.cutoff = gtab.bvals < self.bval_threshold
         gtab_cutoff = gradient_table(bvals=self.gtab.bvals[self.cutoff],
                                      bvecs=self.gtab.bvecs[self.cutoff])
@@ -414,7 +427,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt * cvxpy.quad_form(c, laplacian_matrix)
                 )
 
-            if self.pos_radius == 'infinity':
+            if self.constraint_type == 'global':
                 if self.anisotropic_scaling:
                     A = self.sdp_constraints
                     m = M.shape[1]
@@ -427,8 +440,8 @@ class MapmriModel(ReconstModel, Cache):
                         X = X + s[i] * A[m+i+1]
                     constraints = [X >> 0]
                 else:
-                    msg = 'Global constraints only available for '
-                    msg += 'anistropic_scaling=True.'
+                    msg = 'Global constraints only available for'
+                    msg += ' anistropic_scaling=True.'
                     warn(msg)
                     constraints = []
             else:
