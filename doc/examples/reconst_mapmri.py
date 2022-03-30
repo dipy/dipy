@@ -150,8 +150,7 @@ map_model_plus_aniso = mapmri.MapmriModel(gtab,
                                           radial_order=radial_order,
                                           laplacian_regularization=False,
                                           positivity_constraint=True,
-                                          constraint_type='global',
-                                          cvxpy_solver='MOSEK')
+                                          constraint_type='global')
 
 """
 Note that when we use only Laplacian regularization, the ``GCV`` option may
@@ -389,7 +388,6 @@ map_model_both_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
 map_model_plus_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
                                        positivity_constraint=True,
                                        constraint_type='global',
-                                       cvxpy_solver='MOSEK',
                                        bval_threshold=2000)
 
 mapfit_both_ng = map_model_both_ng.fit(data_small)
