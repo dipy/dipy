@@ -812,7 +812,7 @@ def test_plus_constraint(radial_order=6):
     mapmod_constraint = MapmriModel(gtab, radial_order=radial_order,
                                     laplacian_regularization=False,
                                     positivity_constraint=True,
-                                    pos_radius='infinity')
+                                    constraint_type='global')
     mapfit_constraint = mapmod_constraint.fit(S_noise)
     pdf = mapfit_constraint.pdf(r_grad)
     pdf_negative_constraint = pdf[pdf < 0].sum()
