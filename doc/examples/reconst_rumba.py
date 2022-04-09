@@ -498,7 +498,7 @@ References
 
 .. [Constantinides1997] Constantinides, C. D., Atalar, E., & McVeigh, E. R.
    (1997). Signal-to-Noise Measurements in Magnitude Images from NMR Phased
-   Arrays. Magnetic Resonance in Medicine : Official Journal of the Society of
+   Arrays. Magnetic Resonance in Medicine: Official Journal of the Society of
    Magnetic Resonance in Medicine / Society of Magnetic Resonance in Medicine,
    38(5), 852–857.
 
