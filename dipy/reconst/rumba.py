@@ -299,7 +299,7 @@ class RumbaFit(OdfFit):
 
     def __init__(self, model, model_params):
         '''
-        Constructs fODF, GM/CSF volume fractions, and other dereived results.
+        Constructs fODF, GM/CSF volume fractions, and other derived results.
 
         fODF and GM/CSF fractions are normalized to collectively sum to 1 for
         each voxel.
