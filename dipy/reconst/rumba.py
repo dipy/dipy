@@ -175,8 +175,6 @@ class RumbaSDModel(OdfModel):
 
         Parameters
         ----------
-        model : RumbaSDModel
-            RumbaSDModel model
         data : ndarray (x, y, z, N)
             Signal values for each voxel. Must be 4D.
         mask : ndarray (x, y, z), optional
@@ -238,8 +236,6 @@ class RumbaSDModel(OdfModel):
 
         Parameters
         ----------
-        model : RumbaSDModel
-            RumbaSDModel model
         data : ndarray ([x, y, z], N)
             Signal values for each voxel.
         mask : ndarray ([x, y, z]), optional
@@ -310,8 +306,6 @@ class RumbaFit(OdfFit):
             RumbaSDModel-SD model.
         model_params : ndarray ([x, y, z], M)
             fODF and GM/CSF volume fractions for each voxel.
-        data : ndarray ([x, y, z], N)
-            Signal values for each voxel.
 
         '''
 
