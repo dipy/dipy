@@ -393,6 +393,7 @@ This is done by setting `voxelwise` to `False`, and setting `use_tv` to `True`.
 TV regularization requires a volume without any singleton dimensions, so we'll
 have to start by expanding our data slice.
 """
+
 rumba = RumbaSDModel(gtab, wm_response=response[0], gm_response=None,
                      voxelwise=False, use_tv=True, sphere=sphere)
 data_tv = data[20:50, 55:85, 38:40]
