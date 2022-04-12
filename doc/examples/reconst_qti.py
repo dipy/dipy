@@ -190,7 +190,4 @@ References
 .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
    multidimensional diffusion MRI of the human brain." Neuroimage 135
    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
-.. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
-   Özarslan E., "Q-space trajectory imaging with positivity constraints
-   (QTI+)" in Neuroimage, Volume 238, 2021.
 """
