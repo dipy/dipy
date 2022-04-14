@@ -49,7 +49,10 @@ from dipy.data.fetcher import (get_fnames,
                                get_two_hcp842_bundles,
                                fetch_bundle_fa_hcp,
                                fetch_gold_standard_io,
-                               read_qte_lte_pte)
+                               fetch_resdnn_weights,
+                               read_qte_lte_pte,
+                               read_DiB_70_lte_pte_ste,
+                               read_DiB_217_lte_pte_ste)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti

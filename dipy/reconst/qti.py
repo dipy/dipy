@@ -164,6 +164,7 @@ def from_21x1_to_6x6(V):
     T = np.moveaxis(T, (0, 1), (-2, -1))
     return T
 
+
 def cvxpy_1x6_to_3x3(V):
     """Convert a 1 x 6 vector into a symmetric 3 x 3 matrix and
     returns a cvxpy block matrix object.
@@ -227,14 +228,17 @@ def cvxpy_1x21_to_6x6(V):
     f = 1 / np.sqrt(2)
 
     T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4], f * V[0, 6],
-                  f * V[0, 7], f * V[0, 8]],[f * V[0, 5], V[0, 1], 
-                  f * V[0, 3], f * V[0, 9], f * V[0, 10], f * V[0, 11]],
-                 [f * V[0, 4], f * V[0, 3], V[0, 2], f * V[0, 12], 
-                  f * V[0, 13], f * V[0, 14]], [f * V[0, 6], f * V[0, 9],
-                  f * V[0, 12], V[0, 15], f * V[0, 18], f * V[0, 20]],
-                 [f * V[0, 7], f * V[0, 10], f * V[0, 13], f * V[0, 18], 
-                 V[0, 16], f * V[0, 19]], [f * V[0, 8], f * V[0, 11],
-                  f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
+                f * V[0, 7], f * V[0, 8]], 
+                [f * V[0, 5], V[0, 1],
+                 f * V[0, 3], f * V[0, 9], f * V[0, 10], f * V[0, 11]],
+                [f * V[0, 4], f * V[0, 3], V[0, 2], f * V[0, 12],
+                 f * V[0, 13], f * V[0, 14]],
+                [f * V[0, 6], f * V[0, 9],
+                 f * V[0, 12], V[0, 15], f * V[0, 18], f * V[0, 20]],
+                [f * V[0, 7], f * V[0, 10], f * V[0, 13], f * V[0, 18],
+                 V[0, 16], f * V[0, 19]], 
+                [f * V[0, 8], f * V[0, 11],
+                 f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
     return T
 
 # These tensors are used in the calculation of the QTI parameters
@@ -459,6 +463,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
     params = params.reshape((mask.shape + (28,)))
     return params
 
+
 def _sdpdc_fit(data, mask, X, cvxpy_solver):
     """Estimate the model parameters using Semidefinite Programming (SDP), 
         while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
@@ -472,7 +477,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     X : numpy.ndarray
         Design matrix of shape (number of acquisitions, 28).
     cvxpy_solver: string, required
-        The name of the SDP solver to be used. Default: 'SCS'    
+        The name of the SDP solver to be used. Default: 'SCS'
     Returns
     -------
     params : numpy.ndarray
@@ -523,7 +528,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         A.value = vox_data * X
 
         try:
-            prob.solve(solver=cvxpy_solver, verbose=True)
+            prob.solve(solver=cvxpy_solver, verbose=False)
             m = x.value
         except Exception:
             msg = 'Constrained optimization failed, attempting unconstrained'

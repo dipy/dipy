@@ -1,11 +1,12 @@
 """
 =====================================================================
-Applying positivity constraints to Q-space Trajectory Imagigng (QTI+)
+Applying positivity constraints to Q-space Trajectory Imaging (QTI+)
 =====================================================================
 
-Q-space trajectory imaging (QTI) [1]_ with applied positivity constraints (QTI+) 
-is an estimation framework proposed by Herberthson et al. [2]_ which enforces
-necessary constraints during the estimation of the QTI model parameters.
+Q-space trajectory imaging (QTI) [1]_ with applied positivity constraints
+(QTI+) is an estimation framework proposed by Herberthson et al. [2]_ which
+enforces necessary constraints during the estimation of the QTI model
+parameters.
 
 This tutorial briefly summarizes the theory and provides a comparison between
 performing the constrained and unconstrained reconstruction in DIPY.
@@ -74,24 +75,25 @@ parameters requires that $\text{rank}(\mathbf{X}^\text{T}\mathbf{X}) = 28$.
 This can be achieved by combining acquisitions with b-tensors with different
 shapes, sizes, and orientations.
 
-The estimated $\langle\mathbf{D}\rangle$ and $\mathbb{C}$ tensors should observe
-mathematical and physical conditions dictated by the model itself: since 
-$\langle\mathbf{D}\rangle$ represents a diffusivity, it should be positive 
-semi-definite; similarly, since $\mathbb{C}$ represents a covariance, it should
-be positive semi-definite. 
+Note that the estimated $\langle\mathbf{D}\rangle$ and $\mathbb{C}$ tensors
+should observe mathematical and physical conditions dictated by the model
+itself: since $\langle\mathbf{D}\rangle$ represents a diffusivity, it should be
+positive semi-definite: $\langle\mathbf{D}\rangle \succeq 0$. Similarly, since
+$\mathbf{C}$ represents a covariance, it's $6 \times 6$ representation,
+$\mathbf{C}$, should be positive semi-definite:  $\mathbf{C} \succeq 0$
 
-When not imposed, violations of these conditions can occur in presence of noise 
-and/or in sparsely sampled data. This could results in metrics derived from the 
+When not imposed, violations of these conditions can occur in presence of noise
+and/or in sparsely sampled data. This could results in metrics derived from the
 model parameters being unreliable. Both these conditions can be enfoced while
-estimating the QTI model's parameters using semidefinite programming as 
-shown by Herberthson et al. [2]_
-
-In DIPY, the constrained estimation routine is avaiable as part of the
-`dipy.reconst.qti` module. 
-
+estimating the QTI model's parameters using semidefinite programming as
+shown by Herberthson et al. [2]_.
 
 Usage example
 =============
+In DIPY, the constrained estimation routine is avaiable as part of the
+`dipy.reconst.qti` module. Here we show how metrics derived from the
+QTI model parameters compares when the fit is performed with and without
+applying the positivity constraints.
 
 First we import all the necessary modules to perform the QTI fit:
 """
@@ -99,36 +101,34 @@ First we import all the necessary modules to perform the QTI fit:
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.image import load_nifti
 import matplotlib.pyplot as plt
-import nibabel as nib
 import numpy as np
 import dipy.reconst.qti as qti
 
 """
-To showcase why enforcing positivity constraints in QTI is relevant, we use 
+To showcase why enforcing positivity constraints in QTI is relevant, we use
 a human brain dataset comprising 70 volumes acquired with tensor-encoding.
 This dataset was obtained by subsampling a richer dataset containing 217
 diffusion measurements, which we will use as ground truth when comparing
-the parameters estimation with and without applied constraints.
-The full dataset was originally published at
+the parameters estimation with and without applied constraints. This emulates
+performing short data acquisition which can correspond to scanning patients
+in clinical settings.
+
+The full dataset used here was originally published at
 https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
 and described in [3]_
 
 """
 
 '''
-First, let's load the complete dataset and create the gradient table. 
+First, let's load the complete dataset and create the gradient table.
 We mark these two with the '_217' suffix
 '''
-'''
-fdata, fbvals, fbvecs, fmask = get_fnames('DiB_217_lte_pte_ste')
-'''
-fdata = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/DiB_217_lte_pte_ste.nii'
-fbvals = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/bval_DiB_217_lte_pte_ste.bval'
-fbvecs = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/bvec_DiB_217_lte_pte_ste.bvec'
-fmask = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/DiB_mask.nii'
-data_217, _ = load_nifti(fdata)
+fdata_1, fdata_2, fbvals, fbvecs, fmask = get_fnames('DiB_217_lte_pte_ste')
+data_1, _ = load_nifti(fdata_1)
+data_2, _ = load_nifti(fdata_2)
+data_217 = np.concatenate((data_1, data_2), axis=3)
 mask, _ = load_nifti(fmask)
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 btens = np.array(['LTE' for i in range(13)] +
@@ -147,15 +147,13 @@ btens = np.array(['LTE' for i in range(13)] +
 gtab_217 = gradient_table(bvals, bvecs, btens=btens)
 
 '''
-Second, let's load the downsampled dataset and create the gradient table. 
+Second, let's load the downsampled dataset and create the gradient table.
 We mark these two with the '_70' suffix
 '''
-'''
-fdata, fbvals, fbvecs, fmask = get_fnames('DiB_70_lte_pte_ste')
-'''
-fdata = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/DiB_70_lte_pte_ste.nii'
-fbvals = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/bval_DiB_70_lte_pte_ste.bval'
-fbvecs = r'/Users/denebboito/Library/CloudStorage/OneDrive-Linköpingsuniversitet/Python Scripts/data_folder/bvec_DiB_70_lte_pte_ste.bvec'
+
+fdata, fbvals, fbvecs, _ = get_fnames('DiB_70_lte_pte_ste')
+data, _ = load_nifti(fdata)
+bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 data_70, _ = load_nifti(fdata)
 bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
 btens = np.array(['LTE' for i in range(1)] +
@@ -174,13 +172,13 @@ gtab_70 = gradient_table(bvals, bvecs, btens=btens)
 
 
 """
-Now we can fit the QTI model to the datasets containing 217 measurements, and 
-use it as reference to compare the constrained and unconstrained fit on the 
+Now we can fit the QTI model to the datasets containing 217 measurements, and
+use it as reference to compare the constrained and unconstrained fit on the
 smaller dataset. For time sake, we restrict the fit to a single slice.
 """
 
-mask[:,:,:13] = 0
-mask[:,:,14:] = 0
+mask[:, :, :13] = 0
+mask[:, :, 14:] = 0
 
 qtimodel_217 = qti.QtiModel(gtab_217)
 qtifit_217 = qtimodel_217.fit(data_217, mask)
@@ -197,14 +195,14 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 """
 Now we repeat the fit but with the constraints applied.
 To perform the constrained fit, we select the 'SDPdc' fit method when creating
-the QtiModel object. 
-Note: this fit method is slower compared to the defaults unconstrained, 
-and requires the cvxpy library to be installed. It is also recommended to 
+the QtiModel object.
+Note: this fit method is slower compared to the defaults unconstrained,
+and requires the cvxpy library to be installed. It is also recommended to
 install the solver 'MOSEK' as opposed to using the free solver (SCS) installed
 with cvxpy.
 Instructions on how to install cvxpy can be found at
 https://www.cvxpy.org/install/
-Instructions on how to install Mosek and setting up a licence can be found 
+Instructions on how to install Mosek and setting up a licence can be found
 at https://docs.mosek.com/latest/install/installation.html
 
 Once mosek is installed, it can be specified as the solver to be used
@@ -214,31 +212,26 @@ qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
 qtifit = qtimodel.fit(data, mask)
 
 If Mosek is not installed, the constrained fit can still be performed, and
-SCS will be used as solver. SCS is typically much slower than Mosek, but 
+SCS will be used as solver. SCS is typically much slower than Mosek, but
 provides similar results in terms of accuracy. To give an example, the fit
 performed in the next line will take approximately 15 minutes when using SCS,
-and 1 minute when using Mosek!
+and 2 minute when using Mosek!
 """
-import time
-t0 = time.time()
 
-qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc', cvxpy_solver='SCS')
+qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc',
+                                    cvxpy_solver='MOSEK')
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
-t1 = time.time()
-print('total time ')
-print((t1-t0)//60)
-
 """
-Now we can visualize the results obtained with the constrained and unconstrained
-fit on the small dataset, and compare them with the "ground truth" provided by 
-fitting the QTI model to the full dataset. For example, we can look at the $\mu$FA 
-and FA maps, and the values distribution in White Matter in comparison to the 
-ground truth.
+Now we can visualize the results obtained with the constrained and
+unconstrained fit on the small dataset, and compare them with the
+"ground truth" provided by fitting the QTI model to the full dataset.
+For example, we can look at the $\mu$FA and FA maps, and their value
+distribution in White Matter in comparison to the ground truth.
 """
 
 z = 13
-wm_mask = qtifit_217.ufa[:,:,z] > 0.7
+wm_mask = qtifit_217.ufa[:, :, z] > 0.6
 
 fig, ax = plt.subplots(2, 4, figsize=(12, 9))
 
@@ -250,8 +243,8 @@ for i in range(2):
         ax[i, j].set_yticks([])
 
 ax[0, 0].imshow(np.rot90(qtifit_217.fa[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[0, 0].set_title('Ground Truth')
-ax[0, 0].set_ylabel('FA')
+ax[0, 0].set_title('GROUND TRUTH')
+ax[0, 0].set_ylabel('FA', fontsize=20)
 ax[0, 1].imshow(np.rot90(qtifit_unconstrained.fa[:, :, z]),
                 cmap='gray', vmin=0, vmax=1)
 ax[0, 1].set_title('QTI')
@@ -259,17 +252,18 @@ ax[0, 2].imshow(np.rot90(qtifit_constrained.fa[:, :, z]), cmap='gray', vmin=0,
                 vmax=1)
 ax[0, 2].set_title('QTI+')
 ax[0, 3].hist((qtifit_unconstrained.fa[wm_mask, z]).flatten(),
-                density=True, bins=40, label='QTI')
+              density=True, bins=40, label='QTI')
 ax[0, 3].hist((qtifit_constrained.fa[wm_mask, z]).flatten(), 
-                density=True, bins=40, label='QTI+', alpha=0.7)
+              density=True, bins=40, label='QTI+', alpha=0.7)
 ax[0, 3].hist((qtifit_217.fa[wm_mask, z]).flatten(), histtype='stepfilled',
-            density=True, bins=40, label='GT', ec="k", alpha=1,linewidth=1.5, fc="None")
+              density=True, bins=40, label='GT', ec="k", alpha=1,
+              linewidth=1.5, fc="None")
 ax[0, 3].legend()
-ax[0, 3].set_title('Values distribution')
+ax[0, 3].set_title('VALUE DISTRIBUTION')
 
 ax[1, 0].imshow(np.rot90(qtifit_217.ufa[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[1, 0].set_title('Ground Truth')
-ax[1, 0].set_ylabel('μFA')
+ax[1, 0].set_title('GROUND TRUTH')
+ax[1, 0].set_ylabel('μFA', fontsize=20)
 ax[1, 1].imshow(np.rot90(qtifit_unconstrained.ufa[:, :, z]),
                 cmap='gray', vmin=0, vmax=1)
 ax[1, 1].set_title('QTI')
@@ -277,18 +271,22 @@ ax[1, 2].imshow(np.rot90(qtifit_constrained.ufa[:, :, z]), cmap='gray', vmin=0,
                 vmax=1)
 ax[1, 2].set_title('QTI+')
 ax[1, 3].hist((qtifit_unconstrained.ufa[wm_mask, z]).flatten(), 
-            density=True, bins=40, label='QTI', alpha=1)
+              density=True, bins=40, label='QTI', alpha=1)
 ax[1, 3].hist((qtifit_constrained.ufa[wm_mask, z]).flatten(), 
-            density=True, bins=40, label='QTI+', alpha=0.7)
+              density=True, bins=40, label='QTI+', alpha=0.7)
 ax[1, 3].hist((qtifit_217.ufa[wm_mask, z]).flatten(), histtype='stepfilled',
-            density=True, bins=40, label='GT', ec="k", alpha=1,linewidth=1.5, fc="None")
+              density=True, bins=40, label='GT', ec="k", alpha=1,
+              linewidth=1.5, fc="None")
 ax[1, 3].legend()
-ax[1, 3].set_title('Values distribution')
+ax[1, 3].set_title('VALUE DISTRIBUTION')
+ax[1, 3].set_xlim([0.4, 1.5])
 
 fig.tight_layout()
 plt.show()
 
 """
+COMMENT ON THE RESULTS!
+
 For more information about QTI and QTI+, please read the articles by
 Westin et al. [1]_ and Herberthson et al. [2]_.
 
@@ -301,8 +299,9 @@ References
 .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
    Özarslan E., "Q-space trajectory imaging with positivity constraints
    (QTI+)" in Neuroimage, Volume 238, 2021.
-.. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical 
-    tensor-valued diffusion MRI data by free waveform encoding in healthy brain, 
-    water, oil and liquid crystals. Data in Brief (2019), 
-    DOI: https://doi.org/10.1016/j.dib.2019.104208
+.. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
+   tensor-valued diffusion MRI data by free waveform encoding in healthy
+   brain, water, oil and liquid crystals. Data in Brief (2019),
+   DOI: https://doi.org/10.1016/j.dib.2019.104208
+
 """
