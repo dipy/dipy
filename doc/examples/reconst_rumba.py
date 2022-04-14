@@ -393,6 +393,7 @@ This is done by setting `voxelwise` to `False`, and setting `use_tv` to `True`.
 TV regularization requires a volume without any singleton dimensions, so we'll
 have to start by expanding our data slice.
 """
+
 rumba = RumbaSDModel(gtab, wm_response=response[0], gm_response=None,
                      voxelwise=False, use_tv=True, sphere=sphere)
 data_tv = data[20:50, 55:85, 38:40]
@@ -498,7 +499,7 @@ References
 
 .. [Constantinides1997] Constantinides, C. D., Atalar, E., & McVeigh, E. R.
    (1997). Signal-to-Noise Measurements in Magnitude Images from NMR Phased
-   Arrays. Magnetic Resonance in Medicine : Official Journal of the Society of
+   Arrays. Magnetic Resonance in Medicine: Official Journal of the Society of
    Magnetic Resonance in Medicine / Society of Magnetic Resonance in Medicine,
    38(5), 852–857.
 

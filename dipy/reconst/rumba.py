@@ -1,4 +1,4 @@
-'''Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)'''
+"""Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)"""
 import logging
 import warnings
 
@@ -27,7 +27,7 @@ class RumbaSDModel(OdfModel):
                  gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
                  recon_type='smf', n_coils=1, R=1, voxelwise=True,
                  use_tv=False, sphere=None, verbose=False):
-        '''
+        """
         Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_
 
         Modification of the Richardson-Lucy algorithm accounting for Rician
@@ -111,7 +111,7 @@ class RumbaSDModel(OdfModel):
                https://doi.org/10.1109/TBME.2006.888830
 
 
-        '''
+        """
 
         if not np.any(gtab.b0s_mask):
             raise ValueError("Gradient table has no b0 measurements")
@@ -170,13 +170,11 @@ class RumbaSDModel(OdfModel):
         self.kernel = None
 
     def _global_fit(self, data, mask=None):
-        '''
+        """
         Fit fODF and GM/CSF volume fractions globally.
 
         Parameters
         ----------
-        model : RumbaSDModel
-            RumbaSDModel model
         data : ndarray (x, y, z, N)
             Signal values for each voxel. Must be 4D.
         mask : ndarray (x, y, z), optional
@@ -189,7 +187,7 @@ class RumbaSDModel(OdfModel):
         model_fit : RumbaFit
             Fit object storing model parameters.
 
-        '''
+        """
 
         # Checking data and mask shapes
         if len(data.shape) != 4:
@@ -233,13 +231,11 @@ class RumbaSDModel(OdfModel):
         return model_fit
 
     def _voxelwise_fit(self, data, mask=None):
-        '''
+        """
         Fit fODF and GM/CSF volume fractions voxelwise.
 
         Parameters
         ----------
-        model : RumbaSDModel
-            RumbaSDModel model
         data : ndarray ([x, y, z], N)
             Signal values for each voxel.
         mask : ndarray ([x, y, z]), optional
@@ -252,7 +248,7 @@ class RumbaSDModel(OdfModel):
         model_fit : RumbaFit
             Fit object storing model parameters.
 
-        '''
+        """
 
         if mask is None:  # default mask includes all voxels
             mask = np.ones(data.shape[:-1])
@@ -298,8 +294,8 @@ class RumbaSDModel(OdfModel):
 class RumbaFit(OdfFit):
 
     def __init__(self, model, model_params):
-        '''
-        Constructs fODF, GM/CSF volume fractions, and other dereived results.
+        """
+        Constructs fODF, GM/CSF volume fractions, and other derived results.
 
         fODF and GM/CSF fractions are normalized to collectively sum to 1 for
         each voxel.
@@ -310,16 +306,14 @@ class RumbaFit(OdfFit):
             RumbaSDModel-SD model.
         model_params : ndarray ([x, y, z], M)
             fODF and GM/CSF volume fractions for each voxel.
-        data : ndarray ([x, y, z], N)
-            Signal values for each voxel.
 
-        '''
+        """
 
         self.model = model
         self.model_params = model_params
 
     def odf(self, sphere=None):
-        '''
+        """
         Constructs fODF at discrete vertices on model sphere for each voxel.
 
         Parameters
@@ -333,7 +327,7 @@ class RumbaFit(OdfFit):
         odf : ndarray ([x, y, z], M-2)
             fODF computed at each vertex on model sphere.
 
-        '''
+        """
         if sphere is not None and sphere != self.model.sphere:
             raise ValueError("Reconstruction sphere must be the same as used"
                              + " in the RUMBA-SD model.")
@@ -343,35 +337,35 @@ class RumbaFit(OdfFit):
 
     @auto_attr
     def f_gm(self):
-        '''
+        """
         Constructs GM volume fraction for each voxel.
 
         Returns
         -------
         f_gm : ndarray ([x, y, z])
             GM volume fraction.
-        '''
+        """
 
         f_gm = self.model_params[..., -2]
         return f_gm
 
     @auto_attr
     def f_csf(self):
-        '''
+        """
         Constructs CSF volume fraction for each voxel.
 
         Returns
         -------
         f_csf : ndarray ([x, y, z])
             CSF volume fraction.
-        '''
+        """
 
         f_csf = self.model_params[..., -1]
         return f_csf
 
     @auto_attr
     def f_wm(self):
-        '''
+        """
         Constructs white matter volume fraction for each voxel.
 
         Equivalent to sum of fODF.
@@ -380,14 +374,14 @@ class RumbaFit(OdfFit):
         -------
         f_wm : ndarray ([x, y, z])
             White matter volume fraction.
-        '''
+        """
 
         f_wm = np.sum(self.odf(), axis=-1)
         return f_wm
 
     @auto_attr
     def f_iso(self):
-        '''
+        """
         Constructs isotropic volume fraction for each voxel.
 
         Equivalent to sum of GM and CSF volume fractions.
@@ -396,14 +390,14 @@ class RumbaFit(OdfFit):
         -------
         f_iso : ndarray ([x, y, z])
             Isotropic volume fraction.
-        '''
+        """
 
         f_iso = self.f_gm + self.f_csf
         return f_iso
 
     @auto_attr
     def combined_odf_iso(self):
-        '''
+        """
         Constructs fODF combined with isotropic volume fraction at discrete
         vertices on model sphere.
 
@@ -414,7 +408,7 @@ class RumbaFit(OdfFit):
         -------
         combined : ndarray ([x, y, z], M-2)
             fODF combined with isotropic volume fraction.
-        '''
+        """
 
         odf = self.odf()
         combined = odf + self.f_iso[..., None] / odf.shape[-1]
@@ -467,7 +461,7 @@ class RumbaFit(OdfFit):
 
 
 def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
-    r'''
+    r"""
     Fit fODF and GM/CSF volume fractions for a voxel using RUMBA-SD [1]_.
 
     Deconvolves the kernel from the diffusion-weighted signal by computing a
@@ -580,10 +574,10 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
     .. [2] Constantinides, C. D., Atalar, E., & McVeigh, E. R. (1997).
            Signal-to-Noise Measurements in Magnitude Images from NMR Phased
-           Arrays. Magnetic Resonance in Medicine : Official Journal of the
+           Arrays. Magnetic Resonance in Medicine: Official Journal of the
            Society of Magnetic Resonance in Medicine / Society of Magnetic
            Resonance in Medicine, 38(5), 852–857.
-    '''
+    """
 
     n_comp = kernel.shape[1]  # number of compartments
     n_grad = len(data)  # gradient directions
@@ -640,7 +634,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
 
 
 def mbessel_ratio(n, x):
-    r'''
+    r"""
     Fast computation of modified Bessel function ratio (first kind).
 
     Computes:
@@ -668,7 +662,7 @@ def mbessel_ratio(n, x):
     .. [1] W. Gautschi and J. Slavik, “On the computation of modified Bessel
            function ratios,” Math. Comp., vol. 32, no. 143, pp. 865–875, 1978,
            doi: 10.1090/S0025-5718-1978-0470267-9
-    '''
+    """
 
     y = x / ((2 * n + x) - (2 * x * (n + 1 / 2) / (2 * n + 1 + 2 * x - (
         2 * x * (n + 3 / 2) / (2 * n + 2 + 2 * x - (2 * x * (n + 5 / 2) / (
@@ -678,7 +672,7 @@ def mbessel_ratio(n, x):
 
 
 def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
-    '''
+    """
     Generate deconvolution kernel
 
     Compute kernel mapping orientation densities of white matter fiber
@@ -708,7 +702,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
         Computed kernel; can be multiplied with a vector consisting of volume
         fractions for each of M-2 fiber populations as well as GM and CSF
         fractions to produce a diffusion weighted signal.
-    '''
+    """
 
     # Coordinates of sphere vertices
     sticks = sphere.vertices
@@ -796,7 +790,7 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
 
 def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
                         n_coils=1, R=1, use_tv=True, verbose=False):
-    r'''
+    r"""
     Fit fODF for all voxels simultaneously using RUMBA-SD.
 
     Deconvolves the kernel from the diffusion-weighted signal at each voxel by
@@ -892,7 +886,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
     .. [3] Chambolle A. An algorithm for total variation minimization and
            applications. Journal of Mathematical Imaging and Vision. 2004;
            20:89–97.
-    '''
+    """
 
     # Crop data to reduce memory consumption
     dim_orig = data.shape
@@ -1025,9 +1019,9 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
 
 def _grad(M):
-    '''
+    """
     Computes one way first difference
-    '''
+    """
     x_ind = list(range(1, M.shape[0])) + [M.shape[0] - 1]
     y_ind = list(range(1, M.shape[1])) + [M.shape[1] - 1]
     z_ind = list(range(1, M.shape[2])) + [M.shape[2] - 1]
@@ -1041,10 +1035,10 @@ def _grad(M):
 
 
 def _divergence(F):
-    '''
+    """
     Computes divergence of a 3-dimensional vector field (with one way
     first difference)
-    '''
+    """
     Fx = F[:, :, :, 0, :]
     Fy = F[:, :, :, 1, :]
     Fz = F[:, :, :, 2, :]
@@ -1069,9 +1063,9 @@ def _divergence(F):
 
 
 def _reshape_2d_4d(M, mask, out=None):
-    '''
+    """
     Faster reshape from 2D to 4D.
-    '''
+    """
     if out is None:
         out = np.zeros((*mask.shape, M.shape[-1]), dtype=M.dtype)
     n = 0
