@@ -52,7 +52,7 @@ class ShoreModel(Cache):
     .. [3] Rathi Y. et al., "Sparse multi-shell diffusion imaging", MICCAI,
            2011.
 
-    .. [4] Cheng J. et al., "Theoretical Analysis and eapactical Insights on
+    .. [4] Cheng J. et al., "Theoretical Analysis and Practical Insights on
            EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
            Computational Diffusion MRI, 2011.
 
@@ -812,7 +812,7 @@ def shore_order(n, l, m):
     radial_order : unsigned int
         an even integer that represent the maximal order of the basis
     index : unsigned int
-        index of the coefficient correspondig to (n,l,m), start from 0
+        index of the coefficient corresponding to (n,l,m), start from 0
 
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0 or np.abs(m) > l:

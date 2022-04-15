@@ -66,7 +66,7 @@ class MultiShellResponse(object):
 
         The method `multi_shell_fiber_response` allows to create a multi-shell
         fiber response with the right format, for a three compartments model.
-        It can be refered to in order to understand the inputs of this class.
+        It can be referred to in order to understand the inputs of this class.
 
         Parameters
         ----------
@@ -440,7 +440,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     sh_order : int
          Maximum spherical harmonics order.
     bvals : ndarray
-        Array containing the b-values. Must be unique b-values, like outputed
+        Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
     wm_rf : (4, len(bvals)) ndarray
         Response function of the WM tissue, for each bvals.

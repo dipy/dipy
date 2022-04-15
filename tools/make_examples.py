@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 from matplotlib._pylab_helpers import Gcf
 
 # -----------------------------------------------------------------------------
-# Function defintions
+# Function definitions
 # -----------------------------------------------------------------------------
 
 # These global variables let show() be called by the scripts in the usual

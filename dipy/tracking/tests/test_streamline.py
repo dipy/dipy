@@ -684,7 +684,7 @@ def test_compress_streamlines():
         # (like the C++ version)
         compress_func(streamline, max_segment_length=np.inf)
 
-        # Incompressable streamline when `tol_error` == 1.
+        # Incompressible streamline when `tol_error` == 1.
         simple_streamline = np.array([[0, 0, 0],
                                       [1, 1, 0],
                                       [1.5, np.inf, 0],

@@ -402,7 +402,7 @@ def test_degenerative_cases():
 
     sphere = default_sphere
 
-    # completely isotropic and degencase
+    # completely isotropic and degenerate case
     odf = np.zeros(sphere.vertices.shape[0])
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     print(directions, values, indices)

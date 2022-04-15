@@ -198,12 +198,12 @@ def test_save_seeds():
                                           save_seeds=True)
 
     streamlines_not_all = iter(streamlines_generator)
-    # Verifiy that seeds are returned by the LocalTracker
+    # Verify that seeds are returned by the LocalTracker
     _, seed = next(streamlines_not_all)
     npt.assert_equal(seed, seeds[0])
     _, seed = next(streamlines_not_all)
     npt.assert_equal(seed, seeds[1])
-    # Verifiy that seeds are returned by the PFTTracker also
+    # Verify that seeds are returned by the PFTTracker also
     pft_streamlines = ParticleFilteringTracking(direction_getter=dg,
                                                 stopping_criterion=sc,
                                                 seeds=seeds,
@@ -220,7 +220,7 @@ def test_save_seeds():
 
 
 def test_probabilistic_odf_weighted_tracker():
-    """This tests that the Probabalistic Direction Getter plays nice
+    """This tests that the Probabilistic Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = HemiSphere.from_sphere(unit_octahedron)
@@ -540,7 +540,7 @@ def test_maximum_deterministic_tracker():
 
 
 def test_bootstap_peak_tracker():
-    """This tests that the Bootstrat Peak Direction Getter plays nice
+    """This tests that the Bootstrap Peak Direction Getter plays nice
     LocalTracking and produces reasonable streamlines in a simple example.
     """
     sphere = get_sphere('repulsion100')

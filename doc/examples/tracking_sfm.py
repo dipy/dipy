@@ -132,7 +132,7 @@ color = colormap.line_colors(streamlines)
 To speed up visualization, we will select a random sub-set of streamlines to
 display. This is particularly important, if you track from seeds throughout the
 entire white matter, generating many streamlines. In this case, for
-demonstration purposes, we subselect 900 streamlines.
+demonstration purposes, we select a subset of 900 streamlines.
 """
 
 plot_streamlines = select_random_set_of_streamlines(streamlines, 900)
