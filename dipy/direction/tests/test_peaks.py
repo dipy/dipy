@@ -398,7 +398,7 @@ def test_difference_with_minmax():
     assert_almost_equal(values_1, values_4)
 
 
-def test_degenerative_cases():
+def test_degenerate_cases():
 
     sphere = default_sphere
 
