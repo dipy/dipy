@@ -224,9 +224,9 @@ def test_ndbincount():
     # pass in weights
     weights = np.arange(6.)
     weights[-1] = 1.23
-    expeceted = [1., 5., 4., 1.23]
+    expected = [1., 5., 4., 1.23]
     bc = ndbincount(x, weights=weights)
-    check(expeceted)
+    check(expected)
     # raises an error if shape is too small
     npt.assert_raises(ValueError, ndbincount, x, None, (2, 2))
 
