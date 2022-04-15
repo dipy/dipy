@@ -117,13 +117,13 @@ in clinical settings.
 
 The full dataset used here was originally published at
 https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
-and described in [3]_
+and described in [3]_.
 
 """
 
 '''
 First, let's load the complete dataset and create the gradient table.
-We mark these two with the '_217' suffix
+We mark these two with the '_217' suffix.
 '''
 fdata_1, fdata_2, fbvals, fbvecs, fmask = get_fnames('DiB_217_lte_pte_ste')
 data_1, _ = load_nifti(fdata_1)
@@ -148,7 +148,7 @@ gtab_217 = gradient_table(bvals, bvecs, btens=btens)
 
 '''
 Second, let's load the downsampled dataset and create the gradient table.
-We mark these two with the '_70' suffix
+We mark these two with the '_70' suffix.
 '''
 
 fdata, fbvals, fbvecs, _ = get_fnames('DiB_70_lte_pte_ste')
