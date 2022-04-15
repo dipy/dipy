@@ -528,7 +528,8 @@ fetch_fury_surface = _make_fetcher(
 fetch_DiB_70_lte_pte_ste = _make_fetcher(
     'fetch_DiB_70_lte_pte_ste',
     pjoin(dipy_home, 'DiB_70_lte_pte_ste'),
-    'https://github.com/DenebBoito/DiB_Downsampled/raw/master/',
+    'https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/'
+    'raw/master/DATA/brain/NII_Boito_SubSamples/',
     ['DiB_70_lte_pte_ste/DiB_70_lte_pte_ste.nii.gz',
      'DiB_70_lte_pte_ste/bval_DiB_70_lte_pte_ste.bval',
      'DiB_70_lte_pte_ste/bvec_DiB_70_lte_pte_ste.bvec',
