@@ -42,7 +42,7 @@ class QtdmriModel(Cache):
                     \,\Phi_i(\textbf{q})\,T_k(\tau),
                 \end{equation}
 
-        where $\Phi$ and $T$ are the spatial and temporal basis funcions,
+        where $\Phi$ and $T$ are the spatial and temporal basis functions,
         $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal
         order, and $i,k$ are basis order iterators.
 
@@ -2093,7 +2093,7 @@ def visualise_gradient_table_G_Delta_rainbow(
     G_start : float,
         optional minimum gradient strength that is plotted in T/m
     G_end : float,
-        optional maximum gradient strength taht is plotted in T/m
+        optional maximum gradient strength that is plotted in T/m
     bval_isolines : array,
         optional array of bvalue isolines that are plotted in the background
     alpha_shading : float between [0-1]

@@ -248,7 +248,7 @@ def mrtrix_spherical_functions():
     -------
     func_coef : array (2, 3, 4, 45)
         Functions represented by the coefficients associated with the
-        mxtrix spherical harmonic basis of order 8.
+        mrtrix spherical harmonic basis of order 8.
     func_discrete : array (2, 3, 4, 81)
         Functions evaluated on `sphere`.
     sphere : Sphere
@@ -292,7 +292,7 @@ def get_cmap(name):
             x, y0, y1 = zip(*desc[color])
             # Matplotlib allows more complex colormaps, but for users who do
             # not have Matplotlib dipy makes a few simple colormaps available.
-            # These colormaps are simple because y0 == y1, and therefor we
+            # These colormaps are simple because y0 == y1, and therefore we
             # ignore y1 here.
             rgba[:, i] = np.interp(v, x, y0)
         return rgba

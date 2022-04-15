@@ -163,8 +163,8 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 """
 
 Since the CC is aligned with the X axis, the lowest SNR is for that gradient
-direction. In comparison, the DW images in the perpendical Y and Z axes have a
-high SNR. The b0 still exhibits the highest SNR, since there is no signal
+direction. In comparison, the DW images in the perpendicular Y and Z axes have
+a high SNR. The b0 still exhibits the highest SNR, since there is no signal
 attenuation.
 
 Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of

@@ -700,7 +700,7 @@ def decompose_matrix(matrix):
     Parameters
     ----------
     matrix : array_like
-        Non-degenerative homogeneous transformation matrix
+        Non-degenerate homogeneous transformation matrix
 
     Returns
     -------
@@ -718,7 +718,7 @@ def decompose_matrix(matrix):
     Raises
     ------
     ValueError
-        If matrix is of wrong type or degenerative.
+        If matrix is of wrong type or degenerate.
 
     Examples
     --------

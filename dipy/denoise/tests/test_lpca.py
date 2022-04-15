@@ -284,8 +284,8 @@ def test_pca_classifier():
     var, c = _pca_classifier(L, 125)
     std = np.sqrt(var)
 
-    # Expected number of signal components is 0 because phantom only has one
-    # voxel type and that information is campured by the mean of X.
+    # Expected number of signal components is 0 because the phantom only has
+    # one voxel type and that information is captured by the mean of X.
     # Therefore, expected noise components should be equal to size of L.
     # To allow some margin of error let's assess if c is higher than
     # L.size - 3.
@@ -321,8 +321,8 @@ def test_mppca_returned_sigma():
     std_error = abs(msigma - std_gt)/std_gt * 100
     assert_(std_error < 5)
 
-    # Case that sigma is inputed (sigma outputed should be the same as the one
-    # inputed)
+    # Case that sigma is inputted (sigma outputted should be the same as the
+    # one inputted)
     DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
                              patch_radius=2, return_sigma=True)
     assert_array_almost_equal(rsigma, sigma)

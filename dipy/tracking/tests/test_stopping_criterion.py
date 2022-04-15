@@ -61,7 +61,7 @@ def test_binary_stopping_criterion():
 
 
 def test_threshold_stopping_criterion():
-    """This tests that the thresholdy stopping criterion returns expected
+    """This tests that the threshold stopping criterion returns expected
     streamline statuses.
     """
 

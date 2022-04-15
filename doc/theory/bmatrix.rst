@@ -58,6 +58,6 @@ say $\lambda_1$, is effectively non-zero. Then $b = \lambda_1$, $\mathbf{g} =
 (essentially we have a choice between two possible square roots of the
 rank 1 tensor $\mathbf{B}$). Once we have $\mathbf{q}_{actual}$ we can
 calculate $b_{actual} = |\mathbf{q}_{actual}|$ and $\mathbf{g}_{actual}
-= \mathbf{q}_{actual} / b_{actual}$. Various sofware packages
+= \mathbf{q}_{actual} / b_{actual}$. Various software packages
 (e.g. FSL's DFT-DTIFIT) expect to get 3 × N and 1 × N arrays of
 $\mathbf{g}_{actual}$ and $b_{actual}$ values as their inputs.

@@ -40,7 +40,7 @@ def bootstrap(x, statistic=bs_se, B=1000, alpha=0.95):
     Returns
     -------
     bs_pdf : ndarray (M, 1)
-        Jackknife probabilisty distribution function of the statistic.
+        Jackknife probability distribution function of the statistic.
     se : float
         Standard error of the statistic.
     ci : ndarray (2, 1)
@@ -229,7 +229,7 @@ def jackknife(pdf, statistic=np.std, M=None):
     Returns
     -------
     jk_pdf : ndarray (M, 1)
-        Jackknife probabilisty distribution function of the statistic.
+        Jackknife probability distribution function of the statistic.
     bias : float
         Bias of the jackknife pdf of the statistic.
     se : float
