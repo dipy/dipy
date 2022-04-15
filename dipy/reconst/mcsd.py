@@ -116,9 +116,9 @@ def _inflate_response(response, gtab, n, delta):
     n_idx[iso:] = n // 2 + iso
     diff = abs(response.shells[:, None] - gtab.bvals)
     b_idx = np.argmin(diff, axis=0)
-    kernal = response.response / delta
+    kernel = response.response / delta
 
-    return kernal[np.ix_(b_idx, n_idx)]
+    return kernel[np.ix_(b_idx, n_idx)]
 
 
 def _basic_delta(iso, m, n, theta, phi):
