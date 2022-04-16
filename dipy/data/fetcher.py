@@ -535,15 +535,16 @@ fetch_DiB_70_lte_pte_ste = _make_fetcher(
         'DOI: https://doi.org/10.1016/j.dib.2019.104208' +
         'if using this data.',
     md5_list=['11f2e0d53e19061654eb3cdfc8fe9827',
-              '099f9cbd53083a820a985868cfc1e9d9',
-              '8c02070a6c48dc89581695c6e2891a1d',
+              '15021885b4967437c8cf441c09045c25',
+              '1e6b867182da249f81aa9abd50e8b9f7',
               '2ea48d80b6ae1c3da50cb44e615b09e5'],
     data_size='51.1 MB')
 
 fetch_DiB_217_lte_pte_ste = _make_fetcher(
     'fetch_DiB_217_lte_pte_ste',
     pjoin(dipy_home, 'DiB_217_lte_pte_ste'),
-    'https://github.com/DenebBoito/DiB_Downsampled/raw/master/',
+    'https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/'
+    'raw/master/DATA/brain/NII_Boito_SubSamples/',
     ['DiB_217_lte_pte_ste/DiB_217_lte_pte_ste_1.nii.gz',
      'DiB_217_lte_pte_ste/DiB_217_lte_pte_ste_2.nii.gz',
      'DiB_217_lte_pte_ste/bval_DiB_217_lte_pte_ste.bval',
