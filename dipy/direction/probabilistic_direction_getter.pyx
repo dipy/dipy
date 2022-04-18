@@ -14,6 +14,7 @@ cimport numpy as cnp
 
 from dipy.direction.closest_peak_direction_getter cimport PmfGenDirectionGetter
 from dipy.utils.fast_numpy cimport cumsum, where_to_insert
+from dipy.utils.deprecator import deprecated_params
 
 
 cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
@@ -30,7 +31,13 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         double[:, :] vertices
         dict _adj_matrix
 
-    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, **kwargs):
+    @deprecated_params('max_angle', since='1.5', until='1.99',
+                       alternative='use min_curvature instead. To convert your '
+                                   'max_angle to min_curvature, use '
+                                   'max_angle_from_curvature function in '
+                                   '``dipy.tracking.utils``')
+    def __init__(self, pmf_gen, max_angle, sphere, min_curvature=None,
+                 pmf_threshold=.1, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -43,6 +50,8 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
             direction.
         sphere : Sphere
             The set of directions to be used for tracking.
+        min_curvature : float
+            Minimum radius of curvature in mm.
         pmf_threshold : float [0., 1.]
             Used to remove direction from the probability mass function for
             selecting the tracking direction.
@@ -59,7 +68,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
 
         """
         PmfGenDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
+                                       min_curvature, pmf_threshold, **kwargs)
         # The vertices need to be in a contiguous array
         self.vertices = self.sphere.vertices.copy()
         self._set_adjacency_matrix(sphere, self.cos_similarity)

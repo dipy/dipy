@@ -23,8 +23,11 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
                                         step_size=step_size, **kwargs)
 
     @classmethod
-    @deprecated_params('max_angle', since='1.14', until='1.15',
-                       alternative='use min_curvature instead.')
+    @deprecated_params('max_angle', since='1.5', until='1.99',
+                       alternative='use min_curvature instead. To convert your '
+                                   'max_angle to min_curvature, use '
+                                   'max_angle_from_curvature function in '
+                                   '``dipy.tracking.utils``')
     def from_data(cls, data, model, max_angle, sphere=default_sphere,
                   sh_order=0, max_attempts=5, min_curvature=None,
                   step_size=None, **kwargs):

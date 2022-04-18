@@ -62,8 +62,11 @@ cdef int closest_peak(cnp.ndarray[cnp.float_t, ndim=2] peak_dirs,
 cdef class BasePmfDirectionGetter(DirectionGetter):
     """A base class for dynamic direction getters"""
 
-    @deprecated_params('max_angle', since='1.14', until='1.15',
-                       alternative='use min_curvature instead.')
+    @deprecated_params('max_angle', since='1.5', until='1.99',
+                       alternative='use min_curvature instead. To convert your '
+                                   'max_angle to min_curvature, use '
+                                   'max_angle_from_curvature function in '
+                                   '``dipy.tracking.utils``')
     def __init__(self, pmf_gen, max_angle, sphere, min_curvature=None,
                  step_size=None, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
@@ -125,8 +128,11 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
     """A base class for direction getter using a pmf"""
 
     @classmethod
-    @deprecated_params('max_angle', since='1.14', until='1.15',
-                    alternative='use min_curvature instead.')
+    @deprecated_params('max_angle', since='1.5', until='1.99',
+                       alternative='use min_curvature instead. To convert your '
+                                   'max_angle to min_curvature, use '
+                                   'max_angle_from_curvature function in '
+                                   '``dipy.tracking.utils``')
     def from_pmf(cls, pmf, max_angle, sphere, min_curvature=None,
                  step_size=None, pmf_threshold=.1, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
@@ -172,8 +178,11 @@ cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
                      min_curvature, step_size, **kwargs)
 
     @classmethod
-    @deprecated_params('max_angle', since='1.14', until='1.15',
-                       alternative='use min_curvature instead.')
+    @deprecated_params('max_angle', since='1.5', until='1.99',
+                       alternative='use min_curvature instead. To convert your '
+                                   'max_angle to min_curvature, use '
+                                   'max_angle_from_curvature function in '
+                                   '``dipy.tracking.utils``')
     def from_shcoeff(cls, shcoeff, max_angle, sphere=default_sphere,
                      min_curvature=None, step_size=None, pmf_threshold=0.1,
                      basis_type=None, **kwargs):
