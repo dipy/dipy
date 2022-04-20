@@ -16,6 +16,7 @@ from dipy.utils.optpkg import optional_package
 
 cp, have_cvxpy, _ = optional_package("cvxpy")
 
+
 # XXX Eventually to be replaced with `reconst.dti.lower_triangular`
 def from_3x3_to_6x1(T):
     """Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
@@ -241,6 +242,7 @@ def cvxpy_1x21_to_6x6(V):
                  f * V[0, 14], f * V[0, 20], f * V[0, 19], V[0, 17]]])
     return T
 
+
 # These tensors are used in the calculation of the QTI parameters
 e_iso = np.eye(3) / 3
 E_iso = np.eye(6) / 3
@@ -465,8 +467,8 @@ def _wls_fit(data, mask, X, step=int(1e4)):
 
 
 def _sdpdc_fit(data, mask, X, cvxpy_solver):
-    """Estimate the model parameters using Semidefinite Programming (SDP), 
-        while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
+    """Estimate the model parameters using Semidefinite Programming (SDP),
+    while enforcing positivity constraints on the D and C tensors (SDPdc) [2]_
         
     Parameters
     ----------
@@ -495,11 +497,11 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     """
 
     if not have_cvxpy:
-                raise ValueError(
+        raise ValueError(
                     'CVXPY package needed to enforce constraints')
     
     if cvxpy_solver not in cp.installed_solvers():
-           raise ValueError(
+        raise ValueError(
                     'The selected solver is not available')
 
     params = np.zeros((np.product(mask.shape), 28)) * np.nan

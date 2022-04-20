@@ -9,7 +9,7 @@ enforces necessary constraints during the estimation of the QTI model
 parameters.
 
 This tutorial briefly summarizes the theory and provides a comparison between
-performing the constrained and unconstrained reconstruction in DIPY.
+performing the constrained and unconstrained QTI reconstruction in DIPY.
 
 Theory
 ======
@@ -40,29 +40,46 @@ where $S_0$ is the signal without diffusion-weighting, $\mathbf{b}$ is the
 b-tensor used in the acquisition, and $:$ denotes a tensor inner product.
 
 The model parameters $S_0$, $\langle\mathbf{D}\rangle$, and $\mathbb{C}$ can be
-estimated by solving the following equation:
+estimated by solving the following weighted problem, where the
+heteroskedasticity introduced by the taking the logarithm of the signal is
+accounted for:
 
 .. math::
 
-   S = \beta X,
+    \underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
+\sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
+\mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
+\mathbb{C} \right|^2,
+
+the above can be written as a weighted least squares problem
+
+.. math::
+
+   \mathbf{Ax} = \mathbf{y},
 
 where
 
 .. math::
 
-   S = \begin{pmatrix} \ln S_1 \\ \vdots \\ \ln S_n \end{pmatrix} ,
+   y = \begin{pmatrix} \ S_1 \ ln S_1 \\ \vdots \\
+   \ S_n \ ln S_n \end{pmatrix} ,
 
 .. math::
 
-   \beta = \begin{pmatrix} \ln S_0 & \langle \mathbf{D} \rangle & \mathbb{C}
+   x = \begin{pmatrix} \ln S_0 & \langle \mathbf{D} \rangle & \mathbb{C}
    \end{pmatrix}^\text{T} ,
 
 .. math::
 
-   X =
+   A =
+   \begin{pmatrix}
+   S_1 & 0 & \ldots & 0 \\ 0 & \ddots & \ddots & \vdots \\ \vdots & \ddots
+   & \ddots & 0 \\ 0 & \ldots & 0 & S_n
+   \end{pmatrix}
    \begin{pmatrix}
    1 & -\mathbf{b}_1^\text{T} & \frac{1}{2} (\mathbf{b}_1 \otimes \mathbf{b}_1)
    \text{T} \\
+   \vdots & \vdots & \vdots \\ 
    \vdots & \vdots & \vdots \\
    1 & -\mathbf{b}_n^\text{T} & \frac{1}{2} (\mathbf{b}_n \otimes \mathbf{b}_n)
    ^\text{T}
@@ -70,12 +87,9 @@ where
 
 where $n$ is the number of acquisitions and $\langle\mathbf{D}\rangle$,
 $\mathbb{C}$, $\mathbf{b}_i$, and $(\mathbf{b}_i \otimes \mathbf{b}_i)$ are
-represented by column vectors using Voigt notation. Estimation of the model
-parameters requires that $\text{rank}(\mathbf{X}^\text{T}\mathbf{X}) = 28$.
-This can be achieved by combining acquisitions with b-tensors with different
-shapes, sizes, and orientations.
+represented by column vectors using Voigt notation.
 
-Note that the estimated $\langle\mathbf{D}\rangle$ and $\mathbb{C}$ tensors
+The estimated $\langle\mathbf{D}\rangle$ and $\mathbb{C}$ tensors
 should observe mathematical and physical conditions dictated by the model
 itself: since $\langle\mathbf{D}\rangle$ represents a diffusivity, it should be
 positive semi-definite: $\langle\mathbf{D}\rangle \succeq 0$. Similarly, since
@@ -84,9 +98,18 @@ $\mathbf{C}$, should be positive semi-definite:  $\mathbf{C} \succeq 0$
 
 When not imposed, violations of these conditions can occur in presence of noise
 and/or in sparsely sampled data. This could results in metrics derived from the
-model parameters being unreliable. Both these conditions can be enfoced while
+model parameters to be unreliable. Both these conditions can be enfoced while
 estimating the QTI model's parameters using semidefinite programming as
-shown by Herberthson et al. [2]_.
+shown by Herberthson et al. [2]_. This corresponds to solve the problem
+
+.. math::
+
+    \mathbf{Ax} = \mathbf{y} \\
+
+    \text{subject to:} \\
+
+    \langle\mathbf{D}\rangle \succeq 0 , \\
+    \mathbf{C} \succeq 0
 
 Usage example
 =============
@@ -115,9 +138,9 @@ the parameters estimation with and without applied constraints. This emulates
 performing short data acquisition which can correspond to scanning patients
 in clinical settings.
 
-The full dataset used here was originally published at
+The full dataset used in this tutorial was originally published at
 https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019,
-and described in [3]_.
+and is described in [3]_.
 
 """
 
@@ -174,7 +197,8 @@ gtab_70 = gradient_table(bvals, bvecs, btens=btens)
 """
 Now we can fit the QTI model to the datasets containing 217 measurements, and
 use it as reference to compare the constrained and unconstrained fit on the
-smaller dataset. For time sake, we restrict the fit to a single slice.
+smaller dataset. For time considerations, we restrict the fit to a
+single slice.
 """
 
 mask[:, :, :13] = 0
@@ -226,7 +250,7 @@ qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 Now we can visualize the results obtained with the constrained and
 unconstrained fit on the small dataset, and compare them with the
 "ground truth" provided by fitting the QTI model to the full dataset.
-For example, we can look at the $\mu$FA and FA maps, and their value
+For example, we can look at the FA and $\mu$FA maps, and their value
 distribution in White Matter in comparison to the ground truth.
 """
 
@@ -235,7 +259,7 @@ wm_mask = qtifit_217.ufa[:, :, z] > 0.6
 
 fig, ax = plt.subplots(2, 4, figsize=(12, 9))
 
-background = np.zeros(data_217.shape[0:2])  # Black background for figures
+background = np.zeros(data_217.shape[0:2]) 
 for i in range(2):
     for j in range(3):
         ax[i, j].imshow(background, cmap='gray')
@@ -285,7 +309,13 @@ fig.tight_layout()
 plt.show()
 
 """
-COMMENT ON THE RESULTS!
+The results clearly shows how many of the FA and $\mu$FA values
+obtained with the unconstrained fit falls outside the correct
+theoretical range [0 1], while the constrained fit provides
+more sound results. Note also that even when fitting the rich
+dataset, some values of the parameters fall outside the
+theoretical range, suggesting that the constrained fit should
+be performed even on very densely sampled diffusion data.
 
 For more information about QTI and QTI+, please read the articles by
 Westin et al. [1]_ and Herberthson et al. [2]_.
