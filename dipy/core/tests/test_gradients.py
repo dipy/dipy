@@ -9,14 +9,17 @@ from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_qvals_bvecs,
                                  gradient_table_from_gradient_strength_bvecs,
                                  WATER_GYROMAGNETIC_RATIO,
+                                 orientation_to_string,
                                  reorient_bvecs, generate_bvecs,
                                  check_multi_b, round_bvals, get_bval_indices,
                                  unique_bvals_magnitude,
                                  unique_bvals_tolerance, unique_bvals,
-                                 params_to_btens, btens_to_params)
+                                 params_to_btens, btens_to_params,
+                                 orientation_from_string, reorient_vectors)
 from dipy.core.geometry import vec2vec_rotmat, vector_norm
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.utils.deprecator import ExpiredDeprecationError
+from dipy.testing import clear_and_catch_warnings
 
 
 def test_unique_bvals_deprecated():
@@ -750,3 +753,51 @@ def test_params_to_btens():
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         npt.assert_raises(ValueError, params_to_btens, bval, bdelta, b_eta)
+
+
+def test_orientation_from_to_string():
+    with clear_and_catch_warnings():
+        ras = np.array(((0, 1), (1, 1), (2, 1)))
+        lps = np.array(((0, -1), (1, -1), (2, 1)))
+        asl = np.array(((1, 1), (2, 1), (0, -1)))
+        npt.assert_array_equal(orientation_from_string('ras'), ras)
+        npt.assert_array_equal(orientation_from_string('lps'), lps)
+        npt.assert_array_equal(orientation_from_string('asl'), asl)
+        npt.assert_raises(ValueError, orientation_from_string, 'aasl')
+
+        assert orientation_to_string(ras) == 'ras'
+        assert orientation_to_string(lps) == 'lps'
+        assert orientation_to_string(asl) == 'asl'
+
+
+def test_reorient_vectors():
+    with clear_and_catch_warnings():
+        bvec = np.arange(12).reshape((3, 4))
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'ras'), bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'lpi'), -bvec)
+        result = bvec[[1, 2, 0]]
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'asr'), result)
+        bvec = result
+        result = bvec[[1, 0, 2]] * [[-1], [1], [-1]]
+        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'ial'), result)
+        result = bvec[[1, 0, 2]] * [[-1], [1], [1]]
+        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'iar'), result)
+        npt.assert_raises(ValueError, reorient_vectors, bvec, 'ras', 'ra')
+
+        bvec = np.arange(12).reshape((3, 4))
+        bvec = bvec.T
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'ras', axis=1),
+                               bvec)
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'lpi', axis=1),
+                               -bvec)
+        result = bvec[:, [1, 2, 0]]
+        npt.assert_array_equal(reorient_vectors(bvec, 'ras', 'asr', axis=1),
+                               result)
+        bvec = result
+        result = bvec[:, [1, 0, 2]] * [-1, 1, -1]
+        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'ial', axis=1),
+                               result)
+        result = bvec[:, [1, 0, 2]] * [-1, 1, 1]
+        npt.assert_array_equal(reorient_vectors(bvec, 'asr', 'iar', axis=1),
+                               result)
+    bvec = np.arange(12).reshape((3, 4))
