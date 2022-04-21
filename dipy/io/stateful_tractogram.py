@@ -15,8 +15,8 @@ from dipy.io.utils import (get_reference_info,
                            is_reference_info_valid,
                            is_header_compatible)
 
-logging.basicConfig()
 logger = logging.getLogger('StatefulTractogram')
+logger.setLevel(level=logging.INFO)
 
 
 def set_sft_logger_level(log_level):
