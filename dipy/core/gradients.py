@@ -932,7 +932,7 @@ def _btens_to_params_2d(btens_2d, ztol):
 
 
 def btens_to_params(btens, ztol=1e-10):
-    r"""Compute trace, anisotropy and assymetry parameters from b-tensors
+    r"""Compute trace, anisotropy and assymetry parameters from b-tensors.
 
     Parameters
     ----------
@@ -1003,7 +1003,7 @@ def btens_to_params(btens, ztol=1e-10):
 
 
 def params_to_btens(bval, bdelta, b_eta):
-    """Compute b-tensor from trace, anisotropy and assymetry parameters
+    """Compute b-tensor from trace, anisotropy and assymetry parameters.
 
     Parameters
     ----------
@@ -1061,7 +1061,7 @@ def params_to_btens(bval, bdelta, b_eta):
 
 
 def ornt_mapping(ornt1, ornt2):
-    """Calculates the mapping needing to get from orn1 to orn2"""
+    """Calculate the mapping needing to get from orn1 to orn2."""
 
     mapping = np.empty((len(ornt1), 2), 'int')
     mapping[:, 0] = -1
@@ -1075,7 +1075,7 @@ def ornt_mapping(ornt1, ornt2):
 
 
 def reorient_vectors(input, current_ornt, new_ornt, axis=0):
-    """Changes the orientation of a gradients or other vectors
+    """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
@@ -1128,7 +1128,7 @@ def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
 
 
 def orientation_from_string(string_ornt):
-    """Returns an array representation of an ornt string"""
+    """Return an array representation of an ornt string."""
     orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
                             p=(1, -1), s=(2, 1), i=(2, -1))
     ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
@@ -1140,7 +1140,7 @@ def orientation_from_string(string_ornt):
 
 
 def orientation_to_string(ornt):
-    """Returns a string representation of a 3d ornt"""
+    """Return a string representation of a 3d ornt."""
     if _check_ornt(ornt):
         msg = repr(ornt) + " does not seem to be a valid orientation"
         raise ValueError(msg)

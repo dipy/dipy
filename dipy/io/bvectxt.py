@@ -73,7 +73,7 @@ def ornt_mapping(ornt1, ornt2):
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def reorient_vectors(input, current_ornt, new_ornt, axis=0):
-    """Change the orientation of a gradients or other vectors.
+    """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
