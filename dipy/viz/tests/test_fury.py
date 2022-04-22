@@ -230,7 +230,7 @@ def test_odf_slicer(interactive=False):
     if interactive:
         window.show(scene)
 
-    # Test that the most basic odf_slicer instanciation works
+    # Test that the most basic odf_slicer instantiation works
     odf_actor = actor.odf_slicer(odfs)
     scene.clear()
     scene.add(odf_actor)

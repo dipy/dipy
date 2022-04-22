@@ -169,7 +169,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
 
     Parameters
     ----------
-    streamlines : Steamlines
+    streamlines : Streamlines
         Object of 2D ndarrays of shape[-1]==3
 
     select : int
@@ -616,7 +616,7 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
     threedvec : bool
         Whether the last dimension has length 3. This is a special case in
         which we can use :func:`dipy.core.interpolate.interpolate_vector_3d`
-        for the interploation of 4D volumes without looping over the elements
+        for the interpolation of 4D volumes without looping over the elements
         of the last dimension.
 
     Returns

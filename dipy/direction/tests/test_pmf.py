@@ -110,8 +110,8 @@ def test_boot_pmf():
         warnings.simplefilter("always", category=PendingDeprecationWarning)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                     sh_order=6)
-        # Tests that the first catched warning comes from
-        # the CSD model  constructor
+        # Tests that the first caught warning comes from the CSD model
+        # constructor
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("Number of parameters required " in str(w[0].message))
         # Tests that additional warnings are raised for outdated SH basis

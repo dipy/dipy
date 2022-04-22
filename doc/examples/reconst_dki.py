@@ -10,7 +10,7 @@ biological tissues is non-Gaussian using the kurtosis tensor (KT)
 [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
-interest because they can be used to charaterize tissue microstructural
+interest because they can be used to characterize tissue microstructural
 heterogeneity [Jensen2010]_. Moreover, DKI can be used to: 1) derive concrete
 biophysical parameters, such as the density of axonal fibers and diffusion
 tortuosity [Fierem2011]_ (see :ref:`example_reconst_dki_micro`); and 2)
@@ -42,7 +42,7 @@ and
 
 where $D_{ij}$ are the elements of the second-order DT, and $W_{ijkl}$ the
 elements of the fourth-order KT and $MD$ is the mean diffusivity. As the DT,
-KT has antipodal symmetry and thus only 15 Wijkl elemments are needed to fully
+KT has antipodal symmetry and thus only 15 Wijkl elements are needed to fully
 characterize the KT:
 
 .. math::
@@ -278,7 +278,7 @@ The non-Gaussian behaviour of the diffusion signal is expected to be higher
 when tissue water is confined by multiple compartments. MK is, therefore,
 higher in white matter since it is highly compartmentalized by myelin sheaths.
 These water diffusion compartmentalization is expected to be more pronounced
-prependicularly to white matter fibers and thus the RK map presents higher
+perpendicularly to white matter fibers and thus the RK map presents higher
 amplitudes than the AK map.
 
 It is important to note that kurtosis estimates might presented negative
@@ -289,9 +289,9 @@ to capture non-Gaussian information in radial direction due to it's low
 diffusion decays, radial kurtosis estimates (and consequently the mean
 kurtosis estimates) might have low robustness and tendency to exhibit negative
 values [NetoHe2012]_;
-2) Gibbs artefacts - MRI images might be corrupted by signal oscilation
+2) Gibbs artefacts - MRI images might be corrupted by signal oscillation
 artefact between tissue's edges if an inadequate number of high frequencies of
-the k-space is sampled. These oscilations might have different signs on
+the k-space is sampled. These oscillations might have different signs on
 images acquired with different diffusion-weighted and inducing negative biases
 in kurtosis parametric maps [Perron2015]_, [NetoHe2018]_.
 

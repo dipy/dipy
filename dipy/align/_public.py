@@ -313,7 +313,7 @@ def resample(moving, static, moving_affine=None, static_affine=None,
         will over-ride the affine that is in the nifti.
 
     between_affine: 4x4 array, optional
-        If an additional affine is needed betweeen the two spaces.
+        If an additional affine is needed between the two spaces.
         Default: identity (no additional registration).
 
     Returns
@@ -442,7 +442,7 @@ def affine_registration(moving, static,
     -----
     Performs a gradual registration between the two inputs, using a pipeline
     that gradually approximates the final registration. If the final default
-    step (`affine`) is ommitted, the resulting affine may not have all 12
+    step (`affine`) is omitted, the resulting affine may not have all 12
     degrees of freedom adjusted.
 
     """

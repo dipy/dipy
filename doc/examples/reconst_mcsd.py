@@ -271,11 +271,11 @@ response_mcsd = multi_shell_fiber_response(sh_order=8,
                                            csf_rf=response_csf)
 
 """
-As mentionned, we can also build the model directly and it will call
+As mentioned, we can also build the model directly and it will call
 ``multi_shell_fiber_response`` internally. Important note here, the function
 ``unique_bvals_tolerance`` is used to keep only unique bvalues from the gtab
 given to the model, as input for ``multi_shell_fiber_response``. This may
-introduce differences between the calculted response of each method, depending
+introduce differences between the calculated response of each method, depending
 on the bvalues given to ``multi_shell_fiber_response`` externally.
 """
 

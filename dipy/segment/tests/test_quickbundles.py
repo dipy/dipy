@@ -41,7 +41,7 @@ def test_quickbundles_wrong_metric():
                   threshold=10., metric="WrongMetric")
 
 
-def test_quickbundles_shape_uncompatibility():
+def test_quickbundles_shape_incompatibility():
     # QuickBundles' old default metric (AveragePointwiseEuclideanMetric,
     #  aka MDF) requires that all streamlines have the same number of points.
     metric = dipysmetric.AveragePointwiseEuclideanMetric()

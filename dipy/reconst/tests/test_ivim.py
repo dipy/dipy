@@ -131,7 +131,7 @@ def test_single_voxel_fit():
 
     In the two stage fitting routine, initially we fit the signal
     values for bvals less than the specified split_b using the
-    TensorModel and get an intial guess for f and D. Then, using
+    TensorModel and get an initial guess for f and D. Then, using
     these parameters we fit the entire data for all bvalues.
     """
     est_signal = ivim_prediction(ivim_fit_single.model_params, gtab)
@@ -347,7 +347,7 @@ def test_noisy_fit():
         for l_w in w:
             assert_(issubclass(l_w.category, UserWarning))
         assert_("" in str(w[0].message))
-        assert_("x0 obtained from linear fitting is not feasibile" in
+        assert_("x0 obtained from linear fitting is not feasible" in
                 str(w[0].message))
         assert_("x0 is unfeasible" in str(w[1].message))
         assert_("Bounds are violated for leastsq fitting" in str(w[2].message))
@@ -451,7 +451,7 @@ def test_leastsq_failing():
         assert_greater_equal(len(w), 3)
         u_warn = [l_w for l_w in w if issubclass(l_w.category, UserWarning)]
         assert_greater_equal(len(u_warn), 3)
-        message = ["x0 obtained from linear fitting is not feasibile",
+        message = ["x0 obtained from linear fitting is not feasible",
                    "x0 is unfeasible",
                    "Bounds are violated for leastsq fitting"]
         assert_greater_equal(len([lw for lw in u_warn for m in message

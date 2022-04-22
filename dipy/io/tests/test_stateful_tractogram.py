@@ -888,11 +888,11 @@ def test_invalid_streamlines_epsilon():
 
 def test_trk_coloring():
     assert_(random_streamline_color(),
-            msg='Streamlines color assignement failed')
+            msg='Streamlines color assignment failed')
     assert_(random_point_gray(),
-            msg='Streamlines points gray assignement failed')
+            msg='Streamlines points gray assignment failed')
     assert_(random_point_color(),
-            msg='Streamlines points color assignement failed')
+            msg='Streamlines points color assignment failed')
 
 
 def test_create_from_sft():

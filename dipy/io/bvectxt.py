@@ -10,7 +10,7 @@ from dipy.utils.deprecator import deprecate_with_version
                         since='1.4', until='1.5')
 def read_bvec_file(filename, atol=.001):
     """
-    Read gradient table information from a pair of files with extentions
+    Read gradient table information from a pair of files with extensions
     .bvec and .bval. The bval file should have one row of values
     representing the bvalues of each volume in the dwi data set. The bvec
     file should have three rows, where the rows are the x, y, and z
@@ -22,8 +22,8 @@ def read_bvec_file(filename, atol=.001):
     filename :
         The path to the either the bvec or bval file
     atol : float, optional
-        The tolorance used to check all the gradient directions are
-        normalized. Defult is .001
+        The tolerance used to check all the gradient directions are
+        normalized. Default is .001
 
     """
 
@@ -47,7 +47,7 @@ def read_bvec_file(filename, atol=.001):
     if b_values.ndim != 1:
         raise IOError('bval file should have one row')
     if b_values.shape[0] != grad_table.shape[1]:
-        raise IOError('the gradient file and b value fileshould'
+        raise IOError('the gradient file and b value file should'
                       'have the same number of columns')
 
     grad_norms = np.sqrt((grad_table**2).sum(0))

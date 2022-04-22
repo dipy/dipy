@@ -21,7 +21,7 @@ fibers. In contrary, the kurtosis from powder-average signals has the advantage
 of not depending on the fiber distribution functions [NetoHe2018]_,
 [NetoHe2019]_.
 
-In short, in this tutoral we show how to characterize non-Gaussian diffusion
+In short, in this tutorial we show how to characterize non-Gaussian diffusion
 in a more precise way and decoupled from confounding effects of tissue
 dispersion and crossing.
 
@@ -207,7 +207,7 @@ fig1.savefig('MSDKI_simulations.png')
 
 The results of the above figure, demonstrate that both MSD and MSK are
 sensitive to axonal volume fraction (i.e. a microstructure property) but are
-independent to the intersectiong angle of the two crossing fibers (i.e.
+independent to the intersection angle of the two crossing fibers (i.e.
 independent to properties regarding fiber orientation). In contrast, DKI
 measures seem to be independent to both axonal volume fraction and
 intersection angle.
@@ -323,7 +323,7 @@ are similar to the contrast of MD and MSK maps (lower panels); however, in the
 upper part we insure that direct contributions of fiber dispersion were
 removed. The upper panels also reveal that MSDKI measures are let sensitive
 to noise artefacts than standard DKI measures (as pointed by [NetoHe2018]_),
-particularly one can appriciate that MSK maps always present positive values
+particularly one can observe that MSK maps always present positive values
 in brain white matter regions, while implausible negative kurtosis values are
 present in the MK maps in the same regions.
 
@@ -374,7 +374,7 @@ fig3.savefig('MSDKI_SMT2_invivo.png')
    :align: center
 
    SMT2 model quantities extracted from MSDKI. From left to right, the figure
-   shows the axonal volume fraction (f), the intrisic diffusivity (di), and
+   shows the axonal volume fraction (f), the intrinsic diffusivity (di), and
    the microscopic anisotropy of the SMT 2-compartmental model [NetoHe2019]_.
 
 The similar contrast of SMT2 f-parameter maps in comparison to MSK (first panel

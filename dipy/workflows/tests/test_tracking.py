@@ -18,7 +18,7 @@ from dipy.workflows.tracking import (LocalFiberTrackingPAMFlow,
                                      PFTrackingPAMFlow)
 
 
-def test_particle_filtering_traking_workflows():
+def test_particle_filtering_tracking_workflows():
     with TemporaryDirectory() as out_dir:
         dwi_path, bval_path, bvec_path = get_fnames('small_64D')
         volume, affine = load_nifti(dwi_path)

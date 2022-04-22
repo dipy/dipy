@@ -5,7 +5,7 @@ from dipy.utils.multiproc import determine_num_processes
 from numpy.testing import assert_equal, assert_raises
 
 
-def test_determine_num_processs():
+def test_determine_num_processes():
     # Test that the correct number of effective num_processes is returned
 
     # 0 should raise an error

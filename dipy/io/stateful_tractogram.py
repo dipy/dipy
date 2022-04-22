@@ -180,8 +180,8 @@ class StatefulTractogram(object):
         ----------
         streamlines : list or ArraySequence
             Streamlines of the tractogram
-        sft : StatefulTractgram,
-            The other StatefulTractgram to copy the space_attribute AND
+        sft : StatefulTractogram,
+            The other StatefulTractogram to copy the space_attribute AND
             state from.
         data_per_point : dict, optional
             Dictionary in which each key has X items, each items has Y_i items
@@ -344,7 +344,7 @@ class StatefulTractogram(object):
 
         Parameters
         ----------
-        streamlines : list or ArraySequence (list and deepcopy recommanded)
+        streamlines : list or ArraySequence (list and deepcopy recommended)
             Streamlines of the tractogram
         """
         if isinstance(streamlines, Streamlines):

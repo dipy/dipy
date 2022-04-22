@@ -58,7 +58,7 @@ parts of the brain in which there is known to be only one fascicle (e.g. in
 corpus callosum).
 
 Sparsity constraints on the fiber ODF ($\beta$) are set through the Elastic Net
-algorihtm [Zou2005]_.
+algorithm [Zou2005]_.
 
 Elastic Net optimizes the following cost function:
 

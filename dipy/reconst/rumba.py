@@ -537,7 +537,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     This gives the likelihood under a Rician distribution when $n$ is set to 1.
 
     By taking the negative log of this with respect to $\textbf{f}$ and setting
-    the derivative to 0, the $\textbf{f}$ maxmizing likelihood is found to be:
+    the derivative to 0, the $\textbf{f}$ maximizing likelihood is found to be:
 
     $\textbf{f} = \textbf{f} \circ \frac{\textbf{H}^T\left[\textbf{S}\circ
     \frac{I_n(\textbf{S}\circ \textbf{Hf}/\sigma^2)} {I_{n-1}(\textbf{S}

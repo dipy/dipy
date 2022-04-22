@@ -87,7 +87,7 @@ project the corpus callosum mask on the FA image.:
 """
 
 subplot_titles = ["Subject1 Test", "Subject1 Retest",
-                  "Subject2 Test", "Subject2 Tetest"]
+                  "Subject2 Test", "Subject2 Retest"]
 fig = plt.figure()
 plt.subplots(nrows=2, ncols=2)
 for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
@@ -144,7 +144,7 @@ rtops = []
 rtaps = []
 rtpps = []
 for i, (data_, mask_, gtab_) in enumerate(zip(data, cc_masks, gtabs)):
-    # select the corpus callsoum voxel for every dataset
+    # select the corpus callosum voxel for every dataset
     cc_voxels = data_[mask_ == 1]
     # initialize the qt-dMRI model.
     # recommended basis orders are radial_order=6 and time_order=2.
