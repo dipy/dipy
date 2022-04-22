@@ -2,6 +2,7 @@
 from os.path import splitext
 import numpy as np
 
+from dipy.core import gradients
 from dipy.utils.deprecator import deprecate_with_version
 
 
@@ -64,24 +65,15 @@ def read_bvec_file(filename, atol=.001):
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def ornt_mapping(ornt1, ornt2):
-    """Calculates the mapping needing to get from orn1 to orn2"""
-
-    mapping = np.empty((len(ornt1), 2), 'int')
-    mapping[:, 0] = -1
-    A = ornt1[:, 0].argsort()
-    B = ornt2[:, 0].argsort()
-    mapping[B, 0] = A
-    assert (mapping[:, 0] != -1).all()
-    sign = ornt2[:, 1] * ornt1[mapping[:, 0], 1]
-    mapping[:, 1] = sign
-    return mapping
+    """Calculate the mapping needing to get from orn1 to orn2."""
+    return gradients.ornt_mapping(ornt1=ornt1, ornt2=ornt2)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def reorient_vectors(input, current_ornt, new_ornt, axis=0):
-    """Changes the orientation of a gradients or other vectors
+    """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
@@ -93,107 +85,37 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     P: Posterior
     I: Inferior
 
-    Examples
-    --------
-    >>> gtab = np.array([[1, 1, 1], [1, 2, 3]])
-    >>> reorient_vectors(gtab, 'ras', 'asr', axis=1)
-    array([[1, 1, 1],
-           [2, 3, 1]])
-    >>> reorient_vectors(gtab, 'ras', 'lps', axis=1)
-    array([[-1, -1,  1],
-           [-1, -2,  3]])
-    >>> bvec = gtab.T
-    >>> reorient_vectors(bvec, 'ras', 'lps', axis=0)
-    array([[-1, -1],
-           [-1, -2],
-           [ 1,  3]])
-    >>> reorient_vectors(bvec, 'ras', 'lsp')
-    array([[-1, -1],
-           [ 1,  3],
-           [-1, -2]])
     """
-    if isinstance(current_ornt, str):
-        current_ornt = orientation_from_string(current_ornt)
-    if isinstance(new_ornt, str):
-        new_ornt = orientation_from_string(new_ornt)
-
-    n = input.shape[axis]
-    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
-        raise ValueError("orientations do not match")
-
-    input = np.asarray(input)
-    mapping = ornt_mapping(current_ornt, new_ornt)
-    output = input.take(mapping[:, 0], axis)
-    out_view = np.rollaxis(output, axis, output.ndim)
-    out_view *= mapping[:, 1]
-    return output
+    return gradients.reorient_vectors(input=input, current_ornt=current_ornt,
+                                      new_ornt=new_ornt, axis=axis)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
-    if isinstance(current_ornt, str):
-        current_ornt = orientation_from_string(current_ornt)
-    if isinstance(new_ornt, str):
-        new_ornt = orientation_from_string(new_ornt)
-
-    n = input.shape[axis]
-    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
-        raise ValueError("orientations do not match")
-
-    mapping = ornt_mapping(current_ornt, new_ornt)
-    order = [slice(None)] * input.ndim
-    order[axis] = mapping[:, 0]
-    shape = [1] * input.ndim
-    shape[axis] = -1
-    sign = mapping[:, 1]
-    sign.shape = shape
-    output = input[order]
-    output *= sign
-    return output
+    return gradients.reorient_on_axis(input=input, current_ornt=current_ornt,
+                                      new_ornt=new_ornt, axis=axis)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def orientation_from_string(string_ornt):
-    """Returns an array representation of an ornt string"""
-    orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
-                            p=(1, -1), s=(2, 1), i=(2, -1))
-    ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
-    ornt = np.array(ornt)
-    if _check_ornt(ornt):
-        msg = string_ornt + " does not seem to be a valid orientation string"
-        raise ValueError(msg)
-    return ornt
+    """Return an array representation of an ornt string."""
+    return gradients.orientation_from_string(string_ornt=string_ornt)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def orientation_to_string(ornt):
-    """Returns a string representation of a 3d ornt"""
-    if _check_ornt(ornt):
-        msg = repr(ornt) + " does not seem to be a valid orientation"
-        raise ValueError(msg)
-    orientation_dict = {(0, 1): 'r', (0, -1): 'l', (1, 1): 'a',
-                        (1, -1): 'p', (2, 1): 's', (2, -1): 'i'}
-    ornt_string = ''
-    for ii in ornt:
-        ornt_string += orientation_dict[(ii[0], ii[1])]
-    return ornt_string
+    """Return a string representation of a 3d ornt."""
+    return gradients.orientation_to_string(ornt=ornt)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
 def _check_ornt(ornt):
-    uniq = np.unique(ornt[:, 0])
-    if len(uniq) != len(ornt):
-        print(len(uniq))
-        return True
-    uniq = np.unique(ornt[:, 1])
-    if tuple(uniq) not in set([(-1, 1), (-1,), (1,)]):
-        print(tuple(uniq))
-        return True
+    return gradients._check_ornt(ornt=ornt)
