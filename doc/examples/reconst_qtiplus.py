@@ -1,4 +1,4 @@
-"""
+r'''
 =====================================================================
 Applying positivity constraints to Q-space Trajectory Imaging (QTI+)
 =====================================================================
@@ -13,7 +13,7 @@ performing the constrained and unconstrained QTI reconstruction in DIPY.
 
 Theory
 ======
- 
+
 In QTI, the tissue microstructure is represented by a diffusion tensor
 distribution (DTD). Here, DTD is denoted by $\mathbf{D}$ and the voxel-level
 diffusion tensor from DTI by $\langle\mathbf{D}\rangle$, where
@@ -39,17 +39,17 @@ as
 where $S_0$ is the signal without diffusion-weighting, $\mathbf{b}$ is the
 b-tensor used in the acquisition, and $:$ denotes a tensor inner product.
 
-The model parameters $S_0$, $\langle\mathbf{D}\rangle$, and $\mathbb{C}$ can be
-estimated by solving the following weighted problem, where the
+The model parameters $S_0$, $\langle \mathbf{D}\rangle$, and $\mathbb{C}$
+can be estimated by solving the following weighted problem, where the
 heteroskedasticity introduced by the taking the logarithm of the signal is
 accounted for:
 
 .. math::
 
-    \underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
-\sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
-\mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
-\mathbb{C} \right|^2,
+   \underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
+   \sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
+   \mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
+   \mathbb{C} \right|^2 ,
 
 the above can be written as a weighted least squares problem
 
@@ -79,7 +79,7 @@ where
    \begin{pmatrix}
    1 & -\mathbf{b}_1^\text{T} & \frac{1}{2} (\mathbf{b}_1 \otimes \mathbf{b}_1)
    \text{T} \\
-   \vdots & \vdots & \vdots \\ 
+   \vdots & \vdots & \vdots \\
    \vdots & \vdots & \vdots \\
    1 & -\mathbf{b}_n^\text{T} & \frac{1}{2} (\mathbf{b}_n \otimes \mathbf{b}_n)
    ^\text{T}
@@ -99,7 +99,7 @@ $\mathbf{C}$, should be positive semi-definite:  $\mathbf{C} \succeq 0$
 When not imposed, violations of these conditions can occur in presence of noise
 and/or in sparsely sampled data. This could results in metrics derived from the
 model parameters to be unreliable. Both these conditions can be enfoced while
-estimating the QTI model's parameters using semidefinite programming as
+estimating the QTI model's parameters using semidefinite programming (SDP) as
 shown by Herberthson et al. [2]_. This corresponds to solve the problem
 
 .. math::
@@ -111,15 +111,30 @@ shown by Herberthson et al. [2]_. This corresponds to solve the problem
     \langle\mathbf{D}\rangle \succeq 0 , \\
     \mathbf{C} \succeq 0
 
-Usage example
+Installation
 =============
-In DIPY, the constrained estimation routine is avaiable as part of the
-`dipy.reconst.qti` module. Here we show how metrics derived from the
+
+The constrained problem stated above can be solved using the cvxpy library.
+Instructions on how to install cvxpy
+can be found at https://www.cvxpy.org/install/. A free SDP solver
+called 'SCS' is installed with cvxpy, and can be readily used for
+performing the fit. However, it is recommended to install an
+alternative solver, MOSEK, for improved speed and performance.
+MOSEK requires a licence which is free for academic use.
+Instructions on how to install Mosek and setting up a licence can be found
+at https://docs.mosek.com/latest/install/installation.html
+
+Usage example
+==============
+
+Here we show how metrics derived from the
 QTI model parameters compares when the fit is performed with and without
 applying the positivity constraints.
 
+In DIPY, the constrained estimation routine is avaiable as part of the
+`dipy.reconst.qti` module.
 First we import all the necessary modules to perform the QTI fit:
-"""
+'''
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -220,16 +235,9 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 Now we repeat the fit but with the constraints applied.
 To perform the constrained fit, we select the 'SDPdc' fit method when creating
 the QtiModel object.
-Note: this fit method is slower compared to the defaults unconstrained,
-and requires the cvxpy library to be installed. It is also recommended to
-install the solver 'MOSEK' as opposed to using the free solver (SCS) installed
-with cvxpy.
-Instructions on how to install cvxpy can be found at
-https://www.cvxpy.org/install/
-Instructions on how to install Mosek and setting up a licence can be found
-at https://docs.mosek.com/latest/install/installation.html
+Note: this fit method is slower compared to the defaults unconstrained.
 
-Once mosek is installed, it can be specified as the solver to be used
+If mosek is installed, it can be specified as the solver to be used
 as follows:
 
 qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
@@ -246,7 +254,7 @@ qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc',
                                     cvxpy_solver='MOSEK')
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
-"""
+r"""
 Now we can visualize the results obtained with the constrained and
 unconstrained fit on the small dataset, and compare them with the
 "ground truth" provided by fitting the QTI model to the full dataset.
@@ -259,7 +267,7 @@ wm_mask = qtifit_217.ufa[:, :, z] > 0.6
 
 fig, ax = plt.subplots(2, 4, figsize=(12, 9))
 
-background = np.zeros(data_217.shape[0:2]) 
+background = np.zeros(data_217.shape[0:2])
 for i in range(2):
     for j in range(3):
         ax[i, j].imshow(background, cmap='gray')
@@ -277,7 +285,7 @@ ax[0, 2].imshow(np.rot90(qtifit_constrained.fa[:, :, z]), cmap='gray', vmin=0,
 ax[0, 2].set_title('QTI+')
 ax[0, 3].hist((qtifit_unconstrained.fa[wm_mask, z]).flatten(),
               density=True, bins=40, label='QTI')
-ax[0, 3].hist((qtifit_constrained.fa[wm_mask, z]).flatten(), 
+ax[0, 3].hist((qtifit_constrained.fa[wm_mask, z]).flatten(),
               density=True, bins=40, label='QTI+', alpha=0.7)
 ax[0, 3].hist((qtifit_217.fa[wm_mask, z]).flatten(), histtype='stepfilled',
               density=True, bins=40, label='GT', ec="k", alpha=1,
@@ -294,9 +302,9 @@ ax[1, 1].set_title('QTI')
 ax[1, 2].imshow(np.rot90(qtifit_constrained.ufa[:, :, z]), cmap='gray', vmin=0,
                 vmax=1)
 ax[1, 2].set_title('QTI+')
-ax[1, 3].hist((qtifit_unconstrained.ufa[wm_mask, z]).flatten(), 
+ax[1, 3].hist((qtifit_unconstrained.ufa[wm_mask, z]).flatten(),
               density=True, bins=40, label='QTI', alpha=1)
-ax[1, 3].hist((qtifit_constrained.ufa[wm_mask, z]).flatten(), 
+ax[1, 3].hist((qtifit_constrained.ufa[wm_mask, z]).flatten(),
               density=True, bins=40, label='QTI+', alpha=0.7)
 ax[1, 3].hist((qtifit_217.ufa[wm_mask, z]).flatten(), histtype='stepfilled',
               density=True, bins=40, label='GT', ec="k", alpha=1,
@@ -308,7 +316,7 @@ ax[1, 3].set_xlim([0.4, 1.5])
 fig.tight_layout()
 plt.show()
 
-"""
+r"""
 The results clearly shows how many of the FA and $\mu$FA values
 obtained with the unconstrained fit falls outside the correct
 theoretical range [0 1], while the constrained fit provides
