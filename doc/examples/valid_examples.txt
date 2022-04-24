@@ -24,6 +24,7 @@
  reconst_shore.py
  reconst_shore_metrics.py
  reconst_qti.py
+ reconst_qtiplus.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py

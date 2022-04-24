@@ -20,18 +20,23 @@ cp, have_cvxpy, _ = optional_package("cvxpy")
 # XXX Eventually to be replaced with `reconst.dti.lower_triangular`
 def from_3x3_to_6x1(T):
     """Convert symmetric 3 x 3 matrices into 6 x 1 vectors.
+
     Parameters
     ----------
     T : numpy.ndarray
         An array of size (..., 3, 3).
+
     Returns
     -------
     V : numpy.ndarray
         Converted vectors of size (..., 6, 1).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
+
             \mathbf{V} = \begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
             \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
@@ -53,18 +58,23 @@ def from_3x3_to_6x1(T):
 
 def from_6x1_to_3x3(V):
     """Convert 6 x 1 vectors into symmetric 3 x 3 matrices.
+
     Parameters
     ----------
     V : numpy.ndarray
         An array of size (..., 6, 1).
+
     Returns
     -------
     T : numpy.ndarray
         Converted matrices of size (..., 3, 3).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
+
             \mathbf{V} = \begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
             \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
@@ -82,18 +92,23 @@ def from_6x1_to_3x3(V):
 
 def from_6x6_to_21x1(T):
     """Convert symmetric 6 x 6 matrices into 21 x 1 vectors.
+
     Parameters
     ----------
     T : numpy.ndarray
         An array of size (..., 6, 6).
+
     Returns
     -------
     V : numpy.ndarray
         Converted vectors of size (..., 21, 1).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
+
             \begin{matrix}
             \mathbf{V} = & \big[
             T_{11} & T_{22} & T_{33} \\
@@ -123,18 +138,23 @@ def from_6x6_to_21x1(T):
 
 def from_21x1_to_6x6(V):
     """Convert 21 x 1 vectors into symmetric 6 x 6 matrices.
+
     Parameters
     ----------
     V : numpy.ndarray
         An array of size (..., 21, 1).
+
     Returns
     -------
     T : numpy.ndarray
         Converted matrices of size (..., 6, 6).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
+
             \begin{matrix}
             \mathbf{V} = & \big[
             T_{11} & T_{22} & T_{33} \\
@@ -167,21 +187,25 @@ def from_21x1_to_6x6(V):
 
 
 def cvxpy_1x6_to_3x3(V):
-    """Convert a 1 x 6 vector into a symmetric 3 x 3 matrix and
-    returns a cvxpy block matrix object.
+    """Convert a 1 x 6 vector into a symmetric 3 x 3 matrix.
+
     Parameters
     ----------
     V : numpy.ndarray
         An array of size (1, 6).
+
     Returns
     -------
     T : cvxpy.bmat
         Converted matrix of size (3, 3).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
-            \mathbf{t} = \begin{bmatrix}
+
+            \mathbf{V} = \begin{bmatrix}
             T_{11} & T_{22} & T_{33} &
             \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12}
             \end{bmatrix}^T
@@ -198,22 +222,26 @@ def cvxpy_1x6_to_3x3(V):
 
 
 def cvxpy_1x21_to_6x6(V):
-    """Convert 1 x 21 vector into a symmetric 6 x 6 matrix and 
-    return it as a cvxpy block matrix object
+    """Convert 1 x 21 vector into a symmetric 6 x 6 matrix.
+
     Parameters
     ----------
     V : numpy.ndarray
         An array of size (1, 21).
+
     Returns
     -------
     T : cvxpy.bmat
         Converted matrices of size (6, 6).
+
     Notes
     -----
     The conversion of a matrix into a vector is defined as
+
         .. math::
+
             \begin{matrix}
-            \mathbf{t} = & \big[
+            \mathbf{V} = & \big[
             T_{11} & T_{22} & T_{33} \\
             & \sqrt{2} T_{23} & \sqrt{2} T_{13} & \sqrt{2} T_{12} \\
             & \sqrt{2} T_{14} & \sqrt{2} T_{15} & \sqrt{2} T_{16} \\
@@ -229,7 +257,7 @@ def cvxpy_1x21_to_6x6(V):
     f = 1 / np.sqrt(2)
 
     T = cp.bmat([[V[0, 0], f * V[0, 5], f * V[0, 4], f * V[0, 6],
-                f * V[0, 7], f * V[0, 8]], 
+                f * V[0, 7], f * V[0, 8]],
                 [f * V[0, 5], V[0, 1],
                  f * V[0, 3], f * V[0, 9], f * V[0, 10], f * V[0, 11]],
                 [f * V[0, 4], f * V[0, 3], V[0, 2], f * V[0, 12],
@@ -253,22 +281,28 @@ E_tsym = E_bulk + .4 * E_shear
 
 def dtd_covariance(DTD):
     """Calculate covariance of a diffusion tensor distribution (DTD).
+
     Parameters
     ----------
     DTD : numpy.ndarray
         Diffusion tensor distribution of shape (number of tensors, 3, 3) or
         (number of tensors, 6, 1).
+
     Returns
     -------
     C : numpy.ndarray
         Covariance tensor of shape (6, 6).
+
     Notes
     -----
     The covariance tensor is calculated according to the following equation and
     converted into a rank-2 tensor [1]_:
+
         .. math::
+
             \mathbb{C} = \langle \mathbf{D} \otimes \mathbf{D} \rangle -
             \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
+
     References
     ----------
     .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
@@ -290,6 +324,7 @@ def dtd_covariance(DTD):
 
 def qti_signal(gtab, D, C, S0=1):
     """Generate signals using the covariance tensor signal representation.
+
     Parameters
     ----------
     gtab : dipy.core.gradients.GradientTable
@@ -301,14 +336,18 @@ def qti_signal(gtab, D, C, S0=1):
     S0 : numpy.ndarray, optional
         Signal magnitudes without diffusion-weighting. Must be a single number
         or an array of same shape as D and C without the last two dimensions.
+
     Returns
     -------
     S : numpy.ndarray
         Simulated signals.
+
     Notes
     -----
     The signal is generated according to
+
         .. math::
+
             S = S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle
             + \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right)
     """
@@ -357,18 +396,23 @@ def qti_signal(gtab, D, C, S0=1):
 
 def design_matrix(btens):
     """Calculate the design matrix from the b-tensors.
+
     Parameters
     ----------
     btens : numpy.ndarray
         An array of b-tensors of shape (number of acquisitions, 3, 3).
+
     Returns
     -------
     X : numpy.ndarray
         Design matrix.
+
     Notes
     -----
     The design matrix is generated according to
+
         .. math::
+
             X = \begin{pmatrix} 1 & -\mathbf{b}_1^T & \frac{1}{2}(\mathbf{b}_1
             \otimes\mathbf{b}_1)^T \\ \vdots & \vdots & \vdots \\ 1 &
             -\mathbf{b}_n^T & \frac{1}{2}(\mathbf{b}_n\otimes\mathbf{b}_n)^T
@@ -385,6 +429,7 @@ def design_matrix(btens):
 
 def _ols_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using ordinary least squares.
+
     Parameters
     ----------
     data : numpy.ndarray
@@ -396,6 +441,7 @@ def _ols_fit(data, mask, X, step=int(1e4)):
         Design matrix of shape (number of acquisitions, 28).
     step : int, optional
         The number of voxels over which the fit is calculated simultaneously.
+
     Returns
     -------
     params : numpy.ndarray
@@ -425,6 +471,7 @@ def _ols_fit(data, mask, X, step=int(1e4)):
 def _wls_fit(data, mask, X, step=int(1e4)):
     """Estimate the model parameters using weighted least squares with the
     signal magnitudes as weights.
+
     Parameters
     ----------
     data : numpy.ndarray
@@ -435,6 +482,7 @@ def _wls_fit(data, mask, X, step=int(1e4)):
         Design matrix of shape (number of acquisitions, 28).
     step : int, optional
         The number of voxels over which the fit is calculated simultaneously.
+
     Returns
     -------
     params : numpy.ndarray
@@ -480,6 +528,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         Design matrix of shape (number of acquisitions, 28).
     cvxpy_solver: string, required
         The name of the SDP solver to be used. Default: 'SCS'
+
     Returns
     -------
     params : numpy.ndarray
@@ -488,7 +537,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
         diffusion-weighting, elements 1-6 are the estimated diffusion tensor
         elements in Voigt notation, and elements 7-27 are the estimated
         covariance tensor elements in Voigt notation.
-        
+
     References
     ----------
     .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
@@ -499,23 +548,23 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     if not have_cvxpy:
         raise ValueError(
                     'CVXPY package needed to enforce constraints')
-    
+
     if cvxpy_solver not in cp.installed_solvers():
         raise ValueError(
                     'The selected solver is not available')
 
     params = np.zeros((np.product(mask.shape), 28)) * np.nan
     data_masked = data[mask]
-    size,nvols = data_masked.shape
+    size, nvols = data_masked.shape
     scale = np.maximum(np.max(data_masked, axis=1, keepdims=True), 1)
     data_masked = data_masked / scale
     data_masked[data_masked < 0] = 0
     log_data = np.log(data_masked)
     params_masked = np.zeros((size, 28))
 
-    x = cp.Variable((28,1))
-    y = cp.Parameter((nvols,1))
-    A = cp.Parameter((nvols,28))
+    x = cp.Variable((28, 1))
+    y = cp.Parameter((nvols, 1))
+    A = cp.Parameter((nvols, 28))
     dc = cvxpy_1x6_to_3x3(x[1:7])
     cc = cvxpy_1x21_to_6x6(x[7:])
     constraints = [dc >> 0, cc >> 0]
@@ -541,7 +590,8 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
                 unconstrained.solve(solver=cvxpy_solver)
                 m = x.value
             except Exception:
-                msg = 'Unconstrained optimization failed, returning zero array.'
+                msg = 'Unconstrained optimization failed,'
+                msg += ' returning zero array.'
                 warn(msg)
                 m = np.zeros(x.shape)
 
@@ -552,10 +602,12 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     params = params.reshape((mask.shape + (28,)))
     return params
 
+
 class QtiModel(ReconstModel):
 
     def __init__(self, gtab, fit_method='WLS', cvxpy_solver='SCS'):
         """Covariance tensor model of q-space trajectory imaging [1]_.
+
         Parameters
         ----------
         gtab : dipy.core.gradients.GradientTable
@@ -571,14 +623,15 @@ class QtiModel(ReconstModel):
                     :func:`qti._sdpdc_fit`
         cvxpy_solver: str, optionals
             solver for the SDP formulation. default: 'SCS'
+
         References
         ----------
         .. [1] Westin, Carl-Fredrik, et al. "Q-space trajectory imaging for
            multidimensional diffusion MRI of the human brain." Neuroimage 135
            (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
-        .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
-            Özarslan E., "Q-space trajectory imaging with positivity constraints
-            (QTI+)" in Neuroimage, Volume 238, 2021.
+        .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin CF.,
+            Özarslan E., "Q-space trajectory imaging with positivity
+            constraints (QTI+)" in Neuroimage, Volume 238, 2021.
         """
         ReconstModel.__init__(self, gtab)
 
@@ -608,12 +661,14 @@ class QtiModel(ReconstModel):
 
     def fit(self, data, mask=None):
         """Fit QTI to data.
+
         Parameters
         ----------
         data : numpy.ndarray
             Array of shape (..., number of acquisitions).
         mask : numpy.ndarray, optional
             Array with the same shape as the data array of a single acquisition.
+
         Returns
         -------
         qtifit : dipy.reconst.qti.QtiFit
@@ -633,6 +688,7 @@ class QtiModel(ReconstModel):
 
     def predict(self, params):
         """Generate signals from this model class instance and given parameters.
+
         Parameters
         ----------
         params : numpy.ndarray
@@ -641,6 +697,7 @@ class QtiModel(ReconstModel):
             elements 1-6 are the diffusion tensor elements in Voigt notation,
             and elements 7-27 are the covariance tensor elements in Voigt
             notation.
+
         Returns
         -------
         S : numpy.ndarray
@@ -657,6 +714,7 @@ class QtiFit(object):
 
     def __init__(self, params):
         """Fitted QTI model.
+
         Parameters
         ----------
         params : numpy.ndarray
@@ -670,10 +728,12 @@ class QtiFit(object):
 
     def predict(self, gtab):
         """Generate signals from this model fit and a given gradient table.
+
         Parameters
         ----------
         gtab : dipy.core.gradients.GradientTable
             Gradient table with b-tensors.
+
         Returns
         -------
         S : numpy.ndarray
@@ -691,6 +751,7 @@ class QtiFit(object):
     @auto_attr
     def S0_hat(self):
         """Estimated signal without diffusion-weighting.
+
         Returns
         -------
         S0 : numpy.ndarray
@@ -701,13 +762,17 @@ class QtiFit(object):
     @auto_attr
     def md(self):
         """Mean diffusivity.
+
         Returns
         -------
         md : numpy.ndarray
+
         Notes
         -----
         Mean diffusivity is calculated as
+
             .. math::
+
                 \text{MD} = \langle \mathbf{D} \rangle : \mathbf{E}_\text{iso}
         """
         md = np.matmul(
@@ -719,13 +784,17 @@ class QtiFit(object):
     @auto_attr
     def v_md(self):
         """Variance of microscopic mean diffusivities.
+
         Returns
         -------
         v_md : numpy.ndarray
+
         Notes
         -----
         Variance of microscopic mean diffusivities is calculated as
+
             .. math::
+
                 V_\text{MD} = \mathbb{C} : \mathbb{E}_\text{bulk}
         """
         v_md = np.matmul(
@@ -737,13 +806,17 @@ class QtiFit(object):
     @auto_attr
     def v_shear(self):
         """Shear variance.
+
         Returns
         -------
         v_shear : numpy.ndarray
+
         Notes
         -----
         Shear variance is calculated as
+
             .. math::
+
                 V_\text{shear} = \mathbb{C} : \mathbb{E}_\text{shear}
         """
         v_shear = np.matmul(
@@ -755,13 +828,17 @@ class QtiFit(object):
     @auto_attr
     def v_iso(self):
         """Total isotropic variance.
+
         Returns
         -------
         v_iso : numpy.ndarray
+
         Notes
         -----
         Total isotropic variance is calculated as
+
             .. math::
+
                 V_\text{iso} = \mathbb{C} : \mathbb{E}_\text{iso}
         """
         v_iso = np.matmul(
@@ -773,6 +850,7 @@ class QtiFit(object):
     @auto_attr
     def d_sq(self):
         """Diffusion tensor's outer product with itself.
+
         Returns
         -------
         d_sq : numpy.ndarray
@@ -787,14 +865,18 @@ class QtiFit(object):
     def mean_d_sq(self):
         """Average of microscopic diffusion tensors' outer products with
         themselves.
+
         Returns
         -------
         mean_d_sq : numpy.ndarray
+
         Notes
         -----
         Average of microscopic diffusion tensors' outer products with themselves
         is calculated as
+
             .. math::
+
                 \langle \mathbf{D} \otimes \mathbf{D} \rangle = \mathbb{C} +
                 \langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle
         """
@@ -805,13 +887,17 @@ class QtiFit(object):
     @auto_attr
     def c_md(self):
         """Normalized variance of mean diffusivities.
+
         Returns
         -------
         c_md : numpy.ndarray
+
         Notes
         -----
         Normalized variance of microscopic mean diffusivities is calculated as
+
             .. math::
+
                 C_\text{MD} = \frac{\mathbb{C} : \mathbb{E}_\text{bulk}}
                 {\langle \mathbf{D} \otimes \mathbf{D} \rangle :
                 \mathbb{E}_\text{bulk}}
@@ -824,13 +910,17 @@ class QtiFit(object):
     @auto_attr
     def c_mu(self):
         """Normalized microscopic anisotropy.
+
         Returns
         -------
         c_mu : numpy.ndarray
+
         Notes
         -----
         Normalized microscopic anisotropy is calculated as
+
             .. math::
+
                 C_\mu = \frac{3}{2} \frac{\langle \mathbf{D} \otimes \mathbf{D}
                 \rangle : \mathbb{E}_\text{shear}}{\langle \mathbf{D} \otimes
                 \mathbf{D} \rangle : \mathbb{E}_\text{iso}}
@@ -845,13 +935,17 @@ class QtiFit(object):
     @auto_attr
     def ufa(self):
         """Microscopic fractional anisotropy.
+
         Returns
         -------
         ufa : numpy.ndarray
+
         Notes
         -----
         Microscopic fractional anisotropy is calculated as
+
             .. math::
+
                 \mu\text{FA} = \sqrt{C_\mu}
         """
         ufa = np.sqrt(self.c_mu)
@@ -860,13 +954,17 @@ class QtiFit(object):
     @auto_attr
     def c_m(self):
         """Normalized macroscopic anisotropy.
+
         Returns
         -------
         c_m : numpy.ndarray
+
         Notes
         -----
         Normalized macroscopic anisotropy is calculated as
+
             .. math::
+
                 C_\text{M} = \frac{3}{2} \frac{\langle \mathbf{D} \rangle
                 \otimes \langle \mathbf{D} \rangle : \mathbb{E}_\text{shear}}
                 {\langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle :
@@ -882,13 +980,17 @@ class QtiFit(object):
     @auto_attr
     def fa(self):
         """Fractional anisotropy.
+
         Returns
         -------
         fa : numpy.ndarray
+
         Notes
         -----
         Fractional anisotropy is calculated as
+
             .. math::
+
                 \text{FA} = \sqrt{C_\text{M}}
         """
         fa = np.sqrt(self.c_m)
@@ -897,13 +999,17 @@ class QtiFit(object):
     @auto_attr
     def c_c(self):
         """Microscopic orientation coherence.
+
         Returns
         -------
         c_c : numpy.ndarray
+
         Notes
         -----
         Microscopic orientation coherence is calculated as
+
             .. math::
+
                 C_c = \frac{C_\text{M}}{C_\mu}
         """
         c_c = self.c_m / self.c_mu
@@ -912,13 +1018,17 @@ class QtiFit(object):
     @auto_attr
     def mk(self):
         """Mean kurtosis.
+
         Returns
         -------
         mk : numpy.ndarray
+
         Notes
         -----
         Mean kurtosis is calculated as
+
             .. math::
+
                 \text{MK} = K_\text{bulk} + K_\text{shear}
         """
         mk = self.k_bulk + self.k_shear
@@ -927,13 +1037,17 @@ class QtiFit(object):
     @auto_attr
     def k_bulk(self):
         """Bulk kurtosis.
+
         Returns
         -------
         k_bulk : numpy.ndarray
+
         Notes
         -----
         Bulk kurtosis is calculated as
+
             .. math::
+
                 K_\text{bulk} = 3 \frac{\mathbb{C} : \mathbb{E}_\text{bulk}}
                 {\langle \mathbf{D} \rangle \otimes \langle \mathbf{D} \rangle :
                 \mathbb{E}_\text{bulk}}
@@ -948,13 +1062,17 @@ class QtiFit(object):
     @auto_attr
     def k_shear(self):
         """Shear kurtosis.
+
         Returns
         -------
         k_shear : numpy.ndarray
+
         Notes
         -----
         Shear kurtosis is calculated as
+
             .. math::
+
                 K_\text{shear} = \frac{6}{5} \frac{\mathbb{C} :
                 \mathbb{E}_\text{shear}}{\langle \mathbf{D} \rangle \otimes
                 \langle \mathbf{D} \rangle : \mathbb{E}_\text{bulk}}
@@ -969,13 +1087,17 @@ class QtiFit(object):
     @auto_attr
     def k_mu(self):
         """Microscopic kurtosis.
+
         Returns
         -------
         k_mu : numpy.ndarray
+
         Notes
         -----
         Microscopic kurtosis is calculated as
+
             .. math::
+
                 K_\mu = \frac{6}{5} \frac{\langle \mathbf{D} \otimes \mathbf{D}
                 \rangle : \mathbb{E}_\text{shear}}{\langle \mathbf{D} \rangle
                 \otimes \langle \mathbf{D} \rangle : \mathbb{E}_\text{bulk}}
