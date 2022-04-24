@@ -1,4 +1,4 @@
-r'''
+"""
 =====================================================================
 Applying positivity constraints to Q-space Trajectory Imaging (QTI+)
 =====================================================================
@@ -46,7 +46,7 @@ accounted for:
 
 .. math::
 
-   \underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
+   \\underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
    \sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
    \mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
    \mathbb{C} \right|^2 ,
@@ -134,7 +134,7 @@ applying the positivity constraints.
 In DIPY, the constrained estimation routine is avaiable as part of the
 `dipy.reconst.qti` module.
 First we import all the necessary modules to perform the QTI fit:
-'''
+"""
 
 from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
@@ -159,10 +159,10 @@ and is described in [3]_.
 
 """
 
-'''
+"""
 First, let's load the complete dataset and create the gradient table.
 We mark these two with the '_217' suffix.
-'''
+"""
 fdata_1, fdata_2, fbvals, fbvecs, fmask = get_fnames('DiB_217_lte_pte_ste')
 data_1, _ = load_nifti(fdata_1)
 data_2, _ = load_nifti(fdata_2)
@@ -184,10 +184,10 @@ btens = np.array(['LTE' for i in range(13)] +
                  ['STE' for i in range(10)])
 gtab_217 = gradient_table(bvals, bvecs, btens=btens)
 
-'''
+"""
 Second, let's load the downsampled dataset and create the gradient table.
 We mark these two with the '_70' suffix.
-'''
+"""
 
 fdata, fbvals, fbvecs, _ = get_fnames('DiB_70_lte_pte_ste')
 data, _ = load_nifti(fdata)
@@ -254,7 +254,7 @@ qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc',
                                     cvxpy_solver='MOSEK')
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
-r"""
+"""
 Now we can visualize the results obtained with the constrained and
 unconstrained fit on the small dataset, and compare them with the
 "ground truth" provided by fitting the QTI model to the full dataset.
@@ -316,7 +316,7 @@ ax[1, 3].set_xlim([0.4, 1.5])
 fig.tight_layout()
 plt.show()
 
-r"""
+"""
 The results clearly shows how many of the FA and $\mu$FA values
 obtained with the unconstrained fit falls outside the correct
 theoretical range [0 1], while the constrained fit provides
@@ -341,5 +341,5 @@ References
    tensor-valued diffusion MRI data by free waveform encoding in healthy
    brain, water, oil and liquid crystals. Data in Brief (2019),
    DOI: https://doi.org/10.1016/j.dib.2019.104208
-
+.. include:: ../links_names.inc
 """

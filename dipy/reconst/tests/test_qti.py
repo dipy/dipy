@@ -12,6 +12,7 @@ from dipy.reconst.dti import fractional_anisotropy
 from dipy.utils.optpkg import optional_package
 cp, have_cvxpy, _ = optional_package("cvxpy")
 
+
 def test_from_3x3_to_6x1():
     """Test conversion to Voigt notation."""
     V = np.arange(1, 7)[:, np.newaxis].astype(float)
@@ -75,8 +76,8 @@ def test_cvxpy_1x6_to_3x3():
     if have_cvxpy:
         V = np.arange(1, 7)[:, np.newaxis].astype(float)
         T = np.array(([1, 4.24264069, 3.53553391],
-                    [4.24264069, 2, 2.82842712],
-                    [3.53553391, 2.82842712, 3]))
+                     [4.24264069, 2, 2.82842712],
+                     [3.53553391, 2.82842712, 3]))
         npt.assert_array_almost_equal(qti.cvxpy_1x6_to_3x3(V).value, T)
         npt.assert_array_almost_equal(
             qti.cvxpy_1x6_to_3x3(qti.from_3x3_to_6x1(T)).value, T)
@@ -93,7 +94,8 @@ def test_cvxpy_1x21_to_6x6():
             [3.53553391, 2.82842712, 3, 9.19238816, 9.89949494, 10.60660172],
             [4.94974747, 7.07106781, 9.19238816, 16, 13.43502884, 14.8492424],
             [5.65685425, 7.77817459, 9.89949494, 13.43502884, 17, 14.14213562],
-            [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18]))
+            [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18])
+            )
         npt.assert_array_almost_equal(qti.cvxpy_1x21_to_6x6(V).value, T)
         npt.assert_array_almost_equal(
             qti.cvxpy_1x21_to_6x6(qti.from_6x6_to_21x1(T)).value, T)
@@ -303,7 +305,7 @@ def test_ls_sdp_fits():
         npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
 
         if have_cvxpy:
-            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, 'SCS', 
+            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X, 'SCS',
                                     step=1), params, decimal=2)
 
 
@@ -386,7 +388,8 @@ def test_qti_fit():
             for mask in [None, np.ones(data.shape[0:-1])]:
                 qtifit = qtimodel.fit(data, mask)
                 npt.assert_raises(ValueError, qtifit.predict,
-                                  gradient_table(np.zeros(3), np.zeros((3, 3))))
+                                  gradient_table(np.zeros(3), np.zeros((3, 3)))
+                                  )
                 npt.assert_almost_equal(qtifit.predict(gtab), data, decimal=2)
                 npt.assert_almost_equal(qtifit.S0_hat, S0, decimal=2)
                 npt.assert_almost_equal(qtifit.md, md, decimal=2)
@@ -414,7 +417,8 @@ def test_qti_fit():
             for mask in [None, np.ones(data.shape[0:-1])]:
                 qtifit = qtimodel.fit(data, mask)
                 npt.assert_raises(ValueError, qtifit.predict,
-                                  gradient_table(np.zeros(3), np.zeros((3, 3))))
+                                  gradient_table(np.zeros(3), np.zeros((3, 3)))
+                                  )
                 npt.assert_almost_equal(qtifit.predict(gtab), data)
                 npt.assert_almost_equal(qtifit.S0_hat, S0)
                 npt.assert_almost_equal(qtifit.md, md)
