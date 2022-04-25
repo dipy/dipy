@@ -262,59 +262,11 @@ For example, we can look at the FA and $\mu$FA maps, and their value
 distribution in White Matter in comparison to the ground truth.
 """
 
+from dipy.viz.plotting import compare_qti_maps
+
 z = 13
 wm_mask = qtifit_217.ufa[:, :, z] > 0.6
-
-fig, ax = plt.subplots(2, 4, figsize=(12, 9))
-
-background = np.zeros(data_217.shape[0:2])
-for i in range(2):
-    for j in range(3):
-        ax[i, j].imshow(background, cmap='gray')
-        ax[i, j].set_xticks([])
-        ax[i, j].set_yticks([])
-
-ax[0, 0].imshow(np.rot90(qtifit_217.fa[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[0, 0].set_title('GROUND TRUTH')
-ax[0, 0].set_ylabel('FA', fontsize=20)
-ax[0, 1].imshow(np.rot90(qtifit_unconstrained.fa[:, :, z]),
-                cmap='gray', vmin=0, vmax=1)
-ax[0, 1].set_title('QTI')
-ax[0, 2].imshow(np.rot90(qtifit_constrained.fa[:, :, z]), cmap='gray', vmin=0,
-                vmax=1)
-ax[0, 2].set_title('QTI+')
-ax[0, 3].hist((qtifit_unconstrained.fa[wm_mask, z]).flatten(),
-              density=True, bins=40, label='QTI')
-ax[0, 3].hist((qtifit_constrained.fa[wm_mask, z]).flatten(),
-              density=True, bins=40, label='QTI+', alpha=0.7)
-ax[0, 3].hist((qtifit_217.fa[wm_mask, z]).flatten(), histtype='stepfilled',
-              density=True, bins=40, label='GT', ec="k", alpha=1,
-              linewidth=1.5, fc="None")
-ax[0, 3].legend()
-ax[0, 3].set_title('VALUE DISTRIBUTION')
-
-ax[1, 0].imshow(np.rot90(qtifit_217.ufa[:, :, z]), cmap='gray', vmin=0, vmax=1)
-ax[1, 0].set_title('GROUND TRUTH')
-ax[1, 0].set_ylabel('μFA', fontsize=20)
-ax[1, 1].imshow(np.rot90(qtifit_unconstrained.ufa[:, :, z]),
-                cmap='gray', vmin=0, vmax=1)
-ax[1, 1].set_title('QTI')
-ax[1, 2].imshow(np.rot90(qtifit_constrained.ufa[:, :, z]), cmap='gray', vmin=0,
-                vmax=1)
-ax[1, 2].set_title('QTI+')
-ax[1, 3].hist((qtifit_unconstrained.ufa[wm_mask, z]).flatten(),
-              density=True, bins=40, label='QTI', alpha=1)
-ax[1, 3].hist((qtifit_constrained.ufa[wm_mask, z]).flatten(),
-              density=True, bins=40, label='QTI+', alpha=0.7)
-ax[1, 3].hist((qtifit_217.ufa[wm_mask, z]).flatten(), histtype='stepfilled',
-              density=True, bins=40, label='GT', ec="k", alpha=1,
-              linewidth=1.5, fc="None")
-ax[1, 3].legend()
-ax[1, 3].set_title('VALUE DISTRIBUTION')
-ax[1, 3].set_xlim([0.4, 1.5])
-
-fig.tight_layout()
-plt.show()
+compare_qti_maps(qtifit_217, qtifit_unconstrained, qtifit_constrained, wm_mask)
 
 """
 The results clearly shows how many of the FA and $\mu$FA values
