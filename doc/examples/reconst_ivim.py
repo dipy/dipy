@@ -128,7 +128,7 @@ are passed while creating the ``IvimModel``. If you are using Scipy 0.17, you
 can also set bounds by setting ``bounds=([0., 0., 0.,0.], [np.inf, 1., 1., 1.]))``
 while initializing the ``IvimModel``.
 
-For brevity, we focus on a small section of the slice as selected aboove,
+For brevity, we focus on a small section of the slice as selected above,
 to fit the IVIM model. First, we instantiate the IvimModel object.
 """
 

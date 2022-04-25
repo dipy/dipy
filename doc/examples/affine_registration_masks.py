@@ -101,7 +101,7 @@ affreg = AffineRegistration(metric=metric,
 
 """
 Now let's register these volumes together without any masking. For the purposes
-of this example, we will not provide an inital transformation based on centre
+of this example, we will not provide an initial transformation based on centre
 of mass, but this would work fine with masks.
 
 Note that use of masks is not currently implemented for sparse sampling.
@@ -188,7 +188,7 @@ squares in the corners of both images, but in slightly different locations.
 
 We will make masks that cover these regions but with an extra border of pixels.
 This is because the masks need transforming and resampling during optimization,
-and we want to make sure that we are defintely covering the troublesome
+and we want to make sure that we are definitely covering the troublesome
 features.
 """
 

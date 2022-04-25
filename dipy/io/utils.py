@@ -27,7 +27,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
     Returns
     -------
     image : Nifti1Image
-        5d, extra dimensions addes before the last. Has symmetric matrix intent
+        5d, extra dimensions added before the last. Has symmetric matrix intent
         code
 
     """
@@ -45,7 +45,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
 
 def make5d(input):
     """reshapes the input to have 5 dimensions, adds extra dimensions just
-    before the last dimession
+    before the last dimension
     """
     input = np.asarray(input)
     if input.ndim > 5:
@@ -158,7 +158,7 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     Parameters
     ----------
     affine: ndarray (4,4)
-        Tranformation of VOX to RASMM
+        Transformation of VOX to RASMM
     dimensions: ndarray (3,), int16
         Volume shape for each axis
     voxel_sizes:  ndarray (3,), float32
@@ -235,7 +235,7 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
+        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'

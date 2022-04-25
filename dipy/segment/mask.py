@@ -112,9 +112,9 @@ def crop(vol, mins, maxs):
     vol : ndarray
         Volume to crop.
     mins : array
-        Array containg minimum index of each dimension.
+        Array containing minimum index of each dimension.
     maxs : array
-        Array containg maximum index of each dimension.
+        Array containing maximum index of each dimension.
 
     Returns
     -------

@@ -4,7 +4,7 @@ Base-classes for reconstruction models and reconstruction fits.
 
 All the models in the reconst module follow the same template: a Model object
 is used to represent the abstract properties of the model, that are independent
-of the specifics of the data . These properties are reused whenver fitting a
+of the specifics of the data . These properties are reused whenever fitting a
 particular set of data (different voxels, for example).
 
 

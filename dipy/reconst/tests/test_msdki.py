@@ -208,7 +208,7 @@ def test_msdki_statistics():
 
 
 def test_kurtosis_to_smt2_convertion():
-    # 1. Check convertion of smt2 awf to kurtosis
+    # 1. Check conversion of smt2 awf to kurtosis
     # When awf = 0 kurtosis was to be 0
     awf0 = 0
     kexp0 = 0
@@ -221,7 +221,7 @@ def test_kurtosis_to_smt2_convertion():
     kest1 = msk_from_awf(awf1)
     assert_almost_equal(kest1, kexp1)
 
-    # Check the invertion of msk_from_awf
+    # Check the inversion of msk_from_awf
     awf_test_array = np.linspace(0, 1, 100)
     k_exp = msk_from_awf(awf_test_array)
     awf_from_k = awf_from_msk(k_exp)
@@ -232,7 +232,7 @@ def test_kurtosis_to_smt2_convertion():
     # than 0 and never higher than 2.4. Since SMT2 assumptions are commonly not
     # met kurtosis can be out of this expected range. So, if MSK is lower than
     # 0, f is set to 0 (avoiding negative f). On the other hand, if MSK is
-    # higher than 2.4, f is set to the maxumum value of 1.
+    # higher than 2.4, f is set to the maximum value of 1.
     assert_array_almost_equal(awf_from_msk(np.array([-0.1, 2.5])),
                               np.array([0., 1.]))
 
@@ -241,7 +241,7 @@ def test_kurtosis_to_smt2_convertion():
 
 
 def test_smt2_metrics():
-    # Just checking if parameters can be retrived from MSDKI's fit class obj
+    # Just checking if parameters can be retrieved from MSDKI's fit class obj
 
     # Based on the multi-voxel simulations above (computes gt for SMT2 params)
     AWFgt = awf_from_msk(MKgt_multi)
@@ -267,8 +267,8 @@ def test_smt2_metrics():
 def test_smt2_specific_cases():
     mdkiM = msdki.MeanDiffusionKurtosisModel(gtab_3s)
 
-    # Check smt2 is sepecific cases with knowm g.t:
-    # 1) Intrisic diffusion is equal MSD for single Gaussian isotropic
+    # Check smt2 is specific cases with known g.t:
+    # 1) Intrinsic diffusion is equal MSD for single Gaussian isotropic
     #     diffusion (i.e. awf=0)
     sig_gaussian = single_tensor(gtab_3s, evals=np.array([2e-3, 2e-3, 2e-3]))
     mdkiF = mdkiM.fit(sig_gaussian)
@@ -277,7 +277,7 @@ def test_smt2_specific_cases():
     assert_almost_equal(mdkiF.smt2f, 0)
     assert_almost_equal(mdkiF.smt2di, 2.0e-3)
 
-    # 2) Intrisic diffusion is equal to MSD/3 for single powder-averaged stick
+    # 2) Intrinsic diffusion is equal to MSD/3 for single powder-averaged stick
     #    compartment
     Da = 2.0e-3
     mevals = np.zeros((64, 3))

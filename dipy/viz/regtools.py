@@ -302,7 +302,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname=None,
 
 
 def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
-    r"""Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial
+    r"""Plot 3 slices from the given volume: 1 sagittal, 1 coronal and 1 axial
 
     Creates a figure showing the axial, coronal and sagittal slices at the
     requested positions of the given volume. The requested slices are specified
@@ -368,7 +368,7 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
         overlaid. If None, the slice along the specified axis is used
     slice_type : int (optional)
         the type of slice to be extracted:
-        0=sagital, 1=coronal (default), 2=axial.
+        0=sagittal, 1=coronal (default), 2=axial.
     ltitle : string (optional)
         the string to be written as the title of the left image. By default,
         no title is displayed.
