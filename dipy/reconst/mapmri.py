@@ -85,7 +85,7 @@ class MapmriModel(ReconstModel, Cache):
                  laplacian_regularization=True,
                  laplacian_weighting=0.2,
                  positivity_constraint=False,
-                 constraint_type='local',
+                 global_constraints=False,
                  pos_grid=15,
                  pos_radius='adaptive',
                  anisotropic_scaling=True,
@@ -142,12 +142,12 @@ class MapmriModel(ReconstModel, Cache):
             optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
-        constraint_type : string,
-            If set to 'local', positivity is enforced on a grid determined by
-            pos_grid and pos_radius. If set to 'global', positivity is enforced
+        global_constraints : bool, optional
+            If set to False, positivity is enforced on a grid determined by
+            pos_grid and pos_radius. If set to True, positivity is enforced
             everywhere using the constraints of [6]_. Global constraints are
-            currently available supported for standard MAP-MRI, i.e., when
-            anisotropic_scaling=True, and for radial_order <= 10.
+            currently supported for anisotropic_scaling=True and for
+            radial_order <= 10. Default: False.
         pos_grid : integer,
             The number of points in the grid that is used in the local
             positivity constraint.
@@ -275,7 +275,7 @@ class MapmriModel(ReconstModel, Cache):
                     msg += " was expected."
                     raise ValueError(msg)
             self.cvxpy_solver = cvxpy_solver
-            if constraint_type == 'global':
+            if global_constraints:
                 if radial_order > 10:
                     self.sdp_constraints = hermite_sdp_constraints(10)
                     msg = 'Global constraints are currently supported for'
@@ -283,7 +283,7 @@ class MapmriModel(ReconstModel, Cache):
                     warn(msg)
                 else:
                     self.sdp_constraints = hermite_sdp_constraints(radial_order)
-            elif constraint_type == 'local':
+            elif not global_constraints:
                 msg = "pos_radius must be 'adaptive' or a positive float"
                 if isinstance(pos_radius, str):
                     if pos_radius != 'adaptive':
@@ -301,10 +301,7 @@ class MapmriModel(ReconstModel, Cache):
                     raise ValueError(msg)
                 self.pos_grid = pos_grid
                 self.pos_radius = pos_radius
-            else:
-                msg = "constraint_type must be 'local' or 'global'."
-                raise ValueError(msg)
-            self.constraint_type = constraint_type
+            self.global_constraints = global_constraints
 
         self.anisotropic_scaling = anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
@@ -427,7 +424,7 @@ class MapmriModel(ReconstModel, Cache):
                     lopt * cvxpy.quad_form(c, laplacian_matrix)
                 )
 
-            if self.constraint_type == 'global':
+            if self.global_constraints:
                 if self.anisotropic_scaling:
                     A = self.sdp_constraints
                     m = M.shape[1]
