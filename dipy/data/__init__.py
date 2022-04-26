@@ -337,6 +337,9 @@ def hermite_sdp_constraints(radial_order):
 
     """
 
+    if (not isinstance(radial_order, int) or
+            radial_order < 0 or radial_order > 10 or radial_order % 2):
+        raise ValueError("radial_order must be a non-negative, even integer.")
     mf = 'hermite_constraint_' + str(radial_order) + '.csv'
     coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
     pos = coo[:, :3].astype(int)
