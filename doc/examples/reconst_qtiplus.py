@@ -33,6 +33,7 @@ Using the cumulant expansion, the diffusion-weighted signal can be approximated
 as
 
 .. math::
+
    S \approx S_0 \exp \left(- \mathbf{b} : \langle \mathbf{D} \rangle +
    \frac{1}{2}(\mathbf{b} \otimes \mathbf{b}) : \mathbb{C} \right) ,
 
@@ -46,7 +47,7 @@ accounted for:
 
 .. math::
 
-   \\underset{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}{\mathrm{argmin}}
+   {\mathrm{argmin}}_{S_0,\langle \mathbf{D} \rangle, \mathbb{C}}
    \sum_{k=1}^n S_k^2 \left| \ln(S_k)-\ln(S_0)+\mathbf{b}^{(k)} \langle
    \mathbf{D} \rangle -\frac{1}{2} (\mathbf{b} \otimes \mathbf{b})^{(k)}
    \mathbb{C} \right|^2 ,
@@ -136,12 +137,7 @@ In DIPY, the constrained estimation routine is avaiable as part of the
 First we import all the necessary modules to perform the QTI fit:
 """
 
-from dipy.core.gradients import gradient_table
-from dipy.data import get_fnames
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti
-import matplotlib.pyplot as plt
-import numpy as np
+from dipy.data import read_DiB_217_lte_pte_ste, read_DiB_70_lte_pte_ste
 import dipy.reconst.qti as qti
 
 """
@@ -162,52 +158,21 @@ and is described in [3]_.
 """
 First, let's load the complete dataset and create the gradient table.
 We mark these two with the '_217' suffix.
+
 """
-fdata_1, fdata_2, fbvals, fbvecs, fmask = get_fnames('DiB_217_lte_pte_ste')
-data_1, _ = load_nifti(fdata_1)
-data_2, _ = load_nifti(fdata_2)
-data_217 = np.concatenate((data_1, data_2), axis=3)
-mask, _ = load_nifti(fmask)
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-btens = np.array(['LTE' for i in range(13)] +
-                 ['LTE' for i in range(10)] +
-                 ['PTE' for i in range(10)] +
-                 ['STE' for i in range(10)] +
-                 ['LTE' for i in range(10)] +
-                 ['PTE' for i in range(10)] +
-                 ['STE' for i in range(10)] +
-                 ['LTE' for i in range(16)] +
-                 ['PTE' for i in range(16)] +
-                 ['STE' for i in range(10)] +
-                 ['LTE' for i in range(46)] +
-                 ['PTE' for i in range(46)] +
-                 ['STE' for i in range(10)])
-gtab_217 = gradient_table(bvals, bvecs, btens=btens)
+
+data_img, mask_img, gtab_217 = read_DiB_217_lte_pte_ste()
+data_217 = data_img.get_fdata()
+mask = mask_img.get_fdata()
 
 """
 Second, let's load the downsampled dataset and create the gradient table.
 We mark these two with the '_70' suffix.
+
 """
 
-fdata, fbvals, fbvecs, _ = get_fnames('DiB_70_lte_pte_ste')
-data, _ = load_nifti(fdata)
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-data_70, _ = load_nifti(fdata)
-bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-btens = np.array(['LTE' for i in range(1)] +
-                 ['LTE' for i in range(4)] +
-                 ['PTE' for i in range(3)] +
-                 ['STE' for i in range(3)] +
-                 ['STE' for i in range(4)] +
-                 ['LTE' for i in range(8)] +
-                 ['PTE' for i in range(5)] +
-                 ['STE' for i in range(5)] +
-                 ['LTE' for i in range(21)] +
-                 ['PTE' for i in range(10)] +
-                 ['STE' for i in range(6)]
-                 )
-gtab_70 = gradient_table(bvals, bvecs, btens=btens)
-
+data_img, _, gtab_70 = read_DiB_70_lte_pte_ste()
+data_70 = data_img.get_fdata()
 
 """
 Now we can fit the QTI model to the datasets containing 217 measurements, and
@@ -289,6 +254,7 @@ References
 .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
    Özarslan E., "Q-space trajectory imaging with positivity constraints
    (QTI+)" in Neuroimage, Volume 238, 2021.
+   https://doi.org/10.1016/j.neuroimage.2021.118198
 .. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
    tensor-valued diffusion MRI data by free waveform encoding in healthy
    brain, water, oil and liquid crystals. Data in Brief (2019),
