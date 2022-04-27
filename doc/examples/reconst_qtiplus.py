@@ -215,8 +215,7 @@ performed in the next line will take approximately 15 minutes when using SCS,
 and 2 minute when using Mosek!
 """
 
-qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc',
-                                    cvxpy_solver='MOSEK')
+qtimodel_constrained = qti.QtiModel(gtab_70, fit_method='SDPdc')
 qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 
 """
@@ -252,12 +251,13 @@ References
    multidimensional diffusion MRI of the human brain." Neuroimage 135
    (2016): 345-362. https://doi.org/10.1016/j.neuroimage.2016.02.039.
 .. [2] Herberthson M., Boito D., Dela Haije T., Feragen A., Westin C.-F.,
-   Özarslan E., "Q-space trajectory imaging with positivity constraints
+   Ozarslan E., "Q-space trajectory imaging with positivity constraints
    (QTI+)" in Neuroimage, Volume 238, 2021.
    https://doi.org/10.1016/j.neuroimage.2021.118198
 .. [3] F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and spherical
    tensor-valued diffusion MRI data by free waveform encoding in healthy
    brain, water, oil and liquid crystals. Data in Brief (2019),
    DOI: https://doi.org/10.1016/j.dib.2019.104208
+
 .. include:: ../links_names.inc
 """
