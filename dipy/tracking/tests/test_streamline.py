@@ -518,6 +518,26 @@ def test_unlist_relist_streamlines():
         assert_array_equal(streamlines[i], streamlines2[i])
 
 
+def test_transform_streamlines_dtype_in_place():
+    identity = np.eye(4)
+    streamlines = Streamlines([streamline])
+    streamlines._data = streamlines._data.astype(np.float16)
+    dtype = streamlines._data.dtype
+
+    transform_streamlines(streamlines, identity, in_place=True)
+    assert_equal(dtype, streamlines._data.dtype)
+
+
+def test_transform_streamlines_dtype():
+    identity = np.eye(4)
+    streamlines = Streamlines([streamline])
+    streamlines._data = streamlines._data.astype(np.float16)
+    dtype = streamlines._data.dtype
+
+    streamlines = transform_streamlines(streamlines, identity, in_place=False)
+    assert_equal(dtype, streamlines._data.dtype)
+
+
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
