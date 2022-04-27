@@ -156,10 +156,12 @@ def transform_streamlines(streamlines, mat, in_place=False):
     if isinstance(streamlines, Streamlines):
         old_dtype = streamlines._data.dtype
         if in_place:
-            streamlines._data = apply_affine(mat, streamlines._data).astype(old_dtype)
+            streamlines._data = apply_affine(
+                mat, streamlines._data).astype(old_dtype)
             return streamlines
         new_streamlines = streamlines.copy()
-        new_streamlines._data = apply_affine(mat, new_streamlines._data).astype(old_dtype)
+        new_streamlines._data = apply_affine(
+            mat, new_streamlines._data).astype(old_dtype)
         return new_streamlines
     # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]
