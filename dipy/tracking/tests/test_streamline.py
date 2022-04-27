@@ -522,20 +522,24 @@ def test_transform_streamlines_dtype_in_place():
     identity = np.eye(4)
     streamlines = Streamlines([streamline])
     streamlines._data = streamlines._data.astype(np.float16)
-    dtype = streamlines._data.dtype
+    data_dtype = streamlines._data.dtype
+    offsets_dtype = streamlines._offsets.dtype
 
     transform_streamlines(streamlines, identity, in_place=True)
-    assert_equal(dtype, streamlines._data.dtype)
+    assert_equal(data_dtype, streamlines._data.dtype)
+    assert_equal(offsets_dtype, streamlines._offsets.dtype)
 
 
 def test_transform_streamlines_dtype():
     identity = np.eye(4)
     streamlines = Streamlines([streamline])
     streamlines._data = streamlines._data.astype(np.float16)
-    dtype = streamlines._data.dtype
+    data_dtype = streamlines._data.dtype
+    offsets_dtype = streamlines._offsets.dtype
 
     streamlines = transform_streamlines(streamlines, identity, in_place=False)
-    assert_equal(dtype, streamlines._data.dtype)
+    assert_equal(data_dtype, streamlines._data.dtype)
+    assert_equal(offsets_dtype, streamlines._offsets.dtype)
 
 
 def test_deform_streamlines():
