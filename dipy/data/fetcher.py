@@ -532,8 +532,7 @@ fetch_DiB_70_lte_pte_ste = _make_fetcher(
         'spherical tensor-valued diffusion MRI data by free waveform ' +
         'encoding in healthy brain, water, oil and liquid crystals. ' +
         'Data in Brief (2019),' +
-        'DOI: https://doi.org/10.1016/j.dib.2019.104208' +
-        'if using this data.',
+        'DOI: https://doi.org/10.1016/j.dib.2019.104208',
     md5_list=['11f2e0d53e19061654eb3cdfc8fe9827',
               '15021885b4967437c8cf441c09045c25',
               '1e6b867182da249f81aa9abd50e8b9f7',
@@ -561,8 +560,7 @@ fetch_DiB_217_lte_pte_ste = _make_fetcher(
         'spherical tensor-valued diffusion MRI data by free waveform ' +
         'encoding in healthy brain, water, oil and liquid crystals. ' +
         'Data in Brief (2019),' +
-        'DOI: https://doi.org/10.1016/j.dib.2019.104208' +
-        'if using this data.',
+        'DOI: https://doi.org/10.1016/j.dib.2019.104208',
     md5_list=['424e9cf75b20bc1f7ae1acde26b26da0',
               '8e70d14fb8f08065a7a0c4d3033179c6',
               '1f657215a475676ce333299038df3a39',
