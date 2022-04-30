@@ -3,7 +3,6 @@ plotting functions
 """
 
 import numpy as np
-from warnings import warn
 from dipy.utils.optpkg import optional_package
 plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
@@ -46,12 +45,18 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
     """
 
     if not have_plt:
+<<<<<<< HEAD
         raise ValueError('matplotlib package needed for visualization.')
 
     fontsize = 'large'
     xscale, yscale = 12, 10
 
     m = len(fits)
+=======
+        raise ValueError(
+                    'matplotlib package needed for visualization')
+
+>>>>>>> 70c7f98d9 (put matplotlib as optional)
     n = len(maps)
 
     if transpose is None:
