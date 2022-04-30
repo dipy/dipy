@@ -5,7 +5,8 @@ plotting functions
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+from dipy.utils.optpkg import optional_package
+plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 def compare_qti_maps(gt, fit1, fit2, mask,
@@ -39,6 +40,10 @@ def compare_qti_maps(gt, fit1, fit2, mask,
     slice : int, optional
         Axial brain slice to be visualized
     """
+
+    if not have_plt:
+        raise ValueError(
+                    'matplotlib package needed for visualization')
 
     n = len(maps)
     fig, ax = plt.subplots(n, 4, figsize=(12, 9))
