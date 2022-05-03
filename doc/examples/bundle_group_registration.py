@@ -34,7 +34,6 @@ We start by importing and creating the necessary functions:
 
 import os
 import zipfile
-from time import sleep
 from dipy.align.streamlinear import groupwise_slr
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
@@ -59,7 +58,6 @@ def show_bundles(bundles, colors, show=True, fname=None):
     if show:
         window.show(scene)
     if fname is not None:
-        sleep(1)
         window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
