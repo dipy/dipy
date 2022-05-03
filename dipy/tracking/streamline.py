@@ -154,11 +154,17 @@ def transform_streamlines(streamlines, mat, in_place=False):
     """
     # using new Streamlines API
     if isinstance(streamlines, Streamlines):
+        old_data_dtype = streamlines._data.dtype
+        old_offsets_dtype = streamlines._offsets.dtype
         if in_place:
-            streamlines._data = apply_affine(mat, streamlines._data)
+            streamlines._data = apply_affine(
+                mat, streamlines._data).astype(old_data_dtype)
             return streamlines
         new_streamlines = streamlines.copy()
-        new_streamlines._data = apply_affine(mat, new_streamlines._data)
+        new_streamlines._offsets = new_streamlines._offsets.astype(
+            old_offsets_dtype)
+        new_streamlines._data = apply_affine(
+            mat, new_streamlines._data).astype(old_data_dtype)
         return new_streamlines
     # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]
