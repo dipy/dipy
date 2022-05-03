@@ -1,3 +1,4 @@
+import tempfile
 import zipfile
 import numpy as np
 from numpy.testing import (assert_,
@@ -5,7 +6,6 @@ from numpy.testing import (assert_,
                            assert_almost_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from nibabel.tmpdirs import TemporaryDirectory
 from dipy.align.streamlinear import (compose_matrix44,
                                      decompose_matrix44,
                                      BundleSumDistanceMatrixMetric,
@@ -515,7 +515,7 @@ def test_get_unique_pairs():
 
 
 def test_groupwise_slr():
-    with TemporaryDirectory() as in_dir:
+    with tempfile.TemporaryDirectory() as in_dir:
         # Extract and load example dataset with 5 AF_L bundles
         example_tracts = get_fnames('minimal_bundles')
         with zipfile.ZipFile(example_tracts, 'r') as zip_ref:
