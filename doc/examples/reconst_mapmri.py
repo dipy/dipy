@@ -194,7 +194,8 @@ the Laplacian of the fitted signal.
 """
 
 compare_maps(fits, maps=['norm_of_laplacian_signal'], fit_labels=fit_labels,
-             map_labels=['Norm of Laplacian'], map_kwargs={'vmin':0, 'vmax':3},
+             map_labels=['Norm of Laplacian'],
+             map_kwargs={'vmin': 0, 'vmax': 3},
              filename='MAPMRI_norm_laplacian.png')
 
 """
