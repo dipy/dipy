@@ -597,15 +597,42 @@ class OdffpModel(object):
         return output_matrix
 
 
-    def _find_matching_odf_trace(self, input_odf_trace, dict_odf_trace, penalty, max_chunk_size):
-        dot_product = np.dot(input_odf_trace, dict_odf_trace)
-        
+    # def _find_matching_odf_trace(self, input_odf_trace, dict_odf_trace, penalty, max_chunk_size):
+    #     dot_product = np.dot(input_odf_trace, dict_odf_trace)
+    #
+    #     if penalty > 0.0:
+    #         dict_size = len(self._dict.peaks_per_voxel)
+    #         for chunk_idx in np.split(range(dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
+    #             dot_product[:,chunk_idx] = np.log(dot_product[:,chunk_idx]) - 2 * penalty * self._dict.peaks_per_voxel[chunk_idx]
+    #
+    #     return np.argmax(dot_product, axis=1) 
+
+
+    def _find_matching_odf_trace(self, input_odf_trace, dict_odf_trace, penalty):
+        input_odf_trace_num = input_odf_trace.shape[0]
+    
+        max_dot_product_values = np.zeros((self._dict.max_peaks_num+1, input_odf_trace_num))
+        max_dot_product_dict_idx = np.zeros((self._dict.max_peaks_num+1, input_odf_trace_num), dtype=int)
+    
+        for peak_id in range(self._dict.max_peaks_num+1):
+            peak_filter = np.array(self._dict.peaks_per_voxel == peak_id)
+            peak_filter_idx = np.arange(len(self._dict.peaks_per_voxel))[peak_filter]
+    
+            dot_product = np.dot(input_odf_trace, dict_odf_trace[:,peak_filter])
+            max_dot_product_idx = np.argmax(dot_product, axis=1)
+            max_dot_product_dict_idx[peak_id] = peak_filter_idx[max_dot_product_idx] 
+            max_dot_product_values[peak_id] = dot_product[
+                np.arange(input_odf_trace_num),
+                max_dot_product_idx
+            ]
+    
         if penalty > 0.0:
-            dict_size = len(self._dict.peaks_per_voxel)
-            for chunk_idx in np.split(range(dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
-                dot_product[:,chunk_idx] = np.log(dot_product[:,chunk_idx]) - 2 * penalty * self._dict.peaks_per_voxel[chunk_idx]
-        
-        return np.argmax(dot_product, axis=1) 
+            max_dot_product_values = np.log(max_dot_product_values) - 2 * penalty * np.atleast_2d(np.arange(self._dict.max_peaks_num+1)).T
+    
+        return max_dot_product_dict_idx[
+            np.argmax(max_dot_product_values, axis=0),
+            np.arange(input_odf_trace_num)
+        ]
 
    
     def fit(self, data, mask=None, max_chunk_size=1000, penalty = DEFAULT_FIT_PENALTY):
@@ -651,7 +678,7 @@ class OdffpModel(object):
                     self.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
                 )
  
-            dict_idx[chunk_idx] = self._find_matching_odf_trace(input_odf_trace, dict_odf_trace, penalty, max_chunk_size) 
+            dict_idx[chunk_idx] = self._find_matching_odf_trace(input_odf_trace, dict_odf_trace, penalty) 
          
             for i, j in zip(range(chunk_size), chunk_idx):
                 if self._output_dict_odf:
