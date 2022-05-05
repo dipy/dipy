@@ -178,8 +178,8 @@ positivity in discrete points (CMAP), or using both Laplacian regularization and
 positivity in discrete points (CMAPL). We first show the RTOP [Ozarslan2013]_.
 """
 
-compare_maps(fits, maps = ['rtop'], fit_labels = fit_labels,
-             map_labels = ['RTOP'], filename = 'MAPMRI_rtop.png')
+compare_maps(fits, maps=['rtop'], fit_labels=fit_labels, map_labels=['RTOP'],
+             filename='MAPMRI_rtop.png')
 
 """
 .. figure:: MAPMRI_rtop.png
@@ -193,10 +193,9 @@ reconstruction can be further illustrated by visualizing the analytic norm of
 the Laplacian of the fitted signal.
 """
 
-compare_maps(fits, maps = ['norm_of_laplacian_signal'], fit_labels = fit_labels,
-             map_labels = ['Norm of Laplacian'],
-             map_kwargs = {'vmin' : 0, 'vmax' : 3},
-             filename = 'MAPMRI_norm_laplacian.png')
+compare_maps(fits, maps=['norm_of_laplacian_signal'], fit_labels=fit_labels,
+             map_labels=['Norm of Laplacian'], map_kwargs={'vmin':0, 'vmax':3},
+             filename='MAPMRI_norm_laplacian.png')
 
 """
 .. figure:: MAPMRI_norm_laplacian.png
@@ -217,10 +216,10 @@ approach, show all maps we can generate, and explain their significance.
 fits = fits[2:]
 fit_labels = fit_labels[2:]
 
-compare_maps(fits, maps = ['msd','qiv','rtop','rtap','rtpp'],
-             fit_labels = fit_labels,
-             map_labels = ['MSD','QIV','RTOP','RTAP','RTPP'],
-             filename = 'MAPMRI_maps.png')
+compare_maps(fits, maps=['msd', 'qiv', 'rtop', 'rtap', 'rtpp'],
+             fit_labels=fit_labels,
+             map_labels=['MSD', 'QIV', 'RTOP', 'RTAP', 'RTPP'],
+             filename='MAPMRI_maps.png')
 
 """
 .. figure:: MAPMRI_maps.png
@@ -278,10 +277,10 @@ mapfit_plus_ng = map_model_plus_ng.fit(data_small)
 fits = [mapfit_both_ng, mapfit_plus_ng]
 fit_labels = ['CMAPL', 'MAP+']
 
-compare_maps(fits, maps = ['ng','ng_perpendicular','ng_parallel'],
-             fit_labels = fit_labels,
-             map_labels = ['NG','NG perpendicular','NG parallel'],
-             filename = 'MAPMRI_ng.png')
+compare_maps(fits, maps=['ng', 'ng_perpendicular', 'ng_parallel'],
+             fit_labels=fit_labels,
+             map_labels=['NG', 'NG perpendicular', 'NG parallel'],
+             filename='MAPMRI_ng.png')
 
 """
 .. figure:: MAPMRI_ng.png
