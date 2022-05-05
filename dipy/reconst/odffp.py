@@ -69,6 +69,9 @@ def plot_odf(odf, filename='odf.png', tessellation=dsiSphere8Fold()):
 class OdffpDictionary(object):
     odf = None
     peak_dirs = None
+    micro = None
+    ratio = None
+    peaks_per_voxel = None
     max_peaks_num = 0    
         
     MICRO_DA  = 0
@@ -293,6 +296,14 @@ class OdffpDictionary(object):
         hdf5storage.write(odf_dict, '.', dict_file, matlab_compatible=True)
  
     
+    def append(self, external_odf_dict):
+        self.odf = np.concatenate((self.odf, external_odf_dict.odf), axis=1)
+        self.peak_dirs = np.concatenate((self.peak_dirs, external_odf_dict.peak_dirs), axis=2)
+        self.micro = np.concatenate((self.micro, external_odf_dict.micro), axis=2)
+        self.ratio = np.concatenate((self.ratio, external_odf_dict.ratio), axis=1)
+        self.peaks_per_voxel = np.concatenate((self.peaks_per_voxel, external_odf_dict.peaks_per_voxel))
+        
+    
     def generate(self, gtab, dict_size=1000000, max_peaks_num=3, equal_fibers=False,
                  p_iso=[0.0,1.0], p_fib=[0.0,1.0], f_in=[0.0,1.0], 
                  D_iso=[2.0,3.0], D_a=[0.5,2.5], D_e=[0.5,2.5], D_r=[0.0,2.0],
@@ -393,96 +404,100 @@ class OdffpDictionary(object):
 class PosteriorOdffpDictionary(OdffpDictionary):
     
     def __init__(self, odffp_fit, dict_file=None, is_sorted=False, tessellation=dsiSphere8Fold()):
-        self._micro_pdf = {}
-        self._ratio_pdf = {} 
+        self._ratio_pdf = {0: {}} 
+        self._micro_pdf = {0: {}}
 
-        for peak_id in range(odffp_fit.get_max_peaks_num()+1):
+        for peaks_num in range(1, odffp_fit.get_max_peaks_num()+1):
 
-            self._ratio_pdf[peak_id] = self._estimate_pdf(
-                odffp_fit.get_compartment_volume(peak_id)
-            )
+            self._ratio_pdf[peaks_num] = {} 
+            self._micro_pdf[peaks_num] = {}
 
-            self._micro_pdf[peak_id] = {}
-
-            # Diffusivity parameters of the free water compartment aren't estimated
-            if peak_id < 1:
-                continue
-            
-            for parameter_id in range(self.MICRO_PARAMS_NUM):
-                self._micro_pdf[peak_id][parameter_id] = self._estimate_pdf(
-                    odffp_fit.get_micro_parameter(parameter_id, peak_id)
+            for peak_id in range(peaks_num+1):
+    
+                self._ratio_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
+                    odffp_fit.get_compartment_volume(peak_id, fixed_peaks_num=peaks_num)
                 )
-
+    
+                # Diffusivity parameters of the free water compartment aren't estimated
+                if peak_id < 1:
+                    self._micro_pdf[peaks_num][peak_id] = {}
+                    continue
+    
+                self._micro_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
+                    odffp_fit.get_micro_parameters(peak_id, fixed_peaks_num=peaks_num),
+                    bw_method='silverman'
+                )
+                        
         OdffpDictionary.__init__(self, dict_file, is_sorted, tessellation)
     
 
-    def _estimate_pdf(self, samples):
-        return scipy.stats.gaussian_kde(samples[np.isfinite(samples)])
+    def _crop_value(self, value, lower_bound, upper_bound):
+        return np.maximum(np.minimum(np.squeeze(value), upper_bound), lower_bound)
 
-
-    def _random_from_pdf(self, pdf, min_value, max_value):
-        while True:
-            value = float(pdf.resample(1))
-            if value < min_value or value > max_value:
-                continue
-
-            break
-        
-        return value
-                
 
     def _random_fraction_volumes(self, p_iso, p_fib, peaks_per_voxel):        
         fraction_volumes = np.zeros(peaks_per_voxel+1)
-
-        fraction_volumes[0] = self._random_from_pdf(self._ratio_pdf[0], p_iso[0], p_iso[1])
-
+    
+        fraction_volumes[0] = self._crop_value(
+            float(self._ratio_pdf[peaks_per_voxel][0].resample(1)), p_iso[0], p_iso[1]
+        )
+    
         for peak_id in range(1,peaks_per_voxel+1):
-            fraction_volumes[peak_id] = self._random_from_pdf(self._ratio_pdf[peak_id], p_fib[0], p_fib[1])
-                     
+            fraction_volumes[peak_id] = self._crop_value(
+                float(self._ratio_pdf[peaks_per_voxel][peak_id].resample(1)), p_fib[0], p_fib[1]
+            )
+    
         return fraction_volumes / np.maximum(1e-8, np.sum(fraction_volumes))
 
 
+    def _out_of_range(self, values, valid_range):
+        return np.any(values < valid_range[0]) or np.any(values > valid_range[1])
+        
+
     def _random_micro_parameters(self, f_in, D_iso, D_a, D_e, D_r, peaks_per_voxel, 
                                  equal_fibers, assert_faster_D_a, tortuosity_approximation):
-        
+    
         micro_params = np.zeros((self.MICRO_PARAMS_NUM, peaks_per_voxel+1))
-        
+    
         # Free water compartment has D_a=0, f_in=0, and D_a=D_e
         micro_params[1:3,0] = np.random.uniform(D_iso[0], D_iso[1])
-        
+    
         # Repeat until the microstructure parameters are valid
         while True:
 
-            # Equal fibers means that all fibers have the same diffusivities and f_in
-            if equal_fibers:
-                micro_params[:,1:] = np.tile(
-                    [
-                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DA], D_a[0], D_a[1])],
-                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DE], D_e[0], D_e[1])],
-                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_DR], D_r[0], D_r[1])],
-                        [self._random_from_pdf(self._micro_pdf[1][self.MICRO_FIN], f_in[0], f_in[1])]
-                    ], 
-                    peaks_per_voxel
-                )
-            else:
-                for peak_id in range(1,peaks_per_voxel+1):
-                    micro_params[:,peak_id] = np.array([
-                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DA], D_a[0], D_a[1]),
-                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DE], D_e[0], D_e[1]),
-                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_DR], D_r[0], D_r[1]),
-                        self._random_from_pdf(self._micro_pdf[peak_id][self.MICRO_FIN], f_in[0], f_in[1])
-                    ])
+            for peak_id in range(1,peaks_per_voxel+1):
+
+                if equal_fibers and peak_id > 1:
+                    # Equal fibers means that all fibers have the same diffusivities and f_in
+                    micro_params[:,peak_id] = micro_params[:,1]
+                    continue
                 
+                micro_params[:,peak_id] = np.squeeze(
+                    self._micro_pdf[peaks_per_voxel][peak_id].resample(1)
+                )
+                
+            if self._out_of_range(micro_params[self.MICRO_DA,1:peaks_per_voxel+1], D_a):
+                continue
+            
+            if self._out_of_range(micro_params[self.MICRO_DE,1:peaks_per_voxel+1], D_e):
+                continue
+            
+            if self._out_of_range(micro_params[self.MICRO_DR,1:peaks_per_voxel+1], D_r):
+                continue
+            
+            if self._out_of_range(micro_params[self.MICRO_FIN,1:peaks_per_voxel+1], f_in):
+                continue
+            
             if assert_faster_D_a and np.any(micro_params[self.MICRO_DA,1:] < micro_params[self.MICRO_DE,1:]):
                 continue
-
+    
             if tortuosity_approximation:
                 micro_params[self.MICRO_DR,1:] = (1 - micro_params[self.MICRO_FIN,1:]) * micro_params[self.MICRO_DA,1:]
                 if np.any(micro_params[self.MICRO_DR,1:] < D_r[0]) or np.any(micro_params[self.MICRO_DR,1:] > D_r[1]):
                     continue
-                
+    
             break
-        
+    
         return micro_params
 
 
@@ -679,15 +694,28 @@ class OdffpFit(OdfFit):
         self._dict_idx = dict_idx
     
         
-    def _nonzero_dict_idx(self):
-        return self._dict_idx[self._dict_idx > 0]
+    def _export_dict_var(self, dict_var, peak_id, ignore_empty=True, fixed_peaks_num=None):
 
-    
-    def _export_dict_var(self, dict_var, peak_id):
+        # Validate peak_id
         if peak_id > self._dict.max_peaks_num:
             raise Exception("Argument peak_id=%d exceeds the maximum number of peaks." % peak_id)
             
-        return dict_var[peak_id,self._nonzero_dict_idx()]
+        if ignore_empty:
+            # Disregard "empty" voxels, i.e. these with free water only
+            select_dict_idx = self._dict_idx[self._dict_idx > 0]
+            
+            if fixed_peaks_num and np.any(self._dict.peaks_per_voxel[select_dict_idx] == fixed_peaks_num):
+                # If a fixed number of peaks is needed and such examples exist 
+                select_dict_idx = select_dict_idx[self._dict.peaks_per_voxel[select_dict_idx] == fixed_peaks_num]
+            else:
+                # Otherwise, disregard voxels with the number of peaks < peak_id 
+                select_dict_idx = select_dict_idx[self._dict.peaks_per_voxel[select_dict_idx] >= peak_id]
+                            
+        else:
+            # Alternatively, take entire 3-D volume
+            select_dict_idx = self._dict_idx
+        
+        return dict_var[...,peak_id,select_dict_idx]
 
     
     def _fib_reshape(self, matrix, new_size, orientation_agreement=True):
@@ -720,12 +748,12 @@ class OdffpFit(OdfFit):
         return self._dict.max_peaks_num
     
     
-    def get_micro_parameter(self, parameter_id, peak_id):
-        return self._export_dict_var(self._dict.micro[parameter_id], peak_id)
+    def get_micro_parameters(self, peak_id, ignore_empty=True, fixed_peaks_num=None):
+        return self._export_dict_var(self._dict.micro, peak_id, ignore_empty, fixed_peaks_num)
     
-    
-    def get_compartment_volume(self, peak_id):
-        return self._export_dict_var(self._dict.ratio, peak_id)
+
+    def get_compartment_volume(self, peak_id, ignore_empty=True, fixed_peaks_num=None):
+        return self._export_dict_var(self._dict.ratio, peak_id, ignore_empty, fixed_peaks_num)
     
     
     def save_as_fib(self, affine, voxel_size, output_file_name='output.fib'):
