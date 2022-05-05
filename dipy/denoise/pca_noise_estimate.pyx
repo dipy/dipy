@@ -32,22 +32,21 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     Parameters
     ----------
     data: 4D array
-        the input dMRI data.
-
+        the input dMRI data. The first 3 dimension must have size >= 2 *
+        patch_radius + 1 or size = 1.
     gtab: gradient table object
-      gradient information for the data gives us the bvals and bvecs of
-      diffusion data, which is needed here to select between the noise
-      estimation methods.
+        gradient information for the data gives us the bvals and bvecs of
+        diffusion data, which is needed here to select between the noise
+        estimation methods.
     patch_radius : int
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 1 (estimate noise in blocks of 3x3x3 voxels).
     correct_bias : bool
-      Whether to correct for bias due to Rician noise. This is an implementation
-      of equation 8 in [1]_.
-
+        Whether to correct for bias due to Rician noise. This is an
+        implementation of equation 8 in [1]_.
     smooth : int
-      Radius of a Gaussian smoothing filter to apply to the noise estimate
-      before returning. Default: 2.
+        Radius of a Gaussian smoothing filter to apply to the noise estimate
+        before returning. Default: 2.
 
     Returns
     -------
@@ -75,17 +74,23 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
     data0 = data0.astype(np.float64)
     cdef:
+        cnp.npy_intp dsm = np.min(data0.shape[0:-1])
         cnp.npy_intp n0 = data0.shape[0]
         cnp.npy_intp n1 = data0.shape[1]
         cnp.npy_intp n2 = data0.shape[2]
         cnp.npy_intp n3 = data0.shape[3]
         cnp.npy_intp nsamples = n0 * n1 * n2
         cnp.npy_intp i, j, k, i0, j0, k0, l0
-        cnp.npy_intp pr = patch_radius
-        cnp.npy_intp  patch_size = 2 * pr + 1
-        double norm = patch_size ** 3
+        cnp.npy_intp prx = patch_radius if n0 > 1 else 0
+        cnp.npy_intp pry = patch_radius if n1 > 1 else 0
+        cnp.npy_intp prz = patch_radius if n2 > 1 else 0
+        double norm = (2 * prx + 1) * (2 * pry + 1) * (2 * prz + 1)
         double sum_reg, temp1
         double[:, :, :] I = np.zeros((n0, n1, n2))
+
+    # check dimensions of data
+    if (dsm != 1) and (dsm < 2 * patch_radius + 1):
+        raise ValueError("Array 'data' is incorrect shape")
 
     X = data0.reshape(nsamples, n3)
     # Demean:
@@ -107,24 +112,22 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
       double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
       double[:, :, :, :] data0temp = data0
 
-
-
     with nogil:
-        for i in range(pr, n0 - pr):
-            for j in range(pr, n1 - pr):
-                for k in range(pr, n2 - pr):
+        for i in range(prx, n0 - prx):
+            for j in range(pry, n1 - pry):
+                for k in range(prz, n2 - prz):
                     sum_reg = 0
                     temp1 = 0
-                    for i0 in range(-pr, pr + 1):
-                        for j0 in range(-pr, pr + 1):
-                            for k0 in range(-pr, pr + 1):
+                    for i0 in range(-prx, prx + 1):
+                        for j0 in range(-pry, pry + 1):
+                            for k0 in range(-prz, prz + 1):
                                 sum_reg += I[i + i0, j + j0, k + k0] / norm
                                 for l0 in range(n3):
                                     temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (norm * n3)
 
-                    for i0 in range(-pr, pr + 1):
-                        for j0 in range(-pr, pr + 1):
-                            for k0 in range(-pr, pr + 1):
+                    for i0 in range(-prx, prx + 1):
+                        for j0 in range(-pry, pry + 1):
+                            for k0 in range(-prz, prz + 1):
                                 sigma_sq[i + i0, j +j0, k + k0] += (
                                     I[i + i0, j + j0, k + k0] - sum_reg) ** 2
                                 mean[i + i0, j + j0, k + k0] += temp1
