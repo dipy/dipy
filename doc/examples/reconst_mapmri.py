@@ -32,9 +32,8 @@ from dipy.data import get_fnames, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
-import matplotlib.pyplot as plt
+from dipy.viz.plotting import compare_maps
 import numpy as np
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 """
 Download and read the data for this tutorial.
@@ -167,48 +166,20 @@ mapfit_positivity_aniso = map_model_positivity_aniso.fit(data_small)
 mapfit_both_aniso = map_model_both_aniso.fit(data_small)
 mapfit_plus_aniso = map_model_plus_aniso.fit(data_small)
 
+fits = [mapfit_laplacian_aniso, mapfit_positivity_aniso, mapfit_both_aniso,
+        mapfit_plus_aniso]
+fit_labels = ['MAPL', 'CMAP', 'CMAPL', 'MAP+']
+
 """
 From the fitted models we will first illustrate the estimation of q-space
-indices. We will compare the estimation using only Laplacian regularization,
-using only the global positivity constraint, using only positivity in discrete
-points, or using both Laplacian regularization and positivity in discrete
-points. We first show the RTOP [Ozarslan2013]_.
+indices. We will compare the estimation using only Laplacian regularization
+(MAPL), using only the global positivity constraint (MAP+), using only
+positivity in discrete points (CMAP), or using both Laplacian regularization and
+positivity in discrete points (CMAPL). We first show the RTOP [Ozarslan2013]_.
 """
 
-fig = plt.figure(figsize=(18, 3))
-
-ax1 = fig.add_subplot(1, 5, 1, title=r'RTOP - Laplacian')
-ax1.set_axis_off()
-rtop_laplacian = np.array(mapfit_laplacian_aniso.rtop()[:, 0, :].T, dtype=float)
-ind = ax1.imshow(rtop_laplacian, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax2 = fig.add_subplot(1, 5, 2, title=r'RTOP - Discrete positivity')
-ax2.set_axis_off()
-rtop_positivity = np.array(mapfit_positivity_aniso.rtop()[:, 0, :].T,
-                           dtype=float)
-ind = ax2.imshow(rtop_positivity, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax3 = fig.add_subplot(1, 5, 3, title=r'RTOP - Both')
-ax3.set_axis_off()
-rtop_both = np.array(mapfit_both_aniso.rtop()[:, 0, :].T, dtype=float)
-ind = ax3.imshow(rtop_both, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax4 = fig.add_subplot(1, 5, 4, title=r'RTOP - Global positivity')
-ax4.set_axis_off()
-rtop_plus = np.array(mapfit_plus_aniso.rtop()[:, 0, :].T, dtype=float)
-ind = ax4.imshow(rtop_plus, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax5 = fig.add_subplot(1, 5, 5)
-ax5.set_axis_off()
-divider = make_axes_locatable(ax5)
-cax = divider.append_axes("left", size="10%")
-plt.colorbar(ind, cax=cax)
-
-plt.savefig('MAPMRI_rtop.png')
+compare_maps(fits, maps = ['rtop'], fit_labels = fit_labels,
+             map_labels = ['RTOP'], filename = 'MAPMRI_rtop.png')
 
 """
 .. figure:: MAPMRI_rtop.png
@@ -222,43 +193,10 @@ reconstruction can be further illustrated by visualizing the analytic norm of
 the Laplacian of the fitted signal.
 """
 
-fig = plt.figure(figsize=(18, 3))
-
-ax1 = fig.add_subplot(1, 5, 1, title=r'Laplacian norm - Laplacian')
-ax1.set_axis_off()
-laplacian_norm_laplacian = np.array(
-    mapfit_laplacian_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
-ind = ax1.imshow(laplacian_norm_laplacian, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
-
-ax2 = fig.add_subplot(1, 5, 2, title=r'Laplacian norm - Discrete positivity')
-ax2.set_axis_off()
-laplacian_norm_positivity = np.array(
-    mapfit_positivity_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
-ind = ax2.imshow(laplacian_norm_positivity, interpolation='nearest',
-                 origin='lower', cmap=plt.cm.gray, vmin=0, vmax=3)
-
-ax3 = fig.add_subplot(1, 5, 3, title=r'Laplacian norm - Both')
-ax3.set_axis_off()
-laplacian_norm_both = np.array(
-    mapfit_both_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
-ind = ax3.imshow(laplacian_norm_both, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray, vmin=0, vmax=3)
-
-ax4 = fig.add_subplot(1, 5, 4, title=r'Laplacian norm - Global positivity')
-ax4.set_axis_off()
-laplacian_norm_plus = np.array(
-    mapfit_plus_aniso.norm_of_laplacian_signal()[:, 0, :].T, dtype=float)
-ind = ax4.imshow(laplacian_norm_plus, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray, vmin=0, vmax=3)
-
-ax5 = fig.add_subplot(1, 5, 5)
-ax5.set_axis_off()
-divider = make_axes_locatable(ax5)
-cax = divider.append_axes("left", size="10%")
-plt.colorbar(ind, cax=cax)
-
-plt.savefig('MAPMRI_norm_laplacian.png')
+compare_maps(fits, maps = ['norm_of_laplacian_signal'], fit_labels = fit_labels,
+             map_labels = ['Norm of Laplacian'],
+             map_kwargs = {'vmin' : 0, 'vmax' : 3},
+             filename = 'MAPMRI_norm_laplacian.png')
 
 """
 .. figure:: MAPMRI_norm_laplacian.png
@@ -276,69 +214,13 @@ From now on we will just use the combined approach and the globally constrained
 approach, show all maps we can generate, and explain their significance.
 """
 
-fig = plt.figure(figsize=(18, 6))
+fits = fits[2:]
+fit_labels = fit_labels[2:]
 
-ax1 = fig.add_subplot(2, 5, 1, title=r'MSD - Both')
-ax1.set_axis_off()
-msd = np.array(mapfit_both_aniso.msd()[:, 0, :].T, dtype=float)
-ind = ax1.imshow(msd, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax2 = fig.add_subplot(2, 5, 2, title=r'QIV - Both')
-ax2.set_axis_off()
-qiv = np.array(mapfit_both_aniso.qiv()[:, 0, :].T, dtype=float)
-ind = ax2.imshow(qiv, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax3 = fig.add_subplot(2, 5, 3, title=r'RTOP - Both')
-ax3.set_axis_off()
-rtop = np.array((mapfit_both_aniso.rtop()[:, 0, :]).T, dtype=float)
-ind = ax3.imshow(rtop, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax4 = fig.add_subplot(2, 5, 4, title=r'RTAP - Both')
-ax4.set_axis_off()
-rtap = np.array((mapfit_both_aniso.rtap()[:, 0, :]).T, dtype=float)
-ind = ax4.imshow(rtap, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax5 = fig.add_subplot(2, 5, 5, title=r'RTPP - Both')
-ax5.set_axis_off()
-rtpp = np.array(mapfit_both_aniso.rtpp()[:, 0, :].T, dtype=float)
-ind = ax5.imshow(rtpp, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax6 = fig.add_subplot(2, 5, 6, title=r'MSD - Global positivity')
-ax6.set_axis_off()
-msd2 = np.array(mapfit_plus_aniso.msd()[:, 0, :].T, dtype=float)
-ind = ax6.imshow(msd2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax7 = fig.add_subplot(2, 5, 7, title=r'QIV - Global positivity')
-ax7.set_axis_off()
-qiv2 = np.array(mapfit_plus_aniso.qiv()[:, 0, :].T, dtype=float)
-ind = ax7.imshow(qiv2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax8 = fig.add_subplot(2, 5, 8, title=r'RTOP - Global positivity')
-ax8.set_axis_off()
-rtop2 = np.array((mapfit_plus_aniso.rtop()[:, 0, :]).T, dtype=float)
-ind = ax8.imshow(rtop2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax9 = fig.add_subplot(2, 5, 9, title=r'RTAP - Global positivity')
-ax9.set_axis_off()
-rtap2 = np.array((mapfit_plus_aniso.rtap()[:, 0, :]).T, dtype=float)
-ind = ax9.imshow(rtap2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-
-ax10 = fig.add_subplot(2, 5, 10, title=r'RTPP - Global positivity')
-ax10.set_axis_off()
-rtpp2 = np.array(mapfit_plus_aniso.rtpp()[:, 0, :].T, dtype=float)
-ind = ax10.imshow(rtpp2, interpolation='nearest', origin='lower',
-                  cmap=plt.cm.gray)
-
-plt.savefig('MAPMRI_maps.png')
+compare_maps(fits, maps = ['msd','qiv','rtop','rtap','rtpp'],
+             fit_labels = fit_labels,
+             map_labels = ['MSD','QIV','RTOP','RTAP','RTPP'],
+             filename = 'MAPMRI_maps.png')
 
 """
 .. figure:: MAPMRI_maps.png
@@ -393,65 +275,13 @@ map_model_plus_ng = mapmri.MapmriModel(gtab, radial_order=radial_order,
 mapfit_both_ng = map_model_both_ng.fit(data_small)
 mapfit_plus_ng = map_model_plus_ng.fit(data_small)
 
-fig = plt.figure(figsize=(12, 6))
+fits = [mapfit_both_ng, mapfit_plus_ng]
+fit_labels = ['CMAPL', 'MAP+']
 
-ax1 = fig.add_subplot(2, 3, 1, title=r'NG - Both')
-ax1.set_axis_off()
-ng = np.array(mapfit_both_ng.ng()[:, 0, :].T, dtype=float)
-ind = ax1.imshow(ng, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax1)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-ax2 = fig.add_subplot(2, 3, 2, title=r'NG perpendicular - Both')
-ax2.set_axis_off()
-ng_perpendicular = np.array(mapfit_both_ng.ng_perpendicular()[:, 0, :].T,
-                            dtype=float)
-ind = ax2.imshow(ng_perpendicular, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax2)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-ax3 = fig.add_subplot(2, 3, 3, title=r'NG parallel - Both')
-ax3.set_axis_off()
-ng_parallel = np.array(mapfit_both_ng.ng_parallel()[:, 0, :].T, dtype=float)
-ind = ax3.imshow(ng_parallel, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax3)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-ax4 = fig.add_subplot(2, 3, 4, title=r'NG - Global positivity')
-ax4.set_axis_off()
-ng2 = np.array(mapfit_plus_ng.ng()[:, 0, :].T, dtype=float)
-ind = ax4.imshow(ng2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax4)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-ax5 = fig.add_subplot(2, 3, 5, title=r'NG perpendicular - Global positivity')
-ax5.set_axis_off()
-ng_perpendicular2 = np.array(mapfit_plus_ng.ng_perpendicular()[:, 0, :].T,
-                             dtype=float)
-ind = ax5.imshow(ng_perpendicular2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax5)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-ax6 = fig.add_subplot(2, 3, 6, title=r'NG parallel - Global positivity')
-ax6.set_axis_off()
-ng_parallel2 = np.array(mapfit_plus_ng.ng_parallel()[:, 0, :].T, dtype=float)
-ind = ax6.imshow(ng_parallel2, interpolation='nearest', origin='lower',
-                 cmap=plt.cm.gray)
-divider = make_axes_locatable(ax6)
-cax = divider.append_axes("right", size="5%", pad=0.05)
-plt.colorbar(ind, cax=cax)
-
-plt.savefig('MAPMRI_ng.png')
+compare_maps(fits, maps = ['ng','ng_perpendicular','ng_parallel'],
+             fit_labels = fit_labels,
+             map_labels = ['NG','NG perpendicular','NG parallel'],
+             filename = 'MAPMRI_ng.png')
 
 """
 .. figure:: MAPMRI_ng.png
