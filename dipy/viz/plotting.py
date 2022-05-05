@@ -68,14 +68,16 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
         map_kwargs = [map_kwargs]*n
 
     if transpose:
-        fig, ax = plt.subplots(n, m, figsize=(xscale,yscale/m*n), squeeze=False)
+        fig, ax = plt.subplots(n, m, figsize=(xscale, yscale/m*n),
+                               squeeze=False)
         ax = ax.T
         for i in range(m):
             ax[i, 0].set_title(fit_labels[i], fontsize=fontsize)
         for j in range(n):
             ax[0, j].set_ylabel(map_labels[j], fontsize=fontsize)
     else:
-        fig, ax = plt.subplots(m, n, figsize=(xscale,yscale/n*m), squeeze=False)
+        fig, ax = plt.subplots(m, n, figsize=(xscale, yscale/n*m),
+                               squeeze=False)
         for i in range(m):
             ax[i, 0].set_ylabel(fit_labels[i], fontsize=fontsize)
         for j in range(n):
