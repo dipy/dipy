@@ -1,9 +1,9 @@
 """
-=======================
-Fast Streamlines Search
-=======================
+======================
+Fast Streamline Search
+======================
 
-This example explains how Fast Streamlines Search [StOnge2021]_
+This example explains how Fast Streamline Search [StOnge2021]_
 can be used to find all similar streamlines.
 
 First import the necessary modules.
@@ -24,7 +24,7 @@ hcp_file = get_target_tractogram_hcp()
 streamlines = load_trk(hcp_file, "same", bbox_valid_check=False).streamlines
 
 """
-Visualize atlas tractogram and target tractogram
+Visualize the atlas (ref) bundle and full brain tractogram
 """
 
 interactive = False
@@ -41,7 +41,7 @@ else:
 .. figure:: tractograms_initial.png
    :align: center
 
-   Atlas and target before registration.
+   Atlas bundle and source streamlines before registration.
 
 """
 
@@ -78,7 +78,7 @@ else:
 """
 Search for all similar streamlines  [StOnge2021]_
 
-Fast Streamlines Search can do a radius search
+Fast Streamline Search can do a radius search
 to find all streamlines that are similar to from one tractogram to another.
 It return the distance matrix mapping between both tractograms.
 The same list of streamlines can be given to recover the self distance matrix.
@@ -137,13 +137,13 @@ else:
 Color the resulting AF by the nearest streamlines distance
 """
 
-nn_target, nn_ref, nn_dist = nearest_from_matrix_row(coo_mdist_mtx)
+nn_s, nn_ref, nn_dist = nearest_from_matrix_row(coo_mdist_mtx)
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 cmap = actor.colormap_lookup_table(scale_range=(nn_dist.min(), nn_dist.max()))
 scene.add(actor.line(recognized_af_l, colors=nn_dist, lookup_colormap=cmap))
-scene.add(actor.scalar_bar(cmap, title="distance to ref (mm)"))
+scene.add(actor.scalar_bar(cmap, title="distance to atlas (mm)"))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))
