@@ -20,7 +20,7 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
         BasePmfDirectionGetter.__init__(self, pmfgen, maxangle, sphere, **kwargs)
 
     @classmethod
-    def from_data(klass, data, model, max_angle, sphere=default_sphere,
+    def from_data(cls, data, model, max_angle, sphere=default_sphere,
                   sh_order=0, max_attempts=5, **kwargs):
         """Create a BootDirectionGetter using HARDI data and an ODF type model
 
@@ -51,7 +51,7 @@ cdef class BootDirectionGetter(BasePmfDirectionGetter):
         """
         boot_gen = BootPmfGen(np.asarray(data, dtype=float), model, sphere,
                               sh_order=sh_order)
-        return klass(boot_gen, max_angle, sphere, max_attempts, **kwargs)
+        return cls(boot_gen, max_angle, sphere, max_attempts, **kwargs)
 
     cdef int get_direction_c(self, double* point, double* direction):
         """Attempt direction getting on a few bootstrap samples.
