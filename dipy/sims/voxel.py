@@ -142,9 +142,9 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
     ----------
     gtab : GradientTable
         Signal measurement directions.
-    d : float
+    d : float, optional
         Diffusivity value.
-    S0 : float
+    S0 : float, optional
         Unweighted signal value.
     angles : array (K,2) or (K, 3)
         List of K polar angles (in degrees) for the sticks or array of K
@@ -152,7 +152,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
     fractions : float
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
-    snr : float
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
@@ -230,7 +230,7 @@ def gaussian_parallel(q, tau, D=0.7e-3):
         q-space value in 1/mm
     tau : float
         diffusion time in s
-    D : float
+    D : float, optional
         diffusion constant
 
     Returns
@@ -260,9 +260,9 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
         diffusion time in s
     radii : float
         cylinder radius in mm
-    D : float
+    D : float, optional
         diffusion constant
-    S0 : float
+    S0 : float, optional
         Unweighted signal value.
     angles : array (K,2) or (K, 3)
         List of K polar angles (in degrees) for the sticks or array of K
@@ -270,7 +270,7 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
     fractions : [float]
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
-    snr : float
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
@@ -323,17 +323,17 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         Table with information of b-values and gradient directions g.
         Note that if gtab has a btens attribute, simulations will be performed
         according to the given b-tensor B information.
-    S0 : double,
+    S0 : double, optional
         Strength of signal in the presence of no diffusion gradient (also
         called the ``b=0`` value).
-    evals : (3,) ndarray
+    evals : (3,) ndarray, optional
         Eigenvalues of the diffusion tensor.  By default, values typical for
         prolate white matter are used.
-    evecs : (3, 3) ndarray
+    evecs : (3, 3) ndarray, optional
         Eigenvectors of the tensor.  You can also think of this as a rotation
         matrix that transforms the direction of the tensor. The eigenvectors
         need to be column wise.
-    snr : float
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
@@ -390,7 +390,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
         according to the given b-tensor information.
     mevals : array (K, 3)
         each tensor's eigenvalues in each row
-    S0 : float
+    S0 : float, optional
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
         List of K tensor directions in polar angles (in degrees) or unit
@@ -398,7 +398,7 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     fractions : float
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
-    snr : float
+    snr : float, optional
         Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
