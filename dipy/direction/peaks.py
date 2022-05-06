@@ -1,9 +1,9 @@
+import tempfile
 
 from multiprocessing import Pool
 from itertools import repeat
 from os import path
 
-from nibabel.tmpdirs import InTemporaryDirectory
 
 import numpy as np
 import scipy.optimize as opt
@@ -234,8 +234,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     indices = list(zip(np.arange(0, n, chunk_size),
                        np.arange(0, n, chunk_size) + chunk_size))
 
-    with InTemporaryDirectory() as tmpdir:
-
+    with tempfile.TemporaryDirectory() as tmpdir:
         data_file_name = path.join(tmpdir, 'data.npy')
         np.save(data_file_name, data)
         if mask is not None:
