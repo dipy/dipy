@@ -145,7 +145,7 @@ class SingleLayerPerceptron(object):
 class MultipleLayerPercepton(object):
 
     def __init__(self, input_shape=(28, 28),
-                 num_hidden=[128],
+                 num_hidden=(128, ),
                  act_hidden='relu',
                  dropout=0.2,
                  num_out=10,
@@ -158,7 +158,7 @@ class MultipleLayerPercepton(object):
         ----------
         input_shape : tuple
             Shape of data to be trained
-        num_hidden : list
+        num_hidden : array-like
             List of number of nodes in hidden layers
         act_hidden : string
             Activation function used in hidden layer

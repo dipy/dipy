@@ -9,7 +9,7 @@ ray, has_ray, _ = optional_package('ray')
 
 
 def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
-            backend=None, func_args=[], func_kwargs={},
+            backend=None, func_args=None, func_kwargs=None,
             **kwargs):
     """
     Maps a function to a list of inputs in parallel.
@@ -37,9 +37,9 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
         What joblib or dask backend to use. For joblib, the default is "loky".
         For dask the default is "threading".
     func_args : list, optional
-        Positional arguments to `func`. Default: []
-    func_kwargs : list, optional
-        Keyword arguments to `func`. Default: {}
+        Positional arguments to `func`.
+    func_kwargs : dict, optional
+        Keyword arguments to `func`.
     kwargs : dict, optional
         Additional arguments to pass to either joblib.Parallel
         or dask.compute depending on the engine used.
@@ -50,6 +50,10 @@ def paramap(func, in_list, out_shape=None, n_jobs=-1, engine="joblib",
     ndarray of identical shape to `arr`
 
     """
+
+    func_args = func_args or []
+    func_kwargs = func_kwargs or {}
+
     if engine == "joblib":
         if not has_joblib:
             raise joblib()

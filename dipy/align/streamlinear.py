@@ -858,7 +858,7 @@ def slr_with_qbx(static, moving,
                  verbose=False,
                  greater_than=50,
                  less_than=250,
-                 qbx_thr=[40, 30, 20, 15],
+                 qbx_thr=(40, 30, 20, 15),
                  nb_pts=20,
                  progressive=True, rng=None, num_threads=None):
     """ Utility function for registering large tractograms.

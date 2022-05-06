@@ -134,8 +134,8 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
-                    fractions=[35, 35], snr=20):
+def sticks_and_ball(gtab, d=0.0015, S0=1., angles=((0, 0), (90, 0)),
+                    fractions=(35, 35), snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
@@ -146,10 +146,10 @@ def sticks_and_ball(gtab, d=0.0015, S0=1., angles=[(0, 0), (90, 0)],
         Diffusivity value.
     S0 : float, optional
         Unweighted signal value.
-    angles : array (K,2) or (K, 3)
+    angles : array (K, 2) or (K, 3), optional
         List of K polar angles (in degrees) for the sticks or array of K
         sticks as unit vectors.
-    fractions : float
+    fractions : array-like, optional
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
     snr : float, optional
@@ -242,9 +242,9 @@ def gaussian_parallel(q, tau, D=0.7e-3):
     return np.exp(-(2 * np.pi * q) ** 2 * tau * D)
 
 
-def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
-                                S0=1., angles=[(0, 0), (90, 0)],
-                                fractions=[35, 35], snr=20):
+def cylinders_and_ball_soderman(gtab, tau, radii=(5e-3, 5e-3), D=0.7e-3,
+                                S0=1., angles=((0, 0), (90, 0)),
+                                fractions=(35, 35), snr=20):
     r""" Calculates the three-dimensional signal attenuation E(q) originating
     from within a cylinder of radius R using the Soderman approximation [1]_.
     The diffusion signal is assumed to be separable perpendicular and parallel
@@ -258,16 +258,16 @@ def cylinders_and_ball_soderman(gtab, tau, radii=[5e-3, 5e-3], D=0.7e-3,
         Signal measurement directions.
     tau : float
         diffusion time in s
-    radii : float
+    radii : array-like, optional
         cylinder radius in mm
     D : float, optional
         diffusion constant
     S0 : float, optional
         Unweighted signal value.
-    angles : array (K,2) or (K, 3)
+    angles : array (K, 2) or (K, 3), optional
         List of K polar angles (in degrees) for the sticks or array of K
         sticks as unit vectors.
-    fractions : [float]
+    fractions : array-like, optional
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
     snr : float, optional
@@ -378,8 +378,8 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     return S.reshape(out_shape)
 
 
-def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
-                 fractions=[50, 50], snr=20):
+def multi_tensor(gtab, mevals, S0=1., angles=((0, 0), (90, 0)),
+                 fractions=(50, 50), snr=20):
     r""" Simulate a Multi-Tensor signal.
 
     Parameters
@@ -392,10 +392,10 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
         each tensor's eigenvalues in each row
     S0 : float, optional
         Unweighted signal value (b0 signal).
-    angles : array (K,2) or (K,3)
+    angles : array (K, 2) or (K, 3), optional
         List of K tensor directions in polar angles (in degrees) or unit
         vectors
-    fractions : float
+    fractions : array-like, optional
         Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     snr : float, optional
@@ -442,8 +442,8 @@ def multi_tensor(gtab, mevals, S0=1., angles=[(0, 0), (90, 0)],
     return add_noise(S, snr, S0), sticks
 
 
-def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
-                     fractions=[50, 50], snr=20):
+def multi_tensor_dki(gtab, mevals, S0=1., angles=((90., 0.), (90., 0.)),
+                     fractions=(50, 50), snr=20):
     r""" Simulate the diffusion-weight signal, diffusion and kurtosis tensors
     based on the DKI model
 
