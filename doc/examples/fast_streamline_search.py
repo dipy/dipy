@@ -4,18 +4,15 @@ Fast Streamlines Search
 =======================
 
 This example explains how Fast Streamlines Search [StOnge2021]_
-can be used to find similar streamlines.
+can be used to find all similar streamlines.
 
 First import the necessary modules.
 """
 
 import numpy as np
 
-from dipy.data import (fetch_target_tractogram_hcp,
-                       get_target_tractogram_hcp,
-                       get_two_hcp842_bundles)
+from dipy.data import get_target_tractogram_hcp, get_two_hcp842_bundles
 from dipy.io.streamline import load_trk
-from dipy.io.utils import create_tractogram_header
 from dipy.segment.search import FastStreamlineSearch, nearest_from_matrix_row
 from dipy.viz import actor, window
 
@@ -23,25 +20,18 @@ from dipy.viz import actor, window
 Download and read data for this tutorial
 """
 
-
-target_file, target_folder = fetch_target_tractogram_hcp()
-target_file = get_target_tractogram_hcp()
-
-sft_target = load_trk(target_file, "same", bbox_valid_check=False)
-target = sft_target.streamlines
-target_header = create_tractogram_header(target_file,
-                                         *sft_target.space_attributes)
-
+hcp_file = get_target_tractogram_hcp()
+streamlines = load_trk(hcp_file, "same", bbox_valid_check=False).streamlines
 
 """
 Visualize atlas tractogram and target tractogram
 """
 
-interactive = True
+interactive = False
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(target))
+scene.add(actor.line(streamlines))
 if interactive:
     window.show(scene)
 else:
@@ -65,7 +55,6 @@ model_af_l_file, model_cst_l_file = get_two_hcp842_bundles()
 sft_af_l = load_trk(model_af_l_file, "same", bbox_valid_check=False)
 model_af_l = sft_af_l.streamlines
 
-
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
 scene.add(actor.line(model_af_l, colors=(0, 1, 0)))
@@ -86,37 +75,41 @@ else:
 
 """
 
-
 """
 Search for all similar streamlines  [StOnge2021]_
 
-Fast Streamlines Search, apply a radius search from one to another set of streamlines.
-It return the distance matrix mapping both tractograms.
+Fast Streamlines Search can do a radius search
+to find all streamlines that are similar to from one tractogram to another.
+It return the distance matrix mapping between both tractograms.
 The same list of streamlines can be given to recover the self distance matrix.
 
-    - radius : is the maximum distance between streamlines returned. 
+    FastStreamlinesSearch Class
+    - ref_streamlines : reference streamlines, that will be searched in (tree)
+    - max_radius : is the maximum distance that can be used with radius search
+
+    radius_search() function
+    - radius : for each streamline search find all similar ones in the
+        "ref_streamlines" that are within the given radius
+
     Be cautious, a large radius might result in a dense distance computation,
     requiring a large amount of time and memory.
-    Recommended range of the radius is 1 - 10 mm.
-"""
-
-"""
-Compute the sparse distance matrix using Fast Streamlines Search [StOnge2021]_
+    Recommended range of the radius is from 1 to 10 mm.
 """
 
 l21_radius = 7.0
-fss = FastStreamlineSearch(model_af_l, l21_radius, resampling=32)
-coo_mdist_mtx = fss.radius_search(target, l21_radius)
+fss = FastStreamlineSearch(ref_streamlines=model_af_l, max_radius=l21_radius)
+coo_mdist_mtx = fss.radius_search(streamlines, radius=l21_radius)
 
 """
-Extract streamlines with an similar ones in the reference
+Extract indices of streamlines with an similar ones in the reference
 """
-ids_target = np.unique(coo_mdist_mtx.row)
+ids_s = np.unique(coo_mdist_mtx.row)
 ids_ref = np.unique(coo_mdist_mtx.col)
 
-recognized_af_l = target[ids_target]
+recognized_af_l = streamlines[ids_s]
+
 """
-let's visualize extracted Arcuate Fasciculus Left bundle
+let's visualize streamlines similar to the Arcuate Fasciculus Left bundle
 """
 
 scene = window.Scene()
@@ -143,6 +136,7 @@ else:
 """
 Color the resulting AF by the nearest streamlines distance
 """
+
 nn_target, nn_ref, nn_dist = nearest_from_matrix_row(coo_mdist_mtx)
 
 scene = window.Scene()

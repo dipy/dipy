@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy.sparse import coo_matrix
-from scipy.spatial.ckdtree import cKDTree
+from scipy.spatial import cKDTree
 
 from dipy.tracking.streamline import set_number_of_points
 
@@ -35,12 +35,16 @@ class FastStreamlineSearch(object):
 
         References
         ----------
-        .. [StOnge2021] St-Onge E. et al., Fast Tractography Streamline Search,
+        .. [StOnge2021] St-Onge E. et al. Fast Tractography Streamline Search,
                         International Workshop on Computational Diffusion MRI,
                         pp. 82-95. Springer, Cham, 2021.
         """
-        assert (resampling % nb_mpts == 0)
-        assert (max_radius > 0)
+        if resampling % nb_mpts != 0:
+            raise ValueError("nb_mpts needs to be a factor of of resampling")
+
+        if max_radius <= 0.0:
+            raise ValueError("max_radius needs to be a positive value")
+
         self.nb_mpts = nb_mpts
         self.bin_size = bin_size
         self.bidirectional = bidirectional
@@ -48,31 +52,36 @@ class FastStreamlineSearch(object):
         self.bin_overlap = max_radius
 
         # Resample streamlines
-        self.fss_slines = self._resample(ref_streamlines)
-        self.fss_nb_slines = len(self.fss_slines)
+        self.ref_slines = self._resample(ref_streamlines)
+        self.ref_nb_slines = len(self.ref_slines)
 
         if self.bidirectional:
-            self.fss_slines = np.concatenate([self.fss_slines, np.flip(self.fss_slines, axis=1)])
+            self.ref_slines = np.concatenate(
+                [self.ref_slines, np.flip(self.ref_slines, axis=1)])
 
         # Compute streamlines barycenter
-        barycenters = self._slines_barycenters(self.fss_slines)
+        barycenters = self._slines_barycenters(self.ref_slines)
 
         # Compute bin shape (min, max, shape)
         self.min_box = np.min(barycenters, axis=0) - self.bin_overlap
         self.max_box = np.max(barycenters, axis=0) + self.bin_overlap
 
-        self.bin_shape = ((self.max_box - self.min_box) // bin_size).astype(int) + 1
+        box_length = self.max_box - self.min_box
+        self.bin_shape = (box_length // bin_size).astype(int) + 1
 
         # Compute the center of each bin
-        all_bins = np.vstack(np.unravel_index(np.arange(np.prod(self.bin_shape)), self.bin_shape)).T
-        bins_center = (all_bins*bin_size + self.min_box).astype(float) + bin_size/2.0
+        bin_list = np.arange(np.prod(self.bin_shape))
+        all_bins = np.vstack(np.unravel_index(bin_list, self.bin_shape)).T
+        bins_center = all_bins*bin_size + self.min_box + bin_size/2.0
 
         # Assign a list of streamlines to each bin
         baryc_tree = cKDTree(barycenters)
-        baryc_in_bin = baryc_tree.query_ball_point(bins_center, bin_size/2.0 + self.bin_overlap, p=np.inf)
+        center_dist = bin_size/2.0 + self.bin_overlap
+        baryc_in_bin = baryc_tree.query_ball_point(bins_center, center_dist,
+                                                   p=np.inf)
 
         # Compute streamlines mean-points
-        meanpts = self._slines_mean_points(self.fss_slines)
+        meanpts = self._slines_mean_points(self.ref_slines)
 
         # Compute bin indices, streamlines + mean-points tree
         self.bin_indices = np.flatnonzero(np.array(baryc_in_bin))
@@ -106,15 +115,17 @@ class FastStreamlineSearch(object):
 
         Notes
         -----
-        Given streamlines should be already aligned with reference streamlines.
+        Given streamlines should be already aligned with ref streamlines.
 
         References
         ----------
-        .. [StOnge2021] St-Onge E. et al., Fast Tractography Streamline Search,
+        .. [StOnge2021] St-Onge E. et al. Fast Tractography Streamline Search,
                         International Workshop on Computational Diffusion MRI,
                         pp. 82-95. Springer, Cham, 2021.
         """
-        assert (radius <= self.bin_overlap)
+        if radius > self.bin_overlap:
+            raise ValueError("radius should be smaller or equal to the given"
+                             "\n 'max_radius' in FastStreamlineSearch")
 
         # Resample query streamlines
         q_slines = self._resample(streamlines)
@@ -126,7 +137,8 @@ class FastStreamlineSearch(object):
         # Verify if each barycenter are inside the min max box
         u_bin, binned_slines_ids = self._barycenters_binning(q_baryc)
 
-        # Adapting radius for L1 bounded query: sqrt(3) = 1.73205080756887729...
+        # Adapting radius for L1 query: sqrt(3) = 1.73205080756887729..
+        # Rounded up for float32 precision to avoid error / false negative
         l1_sum_dist = 1.73205081 * radius * self.nb_mpts
 
         # Search for all similar streamlines
@@ -143,20 +155,23 @@ class FastStreamlineSearch(object):
                 mpts = self._slines_mean_points(q_slines[slines_id])
 
                 # Compute Tree L1 Query with mean-points
-                res = ref_tree.query_ball_point(mpts, l1_sum_dist, p=1, return_sorted=False)
+                res = ref_tree.query_ball_point(mpts, l1_sum_dist, p=1,
+                                                return_sorted=False)
 
                 # Refine distance with the complete
                 for s, ref_ids in enumerate(res):
                     cur_sline_id = slines_id[s]
                     ref_sline_ids = slines_id_ref[ref_ids]
-                    d = mean_l2_func(q_slines[cur_sline_id], self.fss_slines[ref_sline_ids])
-                    in_dist_max = d < radius
+                    d = mean_l2_func(q_slines[cur_sline_id],
+                                     self.ref_slines[ref_sline_ids])
 
                     # Return all pairs within the radius
-                    y = ref_sline_ids[in_dist_max]
-                    x = np.full_like(y, cur_sline_id)
-                    list_id.append(x)
-                    list_id_ref.append(y)
+                    in_dist_max = d < radius
+                    id_ref = ref_sline_ids[in_dist_max]
+                    id_s = np.full_like(id_ref, cur_sline_id)
+
+                    list_id.append(id_s)
+                    list_id_ref.append(id_ref)
                     list_dist.append(d[in_dist_max])
 
         # Combine all results in a coo sparse matrix
@@ -166,27 +181,27 @@ class FastStreamlineSearch(object):
             dist = np.hstack(list_dist)
 
             if self.bidirectional:
-                flipped = ids_ref >= self.fss_nb_slines
-                ids_ref[flipped] -= self.fss_nb_slines
+                flipped = ids_ref >= self.ref_nb_slines
+                ids_ref[flipped] -= self.ref_nb_slines
                 if use_negative:
                     dist[flipped] *= -1.0
 
             return coo_matrix((dist, (ids_in, ids_ref)),
-                              shape=(q_nb_slines, self.fss_nb_slines))
+                              shape=(q_nb_slines, self.ref_nb_slines))
         else:
             # No results, return an empty sparse matrix
             return coo_matrix(([], ([], [])),
-                              shape=(q_nb_slines, self.fss_nb_slines))
+                              shape=(q_nb_slines, self.ref_nb_slines))
 
     def _resample(self, streamlines):
         """Resample streamlines"""
-        res_slines = np.zeros([len(streamlines), self.resampling, 3], dtype=np.float32)
+        s = np.zeros([len(streamlines), self.resampling, 3], dtype=np.float32)
         for i in range(len(streamlines)):
             if len(streamlines[i]) < 2:
-                res_slines[i] = streamlines[i]
+                s[i] = streamlines[i]
             else:
-                res_slines[i] = set_number_of_points(streamlines[i], self.resampling)
-        return res_slines
+                s[i] = set_number_of_points(streamlines[i], self.resampling)
+        return s
 
     def _slines_barycenters(self, slines_arr):
         """Compute streamlines barycenter"""
@@ -194,7 +209,8 @@ class FastStreamlineSearch(object):
 
     def _slines_mean_points(self, slines_arr):
         """Compute streamlines mean-points"""
-        mpts = np.mean(slines_arr.reshape((len(slines_arr), self.nb_mpts, -1, 3)), axis=2)
+        r_arr = slines_arr.reshape((len(slines_arr), self.nb_mpts, -1, 3))
+        mpts = np.mean(r_arr, axis=2)
         return mpts.reshape(len(slines_arr), -1)
 
     def _barycenters_binning(self, barycenters):
@@ -202,12 +218,13 @@ class FastStreamlineSearch(object):
         in_bin = np.logical_and(np.all(barycenters >= self.min_box, axis=1),
                                 np.all(barycenters <= self.max_box, axis=1))
 
-        baryc_bins = ((barycenters[in_bin] - self.min_box) // self.bin_size).astype(int)
-        baryc_multiid = np.ravel_multi_index(baryc_bins.T, self.bin_shape)
+        baryc_to_box = barycenters[in_bin] - self.min_box
+        baryc_bins_id = (baryc_to_box // self.bin_size).astype(int)
+        baryc_multiid = np.ravel_multi_index(baryc_bins_id.T, self.bin_shape)
 
-        array_sortid = np.argsort(baryc_multiid)
-        u_bin, mapping = np.unique(baryc_multiid[array_sortid], return_index=True)
-        slines_ids = np.split(np.flatnonzero(in_bin)[array_sortid], mapping[1:])
+        sort_id = np.argsort(baryc_multiid)
+        u_bin, mapping = np.unique(baryc_multiid[sort_id], return_index=True)
+        slines_ids = np.split(np.flatnonzero(in_bin)[sort_id], mapping[1:])
         return u_bin, slines_ids
 
 
