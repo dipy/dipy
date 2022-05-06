@@ -1228,17 +1228,17 @@ fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
 
 
-def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
-                            bundles=['af.left', 'cst.right', 'cc_1']):
+def read_bundles_2_subjects(subj_id='subj_1', metrics=('fa',),
+                            bundles=('af.left', 'cst.right', 'cc_1')):
     r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
     Parameters
     ----------
     subj_id : string
         Either ``subj_1`` or ``subj_2``.
-    metrics : list
+    metrics : array-like
         Either ['fa'] or ['t1'] or ['fa', 't1']
-    bundles : list
+    bundles : array-like
         E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.

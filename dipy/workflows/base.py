@@ -34,7 +34,7 @@ def none_or_dtype(dtype):
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
-                 parents=[], formatter_class=argparse.RawTextHelpFormatter,
+                 parents=(), formatter_class=argparse.RawTextHelpFormatter,
                  prefix_chars='-', fromfile_prefix_chars=None,
                  argument_default=None, conflict_handler='resolve',
                  add_help=True):

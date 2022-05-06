@@ -337,7 +337,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
 
 
 class SparseFascicleModel(ReconstModel, Cache):
-    def __init__(self, gtab, sphere=None, response=[0.0015, 0.0005, 0.0005],
+    def __init__(self, gtab, sphere=None, response=(0.0015, 0.0005, 0.0005),
                  solver='ElasticNet', l1_ratio=0.5, alpha=0.001,
                  isotropic=None, seed=42):
         """
