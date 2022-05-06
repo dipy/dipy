@@ -877,6 +877,9 @@ def slr_with_qbx(static, moving,
     rm_small_clusters : int, optional
         Remove clusters that have less than `rm_small_clusters` (default 50)
 
+    maxiter : int, optional
+        Maximum number of iterations to perform.
+
     select_random : int, optional.
         If not, None selects a random number of streamlines to apply clustering
         Default None.
