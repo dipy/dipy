@@ -142,7 +142,7 @@ class SlrWithQbxFlow(Workflow):
             this value.
         less_than : int, optional
             Keep streamlines have length less than this value.
-        np_pts : int, optional
+        nb_pts : int, optional
             Number of points for discretizing each streamline.
         progressive : boolean, optional
         out_dir : string, optional

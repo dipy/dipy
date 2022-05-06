@@ -894,7 +894,7 @@ def slr_with_qbx(static, moving,
     qbx_thr : variable int
             Thresholds for QuickBundlesX (default [40, 30, 20, 15])
 
-    np_pts : int, optional
+    nb_pts : int, optional
             Number of points for discretizing each streamline (default 20)
 
     progressive : boolean, optional
