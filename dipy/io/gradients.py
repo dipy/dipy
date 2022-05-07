@@ -45,7 +45,6 @@ def read_bvals_bvecs(fbvals, fbvecs):
                    '.eddy_rotated_bvecs', '']:
             with open(this_fname, 'r') as f:
                 content = f.read()
-            
             # Note: no context manager used because of windows behavior
             # where tempfile not visible while the while is still open,
             # so explicit cleanup required
