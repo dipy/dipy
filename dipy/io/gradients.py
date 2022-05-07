@@ -1,6 +1,7 @@
 from os.path import splitext
 import re
 import tempfile
+from typing import final
 import warnings
 import numpy as np
 
@@ -44,11 +45,18 @@ def read_bvals_bvecs(fbvals, fbvecs):
                    '.eddy_rotated_bvecs', '']:
             with open(this_fname, 'r') as f:
                 content = f.read()
-            # We replace coma and tab delimiter by space
-            with tempfile.NamedTemporaryFile(suffix=".txt", mode="w") as f:
+            
+            # Note: no context manager used because of windows behavior
+            # where tempfile not visible while the while is still open,
+            # so explicit cleanup required
+            f = tempfile.SpooledTemporaryFile(suffix=".txt", mode="w")
+            try:
+                # We replace coma and tab delimiter by space
                 f.write(re.sub(r'(\t|,)', ' ', content))
                 f.flush()
                 vals.append(np.squeeze(np.loadtxt(f.name)))
+            finally:
+                f.close()
         elif ext == '.npy':
             vals.append(np.squeeze(np.load(this_fname)))
         else:
