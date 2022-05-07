@@ -224,7 +224,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         for r in range(nrows):
             for c in range(ncols):
                 delta = delta_field[r, c]
-                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+                sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
                 if(target is None):
                     b[0] = delta_field[r, c] * grad[r, c, 0]
                     b[1] = delta_field[r, c] * grad[r, c, 1]
@@ -402,7 +402,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[1] = grad[s, r, c, 1]
                     g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
-                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
                     if(target is None):
                         b[0] = delta_field[s, r, c] * g[0]
                         b[1] = delta_field[s, r, c] * g[1]
@@ -599,7 +599,7 @@ def compute_residual_displacement_field_ssd_3d(
             for r in range(nrows):
                 for c in range(ncols):
                     delta = delta_field[s, r, c]
-                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
                     if(target is None):
                         b[0] = delta * gradient_field[s, r, c, 0]
                         b[1] = delta * gradient_field[s, r, c, 1]
@@ -711,7 +711,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         for r in range(nrows):
             for c in range(ncols):
                 delta = delta_field[r, c]
-                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+                sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
                 if target is None:
                     b[0] = delta * gradient_field[r, c, 0]
                     b[1] = delta * gradient_field[r, c, 1]
