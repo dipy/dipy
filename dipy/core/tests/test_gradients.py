@@ -709,11 +709,12 @@ def test_params_to_btens():
     bdeltas = [0, -0.5, 0.5, 1]
     b_etas = [0, 0, 0, 0]
 
-    expected_btens = []
-    expected_btens.append(np.eye(3) / 3)
-    expected_btens.append(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]]) / 2)
-    expected_btens.append(np.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 2]]) / 3)
-    expected_btens.append(np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]]))
+    expected_btens = [
+        np.eye(3) / 3,
+        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 0]]) / 2,
+        np.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 2]]) / 3,
+        np.array([[0, 0, 0], [0, 0, 0], [0, 0, 1]])
+    ]
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         btens = params_to_btens(bval, bdelta, b_eta)
@@ -724,16 +725,17 @@ def test_params_to_btens():
     bdeltas = [0.6, -0.2, 0]
     b_etas = [0.3, 0.8, 0.7]
 
-    expected_btens = []
-    expected_btens.append(np.array([[0.12466667, 0, 0],
-                                    [0, 0.32866667, 0],
-                                    [0, 0, 1.24666667]]))
-    expected_btens.append(np.array([[0.18133333, 0, 0],
-                                    [0, 0.13866667, 0],
-                                    [0, 0, 0.08]]))
-    expected_btens.append(np.array([[0.76666667, 0, 0],
-                                    [0, 0.76666667, 0],
-                                    [0, 0, 0.76666667]]))
+    expected_btens = [
+        np.array([[0.12466667, 0, 0],
+                  [0, 0.32866667, 0],
+                  [0, 0, 1.24666667]]),
+        np.array([[0.18133333, 0, 0],
+                  [0, 0.13866667, 0],
+                  [0, 0, 0.08]]),
+        np.array([[0.76666667, 0, 0],
+                  [0, 0.76666667, 0],
+                  [0, 0, 0.76666667]])
+    ]
 
     for i, (bval, bdelta, b_eta) in enumerate(zip(bvals, bdeltas, b_etas)):
         btens = params_to_btens(bval, bdelta, b_eta)

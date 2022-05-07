@@ -57,9 +57,7 @@ def relist_streamlines(points, offsets):
     streamlines: sequence
     """
 
-    streamlines = []
-
-    streamlines.append(points[0: offsets[0]])
+    streamlines = [points[0: offsets[0]]]
 
     for i in range(len(offsets) - 1):
         streamlines.append(points[offsets[i]: offsets[i + 1]])

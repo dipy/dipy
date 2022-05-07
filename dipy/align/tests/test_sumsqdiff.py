@@ -413,13 +413,16 @@ def test_solve_2d_symmetric_positive_definite():
     As = []
 
     # Identity
-    As.append(np.array([1.0, 0.0, 1.0]))
+    identity = np.array([1.0, 0.0, 1.0])
+    As.append(identity)
 
     # Small determinant
-    As.append(np.array([1e-3, 1e-4, 1e-3]))
+    small_det = np.array([1e-3, 1e-4, 1e-3])
+    As.append(small_det)
 
     # Large determinant
-    As.append(np.array([1e6, 1e4, 1e6]))
+    large_det = np.array([1e6, 1e4, 1e6])
+    As.append(large_det)
 
     for A in As:
         AA = np.array([[A[0], A[1]], [A[1], A[2]]])
@@ -444,7 +447,8 @@ def test_solve_3d_symmetric_positive_definite():
     gs = []
 
     # diagonal
-    gs.append(np.array([0.0, 0.0, 0.0]))
+    diag = np.array([0.0, 0.0, 0.0])
+    gs.append(diag)
 
     # canonical basis
     gs.append(np.array([1.0, 0.0, 0.0]))
