@@ -119,9 +119,9 @@ measured in millimeters and their function in Recobundles:
 
     - model_clust_thr : It will use QuickBundles to get the centroids of the
     model bundle and work with centroids instead of all streamlines. This helps
-    to make RecoBundles faster. The larger the value of threshold fewer
-    centroids will be there and smaller the threshold value, more centroids
-    will be tthere. If you prefer to use all the streamlines of the model
+    to make RecoBundles faster. The larger the value of the threshold, the
+    fewer centroids will be, the and smaller the threshold value, the more
+    centroids will be. If you prefer to use all the streamlines of the model
     bundle, you can set this threshold to 0.01 mm.
     Recommended range of the model_clust_thr is 0.01 - 3.0 mm.
 

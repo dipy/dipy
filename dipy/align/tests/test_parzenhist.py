@@ -377,7 +377,7 @@ def test_joint_pdf_gradients_dense():
         # Now we have the gradient of the joint distribution w.r.t. the
         # transform parameters
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite differences
         n = transform.get_number_of_parameters()
         expected = np.empty_like(actual)
         for i in range(n):
@@ -478,7 +478,7 @@ def test_joint_pdf_gradients_sparse():
         # parameters
         actual = np.copy(parzen_hist.joint_grad)
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite differences
         n = transform.get_number_of_parameters()
         expected = np.empty_like(actual)
         for i in range(n):

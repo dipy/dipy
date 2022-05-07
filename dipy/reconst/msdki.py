@@ -483,7 +483,7 @@ class MeanDiffusionKurtosisFit(object):
         Returns
         -------
         smt2di : ndarray
-            Intrisic diffusivity computed by converting MSDKI to SMT2.
+            Intrinsic diffusivity computed by converting MSDKI to SMT2.
 
         Notes
         -----

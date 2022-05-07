@@ -932,7 +932,7 @@ def _btens_to_params_2d(btens_2d, ztol):
 
 
 def btens_to_params(btens, ztol=1e-10):
-    r"""Compute trace, anisotropy and assymetry parameters from b-tensors
+    r"""Compute trace, anisotropy and assymetry parameters from b-tensors.
 
     Parameters
     ----------
@@ -1003,7 +1003,7 @@ def btens_to_params(btens, ztol=1e-10):
 
 
 def params_to_btens(bval, bdelta, b_eta):
-    """Compute b-tensor from trace, anisotropy and assymetry parameters
+    """Compute b-tensor from trace, anisotropy and assymetry parameters.
 
     Parameters
     ----------
@@ -1058,3 +1058,106 @@ def params_to_btens(bval, bdelta, b_eta):
     btens = bval/3*(np.eye(3)+bdelta*(m1+b_eta*m2))
 
     return btens
+
+
+def ornt_mapping(ornt1, ornt2):
+    """Calculate the mapping needing to get from orn1 to orn2."""
+
+    mapping = np.empty((len(ornt1), 2), 'int')
+    mapping[:, 0] = -1
+    A = ornt1[:, 0].argsort()
+    B = ornt2[:, 0].argsort()
+    mapping[B, 0] = A
+    assert (mapping[:, 0] != -1).all()
+    sign = ornt2[:, 1] * ornt1[mapping[:, 0], 1]
+    mapping[:, 1] = sign
+    return mapping
+
+
+def reorient_vectors(input, current_ornt, new_ornt, axis=0):
+    """Change the orientation of gradients or other vectors.
+
+    Moves vectors, storted along axis, from current_ornt to new_ornt. For
+    example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
+
+    R: Right
+    A: Anterior
+    S: Superior
+    L: Left
+    P: Posterior
+    I: Inferior
+
+    """
+    if isinstance(current_ornt, str):
+        current_ornt = orientation_from_string(current_ornt)
+    if isinstance(new_ornt, str):
+        new_ornt = orientation_from_string(new_ornt)
+
+    n = input.shape[axis]
+    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
+        raise ValueError("orientations do not match")
+
+    input = np.asarray(input)
+    mapping = ornt_mapping(current_ornt, new_ornt)
+    output = input.take(mapping[:, 0], axis)
+    out_view = np.rollaxis(output, axis, output.ndim)
+    out_view *= mapping[:, 1]
+    return output
+
+
+def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
+    if isinstance(current_ornt, str):
+        current_ornt = orientation_from_string(current_ornt)
+    if isinstance(new_ornt, str):
+        new_ornt = orientation_from_string(new_ornt)
+
+    n = input.shape[axis]
+    if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
+        raise ValueError("orientations do not match")
+
+    mapping = ornt_mapping(current_ornt, new_ornt)
+    order = [slice(None)] * input.ndim
+    order[axis] = mapping[:, 0]
+    shape = [1] * input.ndim
+    shape[axis] = -1
+    sign = mapping[:, 1]
+    sign.shape = shape
+    output = input[order]
+    output *= sign
+    return output
+
+
+def orientation_from_string(string_ornt):
+    """Return an array representation of an ornt string."""
+    orientation_dict = dict(r=(0, 1), l=(0, -1), a=(1, 1),
+                            p=(1, -1), s=(2, 1), i=(2, -1))
+    ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
+    ornt = np.array(ornt)
+    if _check_ornt(ornt):
+        msg = string_ornt + " does not seem to be a valid orientation string"
+        raise ValueError(msg)
+    return ornt
+
+
+def orientation_to_string(ornt):
+    """Return a string representation of a 3d ornt."""
+    if _check_ornt(ornt):
+        msg = repr(ornt) + " does not seem to be a valid orientation"
+        raise ValueError(msg)
+    orientation_dict = {(0, 1): 'r', (0, -1): 'l', (1, 1): 'a',
+                        (1, -1): 'p', (2, 1): 's', (2, -1): 'i'}
+    ornt_string = ''
+    for ii in ornt:
+        ornt_string += orientation_dict[(ii[0], ii[1])]
+    return ornt_string
+
+
+def _check_ornt(ornt):
+    uniq = np.unique(ornt[:, 0])
+    if len(uniq) != len(ornt):
+        print(len(uniq))
+        return True
+    uniq = np.unique(ornt[:, 1])
+    if tuple(uniq) not in set([(-1, 1), (-1,), (1,)]):
+        print(tuple(uniq))
+        return True

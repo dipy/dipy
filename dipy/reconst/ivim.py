@@ -429,7 +429,7 @@ class IvimModelTRR(ReconstModel):
             f, D_star = res.x
             return f, D_star
         except ValueError:
-            warningMsg = "x0 obtained from linear fitting is not feasibile"
+            warningMsg = "x0 obtained from linear fitting is not feasible"
             warningMsg += " as initial guess for leastsq while estimating "
             warningMsg += "f and D_star. Using parameters from the "
             warningMsg += "linear fit."
@@ -828,7 +828,7 @@ class IvimModelVP(ReconstModel):
     def phi(self, x):
         """
         Creates a structure for the combining the diffusion and pseudo-
-        diffusion by multipling with the bvals and then exponentiating each of
+        diffusion by multiplying with the bvals and then exponentiating each of
         the two components for fitting as per the IVIM- two compartment model.
 
         Parameters

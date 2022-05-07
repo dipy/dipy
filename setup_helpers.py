@@ -326,7 +326,7 @@ def read_vars_from(ver_file):
         Bunch object where variables read from `ver_file` appear as
         attributes
     """
-    # Use exec for compabibility with Python 3
+    # Use exec for compatibility with Python 3
     ns = {}
     with open(ver_file, 'rt') as fobj:
         exec(fobj.read(), ns)

@@ -66,7 +66,7 @@ class MultiShellResponse(object):
 
         The method `multi_shell_fiber_response` allows to create a multi-shell
         fiber response with the right format, for a three compartments model.
-        It can be refered to in order to understand the inputs of this class.
+        It can be referred to in order to understand the inputs of this class.
 
         Parameters
         ----------
@@ -116,9 +116,9 @@ def _inflate_response(response, gtab, n, delta):
     n_idx[iso:] = n // 2 + iso
     diff = abs(response.shells[:, None] - gtab.bvals)
     b_idx = np.argmin(diff, axis=0)
-    kernal = response.response / delta
+    kernel = response.response / delta
 
-    return kernal[np.ix_(b_idx, n_idx)]
+    return kernel[np.ix_(b_idx, n_idx)]
 
 
 def _basic_delta(iso, m, n, theta, phi):
@@ -440,7 +440,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     sh_order : int
          Maximum spherical harmonics order.
     bvals : ndarray
-        Array containing the b-values. Must be unique b-values, like outputed
+        Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
     wm_rf : (4, len(bvals)) ndarray
         Response function of the WM tissue, for each bvals.

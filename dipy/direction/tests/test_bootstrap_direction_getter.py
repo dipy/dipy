@@ -21,7 +21,7 @@ response = (np.array([1.5e3, 0.3e3, 0.3e3]), 1)
 
 
 def test_bdg_initial_direction():
-    """This test the number of inital direction."
+    """This tests the number of initial directions."
     """
 
     hsph_updated = HemiSphere.from_sphere(unit_icosahedron).subdivide(2)

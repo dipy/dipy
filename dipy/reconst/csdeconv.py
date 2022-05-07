@@ -302,7 +302,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             The spherical harmonic representation of the FOD from which to make
             the signal prediction.
         gtab : GradientTable
-            The gradients for which the signal will be predicted. Use the
+            The gradients for which the signal will be predicted. Uses the
             model's gradient table by default.
         S0 : ndarray or float
             The non diffusion-weighted signal value.

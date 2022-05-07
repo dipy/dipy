@@ -398,11 +398,11 @@ def test_difference_with_minmax():
     assert_almost_equal(values_1, values_4)
 
 
-def test_degenerative_cases():
+def test_degenerate_cases():
 
     sphere = default_sphere
 
-    # completely isotropic and degencase
+    # completely isotropic and degenerate case
     odf = np.zeros(sphere.vertices.shape[0])
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     print(directions, values, indices)

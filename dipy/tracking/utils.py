@@ -911,7 +911,7 @@ def reduce_rois(rois, include):
 
     Notes
     -----
-    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    The include_roi and exclude_roi can be used to perform the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
 

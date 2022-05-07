@@ -104,7 +104,7 @@ fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
 
 """
 This 2-steps procedure will create a FreeWaterTensorFit object which contains
-all the diffusion tensor statistics free for free water contaminations. Below
+all the diffusion tensor statistics free for free water contamination. Below
 we extract the fractional anisotropy (FA) and the mean diffusivity (MD) of the
 free water diffusion tensor."""
 
@@ -125,7 +125,7 @@ dti_MD = dtifit.md
 
 """
 Below the FA values for both free water elimination DTI model and standard DTI
-model are plotted in panels A and B, while the repective MD values are ploted
+model are plotted in panels A and B, while the respective MD values are plotted
 in panels D and E. For a better visualization of the effect of the free water
 correction, the differences between these two metrics are shown in panels C and
 E. In addition to the standard diffusion statistics, the estimated volume
