@@ -757,7 +757,6 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    dkiF.kfa
     assert_almost_equal(dkiF.kfa, np.sqrt(4/5))
 
     # KFA = sqrt(13/5) for systems of two tensors with same AD and RD values
@@ -772,7 +771,6 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    dkiF.kfa
     assert_almost_equal(dkiF.kfa, np.sqrt(13/15))
 
     # KFA = 0 if MKT = 0
@@ -785,5 +783,4 @@ def test_kurtosis_fa():
 
     dkiM = dki.DiffusionKurtosisModel(gtab_2s)
     dkiF = dkiM.fit(signal)
-    dkiF.kfa
     assert_almost_equal(dkiF.kfa, 0)
