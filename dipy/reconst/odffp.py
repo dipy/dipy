@@ -4,7 +4,7 @@ Created on Feb 18, 2021
 @author: patrykfi
 '''
 
-import os, sys, gzip
+import os, gzip
 import h5py, hdf5storage
 import warnings
 
@@ -257,7 +257,7 @@ class OdffpDictionary(object):
         # Compute the ODF for the generated DWI
         odf = odf_recon_model.fit(dwi).odf(self.tessellation).T
            
-        return np.squeeze(odf[:len(self.tessellation.vertices)//2])
+        return odf[:len(self.tessellation.vertices)//2]
 
     
     def load(self, dict_file):
@@ -333,7 +333,9 @@ class OdffpDictionary(object):
         self.ratio[0,0] = 1    # no fibers, hence p_iso=1 
         self.micro[1:3,0] = 3  # diffusivity of free water at 37C
         self.peaks_per_voxel[0] = 0
-        self.odf[:,0] = self._compute_odf_trace(gtab, odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
+        self.odf[:,0] = np.squeeze(
+            self._compute_odf_trace(gtab, odf_recon_model, self.ratio[:,0], self.micro[:,:,0], [])
+        )
    
         for chunk_idx in np.split(range(1, dict_size), range(max_chunk_size, dict_size, max_chunk_size)):
            
@@ -638,48 +640,48 @@ class OdffpModel(object):
     def fit(self, data, mask=None, max_chunk_size=1000, penalty = DEFAULT_FIT_PENALTY):
         max_chunk_size = np.maximum(1, max_chunk_size)
         penalty = np.maximum(0.0, np.minimum(MAX_FIT_PENALTY, penalty))
- 
+
         tessellation_size = len(self._dict.tessellation.vertices)
         tessellation_half_size = tessellation_size // 2
-  
+
         if mask is None:
             mask = np.ones(data.shape[:-1], dtype=bool)
         else:
             mask = mask.astype(bool)
-  
+
         masked_data = data[mask]
         voxels_num = masked_data.shape[0]
 
         dict_idx = np.zeros(voxels_num, dtype=int)
         dict_odf_trace,_ = self._normalize_odf(self._dict.odf)
-         
+
         output_odf = np.zeros((voxels_num, tessellation_half_size))
         output_peak_dirs = np.zeros((voxels_num, self._dict.max_peaks_num, 3))
-         
+
         for chunk_idx in np.split(range(voxels_num), range(max_chunk_size, voxels_num, max_chunk_size)):
-         
+
             print("%.1f%%" % (100 * (np.max(chunk_idx) + 1) / voxels_num))
-         
+
             chunk_size = len(chunk_idx)
- 
+
             input_odf = self._odf_recon_model.fit(masked_data[chunk_idx]).odf(self._dict.tessellation)
             input_odf_trace = np.zeros((chunk_size, tessellation_half_size))
             input_odf_norm = np.zeros(chunk_size)
-              
+
             rotation = np.zeros((chunk_size, 3, 3))
             rotated_tessellation = {}
-             
+
             for i in range(chunk_size):
- 
+
                 rotation[i] = self._find_highest_peak_rotation(input_odf[i])
                 rotated_tessellation[i] = self._rotate_tessellation(self._dict.tessellation, rotation[i])
-             
+
                 input_odf_trace[i], input_odf_norm[i] = self._normalize_odf(
                     self.resample_odf(input_odf[i], self._dict.tessellation, rotated_tessellation[i])
                 )
- 
+
             dict_idx[chunk_idx] = self._find_matching_odf_trace(input_odf_trace, dict_odf_trace, penalty) 
-         
+
             for i, j in zip(range(chunk_size), chunk_idx):
                 if self._output_dict_odf:
                     output_odf[j] = self.resample_odf(
@@ -688,16 +690,16 @@ class OdffpModel(object):
                     )
                 else:
                     output_odf[j] = input_odf[i][:tessellation_half_size]
-                   
+
                 output_peak_dirs[j] = self._rotate_peak_dirs(self._dict.peak_dirs[:,:,dict_idx[j]], rotation[i])
-                 
+
 #                 ## DEBUG:
 #                 
 #                 plot_odf(input_odf[i], 'odf/%08d_in.png' % j)
 #                 plot_odf(output_odf[j], 'odf/%08d_out.png' % j)
 #                 
 #                 ##
-    
+
         return OdffpFit(
             data, self._dict, 
             self._unmask(output_odf, mask), 
