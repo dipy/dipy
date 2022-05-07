@@ -1,11 +1,7 @@
 """ Testing track_metrics module """
 
 import numpy as np
-from dipy.testing import assert_true, assert_false
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_equal, assert_almost_equal)
-from dipy.tracking import metrics as tm
-from dipy.tracking import distances as td
+from numpy.testing import assert_array_equal
 from dipy.tracking import learning as tl
 
 

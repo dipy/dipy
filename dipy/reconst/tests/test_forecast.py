@@ -1,14 +1,15 @@
 # Tests for FORECAST fitting and metrics
 
+import warnings
+
 import numpy as np
 
 from dipy.data import get_sphere, default_sphere, get_3shell_gtab
 from dipy.reconst.forecast import ForecastModel
+from dipy.reconst.shm import descoteaux07_legacy_msg
 from dipy.sims.voxel import multi_tensor
 
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite)
+from numpy.testing import assert_almost_equal, assert_equal
 import pytest
 from dipy.direction.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
@@ -42,15 +43,23 @@ def setup_module():
 
 @needs_cvxpy
 def test_forecast_positive_constrain():
-    fm = ForecastModel(data.gtab,
-                       sh_order=data.sh_order,
-                       lambda_lb=data.lambda_lb,
-                       dec_alg='POS',
-                       sphere=data.sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab,
+                           sh_order=data.sh_order,
+                           lambda_lb=data.lambda_lb,
+                           dec_alg='POS',
+                           sphere=data.sphere)
     f_fit = fm.fit(data.S)
 
     sphere = get_sphere('repulsion100')
-    fodf = f_fit.odf(sphere, clip_negative=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere, clip_negative=False)
     assert_almost_equal(fodf[fodf < 0].sum(), 0, 2)
 
     coeff = f_fit.sh_coeff
@@ -60,15 +69,31 @@ def test_forecast_positive_constrain():
 
 def test_forecast_csd():
     sphere = get_sphere('repulsion100')
-    fm = ForecastModel(data.gtab, dec_alg='CSD',
-                       sphere=data.sphere, lambda_csd=data.lambda_csd)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, dec_alg='CSD',
+                           sphere=data.sphere, lambda_csd=data.lambda_csd)
     f_fit = fm.fit(data.S)
-    fodf_csd = f_fit.odf(sphere, clip_negative=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf_csd = f_fit.odf(sphere, clip_negative=False)
 
-    fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_lb=data.lambda_lb, dec_alg='WLS')
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=data.sh_order,
+                           lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(data.S)
-    fodf_wls = f_fit.odf(sphere, clip_negative=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf_wls = f_fit.odf(sphere, clip_negative=False)
 
     value = fodf_wls[fodf_wls < 0].sum() < fodf_csd[fodf_csd < 0].sum()
     assert_equal(value, 1)
@@ -76,48 +101,88 @@ def test_forecast_csd():
 
 def test_forecast_odf():
     # check FORECAST fODF at different SH order
-    fm = ForecastModel(data.gtab, sh_order=4,
-                       dec_alg='CSD', sphere=data.sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=4,
+                           dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
     sphere = default_sphere
-    fodf = f_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, data.sticks), 2, 1)
 
-    fm = ForecastModel(data.gtab, sh_order=6,
-                       dec_alg='CSD', sphere=data.sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=6,
+                           dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
-    fodf = f_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, data.sticks), 2, 1)
 
-    fm = ForecastModel(data.gtab, sh_order=8,
-                       dec_alg='CSD', sphere=data.sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=8,
+                           dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
-    fodf = f_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, data.sticks), 2, 1)
 
     # stronger regularization is required for high order SH
-    fm = ForecastModel(data.gtab, sh_order=10,
-                       dec_alg='CSD', sphere=sphere.vertices)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=10,
+                           dec_alg='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
-    fodf = f_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
         angular_similarity(directions, data.sticks), 2, 1)
 
-    fm = ForecastModel(data.gtab, sh_order=12,
-                       dec_alg='CSD', sphere=sphere.vertices)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=12,
+                           dec_alg='CSD', sphere=sphere.vertices)
     f_fit = fm.fit(data.S)
-    fodf = f_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = f_fit.odf(sphere)
     directions, _, _ = peak_directions(fodf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(
@@ -126,8 +191,12 @@ def test_forecast_odf():
 
 def test_forecast_indices():
     # check anisotropic tensor
-    fm = ForecastModel(data.gtab, sh_order=2,
-                       lambda_lb=data.lambda_lb, dec_alg='WLS')
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=2,
+                           lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(data.S)
 
     d_par = f_fit.dpar
@@ -150,8 +219,12 @@ def test_forecast_indices():
     S, sticks = multi_tensor(data.gtab, mevals, S0=100.0, angles=data.angl,
                              fractions=[50, 50], snr=None)
 
-    fm = ForecastModel(data.gtab, sh_order=data.sh_order,
-                       lambda_lb=data.lambda_lb, dec_alg='WLS')
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=data.sh_order,
+                           lambda_lb=data.lambda_lb, dec_alg='WLS')
     f_fit = fm.fit(S)
 
     d_par = f_fit.dpar
@@ -165,11 +238,19 @@ def test_forecast_indices():
 
 def test_forecast_predict():
     # check anisotropic tensor
-    fm = ForecastModel(data.gtab, sh_order=8,
-                       dec_alg='CSD', sphere=data.sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(data.gtab, sh_order=8,
+                           dec_alg='CSD', sphere=data.sphere)
     f_fit = fm.fit(data.S)
 
-    S = f_fit.predict(S0=1.0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S = f_fit.predict(S0=1.0)
 
     mse = np.sum((S-data.S/100.0)**2) / len(S)
 
@@ -193,11 +274,19 @@ def test_multivox_forecast():
     S[2, 0, 0], _ = multi_tensor(gtab, mevals, S0=1.0, angles=angl3,
                                  fractions=[50, 50], snr=None)
 
-    fm = ForecastModel(gtab, sh_order=8,
-                       dec_alg='CSD')
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fm = ForecastModel(gtab, sh_order=8,
+                           dec_alg='CSD')
     f_fit = fm.fit(S)
 
-    S_predict = f_fit.predict()
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S_predict = f_fit.predict()
 
     assert_equal(S_predict.shape, S.shape)
 
@@ -209,7 +298,3 @@ def test_multivox_forecast():
 
     mse3 = np.sum((S_predict[2, 0, 0]-S[2, 0, 0])**2) / len(gtab.bvals)
     assert_almost_equal(mse3, 0.0, 3)
-
-
-if __name__ == '__main__':
-    run_module_suite()

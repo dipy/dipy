@@ -439,21 +439,6 @@ def bounding_bbox_valid(standard):
     return sft.is_bbox_in_vox_valid()
 
 
-def remove_invalid_streamlines(resize):
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
-    if resize:
-        sft.dimensions[2] = 5
-
-    sft.remove_invalid_streamlines()
-    return len(sft)
-
-
-def remove_invalid_streamlines_epsilon(epsilon):
-    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
-    sft.remove_invalid_streamlines(epsilon=epsilon)
-    return len(sft)
-
-
 def random_point_color():
     np.random.seed(0)
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
@@ -829,18 +814,76 @@ def test_bounding_box():
 
 
 def test_invalid_streamlines():
-    assert_(remove_invalid_streamlines(True) == 5,
-            msg='A shifted gold standard should have 8 invalid streamlines')
-    assert_(remove_invalid_streamlines(False) == 13,
-            msg='A unshifted gold standard should have 0 invalid streamlines')
+
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    src_strml_count = len(sft)
+
+    obtained_idx_to_remove, obtained_idx_to_keep = \
+        sft.remove_invalid_streamlines()
+
+    expected_idx_to_keep = list(range(src_strml_count))
+
+    assert len(obtained_idx_to_remove) == 0
+    assert expected_idx_to_keep == obtained_idx_to_keep
+    assert_(
+        len(sft) == src_strml_count,
+        msg='An unshifted gold standard should have {} invalid streamlines'.
+            format(src_strml_count - src_strml_count))
+
+    # Change the dimensions so that a few streamlines become invalid
+    sft.dimensions[2] = 5
+
+    obtained_idx_to_remove, obtained_idx_to_keep = \
+        sft.remove_invalid_streamlines()
+
+    expected_idx_to_remove = [1, 3, 5, 7, 8, 9, 10, 11]
+    expected_idx_to_keep = [0, 2, 4, 6, 12]
+    expected_len_sft = 5
+
+    assert obtained_idx_to_remove == expected_idx_to_remove
+    assert obtained_idx_to_keep == expected_idx_to_keep
+    assert_(
+        len(sft) == expected_len_sft,
+        msg='The shifted gold standard should have {} invalid streamlines'.
+            format(src_strml_count - expected_len_sft))
 
 
 def test_invalid_streamlines_epsilon():
-    assert_(remove_invalid_streamlines_epsilon(1e-6) == 13,
+
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    src_strml_count = len(sft)
+
+    epsilon = 1e-6
+    obtained_idx_to_remove, obtained_idx_to_keep = \
+        sft.remove_invalid_streamlines(epsilon)
+
+    expected_idx_to_keep = list(range(src_strml_count))
+
+    assert len(obtained_idx_to_remove) == 0
+    assert expected_idx_to_keep == obtained_idx_to_keep
+    assert_(len(sft) == src_strml_count,
             msg='A small epsilon should not remove any streamlines')
-    assert_(remove_invalid_streamlines_epsilon(1.0) == 5,
-            msg='Too big of an epsilon (1mm) should remove the 8 streamlines '
-                '(8 corners)')
+
+    epsilon = 1.0
+    obtained_idx_to_remove, obtained_idx_to_keep = \
+        sft.remove_invalid_streamlines(epsilon)
+
+    expected_idx_to_remove = [0, 1, 2, 3, 4, 5, 6, 7]
+    expected_idx_to_keep = [8, 9, 10, 11, 12]
+    expected_len_sft = 5
+
+    expected_removed_strml_count = src_strml_count - expected_len_sft
+
+    assert obtained_idx_to_remove == expected_idx_to_remove
+    assert obtained_idx_to_keep == expected_idx_to_keep
+    assert_(
+        len(sft) == expected_len_sft,
+        msg='Too big of an epsilon ({} mm) should have removed {} streamlines '
+            '({} corners)'.format(
+            epsilon,
+            expected_removed_strml_count,
+            expected_removed_strml_count)
+    )
 
 
 def test_trk_coloring():
@@ -871,7 +914,3 @@ def test_create_from_sft():
     sft_1.streamlines = np.arange(6000).reshape((100, 20, 3))
     if np.array_equal(sft_1.streamlines, sft_2.streamlines):
         raise AssertionError()
-
-
-if __name__ == '__main__':
-    npt.run_module_suite()

@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False, initializedcheck=False
 
 import itertools
@@ -6,7 +5,7 @@ import numpy as np
 
 from dipy.segment.cythonutils cimport Data2D, shape2tuple
 from dipy.segment.metricspeed cimport Metric
-from dipy.segment.clusteringspeed cimport ClustersCentroid, Centroid, QuickBundles, QuickBundlesX
+from dipy.segment.clusteringspeed cimport ClustersCentroid, QuickBundles, QuickBundlesX
 from dipy.segment.clustering import ClusterMapCentroid, ClusterCentroid
 
 cdef extern from "stdlib.h" nogil:

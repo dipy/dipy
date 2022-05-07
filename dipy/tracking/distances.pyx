@@ -8,9 +8,7 @@
 cimport cython
 
 from libc.stdlib cimport calloc, realloc, free
-from libc.string cimport memcpy
 
-import time
 import numpy as np
 from warnings import warn
 cimport numpy as cnp
@@ -491,7 +489,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """
@@ -583,7 +581,7 @@ def bundles_distances_mdf(tracksA, tracksB):
         distances between tracksA and tracksB according to metric
 
     See Also
-    ---------
+    --------
     dipy.tracking.streamline.set_number_of_points
 
     """
@@ -759,7 +757,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
     -----
     Algorithmic description
 
-    Lets say we have curves A and B.
+    Let's say we have curves A and B.
 
     For every point in A calculate the minimum distance from every point
     in B stored in minAB
@@ -834,7 +832,7 @@ def minimum_closest_distance(xyz1,xyz2):
     -----
     Algorithmic description
 
-    Lets say we have curves A and B
+    Let's say we have curves A and B
 
     for every point in A calculate the minimum distance from every point in B stored in minAB
     for every point in B calculate the minimum distance from every point in A stored in minBA
@@ -1476,7 +1474,7 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
     Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
 
-    See also
+    See Also
     --------
     dipy.tracking.distances.local_skeleton_clustering
     """

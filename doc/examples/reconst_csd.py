@@ -41,7 +41,7 @@ gtab = gradient_table(bvals, bvecs)
 
 """
 You can verify the b-values of the dataset by looking at the attribute
-``gtab.bvals``. Now that a datasets with multiple gradient directions is
+``gtab.bvals``. Now that a dataset with multiple gradient directions is
 loaded, we can proceed with the two steps of CSD.
 
 Step 1. Estimation of the fiber response function
@@ -68,12 +68,12 @@ response, ratio = auto_response_ssst(gtab, data, roi_radii=10, fa_thr=0.7)
 
 """
 Note that the ``auto_response_ssst`` function calls two functions that can be
-used separatly. First, the function ``mask_for_response_ssst`` creates a mask
-of voxels within the cuboid ROI and that meet the FA threshold constraint. This
+used separately. First, the function ``mask_for_response_ssst`` creates a mask
+of voxels within the cuboid ROI that meet the FA threshold constraint. This
 mask can be used to calculate the number of voxels that were kept, or to also
 apply an external mask (a WM mask for example). Second, the function
 ``response_from_mask_ssst`` takes the mask and returns the response function
-calculated within the mask. If no changes are made to the mask between the to
+calculated within the mask. If no changes are made to the mask between the two
 calls, the resulting responses should be identical.
 """
 
@@ -180,7 +180,7 @@ wm_mask = (np.logical_or(FA >= 0.4, (np.logical_and(FA >= 0.15, MD >= 0.0011))))
 response = recursive_response(gtab, data, mask=wm_mask, sh_order=8,
                               peak_thr=0.01, init_fa=0.08,
                               init_trace=0.0021, iter=8, convergence=0.001,
-                              parallel=True)
+                              parallel=True, num_processes=2)
 
 
 """
@@ -268,7 +268,8 @@ csd_peaks = peaks_from_model(model=csd_model,
                              sphere=default_sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
-                             parallel=True)
+                             parallel=True,
+                             num_processes=2)
 
 scene.clear()
 fodf_peaks = actor.peak_slicer(csd_peaks.peak_dirs, csd_peaks.peak_values)

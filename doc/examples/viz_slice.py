@@ -9,7 +9,7 @@ Here we present an example for visualizing slices from 3D images.
 """
 
 import os
-import nibabel as nib
+
 from dipy.data import fetch_bundles_2_subjects
 from dipy.io.image import load_nifti, load_nifti_data
 from dipy.viz import window, actor, ui
@@ -67,8 +67,8 @@ copy the actor first.
 slice_actor2 = slice_actor.copy()
 
 """
-Now we have a new ``slice_actor`` which displays the middle slice of sagittal
-plane.
+Now we have a new ``slice_actor`` which displays the middle slice of the
+sagittal plane.
 """
 
 slice_actor2.display(slice_actor2.shape[0]//2, None, None)
@@ -206,7 +206,7 @@ fa_actor.AddObserver('LeftButtonPressEvent', left_click_callback, 1.0)
 Create a mosaic
 ===============
 
-By using the ``copy`` and ``display`` method of the ``slice_actor`` becomes
+By using the ``copy`` and ``display`` method of the ``slice_actor`` it becomes
 easy and efficient to create a mosaic of all the slices.
 
 So, let's clear the scene and change the projection from perspective to

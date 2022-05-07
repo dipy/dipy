@@ -1,11 +1,11 @@
-import numpy as np
 import warnings
+
+import numpy as np
 import pickle
 from io import BytesIO
 
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite,
-                           assert_equal, assert_)
+                           assert_almost_equal, assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
 from dipy.direction.peaks import (peaks_from_model,
@@ -21,6 +21,7 @@ from dipy.core.gradients import gradient_table, GradientTable
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
 from dipy.io.gradients import read_bvals_bvecs
+from dipy.reconst.shm import descoteaux07_legacy_msg, tournier07_legacy_msg
 
 
 def test_peak_directions_nl():
@@ -455,8 +456,12 @@ def test_peaksFromModel():
         model = SimpleOdfModel(_gtab)
         _odf = (sphere.vertices * [1, 2, 3]).sum(-1)
         odf_argmax = _odf.argmax()
-        pam = peaks_from_model(model, data, sphere, .5, 45,
-                               normalize_peaks=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pam = peaks_from_model(model, data, sphere, .5, 45,
+                                   normalize_peaks=True)
 
         assert_array_equal(pam.gfa, gfa(_odf))
         assert_array_equal(pam.peak_values[:, 0], 1.)
@@ -468,7 +473,12 @@ def test_peaksFromModel():
         assert_array_equal(pam.peak_indices[:, 1:], -1)
 
         # Test that odf array matches and is right shape
-        pam = peaks_from_model(model, data, sphere, .5, 45, return_odf=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pam = peaks_from_model(
+                model, data, sphere, .5, 45, return_odf=True)
         expected_shape = (len(data), len(_odf))
         assert_equal(pam.odf.shape, expected_shape)
         assert_((_odf == pam.odf).all())
@@ -477,8 +487,12 @@ def test_peaksFromModel():
         # Test mask
         mask = (np.arange(10) % 2) == 1
 
-        pam = peaks_from_model(model, data, sphere, .5, 45, mask=mask,
-                               normalize_peaks=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pam = peaks_from_model(model, data, sphere, .5, 45, mask=mask,
+                                   normalize_peaks=True)
         assert_array_equal(pam.gfa[~mask], 0)
         assert_array_equal(pam.qa[~mask], 0)
         assert_array_equal(pam.peak_values[~mask], 0)
@@ -497,10 +511,14 @@ def test_peaksFromModel():
         for normalize_peaks in [True, False]:
             for return_odf in [True, False]:
                 for return_sh in [True, False]:
-                    pam = peaks_from_model(model, data, sphere, .5, 45,
-                                           normalize_peaks=normalize_peaks,
-                                           return_odf=return_odf,
-                                           return_sh=return_sh)
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore", message=descoteaux07_legacy_msg,
+                            category=PendingDeprecationWarning)
+                        pam = peaks_from_model(model, data, sphere, .5, 45,
+                                               normalize_peaks=normalize_peaks,
+                                               return_odf=return_odf,
+                                               return_sh=return_sh)
 
                     b = BytesIO()
                     pickle.dump(pam, b)
@@ -535,25 +553,30 @@ def test_peaksFromModelParallel():
 
         # test equality with/without multiprocessing
         model = SimpleOdfModel(gtab)
-        pam_multi = peaks_from_model(model, data, sphere, .5, 45,
-                                     normalize_peaks=True, return_odf=True,
-                                     return_sh=True, parallel=True)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            pam_multi = peaks_from_model(model, data, sphere, .5, 45,
+                                         normalize_peaks=True, return_odf=True,
+                                         return_sh=True, parallel=True)
 
-        pam_single = peaks_from_model(model, data, sphere, .5, 45,
-                                      normalize_peaks=True, return_odf=True,
-                                      return_sh=True, parallel=False)
-
-        pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
+            pam_single = peaks_from_model(model, data, sphere, .5, 45,
                                           normalize_peaks=True,
                                           return_odf=True,
-                                          return_sh=True, parallel=True,
-                                          num_processes=-1)
+                                          return_sh=True, parallel=False)
 
-        pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
-                                          normalize_peaks=True,
-                                          return_odf=True,
-                                          return_sh=True, parallel=True,
-                                          num_processes=-2)
+            pam_multi_inv1 = peaks_from_model(model, data, sphere, .5, 45,
+                                              normalize_peaks=True,
+                                              return_odf=True,
+                                              return_sh=True, parallel=True,
+                                              num_processes=-1)
+
+            pam_multi_inv2 = peaks_from_model(model, data, sphere, .5, 45,
+                                              normalize_peaks=True,
+                                              return_odf=True,
+                                              return_sh=True, parallel=True,
+                                              num_processes=-2)
 
         for pam in [pam_multi, pam_multi_inv1, pam_multi_inv2]:
             assert_equal(pam.gfa.dtype, pam_single.gfa.dtype)
@@ -610,22 +633,33 @@ def test_peaks_shm_coeff():
 
     from dipy.reconst.shm import CsaOdfModel
 
-    model = CsaOdfModel(gtab, 4)
-
-    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                           return_odf=True, return_sh=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model = CsaOdfModel(gtab, 4)
+        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
+                               return_odf=True, return_sh=True)
     # Test that spherical harmonic coefficients return back correctly
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)
 
-    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                           return_odf=True, return_sh=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
+                               return_odf=True, return_sh=False)
     assert_equal(pam.shm_coeff, None)
 
-    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
-                           return_odf=True, return_sh=True,
-                           sh_basis_type='tournier07')
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=tournier07_legacy_msg,
+            category=PendingDeprecationWarning)
+        pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
+                               return_odf=True, return_sh=True,
+                               sh_basis_type='tournier07')
 
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
@@ -648,8 +682,3 @@ def test_reshape_peaks_for_visualization():
     assert_array_equal(data1_reshape.reshape(10, 5, 3), data1)
     assert_array_equal(data2_reshape.reshape(10, 2, 5, 3), data2)
     assert_array_equal(data3_reshape.reshape(10, 2, 12, 5, 3), data3)
-
-
-if __name__ == '__main__':
-
-    run_module_suite()

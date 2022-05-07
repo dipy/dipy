@@ -12,7 +12,7 @@ explicit model for either.
 Classical denoising algorithms such as Local PCA [Manjon2013]_, [Veraa2016a]_,
 Non-local Means [Coupe08]_, Total Variation Norm [Knoll11]_, etc. assume
 certain properties on the signal structure. Patch2Self *does not* make any such
-assumption on the signal instead using the fact that the noise across
+assumption on the signal, instead using the fact that the noise across
 different 3D volumes of the DWI signal originates from random fluctuations in
 the acquired signal.
 
@@ -99,7 +99,7 @@ such as HCP 7T, the b0 volumes tend to have a higher b-value (>=50)
 associated with them in the `bval` file. Please check the b-values for b0s and
 adjust the `b0_threshold` accordingly.
 
-Now lets visualize the output and the residuals obtained from the denoising.
+Now let's visualize the output and the residuals obtained from the denoising.
 """
 
 # Gets the center slice and the middle volume of the 4D diffusion data.

@@ -5,11 +5,8 @@
 
 |
 
-.. image:: https://travis-ci.com/dipy/dipy.svg?branch=master
-  :target: https://travis-ci.com/dipy/dipy
-
-.. image:: https://dev.azure.com/dipy/dipy/_apis/build/status/dipy.dipy?branchName=master
-  :target: https://dev.azure.com/dipy/dipy/_build
+.. image:: https://github.com/dipy/dipy/actions/workflows/test.yml/badge.svg?branch=master
+  :target: https://github.com/dipy/dipy/actions/workflows/test.yml
 
 .. image:: https://codecov.io/gh/dipy/dipy/branch/master/graph/badge.svg
   :target: https://codecov.io/gh/dipy/dipy

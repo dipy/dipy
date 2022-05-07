@@ -1,11 +1,10 @@
 import os
 import sys
-import shutil
 
 import numpy as np
 import logging
 import importlib
-from inspect import getmembers, isfunction, getfullargspec
+from inspect import getmembers, isfunction
 from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.workflow import Workflow
 

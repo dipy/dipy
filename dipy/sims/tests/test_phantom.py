@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from numpy.testing import (assert_, assert_array_almost_equal, run_module_suite)
+from numpy.testing import assert_, assert_array_almost_equal
 
 from dipy.data import get_fnames
 from dipy.reconst.dti import TensorModel
@@ -77,7 +77,3 @@ def test_add_noise():
         sigma = S0 / snr
 
         assert_(np.abs(np.var(vol_noise - vol) - sigma ** 2) < 1)
-
-
-if __name__ == "__main__":
-    run_module_suite()

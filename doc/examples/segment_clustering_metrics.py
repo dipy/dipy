@@ -15,7 +15,7 @@ familiar with the tractography clustering framework, check this tutorial
 
 **Note**:
 All examples assume a function `get_streamlines` exists. We defined here a
-simple function to do so. It imports the necessary modules and load a small
+simple function to do so. It imports the necessary modules and loads a small
 streamline bundle.
 """
 
@@ -41,13 +41,13 @@ that are sequences containing the same number of elements.
 
 **When:** By default the `QuickBundles` clustering will resample your
 streamlines on-the-fly so they have 12 points. If for some reason you want
-to avoid this and you made sure all your streamlines have already the same
+to avoid this and you made sure all your streamlines already have the same
 number of points, you can manually provide an instance of
 `AveragePointwiseEuclideanMetric` to `QuickBundles`. Since the default
 `Feature` is the `IdentityFeature` the streamlines won't be resampled thus
 saving some computational time.
 
-**Note:** Inputs must be sequences of same length.
+**Note:** Inputs must be sequences of the same length.
 """
 
 from dipy.segment.clustering import QuickBundles
@@ -87,7 +87,7 @@ return the sum of those distances.
 **When:** This metric mainly exists because it is used internally by
 `AveragePointwiseEuclideanMetric`.
 
-**Note:** Inputs must be sequences of same length.
+**Note:** Inputs must be sequences of the same length.
 """
 
 from dipy.segment.clustering import QuickBundles
@@ -133,7 +133,7 @@ orientation of a streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorOfEndpointsFeature
+from dipy.segment.featurespeed import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Enables/disables interactive visualization

@@ -15,7 +15,7 @@ familiar with the tractography clustering framework, read the
 
 **Note**:
 All examples assume a function `get_streamlines` exists. We defined here a
-simple function to do so. It imports the necessary modules and load a small
+simple function to do so. It imports the necessary modules and loads a small
 streamline bundle.
 """
 
@@ -53,8 +53,8 @@ in the clustering framework.*
 """
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import IdentityFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
+from dipy.segment.featurespeed import IdentityFeature
 
 # Get some streamlines.
 streamlines = get_streamlines()  # Previously defined.
@@ -102,7 +102,7 @@ setting the number of points too high will slow down the clustering process.
 """
 
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import ResampleFeature
+from dipy.segment.featurespeed import ResampleFeature
 from dipy.segment.metric import AveragePointwiseEuclideanMetric
 
 # Get some streamlines.
@@ -144,7 +144,7 @@ streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import CenterOfMassFeature
+from dipy.segment.featurespeed import CenterOfMassFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Enables/disables interactive visualization
@@ -184,7 +184,7 @@ if interactive:
 .. figure:: center_of_mass_feature.png
    :align: center
 
-   Showing the center of mass of each streamline and colored according to
+   Showing the center of mass of each streamline colored according to
    the QuickBundles results.
 
 .. _clustering-examples-MidpointFeature:
@@ -203,7 +203,7 @@ spatial position of a streamline. This can also be an alternative to the
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import MidpointFeature
+from dipy.segment.featurespeed import MidpointFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Get some streamlines.
@@ -239,7 +239,7 @@ if interactive:
 .. figure:: midpoint_feature.png
    :align: center
 
-   Showing the middle point of each streamline and colored according to the
+   Showing the middle point of each streamline colored according to the
    QuickBundles results.
 
 .. _clustering-examples-ArcLengthFeature:
@@ -248,7 +248,7 @@ ArcLength Feature
 =================
 **What:** Instances of `ArcLengthFeature` compute the length of a streamline.
 More specifically, this feature corresponds to the sum of the lengths of every
-streamline segments.
+streamline's segments.
 
 **When:** This feature can be useful when you *only* need information about the
 length of a streamline.
@@ -257,7 +257,7 @@ length of a streamline.
 import numpy as np
 from dipy.viz import window, actor, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import ArcLengthFeature
+from dipy.segment.featurespeed import ArcLengthFeature
 from dipy.segment.metric import EuclideanMetric
 
 # Get some streamlines.
@@ -309,7 +309,7 @@ using this feature.
 import numpy as np
 from dipy.viz import window, colormap
 from dipy.segment.clustering import QuickBundles
-from dipy.segment.metric import VectorOfEndpointsFeature
+from dipy.segment.featurespeed import VectorOfEndpointsFeature
 from dipy.segment.metric import CosineMetric
 
 # Get some streamlines.

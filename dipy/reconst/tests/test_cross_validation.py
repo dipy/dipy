@@ -1,5 +1,7 @@
 """Testing cross-validation analysis."""
 
+import warnings
+
 import numpy as np
 import numpy.testing as npt
 import dipy.reconst.cross_validation as xval
@@ -10,6 +12,7 @@ import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
 import dipy.reconst.base as base
 from dipy.io.image import load_nifti_data
+from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 # We'll set these globally:
@@ -62,7 +65,6 @@ def test_csd_xval():
     gtab = gt.gradient_table(fbval, fbvec)
     S0 = np.mean(data[..., gtab.b0s_mask])
     response = ([0.0015, 0.0003, 0.0001], S0)
-    csdm = csd.ConstrainedSphericalDeconvModel(gtab, response)
 
     # In simulation, it should work rather well (high COD):
     psphere = dpd.get_sphere('symmetric362')
@@ -75,10 +77,18 @@ def test_csd_xval():
               np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
     S0 = 100
     S = sims.single_tensor(gtab, S0, mevals[0], mevecs[0], snr=None)
-    sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     np.random.seed(12345)
     response = ([0.0015, 0.0003, 0.0001], S0)
-    kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
@@ -90,8 +100,12 @@ def test_csd_xval():
     S = np.array([[S, S], [S, S]])
     mask = np.ones(S.shape[:-1], dtype=bool)
     mask[1, 1] = 0
-    kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2,
-                              mask=mask)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2,
+                                  mask=mask)
 
     cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(np.round(cod[0]), csd_cod)

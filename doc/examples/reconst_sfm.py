@@ -1,5 +1,5 @@
 """
-.. _sfm-reconst:
+.. _reconst_sfm:
 
 ==============================================
 Reconstruction with the Sparse Fascicle Model
@@ -14,7 +14,7 @@ First, we import the modules we will use in this example:
 import dipy.reconst.sfm as sfm
 import dipy.data as dpd
 import dipy.direction.peaks as dpp
-from dipy.io.image import load_nifti, save_nifti
+from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from dipy.viz import window, actor
@@ -88,7 +88,7 @@ The ``response`` return value contains two entries. The first is an array with
 the eigenvalues of the response function and the second is the average S0 for
 this response.
 
-It is a very good practice to always validate the result of 
+It is a very good practice to always validate the result of
 ``auto_response_ssst``. For, this purpose we can print it and have a look
 at its values.
 """

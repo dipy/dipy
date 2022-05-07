@@ -4,7 +4,6 @@ cimport cython
 cimport numpy as cnp
 
 import numpy as np
-import time
 import warnings
 
 from libc.math cimport floor
@@ -94,7 +93,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
     """ Access any element of any ndimensional numpy array using cython.
 
     Parameters
-    ------------
+    ----------
     indices : cnp.npy_intp * (int64 *)
         Indices of the array for which we want to find the offset.
     strides : cnp.npy_intp * strides
@@ -103,7 +102,7 @@ cdef cnp.npy_intp offset(cnp.npy_intp *indices,
         Number of bytes for data type e.g. if 8 for double, 4 for int32
 
     Returns
-    ----------
+    -------
     offset : integer
         Element position in array
     """

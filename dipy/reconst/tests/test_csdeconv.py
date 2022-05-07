@@ -2,8 +2,7 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
-                           assert_array_almost_equal, run_module_suite,
-                           assert_array_equal)
+                           assert_array_almost_equal, assert_array_equal)
 from dipy.testing import assert_greater, assert_greater_equal
 from dipy.data import get_sphere, get_fnames, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
@@ -26,8 +25,14 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    recursive_response)
 from dipy.direction.peaks import peak_directions
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (QballModel, sf_to_sh, sh_to_sf,
-                              real_sh_descoteaux, sph_harm_ind_list)
+from dipy.reconst.shm import (
+    descoteaux07_legacy_msg,
+    QballModel,
+    sf_to_sh,
+    sh_to_sf,
+    real_sh_descoteaux,
+    sph_harm_ind_list
+)
 from dipy.reconst.shm import lazy_index
 from dipy.utils.deprecator import ExpiredDeprecationError
 from dipy.io.gradients import read_bvals_bvecs
@@ -100,18 +105,30 @@ def test_recursive_response_calibration():
 
     odf_gt_single = single_tensor_odf(sphere.vertices, evals, evecs)
 
-    response = recursive_response(gtab, data, mask=None, sh_order=8,
-                                  peak_thr=0.01, init_fa=0.05,
-                                  init_trace=0.0021, iter=8, convergence=0.001,
-                                  parallel=False)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = recursive_response(gtab, data, mask=None, sh_order=8,
+                                      peak_thr=0.01, init_fa=0.05,
+                                      init_trace=0.0021, iter=8,
+                                      convergence=0.001, parallel=False)
 
-    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd = ConstrainedSphericalDeconvModel(gtab, response)
 
     csd_fit = csd.fit(data)
 
     assert_equal(np.all(csd_fit.shm_coeff[:, 0] >= 0), True)
 
-    fodf = csd_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = csd_fit.odf(sphere)
 
     directions_gt_single, _, _ = peak_directions(odf_gt_single, sphere)
     directions_gt_cross, _, _ = peak_directions(odf_gt_cross, sphere)
@@ -133,7 +150,11 @@ def test_recursive_response_calibration():
         npt.assert_equal(len(w), 1)
         npt.assert_(issubclass(w[0].category, UserWarning))
         npt.assert_("Vertices are not on the unit sphere" in str(w[0].message))
-    sf = response.on_sphere(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        sf = response.on_sphere(sphere)
     S = np.concatenate(([response.S0], sf))
 
     tenmodel = TensorModel(gtab, min_signal=0.001)
@@ -234,10 +255,18 @@ def test_csdeconv():
     sphere = get_sphere('symmetric362')
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
-    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd = ConstrainedSphericalDeconvModel(gtab, response)
     csd_fit = csd.fit(S)
     assert_equal(csd_fit.shm_coeff[0] > 0, True)
-    fodf = csd_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = csd_fit.odf(sphere)
 
     directions, _, _ = peak_directions(odf_gt, sphere)
     directions2, _, _ = peak_directions(fodf, sphere)
@@ -250,12 +279,18 @@ def test_csdeconv():
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
         _ = ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
         assert_greater(len([lw for lw in w if issubclass(lw.category,
                                                          UserWarning)]), 0)
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", category=UserWarning)
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len([lw for lw in w if issubclass(lw.category,
                                                        UserWarning)]), 0)
@@ -300,10 +335,18 @@ def test_odfdeconv():
     e2 = 3.0
     ratio = e2 / e1
 
-    csd = ConstrainedSDTModel(gtab, ratio, None)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd = ConstrainedSDTModel(gtab, ratio, None)
 
     csd_fit = csd.fit(S)
-    fodf = csd_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = csd_fit.odf(sphere)
 
     directions, _, _ = peak_directions(odf_gt, sphere)
     directions2, _, _ = peak_directions(fodf, sphere)
@@ -316,15 +359,17 @@ def test_odfdeconv():
     assert_equal(directions2.shape[0], 2)
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=PendingDeprecationWarning)
 
         ConstrainedSDTModel(gtab, ratio, sh_order=10)
         w_count = len(w)
         # A warning is expected from the ConstrainedSDTModel constructor
-        # and additionnal warnings should be raised where legacy SH bases
+        # and additional warnings should be raised where legacy SH bases
         # are used
         assert_equal(w_count > 1, True)
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=PendingDeprecationWarning)
 
         ConstrainedSDTModel(gtab, ratio, sh_order=8)
         # Test that the warning from ConstrainedSDTModel
@@ -356,24 +401,40 @@ def test_odf_sh_to_sharp():
 
     sphere = default_sphere
 
-    qb = QballModel(gtab, sh_order=8, assume_normed=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        qb = QballModel(gtab, sh_order=8, assume_normed=True)
 
     qbfit = qb.fit(S)
-    odf_gt = qbfit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odf_gt = qbfit.odf(sphere)
 
     Z = np.linalg.norm(odf_gt)
 
     odfs_gt = np.zeros((3, 1, 1, odf_gt.shape[0]))
     odfs_gt[:, :, :] = odf_gt[:]
 
-    odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type=None)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type=None)
 
     odfs_sh /= Z
 
-    fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                              sh_order=8, lambda_=1., tau=0.1)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
+                                  sh_order=8, lambda_=1., tau=0.1)
 
-    fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
+        fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
     directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere)
 
@@ -419,10 +480,22 @@ def test_r2_term_odf_sharp():
                         fractions=[50, 50], snr=SNR)
 
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
-    odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
-    fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                              sh_order=8, lambda_=1., tau=0.1, r2_term=True)
-    fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
+                                  sh_order=8, lambda_=1., tau=0.1, r2_term=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
@@ -432,9 +505,17 @@ def test_r2_term_odf_sharp():
     assert_equal(directions.shape[0], 2)
 
     # This should pass as well
-    sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order=8)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order=8)
     sdt_fit = sdt_model.fit(S)
-    fodf = sdt_fit.odf(sphere)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        fodf = sdt_fit.odf(sphere)
 
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
@@ -461,19 +542,31 @@ def test_csd_predict():
     multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
-    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd = ConstrainedSphericalDeconvModel(gtab, response)
     csd_fit = csd.fit(S)
 
     # Predicting from a fit should give the same result as predicting from a
     # model, S0 is 1 by default
     prediction1 = csd_fit.predict()
-    prediction2 = csd.predict(csd_fit.shm_coeff)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        prediction2 = csd.predict(csd_fit.shm_coeff)
     npt.assert_array_equal(prediction1, prediction2)
     npt.assert_array_equal(prediction1[..., gtab.b0s_mask], 1.)
 
     # Same with a different S0
     prediction1 = csd_fit.predict(S0=123.)
-    prediction2 = csd.predict(csd_fit.shm_coeff, S0=123.)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        prediction2 = csd.predict(csd_fit.shm_coeff, S0=123.)
     npt.assert_array_equal(prediction1, prediction2)
     npt.assert_array_equal(prediction1[..., gtab.b0s_mask], 123.)
 
@@ -481,7 +574,11 @@ def test_csd_predict():
     # coefficients from the predicted signal.
     coeff = np.random.random(csd_fit.shm_coeff.shape) - .5
     coeff[..., 0] = 10.
-    S = csd.predict(coeff)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S = csd.predict(coeff)
     csd_fit = csd.fit(S)
     npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
 
@@ -490,7 +587,11 @@ def test_csd_predict():
     S_nd[:] = S
     fit = csd.fit(S_nd)
     predict1 = fit.predict()
-    predict2 = csd.predict(fit.shm_coeff)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        predict2 = csd.predict(fit.shm_coeff)
     npt.assert_array_almost_equal(predict1, predict2)
 
 
@@ -504,10 +605,18 @@ def test_csd_predict_multi():
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
     gtab = gradient_table(bvals, bvecs)
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
-    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        csd = ConstrainedSphericalDeconvModel(gtab, response)
     coeff = np.random.random(45) - .5
     coeff[..., 0] = 10.
-    S = csd.predict(coeff, S0=123.)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S = csd.predict(coeff, S0=123.)
     multi_S = np.array([[S, S], [S, S]])
     csd_fit_multi = csd.fit(multi_S)
     S0_multi = np.mean(multi_S[..., gtab.b0s_mask], -1)
@@ -535,10 +644,14 @@ def test_sphere_scaling_csdmodel():
     sphere = hemi.mirror()
 
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
-    model_full = ConstrainedSphericalDeconvModel(gtab, response,
-                                                 reg_sphere=sphere)
-    model_hemi = ConstrainedSphericalDeconvModel(gtab, response,
-                                                 reg_sphere=hemi)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                     reg_sphere=sphere)
+        model_hemi = ConstrainedSphericalDeconvModel(gtab, response,
+                                                     reg_sphere=hemi)
     csd_fit_full = model_full.fit(S)
     csd_fit_hemi = model_hemi.fit(S)
 
@@ -567,6 +680,7 @@ def test_default_lambda_csdmodel():
                                           expected_lambda.values(),
                                           expected_csdmodel_warnings.values()):
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=PendingDeprecationWarning)
             model_full = ConstrainedSphericalDeconvModel(gtab, response,
                                                          sh_order=sh_order,
                                                          reg_sphere=sphere)
@@ -577,7 +691,12 @@ def test_default_lambda_csdmodel():
                 npt.assert_("Number of parameters required " in str(w[0].
                                                                     message))
 
-        B_reg, _, _ = real_sh_descoteaux(sh_order, sphere.theta, sphere.phi)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message=descoteaux07_legacy_msg,
+                category=PendingDeprecationWarning)
+            B_reg, _, _ = real_sh_descoteaux(
+                sh_order, sphere.theta, sphere.phi)
         npt.assert_array_almost_equal(model_full.B_reg, expected * B_reg)
 
 
@@ -595,6 +714,9 @@ def test_csd_superres():
         warnings.filterwarnings(action="always",
                                 message="Number of parameters required.*",
                                 category=UserWarning)
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
         model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
                                                   sh_order=16)
         assert_greater_equal(len(w), 1)
@@ -604,9 +726,13 @@ def test_csd_superres():
 
     sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
     # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
-    d, v, ind = peak_directions(fit16.odf(sphere), sphere,
-                                relative_peak_threshold=.2,
-                                min_separation_angle=0)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        d, v, ind = peak_directions(fit16.odf(sphere), sphere,
+                                    relative_peak_threshold=.2,
+                                    min_separation_angle=0)
 
     # Check that there are two peaks
     assert_equal(len(d), 2)
@@ -625,13 +751,21 @@ def test_csd_convergence():
     evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
     S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
-    model_w_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
-                                                   sh_order=8, convergence=50)
-    model_wo_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
-                                                    sh_order=8)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_w_conv = ConstrainedSphericalDeconvModel(
+            gtab,
+            (evals[0], 3.),
+            sh_order=8,
+            convergence=50,
+        )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_wo_conv = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.),
+                                                        sh_order=8)
 
     assert_equal(model_w_conv.fit(S).shm_coeff, model_wo_conv.fit(S).shm_coeff)
-
-
-if __name__ == '__main__':
-    run_module_suite()

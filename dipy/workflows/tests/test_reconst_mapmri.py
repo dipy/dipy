@@ -63,10 +63,3 @@ def reconst_mmri_core(flow, lap, pos):
                              tmp_bval_path, tmp_bvec_path, small_delta=0.0129,
                              big_delta=0.0218, laplacian=lap,
                              positivity=pos, out_dir=out_dir)
-
-
-if __name__ == '__main__':
-    test_reconst_mmri_laplacian()
-    test_reconst_mmri_none()
-    test_reconst_mmri_positivity()
-    test_reconst_mmri_both()

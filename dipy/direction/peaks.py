@@ -2,7 +2,6 @@
 from multiprocessing import Pool
 from itertools import repeat
 from os import path
-from warnings import warn
 
 from nibabel.tmpdirs import InTemporaryDirectory
 
@@ -381,6 +380,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     ----------
     model : a model instance
         `model` will be used to fit the data.
+    data : ndarray
+        Diffusion data.
     sphere : Sphere
         The Sphere providing discrete directions for evaluation.
     relative_peak_threshold : float
@@ -408,8 +409,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         ``tournier07`` for the Tournier 2007 [2]_ basis, and
         ``descoteaux07`` for the Descoteaux 2007 [1]_ basis
         (``None`` defaults to ``descoteaux07``).
-    sh_smooth : float, optional
-        Lambda-regularization in the SH fit (default 0.0).
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
     B : ndarray, optional
@@ -425,8 +424,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     num_processes: int, optional
         If `parallel` is True, the number of subprocesses to use
         (default multiprocessing.cpu_count()). If < 0 the maximal number of
-        cores minus |num_processes + 1| is used (enter -1 to use as many cores
-        as possible). 0 raises an error.
+        cores minus ``num_processes + 1`` is used (enter -1 to use as many
+        cores as possible). 0 raises an error.
 
     Returns
     -------
@@ -552,12 +551,12 @@ def reshape_peaks_for_visualization(peaks):
     or the fibernavigator.
 
     Parameters
-    -----------
+    ----------
     peaks: nd array (..., N, 3) or PeaksAndMetrics object
         The peaks to be reshaped and converted to float32.
 
     Returns
-    --------
+    -------
     peaks : nd array (..., 3*N)
     """
     if isinstance(peaks, PeaksAndMetrics):

@@ -68,7 +68,3 @@ def test_reconst_ivim():
         D_path = ivim_flow.last_generated_outputs['out_D']
         D_data = load_nifti_data(D_path)
         assert_equal(D_data.shape, data_multi.shape[:-1])
-
-
-if __name__ == '__main__':
-    test_reconst_ivim()

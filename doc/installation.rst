@@ -317,7 +317,7 @@ get an error with ``python setup.py develop`` make sure you have installed
 
 If you get an error saying  "unable to find vcvarsall.bat" then you need to
 check your environment variable ``PATH`` or reinstall VisualStudioBuildTools_.
-Distutils should automatically detect the compiler and use it.
+Setuptools should automatically detect the compiler and use it.
 
 OSX
 ---

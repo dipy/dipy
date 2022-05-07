@@ -1,4 +1,3 @@
-# distutils: language = c
 # cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
@@ -18,12 +17,12 @@ cdef Shape shape_from_memview(Data data) nogil:
     Parameters
     ----------
     data : memoryview object (float)
-        array for which the shape informations are retrieved
+        array for which the shape information is retrieved
 
     Returns
     -------
     shape : `Shape` struct
-        structure containing informations about the shape of `data`
+        structure containing information about the shape of `data`
     """
     cdef Shape shape
     cdef int i
@@ -49,7 +48,7 @@ cdef Shape tuple2shape(dims) except *:
     Returns
     -------
     shape : `Shape` struct
-        structure containing shape informations obtained from `dims`
+        structure containing shape information obtained from `dims`
     """
     assert len(dims) < MAX_NDIM
     cdef Shape shape
@@ -68,7 +67,7 @@ cdef shape2tuple(Shape shape):
     Parameters
     ----------
     shape : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
@@ -92,9 +91,9 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
     Parameters
     ----------
     shape1 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
     shape2 : `Shape` struct
-        structure containing shape informations
+        structure containing shape information
 
     Returns
     -------
@@ -114,19 +113,18 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil:
 
 
 cdef Data2D* create_memview_2d(Py_ssize_t buffer_size, Py_ssize_t dims[MAX_NDIM]) nogil:
-    """ Create a light version of cython memory view 
-
+    """ Create a light version of cython memory view.
 
     Parameters
     ----------
     buffer_size : int
-        data size 
+        data size
     dims : array
-        desired memory view shape 
+        desired memory view shape
 
     Returns
     -------
-    Data2D* : memview pointer 
+    Data2D* : memview pointer
         floating pointer to memview
     """
     cdef Data2D* memview
@@ -149,7 +147,7 @@ cdef void free_memview_2d(Data2D* memview) nogil:
     ----------
     memview : Data2D*
         floating pointer to memory view pointer
-        
+
     """
     free(&(memview[0][0, 0]))
     memview[0] = None  # Necessary to decrease refcount

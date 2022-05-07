@@ -22,7 +22,8 @@ if has_fury:
 skip_it = use_xvfb == 'skip'
 
 
-@pytest.mark.skipif(skip_it or not has_fury, reason='Requires FURY')
+@pytest.mark.skipif(skip_it or not has_fury,
+                    reason='Requires FURY')
 def test_horizon_flow():
 
     s1 = 10 * np.array([[0, 0, 0],
@@ -133,8 +134,3 @@ def test_horizon_flow():
                     out_dir=out_dir, out_stealth_png='tmp_x.png')
         npt.assert_equal(os.path.exists(os.path.join(out_dir, 'tmp_x.png')),
                          True)
-
-
-if __name__ == '__main__':
-
-    test_horizon_flow()

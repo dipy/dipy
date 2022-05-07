@@ -4,10 +4,10 @@ from time import time
 from abc import ABCMeta, abstractmethod
 import logging
 
-from dipy.segment.metric import Metric
-from dipy.segment.metric import ResampleFeature
-from dipy.segment.metric import AveragePointwiseEuclideanMetric
-from dipy.segment.metric import MinimumAverageDirectFlipMetric
+from dipy.segment.featurespeed import ResampleFeature
+from dipy.segment.metricspeed import (
+    AveragePointwiseEuclideanMetric, Metric, MinimumAverageDirectFlipMetric,
+)
 from dipy.tracking.streamline import set_number_of_points, nbytes
 
 
@@ -460,8 +460,8 @@ class QuickBundles(Clustering):
     [61, 191, 47, 1]
     >>> # Resampling streamlines differently is done explicitly as follows.
     >>> # Note this has an impact on the speed and the accuracy (tradeoff).
-    >>> from dipy.segment.metric import ResampleFeature
-    >>> from dipy.segment.metric import AveragePointwiseEuclideanMetric
+    >>> from dipy.segment.featurespeed import ResampleFeature
+    >>> from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
     >>> feature = ResampleFeature(nb_points=2)
     >>> metric = AveragePointwiseEuclideanMetric(feature)
     >>> qb = QuickBundles(threshold=10., metric=metric)
@@ -695,6 +695,7 @@ def qbx_and_merge(streamlines, thresholds,
         If None then RandomState is initialized internally.
     verbose : bool, optional.
         If True, log information. Default False.
+
     Returns
     -------
     clusters : obj

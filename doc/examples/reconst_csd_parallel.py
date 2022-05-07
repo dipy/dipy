@@ -70,11 +70,10 @@ csd_peaks_parallel = peaks_from_model(model=csd_model,
                                       normalize_peaks=True,
                                       npeaks=5,
                                       parallel=True,
-                                      num_processes=None)
+                                      num_processes=2)
 
 time_parallel = time.time() - start_time
-print("peaks_from_model using " + str(multiprocessing.cpu_count())
-      + " process ran in :" + str(time_parallel) + " seconds")
+print(f"peaks_from_model using 2 processes ran in : {time_parallel} seconds")
 
 """
 ``peaks_from_model`` using 8 processes ran in 114.425682068 seconds
@@ -104,7 +103,6 @@ print("peaks_from_model ran in :" + str(time_single) + " seconds")
 print("Speedup factor : " + str(time_single / time_parallel))
 
 """
-Speedup factor : 2.12166099088
 
 In Windows if you get a runtime error about frozen executable please start
 your script by adding your code above in a ``main`` function and use::

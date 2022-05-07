@@ -11,7 +11,6 @@ globbing.
 """
 import os
 from os.path import join as pjoin, isfile, isdir
-import sys
 import shutil
 from glob import glob
 from functools import partial

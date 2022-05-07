@@ -18,14 +18,14 @@ def nifti1_symmat(image_data, *args, **kwargs):
     """Returns a Nifti1Image with a symmetric matrix intent
 
     Parameters
-    -----------
+    ----------
     image_data : array-like
         should have lower triangular elements of a symmetric matrix along the
         last dimension
     all other arguments and keywords are passed to Nifti1Image
 
     Returns
-    --------
+    -------
     image : Nifti1Image
         5d, extra dimensions addes before the last. Has symmetric matrix intent
         code
@@ -395,7 +395,7 @@ def read_img_arr_or_path(data, affine=None):
     Helper function that handles inputs that can be paths, nifti img or arrays
 
     Parameters
-    -----------
+    ----------
     data : array or nib.Nifti1Image or str.
         Either as a 3D/4D array or as a nifti image object, or as
         a string containing the full path to a nifti file.

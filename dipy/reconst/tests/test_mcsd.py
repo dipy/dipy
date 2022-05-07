@@ -11,11 +11,8 @@ import pytest
 
 from dipy.sims.voxel import single_tensor, multi_tensor, add_noise
 from dipy.reconst import shm
-from dipy.reconst.dti import fractional_anisotropy, mean_diffusivity
-from dipy.data import default_sphere, get_3shell_gtab, get_fnames
-from dipy.core.gradients import GradientTable, gradient_table
-
-from dipy.io.gradients import read_bvals_bvecs
+from dipy.data import default_sphere, get_3shell_gtab
+from dipy.core.gradients import GradientTable
 
 from dipy.utils.optpkg import optional_package
 cvx, have_cvxpy, _ = optional_package("cvxpy")
@@ -44,12 +41,10 @@ def get_test_data():
     tissues = [0, 0, 2, 0, 1, 0, 0, 1, 2]  # wm=0, gm=1, csf=2
     data = [add_noise(signals[tissue], 80, s0[0]) for tissue in tissues]
     data = np.asarray(data).reshape((3, 3, 1, len(signals[0])))
-    evals = [evals_list[tissue] for tissue in tissues]
-    evals = np.asarray(evals).reshape((3, 3, 1, 3))
     tissues = np.asarray(tissues).reshape((3, 3, 1))
     masks = [np.where(tissues == x, 1, 0) for x in range(3)]
     responses = [np.concatenate((x[0], [x[1]])) for x in zip(evals_list, s0)]
-    return (gtab, data, masks, responses)
+    return gtab, data, masks, responses
 
 
 def _expand(m, iso, coeff):
@@ -63,29 +58,49 @@ def _expand(m, iso, coeff):
 def test_mcsd_model_delta():
     sh_order = 8
     gtab = get_3shell_gtab()
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
-    model = MultiShellDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model = MultiShellDeconvModel(gtab, response)
     iso = response.iso
 
     theta, phi = default_sphere.theta, default_sphere.phi
-    B = shm.real_sh_descoteaux_from_index(
-        response.m, response.n, theta[:, None], phi[:, None])
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        B = shm.real_sh_descoteaux_from_index(
+            response.m, response.n, theta[:, None], phi[:, None])
 
     wm_delta = model.delta.copy()
     # set isotropic components to zero
     wm_delta[:iso] = 0.
     wm_delta = _expand(model.m, iso, wm_delta)
 
-    for i, s in enumerate([0, 1000, 2000, 3500]):
-        g = GradientTable(default_sphere.vertices * s)
-        signal = model.predict(wm_delta, g)
-        expected = np.dot(response.response[i, iso:], B.T)
-        npt.assert_array_almost_equal(signal, expected)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        for i, s in enumerate([0, 1000, 2000, 3500]):
+            g = GradientTable(default_sphere.vertices * s)
+            signal = model.predict(wm_delta, g)
+            expected = np.dot(response.response[i, iso:], B.T)
+            npt.assert_array_almost_equal(signal, expected)
 
-    signal = model.predict(wm_delta, gtab)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        signal = model.predict(wm_delta, gtab)
     fit = model.fit(signal)
     m = model.m
     npt.assert_array_almost_equal(fit.shm_coeff[m != 0], 0., 2)
@@ -96,13 +111,25 @@ def test_MultiShellDeconvModel_response():
     gtab = get_3shell_gtab()
 
     sh_order = 8
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
-    model_1 = MultiShellDeconvModel(gtab, response, sh_order=sh_order)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_1 = MultiShellDeconvModel(gtab, response, sh_order=sh_order)
     responses = np.array([wm_response, gm_response, csf_response])
-    model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        model_2 = MultiShellDeconvModel(gtab, responses, sh_order=sh_order)
     response_1 = model_1.response.response
     response_2 = model_2.response.response
     npt.assert_array_almost_equal(response_1, response_2, 0)
@@ -126,18 +153,26 @@ def test_MultiShellDeconvModel():
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
     sh_order = 8
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
-    model = MultiShellDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
+        model = MultiShellDeconvModel(gtab, response)
     vf = [0.325, 0.2, 0.475]
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
 
     # Testing both ways to predict
     S_pred_fit = fit.predict()
-    S_pred_model = model.predict(fit.all_shm_coeff)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        S_pred_model = model.predict(fit.all_shm_coeff)
 
     npt.assert_array_almost_equal(S_pred_fit, S_pred_model, 0)
     npt.assert_array_almost_equal(S_pred_fit, signal, 0)
@@ -156,11 +191,15 @@ def test_MSDeconvFit():
     S_csf = csf_response[0, 3] * np.exp(-gtab.bvals * csf_response[0, 0])
 
     sh_order = 8
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
-    model = MultiShellDeconvModel(gtab, response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
+        model = MultiShellDeconvModel(gtab, response)
     vf = [0.325, 0.2, 0.475]
     signal = sum(i * j for i, j in zip(vf, [S_csf, S_gm, S_wm]))
     fit = model.fit(signal)
@@ -170,16 +209,21 @@ def test_MSDeconvFit():
 
 
 def test_multi_shell_fiber_response():
-    gtab = get_3shell_gtab()
+
     sh_order = 8
-    response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
-                                          wm_response,
-                                          gm_response,
-                                          csf_response)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", message=shm.descoteaux07_legacy_msg,
+            category=PendingDeprecationWarning)
+        response = multi_shell_fiber_response(sh_order, [0, 1000, 2000, 3500],
+                                              wm_response,
+                                              gm_response,
+                                              csf_response)
 
     npt.assert_equal(response.response.shape, (4, 7))
 
     with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always", category=PendingDeprecationWarning)
         response = multi_shell_fiber_response(sh_order, [1000, 2000, 3500],
                                               wm_response,
                                               gm_response,
@@ -198,14 +242,20 @@ def test_multi_shell_fiber_response():
 def test_mask_for_response_msmt():
     gtab, data, masks_gt, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     # Verifies that masks are not empty:
     masks_sum = int(np.sum(wm_mask) + np.sum(gm_mask) + np.sum(csf_mask))
@@ -219,14 +269,20 @@ def test_mask_for_response_msmt():
 def test_mask_for_response_msmt_nvoxels():
     gtab, data, _, _ = get_test_data()
 
-    wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
-                                                        roi_center=None,
-                                                        roi_radii=(1, 1, 0),
-                                                        wm_fa_thr=0.7,
-                                                        gm_fa_thr=0.3,
-                                                        csf_fa_thr=0.15,
-                                                        gm_md_thr=0.001,
-                                                        csf_md_thr=0.0032)
+    with warnings.catch_warnings(record=True) as w:
+        wm_mask, gm_mask, csf_mask = mask_for_response_msmt(gtab, data,
+                                                            roi_center=None,
+                                                            roi_radii=(1, 1, 0),
+                                                            wm_fa_thr=0.7,
+                                                            gm_fa_thr=0.3,
+                                                            csf_fa_thr=0.15,
+                                                            gm_md_thr=0.001,
+                                                            csf_md_thr=0.0032)
+
+    npt.assert_equal(len(w), 1)
+    npt.assert_(issubclass(w[0].category, UserWarning))
+    npt.assert_("""Some b-values are higher than 1200.""" in
+                str(w[0].message))
 
     wm_nvoxels = np.sum(wm_mask)
     gm_nvoxels = np.sum(gm_mask)

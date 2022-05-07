@@ -382,7 +382,3 @@ def test_disperse_charges_alt():
     # Verify that the potential of the optimal configuration is smaller than
     # that of the original configuration
     nt.assert_array_less(dispersed_charges_potential, init_charges_potential)
-
-
-if __name__ == "__main__":
-    nt.run_module_suite()
