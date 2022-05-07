@@ -467,7 +467,7 @@ def disperse_charges(hemi, iters, const=.2):
     Notes
     -----
     This function is meant to be used with diffusion imaging so antipodal
-    symmetry is assumed. Therefor each charge must not only be unique, but if
+    symmetry is assumed. Therefore, each charge must not only be unique, but if
     there is a charge at +x, there cannot be a charge at -x. These are treated
     as the same location and because the distance between the two charges will
     be zero, the result will be unstable.

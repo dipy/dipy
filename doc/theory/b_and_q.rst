@@ -109,7 +109,7 @@ $\mathbf{g} = \pm\mathbf{v}_1$, and $b = \gamma^2 G^2 R =
 
 Once we have $\mathbf{b}_{actual}$ we can calculate $b_{actual} =
 \|\mathbf{b}_{actual}\|$ and $\mathbf{g}_{actual} = \mathbf{b}_{actual}
-/ b_{actual}$. Various sofware packages (e.g. FSL's DFT-DTIFIT) expect
+/ b_{actual}$. Various software packages (e.g. FSL's DFT-DTIFIT) expect
 to get N x 3 and N x 1 arrays of $\mathbf{g}_{actual}$ (``bvecs``) and
 $b_{actual}$ values (``bvals``) as their inputs.
 

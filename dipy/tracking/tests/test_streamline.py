@@ -518,6 +518,30 @@ def test_unlist_relist_streamlines():
         assert_array_equal(streamlines[i], streamlines2[i])
 
 
+def test_transform_streamlines_dtype_in_place():
+    identity = np.eye(4)
+    streamlines = Streamlines([streamline])
+    streamlines._data = streamlines._data.astype(np.float16)
+    data_dtype = streamlines._data.dtype
+    offsets_dtype = streamlines._offsets.dtype
+
+    transform_streamlines(streamlines, identity, in_place=True)
+    assert_equal(data_dtype, streamlines._data.dtype)
+    assert_equal(offsets_dtype, streamlines._offsets.dtype)
+
+
+def test_transform_streamlines_dtype():
+    identity = np.eye(4)
+    streamlines = Streamlines([streamline])
+    streamlines._data = streamlines._data.astype(np.float16)
+    data_dtype = streamlines._data.dtype
+    offsets_dtype = streamlines._offsets.dtype
+
+    streamlines = transform_streamlines(streamlines, identity, in_place=False)
+    assert_equal(data_dtype, streamlines._data.dtype)
+    assert_equal(offsets_dtype, streamlines._offsets.dtype)
+
+
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
@@ -684,7 +708,7 @@ def test_compress_streamlines():
         # (like the C++ version)
         compress_func(streamline, max_segment_length=np.inf)
 
-        # Incompressable streamline when `tol_error` == 1.
+        # Incompressible streamline when `tol_error` == 1.
         simple_streamline = np.array([[0, 0, 0],
                                       [1, 1, 0],
                                       [1.5, np.inf, 0],

@@ -64,7 +64,7 @@ def eigenstats(points, alpha=0.05):
 
     Parameters
     ----------
-    points : arraey_like (N,3)
+    points : array_like (N,3)
         array of points on the sphere of radius 1 in $\mathbb{R}^3$
     alpha : real or None
         1 minus the coverage for the confidence ellipsoid, e.g. 0.05 for 95%

@@ -164,7 +164,7 @@ def gen_dirac(m, n, theta, phi, legacy=True):
 def spherical_harmonics(m, n, theta, phi, use_scipy=True):
     """Compute spherical harmonics.
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -224,7 +224,7 @@ def real_sph_harm(m, n, theta, phi):
         $Y^0_n$                     if m = 0
         Real($Y^|m|_n$) * sqrt(2)   if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -259,7 +259,7 @@ def real_sh_tournier_from_index(m, n, theta, phi, legacy=True):
         $Y^0_n$                      if m = 0
         Imag($Y^|m|_n$) * sqrt(2)    if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -313,7 +313,7 @@ def real_sh_descoteaux_from_index(m, n, theta, phi, legacy=True):
         $Y^0_n$                      if m = 0
         Real($Y^m_n$) * sqrt(2)      if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -367,7 +367,7 @@ def real_sh_tournier(sh_order, theta, phi,
         $Y^0_n$                      if m = 0
         Imag($Y^|m|_n$) * sqrt(2)    if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -425,7 +425,7 @@ def real_sh_descoteaux(sh_order, theta, phi,
         $Y^0_n$                      if m = 0
         Real($Y^m_n$) * sqrt(2)      if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -482,7 +482,7 @@ def real_sym_sh_mrtrix(sh_order, theta, phi):
         $Y^0_n$             if m = 0
         Imag($Y^|m|_n$)     if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -535,7 +535,7 @@ def real_sym_sh_basis(sh_order, theta, phi):
         $Y^0_n$                     if m = 0
         Real($Y^|m|_n$) * sqrt(2)   if m < 0
 
-    This may take scalar or array arguments. The inputs will be broadcasted
+    This may take scalar or array arguments. The inputs will be broadcast
     against each other.
 
     Parameters
@@ -872,7 +872,7 @@ class SphHarmFit(OdfFit):
     def shm_coeff(self):
         """The spherical harmonic coefficients of the odf
 
-        Make this a property for now, if there is a usecase for modifying
+        Make this a property for now, if there is a use case for modifying
         the coefficients we can add a setter or expose the coefficients more
         directly
         """
@@ -1026,7 +1026,7 @@ def bootstrap_data_array(data, H, R, permute=None):
     data must be normalized, ie 0 < data <= 1
 
     This function, and the bootstrap_data_voxel function, calculate
-    residual-bootsrap samples given a Hat matrix and a Residual matrix. These
+    residual-bootstrap samples given a Hat matrix and a Residual matrix. These
     samples can be used for non-parametric statistics or for bootstrap
     probabilistic tractography:
 
@@ -1077,7 +1077,7 @@ class ResidualBootstrapWrapper(object):
         Given some linear model described by B, the design matrix, and a
         signal_object, returns an object which can sample the residual
         bootstrap distribution of the signal. We assume that the signals are
-        normalized so we clip the bootsrap samples to be between `min_signal`
+        normalized so we clip the bootstrap samples to be between `min_signal`
         and 1.
 
         Parameters

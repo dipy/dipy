@@ -327,7 +327,7 @@ def test_single_tensor_btens():
     S_btens = single_tensor(gtab_lte, 100, evals, evecs, snr=None)
     assert_array_almost_equal(S_ref, S_btens)
 
-    # Check if Signals producted with STE btensor gives signals that matches
+    # Check if signals produced with STE btensor gives signals that matches
     # the signal decay for mean diffusivity
     md = np.sum(evals)/3
     S_ref = 100 * np.exp(-gtab.bvals * md)

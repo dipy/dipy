@@ -32,7 +32,7 @@ class MaskFlow(Workflow):
         """
         if lb >= ub:
             logging.error('The upper bound(less than) should be greater'
-                          ' than the lower bound (greather_than).')
+                          ' than the lower bound (greater_than).')
             return
 
         io_it = self.get_io_iterator()
