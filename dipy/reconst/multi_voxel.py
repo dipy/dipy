@@ -7,14 +7,16 @@ from tqdm import tqdm
 from dipy.core.ndindex import ndindex
 from dipy.reconst.base import ReconstFit
 from dipy.reconst.quick_squash import quick_squash as _squash
+from dipy.utils.parallel import paramap
+from functools import partial
+import multiprocessing
 
 
 def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition
     """
-
-    def new_fit(self, data, mask=None):
+    def new_fit(self, data, mask=None, **kwargs):
         """Fit method for every voxel in data"""
         # If only one voxel just return a normal fit
         if data.ndim == 1:
@@ -31,12 +33,13 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
-        bar = tqdm(total=np.sum(mask), position=0)
-        for ijk in ndindex(data.shape[:-1]):
-            if mask[ijk]:
-                fit_array[ijk] = single_voxel_fit(self, data[ijk])
-                bar.update()
-        bar.close()
+        data_to_fit = data[mask]
+        single_voxel_with_self = partial(single_voxel_fit, self)
+        n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() -1)
+        vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
+        chunks = [data_to_fit[ii:ii + vox_per_chunk]
+                  for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
+        fit_array[mask] = paramap(single_voxel_with_self, chunks, **kwargs)
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
