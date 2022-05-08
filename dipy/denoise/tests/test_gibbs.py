@@ -187,7 +187,7 @@ def test_swapped_gibbs_4d():
 
 def test_gibbs_errors():
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2, 2, 2)))
-    assert_raises(ValueError, gibbs_removal, np.ones((2)))
+    assert_raises(ValueError, gibbs_removal, np.ones(2))
     assert_raises(ValueError, gibbs_removal, np.ones((2, 2, 2)), 3)
     assert_raises(TypeError, gibbs_removal, image_gibbs.copy(), inplace="True")
     # Test for valid num_processes

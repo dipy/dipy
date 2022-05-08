@@ -164,14 +164,13 @@ class SNRinCCFlow(Workflow):
                     SNR = mean_signal[direction]/noise_std if noise_std else 0
                 SNR_output.append(SNR)
 
-            data = []
-            data.append({
-                        'data': str(SNR_output[0]) + ' ' + str(SNR_output[1]) +
+            data = [{
+                'data': str(SNR_output[0]) + ' ' + str(SNR_output[1]) +
                         ' ' + str(SNR_output[2]) + ' ' + str(SNR_output[3]),
-                        'directions': 'b0' + ' ' + str(SNR_directions[0]) +
-                        ' ' + str(SNR_directions[1]) + ' ' +
-                        str(SNR_directions[2])
-                        })
+                'directions': 'b0' + ' ' + str(SNR_directions[0]) +
+                              ' ' + str(SNR_directions[1]) + ' ' +
+                              str(SNR_directions[2])
+            }]
 
             with open(os.path.join(out_dir, out_path), 'w') as myfile:
                 json.dump(data, myfile)

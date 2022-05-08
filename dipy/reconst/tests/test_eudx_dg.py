@@ -27,7 +27,7 @@ def test_EuDXDirectionGetter():
     def get_direction(dg, point, dir):
         newdir = dir.copy()
         state = dg.get_direction(point, newdir)
-        return (state, np.array(newdir))
+        return state, np.array(newdir)
 
     data = np.random.random((3, 4, 5, 2))
     with warnings.catch_warnings():

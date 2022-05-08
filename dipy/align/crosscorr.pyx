@@ -224,17 +224,17 @@ def precompute_cc_factors_3d(floating[:, :, :] static,
                             for it in range(5):
                                 temp[sss, rr, cc, it] -= \
                                     temp[prev_ss, rr, prev_cc, it]
-                    if(r > 0):
+                    if r > 0:
                         prev_rr = _wrap(rr-1, nr)
                         for it in range(5):
                             temp[sss, rr, cc, it] += \
                                 temp[sss, prev_rr, cc, it]
-                        if(c > 0):
+                        if c > 0:
                             prev_cc = _wrap(cc-1, nc)
                             for it in range(5):
                                 temp[sss, rr, cc, it] -= \
                                     temp[sss, prev_rr, prev_cc, it]
-                    if(c > 0):
+                    if c > 0:
                         prev_cc = _wrap(cc-1, nc)
                         for it in range(5):
                             temp[sss, rr, cc, it] += temp[sss, rr, prev_cc, it]
@@ -407,12 +407,12 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                     sfm = factors[s, r, c, 2]
                     sff = factors[s, r, c, 3]
                     smm = factors[s, r, c, 4]
-                    if(sff == 0.0 or smm == 0.0):
+                    if sff == 0.0 or smm == 0.0:
                         continue
                     localCorrelation = 0
-                    if(sff * smm > 1e-5):
+                    if sff * smm > 1e-5:
                         localCorrelation = sfm * sfm / (sff * smm)
-                    if(localCorrelation < 1):  # avoid bad values...
+                    if localCorrelation < 1:  # avoid bad values...
                         energy -= localCorrelation
                     temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
                     out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
@@ -481,12 +481,12 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                     sfm = factors[s, r, c, 2]
                     sff = factors[s, r, c, 3]
                     smm = factors[s, r, c, 4]
-                    if(sff == 0.0 or smm == 0.0):
+                    if sff == 0.0 or smm == 0.0:
                         continue
                     localCorrelation = 0
-                    if(sff * smm > 1e-5):
+                    if sff * smm > 1e-5:
                         localCorrelation = sfm * sfm / (sff * smm)
-                    if(localCorrelation < 1):  # avoid bad values...
+                    if localCorrelation < 1:  # avoid bad values...
                         energy -= localCorrelation
                     temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
                     out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
@@ -574,7 +574,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                     sums[t] = 0
                     for qq in range(side):
                         sums[t] += lines[t, qq]
-                if(i >= radius):
+                if i >= radius:
                     # r is the pixel that is affected by the cube with slices
                     # [r - radius.. r + radius, :]
                     r = i - radius
@@ -728,12 +728,12 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                 sfm = factors[r, c, 2]
                 sff = factors[r, c, 3]
                 smm = factors[r, c, 4]
-                if(sff == 0.0 or smm == 0.0):
+                if sff == 0.0 or smm == 0.0:
                     continue
                 localCorrelation = 0
-                if(sff * smm > 1e-5):
+                if sff * smm > 1e-5:
                     localCorrelation = sfm * sfm / (sff * smm)
-                if(localCorrelation < 1):  # avoid bad values...
+                if localCorrelation < 1:  # avoid bad values...
                     energy -= localCorrelation
                 temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
                 out[r, c, 0] -= temp * grad_static[r, c, 0]
@@ -795,12 +795,12 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                 sfm = factors[r, c, 2]
                 sff = factors[r, c, 3]
                 smm = factors[r, c, 4]
-                if(sff == 0.0 or smm == 0.0):
+                if sff == 0.0 or smm == 0.0:
                     continue
                 localCorrelation = 0
-                if(sff * smm > 1e-5):
+                if sff * smm > 1e-5:
                     localCorrelation = sfm * sfm / (sff * smm)
-                if(localCorrelation < 1):  # avoid bad values...
+                if localCorrelation < 1:  # avoid bad values...
                     energy -= localCorrelation
                 temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
                 out[r, c, 0] -= temp * grad_moving[r, c, 0]

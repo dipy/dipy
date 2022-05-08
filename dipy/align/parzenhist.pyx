@@ -479,7 +479,7 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
     cdef:
         cnp.npy_intp bin
 
-    bin = <cnp.npy_intp>(normalized)
+    bin = <cnp.npy_intp>normalized
     if bin < padding:
         return padding
     if bin > nbins - 1 - padding:

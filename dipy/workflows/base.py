@@ -244,11 +244,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 help_msg = ''.join(_doc[i][2])
 
                 _args = ['{0}{1}'.format(prefix, arg_name)]
-                _kwargs = {'help': help_msg,
-                           'type': dtype,
-                           'action': 'store'}
+                _kwargs = {'help': help_msg, 'type': dtype, 'action': 'store',
+                           'metavar': dtype.__name__}
 
-                _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
                     default_ = dict()

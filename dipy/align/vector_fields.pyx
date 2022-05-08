@@ -151,7 +151,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 meanNorm += nn
                 stdNorm += nn * nn
                 cnt += 1
-                if(maxNorm < nn):
+                if maxNorm < nn:
                     maxNorm = nn
             else:
                 comp[i, j, 0] = 0
@@ -360,7 +360,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     meanNorm += nn
                     stdNorm += nn * nn
                     cnt += 1
-                    if(maxNorm < nn):
+                    if maxNorm < nn:
                         maxNorm = nn
                 else:
                     comp[k, i, j, 0] = 0
@@ -531,7 +531,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                     mag = sqrt((q[i, j, 0]/sr) ** 2 + (q[i, j, 1]/sc) ** 2)
                     norms[i, j] = mag
                     error += mag
-                    if(difmag < mag):
+                    if difmag < mag:
                         difmag = mag
             maxlen = difmag * epsilon
             for i in range(nr):
@@ -640,7 +640,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                    (q[k, i, j, 2]/sc) ** 2)
                         norms[k, i, j] = mag
                         error += mag
-                        if(difmag < mag):
+                        if difmag < mag:
                             difmag = mag
             maxlen = difmag*epsilon
             for k in range(ns):
