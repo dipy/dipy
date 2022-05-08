@@ -101,7 +101,7 @@ When not imposed, violations of these conditions can occur in presence of noise
 and/or in sparsely sampled data. This could results in metrics derived from the
 model parameters to be unreliable. Both these conditions can be enfoced while
 estimating the QTI model's parameters using semidefinite programming (SDP) as
-shown by Herberthson et al. [2]_. This corresponds to solve the problem
+shown by Herberthson et al. [2]_. This corresponds to solving the problem
 
 .. math::
 
@@ -129,7 +129,7 @@ Usage example
 ==============
 
 Here we show how metrics derived from the
-QTI model parameters compares when the fit is performed with and without
+QTI model parameters compare when the fit is performed with and without
 applying the positivity constraints.
 
 In DIPY, the constrained estimation routine is avaiable as part of the
@@ -146,7 +146,7 @@ a human brain dataset comprising 70 volumes acquired with tensor-encoding.
 This dataset was obtained by subsampling a richer dataset containing 217
 diffusion measurements, which we will use as ground truth when comparing
 the parameters estimation with and without applied constraints. This emulates
-performing short data acquisition which can correspond to scanning patients
+performing shorter data acquisition which can correspond to scanning patients
 in clinical settings.
 
 The full dataset used in this tutorial was originally published at
@@ -200,13 +200,17 @@ qtifit_unconstrained = qtimodel_unconstrained.fit(data_70, mask)
 Now we repeat the fit but with the constraints applied.
 To perform the constrained fit, we select the 'SDPdc' fit method when creating
 the QtiModel object.
-Note: this fit method is slower compared to the defaults unconstrained.
+
+.. note::
+    this fit method is slower compared to the defaults unconstrained.
 
 If mosek is installed, it can be specified as the solver to be used
 as follows:
 
-qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
-qtifit = qtimodel.fit(data, mask)
+.. code-block:: python
+
+    qtimodel = qti.QtiModel(gtab, fit_method='SDPdc', cvxpy_solver='MOSEK')
+    qtifit = qtimodel.fit(data, mask)
 
 If Mosek is not installed, the constrained fit can still be performed, and
 SCS will be used as solver. SCS is typically much slower than Mosek, but
@@ -222,7 +226,7 @@ qtifit_constrained = qtimodel_constrained.fit(data_70, mask)
 Now we can visualize the results obtained with the constrained and
 unconstrained fit on the small dataset, and compare them with the
 "ground truth" provided by fitting the QTI model to the full dataset.
-For example, we can look at the FA and $\mu$FA maps, and their value
+For example, we can look at the FA and µFA maps, and their value
 distribution in White Matter in comparison to the ground truth.
 """
 
@@ -233,13 +237,14 @@ wm_mask = qtifit_217.ufa[:, :, z] > 0.6
 compare_qti_maps(qtifit_217, qtifit_unconstrained, qtifit_constrained, wm_mask)
 
 """
-The results clearly shows how many of the FA and $\mu$FA values
-obtained with the unconstrained fit falls outside the correct
+The results clearly show how many of the FA and µFA values
+obtained with the unconstrained fit fall outside the correct
 theoretical range [0 1], while the constrained fit provides
 more sound results. Note also that even when fitting the rich
-dataset, some values of the parameters fall outside the
-theoretical range, suggesting that the constrained fit should
-be performed even on very densely sampled diffusion data.
+dataset, some values of the parameters produced with the unconstrained
+fit fall outside the correct range, suggesting that the constrained fit,
+despite the additional time cost, should be performed even on densely
+sampled diffusion data.
 
 For more information about QTI and QTI+, please read the articles by
 Westin et al. [1]_ and Herberthson et al. [2]_.
