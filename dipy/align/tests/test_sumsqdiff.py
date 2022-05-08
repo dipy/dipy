@@ -33,10 +33,10 @@ def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
             y[:] = 0
             for (dRow, dCol) in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
                 dr = r + dRow
-                if((dr < 0) or (dr >= nrows)):
+                if dr < 0 or dr >= nrows:
                     continue
                 dc = c + dCol
-                if((dc < 0) or (dc >= ncols)):
+                if dc < 0 or dc >= ncols:
                     continue
                 nn += 1
                 y += dfield[dr, dc]
@@ -47,9 +47,9 @@ def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
                 tau = sigmasq * lambda_param * nn
                 A = np.outer(grad[r, c], grad[r, c]) + tau * np.eye(2)
                 det = np.linalg.det(A)
-                if(det < 1e-9):
+                if det < 1e-9:
                     nrm2 = np.sum(grad[r, c]**2)
-                    if(nrm2 < 1e-9):
+                    if nrm2 < 1e-9:
                         dfield[r, c, :] = 0
                     else:
                         dfield[r, c] = b[r, c] / nrm2
@@ -87,21 +87,21 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
                 for dSlice, dRow, dCol in [(-1, 0, 0), (0, -1, 0), (0, 0, 1),
                                            (0, 1, 0), (0, 0, -1), (1, 0, 0)]:
                     ds = s + dSlice
-                    if((ds < 0) or (ds >= nslices)):
+                    if ds < 0 or ds >= nslices:
                         continue
                     dr = r + dRow
-                    if((dr < 0) or (dr >= nrows)):
+                    if dr < 0 or dr >= nrows:
                         continue
                     dc = c + dCol
-                    if((dc < 0) or (dc >= ncols)):
+                    if dc < 0 or dc >= ncols:
                         continue
                     nn += 1
                     y += dfield[ds, dr, dc]
-                if(np.isinf(sigmasq)):
+                if np.isinf(sigmasq):
                     dfield[s, r, c] = y / nn
-                elif(sigmasq < 1e-9):
+                elif sigmasq < 1e-9:
                     nrm2 = np.sum(g**2)
-                    if(nrm2 < 1e-9):
+                    if nrm2 < 1e-9:
                         dfield[s, r, c, :] = 0
                     else:
                         dfield[s, r, c, :] = b[s, r, c] / nrm2
@@ -113,7 +113,7 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
                         dfield[s, r, c] = np.linalg.solve(G, y)
                     except np.linalg.linalg.LinAlgError:
                         nrm2 = np.sum(g**2)
-                        if(nrm2 < 1e-9):
+                        if nrm2 < 1e-9:
                             dfield[s, r, c, :] = 0
                         else:
                             dfield[s, r, c] = b[s, r, c] / nrm2

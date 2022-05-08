@@ -63,7 +63,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     # first identify the number of the b0 images
     K = gtab.b0s_mask[gtab.b0s_mask].size
 
-    if(K > 1):
+    if K > 1:
         # If multiple b0 values then use MUBE noise estimate
         data0 = data[..., gtab.b0s_mask]
         sibe = False
@@ -142,8 +142,8 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
       # Instead, we will replace these values with 1 below
       with np.errstate(over='ignore', invalid='ignore'):
           xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
-                  ((2 + snr_sq) * sps.iv(0, (snr_sq) / 4) +
-                  (snr_sq) * sps.iv(1, (snr_sq) / 4)) ** 2).astype(float)
+                  ((2 + snr_sq) * sps.iv(0, snr_sq / 4) +
+                  snr_sq * sps.iv(1, snr_sq / 4)) ** 2).astype(float)
       xi[snr > 37.4] = 1
       sigma_corr = sigma_sq / xi
       sigma_corr[np.isnan(sigma_corr)] = 0

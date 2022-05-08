@@ -435,9 +435,9 @@ def test_see_also():
     for func, desc, role in doc6['See Also']:
         if func in ('func_a', 'func_b', 'func_c', 'func_f',
                     'func_g', 'func_h', 'func_j', 'func_k', 'baz.obj_q'):
-            assert(not desc)
+            assert not desc
         else:
-            assert(desc)
+            assert desc
 
         if func == 'func_h':
             assert role == 'meth'

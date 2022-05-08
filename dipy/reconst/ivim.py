@@ -613,7 +613,7 @@ class IvimModelVP(ReconstModel):
         bounds = self.bounds
 
         # Optimizer #3: Nonlinear-Least Squares
-        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
+        res = least_squares(self.nlls_cost, x_f, bounds=bounds,
                             xtol=self.xtol, args=(data,))
         result = res.x
         f_est = result[0]

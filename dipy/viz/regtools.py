@@ -86,9 +86,9 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None, *
     img1 = 255 * ((img1 - img1.min()) / (img1.max() - img1.min()))
 
     # Create the color images
-    img0_red = np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
-    img1_green = np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
-    overlay = np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
+    img0_red = np.zeros(shape=img0.shape + (3,), dtype=np.uint8)
+    img1_green = np.zeros(shape=img0.shape + (3,), dtype=np.uint8)
+    overlay = np.zeros(shape=img0.shape + (3,), dtype=np.uint8)
 
     # Copy the normalized intensities into the appropriate channels of the
     # color images

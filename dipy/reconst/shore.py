@@ -191,7 +191,7 @@ class ShoreModel(Cache):
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
 
-        if positive_constraint and not(constrain_e0):
+        if positive_constraint and not constrain_e0:
             msg = "Constrain_e0 must be True to enfore positivity."
             raise ValueError(msg)
 
@@ -290,7 +290,7 @@ class ShoreModel(Cache):
         return ShoreFit(self, coef)
 
 
-class ShoreFit():
+class ShoreFit:
 
     def __init__(self, model, shore_coef):
         """ Calculates diffusion properties for a single voxel
@@ -659,7 +659,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 def _kappa_odf(zeta, n, l):
     return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 *
                     gamma(n + 1.5) * 2 ** (l + 3)) /
-                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) *
+                   (16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l) *
                     gamma(l + 1.5) ** 2))
 
 

@@ -57,7 +57,7 @@ def read_bvec_file(filename, atol=.001):
     grad_table[:, b_values > 0] = (grad_table[:, b_values > 0] /
                                    grad_norms[b_values > 0])
 
-    return (grad_table, b_values)
+    return grad_table, b_values
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "

@@ -795,7 +795,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
             out.append(streamline_near_roi(sl, x_roi_coords, tol=tol,
                                            mode=mode))
 
-        return(np.array(out, dtype=bool))
+        return np.array(out, dtype=bool)
 
 
 def length(streamlines):
