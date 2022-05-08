@@ -546,7 +546,7 @@ def get_warped_stacked_image(image, nslices, b, m):
     mapping.forward, mapping.backward = d, dinv
     wimage = mapping.transform(image)
 
-    if(nslices == 1):
+    if nslices == 1:
         return image, wimage
 
     # normalize and form the 3d by piling slices
@@ -574,7 +574,7 @@ def get_synthetic_warped_circle(nslices):
     mapping.forward, mapping.backward = d, dinv
     wcircle = mapping.transform(circle)
 
-    if(nslices == 1):
+    if nslices == 1:
         return circle, wcircle
 
     # normalize and form the 3d by piling slices

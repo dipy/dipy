@@ -39,7 +39,7 @@ def set_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
-class HistoResDNN():
+class HistoResDNN:
     """
     This class is intended for the ResDNN Histology Network model.
     """
@@ -241,7 +241,7 @@ class HistoResDNN():
             if i % 100 == 0 or i == count:
                 logger.info('Chunk #{} out of {}'.format(i, count))
             tmp_sh = self.__predict(
-                flat_dw_sh_coef[(i)*chunk_size:(i+1)*chunk_size])
+                flat_dw_sh_coef[i*chunk_size:(i+1)*chunk_size])
 
             # Removing negative values from the SF
             sphere = get_sphere('repulsion724')
@@ -252,7 +252,7 @@ class HistoResDNN():
             tmp_sh = sf_to_sh(tmp_sf, sphere, smooth=0.0006,
                               basis_type=self.basis_type,
                               sh_order=self.sh_order)
-            flat_pred_sh_coef[(i)*chunk_size:(i+1)*chunk_size] = tmp_sh
+            flat_pred_sh_coef[i*chunk_size:(i+1)*chunk_size] = tmp_sh
 
         pred_sh_coef = np.zeros(ori_shape)
         pred_sh_coef[mask > 0] = flat_pred_sh_coef

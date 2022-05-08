@@ -12,7 +12,7 @@ pstats, _, _ = optional_package('pstats',
                                 'python-profiler package in Debian/Ubuntu')
 
 
-class Profiler():
+class Profiler:
     """ Profile python/cython files or functions
 
     If you are profiling cython code you need to add

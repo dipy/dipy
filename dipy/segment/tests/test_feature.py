@@ -62,7 +62,7 @@ def test_feature_resample():
                 raise ValueError(msg)
 
         def infer_shape(self, streamline):
-            return (self.nb_points, streamline.shape[1])
+            return self.nb_points, streamline.shape[1]
 
         def extract(self, streamline):
             return set_number_of_points(streamline, self.nb_points)
@@ -101,7 +101,7 @@ def test_feature_center_of_mass():
             super(CenterOfMassFeature, self).__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
-            return (1, streamline.shape[1])
+            return 1, streamline.shape[1]
 
         def extract(self, streamline):
             return np.mean(streamline, axis=0)[None, :]
@@ -131,7 +131,7 @@ def test_feature_midpoint():
             super(MidpointFeature, self).__init__(is_order_invariant=False)
 
         def infer_shape(self, streamline):
-            return (1, streamline.shape[1])
+            return 1, streamline.shape[1]
 
         def extract(self, streamline):
             return streamline[[len(streamline)//2]]
@@ -166,7 +166,7 @@ def test_feature_arclength():
             super(ArcLengthFeature, self).__init__(is_order_invariant=True)
 
         def infer_shape(self, streamline):
-            return (1, 1)
+            return 1, 1
 
         def extract(self, streamline):
             return length(streamline)[None, None]
@@ -196,7 +196,7 @@ def test_feature_vector_of_endpoints():
             super(VectorOfEndpointsFeature, self).__init__(False)
 
         def infer_shape(self, streamline):
-            return (1, streamline.shape[1])
+            return 1, streamline.shape[1]
 
         def extract(self, streamline):
             return streamline[[-1]] - streamline[[0]]

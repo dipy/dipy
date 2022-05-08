@@ -529,7 +529,7 @@ def multi_tensor_dki(gtab, mevals, S0=1., angles=[(90., 0.), (90., 0.)],
     MD = (DT[0][0] + DT[1][1] + DT[2][2]) / 3
 
     # compute voxel's KT
-    kt = np.zeros((15))
+    kt = np.zeros(15)
     kt[0] = kurtosis_element(D_comps, fractions, 0, 0, 0, 0, DT, MD)
     kt[1] = kurtosis_element(D_comps, fractions, 1, 1, 1, 1, DT, MD)
     kt[2] = kurtosis_element(D_comps, fractions, 2, 2, 2, 2, DT, MD)

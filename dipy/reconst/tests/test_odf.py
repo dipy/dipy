@@ -75,9 +75,9 @@ def test_gfa():
     assert_equal(g, np.array([0, 0]))
 
     # The following series follows the rule (sqrt(n-1)/((n-1)^2))
-    g = gfa(np.hstack([np.ones((9)), [0]]))
+    g = gfa(np.hstack([np.ones(9), [0]]))
     assert_almost_equal(g, np.sqrt(9./81))
-    g = gfa(np.hstack([np.ones((99)), [0]]))
+    g = gfa(np.hstack([np.ones(99), [0]]))
     assert_almost_equal(g, np.sqrt(99./(99.**2)))
 
     # All-zeros returns a nan with no warning:

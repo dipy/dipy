@@ -45,7 +45,7 @@ def test_vector_norm():
 
 def test_sphere_cart():
     # test arrays of points
-    rs, thetas, phis = cart2sphere(*(sphere_points.T))
+    rs, thetas, phis = cart2sphere(*sphere_points.T)
     xyz = sphere2cart(rs, thetas, phis)
     assert_array_almost_equal(xyz, sphere_points.T)
     # test radius estimation

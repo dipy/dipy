@@ -44,7 +44,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
         The degree of the harmonic.
     """
     if iso_comp < 2:
-        msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
+        msg = "Multi-tissue CSD requires at least 2 tissue compartments"
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
     m, n = shm.sph_harm_ind_list(sh_order)
@@ -200,7 +200,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
         if not iso >= 2:
-            msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
+            msg = "Multi-tissue CSD requires at least 2 tissue compartments"
             raise ValueError(msg)
 
         super(MultiShellDeconvModel, self).__init__(gtab)

@@ -66,7 +66,7 @@ def setup_module():
             FAref[0, i, j] = FAdti
             MDref[0, i, j] = MDdti
             R = all_tensor_evecs(p[0])
-            R = R.reshape((9))
+            R = R.reshape(9)
             model_params_mv[0, i, j] = \
                 np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]), axis=0)
 
@@ -161,7 +161,7 @@ def test_fwdti_predictions():
                                   angles=angles,
                                   fractions=[(1-gtf) * 100, gtf*100], snr=None)
     R = all_tensor_evecs(peaks[0])
-    R = R.reshape((9))
+    R = R.reshape(9)
     model_params = np.concatenate(([0.0017, 0.0003, 0.0003], R, [gtf]),
                                   axis=0)
     S_pred1 = fwdti_prediction(model_params, gtab_2s, S0=100)

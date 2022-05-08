@@ -265,10 +265,10 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
     data_dwi = np.squeeze(np.take(data, dwi_idx, axis=3))
 
     # create empty arrays
-    denoised_b0s = np.empty((data_b0s.shape), dtype=calc_dtype)
-    denoised_dwi = np.empty((data_dwi.shape), dtype=calc_dtype)
+    denoised_b0s = np.empty(data_b0s.shape, dtype=calc_dtype)
+    denoised_dwi = np.empty(data_dwi.shape, dtype=calc_dtype)
 
-    denoised_arr = np.empty((data.shape), dtype=calc_dtype)
+    denoised_arr = np.empty(data.shape, dtype=calc_dtype)
 
     if verbose is True:
         t1 = time.time()

@@ -27,7 +27,7 @@ except NameError:  # Python 3
 def _get_package():
     """ Workaround for missing ``__package__`` in Python 3.2
     """
-    if(('__package__' in globals()) and (__package__ is not None)):
+    if '__package__' in globals() and __package__ is not None:
         return __package__
     return __name__.split('.', 1)[0]
 

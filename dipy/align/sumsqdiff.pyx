@@ -225,7 +225,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
             for c in range(ncols):
                 delta = delta_field[r, c]
                 sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
-                if(target is None):
+                if target is None:
                     b[0] = delta_field[r, c] * grad[r, c, 0]
                     b[1] = delta_field[r, c] * grad[r, c, 1]
                 else:
@@ -236,10 +236,10 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                 y[1] = 0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
+                    if dr < 0 or dr >= nrows:
                         continue
                     dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
+                    if dc < 0 or dc >= ncols:
                         continue
                     nn += 1
                     y[0] += displacement_field[dr, dc, 0]
@@ -252,17 +252,17 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     xx -= displacement_field[r, c, 0]
                     yy -= displacement_field[r, c, 1]
                     opt = xx * xx + yy * yy
-                    if(max_displacement < opt):
+                    if max_displacement < opt:
                         max_displacement = opt
                 else:
                     A[0] = grad[r, c, 0] ** 2 + sigmasq * lambda_param * nn
                     A[1] = grad[r, c, 0] * grad[r, c, 1]
                     A[2] = grad[r, c, 1] ** 2 + sigmasq * lambda_param * nn
                     det = A[0] * A[2] - A[1] * A[1]
-                    if(det < 1e-9):
+                    if det < 1e-9:
                         nrm2 = (grad[r, c, 0] ** 2 +
                                 grad[r, c, 1] ** 2)
-                        if(nrm2 < 1e-9):
+                        if nrm2 < 1e-9:
                             displacement_field[r, c, 0] = 0
                             displacement_field[r, c, 1] = 0
                         else:
@@ -277,7 +277,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                         displacement_field[r, c, 0] = d[0]
                         displacement_field[r, c, 1] = d[1]
                         opt = xx * xx + yy * yy
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
     return sqrt(max_displacement)
 
@@ -403,7 +403,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
-                    if(target is None):
+                    if target is None:
                         b[0] = delta_field[s, r, c] * g[0]
                         b[1] = delta_field[s, r, c] * g[1]
                         b[2] = delta_field[s, r, c] * g[2]
@@ -417,13 +417,13 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     y[2] = 0
                     for k in range(NUM_NEIGHBORS):
                         ds = s + dSlice[k]
-                        if((ds < 0) or (ds >= nslices)):
+                        if ds < 0 or ds >= nslices:
                             continue
                         dr = r + dRow[k]
-                        if((dr < 0) or (dr >= nrows)):
+                        if dr < 0 or dr >= nrows:
                             continue
                         dc = c + dCol[k]
-                        if((dc < 0) or (dc >= ncols)):
+                        if dc < 0 or dc >= ncols:
                             continue
                         nn += 1
                         y[0] += disp[ds, dr, dc, 0]
@@ -440,11 +440,11 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         yy -= disp[s, r, c, 1]
                         zz -= disp[s, r, c, 2]
                         opt = xx * xx + yy * yy + zz * zz
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
-                    elif(sigmasq < 1e-9):
+                    elif sigmasq < 1e-9:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if(nrm2 < 1e-9):
+                            if nrm2 < 1e-9:
                                 disp[s, r, c, 0] = 0
                                 disp[s, r, c, 1] = 0
                                 disp[s, r, c, 2] = 0
@@ -461,7 +461,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                                                                 g, y, tau, d)
                         if is_singular == 1:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if(nrm2 < 1e-9):
+                            if nrm2 < 1e-9:
                                 disp[s, r, c, 0] = 0
                                 disp[s, r, c, 1] = 0
                                 disp[s, r, c, 2] = 0
@@ -476,7 +476,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         disp[s, r, c, 1] = d[1]
                         disp[s, r, c, 2] = d[2]
                         opt = xx * xx + yy * yy + zz * zz
-                        if(max_displacement < opt):
+                        if max_displacement < opt:
                             max_displacement = opt
     return sqrt(max_displacement)
 
@@ -600,7 +600,7 @@ def compute_residual_displacement_field_ssd_3d(
                 for c in range(ncols):
                     delta = delta_field[s, r, c]
                     sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
-                    if(target is None):
+                    if target is None:
                         b[0] = delta * gradient_field[s, r, c, 0]
                         b[1] = delta * gradient_field[s, r, c, 1]
                         b[2] = delta * gradient_field[s, r, c, 2]
@@ -613,13 +613,13 @@ def compute_residual_displacement_field_ssd_3d(
                     y[2] = 0
                     for k in range(NUM_NEIGHBORS):
                         ds = s + dSlice[k]
-                        if((ds < 0) or (ds >= nslices)):
+                        if ds < 0 or ds >= nslices:
                             continue
                         dr = r + dRow[k]
-                        if((dr < 0) or (dr >= nrows)):
+                        if dr < 0 or dr >= nrows:
                             continue
                         dc = c + dCol[k]
-                        if((dc < 0) or (dc >= ncols)):
+                        if dc < 0 or dc >= ncols:
                             continue
                         y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
                         y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
@@ -723,10 +723,10 @@ cpdef compute_residual_displacement_field_ssd_2d(
                 nn=0
                 for k in range(NUM_NEIGHBORS):
                     dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
+                    if dr < 0 or dr >= nrows:
                         continue
                     dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
+                    if dc < 0 or dc >= ncols:
                         continue
                     y[0] += (d[r, c, 0] - d[dr, dc, 0])
                     y[1] += (d[r, c, 1] - d[dr, dc, 1])
