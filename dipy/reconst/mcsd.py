@@ -261,7 +261,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             The non diffusion-weighted signal value.
         """
         if gtab is None or gtab is self.gtab:
-            gtab = self.gtab
             X = self._X
         else:
             iso = self.response.iso

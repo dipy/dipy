@@ -162,7 +162,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
+def patch2self(data, bvals, patch_radius=(0, 0, 0), model='ols',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                b0_denoising=True, clip_negative_vals=False,
                shift_intensity=True):

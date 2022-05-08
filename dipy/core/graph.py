@@ -63,7 +63,8 @@ class Graph(object):
     def down_short(self, n):
         return self.shortest_path(self.succ, n)
 
-    def all_paths(self, graph, start, end=None, path=[]):
+    def all_paths(self, graph, start, end=None, path=None):
+        path = path or []
         path = path + [start]
         if start == end or graph[start] == {}:
             return [path]
@@ -77,7 +78,8 @@ class Graph(object):
                     paths.append(newpath)
         return paths
 
-    def shortest_path(self, graph, start, end=None, path=[]):
+    def shortest_path(self, graph, start, end=None, path=None):
+        path = path or []
         path = path + [start]
         if graph[start] == {} or start == end:
             return path

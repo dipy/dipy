@@ -369,7 +369,7 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, affine, density=[1, 1, 1]):
+def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
