@@ -11,19 +11,18 @@ from dipy.reconst.base import ReconstFit
 from functools import partial
 import multiprocessing
 
-def parallel_fit_worker(vox_data, single_voxel_fit):
+def _parallel_fit_worker(vox_data, single_voxel_fit):
     """
-    Each pool process calls this worker.
-    Fit model on chunks
+    Works on a chunk of voxel data to create a list of
+    single voxel fits.
+
     Parameters
-    -----------
-    arguments: tuple
-        tuple should contains a model and
-        list of indexes
-    Returns
-    --------
-    result: list of tuple
-        return a list of tuple(voxel index, model fitted instance)
+    ----------
+    vox_data : ndarray, shape (n_voxels, ...)
+        The data to fit.
+
+    single_voxel_fit : callable
+        The fit function to use on each voxel.
     """
     return [single_voxel_fit(data) for data in vox_data]
 
@@ -47,9 +46,6 @@ def multi_voxel_fit(single_voxel_fit):
 
         # Fit data where mask is True
         fit_array = np.empty(data.shape[:-1], dtype=object)
-        data_to_fit = data[mask]
-        single_voxel_with_self = partial(single_voxel_fit, self)
-        n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
         # Default to serial execution:
         engine = kwargs.get("engine", "serial")
         if engine == "serial":
@@ -60,12 +56,15 @@ def multi_voxel_fit(single_voxel_fit):
                 bar.update()
             bar.close()
         else:
+            data_to_fit = data[mask]
+            single_voxel_with_self = partial(single_voxel_fit, self)
+            n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
             vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
             chunks = [data_to_fit[ii:ii + vox_per_chunk]
                     for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
             fit_array[mask] = np.concatenate((
                 paramap(
-                    parallel_fit_worker,
+                    _parallel_fit_worker,
                     chunks,
                     func_args=[single_voxel_with_self],
                     **kwargs)
