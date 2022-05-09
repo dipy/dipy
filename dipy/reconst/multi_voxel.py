@@ -53,14 +53,13 @@ def multi_voxel_fit(single_voxel_fit):
         vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
         chunks = [data_to_fit[ii:ii + vox_per_chunk]
                   for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
-        fit_array[mask] = np.squeeze(
+        fit_array[mask] = np.concatenate((
             paramap(
                 parallel_fit_worker,
                 chunks,
                 func_args=[single_voxel_with_self],
-                out_shape=fit_array[mask].shape,
                 **kwargs)
-                )
+                ))
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
