@@ -150,7 +150,6 @@ class FreeWaterTensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
         """
-        data = np.squeeze(data)
         S0 = np.mean(data[self.gtab.b0s_mask])
         fwdti_params = self.fit_method(
             self.design_matrix, data, S0, *self.args, **self.kwargs
