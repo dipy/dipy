@@ -11,7 +11,7 @@ from dipy.utils.parallel import paramap
 from functools import partial
 import multiprocessing
 
-def parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
+def parallel_fit_worker(vox_data, single_voxel_fit):
     """
     Each pool process calls this worker.
     Fit model on chunks
@@ -58,6 +58,7 @@ def multi_voxel_fit(single_voxel_fit):
                 parallel_fit_worker,
                 chunks,
                 func_args=[single_voxel_with_self],
+                out_shape=fit_array[mask].shape,
                 **kwargs)
                 )
         return MultiVoxelFit(self, fit_array, mask)
