@@ -11,6 +11,22 @@ from dipy.reconst.base import ReconstFit
 from functools import partial
 import multiprocessing
 
+def parallel_fit_worker(vox_data, single_voxel_fit, **kwargs):
+    """
+    Each pool process calls this worker.
+    Fit model on chunks
+    Parameters
+    -----------
+    arguments: tuple
+        tuple should contains a model and
+        list of indexes
+    Returns
+    --------
+    result: list of tuple
+        return a list of tuple(voxel index, model fitted instance)
+    """
+    return [single_voxel_fit(data) for data in vox_data]
+
 
 def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
@@ -37,7 +53,13 @@ def multi_voxel_fit(single_voxel_fit):
         vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
         chunks = [data_to_fit[ii:ii + vox_per_chunk]
                   for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
-        fit_array[mask] = paramap(single_voxel_with_self, chunks, **kwargs)
+        fit_array[mask] = np.squeeze(
+            paramap(
+                parallel_fit_worker,
+                chunks,
+                func_args=[single_voxel_with_self],
+                **kwargs)
+                )
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
