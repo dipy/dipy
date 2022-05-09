@@ -50,16 +50,26 @@ def multi_voxel_fit(single_voxel_fit):
         data_to_fit = data[mask]
         single_voxel_with_self = partial(single_voxel_fit, self)
         n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
-        vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
-        chunks = [data_to_fit[ii:ii + vox_per_chunk]
-                  for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
-        fit_array[mask] = np.concatenate((
-            paramap(
-                parallel_fit_worker,
-                chunks,
-                func_args=[single_voxel_with_self],
-                **kwargs)
-                ))
+        # Default to serial execution:
+        engine = kwargs.get("engine", "serial")
+        if engine == "serial":
+            bar = tqdm(total=np.sum(mask), position=0)
+            for ijk in ndindex(data.shape[:-1]):
+                if mask[ijk]:
+                    fit_array[ijk] = single_voxel_fit(self, data[ijk])
+                bar.update()
+            bar.close()
+        else:
+            vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
+            chunks = [data_to_fit[ii:ii + vox_per_chunk]
+                    for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
+            fit_array[mask] = np.concatenate((
+                paramap(
+                    parallel_fit_worker,
+                    chunks,
+                    func_args=[single_voxel_with_self],
+                    **kwargs)
+                    ))
         return MultiVoxelFit(self, fit_array, mask)
 
     return new_fit
