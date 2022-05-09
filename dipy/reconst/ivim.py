@@ -575,13 +575,8 @@ class IvimModelVP(ReconstModel):
         self.bounds = bounds or (BOUNDS[0][1:], BOUNDS[1][1:])
 
     @multi_voxel_fit
-<<<<<<< HEAD
-    def fit(self, data, bounds_de=None):
-        r"""Fit method of the IvimModelVP model class
-=======
     def fit(self, data, bounds_de=None, **kwargs):
         r""" Fit method of the IvimModelVP model class
->>>>>>> a608c2a49 (Enable passing parallelization key-word arguments in fit methods.)
 
         MicroLearn framework (VarPro)[1]_.
 
