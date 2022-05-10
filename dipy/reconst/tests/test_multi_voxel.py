@@ -12,6 +12,10 @@ joblib, has_joblib, _ = optional_package('joblib')
 dask, has_dask, _ = optional_package('dask')
 ray, has_ray, _ = optional_package('ray')
 
+joblib, has_joblib, _ = optional_package('joblib')
+dask, has_dask, _ = optional_package('dask')
+ray, has_ray, _ = optional_package('ray')
+
 
 def test_squash():
     A = np.ones((3, 3), dtype=float)
