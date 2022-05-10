@@ -32,33 +32,12 @@ Example
 We start by importing and creating the necessary functions:
 """
 
-import os
-import zipfile
 from dipy.align.streamlinear import groupwise_slr
-from dipy.data import get_fnames
-from dipy.io.streamline import load_tractogram
-from dipy.viz import window, actor
+from dipy.data import read_five_af_bundles
+from dipy.viz.streamline import show_bundles
 
 import logging
 logging.basicConfig(level=logging.INFO)
-
-colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
-          [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
-
-
-def show_bundles(bundles, colors, show=True, fname=None):
-
-    scene = window.Scene()
-    scene.SetBackground(1., 1, 1)
-    for (i, bundle) in enumerate(bundles):
-        lines_actor = actor.streamtube(bundle, colors[i], linewidth=0.3)
-        lines_actor.RotateX(-90)
-        lines_actor.RotateZ(90)
-        scene.add(lines_actor)
-    if show:
-        window.show(scene)
-    if fname is not None:
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
 
 
 """
@@ -68,24 +47,17 @@ list.
 Here we load 5 left arcuate fasciculi and store them in a list.
 """
 
-example_tracts = get_fnames('minimal_bundles')
-subjects = ['sub_1', 'sub_2', 'sub_3', 'sub_4', 'sub_5']
-in_dir = os.getcwd()
-
-with zipfile.ZipFile(example_tracts, 'r') as zip_ref:
-    zip_ref.extractall(in_dir)
-
-bundles = []
-for sub in subjects:
-    file = os.path.join(in_dir, sub, 'AF_L.trk')
-    bundle_obj = load_tractogram(file, 'same', bbox_valid_check=False)
-    bundles.append(bundle_obj.streamlines)
+bundles = read_five_af_bundles()
 
 """
 Let's now visualize our input bundles:
 """
 
-show_bundles(bundles, colors, False, 'before_group_registration.png')
+colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
+          [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
+
+show_bundles(bundles, interactive=False, colors=colors,
+             fname='before_group_registration.png')
 
 """
 .. figure:: before_group_registration.png
@@ -105,7 +77,8 @@ Finally, we visualize the registered bundles to confirm that they are now in a
 common space:
 """
 
-show_bundles(bundles_reg, colors, False, 'after_group_registration.png')
+show_bundles(bundles_reg, interactive=False, colors=colors,
+             fname='after_group_registration.png')
 
 """
 .. figure:: after_group_registration.png

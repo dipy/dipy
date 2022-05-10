@@ -11,11 +11,13 @@ import numpy as np
 import nibabel as nib
 
 import tarfile
+import tempfile
 import zipfile
 from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
+from dipy.io.streamline import load_trk
 
 from urllib.request import urlopen
 
@@ -1516,6 +1518,7 @@ def read_qte_lte_pte():
     return data_img, mask_img, gtab
 
 
+<<<<<<< HEAD
 def read_DiB_70_lte_pte_ste():
     """Read q-space trajectory encoding data with 70 between linear, planar,
     and spherical tensor encoding measurements.
@@ -1590,3 +1593,45 @@ def read_DiB_217_lte_pte_ste():
                      ['STE' for i in range(10)])
     gtab = gradient_table(bvals, bvecs, btens=btens)
     return data_img, mask_img, gtab
+=======
+def extract_example_tracts(out_dir):
+    """ Extract 5 'AF_L','CST_R' and 'CC_ForcepsMajor' trk files in out_dir
+    folder.
+
+    Parameters
+    ----------
+    out_dir : str
+        Folder in which to extract the files.
+
+    """
+
+    fname = get_fnames('minimal_bundles')
+
+    with zipfile.ZipFile(fname, 'r') as zip_obj:
+        zip_obj.extractall(out_dir)
+
+
+def read_five_af_bundles():
+    """ Load 5 small left arcuate fasciculus bundles.
+
+    Returns
+    --------
+    bundles: list of ArraySequence
+        List with loaded bundles.
+
+    """
+
+    subjects = ['sub_1', 'sub_2', 'sub_3', 'sub_4', 'sub_5']
+
+    # Extract bundles from .zip to a temporal folder and load them
+    with tempfile.TemporaryDirectory() as temp_dir:
+        extract_example_tracts(temp_dir)
+
+        bundles = []
+        for sub in subjects:
+            fname = os.path.join(temp_dir, sub, 'AF_L.trk')
+            bundle_obj = load_trk(fname, 'same', bbox_valid_check=False)
+            bundles.append(bundle_obj.streamlines)
+
+    return bundles
+>>>>>>> 2019b2dca (RF: add dedicated functions to read and plot bundles)
