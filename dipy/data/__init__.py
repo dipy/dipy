@@ -7,6 +7,7 @@ from os.path import join as pjoin, dirname
 
 import gzip
 import numpy as np
+from scipy.sparse import load_npz
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
 from dipy.data.fetcher import (get_fnames,
@@ -322,13 +323,13 @@ def hermite_sdp_constraints(radial_order):
 
     Parameters
     ----------
-    radial_order : unsigned int,
-        An even integer that represent the order of the basis
+    radial_order : unsigned int
+        An even integer that represent the order of the basis.
 
     Returns
     -------
-    sdp_constraints : array
-        Constraint matrices
+    sdp_constraints : list
+        List of sparse constraint matrices.
 
     References
     ----------
@@ -341,13 +342,16 @@ def hermite_sdp_constraints(radial_order):
     if (not isinstance(radial_order, int) or
             radial_order < 0 or radial_order > 10 or radial_order % 2):
         raise ValueError("radial_order must be a non-negative, even integer.")
-    mf = 'hermite_constraint_' + str(radial_order) + '.csv'
-    coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
-    pos = coo[:, :3].astype(int)
-    val = coo[:, 3]
-    dim = list(map(max, zip(*(pos + 1))))
-    sdp_constraints = np.zeros(dim)
-    for i in range(coo.shape[0]):
-        sdp_constraints[tuple(pos[i])] = val[i]
+    mf = 'hermite_constraint_' + str(radial_order) + '.npz'
+    # coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
+    # pos = coo[:, :3].astype(int)
+    # val = coo[:, 3]
+    # dim = list(map(max, zip(*(pos + 1))))
+    # sdp_constraints = np.zeros(dim)
+    # for i in range(coo.shape[0]):
+    #     sdp_constraints[tuple(pos[i])] = val[i]
+    arr = load_npz(pjoin(DATA_DIR, mf))
+    n, x = arr.shape
+    sdp_constraints = [arr[i*x:(i+1)*x] for i in range(n//x)]
 
     return sdp_constraints

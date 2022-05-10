@@ -428,7 +428,7 @@ class MapmriModel(ReconstModel, Cache):
                 if self.anisotropic_scaling:
                     A = self.sdp_constraints
                     m = M.shape[1]
-                    n = A.shape[0] - m - 1
+                    n = len(A) - m - 1
                     s = cvxpy.Variable(n)
                     X = A[0]
                     for i in range(m):
