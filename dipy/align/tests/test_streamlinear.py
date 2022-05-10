@@ -1,5 +1,3 @@
-import tempfile
-import zipfile
 import numpy as np
 from numpy.testing import (assert_,
                            assert_equal,
@@ -25,7 +23,7 @@ from dipy.tracking.streamline import (center_streamlines,
 from dipy.io.streamline import load_tractogram
 from dipy.core.geometry import compose_matrix
 
-from dipy.data import get_fnames, two_cingulum_bundles
+from dipy.data import get_fnames, two_cingulum_bundles, read_five_af_bundles
 from dipy.align.bundlemin import (_bundle_minimum_distance_matrix,
                                   _bundle_minimum_distance,
                                   distance_matrix_mdf)
@@ -515,26 +513,17 @@ def test_get_unique_pairs():
 
 
 def test_groupwise_slr():
-    with tempfile.TemporaryDirectory() as in_dir:
-        # Extract and load example dataset with 5 AF_L bundles
-        example_tracts = get_fnames('minimal_bundles')
-        with zipfile.ZipFile(example_tracts, 'r') as zip_ref:
-            zip_ref.extractall(in_dir)
 
-        bundles = []
-        for i in range(5):
-            file = f'{in_dir}/sub_{i+1}/CC_ForcepsMajor.trk'
-            bundles_obj = load_tractogram(file, 'same', bbox_valid_check=False)
-            bundles.append(bundles_obj.streamlines)
+    bundles = read_five_af_bundles()
 
-        # Test regular use case with convergence
-        new_bundles, T, d = groupwise_slr(bundles, verbose=True)
+    # Test regular use case with convergence
+    new_bundles, T, d = groupwise_slr(bundles, verbose=True)
 
-        assert_equal(len(new_bundles), len(bundles))
-        assert_equal(type(new_bundles), list)
-        assert_equal(len(T), len(bundles))
-        assert_equal(type(T), list)
+    assert_equal(len(new_bundles), len(bundles))
+    assert_equal(type(new_bundles), list)
+    assert_equal(len(T), len(bundles))
+    assert_equal(type(T), list)
 
-        # Test regular use case without convergence (few iterations)
-        new_bundles, T, d = groupwise_slr(bundles, max_iter=3, tol=-10,
-                                          verbose=True)
+    # Test regular use case without convergence (few iterations)
+    new_bundles, T, d = groupwise_slr(bundles, max_iter=3, tol=-10,
+                                      verbose=True)
