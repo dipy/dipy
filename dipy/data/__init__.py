@@ -3,7 +3,7 @@
 import json
 import pickle
 
-from os.path import join as pjoin, dirname
+from os.path import join as pjoin, dirname, exists
 
 import gzip
 import numpy as np
@@ -316,20 +316,27 @@ def matlab_life_results():
     return matlab_rmse, matlab_weights
 
 
-def hermite_sdp_constraints(radial_order):
-    """Import semidefinite programming constraint matrices to enforce
-    sum-of-squares constraints on Hermite polynomials, used for example in the
-    case of MAP-MRI, and generated as described in [1]_.
+def load_sdp_constraints(id, order=None):
+    """Import semidefinite programming constraint matrices for different models,
+    generated as described for example in [1]_.
 
     Parameters
     ----------
-    radial_order : unsigned int
-        An even integer that represent the order of the basis.
+    id : string
+        A string identifying the model that is to be constrained.
+    order : unsigned int
+        A non-negative integer that represent the order or instance of the
+        model.
+        Default: None.
 
     Returns
     -------
-    sdp_constraints : list
-        List of sparse constraint matrices.
+    sdp_constraints : array
+        Constraint matrices
+
+    Notes
+    -----
+    The constraints will be loaded from a file named 'id_constraint_order.npz'.
 
     References
     ----------
@@ -339,19 +346,19 @@ def hermite_sdp_constraints(radial_order):
 
     """
 
-    if (not isinstance(radial_order, int) or
-            radial_order < 0 or radial_order > 10 or radial_order % 2):
-        raise ValueError("radial_order must be a non-negative, even integer.")
-    mf = 'hermite_constraint_' + str(radial_order) + '.npz'
-    # coo = np.loadtxt(pjoin(DATA_DIR, mf), delimiter=",")
-    # pos = coo[:, :3].astype(int)
-    # val = coo[:, 3]
-    # dim = list(map(max, zip(*(pos + 1))))
-    # sdp_constraints = np.zeros(dim)
-    # for i in range(coo.shape[0]):
-    #     sdp_constraints[tuple(pos[i])] = val[i]
-    arr = load_npz(pjoin(DATA_DIR, mf))
-    n, x = arr.shape
-    sdp_constraints = [arr[i*x:(i+1)*x] for i in range(n//x)]
+    file = id + '_constraint'
+    if order is not None:
+        file += '_' + str(order)
+    file += '.npz'
+    path = pjoin(DATA_DIR, file)
 
-    return sdp_constraints
+    if not exists(path):
+        raise ValueError("Constraints file '" + file + "' not found.")
+
+    try:
+        array = load_npz(path)
+        n, x = array.shape
+        sdp_constraints = [array[i*x:(i+1)*x] for i in range(n//x)]
+        return sdp_constraints
+    except:
+        raise ValueError("Failed to read constraints file '" + file + "'.")
