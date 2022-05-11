@@ -411,24 +411,31 @@ class PosteriorOdffpDictionary(OdffpDictionary):
 
         for peaks_num in range(1, odffp_fit.get_max_peaks_num()+1):
 
-            self._ratio_pdf[peaks_num] = {} 
-            self._micro_pdf[peaks_num] = {}
+            compartment_volumes = odffp_fit.get_compartment_volume(peaks_num)
+            try:
+                # Fit KDE model of the compartment volumes
+                self._ratio_pdf[peaks_num] = scipy.stats.gaussian_kde(compartment_volumes)
+            except:
+                # If not succeeded, take mean values
+                self._ratio_pdf[peaks_num] = np.mean(compartment_volumes, axis=1)
 
+            self._micro_pdf[peaks_num] = {}
             for peak_id in range(peaks_num+1):
-    
-                self._ratio_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
-                    odffp_fit.get_compartment_volume(peak_id, fixed_peaks_num=peaks_num)
-                )
     
                 # Diffusivity parameters of the free water compartment aren't estimated
                 if peak_id < 1:
                     self._micro_pdf[peaks_num][peak_id] = {}
                     continue
-    
-                self._micro_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
-                    odffp_fit.get_micro_parameters(peak_id, fixed_peaks_num=peaks_num),
-                    bw_method='silverman'
-                )
+
+                micro_parameters = odffp_fit.get_micro_parameters(peaks_num, peak_id)
+                try:    
+                    # Fit KDE model of the microstructure parameters
+                    self._micro_pdf[peaks_num][peak_id] = scipy.stats.gaussian_kde(
+                        micro_parameters, bw_method='silverman'
+                    )
+                except:
+                    # If not succeeded, take mean values
+                    self._micro_pdf[peaks_num][peak_id] = np.mean(micro_parameters, axis=1)
                         
         OdffpDictionary.__init__(self, dict_file, is_sorted, tessellation)
     
@@ -438,17 +445,16 @@ class PosteriorOdffpDictionary(OdffpDictionary):
 
 
     def _random_fraction_volumes(self, p_iso, p_fib, peaks_per_voxel):        
-        fraction_volumes = np.zeros(peaks_per_voxel+1)
-    
-        fraction_volumes[0] = self._crop_value(
-            float(self._ratio_pdf[peaks_per_voxel][0].resample(1)), p_iso[0], p_iso[1]
-        )
+        try:
+            fraction_volumes = np.squeeze(self._ratio_pdf[peaks_per_voxel].resample(1))
+        except:
+            fraction_volumes = np.squeeze(self._ratio_pdf[peaks_per_voxel])
+
+        fraction_volumes[0] = self._crop_value(fraction_volumes[0], p_iso[0], p_iso[1])
     
         for peak_id in range(1,peaks_per_voxel+1):
-            fraction_volumes[peak_id] = self._crop_value(
-                float(self._ratio_pdf[peaks_per_voxel][peak_id].resample(1)), p_fib[0], p_fib[1]
-            )
-    
+            fraction_volumes[peak_id] = self._crop_value(fraction_volumes[peak_id], p_fib[0], p_fib[1])
+        
         return fraction_volumes / np.maximum(1e-8, np.sum(fraction_volumes))
 
 
@@ -474,9 +480,14 @@ class PosteriorOdffpDictionary(OdffpDictionary):
                     micro_params[:,peak_id] = micro_params[:,1]
                     continue
                 
-                micro_params[:,peak_id] = np.squeeze(
-                    self._micro_pdf[peaks_per_voxel][peak_id].resample(1)
-                )
+                try:
+                    micro_params[:,peak_id] = np.squeeze(
+                        self._micro_pdf[peaks_per_voxel][peak_id].resample(1)
+                    )
+                except:
+                    micro_params[:,peak_id] = np.squeeze(
+                        self._micro_pdf[peaks_per_voxel][peak_id]
+                    )
                 
             if self._out_of_range(micro_params[self.MICRO_DA,1:peaks_per_voxel+1], D_a):
                 continue
@@ -618,6 +629,9 @@ class OdffpModel(object):
     
         for peak_id in range(self._dict.max_peaks_num+1):
             peak_filter = np.array(self._dict.peaks_per_voxel == peak_id)
+            if ~np.any(peak_filter):
+                peak_filter[0] = True
+                
             peak_filter_idx = np.arange(len(self._dict.peaks_per_voxel))[peak_filter]
     
             dot_product = np.dot(input_odf_trace, dict_odf_trace[:,peak_filter])
@@ -723,28 +737,33 @@ class OdffpFit(OdfFit):
         self._dict_idx = dict_idx
     
         
-    def _export_dict_var(self, dict_var, peak_id, ignore_empty=True, fixed_peaks_num=None):
-
+    def _export_dict_var(self, dict_var, fixed_peaks_num=None, peak_id=None, full_volume=False):
+    
         # Validate peak_id
-        if peak_id > self._dict.max_peaks_num:
+        if peak_id and peak_id > self._dict.max_peaks_num:
             raise Exception("Argument peak_id=%d exceeds the maximum number of peaks." % peak_id)
-            
-        if ignore_empty:
+    
+        # If needed, take the entire 3-D volume
+        if full_volume:
+            select_dict_idx = self._dict_idx
+        else:
             # Disregard "empty" voxels, i.e. these with free water only
             select_dict_idx = self._dict_idx[self._dict_idx > 0]
-            
+    
+            # If a fixed number of peaks is needed and such examples exist 
             if fixed_peaks_num and np.any(self._dict.peaks_per_voxel[select_dict_idx] == fixed_peaks_num):
-                # If a fixed number of peaks is needed and such examples exist 
                 select_dict_idx = select_dict_idx[self._dict.peaks_per_voxel[select_dict_idx] == fixed_peaks_num]
-            else:
-                # Otherwise, disregard voxels with the number of peaks < peak_id 
+            # Otherwise, disregard voxels with the number of peaks < peak_id 
+            elif peak_id:
                 select_dict_idx = select_dict_idx[self._dict.peaks_per_voxel[select_dict_idx] >= peak_id]
-                            
-        else:
-            # Alternatively, take entire 3-D volume
-            select_dict_idx = self._dict_idx
+
+        if peak_id:
+            return dict_var[...,peak_id,select_dict_idx]
         
-        return dict_var[...,peak_id,select_dict_idx]
+        if fixed_peaks_num:
+            return dict_var[...,:fixed_peaks_num+1,select_dict_idx]
+
+        return dict_var[...,select_dict_idx]
 
     
     def _fib_reshape(self, matrix, new_size, orientation_agreement=True):
@@ -777,12 +796,12 @@ class OdffpFit(OdfFit):
         return self._dict.max_peaks_num
     
     
-    def get_micro_parameters(self, peak_id, ignore_empty=True, fixed_peaks_num=None):
-        return self._export_dict_var(self._dict.micro, peak_id, ignore_empty, fixed_peaks_num)
+    def get_micro_parameters(self, fixed_peaks_num=None, peak_id=None, full_volume=False):
+        return self._export_dict_var(self._dict.micro, fixed_peaks_num, peak_id, full_volume)
     
 
-    def get_compartment_volume(self, peak_id, ignore_empty=True, fixed_peaks_num=None):
-        return self._export_dict_var(self._dict.ratio, peak_id, ignore_empty, fixed_peaks_num)
+    def get_compartment_volume(self, fixed_peaks_num=None, peak_id=None, full_volume=False):
+        return self._export_dict_var(self._dict.ratio, fixed_peaks_num, peak_id, full_volume)
     
     
     def save_as_fib(self, affine, voxel_size, output_file_name='output.fib'):
