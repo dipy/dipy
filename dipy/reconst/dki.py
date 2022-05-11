@@ -18,6 +18,9 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
 from dipy.data import get_sphere, get_fnames
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
+from dipy.utils.optpkg import optional_package
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -2329,6 +2332,118 @@ def wls_fit_dki(design_matrix, data):
     for vox in range(len(data_flat)):
         dki_params[vox] = _wls_iter(design_matrix, inv_design, data_flat[vox],
                                     min_diffusivity)
+
+    # Reshape data according to the input data shape
+    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
+
+    return dki_params
+
+
+def _olsp_iter(sdp, sig, cvxpy_solver=None):
+    """ Helper function used by ols_fit_dki_plus - Applies an LMI constrained
+    OLS fit of the diffusion kurtosis model to single voxel signals.
+
+    Parameters
+    ----------
+    sdp : PositiveDefiniteLeastSquares instance
+        A CVXPY representation of a regularized least squares optimization
+        problem.
+    sig : array (g,)
+        Diffusion-weighted signal for a single voxel data.
+    cvxpy_solver : str, optional
+        cvxpy solver name. Optionally optimize the positivity constraint with a
+        particular cvxpy solver. See http://www.cvxpy.org/ for details.
+        Default: None (cvxpy chooses its own solver).
+
+
+    Returns
+    -------
+    dki_params : array (27,)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    """
+
+    # DKI ordinary linear least square solution
+    log_s = np.log(sig)
+    result = sdp.solve(log_s, cvxpy_solver)
+
+    # Extracting the diffusion tensor parameters from solution
+    DT_elements = result[:6]
+    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
+
+    # Extracting kurtosis tensor parameters from solution
+    MD_square = (evals.mean(0))**2
+    KT_elements = result[6:21] / MD_square
+
+    # Write output
+    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
+                                 KT_elements), axis=0)
+
+    return dki_params
+
+
+def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
+    r""" Computes the diffusion and kurtosis tensors using a constrained
+    weighted linear least squares (WLS) approach [2]_.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : array (N, g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+    cvxpy_solver : str, optional
+        cvxpy solver name. Optionally optimize the positivity constraint with a
+        particular cvxpy solver. See http://www.cvxpy.org/ for details.
+        Default: None (cvxpy chooses its own solver).
+
+    Returns
+    -------
+    dki_params : array (N, 27)
+        All parameters estimated from the diffusion kurtosis model for all N
+        voxels.
+        Parameters are ordered as follows:
+            1) Three diffusion tensor's eigenvalues
+            2) Three lines of the eigenvector matrix each containing the first
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+
+    References
+    ----------
+    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints for
+           common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
+    """
+
+    # Check for cvxpy solver
+    if not have_cvxpy:
+        raise ValueError('CVXPY package needed to enforce constraints.')
+    if cvxpy_solver is not None:
+        if cvxpy_solver not in cvxpy.installed_solvers():
+            msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
+            msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
+            msg += " was expected."
+            raise ValueError(msg)
+
+    # Set up SDP solver
+    sdp_constraints = load_sdp_constraints('dki')
+    sdp = PositiveDefiniteLeastSquares(design_matrix, sdp_constraints)
+
+    # preparing data and initializing parameters
+    data = np.asarray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dki_params = np.empty((len(data_flat), 27))
+
+    # looping OLS solution on all data voxels
+    for vox in range(len(data_flat)):
+        dki_params[vox] = _olsp_iter(sdp, data_flat[vox], cvxpy_solver)
 
     # Reshape data according to the input data shape
     dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
