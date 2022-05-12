@@ -33,7 +33,6 @@ from dipy.core.gradients import gradient_table
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.viz.plotting import compare_maps
-import numpy as np
 
 """
 Download and read the data for this tutorial.
