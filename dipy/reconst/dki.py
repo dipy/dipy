@@ -2440,7 +2440,7 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
     # Set up SDP solver
     sdp_constraints = load_sdp_constraints('dki')
     sdp = PositiveDefiniteLeastSquares(design_matrix, sdp_constraints)
-    print('GO')
+
     # preparing data and initializing parameters
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
