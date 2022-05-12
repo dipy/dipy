@@ -69,6 +69,7 @@ from dipy.data import get_fnames
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti
 from dipy.segment.mask import median_otsu
+from dipy.viz.plotting import compare_maps
 from scipy.ndimage import gaussian_filter
 
 """
@@ -300,9 +301,55 @@ suppression algorithms, e.g., as mentioned above, the MP-PCA denoising
 (:ref:`example-denoise-mppca`) and Gibbs Unringing
 (:ref:`example-denoise-gibbs`) algorithms. Alternatively, one can overcome this
 artefact by computing the kurtosis values from powder-averaged
-diffusion-weighted signals. The details on how to compute
-the kurtosis from powder-average signals in dipy are described in follow the
-tutorial (:ref:`example-reconst-msdki`).
+diffusion-weighted signals. The details on how to compute the kurtosis from
+powder-average signals in dipy are described in follow the tutorial
+(:ref:`example-reconst-msdki`). Finally, one can use constrained optimization to
+ensure that the fitter parameters are physically plausible [DelaHa2020]_, as we
+will illustrate in the next section.
+
+Constrained optimization for DKI
+================================
+
+When instantiating the DiffusionKurtosisModel, the model can be set up to use
+constraints with the option `fit_method='CLS'`. Constrained fitting takes more
+time than unconstrained fitting, so in this example we will only fit the DKI
+model to a single slice of the data set.
+
+"""
+
+dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
+dkifit_plus = dkimodel_plus.fit(data_smooth[:, :, 9:10], mask=mask[:, :, 9:10])
+
+"""
+
+We can now compare the kurtosis measures obtained with the constrained fit to
+the measures obtained before, where we see that many of the artefactual voxels
+have now been corrected. In particlar outliers caused by pure noise -- instead
+of for example acquisition artefacts -- can be corrected with this method.
+
+"""
+
+compare_maps([dkifit_plus], ['mk', 'ak', 'rk'], fit_labels=['DKI+'],
+             filename='Kurtosis_tensor_standard_measures_plus.png')
+
+"""
+
+When using constrained optimization, the expected range of the kurtosis measures
+is also naturally constrained, and so does not typically require additional
+clipping.
+
+Finally, constrained optimization obviates the need for smoothing in many cases.
+
+"""
+
+dkifit_noisy = dkimodel.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
+dkifit_noisy_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask[:, :, 9:10])
+
+compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
+             fit_labels=['DKI', 'DKI+'],
+             filename='Kurtosis_tensor_standard_measures_noisy.png')
+
+"""
 
 Mean kurtosis tensor and kurtosis fractional anisotropy
 =======================================================
@@ -391,6 +438,9 @@ References
 .. [NetoHe2018] Neto Henriques R (2018). Advanced Methods for Diffusion MRI
                 Data Analysis and their Application to the Healthy Ageing Brain
                 (Doctoral thesis). https://doi.org/10.17863/CAM.29356
+.. [DelaHa2020] Dela Haije et al. "Enforcing necessary non-negativity
+                constraints for common diffusion MRI models using sum of squares
+                programming". NeuroImage 209, 2020, 116405.
 
 .. include:: ../links_names.inc
 """
