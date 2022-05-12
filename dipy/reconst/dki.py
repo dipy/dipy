@@ -15,7 +15,8 @@ from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 perpendicular_directions)
-from dipy.data import get_sphere, get_fnames
+from dipy.core.optimize import PositiveDefiniteLeastSquares
+from dipy.data import get_sphere, get_fnames, load_sdp_constraints
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
 from dipy.utils.optpkg import optional_package
@@ -1564,6 +1565,9 @@ class DiffusionKurtosisModel(ReconstModel):
             str can be one of the following:
             'OLS' or 'ULLS' for ordinary least squares
                 dki.ols_fit_dki
+            'CLS', 'OLSP', 'ULLSP' or 'Plus' for LMI constrained ordinary least
+            squares
+                dki.ols_fit_dki_plus
             'WLS' or 'UWLLS' for weighted ordinary least squares
                 dki.wls_fit_dki
 
@@ -1571,7 +1575,8 @@ class DiffusionKurtosisModel(ReconstModel):
                 fit_method(design_matrix, data, *args, **kwargs)
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki for details
+           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki,
+           dki.ols_fit_dki_plus for details
 
         References
         ----------
@@ -2435,7 +2440,7 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
     # Set up SDP solver
     sdp_constraints = load_sdp_constraints('dki')
     sdp = PositiveDefiniteLeastSquares(design_matrix, sdp_constraints)
-
+    print('GO')
     # preparing data and initializing parameters
     data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -2652,5 +2657,9 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
                       'restore': restore_fit_tensor,
-                      'RESTORE': restore_fit_tensor
+                      'RESTORE': restore_fit_tensor,
+                      'CLS' : ols_fit_dki_plus,
+                      'OLSP' : ols_fit_dki_plus,
+                      'ULLSP' : ols_fit_dki_plus,
+                      'Plus' : ols_fit_dki_plus
                       }
