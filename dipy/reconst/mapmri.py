@@ -284,13 +284,12 @@ class MapmriModel(ReconstModel, Cache):
                 else:
                     self.sdp_constraints = load_sdp_constraints('hermite',
                                                                 radial_order)
-            elif not global_constraints:
-                msg = "pos_radius must be 'adaptive' or a positive float"
+            else:
+                msg = "pos_radius must be 'adaptive' or a positive float."
                 if isinstance(pos_radius, str):
                     if pos_radius != 'adaptive':
                         raise ValueError(msg)
-                elif isinstance(pos_radius, float) or isinstance(pos_radius,
-                                                                 int):
+                elif isinstance(pos_radius, (float, int)):
                     if pos_radius <= 0:
                         raise ValueError(msg)
                     self.constraint_grid = create_rspace(pos_grid, pos_radius)
@@ -430,12 +429,13 @@ class MapmriModel(ReconstModel, Cache):
                     A = self.sdp_constraints
                     m = M.shape[1]
                     n = len(A) - m - 1
-                    s = cvxpy.Variable(n)
                     X = A[0]
                     for i in range(m):
                         X = X + c[i] * A[i+1]
-                    for i in range(n):
-                        X = X + s[i] * A[m+i+1]
+                    if n > 0:
+                        s = cvxpy.Variable(n)
+                        for i in range(n):
+                            X = X + s[i] * A[m+i+1]
                     constraints = [X >> 0]
                 else:
                     msg = 'Global constraints only available for'
