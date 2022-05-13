@@ -363,7 +363,8 @@ class PositiveDefiniteLeastSquares(object):
         A : array (t = m + k + 1, p, p)
             Constraint matrices $A$.
         L : array (m, m) (optional)
-            Regularization matrix $L$. Default: None
+            Regularization matrix $L$.
+            Default: None.
 
         Notes
         -----
@@ -388,51 +389,67 @@ class PositiveDefiniteLeastSquares(object):
                programming". NeuroImage 209, 2020, 116405.
         """
 
+        # Input
         self.X = X
         self.A = A
         self.L = L
 
+        # Problem size
         n, m = X.shape
         t = len(A)
         k = t - m - 1
 
-        self._h = cvxpy.Variable(m)
-        self._y = cvxpy.Parameter(n)
+        # Unknowns
+        self._f = cvxpy.Parameter(m)    # Given solution for feasibility check
+        self._h = cvxpy.Variable(m)     # Solution to constrained problem
+        self._y = cvxpy.Parameter(n)    # Regressand
 
+        # Error output
         self._zeros = np.zeros(m)
 
+        # Reduction matrices
         V = np.linalg.cholesky(np.dot(X.T, X)).T
         P = np.dot(V, np.linalg.pinv(X))
 
+        # Objective
         if Version(cvxpy.__version__) < Version('1.1'):
-            c = cvxpy.sum_squares(V*self._h - P*self._y)
+            c = V*self._h - P*self._y
+            if L is not None:
+                c += L*self._h
         else:
-            c = cvxpy.sum_squares(V@self._h - P@self._y)
+            c = V@self._h - P@self._y
+            if L is not None:
+                c += L@self._h
 
-        if L is not None:
-            c += cvxpy.quad_form(self._h, L)
+        self.objective = cvxpy.Minimize(cvxpy.norm(c))
+        f_objective = cvxpy.Minimize(0)
 
-        self.objective = cvxpy.Minimize(c)
-
+        # Constraints
         if t:
-            M = A[0]
+            M = F = A[0]
             if k > 0:
                 for i in range(m):
+                    F += self._f[i] * A[i + 1]
                     M += self._h[i] * A[i + 1]
                 self._s = cvxpy.Variable(k)
                 for j in range(k):
+                    F += self._s[j] * A[m + j + 1]
                     M += self._s[j] * A[m + j + 1]
             else:
                 for i in range(t - 1):
+                    F += self._f[i] * A[i + 1]
                     M += self._h[i] * A[i + 1]
+            self.feasibility = [F >> 0]
             self.constraints = [M >> 0]
         else:
-            self.constraints = []
+            self.feasibility = self.constraints = []
 
+        # CVXPY problems
         self.problem = cvxpy.Problem(self.objective, self.constraints)
         self.unconstrained_problem = cvxpy.Problem(self.objective)
+        self.feasibility_problem = cvxpy.Problem(f_objective, self.feasibility)
 
-    def solve(self, y, solver=None, retry=False):
+    def solve(self, y, solver=None, check=False):
         r""" Solve CVXPY problem
 
         Solve a CVXPY problem instance for a given y, and return the optimum.
@@ -440,54 +457,62 @@ class PositiveDefiniteLeastSquares(object):
         Parameters
         ----------
         y : array (n)
-            Measured signal $y$.
+            Regressand $y$.
         solver : string
-            CVXPY solver name. Default: None
-        retry : boolean
-            Try unconstrained optimization upon failure. Default: False
+            CVXPY solver name.
+            Default: None.
+        check : boolean
+            If True check whether the unconstrained optimization solution
+            already satisfies the constraints, before running the constrained
+            optimization. This adds overhead, but can avoid unnecessary
+            constrained optimization calls.
+            Default: False
 
         Returns
         -------
-        result : array (m)
+        h : array (m)
              Estimated optimum for problem variables $h$.
-
-        Notes
-        -----
-        If the solver fails for a constrained problem, a warning will be shown.
-        If `retry=True` the unconstrained problem will be attempted instead,
-        otherwise a warning will be shown and a zero array will be returned.
         """
 
+        # Set regressand
         self._y.value = y
 
         try:
+
+            # Check unconstrained solution
+            if check:
+
+                # Solve unconstrained problem
+                self.unconstrained_problem.solve(solver=solver)
+
+                # Return zeros if optimization failed
+                status = self.unconstrained_problem.status
+                if status != 'optimal':
+                    msg = 'Optimization failed, returning zero array.'
+                    warnings.warn(msg)
+                    return self._zeros
+
+                # Return unconstrained solution if satisfactory
+                self._f.value = self._h.value
+                self.feasibility_problem.solve(solver=solver)
+                if self.feasibility_problem.status == 'optimal':
+                    return np.asarray(self._h.value).squeeze()
+
+            # Solve constrained problem
             self.problem.solve(solver=solver)
+
+            # Show warning if solution is not optimal
             status = self.problem.status
             if status != 'optimal':
                 msg = 'Solver failed to produce an optimum: %s.' % status
                 warnings.warn(msg)
-            result = np.asarray(self._h.value).squeeze()
-        except cvxpy.error.SolverError:
-            if self.constraints and retry:
-                msg = 'Constrained optimization failed, attempting'
-                msg += ' unconstrained optimization.'
-                warnings.warn(msg)
-                try:
-                    self.unconstrained_problem.solve(solver=solver)
-                    status = self.unconstrained_problem.status
-                    if status != 'optimal':
-                        msg = 'Solver failed to produce an optimum:'
-                        msg += ' %s.' % status
-                        warnings.warn(msg)
-                    result = np.asarray(self._h.value).squeeze()
-                except cvxpy.error.SolverError:
-                    msg = 'Unconstrained optimization failed, returning zero'
-                    msg += ' array.'
-                    warnings.warn(msg)
-                    result = self._zeros
-            else:
-                msg = 'Optimization failed, returning zero array.'
-                warnings.warn(msg)
-                result = self._zeros
 
-        return result
+            # Return solution
+            return np.asarray(self._h.value).squeeze()
+
+        except cvxpy.error.SolverError:
+
+            #Return zeros
+            msg = 'Optimization failed, returning zero array.'
+            warnings.warn(msg)
+            return self._zeros

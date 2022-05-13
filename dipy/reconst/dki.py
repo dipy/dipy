@@ -2375,7 +2375,7 @@ def _olsp_iter(sdp, sig, cvxpy_solver=None):
 
     # DKI ordinary linear least square solution
     log_s = np.log(sig)
-    result = sdp.solve(log_s, cvxpy_solver)
+    result = sdp.solve(log_s, solver=cvxpy_solver, check=True)
 
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
@@ -2448,7 +2448,8 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _olsp_iter(sdp, data_flat[vox], cvxpy_solver)
+        dki_params[vox] = _olsp_iter(sdp, data_flat[vox],
+                                     cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
     dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
