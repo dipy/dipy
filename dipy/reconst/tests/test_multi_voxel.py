@@ -6,6 +6,7 @@ import numpy.testing as npt
 from dipy.core.sphere import unit_icosahedron
 from dipy.reconst.multi_voxel import CallableArray, _squash, multi_voxel_fit
 from dipy.testing.decorators import set_random_number_generator
+from dipy.utils.optpkg import optional_package
 
 joblib, has_joblib, _ = optional_package('joblib')
 dask, has_dask, _ = optional_package('dask')
