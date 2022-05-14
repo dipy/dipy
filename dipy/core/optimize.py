@@ -449,7 +449,7 @@ class PositiveDefiniteLeastSquares(object):
         self.unconstrained_problem = cvxpy.Problem(self.objective)
         self.feasibility_problem = cvxpy.Problem(f_objective, self.feasibility)
 
-    def solve(self, y, solver=None, check=False):
+    def solve(self, y, check=False, **kwargs):
         r""" Solve CVXPY problem
 
         Solve a CVXPY problem instance for a given y, and return the optimum.
@@ -458,15 +458,14 @@ class PositiveDefiniteLeastSquares(object):
         ----------
         y : array (n)
             Regressand $y$.
-        solver : string
-            CVXPY solver name.
-            Default: None.
         check : boolean
             If True check whether the unconstrained optimization solution
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary
             constrained optimization calls.
             Default: False
+        kwargs : keyword arguments
+            Arguments passed to the CVXPY solve method.
 
         Returns
         -------
@@ -483,23 +482,25 @@ class PositiveDefiniteLeastSquares(object):
             if check:
 
                 # Solve unconstrained problem
-                self.unconstrained_problem.solve(solver=solver)
+                self.unconstrained_problem.solve(**kwargs)
 
                 # Return zeros if optimization failed
                 status = self.unconstrained_problem.status
                 if status != 'optimal':
+                    msg = 'Solver failed to produce an optimum: %s.' % status
+                    warnings.warn(msg)
                     msg = 'Optimization failed, returning zero array.'
                     warnings.warn(msg)
                     return self._zeros
 
                 # Return unconstrained solution if satisfactory
                 self._f.value = self._h.value
-                self.feasibility_problem.solve(solver=solver)
+                self.feasibility_problem.solve(**kwargs)
                 if self.feasibility_problem.status == 'optimal':
                     return np.asarray(self._h.value).squeeze()
 
             # Solve constrained problem
-            self.problem.solve(solver=solver)
+            self.problem.solve(**kwargs)
 
             # Show warning if solution is not optimal
             status = self.problem.status
