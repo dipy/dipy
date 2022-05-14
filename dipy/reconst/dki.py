@@ -2516,11 +2516,6 @@ def _wlsp_iter(design_matrix, inv_design, sdp_constraints, sig,
     if MD_square:
         KT_elements = result[6:21] / MD_square
     else:
-<<<<<<< HEAD
-=======
-        print(ols_result)
-        print(np.exp(np.dot(design_matrix, ols_result)))
->>>>>>> df900a4bb8a1958bfa2d043773836427e77132f6
         KT_elements = 0.*result[6:21]
 
     # Write output
