@@ -362,5 +362,5 @@ def load_sdp_constraints(id, order=None):
         n, x = array.shape
         sdp_constraints = [array[i*x:(i+1)*x] for i in range(n//x)]
         return sdp_constraints
-    except:
+    except Exception:
         raise ValueError("Failed to read constraints file '" + file + "'.")
