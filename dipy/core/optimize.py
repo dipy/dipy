@@ -348,6 +348,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
         self.coef_ = coef
         return self
 
+
 class PositiveDefiniteLeastSquares(object):
 
     def __init__(self, m, A=None, L=None):
@@ -523,7 +524,7 @@ class PositiveDefiniteLeastSquares(object):
 
         except cvxpy.error.SolverError:
 
-            #Return zeros
+            # Return zeros
             msg = 'Optimization failed, returning zero array.'
             warnings.warn(msg)
             return self._zeros
