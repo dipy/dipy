@@ -107,15 +107,18 @@ screenshot the resulting prediction. FODF should be aligned with the curvature
 of the corpus callosum and a single-fiber population should be visible.
 """
 
-camera = {}
-camera['zoom_factor'] = 0.85
-camera['view_position'] = np.array([(ori_shape[0] - 1) / 2.0,
-                                    max(ori_shape),
-                                    (ori_shape[2] - 1) / 1.5])
-camera['view_center'] = np.array([(ori_shape[0] - 1) / 2.0,
-                                  slice_index,
-                                  (ori_shape[2] - 1) / 1.5])
-camera['up_vector'] = np.array([0.0, 0.0, 1.0])
+camera = {
+    'zoom_factor': 0.85,
+    'view_position': np.array([
+        (ori_shape[0] - 1) / 2.0,
+        max(ori_shape),
+        (ori_shape[2] - 1) / 1.5]),
+    'view_center': np.array([
+        (ori_shape[0] - 1) / 2.0,
+        slice_index,
+        (ori_shape[2] - 1) / 1.5]),
+    'up_vector': np.array([0.0, 0.0, 1.0]),
+}
 
 scene.set_camera(position=camera['view_position'],
                  focal_point=camera['view_center'],

@@ -176,8 +176,8 @@ def carlson_rd(x, y, z, errtol=1e-4):
             An[v] = (An[v] + lamda) * 0.250
 
     # post convergence calculation
-    X = (A0 - x) / (4.**(n) * An)
-    Y = (A0 - y) / (4.**(n) * An)
+    X = (A0 - x) / (4.**n * An)
+    Y = (A0 - y) / (4.**n * An)
     Z = - (X + Y) / 3.
     E2 = X * Y - 6. * Z * Z
     E3 = (3. * X * Y - 8. * Z * Z) * Z

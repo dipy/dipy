@@ -214,7 +214,7 @@ def trk_loader(filename):
         with InTemporaryDirectory():
             load_trk(filename, filepath_dix['gs.nii'])
         return True
-    except (ValueError):
+    except ValueError:
         return False
 
 
@@ -225,7 +225,7 @@ def trk_saver(filename):
         with InTemporaryDirectory():
             save_trk(sft, filename)
         return True
-    except (ValueError):
+    except ValueError:
         return False
 
 

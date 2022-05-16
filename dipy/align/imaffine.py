@@ -61,7 +61,7 @@ from dipy.align.scalespace import IsotropicScaleSpace
 from dipy.utils.deprecator import deprecated_params
 
 _interp_options = ['nearest', 'linear']
-_transform_method = {}
+_transform_method = dict()
 _transform_method[(2, 'nearest')] = vf.transform_2d_affine_nn
 _transform_method[(3, 'nearest')] = vf.transform_3d_affine_nn
 _transform_method[(2, 'linear')] = vf.transform_2d_affine

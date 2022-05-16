@@ -337,10 +337,10 @@ class HemiSphere(Sphere):
         Sphere.__init__(self, xyz=uniq_vertices, edges=edges, faces=faces)
 
     @classmethod
-    def from_sphere(klass, sphere, tol=1e-5):
+    def from_sphere(cls, sphere, tol=1e-5):
         """Create instance from a Sphere"""
-        return klass(theta=sphere.theta, phi=sphere.phi,
-                     edges=sphere.edges, faces=sphere.faces, tol=tol)
+        return cls(theta=sphere.theta, phi=sphere.phi,
+                   edges=sphere.edges, faces=sphere.faces, tol=tol)
 
     def mirror(self):
         """Create a full Sphere from a HemiSphere"""

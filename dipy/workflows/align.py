@@ -103,7 +103,7 @@ class SlrWithQbxFlow(Workflow):
     def run(self, static_files, moving_files,
             x0='affine',
             rm_small_clusters=50,
-            qbx_thr=[40, 30, 20, 15],
+            qbx_thr=(40, 30, 20, 15),
             num_threads=None,
             greater_than=50,
             less_than=250,
@@ -142,7 +142,7 @@ class SlrWithQbxFlow(Workflow):
             this value.
         less_than : int, optional
             Keep streamlines have length less than this value.
-        np_pts : int, optional
+        nb_pts : int, optional
             Number of points for discretizing each streamline.
         progressive : boolean, optional
         out_dir : string, optional
@@ -254,8 +254,8 @@ class ImageRegistrationFlow(Workflow):
 
     def run(self, static_image_files, moving_image_files, transform='affine',
             nbins=32, sampling_prop=None, metric='mi',
-            level_iters=[10000, 1000, 100], sigmas=[3.0, 1.0, 0.0],
-            factors=[4, 2, 1], progressive=True, save_metric=False,
+            level_iters=(10000, 1000, 100), sigmas=(3.0, 1.0, 0.0),
+            factors=(4, 2, 1), progressive=True, save_metric=False,
             out_dir='', out_moved='moved.nii.gz', out_affine='affine.txt',
             out_quality='quality_metric.txt'):
         """
@@ -497,7 +497,7 @@ class ApplyTransformFlow(Workflow):
 class SynRegistrationFlow(Workflow):
 
     def run(self, static_image_files, moving_image_files, prealign_file='',
-            inv_static=False, level_iters=[10, 10, 5], metric="cc",
+            inv_static=False, level_iters=(10, 10, 5), metric="cc",
             mopt_sigma_diff=2.0, mopt_radius=4, mopt_smooth=0.0,
             mopt_inner_iter=0, mopt_q_levels=256, mopt_double_gradient=True,
             mopt_step_type='', step_length=0.25,

@@ -300,7 +300,7 @@ def test_color_fa():
     npt.assert_array_equal(cfa, true_cfa)
 
     # 1D test case
-    fa = np.ones((3))
+    fa = np.ones(3)
     evecs = np.zeros(fa.shape + (3, 3))
     evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     cfa = color_fa(fa, evecs)

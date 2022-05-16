@@ -343,7 +343,7 @@ def test_qti_fit():
         qtimodel = qti.QtiModel(gtab, fit_method)
         data = qtimodel.predict(params)
         npt.assert_raises(ValueError, qtimodel.fit, data,
-                          np.ones((2)))
+                          np.ones(2))
         npt.assert_raises(ValueError, qtimodel.fit, data,
                           np.ones(data.shape))
         for mask in [None, np.ones(data.shape[0:-1])]:

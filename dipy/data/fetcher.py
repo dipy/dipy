@@ -100,7 +100,7 @@ def _get_file_data(fname, url):
             response_size = None
 
         with open(fname, 'wb') as data:
-            if(response_size is None):
+            if response_size is None:
                 copyfileobj(opener, data)
             else:
                 copyfileobj_withprogress(opener, data, response_size)
@@ -129,7 +129,7 @@ def fetch_data(files, folder, data_size=None):
 
     """
     if not os.path.exists(folder):
-        _log("Creating new folder %s" % (folder))
+        _log("Creating new folder %s" % folder)
         os.makedirs(folder)
 
     if data_size is not None:
@@ -148,7 +148,7 @@ def fetch_data(files, folder, data_size=None):
     if all_skip:
         _already_there_msg(folder)
     else:
-        _log("Files successfully downloaded to %s" % (folder))
+        _log("Files successfully downloaded to %s" % folder)
 
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
@@ -893,7 +893,7 @@ def read_stanford_pve_maps():
     img_pve_csf = nib.load(f_pve_csf)
     img_pve_gm = nib.load(f_pve_gm)
     img_pve_wm = nib.load(f_pve_wm)
-    return (img_pve_csf, img_pve_gm, img_pve_wm)
+    return img_pve_csf, img_pve_gm, img_pve_wm
 
 
 def read_taiwan_ntu_dsi():
@@ -1228,17 +1228,17 @@ fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
 
 
-def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
-                            bundles=['af.left', 'cst.right', 'cc_1']):
+def read_bundles_2_subjects(subj_id='subj_1', metrics=('fa',),
+                            bundles=('af.left', 'cst.right', 'cc_1')):
     r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
     Parameters
     ----------
     subj_id : string
         Either ``subj_1`` or ``subj_2``.
-    metrics : list
+    metrics : array-like
         Either ['fa'] or ['t1'] or ['fa', 't1']
-    bundles : list
+    bundles : array-like
         E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
