@@ -287,6 +287,9 @@ class MapmriModel(ReconstModel, Cache):
                 else:
                     self.sdp_constraints = load_sdp_constraints('hermite',
                                                                 radial_order)
+                m = (2 + radial_order)*(4 + radial_order)*(3 + 2*radial_order)//24
+                self.sdp = PositiveDefiniteLeastSquares(m,
+                                                        A=self.sdp_constraints)
             else:
                 msg = "pos_radius must be 'adaptive' or a positive float."
                 if isinstance(pos_radius, str):
@@ -413,8 +416,7 @@ class MapmriModel(ReconstModel, Cache):
         if self.positivity_constraint:
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
             if self.global_constraints:
-                self.sdp = PositiveDefiniteLeastSquares(M, self.sdp_constraints)
-                coef = self.sdp.solve(data_norm, solver=self.cvxpy_solver)
+                coef = self.sdp.solve(M, data_norm, solver=self.cvxpy_solver)
             else:
                 c = cvxpy.Variable(M.shape[1])
                 if Version(cvxpy.__version__) < Version('1.1'):
