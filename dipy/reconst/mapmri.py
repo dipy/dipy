@@ -20,7 +20,7 @@ import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
 from dipy.utils.optpkg import optional_package
-from dipy.core.optimize import Optimizer
+from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
 from dipy.data import load_sdp_constraints
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
@@ -264,8 +264,7 @@ class MapmriModel(ReconstModel, Cache):
             self.laplacian_weighting = laplacian_weighting
         self.laplacian_regularization = laplacian_regularization
 
-        self.positivity_constraint = positivity_constraint
-        if self.positivity_constraint:
+        if positivity_constraint:
             if not have_cvxpy:
                 raise ValueError('CVXPY package needed to enforce constraints.')
             if cvxpy_solver is not None:
@@ -276,6 +275,10 @@ class MapmriModel(ReconstModel, Cache):
                     raise ValueError(msg)
             self.cvxpy_solver = cvxpy_solver
             if global_constraints:
+                if not anisotropic_scaling:
+                    msg = 'Global constraints only available for'
+                    msg += ' anistropic_scaling=True.'
+                    raise ValueError(msg)
                 if radial_order > 10:
                     self.sdp_constraints = load_sdp_constraints('hermite', 10)
                     msg = 'Global constraints are currently supported for'
@@ -302,8 +305,9 @@ class MapmriModel(ReconstModel, Cache):
                 self.pos_grid = pos_grid
                 self.pos_radius = pos_radius
             self.global_constraints = global_constraints
-
+        self.positivity_constraint = positivity_constraint
         self.anisotropic_scaling = anisotropic_scaling
+
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
         else:
@@ -408,41 +412,25 @@ class MapmriModel(ReconstModel, Cache):
 
         if self.positivity_constraint:
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
-            c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
-            else:
-                design_matrix = cvxpy.Constant(M) @ c
-            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
-            # See https://github.com/cvxgrp/cvxpy/issues/672
-            if not lopt:
-                objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix - data_norm))
-            else:
-                objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix - data_norm) +
-                    lopt * cvxpy.quad_form(c, laplacian_matrix)
-                )
-
             if self.global_constraints:
-                if self.anisotropic_scaling:
-                    A = self.sdp_constraints
-                    m = M.shape[1]
-                    n = len(A) - m - 1
-                    X = A[0]
-                    for i in range(m):
-                        X = X + c[i] * A[i+1]
-                    if n > 0:
-                        s = cvxpy.Variable(n)
-                        for i in range(n):
-                            X = X + s[i] * A[m+i+1]
-                    constraints = [X >> 0]
-                else:
-                    msg = 'Global constraints only available for'
-                    msg += ' anistropic_scaling=True.'
-                    warn(msg)
-                    constraints = []
+                self.sdp = PositiveDefiniteLeastSquares(M, self.sdp_constraints)
+                coef = self.sdp.solve(data_norm, solver=self.cvxpy_solver)
             else:
+                c = cvxpy.Variable(M.shape[1])
+                if Version(cvxpy.__version__) < Version('1.1'):
+                    design_matrix = cvxpy.Constant(M) * c
+                else:
+                    design_matrix = cvxpy.Constant(M) @ c
+                # workaround for the bug on cvxpy 1.0.15 when lopt = 0
+                # See https://github.com/cvxgrp/cvxpy/issues/672
+                if not lopt:
+                    objective = cvxpy.Minimize(
+                        cvxpy.sum_squares(design_matrix - data_norm))
+                else:
+                    objective = cvxpy.Minimize(
+                        cvxpy.sum_squares(design_matrix - data_norm) +
+                        lopt * cvxpy.quad_form(c, laplacian_matrix)
+                    )
                 if self.pos_radius == 'adaptive':
                     # custom constraint grid based on scale factor [Avram2015]
                     constraint_grid = create_rspace(self.pos_grid,
@@ -470,19 +458,19 @@ class MapmriModel(ReconstModel, Cache):
                 else:
                     constraints = [(M0[0] @ c) == 1,
                                    (K @ c) >= -0.1]
-            prob = cvxpy.Problem(objective, constraints)
-            try:
-                prob.solve(solver=self.cvxpy_solver)
-                coef = np.asarray(c.value).squeeze()
-            except Exception:
-                errorcode = 2
-                warn('Optimization did not find a solution')
+                prob = cvxpy.Problem(objective, constraints)
                 try:
-                    coef = np.dot(np.linalg.pinv(M), data)  # least squares
-                except np.linalg.linalg.LinAlgError:
-                    errorcode = 3
-                    coef = np.zeros(M.shape[1])
-                    return MapmriFit(self, coef, mu, R, lopt, errorcode)
+                    prob.solve(solver=self.cvxpy_solver)
+                    coef = np.asarray(c.value).squeeze()
+                except Exception:
+                    errorcode = 2
+                    warn('Optimization did not find a solution')
+                    try:
+                        coef = np.dot(np.linalg.pinv(M), data)  # least squares
+                    except np.linalg.linalg.LinAlgError:
+                        errorcode = 3
+                        coef = np.zeros(M.shape[1])
+                        return MapmriFit(self, coef, mu, R, lopt, errorcode)
         else:
             try:
                 pseudoInv = np.dot(

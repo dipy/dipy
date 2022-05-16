@@ -1,10 +1,15 @@
 """A unified interface for performing and debugging optimization problems."""
 
 import abc
+import warnings
 import numpy as np
 import scipy.sparse as sps
 import scipy.optimize as opt
 from scipy.optimize import minimize
+from packaging.version import Version
+from dipy.utils.optpkg import optional_package
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 class Optimizer(object):
@@ -342,3 +347,173 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
         coef, rnorm = opt.nnls(X, y)
         self.coef_ = coef
         return self
+
+class PositiveDefiniteLeastSquares(object):
+
+    def __init__(self, X, A, L=None):
+        r""" Regularized least squares with linear matrix inequality constraints
+
+        Generate a CVXPY representation of a regularized least squares
+        optimization problem subject to linear matrix inequality constraints.
+
+        Parameters
+        ----------
+        X : array (n, m)
+            Design matrix $X$.
+        A : array (t = m + k + 1, p, p)
+            Constraint matrices $A$.
+        L : array (m, m) (optional)
+            Regularization matrix $L$.
+            Default: None.
+
+        Notes
+        -----
+        The basic problem is to minimize
+
+        $c=\|X h - y\|^2 + \|L h\|^2$
+
+        subject to the constraint that
+
+        $M=A_0+\sum_{i=0}^{m-1} h_i A_{i+1}+\sum_{j=0}^{k-1} s_j A_{m+j+1}>0$,
+
+        where $s_j$ are slack variables and where the inequality sign denotes
+        positive definiteness of the matrix $M$.
+
+        This formulation is used here mainly to enforce polynomial
+        sum-of-squares constraints on various models, as described in [1]_.
+
+        References
+        ----------
+        .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
+               for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
+        """
+
+        # Input
+        self.X = X
+        self.A = A
+        self.L = L
+
+        # Problem size
+        n, m = X.shape
+        t = len(A)
+        k = t - m - 1
+
+        # Unknowns
+        self._f = cvxpy.Parameter(m)    # Given solution for feasibility check
+        self._h = cvxpy.Variable(m)     # Solution to constrained problem
+        self._y = cvxpy.Parameter(n)    # Regressand
+
+        # Error output
+        self._zeros = np.zeros(m)
+
+        # Reduction matrices
+        V = np.linalg.cholesky(np.dot(X.T, X)).T
+        P = np.dot(V, np.linalg.pinv(X))
+
+        # Objective
+        if Version(cvxpy.__version__) < Version('1.1'):
+            c = V*self._h - P*self._y
+            if L is not None:
+                c += L*self._h
+        else:
+            c = V@self._h - P@self._y
+            if L is not None:
+                c += L@self._h
+
+        self.objective = cvxpy.Minimize(cvxpy.norm(c))
+        f_objective = cvxpy.Minimize(0)
+
+        # Constraints
+        if t:
+            M = F = A[0]
+            if k > 0:
+                for i in range(m):
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+                self._s = cvxpy.Variable(k)
+                for j in range(k):
+                    F += self._s[j] * A[m + j + 1]
+                    M += self._s[j] * A[m + j + 1]
+            else:
+                for i in range(t - 1):
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+            self.feasibility = [F >> 0]
+            self.constraints = [M >> 0]
+        else:
+            self.feasibility = self.constraints = []
+
+        # CVXPY problems
+        self.problem = cvxpy.Problem(self.objective, self.constraints)
+        self.unconstrained_problem = cvxpy.Problem(self.objective)
+        self.feasibility_problem = cvxpy.Problem(f_objective, self.feasibility)
+
+    def solve(self, y, check=False, **kwargs):
+        r""" Solve CVXPY problem
+
+        Solve a CVXPY problem instance for a given y, and return the optimum.
+
+        Parameters
+        ----------
+        y : array (n)
+            Regressand $y$.
+        check : boolean
+            If True check whether the unconstrained optimization solution
+            already satisfies the constraints, before running the constrained
+            optimization. This adds overhead, but can avoid unnecessary
+            constrained optimization calls.
+            Default: False
+        kwargs : keyword arguments
+            Arguments passed to the CVXPY solve method.
+
+        Returns
+        -------
+        h : array (m)
+             Estimated optimum for problem variables $h$.
+        """
+
+        # Set regressand
+        self._y.value = y
+
+        try:
+
+            # Check unconstrained solution
+            if check:
+
+                # Solve unconstrained problem
+                self.unconstrained_problem.solve(**kwargs)
+
+                # Return zeros if optimization failed
+                status = self.unconstrained_problem.status
+                if status != 'optimal':
+                    msg = 'Solver failed to produce an optimum: %s.' % status
+                    warnings.warn(msg)
+                    msg = 'Optimization failed, returning zero array.'
+                    warnings.warn(msg)
+                    return self._zeros
+
+                # Return unconstrained solution if satisfactory
+                self._f.value = self._h.value
+                self.feasibility_problem.solve(**kwargs)
+                if self.feasibility_problem.status == 'optimal':
+                    return np.asarray(self._h.value).squeeze()
+
+            # Solve constrained problem
+            self.problem.solve(**kwargs)
+
+            # Show warning if solution is not optimal
+            status = self.problem.status
+            if status != 'optimal':
+                msg = 'Solver failed to produce an optimum: %s.' % status
+                warnings.warn(msg)
+
+            # Return solution
+            return np.asarray(self._h.value).squeeze()
+
+        except cvxpy.error.SolverError:
+
+            #Return zeros
+            msg = 'Optimization failed, returning zero array.'
+            warnings.warn(msg)
+            return self._zeros
