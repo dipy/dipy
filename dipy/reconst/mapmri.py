@@ -287,7 +287,8 @@ class MapmriModel(ReconstModel, Cache):
                 else:
                     self.sdp_constraints = load_sdp_constraints('hermite',
                                                                 radial_order)
-                m = (2 + radial_order)*(4 + radial_order)*(3 + 2*radial_order)//24
+                m = (2 + radial_order)*(4 + radial_order)*(3 + 2*radial_order)
+                m = m//24
                 self.sdp = PositiveDefiniteLeastSquares(m,
                                                         A=self.sdp_constraints)
             else:
