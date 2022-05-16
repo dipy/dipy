@@ -350,7 +350,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
 
 class PositiveDefiniteLeastSquares(object):
 
-    def __init__(self, X, A, L=None):
+    def __init__(self, m, A=None, L=None):
         r""" Regularized least squares with linear matrix inequality constraints
 
         Generate a CVXPY representation of a regularized least squares
@@ -358,9 +358,9 @@ class PositiveDefiniteLeastSquares(object):
 
         Parameters
         ----------
-        X : array (n, m)
-            Design matrix $X$.
-        A : array (t = m + k + 1, p, p)
+        m : int
+            Positive int indicating the number of regressors.
+        A : array (t = m + k + 1, p, p) (optional)
             Constraint matrices $A$.
         L : array (m, m) (optional)
             Regularization matrix $L$.
@@ -368,16 +368,20 @@ class PositiveDefiniteLeastSquares(object):
 
         Notes
         -----
-        The basic problem is to minimize
+        The basic problem is to solve for $h$ the minimization of
 
-        $c=\|X h - y\|^2 + \|L h\|^2$
+        $c=\|X h - y\|^2 + \|L h\|^2$,
 
-        subject to the constraint that
+        where $X$ is an (m, m) upper triangular design matrix and $y$ is a set
+        of m measurements, subject to the constraint that
 
         $M=A_0+\sum_{i=0}^{m-1} h_i A_{i+1}+\sum_{j=0}^{k-1} s_j A_{m+j+1}>0$,
 
         where $s_j$ are slack variables and where the inequality sign denotes
-        positive definiteness of the matrix $M$.
+        positive definiteness of the matrix $M$. The sparsity pattern and size
+        of $X$ and $y$ are fixed, because every design matrix and set of
+        measurements can be reduced to an equivalent (minimal) formulation of
+        this type.
 
         This formulation is used here mainly to enforce polynomial
         sum-of-squares constraints on various models, as described in [1]_.
@@ -390,39 +394,39 @@ class PositiveDefiniteLeastSquares(object):
         """
 
         # Input
-        self.X = X
         self.A = A
         self.L = L
 
         # Problem size
-        n, m = X.shape
-        t = len(A)
+        if A:
+            t = len(A)
+        else:
+            t = 0
         k = t - m - 1
 
+        sparsity = [(i, j) for i in range(m) for j in range(i, m)]
+
         # Unknowns
+        self._X = cvxpy.Parameter((m, m), sparsity=sparsity)    # Design matrix
         self._f = cvxpy.Parameter(m)    # Given solution for feasibility check
         self._h = cvxpy.Variable(m)     # Solution to constrained problem
-        self._y = cvxpy.Parameter(n)    # Regressand
+        self._y = cvxpy.Parameter(m)    # Regressand
 
         # Error output
         self._zeros = np.zeros(m)
 
-        # Reduction matrices
-        V = np.linalg.cholesky(np.dot(X.T, X)).T
-        P = np.dot(V, np.linalg.pinv(X))
-
         # Objective
         if Version(cvxpy.__version__) < Version('1.1'):
-            c = V*self._h - P*self._y
+            c = self._X*self._h - self._y
             if L is not None:
                 c += L*self._h
         else:
-            c = V@self._h - P@self._y
+            c = self._X@self._h - self._y
             if L is not None:
                 c += L@self._h
 
-        self.objective = cvxpy.Minimize(cvxpy.norm(c))
         f_objective = cvxpy.Minimize(0)
+        p_objective = cvxpy.Minimize(cvxpy.norm(c))
 
         # Constraints
         if t:
@@ -439,26 +443,29 @@ class PositiveDefiniteLeastSquares(object):
                 for i in range(t - 1):
                     F += self._f[i] * A[i + 1]
                     M += self._h[i] * A[i + 1]
-            self.feasibility = [F >> 0]
-            self.constraints = [M >> 0]
+            f_constraints = [F >> 0]
+            p_constraints = [M >> 0]
         else:
-            self.feasibility = self.constraints = []
+            f_constraints = p_constraints = []
 
         # CVXPY problems
-        self.problem = cvxpy.Problem(self.objective, self.constraints)
-        self.unconstrained_problem = cvxpy.Problem(self.objective)
-        self.feasibility_problem = cvxpy.Problem(f_objective, self.feasibility)
+        self.problem = cvxpy.Problem(p_objective, p_constraints)
+        self.unconstrained_problem = cvxpy.Problem(p_objective)
+        self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
 
-    def solve(self, y, check=False, **kwargs):
+    def solve(self, design_matrix, measurements, check=False, **kwargs):
         r""" Solve CVXPY problem
 
-        Solve a CVXPY problem instance for a given y, and return the optimum.
+        Solve a CVXPY problem instance for a given design matrix and a given set
+        of observations, and return the optimum.
 
         Parameters
         ----------
-        y : array (n)
-            Regressand $y$.
-        check : boolean
+        design_matrix : array (n, m)
+            Design matrix.
+        measurements : array (n)
+            Measurements.
+        check : boolean (optional)
             If True check whether the unconstrained optimization solution
             already satisfies the constraints, before running the constrained
             optimization. This adds overhead, but can avoid unnecessary
@@ -473,8 +480,11 @@ class PositiveDefiniteLeastSquares(object):
              Estimated optimum for problem variables $h$.
         """
 
-        # Set regressand
-        self._y.value = y
+        # Compute and set reduced problem parameters
+        X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        self._X.value = X
+        self._y.value = np.linalg.multi_dot([X, np.linalg.pinv(design_matrix),
+                                             measurements])
 
         try:
 

@@ -2346,7 +2346,7 @@ def wls_fit_dki(design_matrix, data):
     return dki_params
 
 
-def _olsp_iter(sdp, sig, cvxpy_solver=None):
+def _olsp_iter(sdp, design_matrix, sig, cvxpy_solver=None):
     """ Helper function used by ols_fit_dki_plus - Applies an LMI constrained
     OLS fit of the diffusion kurtosis model to single voxel signals.
 
@@ -2355,6 +2355,9 @@ def _olsp_iter(sdp, sig, cvxpy_solver=None):
     sdp : PositiveDefiniteLeastSquares instance
         A CVXPY representation of a regularized least squares optimization
         problem.
+    design_matrix : array (g, 22)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
     sig : array (g,)
         Diffusion-weighted signal for a single voxel data.
     cvxpy_solver : str, optional
@@ -2376,7 +2379,7 @@ def _olsp_iter(sdp, sig, cvxpy_solver=None):
 
     # DKI ordinary linear least square solution
     log_s = np.log(sig)
-    result = sdp.solve(log_s, check=True, solver=cvxpy_solver)
+    result = sdp.solve(design_matrix, log_s, check=True, solver=cvxpy_solver)
 
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
@@ -2443,7 +2446,7 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # Set up SDP solver
     sdp_constraints = load_sdp_constraints('dki')
-    sdp = PositiveDefiniteLeastSquares(design_matrix, sdp_constraints)
+    sdp = PositiveDefiniteLeastSquares(22, A=sdp_constraints)
 
     # preparing data and initializing parameters
     data = np.asarray(data)
@@ -2452,7 +2455,7 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _olsp_iter(sdp, data_flat[vox],
+        dki_params[vox] = _olsp_iter(sdp, design_matrix, data_flat[vox],
                                      cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
@@ -2461,21 +2464,21 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
     return dki_params
 
 
-def _wlsp_iter(design_matrix, inv_design, sdp_constraints, sig,
+def _wlsp_iter(sdp, design_matrix, inv_design, sig,
                cvxpy_solver=None):
     """ Helper function used by wls_fit_dki_plus - Applies an LMI constrained
     WLS fit of the diffusion kurtosis model to single voxel signals.
 
     Parameters
     ----------
+    sdp : PositiveDefiniteLeastSquares instance
+        A CVXPY representation of a regularized least squares optimization
+        problem.
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
     inv_design : array (g, 22)
         Inverse of the design matrix.
-    sdp_constraints : PositiveDefiniteLeastSquares instance
-        A CVXPY representation of a regularized least squares optimization
-        problem.
     sig : array (g,)
         Diffusion-weighted signal for a single voxel data.
     cvxpy_solver : str, optional
@@ -2503,9 +2506,8 @@ def _wlsp_iter(design_matrix, inv_design, sdp_constraints, sig,
     W = np.diag(np.exp(np.dot(design_matrix, ols_result)))
 
     # Set up sdp
-    sdp = PositiveDefiniteLeastSquares(np.dot(W, design_matrix),
-                                       sdp_constraints)
-    result = sdp.solve(np.dot(W, log_s), check=True, solver=cvxpy_solver)
+    result = sdp.solve(np.dot(W, design_matrix), np.dot(W, log_s), check=True,
+                       solver=cvxpy_solver)
 
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
@@ -2572,6 +2574,7 @@ def wls_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # Load constraints
     sdp_constraints = load_sdp_constraints('dki')
+    sdp = PositiveDefiniteLeastSquares(22, A=sdp_constraints)
 
     # Compute design matrix inverse
     inv_design = np.linalg.pinv(design_matrix)
@@ -2583,7 +2586,7 @@ def wls_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _wlsp_iter(design_matrix, inv_design, sdp_constraints,
+        dki_params[vox] = _wlsp_iter(sdp, design_matrix, inv_design,
                                      data_flat[vox], cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
