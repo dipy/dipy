@@ -566,7 +566,7 @@ def planarity(evals, axis=-1):
     """
     evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
-    return (2 * (ev2 - ev3) / evals.sum(0))
+    return 2 * (ev2 - ev3) / evals.sum(0)
 
 
 def sphericity(evals, axis=-1):
@@ -1731,7 +1731,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return params, model_S0
     else:
         return params
 
@@ -1895,7 +1895,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     params.shape = data.shape[:-1] + (npa,)
     if return_S0_hat:
         model_S0.shape = data.shape[:-1] + (1,)
-        return (params, model_S0)
+        return params, model_S0
     else:
         return params
 

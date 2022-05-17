@@ -35,7 +35,7 @@ if __name__ == '__main__':
     print("Source version: ", source_version)
 
     # check for dev tag
-    if(source_version.split(".")[-1] == "dev"):
+    if source_version.split(".")[-1] == "dev":
         dev = True
         print("Development Version detected")
     else:
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     try:
         sh("git checkout gh-pages")
     except:
-        while(1):
+        while 1:
             print("\nLooks like gh-pages branch does not exist!")
             print("Do you want to create a new one? (y/n)")
             choice = str(input()).lower()
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     if (os.path.exists(source_version)) and (dev is not True):
         print("docs for current version already exists")
     else:
-        if(dev is True):
+        if dev is True:
             print("Re-building docs for development version")
         else:
             print("Building docs for a release")

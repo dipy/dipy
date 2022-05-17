@@ -1927,7 +1927,7 @@ def larch_3split(tracks, indices=None, thr=10.):
         float d[2]
 
     lent=len(tracks)
-    if indices==None:
+    if indices is None:
         C={0:{'indices':[0],'rep3':tracks[0].copy(),'N':1}}
         itrange=range(1,lent)
     else:

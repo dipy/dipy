@@ -114,7 +114,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         self.exclude_map = np.asarray(exclude_map, 'float64')
 
     @classmethod
-    def from_pve(klass, wm_map, gm_map, csf_map, **kw):
+    def from_pve(cls, wm_map, gm_map, csf_map, **kw):
         """AnatomicalStoppingCriterion from partial volume fraction (PVE)
         maps.
 
@@ -134,7 +134,7 @@ cdef class AnatomicalStoppingCriterion(StoppingCriterion):
         include_map[(wm_map + gm_map + csf_map) == 0] = 1
         # exclude map = csf
         exclude_map = np.copy(csf_map)
-        return klass(include_map, exclude_map, **kw)
+        return cls(include_map, exclude_map, **kw)
 
     cpdef double get_exclude(self, double[::1] point):
         if point.shape[0] != 3:

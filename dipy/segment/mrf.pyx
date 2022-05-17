@@ -607,13 +607,13 @@ cdef void _icm_ising(double[:,:,:,:] nloglike, double beta,
 
                     for i in range(nneigh):
                         xx = x + dX[i]
-                        if((xx < 0) or (xx >= nx)):
+                        if xx < 0 or xx >= nx:
                             continue
                         yy = y + dY[i]
-                        if((yy < 0) or (yy >= ny)):
+                        if yy < 0 or yy >= ny:
                             continue
                         zz = z + dZ[i]
-                        if((zz < 0) or (zz >= nz)):
+                        if zz < 0 or zz >= nz:
                             continue
 
                         if seg[xx, yy, zz] == k:
@@ -675,13 +675,13 @@ cdef void _prob_class_given_neighb(cnp.npy_short[:, :, :] seg, double beta,
 
                 for i in range(nneigh):
                     xx = x + dX[i]
-                    if((xx < 0) or (xx >= nx)):
+                    if xx < 0 or xx >= nx:
                         continue
                     yy = y + dY[i]
-                    if((yy < 0) or (yy >= ny)):
+                    if yy < 0 or yy >= ny:
                         continue
                     zz = z + dZ[i]
-                    if((zz < 0) or (zz >= nz)):
+                    if zz < 0 or zz >= nz:
                         continue
 
                     if seg[xx, yy, zz] == l:

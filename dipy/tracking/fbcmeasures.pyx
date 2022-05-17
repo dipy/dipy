@@ -119,7 +119,7 @@ cdef class FBCMeasures:
         streamline_out = []
         color_out = []
         rfbc_out = []
-        for i in range((self.streamlines_rfbc).shape[0]):
+        for i in range(self.streamlines_rfbc.shape[0]):
             rfbc = self.streamlines_rfbc[i]
             lfbc = lfbc_log[i]
             if rfbc > threshold:

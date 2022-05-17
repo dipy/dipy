@@ -680,7 +680,7 @@ class MapmriFit(ReconstFit):
         if self.model.anisotropic_scaling:
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (2 * np.pi * np.prod(self.mu[1:]))
-            ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
+            ind_sum = (-1.0) ** (np.sum(ind_mat[sel, 1:], axis=1) / 2.0)
             rtap_vec = const * Bm[sel] * ind_sum * self._mapmri_coef[sel]
             rtap = np.sum(rtap_vec)
         else:
@@ -1159,7 +1159,7 @@ def mapmri_phi_1d(n, q, mu):
     i = complex(0, 1)
     f = mfactorial(n)
 
-    k = i ** (-n) / np.sqrt(2 ** (n) * f)
+    k = i ** (-n) / np.sqrt(2 ** n * f)
     phi = k * np.exp(- qn ** 2 / 2) * H
 
     return phi
@@ -1428,7 +1428,7 @@ def mapmri_isotropic_radial_signal_basis(j, l, mu, qval):
     pi2_mu2_q2 = 2 * np.pi ** 2 * mu ** 2 * qval ** 2
     const = (
         (-1) ** (l / 2) * np.sqrt(4.0 * np.pi) *
-        (pi2_mu2_q2) ** (l / 2) * np.exp(-pi2_mu2_q2) *
+        pi2_mu2_q2 ** (l / 2) * np.exp(-pi2_mu2_q2) *
         genlaguerre(j - 1, l + 0.5)(2 * pi2_mu2_q2)
         )
     return const
@@ -1951,7 +1951,7 @@ def map_laplace_s(n, m):
 
     """
 
-    k = 2 * np.pi ** (7 / 2.) * (-1) ** (n)
+    k = 2 * np.pi ** (7 / 2.) * (-1) ** n
     a0 = 3 * (2 * n ** 2 + 2 * n + 1) * delta(n, m)
     sqmn = np.sqrt(gamma(m + 1) / gamma(n + 1))
     sqnm = 1 / sqmn

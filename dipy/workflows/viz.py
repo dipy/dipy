@@ -115,7 +115,7 @@ class HorizonFlow(Workflow):
         world_coords = not native_coords
         bundle_colors = None
 
-        mni_2009a = {}
+        mni_2009a = dict()
         mni_2009a['affine'] = np.array([[1., 0., 0., -98.],
                                         [0., 1., 0., -134.],
                                         [0., 0., 1., -72.],
@@ -124,7 +124,7 @@ class HorizonFlow(Workflow):
         mni_2009a['vox_size'] = (1., 1., 1.)
         mni_2009a['vox_space'] = 'RAS'
 
-        mni_2009c = {}
+        mni_2009c = dict()
         mni_2009c['affine'] = np.array([[1., 0., 0., -96.],
                                         [0., 1., 0., -132.],
                                         [0., 0., 1., -78.],

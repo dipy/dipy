@@ -190,7 +190,7 @@ class ApiDocWriter(object):
         if filename is None:
             print(filename, 'erk')
             # nothing that we could handle here.
-            return ([], [])
+            return [], []
 
         f = open(filename, 'rt')
         functions, classes = self._parse_lines(f)
