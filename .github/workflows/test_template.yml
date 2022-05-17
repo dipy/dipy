@@ -34,7 +34,7 @@ on:
         description: ""
         type: string
         required: false
-        default: cython numpy matplotlib h5py nibabel cvxpy tqdm
+        default: cython!=0.29.29 numpy matplotlib h5py nibabel cvxpy tqdm
       extra-depends:
         description: ""
         type: string

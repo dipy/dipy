@@ -74,7 +74,7 @@ MIT licenses.
 
 # versions for dependencies
 # Check these versions against .travis.yml and requirements.txt
-CYTHON_MIN_VERSION = '0.29.24, !=0.29.29'
+CYTHON_MIN_VERSION = '0.29.24'
 NUMPY_MIN_VERSION = '1.14.5'
 SCIPY_MIN_VERSION = '1.1'
 NIBABEL_MIN_VERSION = '3.0.0'
