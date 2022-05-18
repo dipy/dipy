@@ -377,7 +377,7 @@ class ClusterMapCentroid(ClusterMap):
     """ Provides functionalities for interacting with clustering outputs
     that have centroids.
 
-    Allows to retrieve easely the centroid of every cluster. Also, it is
+    Allows to retrieve easily the centroid of every cluster. Also, it is
     a useful container to create, remove, retrieve and filter clusters.
     If `refdata` is given, elements will be returned instead of their
     index when using `ClusterCentroid` objects.
@@ -676,7 +676,7 @@ def qbx_and_merge(streamlines, thresholds,
     """ Run QuickBundlesX and then run again on the centroids of the last layer
 
     Running again QuickBundles at a layer has the effect of merging
-    some of the clusters that maybe originally devided because of branching.
+    some of the clusters that may be originally divided because of branching.
     This function help obtain a result at a QuickBundles quality but with
     QuickBundlesX speed. The merging phase has low cost because it is applied
     only on the centroids rather than the entire dataset.

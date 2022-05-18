@@ -44,7 +44,7 @@ def multi_tissue_basis(gtab, sh_order, iso_comp):
         The degree of the harmonic.
     """
     if iso_comp < 2:
-        msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
+        msg = "Multi-tissue CSD requires at least 2 tissue compartments"
         raise ValueError(msg)
     r, theta, phi = geo.cart2sphere(*gtab.gradients.T)
     m, n = shm.sph_harm_ind_list(sh_order)
@@ -66,7 +66,7 @@ class MultiShellResponse(object):
 
         The method `multi_shell_fiber_response` allows to create a multi-shell
         fiber response with the right format, for a three compartments model.
-        It can be refered to in order to understand the inputs of this class.
+        It can be referred to in order to understand the inputs of this class.
 
         Parameters
         ----------
@@ -116,9 +116,9 @@ def _inflate_response(response, gtab, n, delta):
     n_idx[iso:] = n // 2 + iso
     diff = abs(response.shells[:, None] - gtab.bvals)
     b_idx = np.argmin(diff, axis=0)
-    kernal = response.response / delta
+    kernel = response.response / delta
 
-    return kernal[np.ix_(b_idx, n_idx)]
+    return kernel[np.ix_(b_idx, n_idx)]
 
 
 def _basic_delta(iso, m, n, theta, phi):
@@ -200,7 +200,7 @@ class MultiShellDeconvModel(shm.SphHarmModel):
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
         if not iso >= 2:
-            msg = ("Multi-tissue CSD requires at least 2 tissue compartments")
+            msg = "Multi-tissue CSD requires at least 2 tissue compartments"
             raise ValueError(msg)
 
         super(MultiShellDeconvModel, self).__init__(gtab)
@@ -261,7 +261,6 @@ class MultiShellDeconvModel(shm.SphHarmModel):
             The non diffusion-weighted signal value.
         """
         if gtab is None or gtab is self.gtab:
-            gtab = self.gtab
             X = self._X
         else:
             iso = self.response.iso
@@ -440,7 +439,7 @@ def multi_shell_fiber_response(sh_order, bvals, wm_rf, gm_rf, csf_rf,
     sh_order : int
          Maximum spherical harmonics order.
     bvals : ndarray
-        Array containing the b-values. Must be unique b-values, like outputed
+        Array containing the b-values. Must be unique b-values, like outputted
         by `dipy.core.gradients.unique_bvals_tolerance`.
     wm_rf : (4, len(bvals)) ndarray
         Response function of the WM tissue, for each bvals.

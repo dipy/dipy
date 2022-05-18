@@ -31,7 +31,7 @@ def bench_csdeconv(center=(50, 40, 40), width=12):
 
     cmd = "model.fit(data_small, mask_small)"
     print("== Benchmarking CSD fit on %d voxels ==" % voxels)
-    msg = "SH order - %d, gradient directons - %d :: %g sec"
+    msg = "SH order - %d, gradient directions - %d :: %g sec"
 
     # Basic case
     sh_order = 8

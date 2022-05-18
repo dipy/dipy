@@ -537,7 +537,7 @@ def rumba_deconv(data, kernel, n_iter=600, recon_type='smf', n_coils=1):
     This gives the likelihood under a Rician distribution when $n$ is set to 1.
 
     By taking the negative log of this with respect to $\textbf{f}$ and setting
-    the derivative to 0, the $\textbf{f}$ maxmizing likelihood is found to be:
+    the derivative to 0, the $\textbf{f}$ maximizing likelihood is found to be:
 
     $\textbf{f} = \textbf{f} \circ \frac{\textbf{H}^T\left[\textbf{S}\circ
     \frac{I_n(\textbf{S}\circ \textbf{Hf}/\sigma^2)} {I_{n-1}(\textbf{S}
@@ -769,14 +769,14 @@ def generate_kernel(gtab, sphere, wm_response, gm_response, csf_response):
 
     # GM compartment
     if gm_response is None:
-        S_gm = np.zeros((n_grad))
+        S_gm = np.zeros(n_grad)
     else:
         S_gm = \
             single_tensor(gtab, evals=np.array(
                 [gm_response, gm_response, gm_response]))
 
     if csf_response is None:
-        S_csf = np.zeros((n_grad))
+        S_csf = np.zeros(n_grad)
     else:
         S_csf = \
             single_tensor(gtab, evals=np.array(
@@ -943,7 +943,7 @@ def rumba_deconv_global(data, kernel, mask, n_iter=600, recon_type='smf',
 
     # Expand into matrix form for iterations
     sigma2 = sigma2 * np.ones(data_2d.shape, dtype=np.float32)
-    tv_lambda_aux = np.zeros((n_v_tot), dtype=np.float32)
+    tv_lambda_aux = np.zeros(n_v_tot, dtype=np.float32)
 
     reblurred_s = data_2d * reblurred / sigma2
 

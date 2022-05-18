@@ -57,9 +57,7 @@ def relist_streamlines(points, offsets):
     streamlines: sequence
     """
 
-    streamlines = []
-
-    streamlines.append(points[0: offsets[0]])
+    streamlines = [points[0: offsets[0]]]
 
     for i in range(len(offsets) - 1):
         streamlines.append(points[offsets[i]: offsets[i + 1]])
@@ -154,11 +152,17 @@ def transform_streamlines(streamlines, mat, in_place=False):
     """
     # using new Streamlines API
     if isinstance(streamlines, Streamlines):
+        old_data_dtype = streamlines._data.dtype
+        old_offsets_dtype = streamlines._offsets.dtype
         if in_place:
-            streamlines._data = apply_affine(mat, streamlines._data)
+            streamlines._data = apply_affine(
+                mat, streamlines._data).astype(old_data_dtype)
             return streamlines
         new_streamlines = streamlines.copy()
-        new_streamlines._data = apply_affine(mat, new_streamlines._data)
+        new_streamlines._offsets = new_streamlines._offsets.astype(
+            old_offsets_dtype)
+        new_streamlines._data = apply_affine(
+            mat, new_streamlines._data).astype(old_data_dtype)
         return new_streamlines
     # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]
@@ -169,7 +173,7 @@ def select_random_set_of_streamlines(streamlines, select, rng=None):
 
     Parameters
     ----------
-    streamlines : Steamlines
+    streamlines : Streamlines
         Object of 2D ndarrays of shape[-1]==3
 
     select : int
@@ -616,7 +620,7 @@ def _extract_vals(data, streamlines, affine, threedvec=False):
     threedvec : bool
         Whether the last dimension has length 3. This is a special case in
         which we can use :func:`dipy.core.interpolate.interpolate_vector_3d`
-        for the interploation of 4D volumes without looping over the elements
+        for the interpolation of 4D volumes without looping over the elements
         of the last dimension.
 
     Returns

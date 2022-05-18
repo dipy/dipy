@@ -153,25 +153,25 @@ class DiffeomorphicMap(object):
 
         self.dim = dim
 
-        if(disp_shape is None):
+        if disp_shape is None:
             raise ValueError("Invalid displacement field discretization")
 
         self.disp_shape = np.asarray(disp_shape, dtype=np.int32)
 
         # If the discretization affine is None, we assume it's the identity
         self.disp_grid2world = disp_grid2world
-        if(self.disp_grid2world is None):
+        if self.disp_grid2world is None:
             self.disp_world2grid = None
         else:
             self.disp_world2grid = npl.inv(self.disp_grid2world)
 
         # If domain_shape isn't provided, we use the map's discretization shape
-        if(domain_shape is None):
+        if domain_shape is None:
             self.domain_shape = self.disp_shape
         else:
             self.domain_shape = np.asarray(domain_shape, dtype=np.int32)
         self.domain_grid2world = domain_grid2world
-        if(domain_grid2world is None):
+        if domain_grid2world is None:
             self.domain_world2grid = None
         else:
             self.domain_world2grid = npl.inv(domain_grid2world)
@@ -1362,11 +1362,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         x = np.asarray(x)
         y = np.asarray(y)
         X = np.row_stack((x**2, x, np.ones_like(x)))
-        XX = (X).dot(X.T)
+        XX = X.dot(X.T)
         b = X.dot(y)
         beta = npl.solve(XX, b)
         x0 = 0.5 * len(x)
-        y0 = 2.0 * beta[0] * (x0) + beta[1]
+        y0 = 2.0 * beta[0] * x0 + beta[1]
         return y0
 
     def _get_energy_derivative(self):

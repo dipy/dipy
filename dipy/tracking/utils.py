@@ -369,7 +369,7 @@ def subsegment(streamlines, max_segment_length):
         yield output_sl
 
 
-def seeds_from_mask(mask, affine, density=[1, 1, 1]):
+def seeds_from_mask(mask, affine, density=(1, 1, 1)):
     """Create seeds for fiber tracking from a binary mask.
 
     Seeds points are placed evenly distributed in all voxels of ``mask`` which
@@ -795,7 +795,7 @@ def near_roi(streamlines, affine, region_of_interest, tol=None,
             out.append(streamline_near_roi(sl, x_roi_coords, tol=tol,
                                            mode=mode))
 
-        return(np.array(out, dtype=bool))
+        return np.array(out, dtype=bool)
 
 
 def length(streamlines):
@@ -911,7 +911,7 @@ def reduce_rois(rois, include):
 
     Notes
     -----
-    The include_roi and exclude_roi can be used to perfom the operation: "(A
+    The include_roi and exclude_roi can be used to perform the operation: "(A
     or B or ...) and not (X or Y or ...)", where A, B are inclusion regions
     and X, Y are exclusion regions.
 

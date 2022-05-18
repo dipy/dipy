@@ -243,7 +243,7 @@ cdef class EnhancementKernel:
                 i += 0.1
                 x[2] = i
                 kval = self.k2(x, y, r, v) / self.kernelmax
-                if(kval < 0.1):
+                if kval < 0.1:
                     break
 
         N = ceil(i) * 2

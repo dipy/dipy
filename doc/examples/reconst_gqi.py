@@ -127,7 +127,7 @@ This ODF will be of course identical to the ODF calculated above as long as
 the same data and mask are used.
 """
 
-np.sum(gqpeaks.odf != ODF) == 0
+print(np.sum(gqpeaks.odf != ODF) == 0)
 
 """
 True

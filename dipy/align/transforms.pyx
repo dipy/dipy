@@ -1463,7 +1463,7 @@ cdef class AffineTransform3D(Transform):
         R[3, 3] = 1
 
 
-regtransforms = {}
+regtransforms = dict()
 regtransforms [('TRANSLATION', 2)] = TranslationTransform2D()
 regtransforms [('TRANSLATION', 3)] = TranslationTransform3D()
 regtransforms [('ROTATION', 2)] = RotationTransform2D()

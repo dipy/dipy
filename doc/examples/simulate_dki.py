@@ -132,7 +132,7 @@ plt.savefig('simulated_dki_signal.png')
    Simulated signals obtain from the DTI and DKI models.
 
 Non-Gaussian diffusion properties in tissues are responsible to smaller signal
-attenuations for larger bvalues when compared to signal attenuations from free
+attenuation for larger bvalues when compared to signal attenuation from free
 Gaussian water diffusion. This feature can be shown from the figure above,
 since signals simulated from the DKI models reveals larger DW signal
 intensities than the signals obtained only from the diffusion tensor

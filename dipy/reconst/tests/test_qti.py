@@ -377,6 +377,7 @@ def test_qti_fit():
 
     # Fit QTI
     gtab = _qti_gtab()
+    
     if have_cvxpy:
         for fit_method in ['OLS', 'WLS', 'SDPdc']:
             qtimodel = qti.QtiModel(gtab, fit_method)

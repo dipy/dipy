@@ -159,7 +159,7 @@ the degree to which water diffusion in biological tissues is non-Gaussian using
 the kurtosis tensor (KT) [Jensen2005]_.
 
 Measurements of non-Gaussian diffusion from the diffusion kurtosis model are of
-interest because they can be used to charaterize tissue microstructural
+interest because they can be used to characterize tissue microstructural
 heterogeneity [Jensen2010]_.
 
 Moreover, DKI can be used to:

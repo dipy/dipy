@@ -42,7 +42,7 @@ class QtdmriModel(Cache):
                     \,\Phi_i(\textbf{q})\,T_k(\tau),
                 \end{equation}
 
-        where $\Phi$ and $T$ are the spatial and temporal basis funcions,
+        where $\Phi$ and $T$ are the spatial and temporal basis functions,
         $N_{\textbf{q}}$ and $N_\tau$ are the maximum spatial and temporal
         order, and $i,k$ are basis order iterators.
 
@@ -478,7 +478,7 @@ class QtdmriModel(Cache):
             cvxpy_solution_optimal)
 
 
-class QtdmriFit():
+class QtdmriFit:
 
     def __init__(self, model, qtdmri_coef, us, ut, tau_scaling, R, lopt,
                  alpha, cvxpy_solution_optimal):
@@ -538,23 +538,23 @@ class QtdmriFit():
         """
         if self.model.cartesian:
             II = self.model.cache_get('qtdmri_to_mapmri_matrix',
-                                      key=(tau))
+                                      key=tau)
             if II is None:
                 II = qtdmri_to_mapmri_matrix(self.model.radial_order,
                                              self.model.time_order, self.ut,
                                              self.tau_scaling * tau)
                 self.model.cache_set('qtdmri_to_mapmri_matrix',
-                                     (tau), II)
+                                     tau, II)
         else:
             II = self.model.cache_get('qtdmri_isotropic_to_mapmri_matrix',
-                                      key=(tau))
+                                      key=tau)
             if II is None:
                 II = qtdmri_isotropic_to_mapmri_matrix(self.model.radial_order,
                                                        self.model.time_order,
                                                        self.ut,
                                                        self.tau_scaling * tau)
                 self.model.cache_set('qtdmri_isotropic_to_mapmri_matrix',
-                                     (tau), II)
+                                     tau, II)
         mapmri_coef = np.dot(II, self._qtdmri_coef)
         return mapmri_coef
 
@@ -772,7 +772,7 @@ class QtdmriFit():
             Bm = mapmri.b_mat(ind_mat)
             sel = Bm > 0.  # select only relevant coefficients
             const = 1 / (2 * np.pi * np.prod(self.us[1:]))
-            ind_sum = (-1.0) ** ((np.sum(ind_mat[sel, 1:], axis=1) / 2.0))
+            ind_sum = (-1.0) ** (np.sum(ind_mat[sel, 1:], axis=1) / 2.0)
             rtap_vec = const * Bm[sel] * ind_sum * mapmri_coef[sel]
             rtap = np.sum(rtap_vec)
         else:
@@ -1819,7 +1819,7 @@ def generalized_crossvalidation(data, M, LR, startpoint=5e-4):
     bounds = ((1e-5, 1),)
     res = fmin_l_bfgs_b(lambda x,
                         input_stuff: GCV_cost_function(x, input_stuff),
-                        (startpoint), args=(input_stuff,), approx_grad=True,
+                        startpoint, args=(input_stuff,), approx_grad=True,
                         bounds=bounds, disp=False, pgtol=1e-10, factr=10.)
     return res[0][0]
 
@@ -2093,7 +2093,7 @@ def visualise_gradient_table_G_Delta_rainbow(
     G_start : float,
         optional minimum gradient strength that is plotted in T/m
     G_end : float,
-        optional maximum gradient strength taht is plotted in T/m
+        optional maximum gradient strength that is plotted in T/m
     bval_isolines : array,
         optional array of bvalue isolines that are plotted in the background
     alpha_shading : float between [0-1]

@@ -231,7 +231,7 @@ class CCMetric(SimilarityMetric):
             self.compute_backward_step = cc.compute_cc_backward_step_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('CC Metric not defined for dim. %d' % (self.dim))
+            raise ValueError('CC Metric not defined for dim. %d' % self.dim)
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -264,7 +264,7 @@ class CCMetric(SimilarityMetric):
         self.factors = np.array(self.factors)
 
         self.gradient_moving = np.empty(
-            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
+            shape=self.moving_image.shape+(self.dim,), dtype=floating)
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
@@ -276,7 +276,7 @@ class CCMetric(SimilarityMetric):
                                        self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
+            shape=self.static_image.shape+(self.dim,), dtype=floating)
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
@@ -401,14 +401,14 @@ class EMMetric(SimilarityMetric):
             self.compute_stats = em.compute_masked_class_stats_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('EM Metric not defined for dim. %d' % (self.dim))
+            raise ValueError('EM Metric not defined for dim. %d' % self.dim)
 
         if self.step_type == 'demons':
             self.compute_step = self.compute_demons_step
         elif self.step_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
         else:
-            raise ValueError('Opt. step %s not defined' % (self.step_type))
+            raise ValueError('Opt. step %s not defined' % self.step_type)
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -438,7 +438,7 @@ class EMMetric(SimilarityMetric):
         self.staticq_means_field = self.staticq_means[staticq]
 
         self.gradient_moving = np.empty(
-            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
+            shape=self.moving_image.shape+(self.dim,), dtype=floating)
 
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
@@ -451,7 +451,7 @@ class EMMetric(SimilarityMetric):
                                        self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
+            shape=self.static_image.shape+(self.dim,), dtype=floating)
 
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
@@ -552,7 +552,7 @@ class EMMetric(SimilarityMetric):
             delta = self.movingq_means_field - self.static_image
             sigma_sq_field = self.movingq_sigma_sq_field
 
-        displacement = np.zeros(shape=(reference_shape)+(self.dim,),
+        displacement = np.zeros(shape=reference_shape+(self.dim,),
                                 dtype=floating)
 
         if self.dim == 2:
@@ -724,14 +724,14 @@ class SSDMetric(SimilarityMetric):
         elif self.dim == 3:
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('SSD Metric not defined for dim. %d' % (self.dim))
+            raise ValueError('SSD Metric not defined for dim. %d' % self.dim)
 
         if self.step_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
         elif self.step_type == 'demons':
             self.compute_step = self.compute_demons_step
         else:
-            raise ValueError('Opt. step %s not defined' % (self.step_type))
+            raise ValueError('Opt. step %s not defined' % self.step_type)
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -740,7 +740,7 @@ class SSDMetric(SimilarityMetric):
         computation of the forward and backward steps.
         """
         self.gradient_moving = np.empty(
-            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
+            shape=self.moving_image.shape+(self.dim,), dtype=floating)
         for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
 
@@ -752,7 +752,7 @@ class SSDMetric(SimilarityMetric):
                                        self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
+            shape=self.static_image.shape+(self.dim,), dtype=floating)
         for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
 
@@ -809,7 +809,7 @@ class SSDMetric(SimilarityMetric):
             gradient = self.gradient_moving
             delta_field = self.moving_image - self.static_image
 
-        displacement = np.zeros(shape=(reference_shape)+(self.dim,),
+        displacement = np.zeros(shape=reference_shape+(self.dim,),
                                 dtype=floating)
 
         if self.dim == 2:

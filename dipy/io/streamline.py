@@ -225,7 +225,7 @@ def save_generator(ttype):
         _, extension = os.path.splitext(filename)
         if not extension == ttype:
             msg = f"This function can only save {ttype} file, "
-            msg += "for more generability use save_tractogram instead."
+            msg += "for more general cases, use save_tractogram instead."
             raise ValueError(msg)
         save_tractogram(sft, filename, bbox_valid_check=bbox_valid_check)
 

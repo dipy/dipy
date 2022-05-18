@@ -337,10 +337,10 @@ class HemiSphere(Sphere):
         Sphere.__init__(self, xyz=uniq_vertices, edges=edges, faces=faces)
 
     @classmethod
-    def from_sphere(klass, sphere, tol=1e-5):
+    def from_sphere(cls, sphere, tol=1e-5):
         """Create instance from a Sphere"""
-        return klass(theta=sphere.theta, phi=sphere.phi,
-                     edges=sphere.edges, faces=sphere.faces, tol=tol)
+        return cls(theta=sphere.theta, phi=sphere.phi,
+                   edges=sphere.edges, faces=sphere.faces, tol=tol)
 
     def mirror(self):
         """Create a full Sphere from a HemiSphere"""
@@ -467,7 +467,7 @@ def disperse_charges(hemi, iters, const=.2):
     Notes
     -----
     This function is meant to be used with diffusion imaging so antipodal
-    symmetry is assumed. Therefor each charge must not only be unique, but if
+    symmetry is assumed. Therefore, each charge must not only be unique, but if
     there is a charge at +x, there cannot be a charge at -x. These are treated
     as the same location and because the distance between the two charges will
     be zero, the result will be unstable.

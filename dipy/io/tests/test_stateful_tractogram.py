@@ -444,8 +444,7 @@ def random_point_color():
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
     random_colors = np.random.randint(0, 255, (13, 8, 3))
-    coloring_dict = {}
-    coloring_dict['colors'] = random_colors
+    coloring_dict = {'colors': random_colors}
 
     try:
         sft.data_per_point = coloring_dict
@@ -461,10 +460,11 @@ def random_point_gray():
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'])
 
     random_colors = np.random.randint(0, 255, (13, 8, 1))
-    coloring_dict = {}
-    coloring_dict['color_x'] = random_colors
-    coloring_dict['color_y'] = random_colors
-    coloring_dict['color_z'] = random_colors
+    coloring_dict = {
+        'color_x': random_colors,
+        'color_y': random_colors,
+        'color_z': random_colors
+    }
 
     try:
         sft.data_per_point = coloring_dict
@@ -489,10 +489,11 @@ def random_streamline_color():
     uniform_colors_z = np.expand_dims(
         np.repeat(uniform_colors_z, 8, axis=1), axis=-1)
 
-    coloring_dict = {}
-    coloring_dict['color_x'] = uniform_colors_x
-    coloring_dict['color_y'] = uniform_colors_y
-    coloring_dict['color_z'] = uniform_colors_z
+    coloring_dict = {
+        'color_x': uniform_colors_x,
+        'color_y': uniform_colors_y,
+        'color_z': uniform_colors_z
+    }
 
     try:
         sft.data_per_point = coloring_dict
@@ -888,11 +889,11 @@ def test_invalid_streamlines_epsilon():
 
 def test_trk_coloring():
     assert_(random_streamline_color(),
-            msg='Streamlines color assignement failed')
+            msg='Streamlines color assignment failed')
     assert_(random_point_gray(),
-            msg='Streamlines points gray assignement failed')
+            msg='Streamlines points gray assignment failed')
     assert_(random_point_color(),
-            msg='Streamlines points color assignement failed')
+            msg='Streamlines points color assignment failed')
 
 
 def test_create_from_sft():

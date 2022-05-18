@@ -52,7 +52,7 @@ class ShoreModel(Cache):
     .. [3] Rathi Y. et al., "Sparse multi-shell diffusion imaging", MICCAI,
            2011.
 
-    .. [4] Cheng J. et al., "Theoretical Analysis and eapactical Insights on
+    .. [4] Cheng J. et al., "Theoretical Analysis and Practical Insights on
            EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
            Computational Diffusion MRI, 2011.
 
@@ -191,7 +191,7 @@ class ShoreModel(Cache):
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
 
-        if positive_constraint and not(constrain_e0):
+        if positive_constraint and not constrain_e0:
             msg = "Constrain_e0 must be True to enfore positivity."
             raise ValueError(msg)
 
@@ -290,7 +290,7 @@ class ShoreModel(Cache):
         return ShoreFit(self, coef)
 
 
-class ShoreFit():
+class ShoreFit:
 
     def __init__(self, model, shore_coef):
         """ Calculates diffusion properties for a single voxel
@@ -659,7 +659,7 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
 def _kappa_odf(zeta, n, l):
     return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 *
                     gamma(n + 1.5) * 2 ** (l + 3)) /
-                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) *
+                   (16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l) *
                     gamma(l + 1.5) ** 2))
 
 
@@ -812,7 +812,7 @@ def shore_order(n, l, m):
     radial_order : unsigned int
         an even integer that represent the maximal order of the basis
     index : unsigned int
-        index of the coefficient correspondig to (n,l,m), start from 0
+        index of the coefficient corresponding to (n,l,m), start from 0
 
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0 or np.abs(m) > l:

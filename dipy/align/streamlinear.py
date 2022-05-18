@@ -858,7 +858,7 @@ def slr_with_qbx(static, moving,
                  verbose=False,
                  greater_than=50,
                  less_than=250,
-                 qbx_thr=[40, 30, 20, 15],
+                 qbx_thr=(40, 30, 20, 15),
                  nb_pts=20,
                  progressive=True, rng=None, num_threads=None):
     """ Utility function for registering large tractograms.
@@ -877,6 +877,9 @@ def slr_with_qbx(static, moving,
     rm_small_clusters : int, optional
         Remove clusters that have less than `rm_small_clusters` (default 50)
 
+    maxiter : int, optional
+        Maximum number of iterations to perform.
+
     select_random : int, optional.
         If not, None selects a random number of streamlines to apply clustering
         Default None.
@@ -894,7 +897,7 @@ def slr_with_qbx(static, moving,
     qbx_thr : variable int
             Thresholds for QuickBundlesX (default [40, 30, 20, 15])
 
-    np_pts : int, optional
+    nb_pts : int, optional
             Number of points for discretizing each streamline (default 20)
 
     progressive : boolean, optional

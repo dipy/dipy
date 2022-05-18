@@ -376,7 +376,7 @@ def qti_signal(gtab, D, C, S0=1):
             )
     if D.shape[0:-2] != C.shape[0:-2]:
         raise ValueError('The shapes of C and D are not compatible')
-    if not ((isinstance(S0, int) or isinstance(S0, float))):
+    if not (isinstance(S0, int) or isinstance(S0, float)):
         if S0.shape != (1,) and S0.shape != D.shape[0:-2]:
             raise ValueError(
                 'S0 must be a single number or an array of the same shape '

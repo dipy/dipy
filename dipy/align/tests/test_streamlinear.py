@@ -312,7 +312,7 @@ def test_matrix44():
 def test_abstract_metric_class():
 
     class DummyStreamlineMetric(StreamlineDistanceMetric):
-        def test():
+        def test(self):
             pass
     assert_raises(TypeError, DummyStreamlineMetric)
 

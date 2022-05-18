@@ -377,7 +377,7 @@ def test_joint_pdf_gradients_dense():
         # Now we have the gradient of the joint distribution w.r.t. the
         # transform parameters
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite differences
         n = transform.get_number_of_parameters()
         expected = np.empty_like(actual)
         for i in range(n):
@@ -447,7 +447,7 @@ def test_joint_pdf_gradients_sparse():
         samples = np.array(samples)
         samples = np.hstack((samples, np.ones(samples.shape[0])[:, None]))
         sp_to_static = np.linalg.inv(static_g2w)
-        samples_static_grid = (sp_to_static.dot(samples.T).T)[..., :dim]
+        samples_static_grid = sp_to_static.dot(samples.T).T[..., :dim]
         intensities_static, inside = interp_method(static.astype(np.float32),
                                                    samples_static_grid)
         # The routines in vector_fields operate, mostly, with float32 because
@@ -459,7 +459,7 @@ def test_joint_pdf_gradients_sparse():
         # Compute the gradient at theta with the implementation under test
         M = transform.param_to_matrix(theta)
         sp_to_moving = np.linalg.inv(moving_g2w).dot(M)
-        samples_moving_grid = (sp_to_moving.dot(samples.T).T)[..., :dim]
+        samples_moving_grid = sp_to_moving.dot(samples.T).T[..., :dim]
         intensities_moving, inside = interp_method(moving.astype(np.float32),
                                                    samples_moving_grid)
         intensities_moving = np.array(intensities_moving, dtype=np.float64)
@@ -478,7 +478,7 @@ def test_joint_pdf_gradients_sparse():
         # parameters
         actual = np.copy(parzen_hist.joint_grad)
 
-        # Compute the gradient using finite-diferences
+        # Compute the gradient using finite differences
         n = transform.get_number_of_parameters()
         expected = np.empty_like(actual)
         for i in range(n):
