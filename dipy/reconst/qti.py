@@ -7,7 +7,7 @@ from warnings import warn
 
 import numpy as np
 
-from scipy.linalg import sqrtm
+from packaging.version import Version
 
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
@@ -568,8 +568,12 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
     dc = cvxpy_1x6_to_3x3(x[1:7])
     cc = cvxpy_1x21_to_6x6(x[7:])
     constraints = [dc >> 0, cc >> 0]
-    objective = cp.Minimize(cp.sum_squares(A @ x - y))
+    if Version(cp.__version__) < Version('1.1'):
+        objective = cp.Minimize(cp.norm(A * x - y))
+    else:
+        objective = cp.Minimize(cp.norm(A @ x - y))
     prob = cp.Problem(objective, constraints)
+    unconstrained = cp.Problem(objective)
 
     for i in range(0, size, 1):
         vox_data = data_masked[i:i+1, :].T
@@ -586,7 +590,6 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
             msg += ' optimization.'
             warn(msg)
             try:
-                unconstrained = cp.Problem(objective)
                 unconstrained.solve(solver=cvxpy_solver)
                 m = x.value
             except Exception:
@@ -597,7 +600,7 @@ def _sdpdc_fit(data, mask, X, cvxpy_solver):
 
         params_masked[i:i+1, :] = m.T
 
-    params_masked[:, 0] = np.log(np.exp(params_masked[:, 0]) * scale[:, 0])
+    params_masked[:, 0] += np.log(scale[:, 0]) 
     params[np.where(mask.ravel())] = params_masked
     params = params.reshape((mask.shape + (28,)))
     return params
