@@ -70,25 +70,26 @@ class FastStreamlineSearch:
         self.bin_shape = (box_length // bin_size).astype(int) + 1
 
         # Compute the center of each bin
-        bin_list = np.arange(np.prod(self.bin_shape))
+        nb_bins = np.prod(self.bin_shape)
+        bin_list = np.arange(nb_bins)
         all_bins = np.vstack(np.unravel_index(bin_list, self.bin_shape)).T
         bins_center = all_bins*bin_size + self.min_box + bin_size/2.0
 
         # Assign a list of streamlines to each bin
         baryc_tree = cKDTree(barycenters)
         center_dist = bin_size/2.0 + self.bin_overlap
-        baryc_in_bin = baryc_tree.query_ball_point(bins_center, center_dist,
-                                                   p=np.inf)
+        baryc_bins = baryc_tree.query_ball_point(bins_center, center_dist,
+                                                 p=np.inf)
 
         # Compute streamlines mean-points
         meanpts = self._slines_mean_points(self.ref_slines)
 
         # Compute bin indices, streamlines + mean-points tree
-        self.bin_indices = np.flatnonzero(np.array(baryc_in_bin))
         self.bin_dict = {}
-        for i in self.bin_indices:
-            slines_id = np.asarray(baryc_in_bin[i])
-            self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
+        for i in range(nb_bins):
+            if baryc_bins[i]:
+                slines_id = np.asarray(baryc_bins[i])
+                self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
 
     def radius_search(self, streamlines, radius, use_negative=True):
         """ Radius Search using Fast Streamline Search
@@ -153,24 +154,24 @@ class FastStreamlineSearch:
                 mpts = self._slines_mean_points(q_slines[slines_id])
 
                 # Compute Tree L1 Query with mean-points
-                res = ref_tree.query_ball_point(mpts, l1_sum_dist, p=1,
-                                                return_sorted=False)
+                res = ref_tree.query_ball_point(mpts, l1_sum_dist, p=1)
 
                 # Refine distance with the complete
                 for s, ref_ids in enumerate(res):
-                    cur_sline_id = slines_id[s]
-                    ref_sline_ids = slines_id_ref[ref_ids]
-                    d = mean_l2_func(q_slines[cur_sline_id],
-                                     self.ref_slines[ref_sline_ids])
+                    if ref_ids:
+                        cur_sline_id = slines_id[s]
+                        ref_sline_ids = slines_id_ref[ref_ids]
+                        d = mean_l2_func(q_slines[cur_sline_id],
+                                         self.ref_slines[ref_sline_ids])
 
-                    # Return all pairs within the radius
-                    in_dist_max = d < radius
-                    id_ref = ref_sline_ids[in_dist_max]
-                    id_s = np.full_like(id_ref, cur_sline_id)
+                        # Return all pairs within the radius
+                        in_dist_max = d < radius
+                        id_ref = ref_sline_ids[in_dist_max]
+                        id_s = np.full_like(id_ref, cur_sline_id)
 
-                    list_id.append(id_s)
-                    list_id_ref.append(id_ref)
-                    list_dist.append(d[in_dist_max])
+                        list_id.append(id_s)
+                        list_id_ref.append(id_ref)
+                        list_dist.append(d[in_dist_max])
 
         # Combine all results in a coo sparse matrix
         if len(list_id) > 0:
