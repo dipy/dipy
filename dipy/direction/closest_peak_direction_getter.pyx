@@ -71,7 +71,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
                  step_size=None, pmf_threshold=.1, **kwargs):
         self.sphere = sphere
         self.step_size = step_size
-        _max_angle = deg2rad(max_angle)
+        _max_angle = np.deg2rad(max_angle)
         self.min_curvature = min_curvature or min_curvature_from_angle(
                                                 _max_angle, step_size)
         self._pf_kwargs = kwargs
