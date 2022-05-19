@@ -96,9 +96,9 @@ The same list of streamlines can be given to recover the self distance matrix.
     Recommended range of the radius is from 1 to 10 mm.
 """
 
-l21_radius = 7.0
-fss = FastStreamlineSearch(ref_streamlines=model_af_l, max_radius=l21_radius)
-coo_mdist_mtx = fss.radius_search(streamlines, radius=l21_radius)
+radius = 7.0
+fss = FastStreamlineSearch(ref_streamlines=model_af_l, max_radius=radius)
+coo_mdist_mtx = fss.radius_search(streamlines, radius=radius)
 
 """
 Extract indices of streamlines with an similar ones in the reference
@@ -162,18 +162,18 @@ else:
 """
 
 """
-Display the streamlines reference reached
+Display the streamlines reference reached in green
 """
+# Default red color
+ref_color = np.zeros((len(model_af_l), 3), dtype=float)
+ref_color[:] = (1.0, 0.0, 0.0)
 
-ref_in_reach = np.zeros([len(model_af_l)], dtype=bool)
-ref_in_reach[ids_ref] = True
+# Reached in green color
+ref_color[ids_ref] = (0.0, 1.0, 0.0)
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-if np.any(ref_in_reach):
-    scene.add(actor.line(model_af_l[ref_in_reach], colors=(0, 1, 0)))
-if np.any(~ref_in_reach):
-    scene.add(actor.line(model_af_l[~ref_in_reach], colors=(1, 0, 0)))
+scene.add(actor.line(model_af_l, ref_color))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
                  view_up=(-0.03, 0.028, 0.89))

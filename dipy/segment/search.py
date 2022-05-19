@@ -6,7 +6,7 @@ from scipy.spatial import cKDTree
 from dipy.tracking.streamline import set_number_of_points
 
 
-class FastStreamlineSearch(object):
+class FastStreamlineSearch:
     def __init__(self, ref_streamlines, max_radius, nb_mpts=4, bin_size=20.0,
                  resampling=24, bidirectional=True):
         """ Fast Streamline Search (FFS)
@@ -20,13 +20,13 @@ class FastStreamlineSearch(object):
         ref_streamlines : Streamlines
             Streamlines (ref) to generate the tree structure.
         max_radius : float
-            The maximum radius for the search will be limited by this value,
-            Used to compute bins overlap.
-        nb_mpts : int
+            The maximum radius (distance) for subsequent streamline search.
+            Used to compute the overlap in-between bins.
+        nb_mpts : int, optional
             Number of means points to improve computation speed.
-        bin_size : float
+        bin_size : float, optional
             The maximum search radius will be limited by this value.
-        bidirectional : bool
+        bidirectional : bool, optional
             Compute the smallest distance with and without flip.
 
         Notes
@@ -103,7 +103,7 @@ class FastStreamlineSearch(object):
         radius : float
             Search radius (with MDF / average L2 distance)
             must be smaller than max_radius when FFS was initialized.
-        use_negative : bool
+        use_negative : bool, optional
             When used with bidirectional,
             negative values are returned for reversed order neighbors.
 
@@ -145,9 +145,7 @@ class FastStreamlineSearch(object):
         list_id = []
         list_id_ref = []
         list_dist = []
-        for i in range(len(u_bin)):
-            bin_id = u_bin[i]
-
+        for i, bin_id in enumerate(u_bin):
             if bin_id in self.bin_dict:
                 slines_id_ref, ref_tree = self.bin_dict[bin_id]
                 slines_id = binned_slines_ids[i]
@@ -188,10 +186,9 @@ class FastStreamlineSearch(object):
 
             return coo_matrix((dist, (ids_in, ids_ref)),
                               shape=(q_nb_slines, self.ref_nb_slines))
-        else:
-            # No results, return an empty sparse matrix
-            return coo_matrix(([], ([], [])),
-                              shape=(q_nb_slines, self.ref_nb_slines))
+
+        # No results, return an empty sparse matrix
+        return coo_matrix((q_nb_slines, self.ref_nb_slines))
 
     def _resample(self, streamlines):
         """Resample streamlines"""
@@ -284,7 +281,7 @@ def nearest_from_matrix_col(coo_matrix):
 
 def mean_l2_func(a, b):
     """Streamlines distance function: Average L2 (MDF without flip)"""
-    return np.mean(np.sqrt(np.sum((a - b) ** 2, axis=-1)), axis=-1)
+    return np.mean(np.sqrt(np.sum(np.square(a - b), axis=-1)), axis=-1)
 
 
 def mean_l1_func(a, b):
