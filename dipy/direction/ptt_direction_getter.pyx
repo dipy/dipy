@@ -161,7 +161,7 @@ cdef (double,double) getARandomPointWithinDisk(double r):
     ----------
     r : double
         The radius of the disk
-    
+
     Returns
     -------
     x : double
@@ -178,9 +178,9 @@ cdef (double,double) getARandomPointWithinDisk(double r):
         y = unidis_m1_p1()
     return (r*x,r*y)
 
-cdef struct TP:
     """PTT tracking parameters
     """
+cdef struct TP:
     double step_size
     double min_radius_curvature
     double probe_length
@@ -225,7 +225,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       init_last_val
 
     # For each streamline, create a new PTF object with tracking parameters
-    def __init__(self, pmf_gen, max_angle=None, sphere, pmf_threshold=None,
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
                  min_radius_curvature=1/2, probe_length=1/2, probe_radius=0,
                  probe_quality=3, probe_count=1, data_support_exponent=1,
                  **kwargs):
@@ -243,25 +243,25 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         pmf_threshold : None
             Not used for PTT
         min_radius_curvature : double
-            Is used to set the upper limits for the k1 and k2 parameters 
+            Is used to set the upper limits for the k1 and k2 parameters
             of parallel transport frame
         probe_length : double
-            ptt uses probes for estimating future propagation steps. 
+            ptt uses probes for estimating future propagation steps.
             A probe is a short, cylinderical model of the connecting segment.
             Shorter probe_length yields more dispersed fibers.
         probe_radius : double
-            ptt uses probes for estimating future propagation steps. 
+            ptt uses probes for estimating future propagation steps.
             A probe is a short, cylinderical model of the connecting segment.
-            A large probe_radius helps mitigate noise in the fODF 
+            A large probe_radius helps mitigate noise in the fODF
             but it might make it harder to sample thin and intricate connections,
             also the boundary of fiber bundles might be eroded.
         probe_quality : integer
-            ptt uses probes for estimating future propagation steps. 
+            ptt uses probes for estimating future propagation steps.
             A probe is a short, cylinderical model of the connecting segment.
-            This parameter sets the number of segments to split the cylinder 
+            This parameter sets the number of segments to split the cylinder
             along the length of the probe.
         probe_count : integer
-            ptt uses probes for estimating future propagation steps. 
+            ptt uses probes for estimating future propagation steps.
             A probe is a short, cylinderical model of the connecting segment.
             This parameter sets the number of parallel lines used to model the cylinder.
         data_support_exponent : double
@@ -273,7 +273,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
 
-        
         # Set this PTF's parameters
         self.params = TP()
 
@@ -327,12 +326,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.getARandomFrame(init_dir)
         (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.min_radius_curvature)
+
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
 
         self.last_val = 0
 
-        if self.params.probe_count==1:
+        if self.params.probe_count == 1:
             fod_amp = self.pmf_gen.get_pmf_value(self.p, self.F[0])
             self.last_val = fod_amp
         else:
@@ -349,9 +349,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
     cdef void walk(self):
         """Propagates the last position (p) by step_size amount.
-
         The progation is using the parameters of the last candidate.
-
         """
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
@@ -359,18 +357,18 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3] T
 
         for i in range(3):
-            self.p[i]    = self.PP[0]*self.F[0][i] +  self.PP[1]*self.F[1][i]  +  self.PP[2]*self.F[2][i] + self.p[i]
-            T[i]         = self.PP[3]*self.F[0][i] +  self.PP[4]*self.F[1][i]  +  self.PP[5]*self.F[2][i]
-            self.F[2][i] = self.PP[6]*self.F[0][i] +  self.PP[7]*self.F[1][i]  +  self.PP[8]*self.F[2][i]
+            self.p[i]    = self.PP[0]*self.F[0][i] + self.PP[1]*self.F[1][i] + self.PP[2]*self.F[2][i] + self.p[i]
+            T[i]         = self.PP[3]*self.F[0][i] + self.PP[4]*self.F[1][i] + self.PP[5]*self.F[2][i]
+            self.F[2][i] = self.PP[6]*self.F[0][i] + self.PP[7]*self.F[1][i] + self.PP[8]*self.F[2][i]
 
         normalize(T)
         cross(self.F[1],self.F[2],T)
         normalize(self.F[1])
         cross(self.F[2],T,self.F[1])
 
-        self.F[0][0]    = T[0]
-        self.F[0][1]    = T[1]
-        self.F[0][2]    = T[2]
+        self.F[0][0] = T[0]
+        self.F[0][1] = T[1]
+        self.F[0][2] = T[2]
 
         self.likelihood = 0.0
 
@@ -541,7 +539,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
     cdef StreamlineStatus reinitialize(self, double[:] _seed_point, double[:] _seed_direction):
         """Sample an initial curve by rejection sampling.
-        
+
         Parameters
         ----------
         _seed_point : double[3]
@@ -588,8 +586,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.initialized = True
 
                 return TRACKPOINT
-
-
         return NODATASUPPORT
 
     cdef StreamlineStatus propagate(self):
@@ -610,7 +606,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 posteriorMax = dataSupport
 
         # Compensation for underestimation of max posterior estimate
-        posteriorMax = pow(2.0*posteriorMax,self.params.data_support_exponent)
+        posteriorMax = pow(2.0*posteriorMax, self.params.data_support_exponent)
+        #print("Posterior Max: " + str(posteriorMax))
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
@@ -659,10 +656,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         # This step only initializes or flips the frame at the seed point.
         # It does not do any propagation, i.e., tracker is at the seed point and it is ready to propagate
         # Initialization basically checks whether the tracker has data support to move or propagate forward (but it does not move it)
-        if self.initialized:
-            self.flip()
-        else:
-            stream_status = self.reinitialize(seed_point,seed_direction)
+        ###if self.initialized:
+        ###    self.flip()
+        ###else:
+        stream_status = self.reinitialize(seed_point,seed_direction)
 
         # If initialization is successful than the tracker propagates.
         # Propagation first pushes the moving frame forward.

@@ -58,14 +58,14 @@ from dipy.io.streamline import save_trk
 
 fod = csd_fit.odf(small_sphere)
 pmf = fod.clip(min=0)
-prob_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=1,
+prob_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=20,
                                       sphere=small_sphere)
 
 streamline_generator = LocalTracking(direction_getter=prob_dg,
                                      stopping_criterion=stopping_criterion,
                                      seeds=seeds,
                                      affine=affine,
-                                     step_size=1/20)
+                                     step_size=0.2)
 streamlines = Streamlines(streamline_generator)
 sft = StatefulTractogram(streamlines, hardi_img, Space.RASMM)
 save_trk(sft, "tractogram_ptt_dg_pmf.trk")
