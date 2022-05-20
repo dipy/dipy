@@ -10,7 +10,6 @@ First import the necessary modules.
 """
 
 import numpy as np
-import time
 
 from dipy.data import get_target_tractogram_hcp, get_two_hcp842_bundles
 from dipy.io.streamline import load_trk
