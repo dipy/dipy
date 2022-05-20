@@ -1,7 +1,4 @@
-import pathlib
 import warnings
-
-import pytest
 
 import numpy as np
 import numpy.testing as npt
@@ -28,79 +25,6 @@ from dipy.testing import clear_and_catch_warnings
 def test_unique_bvals_deprecated():
     npt.assert_raises(ExpiredDeprecationError, unique_bvals,
                       np.array([0, 800, 1400, 1401, 1405]))
-
-
-def test_read_bvals_bvecs(tmp_path: pathlib.Path):
-    # NOTE: This data is hard-coded to this particular dataset
-    _, fbvals, fbvecs = get_fnames('small_64D')
-    expected_bvals_shape = (65,)
-    expected_bvec_shape = (65, 3)
-    # Case 1: bval + bvec present
-    case_1_bval, case_1_bvec = read_bvals_bvecs(fbvals=fbvals, fbvecs=fbvecs)
-    assert case_1_bval.shape == expected_bvals_shape
-    assert case_1_bvec.shape == expected_bvec_shape
-    # Case 2: bval only
-    case_2_bval, case_2_bvec = read_bvals_bvecs(fbvals=fbvals, fbvecs=None)
-    assert case_2_bval.shape == expected_bvals_shape
-    assert case_2_bvec is None
-    # Case 3: bvec only
-    case_3_bval, case_3_bvec = read_bvals_bvecs(fbvals=None, fbvecs=fbvecs)
-    assert case_3_bval is None
-    assert case_3_bvec.shape == expected_bvec_shape
-    # Case 4: read seralized numpy array
-    case4_bval_numpy_filename = tmp_path / "bval.npy"
-    case4_bvec_numpy_filename = tmp_path / "bvec.npy"
-    np.save(file=case4_bval_numpy_filename, arr=case_1_bval)
-    np.save(file=case4_bvec_numpy_filename, arr=case_1_bvec)
-    case_4_bval, case_4_bvec = read_bvals_bvecs(
-        fbvals=str(case4_bval_numpy_filename),
-        fbvecs=str(case4_bvec_numpy_filename)
-    )
-    assert case_4_bval.shape == expected_bvals_shape
-    assert case_4_bvec.shape == expected_bvec_shape
-    np.testing.assert_allclose(case_4_bval, case_1_bval)
-    np.testing.assert_allclose(case_4_bvec, case_1_bvec)
-
-    # TODO: Expand this test, not sure what would trigger this
-    # Case 5: warning triggered about bvec directions
-    # case5_bval_numpy_filename = tmp_path / "bval.case5.npy"
-    # case5_bvec_numpy_filename = tmp_path / "bvec.case5.npy"
-    # case5_bad_bvec_array_dims = np.expand_dims(case_1_bvec, axis=(-1, -2))
-    # np.save(file=case5_bval_numpy_filename, arr=case_1_bval)
-    # np.save(file=case5_bvec_numpy_filename, arr=case5_bad_bvec_array_dims)
-    # with pytest.warns(
-    #   match=r"Detected only 1 direction on your bvec file") as record:
-    #     read_bvals_bvecs(
-    #       fbvals=str(case5_bval_numpy_filename),
-    #       fbvecs=str(case5_bvec_numpy_filename)
-    #     )
-    #     # Only 1 expected warning here
-    #     breakpoint()
-    #     assert(len(record)) == 1
-
-    # Case 6: bvecs does have have a 3-dim shape
-    with pytest.raises(IOError, match=r"bvec file should have three rows"):
-        case6_bval_numpy_filename = tmp_path / "bval.case6.npy"
-        case6_bvec_numpy_filename = tmp_path / "bvec.case6.npy"
-        np.save(file=case6_bval_numpy_filename, arr=case_1_bval)
-        np.save(file=case6_bvec_numpy_filename, arr=case_1_bval)
-        read_bvals_bvecs(
-            fbvals=str(case6_bval_numpy_filename),
-            fbvecs=str(case6_bvec_numpy_filename)
-        )
-    # Case 7: error when mismatch between bval and bvec shape
-    with pytest.raises(
-        IOError, match=r"b-values and b-vectors shapes do not correspond"
-    ):
-        case7_bval_numpy_filename = tmp_path / "bval.case7.npy"
-        case7_bvec_numpy_filename = tmp_path / "bvec.case7.npy"
-        # Remove the first row so as to cause a mismatch
-        np.save(file=case7_bval_numpy_filename, arr=case_1_bval)
-        np.save(file=case7_bvec_numpy_filename, arr=case_1_bvec[1:])
-        read_bvals_bvecs(
-            fbvals=str(case7_bval_numpy_filename),
-            fbvecs=str(case7_bvec_numpy_filename)
-        )
 
 
 def test_btable_prepare():
@@ -502,8 +426,7 @@ def test_reorient_bvecs():
     # atol is set to 1 here to do the scaling verification here,
     # so that the reorient_bvecs function does not throw an error itself
     new_gt = reorient_bvecs(gt, np.array(shear_affines)[:, :3, :3], atol=1)
-    abs_normalized_vector = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1)
-    bvecs_close_to_1 = abs_normalized_vector <= 0.001
+    bvecs_close_to_1 = abs(vector_norm(new_gt.bvecs[~gt.b0s_mask]) - 1) <= 0.001
     npt.assert_(np.all(bvecs_close_to_1))
 
 def test_nan_bvecs():
