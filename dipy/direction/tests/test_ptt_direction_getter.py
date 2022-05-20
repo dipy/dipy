@@ -1,63 +1,16 @@
 """Test file for Parallel Transport Tracking Algorithm."""
 import numpy as np
 import numpy.testing as npt
-import nibabel as nib
 from dipy.core.sphere import unit_octahedron
-from dipy.data import get_fnames, default_sphere, get_sphere
+from dipy.data import get_fnames, default_sphere
 from dipy.direction import PTTDirectionGetter
 from dipy.io.image import load_nifti
 from dipy.reconst.shm import SphHarmFit, SphHarmModel, sh_to_sf
 from dipy.tracking.local_tracking import LocalTracking
 from dipy.tracking.stopping_criterion import BinaryStoppingCriterion
 from dipy.tracking.streamline import Streamlines
-from dipy.tracking.utils import seeds_from_mask
 
-from dipy.direction import PTTDirectionGetter, ProbabilisticDirectionGetter
-from dipy.data import small_sphere
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import save_tck
-
-sphere = get_sphere("repulsion724")
-fod_fname, seed_coordinates_fname, seed_fname = get_fnames('ptt_minimal_dataset')
-fod, affine, img = load_nifti(fod_fname, return_img=True)
-seed_coordinates = np.loadtxt(seed_coordinates_fname)[:100]
-#seed_coordinates = [s + np.random.random(3) for s in seed_coordinates]
-print(affine)
-# check basis (should be mrtrix3)
-sph = sh_to_sf(fod, sphere, basis_type='tournier07', sh_order=8)
-sph[sph < 0] = 0
-#sc = BinaryStoppingCriterion(np.ones(fod.shape[:3]))
-sc = BinaryStoppingCriterion(np.sum(sph, axis=3)>0)
-
-#sph2=np.random.random(sph.shape)
-#sph2[np.sum(sph, axis=3)==0]=0
-
-prob_dg = ProbabilisticDirectionGetter.from_pmf(sph, sphere=sphere, max_angle=20)
-prob_streamline_generator = LocalTracking(direction_getter=prob_dg,
-                                          step_size=0.2,
-                                          stopping_criterion=sc,
-                                          seeds=seed_coordinates,
-                                          affine=affine)
-streamlines = Streamlines(prob_streamline_generator)
-sft = StatefulTractogram(streamlines, img, Space.RASMM)
-save_tck(sft, "test_prob.tck")
-
-### probe count > 1 fails : AttributeError: 'dict' object has no attribute 'angular_separation'
-dg = PTTDirectionGetter.from_pmf(sph, sphere=sphere, max_angle=20,
-                                 probe_count=1, min_radius_curvature=3)
-streamline_generator = LocalTracking(direction_getter=dg,
-                                     step_size=0.1,
-                                     stopping_criterion=sc,
-                                     seeds=seed_coordinates,
-                                     affine=affine)
-streamlines = Streamlines(streamline_generator)
-sft = StatefulTractogram(streamlines, img, Space.RASMM)
-save_tck(sft, "test_ptt.tck")
-
-import pdb; pdb.set_trace()
-
-
-def test_ptt_tracking(interactive=False):
+def test_ptt_tracking():
     fod_fname, seed_coordinates_fname, _ = get_fnames('ptt_minimal_dataset')
     fod, affine = load_nifti(fod_fname)
     seed_coordinates = np.loadtxt(seed_coordinates_fname)
@@ -75,13 +28,6 @@ def test_ptt_tracking(interactive=False):
 
     streamlines = Streamlines(streamline_generator)
     npt.assert_equal(len(streamlines), 100)
-
-    if interactive:
-        from fury import actor, window
-        st = actor.streamtube(streamlines)
-        scene = window.Scene()
-        scene.add(st)
-        window.show(scene)
 
 
 def test_PTTDirectionGetter():
@@ -142,8 +88,3 @@ def test_PTTDirectionGetter():
                           PTTDirectionGetter.from_shcoeff,
                           fit.shm_coeff, 90, unit_octahedron,
                           basis_type="not a basis")
-
-
-if __name__ == "__main__":
-    test_PTTDirectionGetter()
-    test_ptt_tracking(True)
