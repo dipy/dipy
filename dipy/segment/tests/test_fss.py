@@ -3,9 +3,9 @@ import numpy as np
 
 from dipy.data import get_fnames
 from dipy.io.streamline import load_tractogram
-from dipy.segment.search import (FastStreamlineSearch,
-                                 nearest_from_matrix_row,
-                                 nearest_from_matrix_col)
+from dipy.segment.fss import (FastStreamlineSearch,
+                              nearest_from_matrix_row,
+                              nearest_from_matrix_col)
 
 from dipy.testing import (assert_arrays_equal,
                           assert_greater,

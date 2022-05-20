@@ -1,9 +1,11 @@
 
+import warnings
 import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.spatial import cKDTree
 
 from dipy.tracking.streamline import set_number_of_points
+from dipy.segment.metric import mean_l2_func
 
 
 class FastStreamlineSearch:
@@ -24,14 +26,19 @@ class FastStreamlineSearch:
             Used to compute the overlap in-between bins.
         nb_mpts : int, optional
             Number of means points to improve computation speed.
+            (this only changes computation time)
         bin_size : float, optional
-            The maximum search radius will be limited by this value.
+            The bin size to separate streamlines in groups.
+            (this only changes computation time)
+        resampling : int, optional
+            Number of points used to reshape each streamline.
         bidirectional : bool, optional
             Compute the smallest distance with and without flip.
 
         Notes
         -----
         Make sure that streamlines are aligned in the same space.
+        Preferably in millimeter space (voxmm or rasmm).
 
         References
         ----------
@@ -39,11 +46,15 @@ class FastStreamlineSearch:
                         International Workshop on Computational Diffusion MRI,
                         pp. 82-95. Springer, Cham, 2021.
         """
-        if resampling % nb_mpts != 0:
-            raise ValueError("nb_mpts needs to be a factor of of resampling")
-
         if max_radius <= 0.0:
             raise ValueError("max_radius needs to be a positive value")
+
+        if resampling < 20:
+            raise warnings.warn("For accurate results, resampling should be"
+                                " at least >= 10 and preferably >= 20")
+
+        if resampling % nb_mpts != 0:
+            raise ValueError("nb_mpts needs to be a factor of resampling")
 
         self.nb_mpts = nb_mpts
         self.bin_size = bin_size
@@ -70,8 +81,7 @@ class FastStreamlineSearch:
         self.bin_shape = (box_length // bin_size).astype(int) + 1
 
         # Compute the center of each bin
-        nb_bins = np.prod(self.bin_shape)
-        bin_list = np.arange(nb_bins)
+        bin_list = np.arange(np.prod(self.bin_shape))
         all_bins = np.vstack(np.unravel_index(bin_list, self.bin_shape)).T
         bins_center = all_bins*bin_size + self.min_box + bin_size/2.0
 
@@ -86,9 +96,9 @@ class FastStreamlineSearch:
 
         # Compute bin indices, streamlines + mean-points tree
         self.bin_dict = {}
-        for i in range(nb_bins):
-            if baryc_bins[i]:
-                slines_id = np.asarray(baryc_bins[i])
+        for i, baryc_b in enumerate(baryc_bins):
+            if baryc_b:
+                slines_id = np.asarray(baryc_b)
                 self.bin_dict[i] = (slines_id, cKDTree(meanpts[slines_id]))
 
     def radius_search(self, streamlines, radius, use_negative=True):
@@ -117,6 +127,7 @@ class FastStreamlineSearch:
         Notes
         -----
         Given streamlines should be already aligned with ref streamlines.
+        Preferably in millimeter space (voxmm or rasmm).
 
         References
         ----------
@@ -126,7 +137,7 @@ class FastStreamlineSearch:
         """
         if radius > self.bin_overlap:
             raise ValueError("radius should be smaller or equal to the given"
-                             "\n 'max_radius' in FastStreamlineSearch")
+                             "\n 'max_radius' in FastStreamlineSearch init")
 
         # Resample query streamlines
         q_slines = self._resample(streamlines)
@@ -194,11 +205,11 @@ class FastStreamlineSearch:
     def _resample(self, streamlines):
         """Resample streamlines"""
         s = np.zeros([len(streamlines), self.resampling, 3], dtype=np.float32)
-        for i in range(len(streamlines)):
-            if len(streamlines[i]) < 2:
-                s[i] = streamlines[i]
+        for i, sline in enumerate(streamlines):
+            if len(sline) < 2:
+                s[i] = sline
             else:
-                s[i] = set_number_of_points(streamlines[i], self.resampling)
+                s[i] = set_number_of_points(sline, self.resampling)
         return s
 
     def _slines_barycenters(self, slines_arr):
@@ -278,13 +289,3 @@ def nearest_from_matrix_col(coo_matrix):
     nearest_id = np.squeeze(sparse_matrix.argmax(axis=0).data)[non_zero_ids]
     nearest_dist = upper_limit - np.squeeze(sparse_matrix.max(axis=0).data)
     return non_zero_ids, nearest_id, nearest_dist
-
-
-def mean_l2_func(a, b):
-    """Streamlines distance function: Average L2 (MDF without flip)"""
-    return np.mean(np.sqrt(np.sum(np.square(a - b), axis=-1)), axis=-1)
-
-
-def mean_l1_func(a, b):
-    """Streamlines distance function: Average L1"""
-    return np.mean(np.sum(np.abs(a - b), axis=-1), axis=-1)

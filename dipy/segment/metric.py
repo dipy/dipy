@@ -1,8 +1,9 @@
 
 __all__ = ["MinimumAverageDirectFlipMetric", "Metric",
            "AveragePointwiseEuclideanMetric", "CosineMetric", "dist",
-           "EuclideanMetric", "mdf"]
+           "EuclideanMetric", "mdf", "mean_l1_func", "mean_l2_func"]
 
+import numpy as np
 
 from dipy.segment.metricspeed import (SumPointwiseEuclideanMetric,
                                       MinimumAverageDirectFlipMetric,
@@ -39,3 +40,50 @@ def mdf(s1, s2):
                         vol 6, no 175, 2012.
     """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
+
+
+def mean_l1_func(a, b):
+    """ Compute the average L1 distance (MDF without flip)
+
+    Arrays are representing a single streamline or a list of streamlines
+    that have the same number of N-dimensional points (two last axis).
+
+    Parameters
+    ----------
+    a : 2D or 3D array
+        A streamline or concatenated streamlines
+        (array of S streamlines by P points in N dimension).
+    b : 2D or 3D array
+        A streamline or concatenated streamlines
+        (array of S streamlines by P points in N dimension).
+
+    Returns
+    -------
+    1D array
+        Distance between each S streamlines
+    """
+    return np.mean(np.sum(np.abs(a - b), axis=-1), axis=-1)
+
+
+def mean_l2_func(a, b):
+    """ Compute the average L2 distance (MDF without flip)
+
+    Arrays are representing a single streamline or a list of streamlines
+    that have the same number of N-dimensional points (two last axis).
+
+    Parameters
+    ----------
+    a : 2D or 3D array
+        A streamline or concatenated streamlines
+        (array of S streamlines by P points in N dimension).
+    b : 2D or 3D array
+        A streamline or concatenated streamlines
+        (array of S streamlines by P points in N dimension).
+
+    Returns
+    -------
+    1D array
+        Distance between each S streamlines
+    """
+    return np.mean(np.sqrt(np.sum(np.square(a - b), axis=-1)), axis=-1)
+

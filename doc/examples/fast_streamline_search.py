@@ -10,10 +10,11 @@ First import the necessary modules.
 """
 
 import numpy as np
+import time
 
 from dipy.data import get_target_tractogram_hcp, get_two_hcp842_bundles
 from dipy.io.streamline import load_trk
-from dipy.segment.search import FastStreamlineSearch, nearest_from_matrix_row
+from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_row
 from dipy.viz import actor, window
 
 """
@@ -97,8 +98,9 @@ The same list of streamlines can be given to recover the self distance matrix.
 """
 
 radius = 7.0
-fss = FastStreamlineSearch(ref_streamlines=model_af_l, max_radius=radius)
-coo_mdist_mtx = fss.radius_search(streamlines, radius=radius)
+fs_tree_af = FastStreamlineSearch(ref_streamlines=model_af_l, max_radius=radius)
+coo_mdist_mtx = fs_tree_af.radius_search(streamlines, radius=radius)
+
 
 """
 Extract indices of streamlines with an similar ones in the reference
