@@ -50,8 +50,8 @@ class FastStreamlineSearch:
             raise ValueError("max_radius needs to be a positive value")
 
         if resampling < 20:
-            raise warnings.warn("For accurate results, resampling should be"
-                                " at least >= 10 and preferably >= 20")
+            warnings.warn("For accurate results, resampling should be"
+                          " at least >= 10 and preferably >= 20")
 
         if resampling % nb_mpts != 0:
             raise ValueError("nb_mpts needs to be a factor of resampling")
