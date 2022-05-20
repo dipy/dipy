@@ -9,6 +9,9 @@ from dipy.sims.voxel import vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 from dipy.reconst.dti import fractional_anisotropy
 
+from dipy.utils.optpkg import optional_package
+cp, have_cvxpy, _ = optional_package("cvxpy")
+
 
 def test_from_3x3_to_6x1():
     """Test conversion to Voigt notation."""
@@ -66,6 +69,37 @@ def test_from_21x1_to_6x6():
     npt.assert_array_almost_equal(
         qti.from_21x1_to_6x6(qti.from_6x6_to_21x1(T)), T)
     npt.assert_raises(ValueError, qti.from_21x1_to_6x6, T)
+
+
+def test_cvxpy_1x6_to_3x3():
+    """Test conversion from Voigt notation."""
+    if have_cvxpy:
+        V = np.arange(1, 7)[:, np.newaxis].astype(float)
+        T = np.array(([1, 4.24264069, 3.53553391],
+                     [4.24264069, 2, 2.82842712],
+                     [3.53553391, 2.82842712, 3]))
+        npt.assert_array_almost_equal(qti.cvxpy_1x6_to_3x3(V).value, T)
+        npt.assert_array_almost_equal(
+            qti.cvxpy_1x6_to_3x3(qti.from_3x3_to_6x1(T)).value, T)
+    return
+
+
+def test_cvxpy_1x21_to_6x6():
+    """Test conversion from Voigt notation."""
+    if have_cvxpy:
+        V = np.arange(1, 22)[:, np.newaxis].astype(float)
+        T = np.array((
+            [1, 4.24264069, 3.53553391, 4.94974747, 5.65685425, 6.36396103],
+            [4.24264069, 2, 2.82842712, 7.07106781, 7.77817459, 8.48528137],
+            [3.53553391, 2.82842712, 3, 9.19238816, 9.89949494, 10.60660172],
+            [4.94974747, 7.07106781, 9.19238816, 16, 13.43502884, 14.8492424],
+            [5.65685425, 7.77817459, 9.89949494, 13.43502884, 17, 14.14213562],
+            [6.36396103, 8.48528137, 10.60660172, 14.8492424, 14.14213562, 18])
+            )
+        npt.assert_array_almost_equal(qti.cvxpy_1x21_to_6x6(V).value, T)
+        npt.assert_array_almost_equal(
+            qti.cvxpy_1x21_to_6x6(qti.from_6x6_to_21x1(T)).value, T)
+    return
 
 
 def test_helper_tensors():
@@ -244,9 +278,9 @@ def _qti_gtab():
     return gtab
 
 
-def test_ls_fits():
-    """Test ordinary and weighted least squares QTI fits by comparing the
-    estimated parameters to the ground-truth values."""
+def test_ls_sdp_fits():
+    """Test ordinary and weighted least squares and semidefinite programming
+    QTI fits by comparing the estimated parameters to the ground-truth values."""
     gtab = _qti_gtab()
     X = qti.design_matrix(gtab.btens)
     DTDs = [
@@ -269,6 +303,10 @@ def test_ls_fits():
         params = np.vstack((params, params))
         npt.assert_almost_equal(qti._ols_fit(data, mask, X, step=1), params)
         npt.assert_almost_equal(qti._wls_fit(data, mask, X, step=1), params)
+
+        if have_cvxpy:
+            npt.assert_almost_equal(qti._sdpdc_fit(data, mask, X,
+                                    cvxpy_solver='SCS'), params, decimal=2)
 
 
 def test_qti_model():
@@ -339,30 +377,62 @@ def test_qti_fit():
 
     # Fit QTI
     gtab = _qti_gtab()
-    for fit_method in ['OLS', 'WLS']:
-        qtimodel = qti.QtiModel(gtab, fit_method)
-        data = qtimodel.predict(params)
-        npt.assert_raises(ValueError, qtimodel.fit, data,
-                          np.ones(2))
-        npt.assert_raises(ValueError, qtimodel.fit, data,
-                          np.ones(data.shape))
-        for mask in [None, np.ones(data.shape[0:-1])]:
-            qtifit = qtimodel.fit(data, mask)
-            npt.assert_raises(ValueError, qtifit.predict,
-                              gradient_table(np.zeros(3), np.zeros((3, 3))))
-            npt.assert_almost_equal(qtifit.predict(gtab), data)
-            npt.assert_almost_equal(qtifit.S0_hat, S0)
-            npt.assert_almost_equal(qtifit.md, md)
-            npt.assert_almost_equal(qtifit.v_md, v_md)
-            npt.assert_almost_equal(qtifit.v_shear, v_shear)
-            npt.assert_almost_equal(qtifit.v_iso, v_iso)
-            npt.assert_almost_equal(qtifit.c_md, c_md)
-            npt.assert_almost_equal(qtifit.c_mu, c_mu)
-            npt.assert_almost_equal(qtifit.ufa, ufa)
-            npt.assert_almost_equal(qtifit.c_m, c_m)
-            npt.assert_almost_equal(qtifit.fa, fa)
-            npt.assert_almost_equal(qtifit.c_c, c_c)
-            npt.assert_almost_equal(qtifit.mk, mk)
-            npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
-            npt.assert_almost_equal(qtifit.k_shear, k_shear)
-            npt.assert_almost_equal(qtifit.k_mu, k_mu)
+    
+    if have_cvxpy:
+        for fit_method in ['OLS', 'WLS', 'SDPdc']:
+            qtimodel = qti.QtiModel(gtab, fit_method)
+            data = qtimodel.predict(params)
+            npt.assert_raises(ValueError, qtimodel.fit, data,
+                              np.ones((2)))
+            npt.assert_raises(ValueError, qtimodel.fit, data,
+                              np.ones(data.shape))
+            for mask in [None, np.ones(data.shape[0:-1])]:
+                qtifit = qtimodel.fit(data, mask)
+                npt.assert_raises(ValueError, qtifit.predict,
+                                  gradient_table(np.zeros(3), np.zeros((3, 3)))
+                                  )
+                npt.assert_almost_equal(qtifit.predict(gtab), data, decimal=2)
+                npt.assert_almost_equal(qtifit.S0_hat, S0, decimal=2)
+                npt.assert_almost_equal(qtifit.md, md, decimal=2)
+                npt.assert_almost_equal(qtifit.v_md, v_md, decimal=2)
+                npt.assert_almost_equal(qtifit.v_shear, v_shear, decimal=2)
+                npt.assert_almost_equal(qtifit.v_iso, v_iso, decimal=2)
+                npt.assert_almost_equal(qtifit.c_md, c_md, decimal=2)
+                npt.assert_almost_equal(qtifit.c_mu, c_mu, decimal=2)
+                npt.assert_almost_equal(qtifit.ufa, ufa, decimal=2)
+                npt.assert_almost_equal(qtifit.c_m, c_m, decimal=2)
+                npt.assert_almost_equal(qtifit.fa, fa, decimal=2)
+                npt.assert_almost_equal(qtifit.c_c, c_c, decimal=2)
+                npt.assert_almost_equal(qtifit.mk, mk, decimal=2)
+                npt.assert_almost_equal(qtifit.k_bulk, k_bulk, decimal=2)
+                npt.assert_almost_equal(qtifit.k_shear, k_shear, decimal=2)
+                npt.assert_almost_equal(qtifit.k_mu, k_mu, decimal=2)
+    else:
+        for fit_method in ['OLS', 'WLS']:
+            qtimodel = qti.QtiModel(gtab, fit_method)
+            data = qtimodel.predict(params)
+            npt.assert_raises(ValueError, qtimodel.fit, data,
+                              np.ones((2)))
+            npt.assert_raises(ValueError, qtimodel.fit, data,
+                              np.ones(data.shape))
+            for mask in [None, np.ones(data.shape[0:-1])]:
+                qtifit = qtimodel.fit(data, mask)
+                npt.assert_raises(ValueError, qtifit.predict,
+                                  gradient_table(np.zeros(3), np.zeros((3, 3)))
+                                  )
+                npt.assert_almost_equal(qtifit.predict(gtab), data)
+                npt.assert_almost_equal(qtifit.S0_hat, S0)
+                npt.assert_almost_equal(qtifit.md, md)
+                npt.assert_almost_equal(qtifit.v_md, v_md)
+                npt.assert_almost_equal(qtifit.v_shear, v_shear)
+                npt.assert_almost_equal(qtifit.v_iso, v_iso)
+                npt.assert_almost_equal(qtifit.c_md, c_md)
+                npt.assert_almost_equal(qtifit.c_mu, c_mu)
+                npt.assert_almost_equal(qtifit.ufa, ufa)
+                npt.assert_almost_equal(qtifit.c_m, c_m)
+                npt.assert_almost_equal(qtifit.fa, fa)
+                npt.assert_almost_equal(qtifit.c_c, c_c)
+                npt.assert_almost_equal(qtifit.mk, mk)
+                npt.assert_almost_equal(qtifit.k_bulk, k_bulk)
+                npt.assert_almost_equal(qtifit.k_shear, k_shear)
+                npt.assert_almost_equal(qtifit.k_mu, k_mu)

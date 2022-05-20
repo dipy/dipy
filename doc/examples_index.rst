@@ -163,6 +163,12 @@ Q-space Trajectory Imaging
 - :ref:`example_reconst_qti`
 
 
+Q-space Trajectory Imaging with positivity constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qtiplus`
+
+
 Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
