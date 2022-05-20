@@ -86,4 +86,3 @@ def mean_l2_func(a, b):
         Distance between each S streamlines
     """
     return np.mean(np.sqrt(np.sum(np.square(a - b), axis=-1)), axis=-1)
-
