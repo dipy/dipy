@@ -38,7 +38,7 @@ cdef double uniform_01():
     double
         random number
     """
-    return rand()/float(INT_MAX)
+    return rand() / float(INT_MAX)
 
 cdef double unidis_m1_p1():
     """Picks a random number between -1 and 1
@@ -63,7 +63,7 @@ cdef double norm(double[:] v):
     double
         norm of the vector
     """
-    return sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])
+    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 cdef void normalize(double[:] v):
     """Vector normalization
@@ -77,10 +77,10 @@ cdef void normalize(double[:] v):
     -----
     Overwrites the input vector
     """
-    cdef double scale = 1.0/sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2])
-    v[0] = v[0]*scale
-    v[1] = v[1]*scale
-    v[2] = v[2]*scale
+    cdef double scale = 1.0 / sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+    v[0] = v[0] * scale
+    v[1] = v[1] * scale
+    v[2] = v[2] * scale
 
 cdef double dot(double[:] v1, double[:] v2):
     """Dot product
@@ -97,7 +97,7 @@ cdef double dot(double[:] v1, double[:] v2):
     double
         dot product of input vectors
     """
-    return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
 cdef void cross(double[:] out, double[:] v1, double[:] v2):
     """Cross product
@@ -113,9 +113,9 @@ cdef void cross(double[:] out, double[:] v1, double[:] v2):
     -----
     Overwrites the first argument
     """
-    out[0] = v1[1]*v2[2] - v1[2]*v2[1]
-    out[1] = v1[2]*v2[0] - v1[0]*v2[2]
-    out[2] = v1[0]*v2[1] - v1[1]*v2[0]
+    out[0] = v1[1] * v2[2] - v1[2] * v2[1]
+    out[1] = v1[2] * v2[0] - v1[0] * v2[2]
+    out[2] = v1[0] * v2[1] - v1[1] * v2[0]
 
 cdef void getAUnitRandomVector(double[:] out):
     """Generate a unit random vector
@@ -173,10 +173,10 @@ cdef (double,double) getARandomPointWithinDisk(double r):
     """
     cdef double x = 1
     cdef double y = 1
-    while ((x*x+y*y)>1):
+    while ((x * x + y * y) > 1):
         x = unidis_m1_p1()
         y = unidis_m1_p1()
-    return (r*x,r*y)
+    return (r * x, r * y)
 
     """PTT tracking parameters
     """
@@ -287,9 +287,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                        pmf_threshold, **kwargs)
 
         # Initialize this PTF's internal tracking parameters
-        self.angular_separation = 2.0*M_PI/float(self.params.probe_count)
-        self.probe_step_size    = self.params.probe_length/(self.params.probe_quality-1)
-        self.probe_normalizer   = 1.0/float(self.params.probe_quality*self.params.probe_count)
+        self.angular_separation = 2.0 * M_PI / float(self.params.probe_count)
+        self.probe_step_size = self.params.probe_length / (self.params.probe_quality - 1)
+        self.probe_normalizer = 1.0 / float(self.params.probe_quality * self.params.probe_count)
 
 
     # First set the (initial) position of the parallel transport frame (PTF), i.e. set the seed point
@@ -338,7 +338,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         else:
             for c in range(self.params.probe_count):
                 for i in range(3):
-                    pp[i] = self.p[i] + self.F[1][i]*self.params.probe_radius*cos(c*self.params.angular_separation) + self.F[2][i]*self.params.probe_radius*sin(c*self.params.angular_separation)
+                    pp[i] = (self.p[i] +
+                             self.F[1][i] * self.params.probe_radius *
+                             cos(c * self.params.angular_separation) +
+                             self.F[2][i] * self.params.probe_radius *
+                             sin(c * self.params.angular_separation))
 
                 fod_amp = self.pmf_gen.get_pmf_value(pp, self.F[0])
                 self.last_val += fod_amp
@@ -357,14 +361,19 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3] T
 
         for i in range(3):
-            self.p[i]    = self.PP[0]*self.F[0][i] + self.PP[1]*self.F[1][i] + self.PP[2]*self.F[2][i] + self.p[i]
-            T[i]         = self.PP[3]*self.F[0][i] + self.PP[4]*self.F[1][i] + self.PP[5]*self.F[2][i]
-            self.F[2][i] = self.PP[6]*self.F[0][i] + self.PP[7]*self.F[1][i] + self.PP[8]*self.F[2][i]
+            self.p[i] = (self.PP[0] * self.F[0][i] +
+                         self.PP[1] * self.F[1][i] +
+                         self.PP[2] * self.F[2][i] + self.p[i])
+            T[i] = (self.PP[3] * self.F[0][i] + self.PP[4] * self.F[1][i]
+                    + self.PP[5] * self.F[2][i])
+            self.F[2][i] = (self.PP[6] * self.F[0][i] +
+                            self.PP[7] * self.F[1][i] +
+                            self.PP[8] * self.F[2][i])
 
         normalize(T)
-        cross(self.F[1],self.F[2],T)
+        cross(self.F[1], self.F[2], T)
         normalize(self.F[1])
-        cross(self.F[2],T,self.F[1])
+        cross(self.F[2], T, self.F[1])
 
         self.F[0][0] = T[0]
         self.F[0][1] = T[1]
@@ -397,8 +406,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             for j in range(3):
                 self.F[i][j] = self.init_F[i][j]
 
-        self.k1_cand  = self.init_k1
-        self.k2_cand  = self.init_k2
+        self.k1_cand = self.init_k1
+        self.k2_cand = self.init_k2
         self.last_val = self.init_last_val
 
         return
@@ -441,7 +450,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
         cdef double tto2
 
-        if (abs(self.k1_cand)<0.0001) & (abs(self.k2_cand)<0.0001):
+        if (abs(self.k1_cand) < 0.0001) & (abs(self.k2_cand) < 0.0001):
             self.PP[0] = t
             self.PP[1] = 0
             self.PP[2] = 0
@@ -452,31 +461,34 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.PP[7] = 0
             self.PP[8] = 1
         else:
-            if abs(self.k1_cand)<0.0001: self.k1_cand = 0.0001
-            if abs(self.k2_cand)<0.0001: self.k2_cand = 0.0001
+            if abs(self.k1_cand) < 0.0001:
+                self.k1_cand = 0.0001
+            if abs(self.k2_cand) < 0.0001:
+                self.k2_cand = 0.0001
 
-            tto2  = t*t/2.0
+            tto2  = t * t / 2.0
 
             self.PP[0] = t
-            self.PP[1] = self.k1_cand*tto2
-            self.PP[2] = self.k2_cand*tto2
-            self.PP[3] = 1-self.k2_cand*self.k2_cand*tto2-self.k1_cand*self.k1_cand*tto2
-            self.PP[4] = self.k1_cand*t
-            self.PP[5] = self.k2_cand*t
-            self.PP[6] = -self.k2_cand*t
-            self.PP[7] = -self.k1_cand*self.k2_cand*tto2
-            self.PP[8] = 1-self.k2_cand*self.k2_cand*tto2
+            self.PP[1] = self.k1_cand * tto2
+            self.PP[2] = self.k2_cand * tto2
+            self.PP[3] = (1 - self.k2_cand * self.k2_cand * tto2 -
+                          self.k1_cand * self.k1_cand * tto2)
+            self.PP[4] = self.k1_cand * t
+            self.PP[5] = self.k2_cand * t
+            self.PP[6] = -self.k2_cand * t
+            self.PP[7] = -self.k1_cand * self.k2_cand * tto2
+            self.PP[8] = 1 - self.k2_cand * self.k2_cand * tto2
 
     cdef double calcDataSupport(self):
         """Calculates data support for the candidate probe"""
 
-        cdef double        fod_amp
-        cdef double[3]    _p
+        cdef double fod_amp
+        cdef double[3] _p
         cdef double[3][3] _F
-        cdef double[3]    _T    = [0,0,0]
-        cdef double[3]    _N1     = [0,0,0]
-        cdef double[3]    _N2     = [0,0,0]
-        cdef double[3]     pp
+        cdef double[3] _T = [0,0,0]
+        cdef double[3] _N1 = [0,0,0]
+        cdef double[3] _N2 = [0,0,0]
+        cdef double[3] pp
 
         self.prepare_propagator(self.probe_step_size)
 
@@ -490,15 +502,18 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         for q in range(1, int(self.params.probe_quality)):
 
             for i in range(3):
-                _p[i] = self.PP[0]*_F[0][i] +  self.PP[1]*_F[1][i]  +  self.PP[2]*_F[2][i] + _p[i]
-                _T[i] = self.PP[3]*_F[0][i] +  self.PP[4]*_F[1][i]  +  self.PP[5]*_F[2][i]
+                _p[i] = (self.PP[0] * _F[0][i] +  self.PP[1] * _F[1][i] +
+                        self.PP[2] * _F[2][i] + _p[i])
+                _T[i] = (self.PP[3] * _F[0][i] + self.PP[4]*_F[1][i]  +
+                         self.PP[5] * _F[2][i])
 
             normalize(_T)
 
-            if q < (self.params.probe_quality-1):
+            if q < (self.params.probe_quality - 1):
 
                 for i in range(3):
-                    _N2[i]  = self.PP[6]*_F[0][i] +  self.PP[7]*_F[1][i]  +  self.PP[8]*_F[2][i]
+                    _N2[i] = (self.PP[6] * _F[0][i] +  self.PP[7]*_F[1][i] +
+                              self.PP[8]*_F[2][i])
 
                 cross(_N1,_N2,_T)
 
@@ -517,13 +532,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
                 if q == self.params.probe_quality-1:
                     for i in range(3):
-                        _N2[i]  = self.PP[6]*_F[0][i] +  self.PP[7]*_F[1][i]  +  self.PP[8]*_F[2][i]
+                        _N2[i] = (self.PP[6] * _F[0][i] +
+                                  self.PP[7] * _F[1][i] + self.PP[8] * _F[2][i])
                     cross(_N1,_N2,_T)
 
                 for c in range(int(self.params.probe_count)):
 
                     for i in range(3):
-                        pp[i] = _p[i] + _N1[i]*self.params.probe_radius*cos(c*self.params.angular_separation) + _N2[i]*self.params.probe_radius*sin(c*self.params.angular_separation)
+                        pp[i] = (_p[i] + _N1[i] * self.params.probe_radius *
+                                 cos(c*self.params.angular_separation) +
+                                 _N2[i] * self.params.probe_radius *
+                                 sin(c * self.params.angular_separation))
 
                     fod_amp = self.pmf_gen.get_pmf_value(pp, _T)
                     self.last_val_cand += fod_amp
@@ -576,13 +595,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.last_val = self.last_val_cand
 
                 for i in range(3):
-                    self.init_p[i]    =  self.p[i]
+                    self.init_p[i] = self.p[i]
                     self.init_F[0][i] = -self.F[0][i]
                     self.init_F[1][i] = -self.F[1][i]
-                    self.init_F[2][i] =  self.F[2][i]
+                    self.init_F[2][i] = self.F[2][i]
 
-                self.init_k1     = -self.k1
-                self.init_k2     =  self.k2
+                self.init_k1 = -self.k1
+                self.init_k2 =  self.k2
                 self.initialized = True
 
                 return TRACKPOINT
@@ -606,12 +625,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 posteriorMax = dataSupport
 
         # Compensation for underestimation of max posterior estimate
-        posteriorMax = pow(2.0*posteriorMax, self.params.data_support_exponent)
-        #print("Posterior Max: " + str(posteriorMax))
+        posteriorMax = pow(2.0 * posteriorMax,
+                           self.params.data_support_exponent)
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if uniform_01()*posteriorMax <= self.get_candidate():
+            if uniform_01() * posteriorMax <= self.get_candidate():
                 self.last_val = self.last_val_cand
                 return TRACKPOINT
 
@@ -651,11 +670,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         # An initial direction can be provided to the tracker for initialization
         # But for now let's assume no initialiation is done, i.e., [0,0,0]
         cdef double[3] seed_direction = [0,0,0]
-        cdef double[3] seed_point     = [seed[0],seed[1],seed[2]]
+        cdef double[3] seed_point = [seed[0], seed[1], seed[2]]
 
         # This step only initializes or flips the frame at the seed point.
         # It does not do any propagation, i.e., tracker is at the seed point and it is ready to propagate
         # Initialization basically checks whether the tracker has data support to move or propagate forward (but it does not move it)
+        # TO DO - temporarely disable: foward/backward stremline segments are generated independently
         ###if self.initialized:
         ###    self.flip()
         ###else:
@@ -674,7 +694,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             if stream_status == NODATASUPPORT:
                 break
             copy_point(<double *>&self.p[0], &streamline[i, 0])
-            stream_status = stopping_criterion.check_point_c(<double *>&self.p[0])
+            stream_status = stopping_criterion.check_point_c(<double * > &self.p[0])
             if stream_status == TRACKPOINT:
                 continue
             elif (stream_status == ENDPOINT or
