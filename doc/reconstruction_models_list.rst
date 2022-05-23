@@ -227,6 +227,14 @@
         <td><a href='https://doi.org/10.1016/j.neuroimage.2016.02.039'>Westin 2016</a></td>
     </tr>
     <tr>
+        <td><a href='#q-space-trajectory-imaging-with-positivity-constraints'>QTI+</a></td>
+        <td class='red'>No</td>
+        <td class='green'>Yes</td>
+        <td class='red'>No</td>
+        <td></td>
+        <td><a href='https://doi.org/10.1016/j.neuroimage.2021.118198'>Herberthson 2021</a></td>
+    </tr>
+    <tr>
         <td>Ball & Stick</td>
         <td class='green'>Yes</td>
         <td class='green'>Yes</td>
