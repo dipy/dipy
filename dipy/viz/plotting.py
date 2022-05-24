@@ -107,7 +107,7 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
     else:
         plt.show()
 
-        
+
 def compare_qti_maps(gt, fit1, fit2, mask,
                      maps=["fa", "ufa"],
                      fitname=["QTI", "QTI+"],
