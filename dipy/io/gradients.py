@@ -1,5 +1,6 @@
 from os.path import splitext
 import re
+import io
 import tempfile
 import warnings
 import numpy as np
