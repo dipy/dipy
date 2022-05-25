@@ -349,7 +349,7 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
         return self
 
 
-class PositiveDefiniteLeastSquares(object):
+class PositiveDefiniteLeastSquares:
 
     def __init__(self, m, A=None, L=None):
         r""" Regularized least squares with linear matrix inequality constraints
@@ -399,10 +399,7 @@ class PositiveDefiniteLeastSquares(object):
         self.L = L
 
         # Problem size
-        if A:
-            t = len(A)
-        else:
-            t = 0
+        t = len(A) if A else 0
         k = t - m - 1
 
         sparsity = [(i, j) for i in range(m) for j in range(i, m)]

@@ -123,7 +123,9 @@ We use the package CVXPY (https://www.cvxpy.org/) to solve convex optimization
 problems when ``positivity_constraint=True``, so we need to first install CVXPY.
 When using ``global_constraints=True`` to ensure global positivity, it is
 recommended to use the MOSEK solver (https://www.mosek.com/) together with CVXPY
-by setting ``cvxpy_solver='MOSEK'``.
+by setting ``cvxpy_solver='MOSEK'``. Different solvers can differ greatly in
+terms of runtime and solution accuracy, and in some cases solvers may show
+warnings about convergence or recommended option settings.
 
 For now we will generate the anisotropic models for different combinations.
 """
