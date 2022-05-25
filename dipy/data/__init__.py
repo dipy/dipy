@@ -326,7 +326,7 @@ def load_sdp_constraints(id, order=None):
     ----------
     id : string
         A string identifying the model that is to be constrained.
-    order : unsigned int
+    order : unsigned int, optional
         A non-negative integer that represent the order or instance of the
         model.
         Default: None.
