@@ -105,3 +105,7 @@ binary-release: clean
 
 build-stamp-source:
 	$(PYTHON) -c 'import cythexts; cythexts.build_stamp_source()'
+
+# Checks to see if local files pass formatting rules
+format:
+	python -m pycodestyle dipy
