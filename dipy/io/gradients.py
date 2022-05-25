@@ -45,20 +45,8 @@ def read_bvals_bvecs(fbvals, fbvecs):
             with open(this_fname, 'r') as f:
                 content = f.read()
 
-            # Note: no context manager used because of windows behavior
-            # where tempfile not visible while the while is still open,
-            # so explicit cleanup required
-            f = tempfile.SpooledTemporaryFile(suffix=".txt", mode="w+")
-            try:
-                # We replace coma and tab delimiter by space
-                replaced_content = re.sub(r'(\t|,)', ' ', content)
-                f.write(replaced_content)
-                f.flush()
-                f.seek(0)
-                numpy_data = np.loadtxt(f)
-                vals.append(np.squeeze(numpy_data))
-            finally:
-                f.close()
+            munged_content = io.StringIO(re.sub(r'(\t|,)', ' ', content))
+            vals.append(np.squeeze(np.loadtxt(munged_content)))
         elif ext == '.npy':
             vals.append(np.squeeze(np.load(this_fname)))
         else:
