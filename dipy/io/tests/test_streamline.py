@@ -11,6 +11,7 @@ from dipy.tracking.streamline import Streamlines
 import numpy as np
 import numpy.testing as npt
 import pytest
+from nibabel.streamlines.array_sequence import ArraySequence
 from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
@@ -207,6 +208,18 @@ def test_low_io_vtk():
         tracks = load_vtk_streamlines(fname)
         npt.assert_equal(len(tracks), len(streamlines))
         npt.assert_array_almost_equal(tracks[1], streamline, decimal=4)
+
+
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_no_strs_vtk():
+    with InTemporaryDirectory():
+        fname = 'test.fib'
+        empty_streamlines = [[]]
+
+        # Test save
+        save_vtk_streamlines(empty_streamlines, fname, binary=True)
+        empty_tracks = load_vtk_streamlines(fname)
+        npt.assert_equal(len(empty_tracks), len(empty_streamlines))
 
 
 def trk_loader(filename):

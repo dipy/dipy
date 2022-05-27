@@ -166,6 +166,8 @@ def transform_streamlines(streamlines, mat, in_place=False):
                 mat, new_streamlines._data).astype(old_data_dtype)
         return new_streamlines
     # supporting old data structure of streamlines
+    if len(streamlines) == 1 and len(streamlines[0]) == 0:
+        return streamlines
     return [apply_affine(mat, s) for s in streamlines]
 
 
