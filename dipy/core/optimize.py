@@ -479,7 +479,14 @@ class PositiveDefiniteLeastSquares:
         """
 
         # Compute and set reduced problem parameters
-        X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        try:
+            X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        except np.linalg.linalg.LinAlgError:
+            msg = 'Cholesky decomposition failed, returning zero array. Verify '
+            msg += 'that the data is sufficient to estimate the model '
+            msg += 'parameters, and that the design matrix has full rank.'
+            warnings.warn(msg)
+            return self._zeros
         self._X.value = X
         self._y.value = np.linalg.multi_dot([X, np.linalg.pinv(design_matrix),
                                              measurements])
