@@ -16,9 +16,9 @@ if exists('MANIFEST'):
 # force_setuptools can be set from the setup_egg.py script
 if 'force_setuptools' not in globals():
     # For some commands, always use setuptools
-    if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
-                'bdist_mpkg', 'bdist_wheel', 'install_egg_info', 'egg_info',
-                'easy_install')).intersection(sys.argv)) > 0:
+    if len({'develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
+            'bdist_mpkg', 'bdist_wheel', 'install_egg_info', 'egg_info',
+            'easy_install'}.intersection(sys.argv)) > 0:
         force_setuptools = True
     else:
         force_setuptools = False
