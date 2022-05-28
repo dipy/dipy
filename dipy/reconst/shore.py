@@ -664,7 +664,7 @@ def _kappa_odf(zeta, n, l):
 
 
 def l_shore(radial_order):
-    "Returns the angular regularisation matrix for SHORE basis"
+    """Returns the angular regularisation matrix for SHORE basis"""
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     diagL = np.zeros(n_c)
@@ -679,7 +679,7 @@ def l_shore(radial_order):
 
 
 def n_shore(radial_order):
-    "Returns the angular regularisation matrix for SHORE basis"
+    """Returns the angular regularisation matrix for SHORE basis"""
     F = radial_order / 2
     n_c = int(np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3)))
     diagN = np.zeros(n_c)
