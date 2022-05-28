@@ -215,10 +215,10 @@ class HorizonFlow(Workflow):
                 colors = numpy_support.vtk_to_numpy(vtk_colors)
                 colors = (colors - np.min(colors))/np.ptp(colors)
 
-                for i in range(n):
+                for j in range(n):
 
-                    if pvalues[i] < buan_thr:
-                        colors[ind == i] = buan_highlight
+                    if pvalues[j] < buan_thr:
+                        colors[ind == j] = buan_highlight
 
                 bundle_colors.append(colors)
 
