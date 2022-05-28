@@ -1158,6 +1158,6 @@ def _check_ornt(ornt):
         print(len(uniq))
         return True
     uniq = np.unique(ornt[:, 1])
-    if tuple(uniq) not in set([(-1, 1), (-1,), (1,)]):
+    if tuple(uniq) not in {(-1, 1), (-1,), (1,)}:
         print(tuple(uniq))
         return True
