@@ -344,7 +344,7 @@ def slicer_panel(scene, iren,
         istyle.force_render()
 
     def left_click_picker_callback(obj, ev):
-        ''' Get the value of the clicked voxel and show it in the panel.'''
+        """Get the value of the clicked voxel and show it in the panel."""
 
         event_pos = iren.GetEventPosition()
 
