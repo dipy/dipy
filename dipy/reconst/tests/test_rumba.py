@@ -22,9 +22,8 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 def test_rumba():
-    '''
-    Test fODF results from ideal examples.
-    '''
+
+    # Test fODF results from ideal examples.
 
     sphere = default_sphere  # repulsion 724
 
@@ -83,13 +82,34 @@ def test_rumba():
                 assert_equal(len(directions), len(golden_directions))
             if len(directions) > 3:
                 # Verify large isotropic fraction in isotropic case
-                assert_equal(model_fit.f_iso() > 0.8, True)
+                assert_equal(model_fit.f_iso > 0.8, True)
+
+
+def test_predict():
+
+    # Test signal reconstruction on ideal example
+
+    sphere = default_sphere
+
+    btable = np.loadtxt(get_fnames('dsi515btable'))
+    bvals = btable[:, 0]
+    bvecs = btable[:, 1:]
+    gtab = gradient_table(bvals, bvecs)
+
+    rumba = RumbaSDModel(gtab, n_iter=600, sphere=sphere)
+
+    # Simulated data
+    data = single_tensor(gtab, S0=1, evals=rumba.wm_response)
+    rumba_fit = rumba.fit(data)
+    data_pred = rumba_fit.predict()
+
+    assert_allclose(data_pred, data, atol=0.01, rtol=0.05)
 
 
 def test_recursive_rumba():
-    '''
-    Test with recursive data-driven response
-    '''
+
+    # Test with recursive data-driven response
+
     sphere = default_sphere  # repulsion 724
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -117,9 +137,9 @@ def test_recursive_rumba():
 
 
 def test_multishell_rumba():
-    '''
-    Test with multi-shell response
-    '''
+
+    # Test with multi-shell response
+
     sphere = default_sphere  # repulsion 724
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -143,9 +163,9 @@ def test_multishell_rumba():
 
 
 def test_mvoxel_rumba():
-    '''
-    Verify form of results in multi-voxel situation.
-    '''
+
+    # Verify form of results in multi-voxel situation.
+
     data, gtab = dsi_voxels()  # multi-voxel data
     sphere = default_sphere  # repulsion 724
 
@@ -198,9 +218,8 @@ def test_mvoxel_rumba():
 
 
 def test_global_fit():
-    '''
-    Test fODF results on ideal examples in global fitting paradigm.
-    '''
+
+    # Test fODF results on ideal examples in global fitting paradigm.
 
     sphere = default_sphere  # repulsion 724
 
@@ -271,9 +290,9 @@ def test_global_fit():
 
 
 def test_mvoxel_global_fit():
-    '''
-    Verify form of results in global fitting paradigm.
-    '''
+
+    # Verify form of results in global fitting paradigm.
+
     data, gtab = dsi_voxels()  # multi-voxel data
     sphere = default_sphere  # repulsion 724
 
@@ -317,9 +336,8 @@ def test_mvoxel_global_fit():
 
 
 def test_generate_kernel():
-    '''
-    Test form and content of kernel generation result.
-    '''
+
+    # Test form and content of kernel generation result.
 
     # load repulsion 724 sphere
     sphere = default_sphere
