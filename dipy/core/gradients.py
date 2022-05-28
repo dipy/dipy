@@ -1074,7 +1074,7 @@ def ornt_mapping(ornt1, ornt2):
     return mapping
 
 
-def reorient_vectors(input, current_ornt, new_ornt, axis=0):
+def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
     """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
@@ -1093,36 +1093,36 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     if isinstance(new_ornt, str):
         new_ornt = orientation_from_string(new_ornt)
 
-    n = input.shape[axis]
+    n = bvecs.shape[axis]
     if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
         raise ValueError("orientations do not match")
 
-    input = np.asarray(input)
+    bvecs = np.asarray(bvecs)
     mapping = ornt_mapping(current_ornt, new_ornt)
-    output = input.take(mapping[:, 0], axis)
+    output = bvecs.take(mapping[:, 0], axis)
     out_view = np.rollaxis(output, axis, output.ndim)
     out_view *= mapping[:, 1]
     return output
 
 
-def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
+def reorient_on_axis(bvecs, current_ornt, new_ornt, axis=0):
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
     if isinstance(new_ornt, str):
         new_ornt = orientation_from_string(new_ornt)
 
-    n = input.shape[axis]
+    n = bvecs.shape[axis]
     if current_ornt.shape != (n, 2) or new_ornt.shape != (n, 2):
         raise ValueError("orientations do not match")
 
     mapping = ornt_mapping(current_ornt, new_ornt)
-    order = [slice(None)] * input.ndim
+    order = [slice(None)] * bvecs.ndim
     order[axis] = mapping[:, 0]
-    shape = [1] * input.ndim
+    shape = [1] * bvecs.ndim
     shape[axis] = -1
     sign = mapping[:, 1]
     sign.shape = shape
-    output = input[order]
+    output = bvecs[order]
     output *= sign
     return output
 

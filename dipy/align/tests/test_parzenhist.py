@@ -368,9 +368,9 @@ def test_joint_pdf_gradients_dense():
         spacing = np.ones(dim, dtype=np.float64)
         mgrad, inside = vf.gradient(moving.astype(np.float32), moving_g2w,
                                     spacing, shape, grid_to_space)
-        id = transform.get_identity_parameters()
+        params = transform.get_identity_parameters()
         parzen_hist.update_gradient_dense(
-            id, transform, static.astype(np.float64),
+            params, transform, static.astype(np.float64),
             moved.astype(np.float64), grid_to_space,
             mgrad, smask, mmask)
         actual = np.copy(parzen_hist.joint_grad)
