@@ -174,7 +174,7 @@ def pft_tracker(
 cdef _pft_tracker(DirectionGetter dg,
                   AnatomicalStoppingCriterion sc,
                   double* seed,
-                  double* dir,
+                  double* direction,
                   double* voxel_size,
                   cnp.float_t[:, :] streamline,
                   cnp.float_t[:, :] directions,
@@ -197,23 +197,23 @@ cdef _pft_tracker(DirectionGetter dg,
 
     copy_point(seed, point)
     copy_point(seed, &streamline[0,0])
-    copy_point(dir, &directions[0, 0])
+    copy_point(direction, &directions[0, 0])
 
     stream_status[0] = TRACKPOINT
     pft_trial = 0
     i = 1
     strl_array_len = streamline.shape[0]
     while i < strl_array_len:
-        if dg.get_direction_c(point, dir):
+        if dg.get_direction_c(point, direction):
             # no valid diffusion direction to follow
             stream_status[0] = INVALIDPOINT
         else:
             for j in range(3):
                 # step forward
-                point[j] += dir[j] / voxel_size[j] * step_size
+                point[j] += direction[j] / voxel_size[j] * step_size
 
             copy_point(point, &streamline[i, 0])
-            copy_point(dir, &directions[i, 0])
+            copy_point(direction, &directions[i, 0])
             stream_status[0] = sc.check_point_c(point)
             i += 1
         if stream_status[0] == TRACKPOINT:
@@ -233,7 +233,7 @@ cdef _pft_tracker(DirectionGetter dg,
                 pft_trial += 1
                 # update the current point with the PFT results
                 copy_point(&streamline[i-1, 0], point)
-                copy_point(&directions[i-1, 0], dir)
+                copy_point(&directions[i-1, 0], direction)
 
                 if stream_status[0] != TRACKPOINT:
                     # The tracking stops. PFT returned a valid stopping point
