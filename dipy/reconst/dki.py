@@ -1565,12 +1565,11 @@ class DiffusionKurtosisModel(ReconstModel):
             str can be one of the following:
             'OLS' or 'ULLS' for ordinary least squares
                 dki.ols_fit_dki
-            'CLS', 'OLSP', 'ULLSP' or for LMI constrained ordinary least squares
+            'CLS' for LMI constrained ordinary least squares [2]
                 dki.ols_fit_dki_plus
             'WLS' or 'UWLLS' for weighted ordinary least squares
                 dki.wls_fit_dki
-            'CWLS', 'WLSP', 'UWLLSP' or 'Plus' for LMI constrained weighted
-            least squares
+            'CWLS' for LMI constrained weighted least squares [2]
                 dki.wls_fit_dki_plus
 
             callable has to have the signature:
@@ -1578,13 +1577,17 @@ class DiffusionKurtosisModel(ReconstModel):
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dki.ols_fit_dki, dki.wls_fit_dki,
-           dki.ols_fit_dki_plus for details
+           dki.ols_fit_dki_plus, dki.wls_fit_dki_plus for details
 
         References
         ----------
         .. [1] Tabesh, A., Jensen, J.H., Ardekani, B.A., Helpern, J.A., 2011.
-        Estimation of tensors and tensor-derived measures in diffusional
-        kurtosis imaging. Magn Reson Med. 65(3), 823-836
+               Estimation of tensors and tensor-derived measures in diffusional
+               kurtosis imaging. Magn Reson Med. 65(3), 823-836
+        .. [2] Dela Haije et al. "Enforcing necessary non-negativity constraints
+               for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
+
         """
         ReconstModel.__init__(self, gtab)
 
@@ -2798,10 +2801,5 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor,
                       'CLS' : ols_fit_dki_plus,
-                      'OLSP' : ols_fit_dki_plus,
-                      'ULLSP' : ols_fit_dki_plus,
-                      'CWLS' : wls_fit_dki_plus,
-                      'WLSP' : wls_fit_dki_plus,
-                      'UWLLSP' : wls_fit_dki_plus,
-                      'Plus' : wls_fit_dki_plus
+                      'CWLS' : wls_fit_dki_plus
                       }
