@@ -348,7 +348,8 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
         self.coef_ = coef
         return self
 
-class PositiveDefiniteLeastSquares(object):
+
+class PositiveDefiniteLeastSquares:
 
     def __init__(self, m, A=None, L=None):
         r""" Regularized least squares with linear matrix inequality constraints
@@ -398,10 +399,7 @@ class PositiveDefiniteLeastSquares(object):
         self.L = L
 
         # Problem size
-        if A:
-            t = len(A)
-        else:
-            t = 0
+        t = len(A) if A else 0
         k = t - m - 1
 
         sparsity = [(i, j) for i in range(m) for j in range(i, m)]
@@ -481,7 +479,14 @@ class PositiveDefiniteLeastSquares(object):
         """
 
         # Compute and set reduced problem parameters
-        X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        try:
+            X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        except np.linalg.linalg.LinAlgError:
+            msg = 'Cholesky decomposition failed, returning zero array. Verify '
+            msg += 'that the data is sufficient to estimate the model '
+            msg += 'parameters, and that the design matrix has full rank.'
+            warnings.warn(msg)
+            return self._zeros
         self._X.value = X
         self._y.value = np.linalg.multi_dot([X, np.linalg.pinv(design_matrix),
                                              measurements])
@@ -523,7 +528,7 @@ class PositiveDefiniteLeastSquares(object):
 
         except cvxpy.error.SolverError:
 
-            #Return zeros
+            # Return zeros
             msg = 'Optimization failed, returning zero array.'
             warnings.warn(msg)
             return self._zeros
