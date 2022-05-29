@@ -1,9 +1,9 @@
-
 from os.path import splitext
 import re
+import io
+import tempfile
 import warnings
 import numpy as np
-from nibabel.tmpdirs import InTemporaryDirectory
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
@@ -45,12 +45,9 @@ def read_bvals_bvecs(fbvals, fbvecs):
                    '.eddy_rotated_bvecs', '']:
             with open(this_fname, 'r') as f:
                 content = f.read()
-            # We replace coma and tab delimiter by space
-            with InTemporaryDirectory():
-                tmp_fname = "tmp_bvals_bvecs.txt"
-                with open(tmp_fname, 'w') as f:
-                    f.write(re.sub(r'(\t|,)', ' ', content))
-                vals.append(np.squeeze(np.loadtxt(tmp_fname)))
+
+            munged_content = io.StringIO(re.sub(r'(\t|,)', ' ', content))
+            vals.append(np.squeeze(np.loadtxt(munged_content)))
         elif ext == '.npy':
             vals.append(np.squeeze(np.load(this_fname)))
         else:
