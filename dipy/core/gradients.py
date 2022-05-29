@@ -1047,10 +1047,10 @@ def params_to_btens(bval, bdelta, b_eta):
     if bval < 0:
         raise ValueError("`bval` must be >= 0")
 
-    if not (bdelta >= -0.5 and bdelta <= 1):
+    if not -0.5 <= bdelta <= 1:
         raise ValueError("`delta` must be >= -0.5 and <= 1")
 
-    if not (b_eta >= 0 and b_eta <= 1):
+    if not 0 <= b_eta <= 1:
         raise ValueError("`b_eta` must be >= 0 and <= 1")
 
     m1 = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 2]])
