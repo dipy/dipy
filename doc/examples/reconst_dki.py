@@ -232,7 +232,7 @@ When instantiating the DiffusionKurtosisModel, the model can be set up to use
 constraints with the option `fit_method='CLS'` (for ordinary least squares) or
 with `fit_method='CWLS'` (for weighted least squares). Constrained fitting takes
 more time than unconstrained fitting, but is generally recommended to prevent
-physically unplausible parameter estimates [DelaHa2020]_.  For performance
+physically unplausible parameter estimates [DelaHa2020]_. For performance
 purposes it is recommended to use the MOSEK solver (https://www.mosek.com/) by
 setting ``cvxpy_solver='MOSEK'``
 """
