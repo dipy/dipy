@@ -59,8 +59,8 @@ from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 
 
-def loads_compat(bytes):
-    return pickle.loads(bytes, encoding='latin1')
+def loads_compat(byte_data):
+    return pickle.loads(byte_data, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
@@ -318,13 +318,13 @@ def matlab_life_results():
     return matlab_rmse, matlab_weights
 
 
-def load_sdp_constraints(id, order=None):
+def load_sdp_constraints(model_name, order=None):
     """Import semidefinite programming constraint matrices for different models,
     generated as described for example in [1]_.
 
     Parameters
     ----------
-    id : string
+    model_name : string
         A string identifying the model that is to be constrained.
     order : unsigned int, optional
         A non-negative integer that represent the order or instance of the
@@ -348,7 +348,7 @@ def load_sdp_constraints(id, order=None):
 
     """
 
-    file = id + '_constraint'
+    file = model_name + '_constraint'
     if order is not None:
         file += '_' + str(order)
     file += '.npz'

@@ -119,34 +119,34 @@ def test_peak_directions():
     sphere = fit.model.sphere
 
     # Only one peak
-    dir, val, ind = peak_directions(odf, sphere, .5, 45)
+    direction, val, ind = peak_directions(odf, sphere, .5, 45)
     dir_e = sphere.vertices[[argmax]]
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    assert_array_equal(dir, dir_e)
+    assert_array_equal(direction, dir_e)
 
     odf[0] = mx * .9
     # Two peaks, relative_threshold
-    dir, val, ind = peak_directions(odf, sphere, 1., 0)
+    direction, val, ind = peak_directions(odf, sphere, 1., 0)
     dir_e = sphere.vertices[[argmax]]
-    assert_array_equal(dir, dir_e)
+    assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    dir, val, ind = peak_directions(odf, sphere, .8, 0)
+    direction, val, ind = peak_directions(odf, sphere, .8, 0)
     dir_e = sphere.vertices[[argmax, 0]]
-    assert_array_equal(dir, dir_e)
+    assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
     assert_array_equal(val, odf[ind])
 
     # Two peaks, angle_sep
-    dir, val, ind = peak_directions(odf, sphere, 0., 90)
+    direction, val, ind = peak_directions(odf, sphere, 0., 90)
     dir_e = sphere.vertices[[argmax]]
-    assert_array_equal(dir, dir_e)
+    assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax])
     assert_array_equal(val, odf[ind])
-    dir, val, ind = peak_directions(odf, sphere, 0., 0)
+    direction, val, ind = peak_directions(odf, sphere, 0., 0)
     dir_e = sphere.vertices[[argmax, 0]]
-    assert_array_equal(dir, dir_e)
+    assert_array_equal(direction, dir_e)
     assert_array_equal(ind, [argmax, 0])
     assert_array_equal(val, odf[ind])
 

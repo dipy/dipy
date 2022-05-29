@@ -23,10 +23,10 @@ cdef void cumsum(
         int N) nogil:
     cdef:
         int i = 0
-        np.float_t sum = 0
+        np.float_t csum = 0
     for i in range(N):
-        sum += arr_in[i]
-        arr_out[i] = sum
+        csum += arr_in[i]
+        arr_out[i] = csum
 
 
 cdef void copy_point(

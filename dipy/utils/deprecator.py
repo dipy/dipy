@@ -296,8 +296,8 @@ def deprecated_params(old_name, new_name=None, since='', until='',
         if not isinstance(new_name, (list, tuple)):
             new_name = [new_name] * len(old_name)
 
-        if len(set([len(old_name), len(new_name), len(since),
-                    len(until), len(arg_in_kwargs)])) != 1:
+        if len({len(old_name), len(new_name), len(since), len(until),
+                len(arg_in_kwargs)}) != 1:
             raise ValueError("All parameters should have the same length")
     else:
         # To allow a uniform approach later on, wrap all arguments in lists.

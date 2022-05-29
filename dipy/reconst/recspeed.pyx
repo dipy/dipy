@@ -384,15 +384,15 @@ def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,
     """
     cdef:
         int m,i,j
-        double sum
+        double blocksum
 
     with nogil:
         j=0
         for m in range(outn):
-            sum=0
+            blocksum=0
             for i in range(j,j+blocks[m]):
-                sum+=arr[i]
-            out[m]=sum
+                blocksum+=arr[i]
+            out[m]=blocksum
             j+=blocks[m]
     return
 

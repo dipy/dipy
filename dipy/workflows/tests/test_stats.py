@@ -186,7 +186,7 @@ def test_bundle_analysis_tractometry_flow():
 
         # assert_true(dft.bundle.unique() == "temp")
 
-        assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
+        assert_true(set(dft.subject.unique()) == {'10001', '20002'})
 
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables

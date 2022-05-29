@@ -473,18 +473,18 @@ cdef inline cnp.npy_intp _bin_index(double normalized, int nbins,
 
     Returns
     -------
-    bin : int
+    bin_id : int
         index of the bin in which the normalized intensity 'normalized' lies
     """
     cdef:
-        cnp.npy_intp bin
+        cnp.npy_intp bin_id
 
-    bin = <cnp.npy_intp>normalized
-    if bin < padding:
+    bin_id = <cnp.npy_intp>normalized
+    if bin_id < padding:
         return padding
-    if bin > nbins - 1 - padding:
+    if bin_id > nbins - 1 - padding:
         return nbins - 1 - padding
-    return bin
+    return bin_id
 
 
 def cubic_spline(double[:] x):
@@ -619,10 +619,10 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp i, j, r, c
         double rn, cn
-        double val, spline_arg, sum
+        double val, spline_arg, total_sum
 
     joint[...] = 0
-    sum = 0
+    total_sum = 0
     valid_points = 0
     with nogil:
         smarginal[:] = 0
@@ -643,9 +643,9 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
                 for offset in range(-2, 3):
                     val = _cubic_spline(spline_arg)
                     joint[r, c + offset] += val
-                    sum += val
+                    total_sum += val
                     spline_arg += 1.0
-        if sum > 0:
+        if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
                     joint[i, j] /= valid_points
@@ -708,10 +708,10 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp k, i, j, r, c
         double rn, cn
-        double val, spline_arg, sum
+        double val, spline_arg, total_sum
 
     joint[...] = 0
-    sum = 0
+    total_sum = 0
     with nogil:
         valid_points = 0
         smarginal[:] = 0
@@ -733,13 +733,13 @@ cdef _compute_pdfs_dense_3d(double[:, :, :] static, double[:, :, :] moving,
                     for offset in range(-2, 3):
                         val = _cubic_spline(spline_arg)
                         joint[r, c + offset] += val
-                        sum += val
+                        total_sum += val
                         spline_arg += 1.0
 
-        if sum > 0:
+        if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= sum
+                    joint[i, j] /= total_sum
 
             for i in range(nbins):
                 smarginal[i] /= valid_points
@@ -789,10 +789,10 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
         cnp.npy_intp offset, valid_points
         cnp.npy_intp i, r, c
         double rn, cn
-        double val, spline_arg, sum
+        double val, spline_arg, total_sum
 
     joint[...] = 0
-    sum = 0
+    total_sum = 0
 
     with nogil:
         valid_points = 0
@@ -809,13 +809,13 @@ cdef _compute_pdfs_sparse(double[:] sval, double[:] mval, double smin,
             for offset in range(-2, 3):
                 val = _cubic_spline(spline_arg)
                 joint[r, c + offset] += val
-                sum += val
+                total_sum += val
                 spline_arg += 1.0
 
-        if sum > 0:
+        if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= sum
+                    joint[i, j] /= total_sum
 
             for i in range(nbins):
                 smarginal[i] /= valid_points
