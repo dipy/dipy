@@ -425,9 +425,9 @@ def test_affine_map():
     t = 0.15
     rotations = [-1 * np.pi / 10.0, 0.0, np.pi / 10.0]
     scales = [0.9, 1.0, 1.1]
-    for dim in [2, 3]:
+    for dim1 in [2, 3]:
         # Setup current dimension
-        if dim == 2:
+        if dim1 == 2:
             # Create image of a circle
             img = vf.create_circle(cod_shape[0], cod_shape[1], radius)
             oracle_linear = vf.transform_2d_affine
@@ -440,9 +440,9 @@ def test_affine_map():
             oracle_nn = vf.transform_3d_affine_nn
         img = np.array(img)
         # Translation is the only parameter differing for 2D and 3D
-        translations = [t * dom_shape[:dim]]
+        translations = [t * dom_shape[:dim1]]
         # Generate affine transforms
-        gt_affines = create_affine_transforms(dim, translations, rotations,
+        gt_affines = create_affine_transforms(dim1, translations, rotations,
                                               scales, rot_axis)
         # Include the None case
         gt_affines.append(None)
@@ -465,14 +465,15 @@ def test_affine_map():
             grid2grid_transform = affine
 
             # Evaluate the transform with vector_fields module (already tested)
-            expected_linear = oracle_linear(img, dom_shape[:dim],
+            expected_linear = oracle_linear(img, dom_shape[:dim1],
                                             grid2grid_transform)
-            expected_nn = oracle_nn(img, dom_shape[:dim], grid2grid_transform)
+            expected_nn = oracle_nn(img, dom_shape[:dim1], grid2grid_transform)
 
             # Evaluate the transform with the implementation under test
             affine_map = imaffine.AffineMap(affine,
-                                            dom_shape[:dim], domain_grid2world,
-                                            cod_shape[:dim],
+                                            dom_shape[:dim1],
+                                            domain_grid2world,
+                                            cod_shape[:dim1],
                                             codomain_grid2world)
             actual_linear = affine_map.transform(img, interpolation='linear')
             actual_nn = affine_map.transform(img, interpolation='nearest')
@@ -494,7 +495,7 @@ def test_affine_map():
                 # but not its reference
                 assert id(affine) != id(new_copy_affine)
                 actual = affine_map.affine.dot(affine_map.affine_inv)
-                assert_array_almost_equal(actual, np.eye(dim + 1))
+                assert_array_almost_equal(actual, np.eye(dim1 + 1))
 
             # Evaluate via the inverse transform
 
@@ -506,14 +507,15 @@ def test_affine_map():
             # transform
             aff_inv = None if affine is None else npl.inv(affine)
             aff_inv_inv = None if aff_inv is None else npl.inv(aff_inv)
-            expected_linear = oracle_linear(img, dom_shape[:dim],
+            expected_linear = oracle_linear(img, dom_shape[:dim1],
                                             aff_inv_inv)
-            expected_nn = oracle_nn(img, dom_shape[:dim], aff_inv_inv)
+            expected_nn = oracle_nn(img, dom_shape[:dim1], aff_inv_inv)
 
             affine_map = imaffine.AffineMap(aff_inv,
-                                            cod_shape[:dim],
+                                            cod_shape[:dim1],
                                             codomain_grid2world,
-                                            dom_shape[:dim], domain_grid2world)
+                                            dom_shape[:dim1],
+                                            domain_grid2world)
             actual_linear = affine_map.transform_inverse(
                 img, interpolation='linear')
             actual_nn = affine_map.transform_inverse(img,
@@ -522,8 +524,8 @@ def test_affine_map():
             assert_array_almost_equal(actual_nn, expected_nn)
 
         # Verify AffineMap can not be created with non-square matrix
-        non_square_shapes = [np.zeros((dim, dim + 1), dtype=np.float64),
-                             np.zeros((dim + 1, dim), dtype=np.float64)]
+        non_square_shapes = [np.zeros((dim1, dim1 + 1), dtype=np.float64),
+                             np.zeros((dim1 + 1, dim1), dtype=np.float64)]
         for nsq in non_square_shapes:
             assert_raises(AffineInversionError, AffineMap, nsq)
 
@@ -542,9 +544,9 @@ def test_affine_map():
             assert_raises(AffineInvalidValuesError, AffineMap, bad_aug)
 
         # Verify AffineMap cannot be created with a non-invertible matrix
-        invalid_nan = np.zeros((dim + 1, dim + 1), dtype=np.float64)
+        invalid_nan = np.zeros((dim1 + 1, dim1 + 1), dtype=np.float64)
         invalid_nan[1, 1] = np.nan
-        invalid_zeros = np.zeros((dim + 1, dim + 1), dtype=np.float64)
+        invalid_zeros = np.zeros((dim1 + 1, dim1 + 1), dtype=np.float64)
         assert_raises(
             imaffine.AffineInvalidValuesError,
             imaffine.AffineMap,
@@ -556,10 +558,10 @@ def test_affine_map():
 
         # Test exception is raised when the affine transform matrix is not
         # valid
-        invalid_shape = np.eye(dim)
+        invalid_shape = np.eye(dim1)
         affmap_invalid_shape = imaffine.AffineMap(invalid_shape,
-                                                  dom_shape[:dim], None,
-                                                  cod_shape[:dim], None)
+                                                  dom_shape[:dim1], None,
+                                                  cod_shape[:dim1], None)
         assert_raises(ValueError, affmap_invalid_shape.transform, img)
         assert_raises(ValueError, affmap_invalid_shape.transform_inverse, img)
 
@@ -575,18 +577,18 @@ def test_affine_map():
 
         # Verify exception is raised when attempting to warp an image of
         # invalid dimension
-        for dim in [2, 3]:
-            affine_map = imaffine.AffineMap(np.eye(dim),
-                                            cod_shape[:dim], None,
-                                            dom_shape[:dim], None)
+        for dim2 in [2, 3]:
+            affine_map = imaffine.AffineMap(np.eye(dim2),
+                                            cod_shape[:dim2], None,
+                                            dom_shape[:dim2], None)
             for sh in [(2,), (2, 2, 2, 2)]:
                 img = np.zeros(sh)
                 assert_raises(ValueError, affine_map.transform, img)
                 assert_raises(ValueError, affine_map.transform_inverse, img)
-            aff_sing = np.zeros((dim + 1, dim + 1))
-            aff_nan = np.zeros((dim + 1, dim + 1))
+            aff_sing = np.zeros((dim2 + 1, dim2 + 1))
+            aff_nan = np.zeros((dim2 + 1, dim2 + 1))
             aff_nan[...] = np.nan
-            aff_inf = np.zeros((dim + 1, dim + 1))
+            aff_inf = np.zeros((dim2 + 1, dim2 + 1))
             aff_inf[...] = np.inf
 
             assert_raises(

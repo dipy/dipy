@@ -43,16 +43,16 @@ def nifti1_symmat(image_data, *args, **kwargs):
     return image
 
 
-def make5d(input):
+def make5d(data):
     """reshapes the input to have 5 dimensions, adds extra dimensions just
     before the last dimension
     """
-    input = np.asarray(input)
-    if input.ndim > 5:
+    data = np.asarray(data)
+    if data.ndim > 5:
         raise ValueError("input is already more than 5d")
-    shape = input.shape
+    shape = data.shape
     shape = shape[:-1] + (1,)*(5-len(shape)) + shape[-1:]
-    return input.reshape(shape)
+    return data.reshape(shape)
 
 
 def decfa(img_orig, scale=False):

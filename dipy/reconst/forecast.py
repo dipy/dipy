@@ -150,7 +150,7 @@ class ForecastModel(OdfModel, Cache):
         self.bvals = np.round(gtab.bvals/100) * 100
         self.bvecs = gtab.bvecs
 
-        if sh_order >= 0 and not(bool(sh_order % 2)) and sh_order <= 12:
+        if 0 <= sh_order <= 12 and not bool(sh_order % 2):
             self.sh_order = sh_order
         else:
             msg = "sh_order must be a non-zero even positive number "

@@ -9,7 +9,7 @@ plt, have_plt, _ = optional_package("matplotlib.pyplot")
 
 
 def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
-                 fit_kwargs={}, map_kwargs={}, filename=None):
+                 fit_kwargs=None, map_kwargs=None, filename=None):
     """ Compare one or more scalar maps for different fits or models.
 
     Parameters:
@@ -44,6 +44,9 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
         Filename where the image will be saved.
         Default: None.
     """
+
+    fit_kwargs = fit_kwargs or {}
+    map_kwargs = map_kwargs or {}
 
     if not have_plt:
         raise ValueError('matplotlib package needed for visualization.')
@@ -111,10 +114,10 @@ def compare_maps(fits, maps, transpose=None, fit_labels=None, map_labels=None,
 
 
 def compare_qti_maps(gt, fit1, fit2, mask,
-                     maps=["fa", "ufa"],
-                     fitname=["QTI", "QTI+"],
-                     xlimits=[[0, 1], [0.4, 1.5]],
-                     disprange=[[0, 1], [0, 1]],
+                     maps=("fa", "ufa"),
+                     fitname=("QTI", "QTI+"),
+                     xlimits=([0, 1], [0.4, 1.5]),
+                     disprange=([0, 1], [0, 1]),
                      slice=13):
     """ Compare one or more qti derived maps obtained with
     different fitting routines.
@@ -130,13 +133,13 @@ def compare_qti_maps(gt, fit1, fit2, mask,
     mask : np.ndarray
         Boolean array indicating which voxels to retain for comparing
         the values
-    maps : list, optional
+    maps : array-like, optional
         QTI invariants to be compared
-    fitname : list, optional
+    fitname : array-like, optional
         Names of the used QTI fitting routines
-    xlimits : list, optional
+    xlimits : array-like, optional
         X-Axis limits for the histograms visualization
-    disprange : list, optional
+    disprange : array-like, optional
         Display range for maps
     slice : int, optional
         Axial brain slice to be visualized
