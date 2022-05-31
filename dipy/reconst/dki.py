@@ -1566,18 +1566,18 @@ class DiffusionKurtosisModel(ReconstModel):
             'OLS' or 'ULLS' for ordinary least squares
                 dki.ols_fit_dki
             'CLS' for LMI constrained ordinary least squares [2]
-                dki.ols_fit_dki_plus
+                dki.cls_fit_dki
             'WLS' or 'UWLLS' for weighted ordinary least squares
                 dki.wls_fit_dki
             'CWLS' for LMI constrained weighted least squares [2]
-                dki.wls_fit_dki_plus
+                dki.cwls_fit_dki
 
             callable has to have the signature:
                 fit_method(design_matrix, data, *args, **kwargs)
 
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See dki.ols_fit_dki, dki.wls_fit_dki,
-           dki.ols_fit_dki_plus, dki.wls_fit_dki_plus for details
+           dki.cls_fit_dki, dki.cwls_fit_dki for details
 
         References
         ----------
@@ -2349,8 +2349,8 @@ def wls_fit_dki(design_matrix, data):
     return dki_params
 
 
-def _olsp_iter(sdp, design_matrix, sig, cvxpy_solver=None):
-    """ Helper function used by ols_fit_dki_plus - Applies an LMI constrained
+def _cls_iter(sdp, design_matrix, sig, cvxpy_solver=None):
+    """ Helper function used by cls_fit_dki - Applies an LMI constrained
     OLS fit of the diffusion kurtosis model to single voxel signals.
 
     Parameters
@@ -2402,7 +2402,7 @@ def _olsp_iter(sdp, design_matrix, sig, cvxpy_solver=None):
     return dki_params
 
 
-def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
+def cls_fit_dki(design_matrix, data, cvxpy_solver=None):
     r""" Computes the diffusion and kurtosis tensors using a constrained
     linear least squares approach [2]_.
 
@@ -2458,7 +2458,7 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _olsp_iter(sdp, design_matrix, data_flat[vox],
+        dki_params[vox] = _cls_iter(sdp, design_matrix, data_flat[vox],
                                      cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
@@ -2467,9 +2467,9 @@ def ols_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
     return dki_params
 
 
-def _wlsp_iter(sdp, design_matrix, inv_design, sig,
+def _cwls_iter(sdp, design_matrix, inv_design, sig,
                cvxpy_solver=None):
-    """ Helper function used by wls_fit_dki_plus - Applies an LMI constrained
+    """ Helper function used by cwls_fit_dki - Applies an LMI constrained
     WLS fit of the diffusion kurtosis model to single voxel signals.
 
     Parameters
@@ -2530,7 +2530,7 @@ def _wlsp_iter(sdp, design_matrix, inv_design, sig,
     return dki_params
 
 
-def wls_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
+def cwls_fit_dki(design_matrix, data, cvxpy_solver=None):
     r""" Computes the diffusion and kurtosis tensors using a constrained
     weighted linear least squares (WLS) approach [2]_.
 
@@ -2589,7 +2589,7 @@ def wls_fit_dki_plus(design_matrix, data, cvxpy_solver=None):
 
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
-        dki_params[vox] = _wlsp_iter(sdp, design_matrix, inv_design,
+        dki_params[vox] = _cwls_iter(sdp, design_matrix, inv_design,
                                      data_flat[vox], cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
@@ -2800,6 +2800,6 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'RT': restore_fit_tensor,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor,
-                      'CLS' : ols_fit_dki_plus,
-                      'CWLS' : wls_fit_dki_plus
+                      'CLS' : cls_fit_dki,
+                      'CWLS' : cwls_fit_dki
                       }
