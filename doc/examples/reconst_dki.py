@@ -234,7 +234,9 @@ with `fit_method='CWLS'` (for weighted least squares). Constrained fitting takes
 more time than unconstrained fitting, but is generally recommended to prevent
 physically unplausible parameter estimates [DelaHa2020]_. For performance
 purposes it is recommended to use the MOSEK solver (https://www.mosek.com/) by
-setting ``cvxpy_solver='MOSEK'``
+setting ``cvxpy_solver='MOSEK'``. Different solvers can differ greatly in terms
+of runtime and solution accuracy, and in some cases solvers may show warnings
+about convergence or recommended option settings.
 """
 
 dkimodel_plus = dki.DiffusionKurtosisModel(gtab, fit_method='CLS')
