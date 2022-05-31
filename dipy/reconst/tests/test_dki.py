@@ -117,6 +117,18 @@ def test_dki_fits():
 
     assert_array_almost_equal(dki_wlsF.model_params, crossing_ref)
 
+    # CLS fitting
+    dki_clsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CLS")
+    dki_clsF = dki_clsM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_clsF.model_params, crossing_ref)
+
+    # CWLS fitting
+    dki_cwlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="CWLS")
+    dki_cwlsF = dki_cwlsM.fit(signal_cross)
+
+    assert_array_almost_equal(dki_cwlsF.model_params, crossing_ref)
+
     # NLS fitting
     dki_nlsM = dki.DiffusionKurtosisModel(gtab_2s, fit_method="NLS")
     dki_nlsF = dki_nlsM.fit(signal_cross)
