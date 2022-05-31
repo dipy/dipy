@@ -290,7 +290,7 @@ measures are computed and illustrated bellow:
 """
 
 compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
-             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0,'vmax': 1}],
+             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0, 'vmax': 1}],
              filename='Measures_from_kurtosis_tensor_only.png')
 
 """
