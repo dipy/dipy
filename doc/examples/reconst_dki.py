@@ -269,7 +269,7 @@ dkifit_noisy = dkimodel.fit(data[:, :, 9:10], mask=mask)
 dkifit_noisy_plus = dkimodel_plus.fit(data[:, :, 9:10], mask=mask)
 
 compare_maps([dkifit_noisy, dkifit_noisy_plus], ['mk', 'ak', 'rk'],
-             fit_labels=['DKI', 'DKI+'], map_kwargs={'vmin':0,'vmax':1.5},
+             fit_labels=['DKI', 'DKI+'], map_kwargs={'vmin': 0, 'vmax': 1.5},
              filename='Kurtosis_tensor_standard_measures_noisy.png')
 
 """
@@ -290,7 +290,7 @@ measures are computed and illustrated bellow:
 """
 
 compare_maps([dkifit_plus], ['mkt', 'kfa'], fit_labels=['DKI+'],
-             map_kwargs=[{'vmin':0,'vmax':1.5}, {'vmin':0,'vmax':1}],
+             map_kwargs=[{'vmin': 0, 'vmax': 1.5}, {'vmin': 0,'vmax': 1}],
              filename='Measures_from_kurtosis_tensor_only.png')
 
 """

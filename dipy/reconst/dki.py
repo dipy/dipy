@@ -2459,7 +2459,7 @@ def cls_fit_dki(design_matrix, data, cvxpy_solver=None):
     # looping OLS solution on all data voxels
     for vox in range(len(data_flat)):
         dki_params[vox] = _cls_iter(sdp, design_matrix, data_flat[vox],
-                                     cvxpy_solver=cvxpy_solver)
+                                    cvxpy_solver=cvxpy_solver)
 
     # Reshape data according to the input data shape
     dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
@@ -2800,6 +2800,6 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'RT': restore_fit_tensor,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor,
-                      'CLS' : cls_fit_dki,
-                      'CWLS' : cwls_fit_dki
+                      'CLS': cls_fit_dki,
+                      'CWLS': cwls_fit_dki
                       }
