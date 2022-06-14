@@ -2,8 +2,10 @@
 """ Classes and functions for fitting the diffusion kurtosis model """
 
 import numpy as np
+import warnings
 import scipy.optimize as opt
 import dipy.core.sphere as dps
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               from_lower_triangular,
                               lower_triangular, decompose_tensor,
@@ -19,6 +21,8 @@ from dipy.core.optimize import PositiveDefiniteLeastSquares
 from dipy.data import get_sphere, get_fnames, load_sdp_constraints
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
+
+## TEMP:
 from dipy.utils.optpkg import optional_package
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
@@ -1562,24 +1566,23 @@ class DiffusionKurtosisModel(ReconstModel):
         Parameters
         ----------
         gtab : GradientTable class instance
-
-        fit_method : str or callable
+            The gradient table for the data set
+        fit_method : str or callable, optional
             str can be one of the following:
-            'OLS' or 'ULLS' for ordinary least squares
-                dki.ols_fit_dki
-            'CLS' for LMI constrained ordinary least squares [2]
-                dki.cls_fit_dki
-            'WLS' or 'UWLLS' for weighted ordinary least squares
-                dki.wls_fit_dki
-            'CWLS' for LMI constrained weighted least squares [2]
-                dki.cwls_fit_dki
-
+                'OLS' or 'ULLS' for ordinary least squares
+                    dki.ols_fit_dki
+                'CLS' for LMI constrained ordinary least squares [2]
+                    dki.cls_fit_dki
+                'WLS', 'WLLS' or 'UWLLS' for weighted ordinary least squares
+                    dki.wls_fit_dki
+                'CWLS' for LMI constrained weighted least squares [2]
+                    dki.cwls_fit_dki
             callable has to have the signature:
                 fit_method(design_matrix, data, *args, **kwargs)
-
+            Default: "WLS"
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki,
-           dki.cls_fit_dki, dki.cwls_fit_dki for details
+           fit_method. See dki.ols_fit_dki, dki.wls_fit_dki, dki.cls_fit_dki,
+           dki.cwls_fit_dki for details
 
         References
         ----------
@@ -1593,66 +1596,115 @@ class DiffusionKurtosisModel(ReconstModel):
         """
         ReconstModel.__init__(self, gtab)
 
-        if not callable(fit_method):
-            try:
-                self.fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                raise ValueError('"' + str(fit_method) + '" is not a known '
-                                 'fit method, the fit method should either be '
-                                 'a function or one of the common fit methods')
-
-        self.design_matrix = design_matrix(self.gtab)
-        self.args = args
-        self.kwargs = kwargs
-        self.min_signal = self.kwargs.pop('min_signal', None)
-        if self.min_signal is not None and self.min_signal <= 0:
-            e_s = "The `min_signal` key-word argument needs to be strictly"
-            e_s += " positive."
-            raise ValueError(e_s)
-
         # Check if at least three b-values are given
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b:
-            mes = "DKI requires at least 3 b-values (which can include b=0)"
-            raise ValueError(mes)
+            msg = "DKI requires at least 3 b-values (which can include b=0)."
+            raise ValueError(msg)
 
-    def fit(self, data, mask=None):
-        """ Fit method of the DKI model class
+        self.common_fit_method = not callable(fit_method)
+        if self.common_fit_method:
+            try:
+                self.fit_method = common_fit_methods[fit_method]
+            except KeyError:
+                msg = '"' + str(fit_method) + '" is not a known fit method. The'
+                msg += ' fit method should either be a function or one of the'
+                msg += ' common fit methods.'
+                raise ValueError(msg)
 
-        Parameters
-        ----------
-        data : array
-            The measured signal from one voxel.
+        self.args = args
+        self.kwargs = kwargs
 
-        mask : array
-            A boolean array used to mark the coordinates in the data that
-            should be analyzed that has the shape data.shape[-1]
-
-        """
-        if mask is not None:
-            # Check for valid shape of the mask
-            if mask.shape != data.shape[:-1]:
-                raise ValueError("Mask is not the same shape as data.")
-            mask = np.array(mask, dtype=bool, copy=False)
-        data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
-
+        self.min_signal = self.kwargs.pop('min_signal', None)
         if self.min_signal is None:
-            min_signal = MIN_POSITIVE_SIGNAL
+            self.min_signal = MIN_POSITIVE_SIGNAL
+        elif self.min_signal <= 0:
+            msg = "The `min_signal` key-word argument needs to be strictly"
+            msg += " positive."
+            raise ValueError(msg)
+
+        self.design_matrix = design_matrix(self.gtab)
+        self.inverse_design_matrix = np.linalg.pinv(self.design_matrix)
+
+        tol = 1e-6
+        self.min_diffusivity = tol / -self.design_matrix.min()
+
+        self.convexity_constraint = fit_method in {'CLS', 'CWLS'}
+        if self.convexity_constraint:
+            self.cvxpy_solver = self.kwargs.pop('cvxpy_solver', None)
+            self.convexity_level = self.kwargs.pop('convexity_level', 2)
+            msg = "convexity_level must be a positive, even number, or 'full'."
+            if isinstance(self.convexity_level, str):
+                if self.convexity_level == 'full':
+                    self.sdp_constraints = load_sdp_constraints('dki')
+                else:
+                    raise ValueError(msg)
+            elif self.convexity_level < 0 or self.convexity_level % 2:
+                raise ValueError(msg)
+            else:
+                if self.convexity_level > 4:
+                    msg = "Maximum convexity_level supported is 4."
+                    warnings.warn(msg)
+                    self.convexity_level = 4
+                self.sdp_constraints = load_sdp_constraints(
+                    'dki', self.convexity_level)
+            self.sdp = PositiveDefiniteLeastSquares(22, A=self.sdp_constraints)
+
+        self.wls = fit_method in {'WLS', 'WLLS', 'UWLLS', 'CWLS'}
+
+    @multi_voxel_fit
+    def fit(self, data):
+        data_thres = np.maximum(data, self.min_signal)
+        if self.convexity_constraint:
+            params = self.fit_method(self.design_matrix, data_thres,
+                                     self.inverse_design_matrix, self.sdp,
+                                     weights=self.wls,
+                                     min_diffusivity=self.min_diffusivity,
+                                     cvxpy_solver=self.cvxpy_solver)
+        elif self.common_fit_method:
+            params = self.fit_method(self.design_matrix, data_thres)
+            # params = self.fit_method(self.design_matrix, data_thres,
+            #                          self.inverse_design_matrix, self.wls)
         else:
-            min_signal = self.min_signal
-
-        data_in_mask = np.maximum(data_in_mask, min_signal)
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
-
-        if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
-            dki_params = params_in_mask.reshape(out_shape)
-        else:
-            dki_params = np.zeros(data.shape[:-1] + (27,))
-            dki_params[mask, :] = params_in_mask
-
-        return DiffusionKurtosisFit(self, dki_params)
+            params = self.fit_method(self.design_matrix, data_thres, *self.args,
+                                     **self.kwargs)
+        return DiffusionKurtosisFit(self, params)
+    # def fit(self, data, mask=None):
+    #     """ Fit method of the DKI model class
+    #
+    #     Parameters
+    #     ----------
+    #     data : array
+    #         The measured signal from one voxel.
+    #     mask : array
+    #         A boolean array used to mark the coordinates in the data that
+    #         should be analyzed that has the shape data.shape[-1]
+    #
+    #     """
+    #     if mask is not None:
+    #         # Check for valid shape of the mask
+    #         if mask.shape != data.shape[:-1]:
+    #             raise ValueError("Mask is not the same shape as data.")
+    #         mask = np.array(mask, dtype=bool, copy=False)
+    #     data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
+    #
+    #     if self.min_signal is None:
+    #         min_signal = MIN_POSITIVE_SIGNAL
+    #     else:
+    #         min_signal = self.min_signal
+    #
+    #     data_in_mask = np.maximum(data_in_mask, min_signal)
+    #     params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
+    #                                      *self.args, **self.kwargs)
+    #
+    #     if mask is None:
+    #         out_shape = data.shape[:-1] + (-1, )
+    #         dki_params = params_in_mask.reshape(out_shape)
+    #     else:
+    #         dki_params = np.zeros(data.shape[:-1] + (27,))
+    #         dki_params[mask, :] = params_in_mask
+    #
+    #     return DiffusionKurtosisFit(self, dki_params)
 
     def predict(self, dki_params, S0=1.):
         """ Predict a signal for this DKI model class instance given parameters
@@ -2165,18 +2217,8 @@ def _ols_iter(inv_design, sig, min_diffusivity):
     log_s = np.log(sig)
     result = np.dot(inv_design, log_s)
 
-    # Extracting the diffusion tensor parameters from solution
-    DT_elements = result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
-                                    min_diffusivity=min_diffusivity)
-
-    # Extracting kurtosis tensor parameters from solution
-    MD_square = evals.mean(0)**2
-    KT_elements = result[6:21] / MD_square
-
     # Write output
-    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements), axis=0)
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     return dki_params
 
@@ -2281,20 +2323,10 @@ def _wls_iter(design_matrix, inv_design, sig, min_diffusivity):
     # DKI weighted linear least square solution
     inv_AT_W_A = np.linalg.pinv(np.dot(np.dot(A.T, W), A))
     AT_W_LS = np.dot(np.dot(A.T, W), log_s)
-    wls_result = np.dot(inv_AT_W_A, AT_W_LS)
-
-    # Extracting the diffusion tensor parameters from solution
-    DT_elements = wls_result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
-                                    min_diffusivity=min_diffusivity)
-
-    # Extracting kurtosis tensor parameters from solution
-    MD_square = evals.mean(0)**2
-    KT_elements = wls_result[6:21] / MD_square
+    result = np.dot(inv_AT_W_A, AT_W_LS)
 
     # Write output
-    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements), axis=0)
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     return dki_params
 
@@ -2353,46 +2385,11 @@ def wls_fit_dki(design_matrix, data):
     return dki_params
 
 
-def _cls_iter(sdp, design_matrix, sig, cvxpy_solver=None):
-    """ Helper function used by cls_fit_dki
-
-    Applies an LMI constrained OLS fit of the diffusion kurtosis model to single
-    voxel signals.
-
-    Parameters
-    ----------
-    sdp : PositiveDefiniteLeastSquares instance
-        A CVXPY representation of a regularized least squares optimization
-        problem.
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    sig : array (g,)
-        Diffusion-weighted signal for a single voxel data.
-    cvxpy_solver : str, optional
-        cvxpy solver name. Optionally optimize the positivity constraint with a
-        particular cvxpy solver. See http://www.cvxpy.org/ for details.
-        Default: None (cvxpy chooses its own solver).
-
-    Returns
-    -------
-    dki_params : array (27,)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    """
-
-    # DKI ordinary linear least square solution
-    log_s = np.log(sig)
-    result = sdp.solve(design_matrix, log_s, check=True, solver=cvxpy_solver)
-
+def params_to_dki_params(result, min_diffusivity=0):
     # Extracting the diffusion tensor parameters from solution
     DT_elements = result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
+    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements),
+                                    min_diffusivity=min_diffusivity)
 
     # Extracting kurtosis tensor parameters from solution
     MD_square = evals.mean(0)**2
@@ -2405,18 +2402,30 @@ def _cls_iter(sdp, design_matrix, sig, cvxpy_solver=None):
     return dki_params
 
 
-def cls_fit_dki(design_matrix, data, cvxpy_solver=None):
+def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
+                min_diffusivity=0, cvxpy_solver=None):
     r""" Compute the diffusion and kurtosis tensors using a constrained
-    linear least squares approach [1]_
+    ordinary or weighted linear least squares approach [1]_
 
     Parameters
     ----------
     design_matrix : array (g, 22)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : array (N, g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
+    data : array (g)
+        Data or response variables holding the data.
+    inverse_design_matrix : array (22, g)
+        Inverse of the design matrix.
+    sdp : PositiveDefiniteLeastSquares instance
+        A CVXPY representation of a regularized least squares optimization
+        problem.
+    wls : bool, optional
+        Parameter indicating whether weights are used. Default: True.
+    min_diffusivity : float, optional
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than `min_diffusivity`
+        are replaced with `min_diffusivity`.
     cvxpy_solver : str, optional
         cvxpy solver name. Optionally optimize the positivity constraint with a
         particular cvxpy solver. See http://www.cvxpy.org/ for details.
@@ -2424,14 +2433,13 @@ def cls_fit_dki(design_matrix, data, cvxpy_solver=None):
 
     Returns
     -------
-    dki_params : array (N, 27)
+    dki_params : array (27)
         All parameters estimated from the diffusion kurtosis model for all N
-        voxels.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
+        voxels. Parameters are ordered as follows:
+            1) Three diffusion tensor eigenvalues.
+            2) Three blocks of three elements, containing the first second and
+               third coordinates of the diffusion tensor eigenvectors.
+            3) Fifteen elements of the kurtosis tensor.
 
     References
     ----------
@@ -2440,162 +2448,22 @@ def cls_fit_dki(design_matrix, data, cvxpy_solver=None):
            NeuroImage 209, 2020, 116405.
     """
 
-    # Check for cvxpy solver
-    if not have_cvxpy:
-        raise ValueError('CVXPY package needed to enforce constraints.')
-    if cvxpy_solver is not None:
-        if cvxpy_solver not in cvxpy.installed_solvers():
-            msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-            msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
-            msg += " was expected."
-            raise ValueError(msg)
-
-    # Set up SDP solver
-    sdp_constraints = load_sdp_constraints('dki')
-    sdp = PositiveDefiniteLeastSquares(22, A=sdp_constraints)
-
-    # preparing data and initializing parameters
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 27))
-
-    # looping OLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        dki_params[vox] = _cls_iter(sdp, design_matrix, data_flat[vox],
-                                    cvxpy_solver=cvxpy_solver)
-
-    # Reshape data according to the input data shape
-    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
-
-    return dki_params
-
-
-def _cwls_iter(sdp, design_matrix, inv_design, sig,
-               cvxpy_solver=None):
-    """ Helper function used by cwls_fit_dki
-
-    Applies an LMI constrained WLS fit of the diffusion kurtosis model to single
-    voxel signals.
-
-    Parameters
-    ----------
-    sdp : PositiveDefiniteLeastSquares instance
-        A CVXPY representation of a regularized least squares optimization
-        problem.
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    inv_design : array (g, 22)
-        Inverse of the design matrix.
-    sig : array (g,)
-        Diffusion-weighted signal for a single voxel data.
-    cvxpy_solver : str, optional
-        cvxpy solver name. Optionally optimize the positivity constraint with a
-        particular cvxpy solver. See http://www.cvxpy.org/ for details.
-        Default: None (cvxpy chooses its own solver).
-
-    Returns
-    -------
-    dki_params : array (27,)
-        All parameters estimated from the diffusion kurtosis model.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first,
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    """
-
-    # DKI ordinary linear least square solution (initial guess)
-    log_s = np.log(sig)
-    ols_result = np.dot(inv_design, log_s)
+    # Set up least squares problem
+    A = design_matrix
+    y = np.log(data)
 
     # Define sqrt weights as diag(yn)
-    W = np.diag(np.exp(np.dot(design_matrix, ols_result)))
+    if weights:
+        result = np.dot(inverse_design_matrix, y)
+        W = np.diag(np.exp(np.dot(design_matrix, result)))
+        A = np.dot(W, design_matrix)
+        y = np.dot(W, y)
 
-    # Set up sdp
-    result = sdp.solve(np.dot(W, design_matrix), np.dot(W, log_s), check=True,
-                       solver=cvxpy_solver)
-
-    # Extracting the diffusion tensor parameters from solution
-    DT_elements = result[:6]
-    evals, evecs = decompose_tensor(from_lower_triangular(DT_elements))
-
-    # Extracting kurtosis tensor parameters from solution
-    MD_square = evals.mean(0)**2
-    KT_elements = result[6:21] / MD_square if MD_square else 0.*result[6:21]
+    # Solve sdp
+    result = sdp.solve(A, y, check=True, solver=cvxpy_solver)
 
     # Write output
-    dki_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                 KT_elements), axis=0)
-
-    return dki_params
-
-
-def cwls_fit_dki(design_matrix, data, cvxpy_solver=None):
-    r""" Compute the diffusion and kurtosis tensors using a constrained
-    weighted linear least squares (WLS) approach [1]_
-
-    Parameters
-    ----------
-    design_matrix : array (g, 22)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : array (N, g)
-        Data or response variables holding the data. Note that the last
-        dimension should contain the data. It makes no copies of data.
-    cvxpy_solver : str, optional
-        cvxpy solver name. Optionally optimize the positivity constraint with a
-        particular cvxpy solver. See http://www.cvxpy.org/ for details.
-        Default: None (cvxpy chooses its own solver).
-
-    Returns
-    -------
-    dki_params : array (N, 27)
-        All parameters estimated from the diffusion kurtosis model for all N
-        voxels.
-        Parameters are ordered as follows:
-            1) Three diffusion tensor's eigenvalues
-            2) Three lines of the eigenvector matrix each containing the first
-               second and third coordinates of the eigenvector
-            3) Fifteen elements of the kurtosis tensor
-
-    References
-    ----------
-    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints for
-           common diffusion MRI models using sum of squares programming".
-           NeuroImage 209, 2020, 116405.
-    """
-
-    # Check for cvxpy solver
-    if not have_cvxpy:
-        raise ValueError('CVXPY package needed to enforce constraints.')
-    if cvxpy_solver is not None:
-        if cvxpy_solver not in cvxpy.installed_solvers():
-            msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
-            msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
-            msg += " was expected."
-            raise ValueError(msg)
-
-    # Load constraints
-    sdp_constraints = load_sdp_constraints('dki')
-    sdp = PositiveDefiniteLeastSquares(22, A=sdp_constraints)
-
-    # Compute design matrix inverse
-    inv_design = np.linalg.pinv(design_matrix)
-
-    # preparing data and initializing parameters
-    data = np.asarray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
-    dki_params = np.empty((len(data_flat), 27))
-
-    # looping OLS solution on all data voxels
-    for vox in range(len(data_flat)):
-        dki_params[vox] = _cwls_iter(sdp, design_matrix, inv_design,
-                                     data_flat[vox], cvxpy_solver=cvxpy_solver)
-
-    # Reshape data according to the input data shape
-    dki_params = dki_params.reshape((data.shape[:-1]) + (27,))
+    dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
     return dki_params
 
@@ -2803,5 +2671,5 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor,
                       'CLS': cls_fit_dki,
-                      'CWLS': cwls_fit_dki
+                      'CWLS': cls_fit_dki
                       }
