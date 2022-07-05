@@ -557,10 +557,10 @@ def test_SphHarmFit():
     fit = SphHarmFit(None, coef, mask)
     item = fit[0, 0, 0]
     assert_equal(item.shape, ())
-    slice = fit[0]
-    assert_equal(slice.shape, (4, 5))
-    slice = fit[:, :, 0]
-    assert_equal(slice.shape, (3, 4))
+    data = fit[0]
+    assert_equal(data.shape, (4, 5))
+    data = fit[:, :, 0]
+    assert_equal(data.shape, (3, 4))
 
 
 class TestOpdtModel(TestQballModel):

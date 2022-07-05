@@ -37,7 +37,7 @@ class ReconstMAPMRIFlow(Workflow):
 
     def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
             b0_threshold=50.0, laplacian=True, positivity=True,
-            bval_threshold=2000, save_metrics=[],
+            bval_threshold=2000, save_metrics=(),
             laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
             out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
@@ -224,7 +224,7 @@ class ReconstDtiFlow(Workflow):
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, sigma=None,
-            save_metrics=[], out_dir='', out_tensor='tensors.nii.gz',
+            save_metrics=None, out_dir='', out_tensor='tensors.nii.gz',
             out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
             out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
             out_mode='mode.nii.gz', out_evec='evecs.nii.gz',
@@ -324,6 +324,8 @@ class ReconstDtiFlow(Workflow):
            estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
         """
+        save_metrics = save_metrics or []
+
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
@@ -730,7 +732,7 @@ class ReconstDkiFlow(Workflow):
         return 'dki'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=[],
+            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=None,
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -815,6 +817,8 @@ class ReconstDkiFlow(Workflow):
            estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
         """
+        save_metrics = save_metrics or []
+
         io_it = self.get_io_iterator()
 
         for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
@@ -922,7 +926,7 @@ class ReconstIvimFlow(Workflow):
         return 'ivim'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=[],
+            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=None,
             out_dir='', out_S0_predicted='S0_predicted.nii.gz',
             out_perfusion_fraction='perfusion_fraction.nii.gz',
             out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
@@ -979,6 +983,7 @@ class ReconstIvimFlow(Workflow):
                        and perfusion in intravoxel incoherent motion MR
                        imaging." Radiology 168.2 (1988): 497-505.
         """
+        save_metrics = save_metrics or []
 
         io_it = self.get_io_iterator()
 

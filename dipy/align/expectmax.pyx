@@ -63,9 +63,9 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     #Quantizing at zero levels is undefined
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
-    if(num_levels < 2):
+    if num_levels < 2:
         raise ValueError('Quantization levels must be at least 2')
-    if (num_levels >= 2**31):
+    if num_levels >= 2**31:
         raise ValueError('Quantization levels must be < 2**31')
 
     num_levels -= 1  # zero is one of the levels
@@ -74,19 +74,19 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
 
         for i in range(nrows):
             for j in range(ncols):
-                if(v[i, j] > 0):
-                    if((min_val < 0) or (v[i, j] < min_val)):
+                if v[i, j] > 0:
+                    if min_val < 0 or v[i, j] < min_val:
                         min_val = v[i, j]
-                    if(v[i, j] > max_val):
+                    if v[i, j] > max_val:
                         max_val = v[i, j]
         epsilon = 1e-8
         delta = (max_val - min_val + epsilon) / num_levels
         # notice that we decreased num_levels, so levels[0..num_levels] are well
         # defined
-        if((num_levels < 2) or (delta < epsilon)):
+        if num_levels < 2 or delta < epsilon:
             for i in range(nrows):
                 for j in range(ncols):
-                    if(v[i, j] > 0):
+                    if v[i, j] > 0:
                         out[i, j] = 1
                     else:
                         out[i, j] = 0
@@ -103,7 +103,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
             levels[i] = levels[i - 1] + delta
         for i in range(nrows):
             for j in range(ncols):
-                if(v[i, j] > 0):
+                if v[i, j] > 0:
                     l = ifloor((v[i, j] - min_val) / delta)
                     out[i, j] = l + 1
                     hist[l + 1] += 1
@@ -164,7 +164,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     #Quantizing at zero levels is undefined
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
-    if(num_levels < 2):
+    if num_levels < 2:
         raise ValueError('Quantization levels must be at least 2')
 
     num_levels -= 1  # zero is one of the levels
@@ -174,20 +174,20 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    if(v[k, i, j] > 0):
-                        if((min_val < 0) or (v[k, i, j] < min_val)):
+                    if v[k, i, j] > 0:
+                        if min_val < 0 or v[k, i, j] < min_val:
                             min_val = v[k, i, j]
-                        if(v[k, i, j] > max_val):
+                        if v[k, i, j] > max_val:
                             max_val = v[k, i, j]
         epsilon = 1e-8
         delta = (max_val - min_val + epsilon) / num_levels
         # notice that we decreased num_levels, so levels[0..num_levels] are well
         # defined
-        if((num_levels < 2) or (delta < epsilon)):
+        if num_levels < 2 or delta < epsilon:
             for k in range(nslices):
                 for i in range(nrows):
                     for j in range(ncols):
-                        if(v[k, i, j] > 0):
+                        if v[k, i, j] > 0:
                             out[k, i, j] = 1
                         else:
                             out[k, i, j] = 0
@@ -204,7 +204,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    if(v[k, i, j] > 0):
+                    if v[k, i, j] > 0:
                         l = ifloor((v[k, i, j] - min_val) / delta)
                         out[k, i, j] = l + 1
                         hist[l + 1] += 1
@@ -261,20 +261,20 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
     with nogil:
         for i in range(nrows):
             for j in range(ncols):
-                if(mask[i, j] != 0):
+                if mask[i, j] != 0:
                     means[labels[i, j]] += v[i, j]
                     counts[labels[i, j]] += 1
         for i in range(num_labels):
-            if(counts[i] > 0):
+            if counts[i] > 0:
                 means[i] /= counts[i]
         for i in range(nrows):
             for j in range(ncols):
-                if(mask[i, j] != 0):
+                if mask[i, j] != 0:
                     diff = v[i, j] - means[labels[i, j]]
                     variances[labels[i, j]] += diff ** 2
 
         for i in range(num_labels):
-            if(counts[i] > 1):
+            if counts[i] > 1:
                 variances[i] /= counts[i]
             else:
                 variances[i] = INF64
@@ -330,20 +330,20 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    if(mask[k, i, j] != 0):
+                    if mask[k, i, j] != 0:
                         means[labels[k, i, j]] += v[k, i, j]
                         counts[labels[k, i, j]] += 1
         for i in range(num_labels):
-            if(counts[i] > 0):
+            if counts[i] > 0:
                 means[i] /= counts[i]
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    if(mask[k, i, j] != 0):
+                    if mask[k, i, j] != 0:
                         diff = means[labels[k, i, j]] - v[k, i, j]
                         variances[labels[k, i, j]] += diff ** 2
         for i in range(num_labels):
-            if(counts[i] > 1):
+            if counts[i] > 1:
                 variances[i] /= counts[i]
             else:
                 variances[i] = INF64
@@ -430,7 +430,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                 else:
                     nrm2 = (gradient_moving[i, j, 0]**2 +
                             gradient_moving[i, j, 1]**2)
-                    if(sigma_sq_i == 0):
+                    if sigma_sq_i == 0:
                         if nrm2 == 0:
                             out[i, j, 0], out[i, j, 1] = 0, 0
                         else:
@@ -531,7 +531,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                         nrm2 = (gradient_moving[k, i, j, 0]**2 +
                                 gradient_moving[k, i, j, 1]**2 +
                                 gradient_moving[k, i, j, 2]**2)
-                        if(sigma_sq_i == 0):
+                        if sigma_sq_i == 0:
                             if nrm2 == 0:
                                 out[k, i, j, 0] = 0
                                 out[k, i, j, 1] = 0

@@ -3,10 +3,11 @@
 import json
 import pickle
 
-from os.path import join as pjoin, dirname
+from os.path import join as pjoin, dirname, exists
 
 import gzip
 import numpy as np
+from scipy.sparse import load_npz
 from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere, HemiSphere
 from dipy.data.fetcher import (get_fnames,
@@ -49,15 +50,17 @@ from dipy.data.fetcher import (get_fnames,
                                fetch_bundle_fa_hcp,
                                fetch_gold_standard_io,
                                fetch_resdnn_weights,
-                               read_qte_lte_pte)
+                               read_qte_lte_pte,
+                               read_DiB_70_lte_pte_ste,
+                               read_DiB_217_lte_pte_ste)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.io.image import load_nifti
 from dipy.tracking.streamline import relist_streamlines
 
 
-def loads_compat(bytes):
-    return pickle.loads(bytes, encoding='latin1')
+def loads_compat(byte_data):
+    return pickle.loads(byte_data, encoding='latin1')
 
 
 DATA_DIR = pjoin(dirname(__file__), 'files')
@@ -313,3 +316,51 @@ def matlab_life_results():
     matlab_rmse = np.load(pjoin(DATA_DIR, 'life_matlab_rmse.npy'))
     matlab_weights = np.load(pjoin(DATA_DIR, 'life_matlab_weights.npy'))
     return matlab_rmse, matlab_weights
+
+
+def load_sdp_constraints(model_name, order=None):
+    """Import semidefinite programming constraint matrices for different models,
+    generated as described for example in [1]_.
+
+    Parameters
+    ----------
+    model_name : string
+        A string identifying the model that is to be constrained.
+    order : unsigned int, optional
+        A non-negative integer that represent the order or instance of the
+        model.
+        Default: None.
+
+    Returns
+    -------
+    sdp_constraints : array
+        Constraint matrices
+
+    Notes
+    -----
+    The constraints will be loaded from a file named 'id_constraint_order.npz'.
+
+    References
+    ----------
+    .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
+           for common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
+
+    """
+
+    file = model_name + '_constraint'
+    if order is not None:
+        file += '_' + str(order)
+    file += '.npz'
+    path = pjoin(DATA_DIR, file)
+
+    if not exists(path):
+        raise ValueError("Constraints file '" + file + "' not found.")
+
+    try:
+        array = load_npz(path)
+        n, x = array.shape
+        sdp_constraints = [array[i*x:(i+1)*x] for i in range(n//x)]
+        return sdp_constraints
+    except Exception:
+        raise ValueError("Failed to read constraints file '" + file + "'.")

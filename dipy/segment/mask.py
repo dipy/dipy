@@ -14,12 +14,12 @@ except Exception:
 from scipy.ndimage import binary_dilation, generate_binary_structure
 
 
-def multi_median(input, median_radius, numpass):
+def multi_median(data, median_radius, numpass):
     """ Applies median filter multiple times on input data.
 
     Parameters
     ----------
-    input : ndarray
+    data : ndarray
         The input volume to apply filter on.
     median_radius : int
         Radius (in voxels) of the applied median filter
@@ -28,22 +28,22 @@ def multi_median(input, median_radius, numpass):
 
     Returns
     -------
-    input : ndarray
+    data : ndarray
         Filtered input volume.
     """
     # Array representing the size of the median window in each dimension.
-    medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
+    medarr = np.ones_like(data.shape) * ((median_radius * 2) + 1)
 
     if numpass > 1:
         # ensure the input array is not modified
-        input = input.copy()
+        data = data.copy()
 
     # Multi pass
-    output = np.empty_like(input)
+    output = np.empty_like(data)
     for i in range(0, numpass):
-        median_filter(input, medarr, output=output)
-        input, output = output, input
-    return input
+        median_filter(data, medarr, output=output)
+        data, output = output, data
+    return data
 
 
 def applymask(vol, mask):

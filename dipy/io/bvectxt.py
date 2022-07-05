@@ -58,7 +58,7 @@ def read_bvec_file(filename, atol=.001):
     grad_table[:, b_values > 0] = (grad_table[:, b_values > 0] /
                                    grad_norms[b_values > 0])
 
-    return (grad_table, b_values)
+    return grad_table, b_values
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
@@ -72,7 +72,7 @@ def ornt_mapping(ornt1, ornt2):
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
-def reorient_vectors(input, current_ornt, new_ornt, axis=0):
+def reorient_vectors(bvecs, current_ornt, new_ornt, axis=0):
     """Change the orientation of gradients or other vectors.
 
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
@@ -86,15 +86,15 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     I: Inferior
 
     """
-    return gradients.reorient_vectors(input=input, current_ornt=current_ornt,
+    return gradients.reorient_vectors(bvecs=bvecs, current_ornt=current_ornt,
                                       new_ornt=new_ornt, axis=axis)
 
 
 @deprecate_with_version("dipy.io.bvectxt module is deprecated, "
                         "Please use dipy.core.gradients module instead",
                         since='1.4', until='1.5')
-def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
-    return gradients.reorient_on_axis(input=input, current_ornt=current_ornt,
+def reorient_on_axis(bvecs, current_ornt, new_ornt, axis=0):
+    return gradients.reorient_on_axis(bvecs=bvecs, current_ornt=current_ornt,
                                       new_ornt=new_ornt, axis=axis)
 
 

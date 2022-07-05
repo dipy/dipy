@@ -162,7 +162,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
+def patch2self(data, bvals, patch_radius=(0, 0, 0), model='ols',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                b0_denoising=True, clip_negative_vals=False,
                shift_intensity=True):
@@ -265,10 +265,10 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
     data_dwi = np.squeeze(np.take(data, dwi_idx, axis=3))
 
     # create empty arrays
-    denoised_b0s = np.empty((data_b0s.shape), dtype=calc_dtype)
-    denoised_dwi = np.empty((data_dwi.shape), dtype=calc_dtype)
+    denoised_b0s = np.empty(data_b0s.shape, dtype=calc_dtype)
+    denoised_dwi = np.empty(data_dwi.shape, dtype=calc_dtype)
 
-    denoised_arr = np.empty((data.shape), dtype=calc_dtype)
+    denoised_arr = np.empty(data.shape, dtype=calc_dtype)
 
     if verbose is True:
         t1 = time.time()

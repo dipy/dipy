@@ -95,8 +95,8 @@ def test_diffeomorphic_map_2d():
     # Verify that the transform method accepts different image types (note that
     # the actual image contained integer values, we don't want to test
     # rounding)
-    for type in [floating, np.float64, np.int64, np.int32]:
-        moving_image = moving_image.astype(type)
+    for _type in [floating, np.float64, np.int64, np.int32]:
+        moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
         warped = diff_map.transform(moving_image, 'linear')
@@ -123,8 +123,8 @@ def test_diffeomorphic_map_2d():
                                        codomain_shape, codomain_grid2world,
                                        domain_shape, domain_grid2world, None)
     diff_map.backward = disp
-    for type in [floating, np.float64, np.int64, np.int32]:
-        moving_image = moving_image.astype(type)
+    for _type in [floating, np.float64, np.int64, np.int32]:
+        moving_image = moving_image.astype(_type)
 
         # warp using linear interpolation
         warped = diff_map.transform_inverse(moving_image, 'linear')
@@ -486,8 +486,9 @@ def test_ssd_2d_gauss_newton():
     optimizer.ITER_END_CALLED = 0
 
     optimizer.verbosity = VerbosityLevels.DEBUG
-    id = np.eye(3)
-    mapping = optimizer.optimize(static, moving, id, id, id)
+    transformation = np.eye(3)
+    mapping = optimizer.optimize(
+        static, moving, transformation, transformation, transformation)
     m = optimizer.get_map()
     assert_equal(mapping, m)
 
@@ -546,7 +547,7 @@ def get_warped_stacked_image(image, nslices, b, m):
     mapping.forward, mapping.backward = d, dinv
     wimage = mapping.transform(image)
 
-    if(nslices == 1):
+    if nslices == 1:
         return image, wimage
 
     # normalize and form the 3d by piling slices
@@ -574,7 +575,7 @@ def get_synthetic_warped_circle(nslices):
     mapping.forward, mapping.backward = d, dinv
     wcircle = mapping.transform(circle)
 
-    if(nslices == 1):
+    if nslices == 1:
         return circle, wcircle
 
     # normalize and form the 3d by piling slices

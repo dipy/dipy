@@ -174,7 +174,7 @@ class IvimModelTRR(ReconstModel):
     """
     def __init__(self, gtab, split_b_D=400.0, split_b_S0=200., bounds=None,
                  two_stage=True, tol=1e-15,
-                 x_scale=[1000., 0.1, 0.001, 0.0001],
+                 x_scale=(1000., 0.1, 0.001, 0.0001),
                  gtol=1e-15, ftol=1e-15, eps=1e-15, maxiter=1000):
 
         r"""
@@ -232,7 +232,7 @@ class IvimModelTRR(ReconstModel):
             Tolerance for convergence of minimization.
             default : 1e-15
 
-        x_scale : array, optional
+        x_scale : array-like, optional
             Scaling for the parameters. This is passed to `least_squares` which
             is only available for Scipy version > 0.17.
             default: [1000, 0.01, 0.001, 0.0001]
@@ -613,7 +613,7 @@ class IvimModelVP(ReconstModel):
         bounds = self.bounds
 
         # Optimizer #3: Nonlinear-Least Squares
-        res = least_squares(self.nlls_cost, x_f, bounds=(bounds),
+        res = least_squares(self.nlls_cost, x_f, bounds=bounds,
                             xtol=self.xtol, args=(data,))
         result = res.x
         f_est = result[0]

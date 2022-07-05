@@ -329,8 +329,7 @@ def eudx_both_directions(cnp.ndarray[double, ndim=1] seed,
         # ps2 is for downwards and ps for upwards propagation
         ps2[i] = ps[i]
     point = seed.copy()
-    track = []
-    track.append(point.copy())
+    track = [point.copy()]
     # track towards one direction
     while d:
         d = _propagation_direction(ps, dx, pqa, pin, pverts, qa_thr, ang_thr,

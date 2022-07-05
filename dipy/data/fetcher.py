@@ -15,7 +15,7 @@ import zipfile
 from dipy.core.gradients import (gradient_table,
                                  gradient_table_from_gradient_strength_bvecs)
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, load_nifti_data
+from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 
 from urllib.request import urlopen
 
@@ -100,7 +100,7 @@ def _get_file_data(fname, url):
             response_size = None
 
         with open(fname, 'wb') as data:
-            if(response_size is None):
+            if response_size is None:
                 copyfileobj(opener, data)
             else:
                 copyfileobj_withprogress(opener, data, response_size)
@@ -129,7 +129,7 @@ def fetch_data(files, folder, data_size=None):
 
     """
     if not os.path.exists(folder):
-        _log("Creating new folder %s" % (folder))
+        _log("Creating new folder %s" % folder)
         os.makedirs(folder)
 
     if data_size is not None:
@@ -148,7 +148,7 @@ def fetch_data(files, folder, data_size=None):
     if all_skip:
         _already_there_msg(folder)
     else:
-        _log("Files successfully downloaded to %s" % (folder))
+        _log("Files successfully downloaded to %s" % folder)
 
 
 def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
@@ -525,6 +525,61 @@ fetch_fury_surface = _make_fetcher(
     doc="Surface for testing and examples",
     data_size="11MB")
 
+fetch_DiB_70_lte_pte_ste = _make_fetcher(
+    'fetch_DiB_70_lte_pte_ste',
+    pjoin(dipy_home, 'DiB_70_lte_pte_ste'),
+    'https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/'
+    'raw/master/DATA/brain/NII_Boito_SubSamples/',
+    ['DiB_70_lte_pte_ste/DiB_70_lte_pte_ste.nii.gz',
+     'DiB_70_lte_pte_ste/bval_DiB_70_lte_pte_ste.bval',
+     'DiB_70_lte_pte_ste/bvec_DiB_70_lte_pte_ste.bvec',
+     'DiB_mask.nii.gz'],
+    ['DiB_70_lte_pte_ste.nii.gz',
+     'bval_DiB_70_lte_pte_ste.bval',
+     'bvec_DiB_70_lte_pte_ste.bvec',
+     'DiB_mask.nii.gz'],
+    doc='Download QTE data with linear, planar, ' +
+        'and spherical tensor encoding. If using this data please cite ' +
+        'F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and ' +
+        'spherical tensor-valued diffusion MRI data by free waveform ' +
+        'encoding in healthy brain, water, oil and liquid crystals. ' +
+        'Data in Brief (2019),' +
+        'DOI: https://doi.org/10.1016/j.dib.2019.104208',
+    md5_list=['11f2e0d53e19061654eb3cdfc8fe9827',
+              '15021885b4967437c8cf441c09045c25',
+              '1e6b867182da249f81aa9abd50e8b9f7',
+              '2ea48d80b6ae1c3da50cb44e615b09e5'],
+    data_size='51.1 MB')
+
+fetch_DiB_217_lte_pte_ste = _make_fetcher(
+    'fetch_DiB_217_lte_pte_ste',
+    pjoin(dipy_home, 'DiB_217_lte_pte_ste'),
+    'https://github.com/filip-szczepankiewicz/Szczepankiewicz_DIB_2019/'
+    'raw/master/DATA/brain/NII_Boito_SubSamples/',
+    ['DiB_217_lte_pte_ste/DiB_217_lte_pte_ste_1.nii.gz',
+     'DiB_217_lte_pte_ste/DiB_217_lte_pte_ste_2.nii.gz',
+     'DiB_217_lte_pte_ste/bval_DiB_217_lte_pte_ste.bval',
+     'DiB_217_lte_pte_ste/bvec_DiB_217_lte_pte_ste.bvec',
+     'DiB_mask.nii.gz'],
+    ['DiB_217_lte_pte_ste_1.nii.gz',
+     'DiB_217_lte_pte_ste_2.nii.gz',
+     'bval_DiB_217_lte_pte_ste.bval',
+     'bvec_DiB_217_lte_pte_ste.bvec',
+     'DiB_mask.nii.gz'],
+    doc='Download QTE data with linear, planar, ' +
+        'and spherical tensor encoding. If using this data please cite ' +
+        'F Szczepankiewicz, S Hoge, C-F Westin. Linear, planar and ' +
+        'spherical tensor-valued diffusion MRI data by free waveform ' +
+        'encoding in healthy brain, water, oil and liquid crystals. ' +
+        'Data in Brief (2019),' +
+        'DOI: https://doi.org/10.1016/j.dib.2019.104208',
+    md5_list=['424e9cf75b20bc1f7ae1acde26b26da0',
+              '8e70d14fb8f08065a7a0c4d3033179c6',
+              '1f657215a475676ce333299038df3a39',
+              '4220ca92f2906c97ed4c7287eb62c6f0',
+              '2ea48d80b6ae1c3da50cb44e615b09e5'],
+    data_size='166.3 MB')
+
 
 def get_fnames(name='small_64D'):
     """Provide full paths to example or test datasets.
@@ -713,6 +768,21 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_resdnn_weights()
         wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
         return wraw
+    if name == 'DiB_70_lte_pte_ste':
+        _, folder = fetch_DiB_70_lte_pte_ste()
+        fdata = pjoin(folder, 'DiB_70_lte_pte_ste.nii.gz')
+        fbval = pjoin(folder, 'bval_DiB_70_lte_pte_ste.bval')
+        fbvec = pjoin(folder, 'bvec_DiB_70_lte_pte_ste.bvec')
+        fmask = pjoin(folder, 'DiB_mask.nii.gz')
+        return fdata, fbval, fbvec, fmask
+    if name == 'DiB_217_lte_pte_ste':
+        _, folder = fetch_DiB_217_lte_pte_ste()
+        fdata_1 = pjoin(folder, 'DiB_217_lte_pte_ste_1.nii.gz')
+        fdata_2 = pjoin(folder, 'DiB_217_lte_pte_ste_2.nii.gz')
+        fbval = pjoin(folder, 'bval_DiB_217_lte_pte_ste.bval')
+        fbvec = pjoin(folder, 'bvec_DiB_217_lte_pte_ste.bvec')
+        fmask = pjoin(folder, 'DiB_mask.nii.gz')
+        return fdata_1, fdata_2, fbval, fbvec, fmask
 
 
 def read_qtdMRI_test_retest_2subjects():
@@ -893,7 +963,7 @@ def read_stanford_pve_maps():
     img_pve_csf = nib.load(f_pve_csf)
     img_pve_gm = nib.load(f_pve_gm)
     img_pve_wm = nib.load(f_pve_wm)
-    return (img_pve_csf, img_pve_gm, img_pve_wm)
+    return img_pve_csf, img_pve_gm, img_pve_wm
 
 
 def read_taiwan_ntu_dsi():
@@ -1228,17 +1298,17 @@ fetch_cenir_multib.__doc__ += CENIR_notes
 read_cenir_multib.__doc__ += CENIR_notes
 
 
-def read_bundles_2_subjects(subj_id='subj_1', metrics=['fa'],
-                            bundles=['af.left', 'cst.right', 'cc_1']):
+def read_bundles_2_subjects(subj_id='subj_1', metrics=('fa',),
+                            bundles=('af.left', 'cst.right', 'cc_1')):
     r"""Read images and streamlines from 2 subjects of the SNAIL dataset.
 
     Parameters
     ----------
     subj_id : string
         Either ``subj_1`` or ``subj_2``.
-    metrics : list
+    metrics : array-like
         Either ['fa'] or ['t1'] or ['fa', 't1']
-    bundles : list
+    bundles : array-like
         E.g., ['af.left', 'cst.right', 'cc_1']. See all the available bundles
         in the ``exp_bundles_maps/bundles_2_subjects`` directory of your
         ``$HOME/.dipy`` folder.
@@ -1440,5 +1510,81 @@ def read_qte_lte_pte():
     bvals = np.loadtxt(fbval)
     bvecs = np.loadtxt(fbvec)
     btens = np.array(['LTE' for i in range(61)] + ['PTE' for i in range(61)])
+    gtab = gradient_table(bvals, bvecs, btens=btens)
+    return data_img, mask_img, gtab
+
+
+def read_DiB_70_lte_pte_ste():
+    """Read q-space trajectory encoding data with 70 between linear, planar,
+    and spherical tensor encoding measurements.
+
+    Returns
+    -------
+    data_img : nibabel.nifti1.Nifti1Image
+        dMRI data image.
+    mask_img : nibabel.nifti1.Nifti1Image
+        Brain mask image.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table.
+    """
+    fdata, fbval, fbvec, fmask = get_fnames('DiB_70_lte_pte_ste')
+    data_img = nib.load(fdata)
+    mask_img = nib.load(fmask)
+    bvals = np.loadtxt(fbval)
+    bvecs = np.loadtxt(fbvec)
+    btens = np.array(['LTE' for i in range(1)] +
+                     ['LTE' for i in range(4)] +
+                     ['PTE' for i in range(3)] +
+                     ['STE' for i in range(3)] +
+                     ['STE' for i in range(4)] +
+                     ['LTE' for i in range(8)] +
+                     ['PTE' for i in range(5)] +
+                     ['STE' for i in range(5)] +
+                     ['LTE' for i in range(21)] +
+                     ['PTE' for i in range(10)] +
+                     ['STE' for i in range(6)])
+    gtab = gradient_table(bvals, bvecs, btens=btens)
+    return data_img, mask_img, gtab
+
+
+def read_DiB_217_lte_pte_ste():
+    """Read q-space trajectory encoding data with 217 between linear,
+    planar, and spherical tensor encoding.
+
+    Returns
+    -------
+    data_img : nibabel.nifti1.Nifti1Image
+        dMRI data image.
+    mask_img : nibabel.nifti1.Nifti1Image
+        Brain mask image.
+    gtab : dipy.core.gradients.GradientTable
+        Gradient table.
+    """
+    fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames('DiB_217_lte_pte_ste')
+    _, folder = fetch_DiB_217_lte_pte_ste()
+    if os.path.isfile(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz')):
+        data_img = nib.load(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz'))
+    else:
+        data_1, affine = load_nifti(fdata_1)
+        data_2, _ = load_nifti(fdata_2)
+        data = np.concatenate((data_1, data_2), axis=3)
+        save_nifti(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz'), data, affine)
+        data_img = nib.load(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz'))
+    mask_img = nib.load(fmask)
+    bvals = np.loadtxt(fbval)
+    bvecs = np.loadtxt(fbvec)
+    btens = np.array(['LTE' for i in range(13)] +
+                     ['LTE' for i in range(10)] +
+                     ['PTE' for i in range(10)] +
+                     ['STE' for i in range(10)] +
+                     ['LTE' for i in range(10)] +
+                     ['PTE' for i in range(10)] +
+                     ['STE' for i in range(10)] +
+                     ['LTE' for i in range(16)] +
+                     ['PTE' for i in range(16)] +
+                     ['STE' for i in range(10)] +
+                     ['LTE' for i in range(46)] +
+                     ['PTE' for i in range(46)] +
+                     ['STE' for i in range(10)])
     gtab = gradient_table(bvals, bvecs, btens=btens)
     return data_img, mask_img, gtab

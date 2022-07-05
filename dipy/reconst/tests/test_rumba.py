@@ -22,9 +22,8 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 
 
 def test_rumba():
-    '''
-    Test fODF results from ideal examples.
-    '''
+
+    # Test fODF results from ideal examples.
 
     sphere = default_sphere  # repulsion 724
     sphere2 = get_sphere('symmetric362')
@@ -91,9 +90,8 @@ def test_rumba():
 
 
 def test_predict():
-    '''
-    Test signal reconstruction on ideal example
-    '''
+
+    # Test signal reconstruction on ideal example
 
     sphere = default_sphere
 
@@ -113,9 +111,9 @@ def test_predict():
 
 
 def test_recursive_rumba():
-    '''
-    Test with recursive data-driven response
-    '''
+
+    # Test with recursive data-driven response
+
     sphere = default_sphere  # repulsion 724
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -147,9 +145,9 @@ def test_recursive_rumba():
 
 
 def test_multishell_rumba():
-    '''
-    Test with multi-shell response
-    '''
+
+    # Test with multi-shell response
+
     sphere = default_sphere  # repulsion 724
 
     btable = np.loadtxt(get_fnames('dsi515btable'))
@@ -173,9 +171,9 @@ def test_multishell_rumba():
 
 
 def test_mvoxel_rumba():
-    '''
-    Verify form of results in multi-voxel situation.
-    '''
+
+    # Verify form of results in multi-voxel situation.
+
     data, gtab = dsi_voxels()  # multi-voxel data
     sphere = default_sphere  # repulsion 724
 
@@ -227,9 +225,8 @@ def test_mvoxel_rumba():
 
 
 def test_global_fit():
-    '''
-    Test fODF results on ideal examples in global fitting paradigm.
-    '''
+
+    # Test fODF results on ideal examples in global fitting paradigm.
 
     sphere = default_sphere  # repulsion 724
 
@@ -300,9 +297,9 @@ def test_global_fit():
 
 
 def test_mvoxel_global_fit():
-    '''
-    Verify form of results in global fitting paradigm.
-    '''
+
+    # Verify form of results in global fitting paradigm.
+
     data, gtab = dsi_voxels()  # multi-voxel data
     sphere = default_sphere  # repulsion 724
 
@@ -347,9 +344,8 @@ def test_mvoxel_global_fit():
 
 
 def test_generate_kernel():
-    '''
-    Test form and content of kernel generation result.
-    '''
+
+    # Test form and content of kernel generation result.
 
     # load repulsion 724 sphere
     sphere = default_sphere

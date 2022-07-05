@@ -30,7 +30,7 @@ def test_ProbabilisticDirectionGetter():
 
         # Sample point and direction
         point = np.zeros(3)
-        dir = unit_octahedron.vertices[0].copy()
+        direction = unit_octahedron.vertices[0].copy()
 
         # make a dg from a fit
         with warnings.catch_warnings():
@@ -40,14 +40,14 @@ def test_ProbabilisticDirectionGetter():
             dg = ProbabilisticDirectionGetter.from_shcoeff(
                 fit.shm_coeff, 90, unit_octahedron)
 
-        state = dg.get_direction(point, dir)
+        state = dg.get_direction(point, direction)
         npt.assert_equal(state, 1)
 
         # Make a dg from a pmf
         N = unit_octahedron.theta.shape[0]
         pmf = np.zeros((3, 3, 3, N))
         dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, unit_octahedron)
-        state = dg.get_direction(point, dir)
+        state = dg.get_direction(point, direction)
         npt.assert_equal(state, 1)
 
         # pmf shape must match sphere
@@ -82,7 +82,7 @@ def test_ProbabilisticDirectionGetter():
 def test_DeterministicMaximumDirectionGetter():
     # Test the DeterministicMaximumDirectionGetter
 
-    dir = unit_octahedron.vertices[-1].copy()
+    direction = unit_octahedron.vertices[-1].copy()
     point = np.zeros(3)
     N = unit_octahedron.theta.shape[0]
 
@@ -90,7 +90,7 @@ def test_DeterministicMaximumDirectionGetter():
     pmf = np.zeros((3, 3, 3, N))
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 90,
                                                       unit_octahedron)
-    state = dg.get_direction(point, dir)
+    state = dg.get_direction(point, direction)
     npt.assert_equal(state, 1)
 
     # Test BF #1566 - bad condition in DeterministicMaximumDirectionGetter
@@ -98,5 +98,5 @@ def test_DeterministicMaximumDirectionGetter():
     pmf[0, 0, 0, 0] = 1
     dg = DeterministicMaximumDirectionGetter.from_pmf(pmf, 0,
                                                       unit_octahedron)
-    state = dg.get_direction(point, dir)
+    state = dg.get_direction(point, direction)
     npt.assert_equal(state, 1)

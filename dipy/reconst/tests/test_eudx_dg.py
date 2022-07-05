@@ -24,10 +24,10 @@ def test_EuDXDirectionGetter():
             odf[r] = 1
             return odf
 
-    def get_direction(dg, point, dir):
-        newdir = dir.copy()
+    def get_direction(dg, point, direction):
+        newdir = direction.copy()
         state = dg.get_direction(point, newdir)
-        return (state, np.array(newdir))
+        return state, np.array(newdir)
 
     data = np.random.random((3, 4, 5, 2))
     with warnings.catch_warnings():

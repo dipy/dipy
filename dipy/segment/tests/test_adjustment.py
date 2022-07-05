@@ -10,11 +10,11 @@ def test_adjustment():
 
     for y in range(128):
         for x in range(128):
-            if y > 10 and y < 115 and x > 10 and x < 115:
+            if 10 < y < 115 and 10 < x < 115:
                 imga[x, y] = 100
-            if y > 39 and y < 88 and x > 39 and x < 88:
+            if 39 < y < 88 and 39 < x < 88:
                 imga[x, y] = 150
-            if y > 59 and y < 69 and x > 59 and x < 69:
+            if 59 < y < 69 and 59 < x < 69:
                 imga[x, y] = 255
 
     high_1 = upper_bound_by_rate(imga)

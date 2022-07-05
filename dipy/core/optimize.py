@@ -1,10 +1,15 @@
 """A unified interface for performing and debugging optimization problems."""
 
 import abc
+import warnings
 import numpy as np
 import scipy.sparse as sps
 import scipy.optimize as opt
 from scipy.optimize import minimize
+from packaging.version import Version
+from dipy.utils.optpkg import optional_package
+
+cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
 
 class Optimizer(object):
@@ -342,3 +347,188 @@ class NonNegativeLeastSquares(SKLearnLinearSolver):
         coef, rnorm = opt.nnls(X, y)
         self.coef_ = coef
         return self
+
+
+class PositiveDefiniteLeastSquares:
+
+    def __init__(self, m, A=None, L=None):
+        r""" Regularized least squares with linear matrix inequality constraints
+
+        Generate a CVXPY representation of a regularized least squares
+        optimization problem subject to linear matrix inequality constraints.
+
+        Parameters
+        ----------
+        m : int
+            Positive int indicating the number of regressors.
+        A : array (t = m + k + 1, p, p) (optional)
+            Constraint matrices $A$.
+        L : array (m, m) (optional)
+            Regularization matrix $L$.
+            Default: None.
+
+        Notes
+        -----
+        The basic problem is to solve for $h$ the minimization of
+
+        $c=\|X h - y\|^2 + \|L h\|^2$,
+
+        where $X$ is an (m, m) upper triangular design matrix and $y$ is a set
+        of m measurements, subject to the constraint that
+
+        $M=A_0+\sum_{i=0}^{m-1} h_i A_{i+1}+\sum_{j=0}^{k-1} s_j A_{m+j+1}>0$,
+
+        where $s_j$ are slack variables and where the inequality sign denotes
+        positive definiteness of the matrix $M$. The sparsity pattern and size
+        of $X$ and $y$ are fixed, because every design matrix and set of
+        measurements can be reduced to an equivalent (minimal) formulation of
+        this type.
+
+        This formulation is used here mainly to enforce polynomial
+        sum-of-squares constraints on various models, as described in [1]_.
+
+        References
+        ----------
+        .. [1] Dela Haije et al. "Enforcing necessary non-negativity constraints
+               for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
+        """
+
+        # Input
+        self.A = A
+        self.L = L
+
+        # Problem size
+        t = len(A) if A else 0
+        k = t - m - 1
+
+        sparsity = [(i, j) for i in range(m) for j in range(i, m)]
+
+        # Unknowns
+        self._X = cvxpy.Parameter((m, m), sparsity=sparsity)    # Design matrix
+        self._f = cvxpy.Parameter(m)    # Given solution for feasibility check
+        self._h = cvxpy.Variable(m)     # Solution to constrained problem
+        self._y = cvxpy.Parameter(m)    # Regressand
+
+        # Error output
+        self._zeros = np.zeros(m)
+
+        # Objective
+        if Version(cvxpy.__version__) < Version('1.1'):
+            c = self._X*self._h - self._y
+            if L is not None:
+                c += L*self._h
+        else:
+            c = self._X@self._h - self._y
+            if L is not None:
+                c += L@self._h
+
+        f_objective = cvxpy.Minimize(0)
+        p_objective = cvxpy.Minimize(cvxpy.norm(c))
+
+        # Constraints
+        if t:
+            M = F = A[0]
+            if k > 0:
+                for i in range(m):
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+                self._s = cvxpy.Variable(k)
+                for j in range(k):
+                    F += self._s[j] * A[m + j + 1]
+                    M += self._s[j] * A[m + j + 1]
+            else:
+                for i in range(t - 1):
+                    F += self._f[i] * A[i + 1]
+                    M += self._h[i] * A[i + 1]
+            f_constraints = [F >> 0]
+            p_constraints = [M >> 0]
+        else:
+            f_constraints = p_constraints = []
+
+        # CVXPY problems
+        self.problem = cvxpy.Problem(p_objective, p_constraints)
+        self.unconstrained_problem = cvxpy.Problem(p_objective)
+        self.feasibility_problem = cvxpy.Problem(f_objective, f_constraints)
+
+    def solve(self, design_matrix, measurements, check=False, **kwargs):
+        r""" Solve CVXPY problem
+
+        Solve a CVXPY problem instance for a given design matrix and a given set
+        of observations, and return the optimum.
+
+        Parameters
+        ----------
+        design_matrix : array (n, m)
+            Design matrix.
+        measurements : array (n)
+            Measurements.
+        check : boolean (optional)
+            If True check whether the unconstrained optimization solution
+            already satisfies the constraints, before running the constrained
+            optimization. This adds overhead, but can avoid unnecessary
+            constrained optimization calls.
+            Default: False
+        kwargs : keyword arguments
+            Arguments passed to the CVXPY solve method.
+
+        Returns
+        -------
+        h : array (m)
+             Estimated optimum for problem variables $h$.
+        """
+
+        # Compute and set reduced problem parameters
+        try:
+            X = np.linalg.cholesky(np.dot(design_matrix.T, design_matrix)).T
+        except np.linalg.linalg.LinAlgError:
+            msg = 'Cholesky decomposition failed, returning zero array. Verify '
+            msg += 'that the data is sufficient to estimate the model '
+            msg += 'parameters, and that the design matrix has full rank.'
+            warnings.warn(msg)
+            return self._zeros
+        self._X.value = X
+        self._y.value = np.linalg.multi_dot([X, np.linalg.pinv(design_matrix),
+                                             measurements])
+
+        try:
+
+            # Check unconstrained solution
+            if check:
+
+                # Solve unconstrained problem
+                self.unconstrained_problem.solve(**kwargs)
+
+                # Return zeros if optimization failed
+                status = self.unconstrained_problem.status
+                if status != 'optimal':
+                    msg = 'Solver failed to produce an optimum: %s.' % status
+                    warnings.warn(msg)
+                    msg = 'Optimization failed, returning zero array.'
+                    warnings.warn(msg)
+                    return self._zeros
+
+                # Return unconstrained solution if satisfactory
+                self._f.value = self._h.value
+                self.feasibility_problem.solve(**kwargs)
+                if self.feasibility_problem.status == 'optimal':
+                    return np.asarray(self._h.value).squeeze()
+
+            # Solve constrained problem
+            self.problem.solve(**kwargs)
+
+            # Show warning if solution is not optimal
+            status = self.problem.status
+            if status != 'optimal':
+                msg = 'Solver failed to produce an optimum: %s.' % status
+                warnings.warn(msg)
+
+            # Return solution
+            return np.asarray(self._h.value).squeeze()
+
+        except cvxpy.error.SolverError:
+
+            # Return zeros
+            msg = 'Optimization failed, returning zero array.'
+            warnings.warn(msg)
+            return self._zeros
