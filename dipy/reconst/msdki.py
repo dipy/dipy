@@ -631,8 +631,7 @@ def wls_fit_msdki(design_matrix, msignal, ng, mask=None,
         # WLS fitting
         BTW = np.dot(design_matrix.T, W)
         inv_BT_W_B = np.linalg.pinv(np.dot(BTW, design_matrix))
-        invBTWB_BTW = np.dot(inv_BT_W_B, BTW)
-        p = np.dot(invBTWB_BTW, np.log(msignal[v]))
+        p = np.linalg.multi_dot([inv_BT_W_B, BTW, np.log(msignal[v])])
 
         # Process parameters
         p[1] = p[1] / (p[0]**2)
