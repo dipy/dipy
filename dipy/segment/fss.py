@@ -5,7 +5,7 @@ from scipy.sparse import coo_matrix
 from scipy.spatial import cKDTree
 
 from dipy.tracking.streamline import set_number_of_points
-from dipy.segment.metric import mean_l2_func
+from dipy.segment.metric import mean_euclidean_dist
 
 
 class FastStreamlineSearch:
@@ -15,7 +15,7 @@ class FastStreamlineSearch:
 
         Generate the Binned K-D Tree structure with reference streamlines,
         using streamlines barycenter and mean-points.
-        See [StOnge2021]_ for further details.
+        See [StOnge2022]_ for further details.
 
         Parameters
         ----------
@@ -42,9 +42,9 @@ class FastStreamlineSearch:
 
         References
         ----------
-        .. [StOnge2021] St-Onge E. et al. Fast Tractography Streamline Search,
-                        International Workshop on Computational Diffusion MRI,
-                        pp. 82-95. Springer, Cham, 2021.
+        .. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
+                        An Exact Technique for Diffusion MRI Tractography.
+                        Neuroinformatics, 2022.
         """
         if max_radius <= 0.0:
             raise ValueError("max_radius needs to be a positive value")
@@ -60,7 +60,7 @@ class FastStreamlineSearch:
         self.bin_size = bin_size
         self.bidirectional = bidirectional
         self.resampling = resampling
-        self.bin_overlap = max_radius
+        self.max_radius = max_radius
 
         # Resample streamlines
         self.ref_slines = self._resample(ref_streamlines)
@@ -74,8 +74,9 @@ class FastStreamlineSearch:
         barycenters = self._slines_barycenters(self.ref_slines)
 
         # Compute bin shape (min, max, shape)
-        self.min_box = np.min(barycenters, axis=0) - self.bin_overlap
-        self.max_box = np.max(barycenters, axis=0) + self.bin_overlap
+        bin_overlap = max_radius
+        self.min_box = np.min(barycenters, axis=0) - bin_overlap
+        self.max_box = np.max(barycenters, axis=0) + bin_overlap
 
         box_length = self.max_box - self.min_box
         self.bin_shape = (box_length // bin_size).astype(int) + 1
@@ -83,11 +84,11 @@ class FastStreamlineSearch:
         # Compute the center of each bin
         bin_list = np.arange(np.prod(self.bin_shape))
         all_bins = np.vstack(np.unravel_index(bin_list, self.bin_shape)).T
-        bins_center = all_bins*bin_size + self.min_box + bin_size/2.0
+        bins_center = all_bins * bin_size + self.min_box + bin_size / 2.0
 
         # Assign a list of streamlines to each bin
         baryc_tree = cKDTree(barycenters)
-        center_dist = bin_size/2.0 + self.bin_overlap
+        center_dist = bin_size / 2.0 + bin_overlap
         baryc_bins = baryc_tree.query_ball_point(bins_center, center_dist,
                                                  p=np.inf)
 
@@ -105,7 +106,7 @@ class FastStreamlineSearch:
         """ Radius Search using Fast Streamline Search
 
         For each given streamlines, return all reference streamlines
-        within the given radius. See [StOnge2021]_ for further details.
+        within the given radius. See [StOnge2022]_ for further details.
 
         Parameters
         ----------
@@ -131,11 +132,11 @@ class FastStreamlineSearch:
 
         References
         ----------
-        .. [StOnge2021] St-Onge E. et al. Fast Tractography Streamline Search,
-                        International Workshop on Computational Diffusion MRI,
-                        pp. 82-95. Springer, Cham, 2021.
+        .. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
+                        An Exact Technique for Diffusion MRI Tractography.
+                        Neuroinformatics, 2022.
         """
-        if radius > self.bin_overlap:
+        if radius > self.max_radius:
             raise ValueError("radius should be smaller or equal to the given"
                              "\n 'max_radius' in FastStreamlineSearch init")
 
@@ -172,8 +173,8 @@ class FastStreamlineSearch:
                     if ref_ids:
                         cur_sline_id = slines_id[s]
                         ref_sline_ids = slines_id_ref[ref_ids]
-                        d = mean_l2_func(q_slines[cur_sline_id],
-                                         self.ref_slines[ref_sline_ids])
+                        d = mean_euclidean_dist(q_slines[cur_sline_id],
+                                                self.ref_slines[ref_sline_ids])
 
                         # Return all pairs within the radius
                         in_dist_max = d < radius

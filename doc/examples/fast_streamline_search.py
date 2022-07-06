@@ -3,7 +3,7 @@
 Fast Streamline Search
 ======================
 
-This example explains how Fast Streamline Search [StOnge2021]_
+This example explains how Fast Streamline Search [StOnge2022]_
 can be used to find all similar streamlines.
 
 First import the necessary modules.
@@ -11,7 +11,8 @@ First import the necessary modules.
 
 import numpy as np
 
-from dipy.data import get_target_tractogram_hcp, get_two_hcp842_bundles
+from dipy.data import (get_target_tractogram_hcp, get_two_hcp842_bundles,
+                       fetch_bundle_atlas_hcp842, fetch_target_tractogram_hcp)
 from dipy.io.streamline import load_trk
 from dipy.segment.fss import FastStreamlineSearch, nearest_from_matrix_row
 from dipy.viz import actor, window
@@ -19,6 +20,8 @@ from dipy.viz import actor, window
 """
 Download and read data for this tutorial
 """
+fetch_bundle_atlas_hcp842()
+fetch_target_tractogram_hcp()
 
 hcp_file = get_target_tractogram_hcp()
 streamlines = load_trk(hcp_file, "same", bbox_valid_check=False).streamlines
@@ -76,7 +79,7 @@ else:
 """
 
 """
-Search for all similar streamlines  [StOnge2021]_
+Search for all similar streamlines  [StOnge2022]_
 
 Fast Streamline Search can do a radius search
 to find all streamlines that are similar to from one tractogram to another.
@@ -115,7 +118,6 @@ let's visualize streamlines similar to the Arcuate Fasciculus Left bundle
 
 scene = window.Scene()
 scene.SetBackground(1, 1, 1)
-scene.add(actor.line(model_af_l, colors=(0, 1, 0)))
 scene.add(actor.line(recognized_af_l, colors=(0, 0, 1)))
 scene.set_camera(focal_point=(-18.17281532, -19.55606842, 6.92485857),
                  position=(-360.11, -30.46, -40.44),
@@ -197,7 +199,7 @@ else:
 References
 ----------
 
-.. [StOnge2021] St-Onge E. et al., Fast Tractography Streamline Search,
-        International Workshop on Computational Diffusion MRI,
-        pp. 82-95. Springer, Cham, 2021.
+.. [StOnge2022] St-Onge E. et al. Fast Streamline Search:
+                An Exact Technique for Diffusion MRI Tractography.
+                Neuroinformatics, 2022.
 """

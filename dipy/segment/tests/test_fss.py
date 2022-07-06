@@ -6,6 +6,7 @@ from dipy.io.streamline import load_tractogram
 from dipy.segment.fss import (FastStreamlineSearch,
                               nearest_from_matrix_row,
                               nearest_from_matrix_col)
+from dipy.segment.metric import mean_euclidean_dist
 
 from dipy.testing import (assert_arrays_equal,
                           assert_greater,
@@ -95,6 +96,28 @@ def test_fss_varying_radius():
     assert_true(np.alltrue(np.in1d(rs_2.col, rs_4.col)))
 
 
+def test_fss_single_point_slines():
+    slines = [np.array([[1.0, 1.0, 1.0]]),
+              np.array([[0.0, 1.0, 2.0]])]
+    fss = FastStreamlineSearch(slines, max_radius=4.0, nb_mpts=4, bin_size=20.0,
+                               resampling=24, bidirectional=False)
+    res = fss.radius_search(slines, radius=4.0)
+    # 2x2 matrix with 4 element
+    assert_true(res.nnz == 4)
+    mat = res.A
+    dist = mean_euclidean_dist(slines[0], slines[1])
+    assert_almost_equal(mat[0, 0], 0.0)
+    assert_almost_equal(mat[1, 1], 0.0)
+    assert_almost_equal(mat[1, 0], dist)
+    assert_almost_equal(mat[0, 1], dist)
+
+
+def test_fss_empty_results():
+    fss = FastStreamlineSearch(f1, max_radius=2.0, nb_mpts=2, bin_size=20.0, resampling=22, bidirectional=True)
+    res = fss.radius_search(f2, radius=0.01, use_negative=True)
+    assert_true(res.nnz == 0)
+
+
 def test_fss_invalid_max_radius():
     assert_raises(ValueError, FastStreamlineSearch, f1, max_radius=0.0)
     assert_raises(ValueError, FastStreamlineSearch, f1, max_radius=-1.0)
@@ -107,6 +130,6 @@ def test_fss_invalid_radius():
 
 def test_fss_invalid_mpts():
     assert_raises(ValueError, FastStreamlineSearch, f1,  max_radius=4.0,
-                  nb_mpts=4, resampling=10)
+                  nb_mpts=4, resampling=23)
     assert_raises(ZeroDivisionError, FastStreamlineSearch, f1,  max_radius=4.0,
                   nb_mpts=0, resampling=24)

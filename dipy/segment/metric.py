@@ -42,8 +42,8 @@ def mdf(s1, s2):
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
 
 
-def mean_l1_func(a, b):
-    """ Compute the average L1 distance (MDF without flip)
+def mean_manhattan_distance(a, b):
+    """ Compute the average Manhattan-L1 distance (MDF without flip)
 
     Arrays are representing a single streamline or a list of streamlines
     that have the same number of N-dimensional points (two last axis).
@@ -65,8 +65,8 @@ def mean_l1_func(a, b):
     return np.mean(np.sum(np.abs(a - b), axis=-1), axis=-1)
 
 
-def mean_l2_func(a, b):
-    """ Compute the average L2 distance (MDF without flip)
+def mean_euclidean_dist(a, b):
+    """ Compute the average Euclidean-L2 distance (MDF without flip)
 
     Arrays are representing a single streamline or a list of streamlines
     that have the same number of N-dimensional points (two last axis).
