@@ -955,7 +955,8 @@ class MapmriFit(ReconstFit):
         else:
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
 
-        norm_of_laplacian = np.linalg.multi_dot([self._mapmri_coef, laplacian_matrix,
+        norm_of_laplacian = np.linalg.multi_dot([self._mapmri_coef, 
+                                                laplacian_matrix,
                                                 self._mapmri_coef])
         return norm_of_laplacian
 
