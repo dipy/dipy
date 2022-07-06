@@ -2140,7 +2140,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 def gcv_cost_function(weight, args):
     """The GCV cost function that is iterated [4]."""
     data, M, MMt, K, LR = args
-    S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
+    S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
