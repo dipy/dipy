@@ -422,10 +422,8 @@ def find_signal_means(b_unique, data_norm, bvals, rho, lb_matrix, w=1e-03):
         shell = data_norm[ind]
         if np.sum(ind) > 20:
             M = rho[ind, :]
-
-            pseudo_inv = np.dot(np.linalg.inv(
-                np.dot(M.T, M) + w*lb_matrix), M.T)
-            coef = np.dot(pseudo_inv, shell)
+            coef = np.linalg.multi_dot([np.linalg.inv(
+                np.dot(M.T, M) + w*lb_matrix), M.T, shell])
 
             means[u] = coef[0] / np.sqrt(4*np.pi)
         else:
