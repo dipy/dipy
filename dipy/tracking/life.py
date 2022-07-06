@@ -136,7 +136,7 @@ def grad_tensor(grad, evals):
     # This is the rotation matrix from [1, 0, 0] to this gradient of the sl:
     R = la.svd([grad], overwrite_a=True)[2]
     # This is the 3 by 3 tensor after rotation:
-    T = np.dot(np.dot(R, np.diag(evals)), R.T)
+    T = np.linalg.multi_dot([R, np.diag(evals), R.T])
     return T
 
 
