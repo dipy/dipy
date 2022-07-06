@@ -242,7 +242,7 @@ class LifeSignalMaker(object):
             bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
             bvals = self.gtab.bvals[~self.gtab.b0s_mask]
             tensor = grad_tensor(self.sphere.vertices[idx], self.evals)
-            ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+            ADC = np.diag(np.linalg.multi_dot([bvecs, tensor, bvecs.T]))
             sig = np.exp(-bvals * ADC)
             sig = sig - np.mean(sig)
             self.signal[idx] = sig
