@@ -6,7 +6,7 @@ from dipy.io.streamline import load_tractogram
 from dipy.segment.fss import (FastStreamlineSearch,
                               nearest_from_matrix_row,
                               nearest_from_matrix_col)
-from dipy.segment.metric import mean_euclidean_dist
+from dipy.segment.metric import mean_euclidean_distance
 
 from dipy.testing import (assert_arrays_equal,
                           assert_greater,
@@ -105,7 +105,7 @@ def test_fss_single_point_slines():
     # 2x2 matrix with 4 element
     assert_true(res.nnz == 4)
     mat = res.A
-    dist = mean_euclidean_dist(slines[0], slines[1])
+    dist = mean_euclidean_distance(slines[0], slines[1])
     assert_almost_equal(mat[0, 0], 0.0)
     assert_almost_equal(mat[1, 1], 0.0)
     assert_almost_equal(mat[1, 0], dist)

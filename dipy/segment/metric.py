@@ -1,7 +1,7 @@
 
-__all__ = ["MinimumAverageDirectFlipMetric", "Metric",
-           "AveragePointwiseEuclideanMetric", "CosineMetric", "dist",
-           "EuclideanMetric", "mdf", "mean_l1_func", "mean_l2_func"]
+__all__ = ["MinimumAverageDirectFlipMetric", "Metric", "CosineMetric",
+           "AveragePointwiseEuclideanMetric", "EuclideanMetric", "dist",
+            "mdf", "mean_manhattan_distance", "mean_euclidean_distance"]
 
 import numpy as np
 
@@ -65,7 +65,7 @@ def mean_manhattan_distance(a, b):
     return np.mean(np.sum(np.abs(a - b), axis=-1), axis=-1)
 
 
-def mean_euclidean_dist(a, b):
+def mean_euclidean_distance(a, b):
     """ Compute the average Euclidean-L2 distance (MDF without flip)
 
     Arrays are representing a single streamline or a list of streamlines

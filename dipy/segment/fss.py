@@ -5,7 +5,7 @@ from scipy.sparse import coo_matrix
 from scipy.spatial import cKDTree
 
 from dipy.tracking.streamline import set_number_of_points
-from dipy.segment.metric import mean_euclidean_dist
+from dipy.segment.metric import mean_euclidean_distance
 
 
 class FastStreamlineSearch:
@@ -171,15 +171,15 @@ class FastStreamlineSearch:
                 # Refine distance with the complete
                 for s, ref_ids in enumerate(res):
                     if ref_ids:
-                        cur_sline_id = slines_id[s]
-                        ref_sline_ids = slines_id_ref[ref_ids]
-                        d = mean_euclidean_dist(q_slines[cur_sline_id],
-                                                self.ref_slines[ref_sline_ids])
+                        s_id = slines_id[s]
+                        rs_ids = slines_id_ref[ref_ids]
+                        d = mean_euclidean_distance(q_slines[s_id],
+                                                    self.ref_slines[rs_ids])
 
                         # Return all pairs within the radius
                         in_dist_max = d < radius
-                        id_ref = ref_sline_ids[in_dist_max]
-                        id_s = np.full_like(id_ref, cur_sline_id)
+                        id_ref = rs_ids[in_dist_max]
+                        id_s = np.full_like(id_ref, s_id)
 
                         list_id.append(id_s)
                         list_id_ref.append(id_ref)

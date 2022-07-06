@@ -3,8 +3,7 @@ import dipy.segment.featurespeed as dipysfeature
 import dipy.segment.metric as dipymetric
 import dipy.segment.metricspeed as dipysmetric
 import itertools
-from dipy.segment.metric import (mean_euclidean_dist,
-                                 mean_manhattan_distance)
+
 from dipy.testing import (assert_true, assert_false,
                           assert_greater_equal, assert_less_equal)
 from numpy.testing import (assert_array_equal, assert_raises,
@@ -267,7 +266,7 @@ def test_mean_distances():
     diff = a - b
 
     # Test Euclidean distance (L2)
-    mean_l2_dist = dipymetric.mean_euclidean_dist(a, b)
+    mean_l2_dist = dipymetric.mean_euclidean_distance(a, b)
     diff_norm = np.linalg.norm(diff.reshape((-1, dim)), ord=2, axis=-1)
     mean_norm = np.mean(diff_norm.reshape((nb_slines, -1)), axis=-1)
     assert_almost_equal(mean_l2_dist, mean_norm)
