@@ -956,7 +956,7 @@ class MapmriFit(ReconstFit):
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
 
         norm_of_laplacian = np.linalg.multi_dot([self._mapmri_coef, laplacian_matrix,
-                                   self._mapmri_coef])
+                                                self._mapmri_coef])
         return norm_of_laplacian
 
     def fitted_signal(self, gtab=None):
