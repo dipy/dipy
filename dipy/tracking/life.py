@@ -194,7 +194,7 @@ def streamline_signal(streamline, gtab, evals=(0.001, 0, 0)):
     bvecs = gtab.bvecs[~gtab.b0s_mask]
     bvals = gtab.bvals[~gtab.b0s_mask]
     for ii, tensor in enumerate(tensors):
-        ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+        ADC = np.diag(np.linalg.multi_dot([bvecs, tensor, bvecs.T]))
         # Use the Stejskal-Tanner equation with the ADC as input, and S0 = 1:
         sig[ii] = np.exp(-bvals * ADC)
     return sig - np.mean(sig)
