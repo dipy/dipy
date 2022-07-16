@@ -5,6 +5,11 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+
+DIPY 1.6.0 changes
+------------------
+
+
 DIPY 1.5.0 changes
 ------------------
 **General**
