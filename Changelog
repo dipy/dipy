@@ -24,6 +24,9 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.6.0 (Monday, August 1, 2022)
+
+
 * 1.5.0 (Friday, March 11, 2022)
 
 - New reconstruction model added: Q-space Trajectory Imaging (QTI).
