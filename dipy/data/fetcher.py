@@ -290,21 +290,31 @@ fetch_resdnn_weights = _make_fetcher(
 
 fetch_synb0_weights = _make_fetcher(
     "fetch_synb0_weights",
-    pjoin(dipy_home, 'synb0_default_weights'),
+    pjoin(dipy_home, 'synb0'),
     'https://ndownloader.figshare.com/files/',
-    ['36216225'],
-    ['synb0_default_weights.h5'],
-    ['a596188a6ea649edbfb0c5fe6be518e5'],
+    ['36369915', '36369918', '36369906', '36369909', '36369912'],
+    ['synb0_default_weights1.h5',
+     'synb0_default_weights2.h5',
+     'synb0_default_weights3.h5',
+     'synb0_default_weights4.h5',
+     'synb0_default_weights5.h5'],
+    ['a9362c75bc28616167a11a42fe5d004e',
+     '9dc9353d6ff741d8e22b8569f157c56e',
+     'e548f341e4f12d63dfbed306233fddce',
+     '8cb7a3492d08e4c9b8938277d6fd9b75',
+     '5e796f892605b3bdb9cb9678f1c6ac11'],
     doc="Download Synb0 model weights for Schilling et. al 2019")
 
 fetch_synb0_test = _make_fetcher(
     "fetch_synb0_test",
-    pjoin(dipy_home, 'synb0_test_output'),
+    pjoin(dipy_home, 'synb0'),
     'https://ndownloader.figshare.com/files/',
-    ['36216255'],
-    ['test_synb0.npy'],
-    ['261f2fd67df207aef6c9127697537e7b'],
-    doc="Download Synb0 test output for Schilling et. al 2019")
+    ['36370338', '36370341'],
+    ['test_input_synb0.npy',
+     'test_output_synb0.npy'],
+    ['2a29cb25f77a61dedbe948e37a8da3ce',
+     '22aee70f998a4d5e42572db44c36f5ca'],
+    doc="Download Synb0 test data for Schilling et. al 2019")
 
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
@@ -743,13 +753,18 @@ def get_fnames(name='small_64D'):
         wraw = pjoin(folder, 'resdnn_weights_mri_2018.h5')
         return wraw
     if name == 'synb0_default_weights':
-        files, folder = fetch_synb0_weights()
-        wraw = pjoin(folder, 'synb0_default_weights.h5')
-        return wraw
-    if name == 'synb0_test_output':
+        _, folder = fetch_synb0_weights()
+        w1 = pjoin(folder, 'synb0_default_weights1.h5')
+        w2 = pjoin(folder, 'synb0_default_weights2.h5')
+        w3 = pjoin(folder, 'synb0_default_weights3.h5')
+        w4 = pjoin(folder, 'synb0_default_weights4.h5')
+        w5 = pjoin(folder, 'synb0_default_weights5.h5')
+        return w1, w2, w3, w4, w5
+    if name == 'synb0_test_data':
         files, folder = fetch_synb0_test()
-        wraw = pjoin(folder, 'test_synb0.npy')
-        return wraw
+        input_array = pjoin(folder, 'test_input_synb0.npy')
+        target_array = pjoin(folder, 'test_output_synb0.npy')
+        return input_array, target_array
 
 
 def read_qtdMRI_test_retest_2subjects():

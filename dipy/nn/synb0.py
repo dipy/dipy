@@ -34,6 +34,103 @@ def set_logger_level(log_level):
     """
     logger.setLevel(level=log_level)
 
+class UNet3D(tf.keras.Model):
+    def __init__(self):
+        super(UNet3D, self).__init__()
+        # Encoder
+        self.ec0 = self.encoder_block(32, kernel_size=3, stride=1, padding='same')
+        self.ec1 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
+        self.pool0 = tf.keras.layers.MaxPool3D()
+        self.ec2 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
+        self.ec3 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
+        self.pool1 = tf.keras.layers.MaxPool3D()
+        self.ec4 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
+        self.ec5 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
+        self.pool2 = tf.keras.layers.MaxPool3D()
+        self.ec6 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
+        self.ec7 = self.encoder_block(512, kernel_size=3, stride=1, padding='same')
+        self.pool2 = tf.keras.layers.MaxPool3D()
+        self.el = tf.keras.layers.Conv3D(512, kernel_size=1, stride=1, padding='same')
+
+        # Decoder
+        self.dc9 = self.decoder_block(512, kernel_size=2, stride=2, padding='valid')
+        self.dc8 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
+        self.dc7 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
+        self.dc6 = self.decoder_block(256, kernel_size=2, stride=2, padding='valid')
+        self.dc5 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
+        self.dc4 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
+        self.dc3 = self.decoder_block(128, kernel_size=2, stride=2, padding='valid')
+        self.dc2 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
+        self.dc1 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
+        self.dc0 = self.decoder_block(1, kernel_size=1, stride=1, padding='valid')
+        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1, stride=1, padding='valid')
+    def call(self, input):
+        # Encode
+        x = self.ec0(input)
+        syn0 = self.ec1(x)
+
+        x = self.pool0(syn0)
+        x = self.ec2(x)
+        syn1 = self.ec3(x)
+
+        x = self.pool1(syn1)
+        x = self.ec4(x)
+        syn2 = self.ec5(x)                
+
+        x = self.pool2(syn2)
+        x = self.ec6(x)
+        x = self.ec7(x)
+
+        # Last layer without relu
+        x = self.el(x)
+
+        x = tf.keras.layers.Concatenate()([self.dc9(x), syn2])
+
+        x = self.dc8(x)
+        x = self.dc7(x)
+
+        x = tf.keras.layers.Concatenate()([self.dc6(x), syn1])
+
+        x = self.dc5(x)
+        x = self.dc4(x)
+
+        x = tf.keras.layers.Concatenate()([self.dc3(x), syn0])
+
+        x = self.dc2(x)
+        x = self.dc1(x)
+
+        x = self.dc0(x)
+
+        # Last layer without relu
+        out = self.dl(x)
+
+        return out
+
+    class encoder_block(tf.keras.layers.Layer):
+        def __init__(self, out_channels, kernel_size, stride, padding):
+            super(UNet3D.encoder_block, self).__init__()
+            self.conv3d = tf.keras.layers.Conv3D(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
+            self.instnorm = tfa.layers.InstanceNormalization(out_channels)
+            self.activation = tf.keras.layers.LeakyReLU(0.01)
+        def call(self, input):
+            x = self.conv3d(input)
+            x = self.instnorm(x)
+            x = self.activation(x)
+
+            return x
+        
+        class decoder_block(tf.keras.layers.Layer):
+            def __init__(self, out_channels, kernel_size, stride, padding):
+                super(UNet3D.decoder_block, self).__init__()
+                self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
+                self.instnorm = tfa.layers.InstanceNormalization(out_channels)
+                self.activation = tf.keras.layers.LeakyReLU(0.01)
+            def call(self, input):
+                x = self.conv3d(input)
+                x = self.instnorm(x)
+                x = self.activation(x)
+
+                return x
 
 class Synb0():
     """
@@ -81,115 +178,18 @@ class Synb0():
         # Synb0 network load
 
         self.model = UNet3D()
-        self.model.build(input_shape=(None, 80, 96, 80, 2))
-        class UNet3D(tf.keras.Model):
-            def __init__(self):
-                super(UNet3D, self).__init__()
-                # Encoder
-                self.ec0 = self.encoder_block(32, kernel_size=3, stride=1, padding='same')
-                self.ec1 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
-                self.pool0 = tf.keras.layers.MaxPool3D()
-                self.ec2 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
-                self.ec3 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
-                self.pool1 = tf.keras.layers.MaxPool3D()
-                self.ec4 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
-                self.ec5 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
-                self.pool2 = tf.keras.layers.MaxPool3D()
-                self.ec6 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
-                self.ec7 = self.encoder_block(512, kernel_size=3, stride=1, padding='same')
-                self.pool2 = tf.keras.layers.MaxPool3D()
-                self.el = tf.keras.layers.Conv3D(512, kernel_size=1, stride=1, padding='same')
-
-                # Decoder
-                self.dc9 = self.decoder_block(512, kernel_size=2, stride=2, padding='valid')
-                self.dc8 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
-                self.dc7 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
-                self.dc6 = self.decoder_block(256, kernel_size=2, stride=2, padding='valid')
-                self.dc5 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
-                self.dc4 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
-                self.dc3 = self.decoder_block(128, kernel_size=2, stride=2, padding='valid')
-                self.dc2 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
-                self.dc1 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
-                self.dc0 = self.decoder_block(1, kernel_size=1, stride=1, padding='valid')
-                self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1, stride=1, padding='valid')
-            def call(self, input):
-                # Encode
-                x = self.ec0(input)
-                syn0 = self.ec1(x)
-
-                x = self.pool0(syn0)
-                x = self.ec2(x)
-                syn1 = self.ec3(x)
-
-                x = self.pool1(syn1)
-                x = self.ec4(x)
-                syn2 = self.ec5(x)                
-
-                x = self.pool2(syn2)
-                x = self.ec6(x)
-                x = self.ec7(x)
-
-                # Last layer without relu
-                x = self.el(x)
-
-                x = tf.keras.layers.Concatenate()([self.dc9(x), syn2])
-
-                x = self.dc8(x)
-                x = self.dc7(x)
-
-                x = tf.keras.layers.Concatenate()([self.dc6(x), syn1])
-
-                x = self.dc5(x)
-                x = self.dc4(x)
-
-                x = tf.keras.layers.Concatenate()([self.dc3(x), syn0])
-
-                x = self.dc2(x)
-                x = self.dc1(x)
-
-                x = self.dc0(x)
-
-                # Last layer without relu
-                out = self.dl(x)
-
-                return out
-
-            class encoder_block(tf.keras.layers.Layer):
-                def __init__(self, out_channels, kernel_size, stride, padding):
-                    super(UNet3D.encoder_block, self).__init__()
-                    self.conv3d = tf.keras.layers.Conv3D(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
-                    self.instnorm = tfa.layers.InstanceNormalization(out_channels)
-                    self.activation = tf.keras.layers.LeakyReLU(0.01)
-                def call(self, input):
-                    x = self.conv3d(input)
-                    x = self.instnorm(x)
-                    x = self.activation(x)
-
-                    return x
-            
-            class decoder_block(tf.keras.layers.Layer):
-                def __init__(self, out_channels, kernel_size, stride, padding):
-                    super(UNet3D.decoder_block, self).__init__()
-                    self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
-                    self.instnorm = tfa.layers.InstanceNormalization(out_channels)
-                    self.activation = tf.keras.layers.LeakyReLU(0.01)
-                def call(self, input):
-                    x = self.conv3d(input)
-                    x = self.instnorm(x)
-                    x = self.activation(x)
-
-                    return x
+        self.model.build(input_shape=(None, 80, 80, 96, 2))
 
 
 
             
     
-    def fetch_default_weights(self):
+    def fetch_default_weights(self, idx):
         r"""
         Load the model pre-training weights to use for the fitting.
         """
         fetch_model_weights_path = get_fnames('synb0_default_weights')
-        self.load_model_weights(fetch_model_weights_path)
+        self.load_model_weights(fetch_model_weights_path[int(idx)-1])
 
     def load_model_weights(self, weights_path):
         r"""
@@ -220,7 +220,7 @@ class Synb0():
             Reconstructed b-inf image(s)
         """
     
-        return self.model.predict(x_test)[..., 0]
+        return self.model.predict(x_test)
     
     def __normalize(self, image, max_img, min_img):
         r"""
@@ -253,7 +253,7 @@ class Synb0():
         return (image+1)/2*(max_img-min_img) + min_img
             
 
-    def predict(self, b0, T1, batch_size=None):
+    def predict(self, b0, T1, batch_size=None, average=True):
         r"""
         Wrapper function to faciliate prediction of larger dataset.
         The function will scale the data to meet the required shape of image.
@@ -298,27 +298,55 @@ class Synb0():
                 T1[i] = self.__normalize(T1[i], 150, 0)
                 b0[i] = self.__normalize(b0[i], p99[i], 0)
 
-        if dim == 3:
-            if batch_size is not None:
-                logger.warning('Batch size was specified, but was not used',
-                'due to the input not having a batch dimension')
-            input_data = np.expand_dims(np.concatenate([b0, T1], -1), 0)
-            prediction = self.__predict(input_data)
-            prediction = self.__unnormalize(prediction, p99, 0)
-            prediction = prediction[0, 2:-1, 3:-2, 2:-1, 0]
+        mean_pred = np.zeros(shape+(5,))
+        if average:
+            for i in range(5):
+                self.fetch_default_weights(str(i+1))
+                if dim == 3:
+                    if batch_size is not None:
+                        logger.warning('Batch size was specified, but was not used',
+                        'due to the input not having a batch dimension')
+                    input_data = np.moveaxis(np.expand_dims(np.concatenate([b0, T1], -1), 0), 3, 1)
+                    prediction = self.__predict(input_data)
+                    prediction = self.__unnormalize(prediction, p99, 0)
 
+                else:
+                    if batch_size is None:
+                        batch_size = 1
+                    input_data = np.moveaxis(np.concatenate([b0, T1], -1), 3, 1)
+                    prediction = np.zeros(shape+(1,))
+                    for batch_idx in range(batch_size, shape[0]+1, batch_size):
+                        prediction[:batch_idx] = self.__predict(input_data)
+                    if np.mod(shape[0], batch_size) != 0:
+                        prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data)
+                    for i in range(shape[0]):
+                        prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
+                prediction = prediction[:, 2:-1, 2:-1, 3:-2]
+                prediction = np.moveaxis(prediction, 1, -2)
+                mean_pred[..., i] = prediction
+            prediction = np.mean(mean_pred, axis=-1)
         else:
-            if batch_size is None:
-                batch_size = 1
-            input_data = np.concatenate([b0, T1], -1)
-            prediction = np.zeros(shape+(1,))
-            for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                prediction[:batch_idx] = self.__predict(input_data)
-            if np.mod(shape[0], batch_size) != 0:
-                prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data)
-            for i in range(shape[0]):
-                prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
-            prediction = prediction[:, 2:-1, 3:-2, 2:-1]
+            if dim == 3:
+                if batch_size is not None:
+                    logger.warning('Batch size was specified, but was not used',
+                    'due to the input not having a batch dimension')
+                input_data = np.moveaxis(np.expand_dims(np.concatenate([b0, T1], -1), 0), 3, 1)
+                prediction = self.__predict(input_data)
+                prediction = self.__unnormalize(prediction, p99, 0)
+
+            else:
+                if batch_size is None:
+                    batch_size = 1
+                input_data = np.moveaxis(np.concatenate([b0, T1], -1), 3, 1)
+                prediction = np.zeros(shape+(1,))
+                for batch_idx in range(batch_size, shape[0]+1, batch_size):
+                    prediction[:batch_idx] = self.__predict(input_data)
+                if np.mod(shape[0], batch_size) != 0:
+                    prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data)
+                for i in range(shape[0]):
+                    prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
+            prediction = prediction[:, 2:-1, 2:-1, 3:-2]
+            prediction = np.moveaxis(prediction, 1, -2)[..., 0]
         
         return prediction
 

@@ -1,14 +1,11 @@
 import pytest
 from packaging.version import Version
 
-from dipy.core.gradients import gradient_table
 from dipy.data import get_fnames
-from dipy.io.image import load_nifti
-from dipy.io.gradients import read_bvals_bvecs
 from dipy.nn.synb0 import Synb0
 from dipy.utils.optpkg import optional_package
 import numpy as np
-from numpy.testing import assert_almost_equal, assert_raises, assert_equal
+from numpy.testing import assert_almost_equal
 
 tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
@@ -21,12 +18,22 @@ if have_tf and have_tfa:
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 @pytest.mark.skipif(not have_tfa, reason='Requires TensorFlow_addons')
 def test_default_weights():
-    input_arr = np.zeros((1, 80, 96, 80, 2)).astype(float)
-
-    target_arr = np.load(get_fnames('synb0_test_output'))
+    file_names = get_fnames('synb0_test_data')
+    input_arr1 = np.load(file_names[0])[0, :, :, :, 0]
+    input_arr2 = np.load(file_names[0])[0, :, :, :, 1]
+    target_arr = np.load(file_names[1])[0]
 
     synb0_model = Synb0()
-    synb0_model.fetch_default_weights()
-    input_arr, target_arr = synb0_model.get_test_data()
-    results_arr = synb0_model.__predict(input_arr)
+
+    results_arr = synb0_model.predict(input_arr1, input_arr2, average=True)
+    assert_almost_equal(results_arr, target_arr)
+
+def test_default_weights_batch():
+    file_names = get_fnames('synb0_test_data')
+    input_arr1 = np.load(file_names[0])[..., 0]
+    input_arr2 = np.load(file_names[0])[..., 1]
+    target_arr = np.load(file_names[1])
+
+    synb0_model = Synb0()
+    results_arr = synb0_model.predict(input_arr1, input_arr2, batch_size=2, average=True)
     assert_almost_equal(results_arr, target_arr)
