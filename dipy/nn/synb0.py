@@ -97,7 +97,7 @@ class UNet3D(tf.keras.Model):
 
         x = self.pool1(syn1)
         x = self.ec4(x)
-        syn2 = self.ec5(x)              
+        syn2 = self.ec5(x)
 
         x = self.pool2(syn2)
         x = self.ec6(x)
@@ -361,7 +361,7 @@ class Synb0():
                     temp = np.stack([b0, T1], -1)
                     input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                     prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                           dtype=np.float32)
+                                          dtype=np.float32)
                     for batch_idx in range(batch_size, shape[0]+1, batch_size):
                         temp_pred = self.__predict(input_data[:batch_idx])
                         prediction[:batch_idx] = temp_pred
@@ -382,7 +382,7 @@ class Synb0():
             if dim == 3:
                 if batch_size is not None:
                     logger.warning('Batch size specified, but not used',
-                                    'due to the input not having \
+                                   'due to the input not having \
                                     a batch dimension')
                 temp = np.expand_dims(np.stack([b0, T1], -1), 0)
                 input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
@@ -397,7 +397,7 @@ class Synb0():
                 temp = np.stack([b0, T1], -1)
                 input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                 prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                        dtype=np.float32)
+                                      dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0]+1, batch_size):
                     temp_pred = self.__predict(input_data[:batch_idx])
                     prediction[:batch_idx] = temp_pred
