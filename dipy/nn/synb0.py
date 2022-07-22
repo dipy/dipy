@@ -358,5 +358,3 @@ class Synb0():
                 prediction = np.moveaxis(prediction, 1, -1)
         
         return prediction
-
-            
