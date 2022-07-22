@@ -37,4 +37,3 @@ def test_default_weights_batch():
     synb0_model.fetch_default_weights(0)
     results_arr = synb0_model.predict(input_arr1, input_arr2, batch_size=2, average=False)
     assert_almost_equal(results_arr, target_arr)
-    
