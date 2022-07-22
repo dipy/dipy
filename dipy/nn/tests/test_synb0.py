@@ -28,6 +28,7 @@ def test_default_weights():
     results_arr = synb0_model.predict(input_arr1, input_arr2, average=False)
     assert_almost_equal(results_arr, target_arr)
 
+
 def test_default_weights_batch():
     file_names = get_fnames('synb0_test_data')
     input_arr1 = np.load(file_names[0])['b0']
@@ -35,5 +36,6 @@ def test_default_weights_batch():
     target_arr = np.load(file_names[1])['arr_0']
     synb0_model = Synb0()
     synb0_model.fetch_default_weights(0)
-    results_arr = synb0_model.predict(input_arr1, input_arr2, batch_size=2, average=False)
+    results_arr = synb0_model.predict(input_arr1, input_arr2,
+                                      batch_size=2, average=False)
     assert_almost_equal(results_arr, target_arr)

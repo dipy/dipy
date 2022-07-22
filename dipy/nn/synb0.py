@@ -34,36 +34,58 @@ def set_logger_level(log_level):
     """
     logger.setLevel(level=log_level)
 
+
 class UNet3D(tf.keras.Model):
     def __init__(self):
         super(UNet3D, self).__init__()
         # Encoder
-        self.ec0 = self.encoder_block(32, kernel_size=3, strides=1, padding='same')
-        self.ec1 = self.encoder_block(64, kernel_size=3, strides=1, padding='same')
+        self.ec0 = self.encoder_block(32, kernel_size=3,
+                                      strides=1, padding='same')
+        self.ec1 = self.encoder_block(64, kernel_size=3,
+                                      strides=1, padding='same')
         self.pool0 = tf.keras.layers.MaxPool3D()
-        self.ec2 = self.encoder_block(64, kernel_size=3, strides=1, padding='same')
-        self.ec3 = self.encoder_block(128, kernel_size=3, strides=1, padding='same')
+        self.ec2 = self.encoder_block(64, kernel_size=3,
+                                      strides=1, padding='same')
+        self.ec3 = self.encoder_block(128, kernel_size=3,
+                                      strides=1, padding='same')
         self.pool1 = tf.keras.layers.MaxPool3D()
-        self.ec4 = self.encoder_block(128, kernel_size=3, strides=1, padding='same')
-        self.ec5 = self.encoder_block(256, kernel_size=3, strides=1, padding='same')
+        self.ec4 = self.encoder_block(128, kernel_size=3,
+                                      strides=1, padding='same')
+        self.ec5 = self.encoder_block(256, kernel_size=3,
+                                      strides=1, padding='same')
         self.pool2 = tf.keras.layers.MaxPool3D()
-        self.ec6 = self.encoder_block(256, kernel_size=3, strides=1, padding='same')
-        self.ec7 = self.encoder_block(512, kernel_size=3, strides=1, padding='same')
+        self.ec6 = self.encoder_block(256, kernel_size=3,
+                                      strides=1, padding='same')
+        self.ec7 = self.encoder_block(512, kernel_size=3,
+                                      strides=1, padding='same')
         self.pool2 = tf.keras.layers.MaxPool3D()
-        self.el = tf.keras.layers.Conv3D(512, kernel_size=1, strides=1, padding='same')
+        self.el = tf.keras.layers.Conv3D(512, kernel_size=1,
+                                         strides=1, padding='same')
 
         # Decoder
-        self.dc9 = self.decoder_block(512, kernel_size=2, strides=2, padding='valid')
-        self.dc8 = self.decoder_block(256, kernel_size=3, strides=1, padding='same')
-        self.dc7 = self.decoder_block(256, kernel_size=3, strides=1, padding='same')
-        self.dc6 = self.decoder_block(256, kernel_size=2, strides=2, padding='valid')
-        self.dc5 = self.decoder_block(128, kernel_size=3, strides=1, padding='same')
-        self.dc4 = self.decoder_block(128, kernel_size=3, strides=1, padding='same')
-        self.dc3 = self.decoder_block(128, kernel_size=2, strides=2, padding='valid')
-        self.dc2 = self.decoder_block(64, kernel_size=3, strides=1, padding='same')
-        self.dc1 = self.decoder_block(64, kernel_size=3, strides=1, padding='same')
-        self.dc0 = self.decoder_block(1, kernel_size=1, strides=1, padding='valid')
-        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1, strides=1, padding='valid')
+        self.dc9 = self.decoder_block(512, kernel_size=2,
+                                      strides=2, padding='valid')
+        self.dc8 = self.decoder_block(256, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc7 = self.decoder_block(256, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc6 = self.decoder_block(256, kernel_size=2,
+                                      strides=2, padding='valid')
+        self.dc5 = self.decoder_block(128, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc4 = self.decoder_block(128, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc3 = self.decoder_block(128, kernel_size=2,
+                                      strides=2, padding='valid')
+        self.dc2 = self.decoder_block(64, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc1 = self.decoder_block(64, kernel_size=3,
+                                      strides=1, padding='same')
+        self.dc0 = self.decoder_block(1, kernel_size=1,
+                                      strides=1, padding='valid')
+        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1,
+                                                  strides=1, padding='valid')
+
     def call(self, input):
         # Encode
         x = self.ec0(input)
@@ -75,7 +97,7 @@ class UNet3D(tf.keras.Model):
 
         x = self.pool1(syn1)
         x = self.ec4(x)
-        syn2 = self.ec5(x)                
+        syn2 = self.ec5(x)              
 
         x = self.pool2(syn2)
         x = self.ec6(x)
@@ -109,9 +131,14 @@ class UNet3D(tf.keras.Model):
     class encoder_block(tf.keras.layers.Layer):
         def __init__(self, out_channels, kernel_size, strides, padding):
             super(UNet3D.encoder_block, self).__init__()
-            self.conv3d = tf.keras.layers.Conv3D(out_channels, kernel_size, strides=strides, padding=padding, use_bias=False)
+            self.conv3d = tf.keras.layers.Conv3D(out_channels,
+                                                 kernel_size,
+                                                 strides=strides,
+                                                 padding=padding,
+                                                 use_bias=False)
             self.instnorm = tfa.layers.InstanceNormalization()
             self.activation = tf.keras.layers.LeakyReLU(0.01)
+
         def call(self, input):
             x = self.conv3d(input)
             x = self.instnorm(x)
@@ -122,15 +149,21 @@ class UNet3D(tf.keras.Model):
     class decoder_block(tf.keras.layers.Layer):
         def __init__(self, out_channels, kernel_size, strides, padding):
             super(UNet3D.decoder_block, self).__init__()
-            self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels, kernel_size, strides=strides, padding=padding, use_bias=False)
+            self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels,
+                                                          kernel_size,
+                                                          strides=strides,
+                                                          padding=padding,
+                                                          use_bias=False)
             self.instnorm = tfa.layers.InstanceNormalization()
             self.activation = tf.keras.layers.LeakyReLU(0.01)
+
         def call(self, input):
             x = self.conv3d(input)
             x = self.instnorm(x)
             x = self.activation(x)
 
             return x
+
 
 class Synb0():
     """
@@ -140,10 +173,13 @@ class Synb0():
     @doctest_skip_parser
     def __init__(self, verbose=False):
         r"""
-        The model was pre-trained for usage on pre-processed images following the synb0-disco pipeline
-        One can load their own weights using load_model_weights
+        The model was pre-trained for usage on pre-processed images
+        following the synb0-disco pipeline.
+        One can load their own weights using load_model_weights.
 
-        This model is designed to take as input a b0 image and a T1 weighted image.
+        This model is designed to take as input
+        a b0 image and a T1 weighted image.
+
         It was designed to predict a b-inf image.
 
         Parameters
@@ -154,11 +190,11 @@ class Synb0():
 
         References
         ----------
-        ..  [1] Schilling, K. G., Blaber, J., Huo, Y., Newton, A., 
+        ..  [1] Schilling, K. G., Blaber, J., Huo, Y., Newton, A.,
             Hansen, C., Nath, V., ... & Landman, B. A. (2019).
             Synthesized b0 for diffusion distortion correction (Synb0-DisCo).
             Magnetic resonance imaging, 64, 62-70.
-        ..  [2] Schilling, K. G., Blaber, J., Hansen, C., Cai, L., 
+        ..  [2] Schilling, K. G., Blaber, J., Hansen, C., Cai, L.,
             Rogers, B., Anderson, A. W., ... & Landman, B. A. (2020).
             Distortion correction of diffusion weighted MRI without reverse
             phase-encoding scans or field-maps.
@@ -176,10 +212,6 @@ class Synb0():
         self.model = UNet3D()
         self.model.build(input_shape=(None, 80, 80, 96, 2))
 
-
-
-            
-    
     def fetch_default_weights(self, idx):
         r"""
         Load the model pre-training weights to use for the fitting.
@@ -205,7 +237,8 @@ class Synb0():
         try:
             self.model.load_weights(weights_path)
         except ValueError:
-            raise ValueError('Expected input for the provided model weights do not match the declared model')
+            raise ValueError('Expected input for the provided model weights \
+                             do not match the declared model')
 
     def __predict(self, x_test):
         r"""
@@ -221,9 +254,9 @@ class Synb0():
         np.ndarray (...) or (batch, ...)
             Reconstructed b-inf image(s)
         """
-    
+
         return self.model.predict(x_test)
-    
+
     def __normalize(self, image, max_img, min_img):
         r"""
         Internal normalization function
@@ -263,26 +296,32 @@ class Synb0():
         Parameters
         ----------
         b0 : np.ndarray (batch, 77, 91, 77) or (77, 91, 77)
-            For a single image, input should be a 3D array. If multiple images, there should also be a batch dimension
-        
+            For a single image, input should be a 3D array. If multiple images,
+            there should also be a batch dimension.
+
         T1 : np.ndarray (batch, 77, 91, 77) or (77, 91, 77)
-            For a single image, input should be a 3D array. If multiple images, there should also be a batch dimension
+            For a single image, input should be a 3D array. If multiple images,
+            there should also be a batch dimension.
 
         batch_size : int
-            Number of images per prediction pass. Only available if data is provided with a batch dimension.
-            Consider lowering it if you get an out of memory error. Increase it if you want it to be faster.
-            If None, batch_size will set to be 1 if the provided image has a batch dimension
+            Number of images per prediction pass. Only available if data
+            is provided with a batch dimension.
+            Consider lowering it if you get an out of memory error.
+            Increase it if you want it to be faster and have a lot of data.
+            If None, batch_size will be set to 1 if the provided image
+            has a batch dimension.
             Default is None
         Returns
         -------
         pred_output : np.ndarray (...) or (batch, ...)
             Reconstructed b-inf image(s)
-            
+
         """
-        if all([b0.shape[1:]!=(77, 91, 77), b0.shape!=(77, 91, 77)]) or \
-            b0.shape != T1.shape:
-            raise ValueError('Expected shape (batch, 77, 91, 77) or (77, 91, 77) for both inputs')
-        
+        if all([b0.shape[1:] != (77, 91, 77), b0.shape != (77, 91, 77)]) or \
+                b0.shape != T1.shape:
+            raise ValueError('Expected shape (batch, 77, 91, 77) or \
+                             (77, 91, 77) for both inputs')
+
         shape = b0.shape
         dim = len(shape)
 
@@ -301,14 +340,16 @@ class Synb0():
                 b0[i] = self.__normalize(b0[i], p99[i], 0)
 
         if average:
-            mean_pred = np.zeros(shape+(5,), dtype = np.float32)
+            mean_pred = np.zeros(shape+(5,), dtype=np.float32)
             for i in range(5):
                 self.fetch_default_weights(i)
                 if dim == 3:
                     if batch_size is not None:
-                        logger.warning('Batch size was specified, but was not used',
-                        'due to the input not having a batch dimension')
-                    input_data = np.moveaxis(np.expand_dims(np.stack([b0, T1], -1), 0), 3, 1).astype(np.float32)
+                        logger.warning('Batch size specified, but not used',
+                                       'due to the input not having \
+                                        a batch dimension')
+                    temp = np.expand_dims(np.stack([b0, T1], -1), 0)
+                    input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                     prediction = self.__predict(input_data)
                     prediction = self.__unnormalize(prediction, p99, 0)
                     prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
@@ -317,26 +358,34 @@ class Synb0():
                 else:
                     if batch_size is None:
                         batch_size = 1
-                    input_data = np.moveaxis(np.stack([b0, T1], -1), 3, 1).astype(np.float32)
-                    prediction = np.zeros((shape[0], 80, 80, 96, 1), dtype = np.float32)
+                    temp = np.stack([b0, T1], -1)
+                    input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
+                    prediction = np.zeros((shape[0], 80, 80, 96, 1),
+                                           dtype=np.float32)
                     for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                        prediction[:batch_idx] = self.__predict(input_data[:batch_idx])
-                    if np.mod(shape[0], batch_size) != 0:
-                        prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data[-np.mod(shape[0], batch_size):])
+                        temp_pred = self.__predict(input_data[:batch_idx])
+                        prediction[:batch_idx] = temp_pred
+                    remainder = np.mod(shape[0], batch_size)
+                    if remainder != 0:
+                        temp_pred = self.__predict(input_data[-remainder:])
+                        prediction[-remainder:] = temp_pred
                     for j in range(shape[0]):
-                        prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
-                    
+                        temp = self.__unnormalize(prediction[j], p99[j], 0)
+                        prediction[j] = temp
+
                     prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
                     prediction = np.moveaxis(prediction, 1, -1)
-                    
+
                 mean_pred[..., i] = prediction
             prediction = np.mean(mean_pred, axis=-1)
         else:
             if dim == 3:
                 if batch_size is not None:
-                    logger.warning('Batch size was specified, but was not used',
-                    'due to the input not having a batch dimension')
-                input_data = np.moveaxis(np.expand_dims(np.stack([b0, T1], -1), 0), 3, 1).astype(np.float32)
+                    logger.warning('Batch size specified, but not used',
+                                    'due to the input not having \
+                                    a batch dimension')
+                temp = np.expand_dims(np.stack([b0, T1], -1), 0)
+                input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                 prediction = self.__predict(input_data)
                 prediction = self.__unnormalize(prediction, p99, 0)
                 prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
@@ -345,16 +394,22 @@ class Synb0():
             else:
                 if batch_size is None:
                     batch_size = 1
-                input_data = np.moveaxis(np.stack([b0, T1], -1), 3, 1).astype(np.float32)
-                prediction = np.zeros((shape[0], 80, 80, 96, 1), dtype = np.float32)
+                temp = np.stack([b0, T1], -1)
+                input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
+                prediction = np.zeros((shape[0], 80, 80, 96, 1),
+                                        dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                    prediction[:batch_idx] = self.__predict(input_data[:batch_idx])
-                if np.mod(shape[0], batch_size) != 0:
-                    prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data[-np.mod(shape[0], batch_size):])
-                for i in range(shape[0]):
-                    prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
-                
+                    temp_pred = self.__predict(input_data[:batch_idx])
+                    prediction[:batch_idx] = temp_pred
+                remainder = np.mod(shape[0], batch_size)
+                if remainder != 0:
+                    temp_pred = self.__predict(input_data[-remainder:])
+                    prediction[-remainder:] = temp_pred
+                for j in range(shape[0]):
+                    temp = self.__unnormalize(prediction[j], p99[j], 0)
+                    prediction[j] = temp
+
                 prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
                 prediction = np.moveaxis(prediction, 1, -1)
-        
+
         return prediction
