@@ -38,32 +38,32 @@ class UNet3D(tf.keras.Model):
     def __init__(self):
         super(UNet3D, self).__init__()
         # Encoder
-        self.ec0 = self.encoder_block(32, kernel_size=3, stride=1, padding='same')
-        self.ec1 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
+        self.ec0 = self.encoder_block(32, kernel_size=3, strides=1, padding='same')
+        self.ec1 = self.encoder_block(64, kernel_size=3, strides=1, padding='same')
         self.pool0 = tf.keras.layers.MaxPool3D()
-        self.ec2 = self.encoder_block(64, kernel_size=3, stride=1, padding='same')
-        self.ec3 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
+        self.ec2 = self.encoder_block(64, kernel_size=3, strides=1, padding='same')
+        self.ec3 = self.encoder_block(128, kernel_size=3, strides=1, padding='same')
         self.pool1 = tf.keras.layers.MaxPool3D()
-        self.ec4 = self.encoder_block(128, kernel_size=3, stride=1, padding='same')
-        self.ec5 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
+        self.ec4 = self.encoder_block(128, kernel_size=3, strides=1, padding='same')
+        self.ec5 = self.encoder_block(256, kernel_size=3, strides=1, padding='same')
         self.pool2 = tf.keras.layers.MaxPool3D()
-        self.ec6 = self.encoder_block(256, kernel_size=3, stride=1, padding='same')
-        self.ec7 = self.encoder_block(512, kernel_size=3, stride=1, padding='same')
+        self.ec6 = self.encoder_block(256, kernel_size=3, strides=1, padding='same')
+        self.ec7 = self.encoder_block(512, kernel_size=3, strides=1, padding='same')
         self.pool2 = tf.keras.layers.MaxPool3D()
-        self.el = tf.keras.layers.Conv3D(512, kernel_size=1, stride=1, padding='same')
+        self.el = tf.keras.layers.Conv3D(512, kernel_size=1, strides=1, padding='same')
 
         # Decoder
-        self.dc9 = self.decoder_block(512, kernel_size=2, stride=2, padding='valid')
-        self.dc8 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
-        self.dc7 = self.decoder_block(256, kernel_size=3, stride=1, padding='same')
-        self.dc6 = self.decoder_block(256, kernel_size=2, stride=2, padding='valid')
-        self.dc5 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
-        self.dc4 = self.decoder_block(128, kernel_size=3, stride=1, padding='same')
-        self.dc3 = self.decoder_block(128, kernel_size=2, stride=2, padding='valid')
-        self.dc2 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
-        self.dc1 = self.decoder_block(64, kernel_size=3, stride=1, padding='same')
-        self.dc0 = self.decoder_block(1, kernel_size=1, stride=1, padding='valid')
-        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1, stride=1, padding='valid')
+        self.dc9 = self.decoder_block(512, kernel_size=2, strides=2, padding='valid')
+        self.dc8 = self.decoder_block(256, kernel_size=3, strides=1, padding='same')
+        self.dc7 = self.decoder_block(256, kernel_size=3, strides=1, padding='same')
+        self.dc6 = self.decoder_block(256, kernel_size=2, strides=2, padding='valid')
+        self.dc5 = self.decoder_block(128, kernel_size=3, strides=1, padding='same')
+        self.dc4 = self.decoder_block(128, kernel_size=3, strides=1, padding='same')
+        self.dc3 = self.decoder_block(128, kernel_size=2, strides=2, padding='valid')
+        self.dc2 = self.decoder_block(64, kernel_size=3, strides=1, padding='same')
+        self.dc1 = self.decoder_block(64, kernel_size=3, strides=1, padding='same')
+        self.dc0 = self.decoder_block(1, kernel_size=1, strides=1, padding='valid')
+        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1, strides=1, padding='valid')
     def call(self, input):
         # Encode
         x = self.ec0(input)
@@ -107,10 +107,10 @@ class UNet3D(tf.keras.Model):
         return out
 
     class encoder_block(tf.keras.layers.Layer):
-        def __init__(self, out_channels, kernel_size, stride, padding):
+        def __init__(self, out_channels, kernel_size, strides, padding):
             super(UNet3D.encoder_block, self).__init__()
-            self.conv3d = tf.keras.layers.Conv3D(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
-            self.instnorm = tfa.layers.InstanceNormalization(out_channels)
+            self.conv3d = tf.keras.layers.Conv3D(out_channels, kernel_size, strides=strides, padding=padding, use_bias=False)
+            self.instnorm = tfa.layers.InstanceNormalization()
             self.activation = tf.keras.layers.LeakyReLU(0.01)
         def call(self, input):
             x = self.conv3d(input)
@@ -118,19 +118,19 @@ class UNet3D(tf.keras.Model):
             x = self.activation(x)
 
             return x
-        
-        class decoder_block(tf.keras.layers.Layer):
-            def __init__(self, out_channels, kernel_size, stride, padding):
-                super(UNet3D.decoder_block, self).__init__()
-                self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels, kernel_size, strides=stride, padding=padding, use_bias=False)
-                self.instnorm = tfa.layers.InstanceNormalization(out_channels)
-                self.activation = tf.keras.layers.LeakyReLU(0.01)
-            def call(self, input):
-                x = self.conv3d(input)
-                x = self.instnorm(x)
-                x = self.activation(x)
 
-                return x
+    class decoder_block(tf.keras.layers.Layer):
+        def __init__(self, out_channels, kernel_size, strides, padding):
+            super(UNet3D.decoder_block, self).__init__()
+            self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels, kernel_size, strides=strides, padding=padding, use_bias=False)
+            self.instnorm = tfa.layers.InstanceNormalization()
+            self.activation = tf.keras.layers.LeakyReLU(0.01)
+        def call(self, input):
+            x = self.conv3d(input)
+            x = self.instnorm(x)
+            x = self.activation(x)
+
+            return x
 
 class Synb0():
     """
@@ -141,11 +141,7 @@ class Synb0():
     def __init__(self, verbose=False):
         r"""
         The model was pre-trained for usage on pre-processed images following the synb0-disco pipeline
-
-        To obtain the pre-trained model, use::
-        >>> synb0_model = Synb0() # skip if not have_tf
-        >>> fetch_model_weights_path = get_fnames('synb0_default_weights') # skip if not have_tf
-        >>> synb0_model.load_model_weights(fetch_model_weights_path) # skip if not have_tf
+        One can load their own weights using load_model_weights
 
         This model is designed to take as input a b0 image and a T1 weighted image.
         It was designed to predict a b-inf image.
@@ -187,9 +183,15 @@ class Synb0():
     def fetch_default_weights(self, idx):
         r"""
         Load the model pre-training weights to use for the fitting.
+
+        Parameters
+        ----------
+        idx : int
+            The idx of the default weights. It can be from 0~4.
         """
         fetch_model_weights_path = get_fnames('synb0_default_weights')
-        self.load_model_weights(fetch_model_weights_path[int(idx)-1])
+        print('fetched ' + fetch_model_weights_path[idx])
+        self.load_model_weights(fetch_model_weights_path[idx])
 
     def load_model_weights(self, weights_path):
         r"""
@@ -207,11 +209,11 @@ class Synb0():
 
     def __predict(self, x_test):
         r"""
-        Reconstruct b-inf image(s)
+        Internal prediction function
 
         Parameters
         ----------
-        x_test : np.ndarray (batch, 80, 96, 80, 2)
+        x_test : np.ndarray (batch, 80, 80, 96, 2)
             Image should match the required shape of the model.
 
         Returns
@@ -235,7 +237,7 @@ class Synb0():
         np.ndarray
             Normalized image from range -1 to 1
         """
-        return (((image - min_img)/(max_img - min_img))-0.5)*2
+        return ((image - min_img)/(max_img - min_img))*2-1
 
     def __unnormalize(self, image, max_img, min_img):
         r"""
@@ -251,12 +253,12 @@ class Synb0():
             unnormalized image from range min_img to max_img
         """
         return (image+1)/2*(max_img-min_img) + min_img
-            
 
     def predict(self, b0, T1, batch_size=None, average=True):
         r"""
         Wrapper function to faciliate prediction of larger dataset.
         The function will scale the data to meet the required shape of image.
+        Note that the b0 and T1 image should have the same shape
 
         Parameters
         ----------
@@ -279,7 +281,7 @@ class Synb0():
         """
         if all([b0.shape[1:]!=(77, 91, 77), b0.shape!=(77, 91, 77)]) or \
             b0.shape != T1.shape:
-            raise ValueError('Expected shape (batch, 77, 91, 77) or (77, 91, 77) on the inputs do not match the shape of the inputs')
+            raise ValueError('Expected shape (batch, 77, 91, 77) or (77, 91, 77) for both inputs')
         
         shape = b0.shape
         dim = len(shape)
@@ -298,31 +300,35 @@ class Synb0():
                 T1[i] = self.__normalize(T1[i], 150, 0)
                 b0[i] = self.__normalize(b0[i], p99[i], 0)
 
-        mean_pred = np.zeros(shape+(5,))
         if average:
+            mean_pred = np.zeros(shape+(5,), dtype = np.float32)
             for i in range(5):
-                self.fetch_default_weights(str(i+1))
+                self.fetch_default_weights(i)
                 if dim == 3:
                     if batch_size is not None:
                         logger.warning('Batch size was specified, but was not used',
                         'due to the input not having a batch dimension')
-                    input_data = np.moveaxis(np.expand_dims(np.concatenate([b0, T1], -1), 0), 3, 1)
+                    input_data = np.moveaxis(np.expand_dims(np.stack([b0, T1], -1), 0), 3, 1).astype(np.float32)
                     prediction = self.__predict(input_data)
                     prediction = self.__unnormalize(prediction, p99, 0)
+                    prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
+                    prediction = np.moveaxis(prediction, 0, -1)
 
                 else:
                     if batch_size is None:
                         batch_size = 1
-                    input_data = np.moveaxis(np.concatenate([b0, T1], -1), 3, 1)
-                    prediction = np.zeros(shape+(1,))
+                    input_data = np.moveaxis(np.stack([b0, T1], -1), 3, 1).astype(np.float32)
+                    prediction = np.zeros((shape[0], 80, 80, 96, 1), dtype = np.float32)
                     for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                        prediction[:batch_idx] = self.__predict(input_data)
+                        prediction[:batch_idx] = self.__predict(input_data[:batch_idx])
                     if np.mod(shape[0], batch_size) != 0:
-                        prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data)
-                    for i in range(shape[0]):
-                        prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
-                prediction = prediction[:, 2:-1, 2:-1, 3:-2]
-                prediction = np.moveaxis(prediction, 1, -2)
+                        prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data[-np.mod(shape[0], batch_size):])
+                    for j in range(shape[0]):
+                        prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
+                    
+                    prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
+                    prediction = np.moveaxis(prediction, 1, -1)
+                    
                 mean_pred[..., i] = prediction
             prediction = np.mean(mean_pred, axis=-1)
         else:
@@ -330,23 +336,26 @@ class Synb0():
                 if batch_size is not None:
                     logger.warning('Batch size was specified, but was not used',
                     'due to the input not having a batch dimension')
-                input_data = np.moveaxis(np.expand_dims(np.concatenate([b0, T1], -1), 0), 3, 1)
+                input_data = np.moveaxis(np.expand_dims(np.stack([b0, T1], -1), 0), 3, 1).astype(np.float32)
                 prediction = self.__predict(input_data)
                 prediction = self.__unnormalize(prediction, p99, 0)
+                prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
+                prediction = np.moveaxis(prediction, 0, -1)
 
             else:
                 if batch_size is None:
                     batch_size = 1
-                input_data = np.moveaxis(np.concatenate([b0, T1], -1), 3, 1)
-                prediction = np.zeros(shape+(1,))
+                input_data = np.moveaxis(np.stack([b0, T1], -1), 3, 1).astype(np.float32)
+                prediction = np.zeros((shape[0], 80, 80, 96, 1), dtype = np.float32)
                 for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                    prediction[:batch_idx] = self.__predict(input_data)
+                    prediction[:batch_idx] = self.__predict(input_data[:batch_idx])
                 if np.mod(shape[0], batch_size) != 0:
-                    prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data)
+                    prediction[-np.mod(shape[0], batch_size):] = self.__predict(input_data[-np.mod(shape[0], batch_size):])
                 for i in range(shape[0]):
                     prediction[i] = self.__unnormalize(prediction[i], p99[i], 0)
-            prediction = prediction[:, 2:-1, 2:-1, 3:-2]
-            prediction = np.moveaxis(prediction, 1, -2)[..., 0]
+                
+                prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
+                prediction = np.moveaxis(prediction, 1, -1)
         
         return prediction
 

@@ -292,7 +292,7 @@ fetch_synb0_weights = _make_fetcher(
     "fetch_synb0_weights",
     pjoin(dipy_home, 'synb0'),
     'https://ndownloader.figshare.com/files/',
-    ['36369915', '36369918', '36369906', '36369909', '36369912'],
+    ['36379914', '36379917', '36379920', '36379923', '36379926'],
     ['synb0_default_weights1.h5',
      'synb0_default_weights2.h5',
      'synb0_default_weights3.h5',
@@ -309,11 +309,11 @@ fetch_synb0_test = _make_fetcher(
     "fetch_synb0_test",
     pjoin(dipy_home, 'synb0'),
     'https://ndownloader.figshare.com/files/',
-    ['36370338', '36370341'],
-    ['test_input_synb0.npy',
-     'test_output_synb0.npy'],
-    ['2a29cb25f77a61dedbe948e37a8da3ce',
-     '22aee70f998a4d5e42572db44c36f5ca'],
+    ['36379911', '36395652'],
+    ['test_input_synb0.npz',
+     'test_output_synb0.npz'],
+    ['987203aa73de2dac8770f39ed506dc0c',
+     '96450a5e306b82f35313116a4297c188'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
 fetch_stanford_t1 = _make_fetcher(
@@ -762,8 +762,8 @@ def get_fnames(name='small_64D'):
         return w1, w2, w3, w4, w5
     if name == 'synb0_test_data':
         files, folder = fetch_synb0_test()
-        input_array = pjoin(folder, 'test_input_synb0.npy')
-        target_array = pjoin(folder, 'test_output_synb0.npy')
+        input_array = pjoin(folder, 'test_input_synb0.npz')
+        target_array = pjoin(folder, 'test_output_synb0.npz')
         return input_array, target_array
 
 
