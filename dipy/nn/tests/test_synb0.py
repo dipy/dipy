@@ -15,8 +15,8 @@ if have_tf and have_tfa:
         raise ImportError('Please upgrade to TensorFlow 2+')
 
 
-@pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
-@pytest.mark.skipif(not have_tfa, reason='Requires TensorFlow_addons')
+@pytest.mark.skipif(not all([have_tf, have_tfa]), reason='Requires TensorFlow \
+                                                          , TensorFlow_addons')
 def test_default_weights():
     file_names = get_fnames('synb0_test_data')
     input_arr1 = np.load(file_names[0])['b0'][0]
@@ -29,6 +29,8 @@ def test_default_weights():
     assert_almost_equal(results_arr, target_arr)
 
 
+@pytest.mark.skipif(not all([have_tf, have_tfa]), reason='Requires TensorFlow \
+                                                          , TensorFlow_addons')
 def test_default_weights_batch():
     file_names = get_fnames('synb0_test_data')
     input_arr1 = np.load(file_names[0])['b0']
