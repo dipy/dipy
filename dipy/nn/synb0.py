@@ -38,6 +38,11 @@ def set_logger_level(log_level):
 class UNet3D(tf.keras.Model):
     def __init__(self):
         super(UNet3D, self).__init__()
+
+        if not have_tf:
+            raise tf()
+        if not have_tfa:
+            raise tfa()
         # Encoder
         self.ec0 = self.encoder_block(32, kernel_size=3,
                                       strides=1, padding='same')
