@@ -194,6 +194,11 @@ def test_io_vtk():
     io_tractogram('vtk')
 
 
+@pytest.mark.skipif(not have_fury, reason="Requires FURY")
+def test_io_vtp():
+    io_tractogram('vtp')
+
+
 def test_io_dpy():
     io_tractogram('dpy')
 
