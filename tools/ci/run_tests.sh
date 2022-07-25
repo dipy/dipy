@@ -14,7 +14,7 @@ cd for_testing
 cp ../setup.cfg .
 # No figure windows for mpl; quote to hide : from travis-ci yaml parsing
 echo "backend : agg" > matplotlibrc
-if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" = true ]; then
+if [ "$COVERAGE" == "1" ] || [ "$COVERAGE" == true ]; then
     cp ../.coveragerc .;
     cp ../.codecov.yml .;
     # Run the tests and check for test coverage.
