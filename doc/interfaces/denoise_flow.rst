@@ -96,7 +96,7 @@ will be specifying the patch radius value and the output directory.
 The MMPPCA denoising method is run using the ``dipy_denoise_mppca`` command,
 e.g.::
 
-    dipy_denoise_mppca data/sherbrooke_3shell/HRADI193.nii.gz --patch_radius 10 --out_dir "denoise_mppca_output"
+    dipy_denoise_mppca data/sherbrooke_3shell/HARDI193.nii.gz --patch_radius 10 --out_dir "denoise_mppca_output"
 
 This command will denoise the diffusion image and save it to the specified
 output directory.
