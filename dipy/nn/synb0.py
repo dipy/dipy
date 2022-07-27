@@ -35,141 +35,6 @@ def set_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
-class UNet3D(tf.keras.Model):
-    def __init__(self):
-        super(UNet3D, self).__init__()
-
-        if not have_tf:
-            raise tf()
-        if not have_tfa:
-            raise tfa()
-        # Encoder
-        self.ec0 = self.encoder_block(32, kernel_size=3,
-                                      strides=1, padding='same')
-        self.ec1 = self.encoder_block(64, kernel_size=3,
-                                      strides=1, padding='same')
-        self.pool0 = tf.keras.layers.MaxPool3D()
-        self.ec2 = self.encoder_block(64, kernel_size=3,
-                                      strides=1, padding='same')
-        self.ec3 = self.encoder_block(128, kernel_size=3,
-                                      strides=1, padding='same')
-        self.pool1 = tf.keras.layers.MaxPool3D()
-        self.ec4 = self.encoder_block(128, kernel_size=3,
-                                      strides=1, padding='same')
-        self.ec5 = self.encoder_block(256, kernel_size=3,
-                                      strides=1, padding='same')
-        self.pool2 = tf.keras.layers.MaxPool3D()
-        self.ec6 = self.encoder_block(256, kernel_size=3,
-                                      strides=1, padding='same')
-        self.ec7 = self.encoder_block(512, kernel_size=3,
-                                      strides=1, padding='same')
-        self.pool2 = tf.keras.layers.MaxPool3D()
-        self.el = tf.keras.layers.Conv3D(512, kernel_size=1,
-                                         strides=1, padding='same')
-
-        # Decoder
-        self.dc9 = self.decoder_block(512, kernel_size=2,
-                                      strides=2, padding='valid')
-        self.dc8 = self.decoder_block(256, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc7 = self.decoder_block(256, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc6 = self.decoder_block(256, kernel_size=2,
-                                      strides=2, padding='valid')
-        self.dc5 = self.decoder_block(128, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc4 = self.decoder_block(128, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc3 = self.decoder_block(128, kernel_size=2,
-                                      strides=2, padding='valid')
-        self.dc2 = self.decoder_block(64, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc1 = self.decoder_block(64, kernel_size=3,
-                                      strides=1, padding='same')
-        self.dc0 = self.decoder_block(1, kernel_size=1,
-                                      strides=1, padding='valid')
-        self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1,
-                                                  strides=1, padding='valid')
-
-    def call(self, input):
-        # Encode
-        x = self.ec0(input)
-        syn0 = self.ec1(x)
-
-        x = self.pool0(syn0)
-        x = self.ec2(x)
-        syn1 = self.ec3(x)
-
-        x = self.pool1(syn1)
-        x = self.ec4(x)
-        syn2 = self.ec5(x)
-
-        x = self.pool2(syn2)
-        x = self.ec6(x)
-        x = self.ec7(x)
-
-        # Last layer without relu
-        x = self.el(x)
-
-        x = tf.keras.layers.Concatenate()([self.dc9(x), syn2])
-
-        x = self.dc8(x)
-        x = self.dc7(x)
-
-        x = tf.keras.layers.Concatenate()([self.dc6(x), syn1])
-
-        x = self.dc5(x)
-        x = self.dc4(x)
-
-        x = tf.keras.layers.Concatenate()([self.dc3(x), syn0])
-
-        x = self.dc2(x)
-        x = self.dc1(x)
-
-        x = self.dc0(x)
-
-        # Last layer without relu
-        out = self.dl(x)
-
-        return out
-
-    class encoder_block(tf.keras.layers.Layer):
-        def __init__(self, out_channels, kernel_size, strides, padding):
-            super(UNet3D.encoder_block, self).__init__()
-            self.conv3d = tf.keras.layers.Conv3D(out_channels,
-                                                 kernel_size,
-                                                 strides=strides,
-                                                 padding=padding,
-                                                 use_bias=False)
-            self.instnorm = tfa.layers.InstanceNormalization()
-            self.activation = tf.keras.layers.LeakyReLU(0.01)
-
-        def call(self, input):
-            x = self.conv3d(input)
-            x = self.instnorm(x)
-            x = self.activation(x)
-
-            return x
-
-    class decoder_block(tf.keras.layers.Layer):
-        def __init__(self, out_channels, kernel_size, strides, padding):
-            super(UNet3D.decoder_block, self).__init__()
-            self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels,
-                                                          kernel_size,
-                                                          strides=strides,
-                                                          padding=padding,
-                                                          use_bias=False)
-            self.instnorm = tfa.layers.InstanceNormalization()
-            self.activation = tf.keras.layers.LeakyReLU(0.01)
-
-        def call(self, input):
-            x = self.conv3d(input)
-            x = self.instnorm(x)
-            x = self.activation(x)
-
-            return x
-
-
 class Synb0():
     """
     This class is intended for the Synb0 model.
@@ -208,14 +73,146 @@ class Synb0():
 
         if not have_tf:
             raise tf()
+        if not have_tfa:
+            raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
         set_logger_level(log_level)
 
         # Synb0 network load
 
-        self.model = UNet3D()
+        self.model = self.UNet3D()
         self.model.build(input_shape=(None, 80, 80, 96, 2))
+    
+    class UNet3D(tf.keras.Model):
+        def __init__(self):
+            super(Synb0.UNet3D, self).__init__()
+
+            # Encoder
+            self.ec0 = self.encoder_block(32, kernel_size=3,
+                                        strides=1, padding='same')
+            self.ec1 = self.encoder_block(64, kernel_size=3,
+                                        strides=1, padding='same')
+            self.pool0 = tf.keras.layers.MaxPool3D()
+            self.ec2 = self.encoder_block(64, kernel_size=3,
+                                        strides=1, padding='same')
+            self.ec3 = self.encoder_block(128, kernel_size=3,
+                                        strides=1, padding='same')
+            self.pool1 = tf.keras.layers.MaxPool3D()
+            self.ec4 = self.encoder_block(128, kernel_size=3,
+                                        strides=1, padding='same')
+            self.ec5 = self.encoder_block(256, kernel_size=3,
+                                        strides=1, padding='same')
+            self.pool2 = tf.keras.layers.MaxPool3D()
+            self.ec6 = self.encoder_block(256, kernel_size=3,
+                                        strides=1, padding='same')
+            self.ec7 = self.encoder_block(512, kernel_size=3,
+                                        strides=1, padding='same')
+            self.pool2 = tf.keras.layers.MaxPool3D()
+            self.el = tf.keras.layers.Conv3D(512, kernel_size=1,
+                                            strides=1, padding='same')
+
+            # Decoder
+            self.dc9 = self.decoder_block(512, kernel_size=2,
+                                        strides=2, padding='valid')
+            self.dc8 = self.decoder_block(256, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc7 = self.decoder_block(256, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc6 = self.decoder_block(256, kernel_size=2,
+                                        strides=2, padding='valid')
+            self.dc5 = self.decoder_block(128, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc4 = self.decoder_block(128, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc3 = self.decoder_block(128, kernel_size=2,
+                                        strides=2, padding='valid')
+            self.dc2 = self.decoder_block(64, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc1 = self.decoder_block(64, kernel_size=3,
+                                        strides=1, padding='same')
+            self.dc0 = self.decoder_block(1, kernel_size=1,
+                                        strides=1, padding='valid')
+            self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1,
+                                                    strides=1, padding='valid')
+
+        def call(self, input):
+            # Encode
+            x = self.ec0(input)
+            syn0 = self.ec1(x)
+
+            x = self.pool0(syn0)
+            x = self.ec2(x)
+            syn1 = self.ec3(x)
+
+            x = self.pool1(syn1)
+            x = self.ec4(x)
+            syn2 = self.ec5(x)
+
+            x = self.pool2(syn2)
+            x = self.ec6(x)
+            x = self.ec7(x)
+
+            # Last layer without relu
+            x = self.el(x)
+
+            x = tf.keras.layers.Concatenate()([self.dc9(x), syn2])
+
+            x = self.dc8(x)
+            x = self.dc7(x)
+
+            x = tf.keras.layers.Concatenate()([self.dc6(x), syn1])
+
+            x = self.dc5(x)
+            x = self.dc4(x)
+
+            x = tf.keras.layers.Concatenate()([self.dc3(x), syn0])
+
+            x = self.dc2(x)
+            x = self.dc1(x)
+
+            x = self.dc0(x)
+
+            # Last layer without relu
+            out = self.dl(x)
+
+            return out
+
+        class encoder_block(tf.keras.layers.Layer):
+            def __init__(self, out_channels, kernel_size, strides, padding):
+                super(Synb0.UNet3D.encoder_block, self).__init__()
+                self.conv3d = tf.keras.layers.Conv3D(out_channels,
+                                                    kernel_size,
+                                                    strides=strides,
+                                                    padding=padding,
+                                                    use_bias=False)
+                self.instnorm = tfa.layers.InstanceNormalization()
+                self.activation = tf.keras.layers.LeakyReLU(0.01)
+
+            def call(self, input):
+                x = self.conv3d(input)
+                x = self.instnorm(x)
+                x = self.activation(x)
+
+                return x
+
+        class decoder_block(tf.keras.layers.Layer):
+            def __init__(self, out_channels, kernel_size, strides, padding):
+                super(Synb0.UNet3D.decoder_block, self).__init__()
+                self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels,
+                                                            kernel_size,
+                                                            strides=strides,
+                                                            padding=padding,
+                                                            use_bias=False)
+                self.instnorm = tfa.layers.InstanceNormalization()
+                self.activation = tf.keras.layers.LeakyReLU(0.01)
+
+            def call(self, input):
+                x = self.conv3d(input)
+                x = self.instnorm(x)
+                x = self.activation(x)
+
+                return x
 
     def fetch_default_weights(self, idx):
         r"""
