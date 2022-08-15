@@ -313,11 +313,11 @@ fetch_synb0_test = _make_fetcher(
     "fetch_synb0_test",
     pjoin(dipy_home, 'synb0'),
     'https://ndownloader.figshare.com/files/',
-    ['36379911', '36395652'],
+    ['36379911', '36671850'],
     ['test_input_synb0.npz',
      'test_output_synb0.npz'],
     ['987203aa73de2dac8770f39ed506dc0c',
-     '96450a5e306b82f35313116a4297c188'],
+     '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
 fetch_stanford_t1 = _make_fetcher(

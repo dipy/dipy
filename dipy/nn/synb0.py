@@ -14,8 +14,9 @@ import numpy as np
 tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
 if have_tf and have_tfa:
-    import tensorflow as tf
-    import tensorflow_addons as tfa
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose, Conv3D, LeakyReLU, Concatenate, Layer
+    from tensorflow_addons.layers import InstanceNormalization
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
@@ -38,6 +39,9 @@ def set_logger_level(log_level):
 class Synb0():
     """
     This class is intended for the Synb0 model.
+    The model is the deep learning part of the Synb0-Disco
+    pipeline, thus stand-alone usage is not
+    recommended.
     """
 
     @doctest_skip_parser
@@ -84,7 +88,7 @@ class Synb0():
         self.model = self.UNet3D()
         self.model.build(input_shape=(None, 80, 80, 96, 2))
     
-    class UNet3D(tf.keras.Model):
+    class UNet3D(Model):
         def __init__(self):
             super(Synb0.UNet3D, self).__init__()
 
@@ -93,23 +97,23 @@ class Synb0():
                                         strides=1, padding='same')
             self.ec1 = self.encoder_block(64, kernel_size=3,
                                         strides=1, padding='same')
-            self.pool0 = tf.keras.layers.MaxPool3D()
+            self.pool0 = MaxPool3D()
             self.ec2 = self.encoder_block(64, kernel_size=3,
                                         strides=1, padding='same')
             self.ec3 = self.encoder_block(128, kernel_size=3,
                                         strides=1, padding='same')
-            self.pool1 = tf.keras.layers.MaxPool3D()
+            self.pool1 = MaxPool3D()
             self.ec4 = self.encoder_block(128, kernel_size=3,
                                         strides=1, padding='same')
             self.ec5 = self.encoder_block(256, kernel_size=3,
                                         strides=1, padding='same')
-            self.pool2 = tf.keras.layers.MaxPool3D()
+            self.pool2 = MaxPool3D()
             self.ec6 = self.encoder_block(256, kernel_size=3,
                                         strides=1, padding='same')
             self.ec7 = self.encoder_block(512, kernel_size=3,
                                         strides=1, padding='same')
-            self.pool2 = tf.keras.layers.MaxPool3D()
-            self.el = tf.keras.layers.Conv3D(512, kernel_size=1,
+            self.pool2 = MaxPool3D()
+            self.el = Conv3D(512, kernel_size=1,
                                             strides=1, padding='same')
 
             # Decoder
@@ -133,7 +137,7 @@ class Synb0():
                                         strides=1, padding='same')
             self.dc0 = self.decoder_block(1, kernel_size=1,
                                         strides=1, padding='valid')
-            self.dl = tf.keras.layers.Conv3DTranspose(1, kernel_size=1,
+            self.dl = Conv3DTranspose(1, kernel_size=1,
                                                     strides=1, padding='valid')
 
         def call(self, input):
@@ -156,17 +160,17 @@ class Synb0():
             # Last layer without relu
             x = self.el(x)
 
-            x = tf.keras.layers.Concatenate()([self.dc9(x), syn2])
+            x = Concatenate()([self.dc9(x), syn2])
 
             x = self.dc8(x)
             x = self.dc7(x)
 
-            x = tf.keras.layers.Concatenate()([self.dc6(x), syn1])
+            x = Concatenate()([self.dc6(x), syn1])
 
             x = self.dc5(x)
             x = self.dc4(x)
 
-            x = tf.keras.layers.Concatenate()([self.dc3(x), syn0])
+            x = Concatenate()([self.dc3(x), syn0])
 
             x = self.dc2(x)
             x = self.dc1(x)
@@ -178,16 +182,16 @@ class Synb0():
 
             return out
 
-        class encoder_block(tf.keras.layers.Layer):
+        class encoder_block(Layer):
             def __init__(self, out_channels, kernel_size, strides, padding):
                 super(Synb0.UNet3D.encoder_block, self).__init__()
-                self.conv3d = tf.keras.layers.Conv3D(out_channels,
+                self.conv3d = Conv3D(out_channels,
                                                     kernel_size,
                                                     strides=strides,
                                                     padding=padding,
                                                     use_bias=False)
-                self.instnorm = tfa.layers.InstanceNormalization()
-                self.activation = tf.keras.layers.LeakyReLU(0.01)
+                self.instnorm = InstanceNormalization()
+                self.activation = LeakyReLU(0.01)
 
             def call(self, input):
                 x = self.conv3d(input)
@@ -196,16 +200,16 @@ class Synb0():
 
                 return x
 
-        class decoder_block(tf.keras.layers.Layer):
+        class decoder_block(Layer):
             def __init__(self, out_channels, kernel_size, strides, padding):
                 super(Synb0.UNet3D.decoder_block, self).__init__()
-                self.conv3d = tf.keras.layers.Conv3DTranspose(out_channels,
+                self.conv3d = Conv3DTranspose(out_channels,
                                                             kernel_size,
                                                             strides=strides,
                                                             padding=padding,
                                                             use_bias=False)
-                self.instnorm = tfa.layers.InstanceNormalization()
-                self.activation = tf.keras.layers.LeakyReLU(0.01)
+                self.instnorm = InstanceNormalization()
+                self.activation = LeakyReLU(0.01)
 
             def call(self, input):
                 x = self.conv3d(input)
@@ -217,6 +221,8 @@ class Synb0():
     def fetch_default_weights(self, idx):
         r"""
         Load the model pre-training weights to use for the fitting.
+        While the user can load different weights, the function
+        is mainly intended for the class function 'predict'.
 
         Parameters
         ----------
@@ -292,7 +298,7 @@ class Synb0():
     def predict(self, b0, T1, batch_size=None, average=True):
         r"""
         Wrapper function to faciliate prediction of larger dataset.
-        The function will scale the data to meet the required shape of image.
+        The function will pad the data to meet the required shape of image.
         Note that the b0 and T1 image should have the same shape
 
         Parameters
@@ -313,105 +319,92 @@ class Synb0():
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
             Default is None
+        
+        average : bool
+            Whether the function follows the Synb0-Disco pipeline and
+            averages the prediction of 5 different models.
+            If False, it uses the loaded weights for prediction.
+            Default is True.
         Returns
         -------
         pred_output : np.ndarray (...) or (batch, ...)
             Reconstructed b-inf image(s)
 
         """
+        # Check if shape is as intended
         if all([b0.shape[1:] != (77, 91, 77), b0.shape != (77, 91, 77)]) or \
                 b0.shape != T1.shape:
             raise ValueError('Expected shape (batch, 77, 91, 77) or \
                              (77, 91, 77) for both inputs')
 
+        dim = len(b0.shape)
+
+        # Add batch dimension if not provided
+        if dim == 3:
+            T1 = np.expand_dims(T1, 0)
+            b0 = np.expand_dims(b0, 0)
         shape = b0.shape
-        dim = len(shape)
+
+        # Pad the data to match the model's input shape
+        T1 = np.pad(T1, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
+        b0 = np.pad(b0, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
+
+        # Normalize the data.
+        p99 = np.percentile(b0, 99, axis=(1, 2, 3))
+        for i in range(shape[0]):
+            T1[i] = self.__normalize(T1[i], 150, 0)
+            b0[i] = self.__normalize(b0[i], p99[i], 0)
 
         if dim == 3:
-            T1 = np.pad(T1, ((2, 1), (3, 2), (2, 1)), 'constant')
-            b0 = np.pad(b0, ((2, 1), (3, 2), (2, 1)), 'constant')
-            p99 = np.percentile(b0, 99)
-            T1 = self.__normalize(T1, 150, 0)
-            b0 = self.__normalize(b0, p99, 0)
-        else:
-            T1 = np.pad(T1, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
-            b0 = np.pad(b0, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
-            p99 = np.percentile(b0, 99, axis=(1, 2, 3))
-            for i in range(shape[0]):
-                T1[i] = self.__normalize(T1[i], 150, 0)
-                b0[i] = self.__normalize(b0[i], p99[i], 0)
+            if batch_size is not None:
+                logger.warning('Batch size specified, but not used',
+                                'due to the input not having \
+                                a batch dimension')
+            batch_size = 1
 
+        # Prediction stage
         if average:
             mean_pred = np.zeros(shape+(5,), dtype=np.float32)
             for i in range(5):
                 self.fetch_default_weights(i)
-                if dim == 3:
-                    if batch_size is not None:
-                        logger.warning('Batch size specified, but not used',
-                                       'due to the input not having \
-                                        a batch dimension')
-                    temp = np.expand_dims(np.stack([b0, T1], -1), 0)
-                    input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
-                    prediction = self.__predict(input_data)
-                    prediction = self.__unnormalize(prediction, p99, 0)
-                    prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
-                    prediction = np.moveaxis(prediction, 0, -1)
-
-                else:
-                    if batch_size is None:
-                        batch_size = 1
-                    temp = np.stack([b0, T1], -1)
-                    input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
-                    prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                          dtype=np.float32)
-                    for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                        temp_pred = self.__predict(input_data[:batch_idx])
-                        prediction[:batch_idx] = temp_pred
-                    remainder = np.mod(shape[0], batch_size)
-                    if remainder != 0:
-                        temp_pred = self.__predict(input_data[-remainder:])
-                        prediction[-remainder:] = temp_pred
-                    for j in range(shape[0]):
-                        temp = self.__unnormalize(prediction[j], p99[j], 0)
-                        prediction[j] = temp
-
-                    prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
-                    prediction = np.moveaxis(prediction, 1, -1)
-
-                mean_pred[..., i] = prediction
-            prediction = np.mean(mean_pred, axis=-1)
-        else:
-            if dim == 3:
-                if batch_size is not None:
-                    logger.warning('Batch size specified, but not used',
-                                   'due to the input not having \
-                                    a batch dimension')
-                temp = np.expand_dims(np.stack([b0, T1], -1), 0)
-                input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
-                prediction = self.__predict(input_data)
-                prediction = self.__unnormalize(prediction, p99, 0)
-                prediction = prediction[0, 2:-1, 2:-1, 3:-2, 0]
-                prediction = np.moveaxis(prediction, 0, -1)
-
-            else:
-                if batch_size is None:
-                    batch_size = 1
                 temp = np.stack([b0, T1], -1)
                 input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                 prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                      dtype=np.float32)
+                                        dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                    temp_pred = self.__predict(input_data[:batch_idx])
-                    prediction[:batch_idx] = temp_pred
+                    temp_pred = self.__predict(input_data[batch_idx-batch_size:batch_idx])
+                    prediction[batch_idx-batch_size:batch_idx] = temp_pred
                 remainder = np.mod(shape[0], batch_size)
                 if remainder != 0:
                     temp_pred = self.__predict(input_data[-remainder:])
                     prediction[-remainder:] = temp_pred
                 for j in range(shape[0]):
-                    temp = self.__unnormalize(prediction[j], p99[j], 0)
-                    prediction[j] = temp
+                    prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
 
                 prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
                 prediction = np.moveaxis(prediction, 1, -1)
+
+                mean_pred[..., i] = prediction
+            prediction = np.mean(mean_pred, axis=-1)
+        else:
+            temp = np.stack([b0, T1], -1)
+            input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
+            prediction = np.zeros((shape[0], 80, 80, 96, 1),
+                                    dtype=np.float32)
+            for batch_idx in range(batch_size, shape[0]+1, batch_size):
+                temp_pred = self.__predict(input_data[:batch_idx])
+                prediction[:batch_idx] = temp_pred
+            remainder = np.mod(shape[0], batch_size)
+            if remainder != 0:
+                temp_pred = self.__predict(input_data[-remainder:])
+                prediction[-remainder:] = temp_pred
+            for j in range(shape[0]):
+                prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
+
+            prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
+            prediction = np.moveaxis(prediction, 1, -1)
+        
+        if dim == 3:
+            prediction = prediction[0]
 
         return prediction
