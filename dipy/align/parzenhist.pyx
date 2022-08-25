@@ -648,7 +648,7 @@ cdef _compute_pdfs_dense_2d(double[:, :] static, double[:, :] moving,
         if total_sum > 0:
             for i in range(nbins):
                 for j in range(nbins):
-                    joint[i, j] /= valid_points
+                    joint[i, j] /= total_sum
 
             for i in range(nbins):
                 smarginal[i] /= valid_points
