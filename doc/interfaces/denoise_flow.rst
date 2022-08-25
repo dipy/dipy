@@ -93,7 +93,7 @@ In order to run the MPPCA denoising method, we need to specify the location of
 the diffusion data file, followed by the optional arguments. In this case, we
 will be specifying the patch radius value and the output directory.
 
-The MMPPCA denoising method is run using the ``dipy_denoise_mppca`` command,
+The MPPCA denoising method is run using the ``dipy_denoise_mppca`` command,
 e.g.::
 
     dipy_denoise_mppca data/sherbrooke_3shell/HARDI193.nii.gz --patch_radius 10 --out_dir "denoise_mppca_output"
