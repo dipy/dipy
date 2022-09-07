@@ -218,6 +218,8 @@ class LPCAFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
         for dwi, bval, bvec, odenoised in io_it:
             logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
@@ -288,6 +290,9 @@ class MPPCAFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
+
         for dwi, odenoised, osigma in io_it:
             logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)

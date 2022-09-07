@@ -136,7 +136,7 @@ def grad_tensor(grad, evals):
     # This is the rotation matrix from [1, 0, 0] to this gradient of the sl:
     R = la.svd([grad], overwrite_a=True)[2]
     # This is the 3 by 3 tensor after rotation:
-    T = np.dot(np.dot(R, np.diag(evals)), R.T)
+    T = np.linalg.multi_dot([R, np.diag(evals), R.T])
     return T
 
 
@@ -194,7 +194,7 @@ def streamline_signal(streamline, gtab, evals=(0.001, 0, 0)):
     bvecs = gtab.bvecs[~gtab.b0s_mask]
     bvals = gtab.bvals[~gtab.b0s_mask]
     for ii, tensor in enumerate(tensors):
-        ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+        ADC = np.diag(np.linalg.multi_dot([bvecs, tensor, bvecs.T]))
         # Use the Stejskal-Tanner equation with the ADC as input, and S0 = 1:
         sig[ii] = np.exp(-bvals * ADC)
     return sig - np.mean(sig)
@@ -242,7 +242,7 @@ class LifeSignalMaker(object):
             bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
             bvals = self.gtab.bvals[~self.gtab.b0s_mask]
             tensor = grad_tensor(self.sphere.vertices[idx], self.evals)
-            ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+            ADC = np.diag(np.linalg.multi_dot([bvecs, tensor, bvecs.T]))
             sig = np.exp(-bvals * ADC)
             sig = sig - np.mean(sig)
             self.signal[idx] = sig

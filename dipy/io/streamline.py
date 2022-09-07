@@ -67,7 +67,8 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         nib.streamlines.save(fileobj, filename)
 
     elif extension in ['.vtk', '.vtp', '.fib']:
-        save_vtk_streamlines(sft.streamlines, filename, binary=True)
+        binary = extension in ['.vtk', '.fib']
+        save_vtk_streamlines(sft.streamlines, filename, binary=binary)
     elif extension in ['.dpy']:
         dpy_obj = Dpy(filename, mode='w')
         dpy_obj.write_tracks(sft.streamlines)
