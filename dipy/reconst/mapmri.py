@@ -955,8 +955,9 @@ class MapmriFit(ReconstFit):
         else:
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
 
-        norm_of_laplacian = np.dot(np.dot(self._mapmri_coef, laplacian_matrix),
-                                   self._mapmri_coef)
+        norm_of_laplacian = np.linalg.multi_dot([self._mapmri_coef,
+                                                laplacian_matrix,
+                                                self._mapmri_coef])
         return norm_of_laplacian
 
     def fitted_signal(self, gtab=None):
@@ -2090,7 +2091,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     while gcvold >= gcvnew and i < samples - 2:
         gcvold = gcvnew
         i = i + 1
-        S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
+        S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + lrange[i] * LR), M.T])
         trS = np.trace(S)
         normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
         gcvnew = normyytilde / (K - trS)
@@ -2140,7 +2141,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 def gcv_cost_function(weight, args):
     """The GCV cost function that is iterated [4]."""
     data, M, MMt, K, LR = args
-    S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
+    S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)
