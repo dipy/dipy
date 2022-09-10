@@ -1,14 +1,20 @@
 import tempfile
 import os
 from numpy.testing import assert_raises, assert_equal, run_module_suite
+import pytest
 
+from dipy.utils.optpkg import optional_package
 from dipy.data import read_five_af_bundles
-from dipy.viz.streamline import show_bundles
+
+fury, has_fury, _ = optional_package('fury')
+if has_fury:
+    from dipy.viz.streamline import show_bundles
 
 
 bundles = read_five_af_bundles()
 
 
+@pytest.mark.skipif(not has_fury, reason='Requires FURY')
 def test_output_created():
     views = ['axial', 'sagital', 'coronal']
 
@@ -26,6 +32,7 @@ def test_output_created():
         assert_equal(True, os.path.exists(fname))
 
 
+@pytest.mark.skipif(not has_fury, reason='Requires FURY')
 def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
 
