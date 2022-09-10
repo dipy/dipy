@@ -1499,7 +1499,6 @@ def read_qte_lte_pte():
     return data_img, mask_img, gtab
 
 
-<<<<<<< HEAD
 def read_DiB_70_lte_pte_ste():
     """Read q-space trajectory encoding data with 70 between linear, planar,
     and spherical tensor encoding measurements.
@@ -1574,7 +1573,8 @@ def read_DiB_217_lte_pte_ste():
                      ['STE' for i in range(10)])
     gtab = gradient_table(bvals, bvecs, btens=btens)
     return data_img, mask_img, gtab
-=======
+
+
 def extract_example_tracts(out_dir):
     """ Extract 5 'AF_L','CST_R' and 'CC_ForcepsMajor' trk files in out_dir
     folder.
@@ -1615,4 +1615,3 @@ def read_five_af_bundles():
             bundles.append(bundle_obj.streamlines)
 
     return bundles
->>>>>>> 2019b2dca (RF: add dedicated functions to read and plot bundles)
