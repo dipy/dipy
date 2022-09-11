@@ -1,4 +1,8 @@
-from dipy.viz import window, actor
+from dipy.utils.optpkg import optional_package
+
+fury, has_fury, _ = optional_package('fury')
+if has_fury:
+    from dipy.viz import window, actor
 
 
 def show_bundles(bundles, interactive=True, view='sagital', colors=None,
