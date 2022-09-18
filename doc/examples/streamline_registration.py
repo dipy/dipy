@@ -55,7 +55,7 @@ from dipy.data.fetcher import (fetch_mni_template, read_mni_template)
 from dipy.align.reslice import reslice
 
 fetch_mni_template()
-img_t2_mni = read_mni_template("a", contrast="T2")
+img_t2_mni = read_mni_template(version="a", contrast="T2")
 
 new_zooms = (2., 2., 2.)
 data2, affine2 = reslice(np.asarray(img_t2_mni.dataobj), img_t2_mni.affine,
@@ -63,7 +63,7 @@ data2, affine2 = reslice(np.asarray(img_t2_mni.dataobj), img_t2_mni.affine,
 img_t2_mni = nib.Nifti1Image(data2, affine=affine2)
 
 """
-We filter the diffusion data from the Stanford HARDI dataset to find the b0
+We filter the diffusion data from the Stanford HARDI dataset to find all the b0
 images.
 
 """
