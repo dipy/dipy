@@ -13,6 +13,7 @@ from dipy.align import metrics as metrics
 from dipy.align import vector_fields as vfu
 from dipy.align import VerbosityLevels
 from dipy.align.imwarp import DiffeomorphicMap
+from dipy.tracking.streamline import deform_streamlines
 
 
 def test_mult_aff():
@@ -1066,3 +1067,10 @@ def test_coordinate_mapping():
         # Interpolate at warped points and verify it's equal to direct warping
         actual, inside = interpolate_f(moving_image, wpoints)
         assert_array_almost_equal(actual, expected, decimal=5)
+
+        if dim in [3, 4]:
+            wpoints_2 = deform_streamlines([points, ], disp, np.eye(4),
+                                           domain_grid2world, np.eye(4),
+                                           codomain_grid2world)
+
+            assert_array_almost_equal(wpoints, wpoints_2[0])
