@@ -6,6 +6,7 @@ import abc
 import numpy as np
 import numpy.linalg as npl
 import nibabel as nib
+from nibabel.streamlines import ArraySequence as Streamlines
 
 from dipy.align import vector_fields as vfu
 from dipy.align import floating
@@ -650,6 +651,9 @@ class DiffeomorphicMap(object):
 
     def transform_points(self, points, coord2world=None,
                          world2coord=None):
+        if isinstance(points, Streamlines):
+            points = points.get_data()
+
         if self.is_inverse:
             out = self._warp_coordinates_backward(points, coord2world,
                                                   world2coord)
@@ -660,6 +664,9 @@ class DiffeomorphicMap(object):
 
     def transform_points_inverse(self, points, coord2world=None,
                                  world2coord=None):
+        if isinstance(points, Streamlines):
+            points = points.get_data()
+
         if self.is_inverse:
             out = self._warp_coordinates_forward(points, coord2world,
                                                  world2coord)
