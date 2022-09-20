@@ -19,6 +19,11 @@ if have_tf and have_tfa:
     from tensorflow_addons.layers import InstanceNormalization
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
+else:
+    class Model:
+        pass
+    class Layer:
+        pass
 
 logging.basicConfig()
 logger = logging.getLogger('synb0')
