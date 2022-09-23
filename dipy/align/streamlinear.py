@@ -1321,7 +1321,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
     return bundles, aff_list, d
 
 
-def get_unique_pairs(n_bundle, pairs=None, excluded=None):
+def get_unique_pairs(n_bundle, pairs=None):
     """ Make unique pairs from n_bundle bundles.
 
     The function allows to input a previous pairs asignment so that the new
@@ -1334,12 +1334,6 @@ def get_unique_pairs(n_bundle, pairs=None, excluded=None):
 
     pairs : array, optional
         array containing the indexes of previous pairs.
-
-    excluded : int, optional
-        Index of a bundle that was excluded previously. This is used when
-        n_bundles is odd and and we want to avoid the same bundle being
-        consecutively.
-
     """
     if not isinstance(n_bundle, int):
         raise TypeError(f"n_bundle must be an int but is a {type(n_bundle)}")
@@ -1352,13 +1346,14 @@ def get_unique_pairs(n_bundle, pairs=None, excluded=None):
     n_pair = n_bundle // 2
 
     # If n_bundle is odd, we exclude one ensuring it wasn't previously excluded
+    excluded = None
     if np.mod(n_bundle, 2) == 1:
-        if excluded is None:
+        if pairs is None:
             excluded = np.random.choice(index)
         else:
             excluded = np.random.choice(np.unique(pairs))
-            np.append(index, excluded)
-        index = np.delete(index, index == excluded)
+
+        index = index[index != excluded]
 
     # Shuffle indexes
     index = np.random.permutation(index)

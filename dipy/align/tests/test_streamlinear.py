@@ -503,7 +503,7 @@ def test_get_unique_pairs():
     assert_equal(isinstance(exclude, (int, np.int64, np.int32)), True)
 
     # Iterative case
-    new_pairs, new_exclude = get_unique_pairs(5, pairs, exclude)
+    new_pairs, new_exclude = get_unique_pairs(5, pairs)
     assert_equal(len(np.unique(pairs)), 4)
     assert_equal(exclude != new_exclude, True)
 
