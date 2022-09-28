@@ -226,7 +226,9 @@ def main(**extra_args):
                     'dipy.workflows',
                     'dipy.workflows.tests',
                     'dipy.nn',
-                    'dipy.nn.tests'],
+                    'dipy.nn.tests',
+                    'dipy.atlasing',
+                    'dipy.atlasing.tests'],
 
           ext_modules=EXTS,
           package_data={'dipy': [pjoin('data', 'files', '*')],

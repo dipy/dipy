@@ -679,6 +679,8 @@ def get_fnames(name='small_64D'):
     if name == "t-design":
         N = 45
         return pjoin(DATA_DIR, 'tdesign' + str(N) + '.txt')
+    if name == 'minimal_bundles':
+        return pjoin(DATA_DIR, 'minimal_bundles.zip')
     if name == 'scil_b0':
         files, folder = fetch_scil_b0()
         files = files['datasets_multi-site_all_companies.zip'][2]
