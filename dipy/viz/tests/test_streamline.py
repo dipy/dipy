@@ -1,6 +1,6 @@
 import tempfile
 import os
-from numpy.testing import assert_raises, assert_equal, run_module_suite
+from numpy.testing import assert_raises, assert_equal
 import pytest
 
 from dipy.utils.optpkg import optional_package
@@ -9,7 +9,7 @@ from dipy.data import read_five_af_bundles
 fury, has_fury, _ = optional_package('fury')
 if has_fury:
     from dipy.viz.streamline import show_bundles
-
+    from dipy.viz import window
 
 bundles = read_five_af_bundles()
 
@@ -37,5 +37,9 @@ def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
 
 
-if __name__ == '__main__':
-    run_module_suite()
+@pytest.mark.skipif(not has_fury, reason='Requires FURY')
+def test_empty_window():
+    scene = show_bundles(bundles, False)
+    image = window.snapshot(scene, offscreen=True)
+    report = window.analyze_snapshot(image, find_objects=True)
+    assert_equal(report.objects, 1)
