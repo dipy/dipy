@@ -57,7 +57,7 @@ colors = [[0.91, 0.26, 0.35], [0.99, 0.50, 0.38], [0.99, 0.88, 0.57],
           [0.69, 0.85, 0.64], [0.51, 0.51, 0.63]]
 
 show_bundles(bundles, interactive=False, colors=colors,
-             fname='before_group_registration.png')
+             save_as='before_group_registration.png')
 
 """
 .. figure:: before_group_registration.png
@@ -78,7 +78,7 @@ common space:
 """
 
 show_bundles(bundles_reg, interactive=False, colors=colors,
-             fname='after_group_registration.png')
+             save_as='after_group_registration.png')
 
 """
 .. figure:: after_group_registration.png

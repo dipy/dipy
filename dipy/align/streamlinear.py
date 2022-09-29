@@ -590,7 +590,7 @@ class StreamlineRegistrationMap(object):
         return transform_streamlines(moving, self.matrix)
 
 
-class JointStreamlineRegistrationMap(object):
+class JointStreamlineRegistrationMap():
 
     def __init__(self, xopt, fopt, matopt_history, funcs, iterations):
         """ A map holding the optimum affine matrices for halfway streamline

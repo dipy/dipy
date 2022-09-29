@@ -6,7 +6,7 @@ if has_fury:
 
 
 def show_bundles(bundles, interactive=True, view='sagital', colors=None,
-                 linewidth=0.3, fname=None):
+                 linewidth=0.3, save_as=None):
     """ Render bundles to visualize them interactively or save them into a png.
 
     The function allows to just render the bundles in an interactive plot or
@@ -16,16 +16,16 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
     ----------
     bundles : list
         Bundles to be rendered.
-    interactive : boolean
+    interactive : boolean, optional
         If True a 3D interactive rendering is created. Default is True.
-    view : string
+    view : str, optional
         Viewing angle. Supported options: 'sagital','axial' and 'coronal'.
         Default is 'sagital'.
-    colors : list
+    colors : list, optional
        Colors to be used for each bundle. If None default colors are used.
-    linewidth : float
+    linewidth : float, optional
         Width of each rendered streamline. Default is 0.3.
-    fname : string
+    save_as : str, optional
         If not None rendered scene is stored in a png file with that name.
         Default is None.
 
@@ -60,7 +60,7 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
     if interactive:
         window.show(scene)
 
-    if fname is not None:
-        window.record(scene, n_frames=1, out_path=fname, size=(900, 900))
+    if save_as is not None:
+        window.record(scene, n_frames=1, out_path=save_as, size=(900, 900))
 
     return scene
