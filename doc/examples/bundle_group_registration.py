@@ -11,7 +11,7 @@ How it works
 ============
 
 The bundle groupwise registration framework in DIPY relies on streamline linear
-registration (SLR) and an iterative process.
+registration (SLR) [Garyfallidis15]_ and an iterative process.
 
 In each iteration, bundles are shuffled and matched in pairs. Then, each pair
 of bundles are simultaneously moved to a common space in between both.
@@ -24,7 +24,8 @@ When the reduction in the group distance reaches a tolerance level the process
 ends.
 
 To reduce computational time, by default both registration and distance
-computation are performed on streamline centroids (obtained with Quickbundles).
+computation are performed on streamline centroids (obtained with Quickbundles)
+[Garyfallidis12]_.
 
 Example
 =======
@@ -96,4 +97,19 @@ computed in each iteration.
 By changing the input arguments the user can modify the transformation (up to
 affine), the number of maximum number of streamlines per bundle, the level of
 clustering, or the tolerance of the method.
+
+References
+----------
+
+.. [Garyfallidis15] Garyfallidis et al., "Robust and efficient linear
+                    registration of white-matter fascicles in the space of
+                    streamlines", Neuroimage, 117:124-140, 2015.
+.. [Garyfallidis12] Garyfallidis E. et al., "QuickBundles a method for
+                    tractography simplification", Frontiers in Neuroscience,
+                    vol 6, no 175, 2012.
+.. [RomeroBascones22] Romero-Bascones D. et al., "BundleAtlasing: unbiased
+                    population-specific atlasing of bundles in streamline
+                    space", ISMRM, 2022.
+
+
 """
