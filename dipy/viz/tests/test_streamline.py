@@ -24,11 +24,11 @@ def test_output_created():
     with tempfile.TemporaryDirectory() as temp_dir:
         for view in views:
             fname = os.path.join(temp_dir, f'test_{view}.png')
-            show_bundles(bundles, False, view=view, fname=fname)
+            show_bundles(bundles, False, view=view, save_as=fname)
             assert_equal(True, os.path.exists(fname))
 
         fname = os.path.join(temp_dir, 'test_colors.png')
-        show_bundles(bundles, False, colors=colors, fname=fname)
+        show_bundles(bundles, False, colors=colors, save_as=fname)
         assert_equal(True, os.path.exists(fname))
 
 
