@@ -1596,7 +1596,7 @@ def read_five_af_bundles():
     """ Load 5 small left arcuate fasciculus bundles.
 
     Returns
-    --------
+    -------
     bundles: list of ArraySequence
         List with loaded bundles.
 
@@ -1604,7 +1604,6 @@ def read_five_af_bundles():
 
     subjects = ['sub_1', 'sub_2', 'sub_3', 'sub_4', 'sub_5']
 
-    # Extract bundles from .zip to a temporal folder and load them
     with tempfile.TemporaryDirectory() as temp_dir:
         extract_example_tracts(temp_dir)
 
