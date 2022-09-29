@@ -29,10 +29,6 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
         If not None rendered scene is stored in a png file with that name.
         Default is None.
 
-    Returns
-    -------
-    scene : FURY Scene() object with rendered bundles.
-
     """
 
     scene = window.Scene()
@@ -62,5 +58,3 @@ def show_bundles(bundles, interactive=True, view='sagital', colors=None,
 
     if save_as is not None:
         window.record(scene, n_frames=1, out_path=save_as, size=(900, 900))
-
-    return scene
