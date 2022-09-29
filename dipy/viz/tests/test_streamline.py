@@ -25,21 +25,17 @@ def test_output_created():
         for view in views:
             fname = os.path.join(temp_dir, f'test_{view}.png')
             show_bundles(bundles, False, view=view, save_as=fname)
-            assert_equal(True, os.path.exists(fname))
+            assert_equal(os.path.exists(fname), True)
 
         fname = os.path.join(temp_dir, 'test_colors.png')
         show_bundles(bundles, False, colors=colors, save_as=fname)
-        assert_equal(True, os.path.exists(fname))
+        assert_equal(os.path.exists(fname), True)
+
+        # Check rendered image is not empty
+        report = window.analyze_snapshot(fname, find_objects=True)
+        assert_equal(report.objects > 0, True)
 
 
 @pytest.mark.skipif(not has_fury, reason='Requires FURY')
 def test_incorrect_view():
     assert_raises(ValueError, show_bundles, bundles, False, 'wrong_view')
-
-
-@pytest.mark.skipif(not has_fury, reason='Requires FURY')
-def test_empty_window():
-    scene = show_bundles(bundles, False)
-    image = window.snapshot(scene, offscreen=True)
-    report = window.analyze_snapshot(image, find_objects=True)
-    assert_equal(report.objects, 1)
