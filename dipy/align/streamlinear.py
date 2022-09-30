@@ -1,5 +1,6 @@
 import logging
 import abc
+from itertools import combinations
 import numpy as np
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
@@ -220,6 +221,69 @@ class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
         return bundle_sum_distance(xopt, self.static, self.moving)
 
 
+class JointBundleMinDistanceMetric(StreamlineDistanceMetric):
+    """ Bundle-based Minimum Distance for joint optimization.
+
+    This cost function is used by the StreamlineLinearRegistration class when
+    running halfway streamline linear registration for unbiased groupwise
+    bundle registration and atlasing.
+
+    It computes the BMD distance after moving both static and moving bundles to
+    a halfway space in between both.
+
+    Methods
+    -------
+    setup(static, moving)
+    distance(xopt)
+
+    Notes
+    -----
+    In this metric both static and moving bundles are treated equally (i.e.,
+    there is no static reference bundle as both are intended to move). The
+    naming convention is kept for consistency.
+    """
+
+    def setup(self, static, moving):
+        """ Setup static and moving sets of streamlines.
+
+        Parameters
+        ----------
+        static : streamlines
+            Set of streamlines
+        moving : streamlines
+            Set of streamlines
+
+        Notes
+        -----
+        Call this after the object is initiated and before distance.
+        Num_threads is not used in this class.
+        """
+        self.static = static
+        self.moving = moving
+
+    def distance(self, xopt):
+        """ Distance calculated from this Metric.
+
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector. These affine parameters
+            are used to derive the corresponding halfway transformation
+            parameters for each bundle.
+        """
+        # Define halfway space transformations
+        x_static = np.concatenate((xopt[0:6]/2, (1+xopt[6:9])/2, xopt[9:12]/2))
+        x_moving = np.concatenate((-xopt[0:6]/2, 2/(1+xopt[6:9]),
+                                   -xopt[9:12]/2))
+
+        # Move static bundle to the halfway space
+        aff_static = compose_matrix44(x_static)
+        static = transform_streamlines(self.static, aff_static)
+
+        # Move moving bundle to halfway space and compute distance
+        return bundle_min_distance(x_moving, static, self.moving)
+
+
 class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
@@ -411,8 +475,16 @@ class StreamlineLinearRegistration(object):
                                             compose_matrix44(vecs),
                                             static_mat))
 
-        srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
-                                        mat_history, opt.nfev, opt.nit)
+        # If we are running halfway streamline linear registration (for
+        # groupwise registration or atlasing) the registration map is different
+        if isinstance(self.metric, JointBundleMinDistanceMetric):
+            srm = JointStreamlineRegistrationMap(opt.xopt, opt.fopt,
+                                                 mat_history, opt.nfev,
+                                                 opt.nit)
+        else:
+            srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
+                                            mat_history, opt.nfev, opt.nit)
+
         del opt
         return srm
 
@@ -516,6 +588,75 @@ class StreamlineRegistrationMap(object):
 
         """
         return transform_streamlines(moving, self.matrix)
+
+
+class JointStreamlineRegistrationMap():
+
+    def __init__(self, xopt, fopt, matopt_history, funcs, iterations):
+        """ A map holding the optimum affine matrices for halfway streamline
+        linear registration and some other parameters of the optimization.
+
+        xopt is optimized by StreamlineLinearRegistration using the
+        JointBundleMinDistanceMetric. In that case the mat argument of the
+        optimize method needs to be np.eye(4) to avoid streamline centering.
+
+        This constructor derives and stores the transformations to move both
+        static and moving bundles to the halfway space.
+
+        Parameters
+        ----------
+        xopt : array
+            1d array with the parameters of the transformation.
+
+        fopt : float
+            Final value of the metric.
+
+        matopt_history : array
+            All transformation matrices created during the optimization.
+
+        funcs : int
+            Number of function evaluations of the optimizer.
+
+        iterations : int
+            Number of iterations of the optimizer.
+
+        """
+
+        trans, angles, scale, shear = xopt[:3], xopt[3:6], xopt[6:9], xopt[9:]
+
+        self.x1 = np.concatenate((trans/2, angles/2, (1+scale)/2, shear/2))
+        self.x2 = np.concatenate((-trans/2, -angles/2, 2/(1+scale), -shear/2))
+        self.matrix1 = compose_matrix44(self.x1)
+        self.matrix2 = compose_matrix44(self.x2)
+        self.fopt = fopt
+        self.matrix_history = matopt_history
+        self.funcs = funcs
+        self.iterations = iterations
+
+    def transform(self, static, moving):
+        """ Transform both static and moving bundles to the halfway space.
+
+        All this does is apply ``self.matrix1`` and `self.matrix2`` to the
+        static and moving bundles, respectively.
+
+        Parameters
+        ----------
+        static : streamlines
+
+        moving : streamlines
+
+        Returns
+        -------
+        static : streamlines
+
+        moving : streamlines
+
+        """
+
+        static = transform_streamlines(static, self.matrix1)
+        moving = transform_streamlines(moving, self.matrix2)
+
+        return static, moving
 
 
 def bundle_sum_distance(t, static, moving, num_threads=None):
@@ -1018,6 +1159,220 @@ def slr_with_qbx(static, moving,
 # bundles using local and global streamline-based registration and
 # clustering, NeuroImage, 2017.
 whole_brain_slr = slr_with_qbx
+
+
+def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
+                  nb_pts=20, select_random=10000, verbose=False, rng=None):
+    """ Function to perform unbiased groupwise bundle registration.
+
+    All bundles are moved to the same space by iteratively applying halfway
+    streamline linear registration in pairs. With each iteration, bundles get
+    closer to each other until the procedure converges and there is no more
+    improvement.
+
+    Parameters
+    ----------
+    bundles : list
+        List with streamlines of the bundles to be registered.
+
+    x0 : str, optional
+        rigid, similarity or affine transformation model. Default: affine.
+
+    tol : float, optional
+        Tolerance value to be used to assume convergence. Default: 0.
+
+    max_iter : int, optional
+        Maximum number of iterations. Depending on the number of bundles to be
+        registered this may need to be larger. Default: 20.
+
+    qbx_thr : variable int, optional
+        Thresholds for Quickbundles used for clustering streamlines and reduce
+        computational time. If None, no clustering is performed. Higher values
+        cluster streamlines into a smaller number of centroids. Default: [4].
+
+    nb_pts : int, optional
+        Number of points for discretizing each streamline. Default: 20.
+
+    select_random : int, optional
+        Maximum number of streamlines for each bundle. If None, all the
+        streamlines are used. Deafult: 10000.
+
+    verbose : bool, optional
+        If True, logs information. Default: False.
+
+    rng : RandomState
+        If None, creates RandomState in function. Default: None.
+
+    References
+    ----------
+    .. [Garyfallidis15] Garyfallidis et al. "Robust and efficient linear
+    registration of white-matter fascicles in the space of streamlines",
+    NeuroImage, 117, 124--140, 2015
+    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+            bundle alignment for group comparisons", ISMRM, 2014.
+    .. [Garyfallidis17] Garyfallidis et al. Recognition of white matter
+    bundles using local and global streamline-based registration and
+    clustering, Neuroimage, 2017.
+
+    """
+    def group_distance(bundles, n_bundle):
+        all_pairs = list(combinations(np.arange(n_bundle), 2))
+        d = np.zeros(len(all_pairs))
+        for i, ind in enumerate(all_pairs):
+            mdf = distance_matrix_mdf(bundles[ind[0]], bundles[ind[1]])
+            rows, cols = mdf.shape
+            d[i] = 0.25 * (np.sum(np.min(mdf, axis=0)) / float(cols) +
+                           np.sum(np.min(mdf, axis=1)) / float(rows)) ** 2
+        return d
+
+    if rng is None:
+        rng = np.random.RandomState()
+
+    metric = JointBundleMinDistanceMetric()
+
+    bundles = bundles.copy()
+    n_bundle = len(bundles)
+
+    if verbose:
+        logging.info("Groupwise bundle registration running.")
+        logging.info(f"Number of bundles found: {n_bundle}.")
+
+    # Preprocess bundles: streamline selection, centering and clustering
+    centroids = []
+    aff_list = []
+    for i in range(n_bundle):
+        if verbose:
+            logging.info(f"Preprocessing: bundle {i}/{n_bundle}: " +
+                         f"{len(bundles[i])} streamlines found.")
+
+        if select_random is not None:
+            bundles[i] = select_random_set_of_streamlines(bundles[i],
+                                                          select_random, rng)
+
+        bundles[i] = set_number_of_points(bundles[i], nb_pts)
+
+        bundle, shift = center_streamlines(bundles[i])
+        aff_list.append(compose_matrix44(-shift))
+
+        if qbx_thr is not None:
+            cluster_map = qbx_and_merge(bundle, thresholds=qbx_thr, rng=rng)
+            bundle = remove_clusters_by_size(cluster_map, 1)
+
+        centroids.append(bundle)
+
+    # Compute initial group distance (mean distance between all bundle pairs)
+    d = group_distance(centroids, n_bundle)
+
+    if verbose:
+        logging.info(f"Intial group distance: {np.mean(d)}.")
+
+    # Make pairs and start iterating
+    pairs, excluded = get_unique_pairs(n_bundle)
+    n_pair = n_bundle//2
+
+    for i_iter in range(1, max_iter+1):
+        for i_pair, pair in enumerate(pairs):
+            ind1 = pair[0]
+            ind2 = pair[1]
+
+            centroids1 = centroids[ind1]
+            centroids2 = centroids[ind2]
+
+            hslr = StreamlineLinearRegistration(x0=x0, metric=metric)
+            hsrm = hslr.optimize(static=centroids1, moving=centroids2,
+                                 mat=np.eye(4))
+
+            # Update transformation matrices
+            aff_list[ind1] = np.dot(hsrm.matrix1, aff_list[ind1])
+            aff_list[ind2] = np.dot(hsrm.matrix2, aff_list[ind2])
+
+            centroids1, centroids2 = hsrm.transform(centroids1, centroids2)
+
+            centroids[ind1] = centroids1
+            centroids[ind2] = centroids2
+
+            if verbose:
+                logging.info(f"Iteration: {i_iter} pair: {i_pair+1}/{n_pair}.")
+
+        d = np.vstack((d, group_distance(centroids, n_bundle)))
+
+        # Use as reference the distance 3 iterations ago
+        prev_iter = np.max([0, i_iter-3])
+        d_improve = np.mean(d[prev_iter, :]) - np.mean(d[i_iter, :])
+
+        if verbose:
+            logging.info(f"Iteration {i_iter} group distance: " +
+                         f"{np.mean(d[i_iter, :])}")
+            logging.info(f"Iteration {i_iter} improvement previous 3: " +
+                         f"{d_improve}")
+
+        if d_improve < tol:
+            if verbose:
+                logging.info("Registration converged " +
+                             f"{d_improve} < {tol}")
+            break
+
+        pairs, excluded = get_unique_pairs(n_bundle, pairs)
+
+    # Move bundles just once at the end
+    for i, aff in enumerate(aff_list):
+        bundles[i] = transform_streamlines(bundles[i], aff)
+
+    return bundles, aff_list, d
+
+
+def get_unique_pairs(n_bundle, pairs=None):
+    """ Make unique pairs from n_bundle bundles.
+
+    The function allows to input a previous pairs asignment so that the new
+    pairs are different.
+
+    Parameters
+    ----------
+    n_bundle : int
+        Number of bundles to be matched in pairs.
+
+    pairs : array, optional
+        array containing the indexes of previous pairs.
+    """
+    if not isinstance(n_bundle, int):
+        raise TypeError(f"n_bundle must be an int but is a {type(n_bundle)}")
+
+    if n_bundle <= 1:
+        raise ValueError(f"n_bundle must be > 1 but is {n_bundle}")
+
+    # Generate indexes
+    index = np.arange(n_bundle)
+    n_pair = n_bundle // 2
+
+    # If n_bundle is odd, we exclude one ensuring it wasn't previously excluded
+    excluded = None
+    if np.mod(n_bundle, 2) == 1:
+        if pairs is None:
+            excluded = np.random.choice(index)
+        else:
+            excluded = np.random.choice(np.unique(pairs))
+
+        index = index[index != excluded]
+
+    # Shuffle indexes
+    index = np.random.permutation(index)
+    new_pairs = index.reshape((n_pair, 2))
+
+    if pairs is None or n_bundle <= 3:
+        return new_pairs, excluded
+
+    # Repeat the shuffle process until we find new unique pairs
+    all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1],
+                           pairs, pairs[:, ::-1]))
+
+    while len(np.unique(all_pairs, axis=0)) < 4*n_pair:
+        index = np.random.permutation(index)
+        new_pairs = index.reshape((n_pair, 2))
+        all_pairs = np.vstack((new_pairs, new_pairs[:, ::-1],
+                               pairs, pairs[:, ::-1]))
+
+    return new_pairs, excluded
 
 
 def _threshold(x, th):
