@@ -162,7 +162,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         
         # !!! Add basic case
         if not self.angle_variation:
-            adj_matrix=self.adj_matrix
+            adj_matrix=self._adj_matrix
         else:
             angle=self._angle_array[int(point[0]),int(point[1]),int(point[2])]
             adj_matrix = self._adj_matrix_dic[angle]
