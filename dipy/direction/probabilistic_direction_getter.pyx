@@ -158,8 +158,11 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         _len = pmf.shape[0]
         
         # !!! Add basic case
-        angle=self._angle_array[int(point[0]),int(point[1]),int(point[2])]
-        adj_matrix = self._adj_matrix_dic[angle]
+        if len(_adj_matrix):
+            adj_matrix=self.adj_matrix
+        else:
+            angle=self._angle_array[int(point[0]),int(point[1]),int(point[2])]
+            adj_matrix = self._adj_matrix_dic[angle]
 
         bool_array = adj_matrix[
             (direction[0], direction[1], direction[2])]
