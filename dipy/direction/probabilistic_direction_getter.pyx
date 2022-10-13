@@ -32,6 +32,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         # !!!
         dict _adj_matrix_dic
         long [:,:,:] _angle_array
+        bint angle_variation
 
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, angle_var=None, **kwargs):
         """Direction getter from a pmf generator.
@@ -67,10 +68,12 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         self.vertices = self.sphere.vertices.copy()
         if angle_var is None:
             self._set_adjacency_matrix(sphere, self.cos_similarity)
+            self.angle_variation=False
         # !!!
         else:
             # self._angle_array=np.zeros(angle_var[:3].shape)
             self._set_adjacency_matrix_dic(sphere, angle_var)
+            self.angle_variation=True
             print('Angle variation enabled')
 
     def _set_adjacency_matrix(self, sphere, cos_similarity):
@@ -158,7 +161,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         _len = pmf.shape[0]
         
         # !!! Add basic case
-        if len(_adj_matrix):
+        if not self.angle_variation:
             adj_matrix=self.adj_matrix
         else:
             angle=self._angle_array[int(point[0]),int(point[1]),int(point[2])]
