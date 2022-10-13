@@ -29,9 +29,11 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
     cdef:
         double[:, :] vertices
         dict _adj_matrix
+        # !!!
+        dict _adj_matrix_dic
+        long [:,:,:] _angle_array
 
-    def __init__(self, pmf_gen, max_angle, sphere,
-                 pmf_threshold=.1, angle_var=None, **kwargs):
+    def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=.1, angle_var=None, **kwargs):
         """Direction getter from a pmf generator.
 
         Parameters
@@ -67,6 +69,7 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
             self._set_adjacency_matrix(sphere, self.cos_similarity)
         # !!!
         else:
+            # self._angle_array=np.zeros(angle_var[:3].shape)
             self._set_adjacency_matrix_dic(sphere, angle_var)
             print('Angle variation enabled')
 
@@ -82,25 +85,49 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         adj_matrix.update(zip(keys, matrix))
         self._adj_matrix = adj_matrix
         
+    # # !!!
+    # def _set_adjacency_matrix_dic(self, sphere, wmfod):
+    #     '''
+    #     Requires too much RAM
+    #     '''
+        
+    #     max_angle=(np.arctan((-wmfod[:,:,:,0]+0.3)*20)+np.pi/2)/np.pi*30+15
+    #     cos_similarity=np.cos(np.deg2rad(max_angle))
+    #     matrix=np.dot(sphere.vertices, sphere.vertices.T)
+    #     matrix_array = np.full(wmfod.shape[:3]+matrix.shape,matrix)
+    #     keys = [tuple(v) for v in sphere.vertices]
+    #     keys_m = [tuple(-v) for v in sphere.vertices]
+        
+    #     adj_matrix_dic={}
+        
+    #     for xyz in np.ndindex(wmfod.shape[:3]):
+                        
+    #         matrix_array[xyz] = (abs(matrix_array[xyz]) >= cos_similarity[xyz]).astype('uint8')
+    #         adj_matrix_dic[xyz] = dict(zip(keys, matrix_array[xyz]))
+    #         adj_matrix_dic[xyz].update(zip(keys_m, matrix_array[xyz]))
+        
+    #     self._adj_matrix_dic = adj_matrix_dic
+        
     # !!!
     def _set_adjacency_matrix_dic(self, sphere, wmfod):
         
-        max_angle=(np.arctan((-wmfod[:,:,:,0]+0.3)*20)+np.pi/2)/np.pi*30+15
-        cos_similarity=np.cos(np.deg2rad(max_angle))
-        matrix=np.dot(sphere.vertices, sphere.vertices.T)
-        matrix_array = np.full(wmfod.shape[:3]+matrix.shape,matrix)
+        self._angle_array=np.round((np.arctan((-wmfod[:,:,:,0]+0.3)*20)+np.pi/2)/np.pi*30+15).astype(int)
+        
+        min_angle=15
+        max_angle=45
+        
+        matrix = np.dot(sphere.vertices, sphere.vertices.T)
         keys = [tuple(v) for v in sphere.vertices]
         keys_m = [tuple(-v) for v in sphere.vertices]
         
         adj_matrix_dic={}
         
-        for xyz in np.ndindex(wmfod.shape[:3]):
-                        
-            matrix_array[xyz] = (abs(matrix_array[xyz]) >=
-                                 cos_similarity[xyz]).astype('uint8')
+        for angle in range(min_angle,max_angle+1):
             
-            adj_matrix_dic[xyz] = dict(zip(keys, matrix_array[xyz]))
-            adj_matrix_dic[xyz].update(zip(keys_m, matrix_array[xyz]))
+            cos_similarity=np.cos(np.deg2rad(angle))
+            matrix_d = (abs(matrix) >= cos_similarity).astype('uint8')
+            adj_matrix_dic[angle] = dict(zip(keys, matrix_d))
+            adj_matrix_dic[angle].update(zip(keys_m, matrix_d))
         
         self._adj_matrix_dic = adj_matrix_dic
 
@@ -130,8 +157,9 @@ cdef class ProbabilisticDirectionGetter(PmfGenDirectionGetter):
         pmf = self._get_pmf(point)
         _len = pmf.shape[0]
         
-        # !!!
-        adj_matrix = self._adj_matrix_dic[point]
+        # !!! Add basic case
+        angle=self._angle_array[int(point[0]),int(point[1]),int(point[2])]
+        adj_matrix = self._adj_matrix_dic[angle]
 
         bool_array = adj_matrix[
             (direction[0], direction[1], direction[2])]

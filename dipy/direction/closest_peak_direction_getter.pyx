@@ -107,7 +107,7 @@ cdef class BasePmfDirectionGetter(DirectionGetter):
         for i in range(_len):
             if pmf[i] < absolute_pmf_threshold:
                 pmf[i] = 0.0
-        return pmf       
+        return pmf
 
 
 cdef class PmfGenDirectionGetter(BasePmfDirectionGetter):
