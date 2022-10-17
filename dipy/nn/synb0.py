@@ -15,13 +15,16 @@ tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
 if have_tf and have_tfa:
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose, Conv3D, LeakyReLU, Concatenate, Layer
+    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
+    from tensorflow.keras.layers import Conv3D, LeakyReLU
+    from tensorflow.keras.layers import Concatenate, Layer
     from tensorflow_addons.layers import InstanceNormalization
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 else:
     class Model:
         pass
+
     class Layer:
         pass
 
@@ -92,58 +95,58 @@ class Synb0():
 
         self.model = self.UNet3D()
         self.model.build(input_shape=(None, 80, 80, 96, 2))
-    
+
     class UNet3D(Model):
         def __init__(self):
             super(Synb0.UNet3D, self).__init__()
 
             # Encoder
             self.ec0 = self.encoder_block(32, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.ec1 = self.encoder_block(64, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.pool0 = MaxPool3D()
             self.ec2 = self.encoder_block(64, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.ec3 = self.encoder_block(128, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.pool1 = MaxPool3D()
             self.ec4 = self.encoder_block(128, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.ec5 = self.encoder_block(256, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.pool2 = MaxPool3D()
             self.ec6 = self.encoder_block(256, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.ec7 = self.encoder_block(512, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.pool2 = MaxPool3D()
             self.el = Conv3D(512, kernel_size=1,
-                                            strides=1, padding='same')
+                             strides=1, padding='same')
 
             # Decoder
             self.dc9 = self.decoder_block(512, kernel_size=2,
-                                        strides=2, padding='valid')
+                                          strides=2, padding='valid')
             self.dc8 = self.decoder_block(256, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc7 = self.decoder_block(256, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc6 = self.decoder_block(256, kernel_size=2,
-                                        strides=2, padding='valid')
+                                          strides=2, padding='valid')
             self.dc5 = self.decoder_block(128, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc4 = self.decoder_block(128, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc3 = self.decoder_block(128, kernel_size=2,
-                                        strides=2, padding='valid')
+                                          strides=2, padding='valid')
             self.dc2 = self.decoder_block(64, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc1 = self.decoder_block(64, kernel_size=3,
-                                        strides=1, padding='same')
+                                          strides=1, padding='same')
             self.dc0 = self.decoder_block(1, kernel_size=1,
-                                        strides=1, padding='valid')
+                                          strides=1, padding='valid')
             self.dl = Conv3DTranspose(1, kernel_size=1,
-                                                    strides=1, padding='valid')
+                                      strides=1, padding='valid')
 
         def call(self, input):
             # Encode
@@ -191,10 +194,10 @@ class Synb0():
             def __init__(self, out_channels, kernel_size, strides, padding):
                 super(Synb0.UNet3D.encoder_block, self).__init__()
                 self.conv3d = Conv3D(out_channels,
-                                                    kernel_size,
-                                                    strides=strides,
-                                                    padding=padding,
-                                                    use_bias=False)
+                                     kernel_size,
+                                     strides=strides,
+                                     padding=padding,
+                                     use_bias=False)
                 self.instnorm = InstanceNormalization()
                 self.activation = LeakyReLU(0.01)
 
@@ -209,10 +212,10 @@ class Synb0():
             def __init__(self, out_channels, kernel_size, strides, padding):
                 super(Synb0.UNet3D.decoder_block, self).__init__()
                 self.conv3d = Conv3DTranspose(out_channels,
-                                                            kernel_size,
-                                                            strides=strides,
-                                                            padding=padding,
-                                                            use_bias=False)
+                                              kernel_size,
+                                              strides=strides,
+                                              padding=padding,
+                                              use_bias=False)
                 self.instnorm = InstanceNormalization()
                 self.activation = LeakyReLU(0.01)
 
@@ -324,7 +327,7 @@ class Synb0():
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
             Default is None
-        
+
         average : bool
             Whether the function follows the Synb0-Disco pipeline and
             averages the prediction of 5 different models.
@@ -363,8 +366,8 @@ class Synb0():
         if dim == 3:
             if batch_size is not None:
                 logger.warning('Batch size specified, but not used',
-                                'due to the input not having \
-                                a batch dimension')
+                               'due to the input not having \
+                               a batch dimension')
             batch_size = 1
 
         # Prediction stage
@@ -375,16 +378,18 @@ class Synb0():
                 temp = np.stack([b0, T1], -1)
                 input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
                 prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                        dtype=np.float32)
+                                      dtype=np.float32)
                 for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                    temp_pred = self.__predict(input_data[batch_idx-batch_size:batch_idx])
+                    temp_input = input_data[batch_idx-batch_size:batch_idx]
+                    temp_pred = self.__predict(temp_input)
                     prediction[batch_idx-batch_size:batch_idx] = temp_pred
                 remainder = np.mod(shape[0], batch_size)
                 if remainder != 0:
                     temp_pred = self.__predict(input_data[-remainder:])
                     prediction[-remainder:] = temp_pred
                 for j in range(shape[0]):
-                    prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
+                    temp_pred = self.__unnormalize(prediction[j], p99[j], 0)
+                    prediction[j] = temp_pred
 
                 prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
                 prediction = np.moveaxis(prediction, 1, -1)
@@ -395,7 +400,7 @@ class Synb0():
             temp = np.stack([b0, T1], -1)
             input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
             prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                    dtype=np.float32)
+                                  dtype=np.float32)
             for batch_idx in range(batch_size, shape[0]+1, batch_size):
                 temp_pred = self.__predict(input_data[:batch_idx])
                 prediction[:batch_idx] = temp_pred
@@ -408,7 +413,7 @@ class Synb0():
 
             prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
             prediction = np.moveaxis(prediction, 1, -1)
-        
+
         if dim == 3:
             prediction = prediction[0]
 
