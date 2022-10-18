@@ -101,49 +101,49 @@ class Synb0():
             super(Synb0.UNet3D, self).__init__()
 
             # Encoder
-            self.ec0 = self.encoder_block(32, kernel_size=3,
+            self.ec0 = self.EncoderBlock(32, kernel_size=3,
                                           strides=1, padding='same')
-            self.ec1 = self.encoder_block(64, kernel_size=3,
+            self.ec1 = self.EncoderBlock(64, kernel_size=3,
                                           strides=1, padding='same')
             self.pool0 = MaxPool3D()
-            self.ec2 = self.encoder_block(64, kernel_size=3,
+            self.ec2 = self.EncoderBlock(64, kernel_size=3,
                                           strides=1, padding='same')
-            self.ec3 = self.encoder_block(128, kernel_size=3,
+            self.ec3 = self.EncoderBlock(128, kernel_size=3,
                                           strides=1, padding='same')
             self.pool1 = MaxPool3D()
-            self.ec4 = self.encoder_block(128, kernel_size=3,
+            self.ec4 = self.EncoderBlock(128, kernel_size=3,
                                           strides=1, padding='same')
-            self.ec5 = self.encoder_block(256, kernel_size=3,
+            self.ec5 = self.EncoderBlock(256, kernel_size=3,
                                           strides=1, padding='same')
             self.pool2 = MaxPool3D()
-            self.ec6 = self.encoder_block(256, kernel_size=3,
+            self.ec6 = self.EncoderBlock(256, kernel_size=3,
                                           strides=1, padding='same')
-            self.ec7 = self.encoder_block(512, kernel_size=3,
+            self.ec7 = self.EncoderBlock(512, kernel_size=3,
                                           strides=1, padding='same')
             self.pool2 = MaxPool3D()
             self.el = Conv3D(512, kernel_size=1,
                              strides=1, padding='same')
 
             # Decoder
-            self.dc9 = self.decoder_block(512, kernel_size=2,
+            self.dc9 = self.DecoderBlock(512, kernel_size=2,
                                           strides=2, padding='valid')
-            self.dc8 = self.decoder_block(256, kernel_size=3,
+            self.dc8 = self.DecoderBlock(256, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc7 = self.decoder_block(256, kernel_size=3,
+            self.dc7 = self.DecoderBlock(256, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc6 = self.decoder_block(256, kernel_size=2,
+            self.dc6 = self.DecoderBlock(256, kernel_size=2,
                                           strides=2, padding='valid')
-            self.dc5 = self.decoder_block(128, kernel_size=3,
+            self.dc5 = self.DecoderBlock(128, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc4 = self.decoder_block(128, kernel_size=3,
+            self.dc4 = self.DecoderBlock(128, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc3 = self.decoder_block(128, kernel_size=2,
+            self.dc3 = self.DecoderBlock(128, kernel_size=2,
                                           strides=2, padding='valid')
-            self.dc2 = self.decoder_block(64, kernel_size=3,
+            self.dc2 = self.DecoderBlock(64, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc1 = self.decoder_block(64, kernel_size=3,
+            self.dc1 = self.DecoderBlock(64, kernel_size=3,
                                           strides=1, padding='same')
-            self.dc0 = self.decoder_block(1, kernel_size=1,
+            self.dc0 = self.DecoderBlock(1, kernel_size=1,
                                           strides=1, padding='valid')
             self.dl = Conv3DTranspose(1, kernel_size=1,
                                       strides=1, padding='valid')
@@ -190,9 +190,9 @@ class Synb0():
 
             return out
 
-        class encoder_block(Layer):
+        class EncoderBlock(Layer):
             def __init__(self, out_channels, kernel_size, strides, padding):
-                super(Synb0.UNet3D.encoder_block, self).__init__()
+                super(Synb0.UNet3D.EncoderBlock, self).__init__()
                 self.conv3d = Conv3D(out_channels,
                                      kernel_size,
                                      strides=strides,
@@ -208,9 +208,9 @@ class Synb0():
 
                 return x
 
-        class decoder_block(Layer):
+        class DecoderBlock(Layer):
             def __init__(self, out_channels, kernel_size, strides, padding):
-                super(Synb0.UNet3D.decoder_block, self).__init__()
+                super(Synb0.UNet3D.DecoderBlock, self).__init__()
                 self.conv3d = Conv3DTranspose(out_channels,
                                               kernel_size,
                                               strides=strides,
