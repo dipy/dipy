@@ -44,7 +44,7 @@ def set_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
-class Synb0():
+class Synb0:
     """
     This class is intended for the Synb0 model.
     The model is the deep learning part of the Synb0-Disco
