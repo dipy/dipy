@@ -26,7 +26,7 @@ def test_default_weights():
     synb0_model = Synb0()
     synb0_model.fetch_default_weights(0)
     results_arr = synb0_model.predict(input_arr1, input_arr2, average=False)
-    assert_almost_equal(results_arr, target_arr, decimal=5)
+    assert_almost_equal(results_arr, target_arr, decimal=4)
 
 
 @pytest.mark.skipif(not all([have_tf, have_tfa]), reason='Requires TensorFlow \
@@ -40,4 +40,4 @@ def test_default_weights_batch():
     synb0_model.fetch_default_weights(0)
     results_arr = synb0_model.predict(input_arr1, input_arr2,
                                       batch_size=2, average=False)
-    assert_almost_equal(results_arr, target_arr, decimal=5)
+    assert_almost_equal(results_arr, target_arr, decimal=4)
