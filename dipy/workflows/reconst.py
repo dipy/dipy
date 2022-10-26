@@ -255,14 +255,14 @@ class ReconstDtiFlow(Workflow):
             'LS' or 'OLS' for ordinary least squares
             'NLLS' for non-linear least-squares
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
-        sigma : float, optional
-            An estimate of the variance. [5]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        sigma : float, optional
+            An estimate of the variance. [5]_ recommend to use
+            1.5267 * std(background_noise), where background_noise is estimated
+            from some part of the image known to contain no signal (only noise)
             b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
