@@ -399,12 +399,10 @@ class ReconstDtiFlow(Workflow):
             if 'eval' in save_metrics:
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
-            dname_ = os.path.dirname(oevals)
-            if dname_ == '':
-                logging.info('DTI metrics saved in current directory')
-            else:
-                logging.info(
-                        'DTI metrics saved in {0}'.format(dname_))
+            if save_metrics:
+                logging.info('DTI metrics saved to')
+                for metric in save_metrics:
+                    logging.info(self.last_generated_outputs["out_" + metric])
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
                           bvecs_tol=0.01, fit_method='WLS',
