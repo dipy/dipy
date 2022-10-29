@@ -21,8 +21,10 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files, model='ols', verbose=False,
-            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+    def run(self, input_files, bval_files, model='ols',
+            b0_threshold=50, alpha=1.0, verbose=False, b0_denoising=True,
+            clip_negative_vals=False, shift_intensity=True, out_dir='',
+            out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
@@ -47,8 +49,19 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
             Default: 'ols'.
+        b0_threshold : int, optional
+            Threshold for considering volumes as b0.
+        alpha : float, optional
+            Regularization parameter only for ridge regression model.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
+        b0_denoising : bool, optional
+            Skips denoising b0 volumes if set to False.
+        clip_negative_vals : bool, optional
+            Sets negative values after denoising to 0 using `np.clip`.
+        shift_intensity : bool, optional
+            Shifts the distribution of intensities per volume to give
+            non-negative values
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -72,8 +85,12 @@ class Patch2SelfFlow(Workflow):
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
 
-                denoised_data = patch2self(data, bvals, model=model,
-                                           verbose=verbose)
+                denoised_data = patch2self(
+                    data, bvals, model=model, b0_threshold=b0_threshold,
+                    alpha=alpha, verbose=verbose, b0_denoising=b0_denoising,
+                    clip_negative_vals=clip_negative_vals,
+                    shift_intensity=shift_intensity,
+                )
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info('Denoised volumes saved as %s', odenoised)
