@@ -36,12 +36,12 @@ def connect_output_paths(inputs, out_dir, out_files,
         The output directory.
     out_files : array
         List of output files.
-    output_strategy : string
+    output_strategy : string, optional
         Which strategy to use to generate the output paths.
             'append': Add out_dir to the path of the input.
             'prepend': Add the input path directory tree to out_dir.
             'absolute': Put directly in out_dir.
-    mix_names : bool
+    mix_names : bool, optional
         Whether or not prepend a string composed of a mix of the input
         names to the final output name.
 
@@ -130,9 +130,9 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
         Output directory.
     fnames : array
         File names of all outputs to be created.
-    output_strategy : string
+    output_strategy : string, optional
         Controls the behavior of the IOIterator for output paths.
-    mix_names : bool
+    mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
 
     Returns
