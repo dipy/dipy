@@ -134,6 +134,8 @@ def io_iterator(inputs, out_dir, fnames, output_strategy='absolute',
         Controls the behavior of the IOIterator for output paths.
     mix_names : bool, optional
         Whether or not to append a mix of input names at the beginning.
+    out_keys : list, optional
+        Output parameter names.
 
     Returns
     -------
