@@ -316,7 +316,7 @@ class GibbsRingingFlow(Workflow):
     @deprecated_params('num_threads', 'num_processes', since='1.4',
                        until='1.5')
     def run(self, input_files, slice_axis=2, n_points=3, num_processes=1,
-            out_dir='', out_unring='dwi_unrig.nii.gz'):
+            out_dir='', out_unring='dwi_unring.nii.gz'):
         r"""Workflow for applying Gibbs Ringing method.
 
         Parameters
@@ -337,7 +337,7 @@ class GibbsRingingFlow(Workflow):
             use as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
-        out_unrig : string, optional
+        out_unring : string, optional
             Name of the resulting denoised volume.
 
         References
