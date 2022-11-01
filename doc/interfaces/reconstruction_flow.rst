@@ -147,7 +147,7 @@ e.g.::
 
     dipy_fit_dti data/stanford_hardi/HARDI150.nii.gz data/stanford_hardi/HARDI150.bval data/stanford_hardi/HARDI150.bvec stanford_hardi_mask/brain_mask.nii.gz --save_metrics "md" "mode" "tensor" --out_dir "recons_dti_output" --out_tensor "dti_tensors.nii.gz"
 
-This command will save the DTI metrics to the specified output directory.
+This command will save the DTI metrics to the specified output directory. The tensors will be saved as a 4D data with last dimension representing (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz).
 
 --------------------------------
 Diffusion Kurtosis Imaging (DKI)
