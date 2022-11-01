@@ -124,10 +124,10 @@ tenfit = tenmodel.fit(maskdata)
 
 """
 The fit method creates a ``TensorFit`` object which contains the fitting
-parameters and other attributes of the model. You can revover the 6 values 
-of the triangular matrix representing the tensor D. By default, in Dipy, values
-are ordered as (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz). The tensor_val variable defined
-below is a 4D data with last dimension of size 6.
+parameters and other attributes of the model. You can recover the 6 values
+of the triangular matrix representing the tensor D. By default, in DIPY, values
+are ordered as (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz). The ``tensor_vals`` variable
+defined below is a 4D data with last dimension of size 6.
 """
 
 tensor_vals = dti.lower_triangular(tenfit.quadratic_form)
