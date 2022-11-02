@@ -124,7 +124,16 @@ tenfit = tenmodel.fit(maskdata)
 
 """
 The fit method creates a ``TensorFit`` object which contains the fitting
-parameters and other attributes of the model. For example we can generate
+parameters and other attributes of the model. You can recover the 6 values
+of the triangular matrix representing the tensor D. By default, in DIPY, values
+are ordered as (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz). The ``tensor_vals`` variable
+defined below is a 4D data with last dimension of size 6.
+"""
+
+tensor_vals = dti.lower_triangular(tenfit.quadratic_form)
+
+"""
+You can also recover other metrics from the model. For example we can generate
 fractional anisotropy (FA) from the eigen-values of the tensor. FA is used to
 characterize the degree to which the distribution of diffusion in a voxel is
 directional. That is, whether there is relatively unrestricted diffusion in one

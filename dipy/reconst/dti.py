@@ -1932,8 +1932,8 @@ _lt_cols = np.array([0, 0, 1, 0, 1, 2])
 
 def lower_triangular(tensor, b0=None):
     """
-    Returns the six lower triangular values of the tensor and a dummy variable
-    if b0 is not None
+    Returns the six lower triangular values of the tensor ordered as
+    (Dxx, Dxy, Dyy, Dxz, Dyz, Dzz) and a dummy variable if b0 is not None.
 
     Parameters
     ----------
