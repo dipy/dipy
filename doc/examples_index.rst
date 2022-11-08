@@ -39,10 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Reslice
-~~~~~~~
+Reslice & Motion Correction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reslice_datasets`
+- :ref:`example_motion_correction`
+
 
 ---------
 Denoising
