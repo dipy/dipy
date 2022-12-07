@@ -513,7 +513,7 @@ class ReconstCSDFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            print(b0_threshold, bvals.min())
+
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
                      "b0_threshold. It should be higher than the first b0 value "
