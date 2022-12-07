@@ -146,6 +146,10 @@ def gen_dirac(m, n, theta, phi, legacy=True):
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
+    legacy: bool, optional
+        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        is used for m < 0). Else, implements the basis as defined in
+        Descoteaux et al. 2007 (without the absolute value).
 
     See Also
     --------
