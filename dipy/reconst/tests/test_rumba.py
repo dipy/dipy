@@ -12,7 +12,7 @@ from numpy.testing import assert_
 from dipy.reconst.rumba import RumbaSDModel, generate_kernel
 from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.data import get_fnames, dsi_voxels, default_sphere, get_sphere
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.core.geometry import cart2sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
@@ -158,7 +158,9 @@ def test_multishell_rumba():
                                               angles=[(0, 0), (90, 0)],
                                               fractions=[50, 50], snr=None)
 
-    wm_response = np.tile(np.array([1.7E-3, 0.2E-3, 0.2E-3]), (22, 1))
+    ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
+    wm_response = np.tile(
+        np.array([1.7E-3, 0.2E-3, 0.2E-3]), (ms_eigenval_count, 1))
     model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
@@ -381,7 +383,8 @@ def test_generate_kernel():
     assert_almost_equal(kernel[:, 0], S)
 
     # Multi-shell version
-    wm_response_multi = np.tile(wm_response, (22, 1))
+    ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
+    wm_response_multi = np.tile(wm_response, (ms_eigenval_count, 1))
     kernel_multi = generate_kernel(
         gtab, sphere, wm_response_multi, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices) + 2))
