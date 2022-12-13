@@ -2,7 +2,9 @@
 import os
 import contextlib
 import logging
+import json
 
+import os.path as op
 from os.path import join as pjoin
 from hashlib import md5
 from shutil import copyfileobj
@@ -18,6 +20,8 @@ from dipy.core.gradients import (gradient_table,
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.streamline import load_trk
+from dipy.utils.optpkg import optional_package
+
 
 from urllib.request import urlopen
 
@@ -25,11 +29,14 @@ from urllib.request import urlopen
 if 'DIPY_HOME' in os.environ:
     dipy_home = os.environ['DIPY_HOME']
 else:
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    dipy_home = pjoin(op.expanduser('~'), '.dipy')
 
 # The URL to the University of Washington Researchworks repository:
 UW_RW_URL = \
     "https://digital.lib.washington.edu/researchworks/bitstream/handle/"
+
+
+boto3, has_boto3, _ = optional_package('boto3')
 
 
 class FetcherError(Exception):
@@ -130,7 +137,7 @@ def fetch_data(files, folder, data_size=None):
         value. The downloaded file is not deleted when this error is raised.
 
     """
-    if not os.path.exists(folder):
+    if not op.exists(folder):
         _log("Creating new folder %s" % folder)
         os.makedirs(folder)
 
@@ -141,7 +148,7 @@ def fetch_data(files, folder, data_size=None):
     for f in files:
         url, md5 = files[f]
         fullpath = pjoin(folder, f)
-        if os.path.exists(fullpath) and (_get_file_md5(fullpath) == md5):
+        if op.exists(fullpath) and (_get_file_md5(fullpath) == md5):
             continue
         all_skip = False
         _log('Downloading "%s" to %s' % (f, folder))
@@ -202,9 +209,9 @@ def _make_fetcher(name, folder, baseurl, remote_fnames, local_fnames,
             _log(msg)
         if unzip:
             for f in local_fnames:
-                split_ext = os.path.splitext(f)
+                split_ext = op.splitext(f)
                 if split_ext[-1] == '.gz' or split_ext[-1] == '.bz2':
-                    if os.path.splitext(split_ext[0])[-1] == '.tar':
+                    if op.splitext(split_ext[0])[-1] == '.tar':
                         ar = tarfile.open(pjoin(folder, f))
                         ar.extractall(path=folder)
                         ar.close()
@@ -615,7 +622,7 @@ def get_fnames(name='small_64D'):
     True
 
     """
-    DATA_DIR = pjoin(os.path.dirname(__file__), 'files')
+    DATA_DIR = pjoin(op.dirname(__file__), 'files')
     if name == 'small_64D':
         fbvals = pjoin(DATA_DIR, 'small_64D.bval')
         fbvecs = pjoin(DATA_DIR, 'small_64D.bvec')
@@ -675,7 +682,7 @@ def get_fnames(name='small_64D'):
         files, folder = fetch_scil_b0()
         files = files['datasets_multi-site_all_companies.zip'][2]
         files = [pjoin(folder, f) for f in files]
-        return [f for f in files if os.path.isfile(f)]
+        return [f for f in files if op.isfile(f)]
     if name == 'stanford_hardi':
         files, folder = fetch_stanford_hardi()
         fraw = pjoin(folder, 'HARDI150.nii.gz')
@@ -1006,7 +1013,7 @@ def fetch_tissue_data():
     fname_list = ['t1_brain.nii.gz', 't1_brain_denoised.nii.gz',
                   'power_map.nii.gz']
 
-    if not os.path.exists(folder):
+    if not op.exists(folder):
         _log('Creating new directory %s' % folder)
         os.makedirs(folder)
         msg = 'Downloading 3 Nifti1 images (9.3MB)...'
@@ -1547,7 +1554,7 @@ def read_DiB_217_lte_pte_ste():
     """
     fdata_1, fdata_2, fbval, fbvec, fmask = get_fnames('DiB_217_lte_pte_ste')
     _, folder = fetch_DiB_217_lte_pte_ste()
-    if os.path.isfile(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz')):
+    if op.isfile(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz')):
         data_img = nib.load(pjoin(folder, 'DiB_217_lte_pte_ste.nii.gz'))
     else:
         data_1, affine = load_nifti(fdata_1)
@@ -1609,8 +1616,141 @@ def read_five_af_bundles():
 
         bundles = []
         for sub in subjects:
-            fname = os.path.join(temp_dir, sub, 'AF_L.trk')
+            fname = pjoin(temp_dir, sub, 'AF_L.trk')
             bundle_obj = load_trk(fname, 'same', bbox_valid_check=False)
             bundles.append(bundle_obj.streamlines)
 
     return bundles
+
+
+def to_bids_description(path, fname='dataset_description.json',
+                        BIDSVersion="1.4.0", **kwargs):
+    """Dumps a dict into a bids description at the given location"""
+    kwargs.update({"BIDSVersion": BIDSVersion})
+    desc_file = op.join(path, fname)
+    with open(desc_file, 'w') as outfile:
+        json.dump(kwargs, outfile)
+
+
+def fetch_hcp(subjects,
+              hcp_bucket='hcp-openaccess',
+              profile_name="hcp",
+              path=None,
+              study='HCP_1200',
+              aws_access_key_id=None,
+              aws_secret_access_key=None):
+    """
+    Fetch HCP diffusion data and arrange it in a manner that resembles the
+    BIDS [1]_ specification.
+
+    Parameters
+    ----------
+    subjects : list
+        Each item is an integer, identifying one of the HCP subjects
+    hcp_bucket : string, optional
+        The name of the HCP S3 bucket. Default: "hcp-openaccess"
+    profile_name : string, optional
+        The name of the AWS profile used for access. Default: "hcp"
+    path : string, optional
+        Path to save files into. Default: '~/AFQ_data'
+    study : string, optional
+        Which HCP study to grab. Default: 'HCP_1200'
+    aws_access_key_id : string, optional
+        AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+        set to False.
+    aws_secret_access_key : string, optional
+        AWS credentials to HCP AWS S3. Will only be used if `profile_name` is
+        set to False.
+
+    Returns
+    -------
+    dict with remote and local names of these files,
+    path to BIDS derivative dataset
+
+    Notes
+    -----
+    To use this function with its default setting, you need to have a
+    file '~/.aws/credentials', that includes a section:
+
+    [hcp]
+    AWS_ACCESS_KEY_ID=XXXXXXXXXXXXXXXX
+    AWS_SECRET_ACCESS_KEY=XXXXXXXXXXXXXXXX
+
+    The keys are credentials that you can get from HCP
+    (see https://wiki.humanconnectome.org/display/PublicData/How+To+Connect+to+Connectome+Data+via+AWS)  # noqa
+
+    Local filenames are changed to match our expected conventions.
+
+    .. [1] Gorgolewski et al. (2016). The brain imaging data structure,
+           a format for organizing and describing outputs of neuroimaging
+           experiments. Scientific Data, 3::160044. DOI: 10.1038/sdata.2016.44.
+    """
+    if not has_boto3:
+        raise ValueError("'fetch_hcp' requires boto3 and it is"
+                         " not currently installed. Please install"
+                         "it using `pip install boto3`. ")
+
+    if profile_name:
+        boto3.setup_default_session(profile_name=profile_name)
+    elif aws_access_key_id is not None and aws_secret_access_key is not None:
+        boto3.setup_default_session(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key)
+    else:
+        raise ValueError("Must provide either a `profile_name` or ",
+                         "both `aws_access_key_id` and ",
+                         "`aws_secret_access_key` as input to 'fetch_hcp'")
+
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(hcp_bucket)
+
+    if path is None:
+        if not op.exists(dipy_home):
+            os.mkdir(dipy_home)
+        my_path = dipy_home
+    else:
+        my_path = path
+
+    base_dir = pjoin(my_path, study, 'derivatives', 'hcp_pipeline')
+
+    if not op.exists(base_dir):
+        os.makedirs(base_dir, exist_ok=True)
+
+    data_files = {}
+    for subject in subjects:
+        # We make a single session folder per subject for this case, because
+        # AFQ api expects session structure:
+        sub_dir = pjoin(base_dir, f'sub-{subject}')
+        sess_dir = pjoin(sub_dir, "ses-01")
+        if not op.exists(sub_dir):
+            os.makedirs(pjoin(sess_dir, 'dwi'), exist_ok=True)
+            os.makedirs(pjoin(sess_dir, 'anat'), exist_ok=True)
+        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bval')] =\
+            f'{study}/{subject}/T1w/Diffusion/bvals'
+        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bvec')] =\
+            f'{study}/{subject}/T1w/Diffusion/bvecs'
+        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.nii.gz')] =\
+            f'{study}/{subject}/T1w/Diffusion/data.nii.gz'
+        data_files[pjoin(sess_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
+            f'{study}/{subject}/T1w/T1w_acpc_dc.nii.gz'
+        data_files[pjoin(sess_dir, 'anat',
+                           f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
+            f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
+
+    for k in data_files.keys():
+        if not op.exists(k):
+            bucket.download_file(data_files[k], k)
+    # Create the BIDS dataset description file text
+    hcp_acknowledgements = """Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.""",  # noqa
+    to_bids_description(pjoin(my_path, study),
+                        **{"Name": study,
+                           "Acknowledgements": hcp_acknowledgements,
+                           "Subjects": subjects})
+
+    # Create the BIDS derivatives description file text
+    to_bids_description(base_dir,
+                        **{"Name": study,
+                           "Acknowledgements": hcp_acknowledgements,
+                           "PipelineDescription": {'Name': 'hcp_pipeline'}})
+
+    return data_files, pjoin(my_path, study)
