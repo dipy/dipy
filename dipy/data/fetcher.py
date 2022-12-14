@@ -1671,7 +1671,7 @@ def fetch_hcp(subjects,
     profile_name : string, optional
         The name of the AWS profile used for access. Default: "hcp"
     path : string, optional
-        Path to save files into. Default: '~/AFQ_data'
+        Path to save files into. Default: '~/.dipy'
     study : string, optional
         Which HCP study to grab. Default: 'HCP_1200'
     aws_access_key_id : string, optional
@@ -1736,6 +1736,11 @@ def fetch_hcp(subjects,
         os.makedirs(base_dir, exist_ok=True)
 
     data_files = {}
+    # If user provided incorrect input, these are typical failures that
+    # are easy to recover from:
+    if isinstance(subjects, int) or isinstance(subjects, str):
+        subjects = [subjects]
+
     for subject in subjects:
         # We make a single session folder per subject for this case, because
         # AFQ api expects session structure:
