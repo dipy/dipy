@@ -1761,9 +1761,13 @@ def fetch_hcp(subjects,
                            f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
             f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
 
-    for k in data_files.keys():
-        if not op.exists(k):
-            bucket.download_file(data_files[k], k)
+    with tqdm(total=len(data_files.keys())) as pbar:
+        for k in data_files.keys():
+            pbar.set_description_str(f"Downloading {k}")
+            if not op.exists(k):
+                bucket.download_file(data_files[k], k)
+            pbar.update()
+
     # Create the BIDS dataset description file text
     hcp_acknowledgements = """Data were provided by the Human Connectome Project, WU-Minn Consortium (Principal Investigators: David Van Essen and Kamil Ugurbil; 1U54MH091657) funded by the 16 NIH Institutes and Centers that support the NIH Blueprint for Neuroscience Research; and by the McDonnell Center for Systems Neuroscience at Washington University.""",  # noqa
     to_bids_description(pjoin(my_path, study),
