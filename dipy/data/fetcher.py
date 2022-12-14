@@ -1742,22 +1742,19 @@ def fetch_hcp(subjects,
         subjects = [subjects]
 
     for subject in subjects:
-        # We make a single session folder per subject for this case, because
-        # AFQ api expects session structure:
         sub_dir = pjoin(base_dir, f'sub-{subject}')
-        sess_dir = pjoin(sub_dir, "ses-01")
         if not op.exists(sub_dir):
-            os.makedirs(pjoin(sess_dir, 'dwi'), exist_ok=True)
-            os.makedirs(pjoin(sess_dir, 'anat'), exist_ok=True)
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bval')] =\
+            os.makedirs(pjoin(sub_dir, 'dwi'), exist_ok=True)
+            os.makedirs(pjoin(sub_dir, 'anat'), exist_ok=True)
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.bval')] =\
             f'{study}/{subject}/T1w/Diffusion/bvals'
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bvec')] =\
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.bvec')] =\
             f'{study}/{subject}/T1w/Diffusion/bvecs'
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.nii.gz')] =\
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.nii.gz')] =\
             f'{study}/{subject}/T1w/Diffusion/data.nii.gz'
-        data_files[pjoin(sess_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
+        data_files[pjoin(sub_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
             f'{study}/{subject}/T1w/T1w_acpc_dc.nii.gz'
-        data_files[pjoin(sess_dir, 'anat',
+        data_files[pjoin(sub_dir, 'anat',
                            f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
             f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
 
@@ -1786,3 +1783,89 @@ def fetch_hcp(subjects,
                            "PipelineDescription": {'Name': 'hcp_pipeline'}})
 
     return data_files, pjoin(my_path, study)
+
+
+def fetch_hbn_preproc(subjects, path=None):
+    """
+    Fetches data from the Healthy Brain Network POD2 study [1, 2]_.
+
+    Parameters
+    ----------
+    subjects : list
+        Identifiers of the subjects to download.
+        For example: ["NDARAA112DMH", "NDARAA117NEJ"].
+    path : string, optional
+        Path to save files into. Default: '~/AFQ_data'
+
+    Returns
+    -------
+    dict with remote and local names of these files,
+    path to BIDS derivative dataset
+
+    Notes
+    -----
+
+    .. [1] Alexander LM, Escalera J, Ai L, et al. An open resource for
+        transdiagnostic research in pediatric mental health and learning
+        disorders. Sci Data. 2017;4:170181.
+
+    .. [2] Richie-Halford A, Cieslak M, Ai L, et al. An analysis-ready and
+        quality controlled resource for pediatric brain white-matter research.
+        Scientific Data. 2022;9(1):1-27.
+
+    """
+
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket("fcp-indi")
+    client = boto3.client('s3')
+    if path is None:
+        if not op.exists(dipy_home):
+            os.mkdir(dipy_home)
+        my_path = dipy_home
+    else:
+        my_path = path
+
+    base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
+
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir, exist_ok=True)
+
+    data_files = {}
+
+    for subject in subjects:
+        initial_query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/sub-{subject}/")
+        ses = initial_query['Contents'][0]["Key"].split('/')[5]
+        query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+        file_list = [kk["Key"] for kk in query["Contents"]]
+        sub_dir = op.join(base_dir, f'sub-{subject}')
+        ses_dir = op.join(sub_dir, ses)
+        if not os.path.exists(sub_dir):
+            os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
+            os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
+        for remote in file_list:
+            full = remote.split("Projects")[-1][1:].replace("/BIDS_curated", "")
+            local = op.join(dipy_home, full)
+            data_files[local] = remote
+
+    for k in data_files.keys():
+        if not op.exists(k):
+            bucket.download_file(data_files[k], k)
+
+    # Create the BIDS dataset description file text
+    hbn_acknowledgements = """ """,  # noqa
+    to_bids_description(op.join(my_path, "HBN"),
+                        **{"Name": "HBN",
+                           "Acknowledgements": hbn_acknowledgements,
+                           "Subjects": subjects})
+
+    # Create the BIDS derivatives description file text
+    to_bids_description(base_dir,
+                        **{"Name": "HBN",
+                           "Acknowledgements": hbn_acknowledgements,
+                           "PipelineDescription": {'Name': 'qsiprep'}})
+
+    return data_files, pjoin(my_path, "HBN")
