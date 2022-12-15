@@ -1814,7 +1814,6 @@ def fetch_hbn_preproc(subjects, path=None):
         Scientific Data. 2022;9(1):1-27.
 
     """
-
     s3 = boto3.resource('s3')
     bucket = s3.Bucket("fcp-indi")
     client = boto3.client('s3')
@@ -1851,21 +1850,21 @@ def fetch_hbn_preproc(subjects, path=None):
             local = op.join(dipy_home, full)
             data_files[local] = remote
 
-    for k in data_files.keys():
-        if not op.exists(k):
-            bucket.download_file(data_files[k], k)
+    with tqdm(total=len(data_files.keys())) as pbar:
+        for k in data_files.keys():
+            pbar.set_description_str(f"Downloading {k}")
+            if not op.exists(k):
+                bucket.download_file(data_files[k], k)
+            pbar.update()
 
     # Create the BIDS dataset description file text
-    hbn_acknowledgements = """ """,  # noqa
     to_bids_description(op.join(my_path, "HBN"),
                         **{"Name": "HBN",
-                           "Acknowledgements": hbn_acknowledgements,
                            "Subjects": subjects})
 
     # Create the BIDS derivatives description file text
     to_bids_description(base_dir,
                         **{"Name": "HBN",
-                           "Acknowledgements": hbn_acknowledgements,
                            "PipelineDescription": {'Name': 'qsiprep'}})
 
     return data_files, pjoin(my_path, "HBN")
