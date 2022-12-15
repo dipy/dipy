@@ -129,6 +129,8 @@ EXTRAS_REQUIRE = {
         "scikit-learn",
         "scikit-image",
         "statsmodels",
+        "boto3"
+
     ],
     "viz": [
         "fury>=0.8.0",
@@ -141,7 +143,6 @@ EXTRAS_REQUIRE = {
         "tables",
         "tensorflow"
     ]
-
 }
 
 EXTRAS_REQUIRE["all"] = list(set([a[i] for a in list(EXTRAS_REQUIRE.values())
