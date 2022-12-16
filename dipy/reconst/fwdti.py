@@ -103,8 +103,7 @@ class FreeWaterTensorModel(ReconstModel):
               fit_method(design_matrix, data, *args, **kwargs)
         single_shell : bool, optional.
             Whether to use regularized gradient descent to estimate the model
-            [2]_. Default: False.
-
+            [2, 3]_. Default: False.
         args, kwargs : arguments and key-word arguments passed to the
            fit_method. See fwdti.wls_iter, fwdti.nls_iter for details
 
@@ -116,9 +115,17 @@ class FreeWaterTensorModel(ReconstModel):
             elimination two-compartment model for diffusion tensor imaging.
             ReScience volume 3, issue 1, article number 2
 
-        .. [2] Golub M, Neto Henriques R, Gouveia Nunes R. Free-water DTI
+        .. [2] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander,
+            S., Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
+            iNtErpolated iniTialization (FERNET): Characterizing peritumoral
+            edema using clinically feasible diffusion MRI data. Plos one, 15(5),
+            e0233645.
+
+        .. [3] Golub M, Neto Henriques R, Gouveia Nunes R. Free-water DTI
             estimates from single b-value data might seem plausible but must be
             interpreted with care. Magn Reson Med. 2021;85(5):2537-2551.
+
+
         """
         ReconstModel.__init__(self, gtab)
 
@@ -183,8 +190,17 @@ class FreeWaterTensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
         """
-        S0 = np.mean(data[self.gtab.b0s_mask])
-        fwdti_params = self.fit_method(self.design_matrix, data, S0,
+        if self.single_shell:
+            # Running single-shell routine
+            non_b0s = ~self.gtab.b0s_mask
+            S0 = np.mean(data[self.gtab.b0s_mask])
+            fwdti_params = fernet_iter(self.design_matrix, data, S0,
+                                       non_b0_mask=non_b0s,
+                                       *self.args, **self.kwargs)
+        else:
+            # Running multi-shell routine
+            S0 = np.mean(data[self.gtab.b0s_mask])
+            fwdti_params = self.fit_method(self.design_matrix, data, S0,
                                            *self.args, **self.kwargs)
 
         return FreeWaterTensorFit(self, fwdti_params)
@@ -840,214 +856,12 @@ def cholesky_to_lower_triangular(R):
 def fwmd_iter(design_matrix, sig, S0, bvals,
               Diso=3e-3, md_tissue=0.6e-3, mdreg=2.7e-3, min_signal=1.0e-6):
     r""" Free water ellimination model estimation for single-shell data based
-    mean diffusivity information (single voxel signals)
+    on unweighted signal and mean diffusivity information (single voxel signals)
 
     Parameters
     ----------
     design_matrix : array (g, 7)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    sig : array (g, )
-        Diffusion-weighted signal for a single voxel data.
-    S0 : float
-        Non diffusion weighted signal (i.e. signal for b-value=0).
-    bvals : array (g, )
-        The acquisition b-values.
-    Diso : float, optional
-        Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
-        units of diffusion.
-    md_tissue : float
-        Prior for mean diffusivity expected in healthy tissue.
-    mdreg : float, optimal
-        DTI's mean diffusivity regularization threshold. If standard DTI
-        diffusion tensor's mean diffusivity is almost near the free water
-        diffusion value, the diffusion signal is assumed to be only free water
-        diffusion (i.e. volume fraction will be set to 1 and tissue's diffusion
-        parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
-        (corresponding to 90% of the free water diffusion value).
-    min_signal : float
-        The minimum signal value. Needs to be a strictly positive
-        number. Default: minimal signal in the data provided to `fit`.
-
-    Returns
-    -------
-    All parameters estimated from the free water tensor model.
-    Parameters are ordered as follows:
-        1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
-        3) The volume fraction of the free water compartment
-
-    Notes
-    -----
-    The initial guess estimate for the tissue compartment free water fraction,
-    based on MD information is given by:
-
-    ..math::
-
-        f_{MD} = \frac{exp(-b MD) - exp(-b D_{iso})}{exp(-b MD_t) -
-                                                     exp(-b D_{iso})}
-
-    where MD in the numerator is estimated with standard DTI and $MD_t$ is the
-    prior for MD in healthy tissue, set to $0.6 \mu m^2 ms^{-1}$.
-
-    References
-    ----------
-    .. [1] Golub, M., Neto Henriques, R., & Gouveia Nunes, R. (2021).
-           Free‐water DTI estimates from single b‐value data might seem
-           plausible but must be interpreted with care.
-           Magnetic Resonance in Medicine, 85(5), 2537-2551.
-    .. [2] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander,
-           S., Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
-           iNtErpolated iniTialization (FERNET): Characterizing peritumoral
-           edema using clinically feasible diffusion MRI data. Plos one,
-           15(5), e0233645.
-    """
-
-    W = design_matrix
-
-    # DTI ordinary linear least square solution
-    log_s = np.log(np.maximum(sig, min_signal))
-
-    # Define weights
-    S2 = np.diag(sig**2)
-
-    # DTI weighted linear least square solution
-    WTS2 = np.dot(W.T, S2)
-    inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
-    invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
-    params = np.dot(invWTS2W_WTS2, log_s)
-
-    # Process voxel if it has significant signal from tissue
-    md = (params[0] + params[2] + params[5]) / 3
-    if md < mdreg and np.mean(sig) > min_signal and S0 > min_signal:
-        f = fmd_init(design_matrix, sig, bvals, Diso, md_tissue, min_signal)
-        fw = 1 - f
-
-        # Tissue signal corrected for FW
-        tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
-                        np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
-
-        # Estimating the tissue tensor after FW correction
-        log_s = np.log(np.maximum(tissue_sig, min_signal))
-        S2 = np.diag(tissue_sig**2)
-        WTS2 = np.dot(W.T, S2)
-        inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
-        invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
-        params = np.dot(invWTS2W_WTS2, log_s)
-
-        evals, evecs = decompose_tensor(from_lower_triangular(params))
-        fw_params = np.concatenate((evals, evecs[0], evecs[1], evecs[2],
-                                    np.array([fw])), axis=0)
-    else:
-        fw_params = np.zeros(13)
-        fw_params[12] = 1.0
-
-    return fw_params
-
-
-def fmd_init(design_matrix, sig, bvals, Diso, md_tissue, min_signal):
-    r""" Tissue water fraction estimation for single-shell data based
-    mean diffusivity information (single voxel signals). This function is
-    called by 'fwmd_iter' and 'fwhy_iter'.
-
-    Parameters
-    ----------
-    design_matrix : array (g, 7)
-        Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    sig : array (g, )
-        Diffusion-weighted signal for a single voxel data.
-    bvals : array (g, )
-        The acquisition b-values.
-    Diso : float, optional
-        Value of the free water isotropic diffusion. Default is set to 3e-3
-        $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
-        units of diffusion.
-    md_tissue : float
-        Prior for mean diffusivity expected in healthy tissue.
-    min_signal : float
-        The minimum signal value. Needs to be a strictly positive
-        number. Default: minimal signal in the data provided to `fit`.
-
-    Returns
-    -------
-    f : float
-        The estimated tissue water fraction.
-
-    Notes
-    -----
-    The initial guess estimate for the tissue compartment free water fraction,
-    based on MD information is given by:
-
-    ..math::
-
-        f_{MD} = \frac{exp(-b MD) - exp(-b D_{iso})}{exp(-b MD_t) -
-                                                     exp(-b D_{iso})}
-
-    where MD in the numerator is estimated with standard DTI and $MD_t$ is the
-    prior for MD in healthy tissue, set to $0.6 \mu m^2 ms^{-1}$.
-
-    References
-    ----------
-    .. [1] Golub, M., Neto Henriques, R., & Gouveia Nunes, R. (2021).
-           Free‐water DTI estimates from single b‐value data might seem
-           plausible but must be interpreted with care.
-           Magnetic Resonance in Medicine, 85(5), 2537-2551.
-    .. [2] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander,
-           S., Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
-           iNtErpolated iniTialization (FERNET): Characterizing peritumoral
-           edema using clinically feasible diffusion MRI data. Plos one,
-           15(5), e0233645.
-    """
-
-    # to adapt this method with multi-shell data, only the max bval is used  (and S0)
-    # TODO this can give problems if tthe multi-shell data contains too high bvals, such as 2000 and abvove...
-    # maybe replace by mean(bvals) ?
-    max_bval = np.max(bvals)
-    max_bval_inds = get_bval_indices(bvals, max_bval)
-    zero_bval_inds = get_bval_indices(bvals, 0)
-    bval_inds = np.hstack((zero_bval_inds, max_bval_inds))
-
-    W = design_matrix[bval_inds, :]
-
-    log_s = np.log(np.maximum(sig[bval_inds], min_signal))
-
-    # Define weights
-    S2 = np.diag(sig[bval_inds]**2)
-
-    # DTI weighted linear least square solution
-    WTS2 = np.dot(W.T, S2)
-    inv_WT_S2_W = np.linalg.pinv(np.dot(WTS2, W))
-    invWTS2W_WTS2 = np.dot(inv_WT_S2_W, WTS2)
-    params = np.dot(invWTS2W_WTS2, log_s)
-
-    # Computing total compartment Mean Diffusivity
-    md = (params[0] + params[2] + params[5]) / 3
-
-    fwsig = np.exp(np.dot(design_matrix[max_bval_inds],
-                          np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
-    mdsig = np.exp(np.dot(design_matrix[max_bval_inds],
-                          np.array([md, 0, md, 0, 0, md, 0])))
-
-    healthy_sig = np.exp(np.dot(design_matrix[max_bval_inds],
-                                np.array([md_tissue, 0, md_tissue, 0, 0, md_tissue, 0])))
-    f = (mdsig - fwsig) / (healthy_sig - fwsig)
-    f = np.mean(f)
-    return f
-
-
-def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
-              Diso=3e-3, mdreg=2.7e-3, min_signal=1.0e-6,
-              Dtmin=0.1e-3, Dtmax=2.5e-3):
-    r""" Free water ellimination model estimation for single-shell data based
-    on unweighted signal information (single voxel signals)
-
-    Parameters
-    ----------
-    design_matrix : array (g, 7)
-        Design matrix holding the covariants used to solve for the regression
+        Design matrix holding the covariates used to solve for the regression
         coefficients.
     sig : array (g, )
         Diffusion-weighted signal for a single voxel data.
@@ -1059,8 +873,11 @@ def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         Non diffusion weighted signal representative of tissue for the given
         data (i.e signal for b-value=0 taken from deep White Matter).
     Sw : float
-        Non diffusion weighted signal representative of water for the given
-        data (i.e. signal for b-value=0 taken from CSF).
+        Non diffusion weighted signal representative of water for the given data
+        (i.e. signal for b-value=0 taken from CSF).
+    non_b0_mask : bool (g, )
+        Boolean array that marks the positions in sig that were acquired with a
+        non zero b-value.
     Diso : float, optional
         Value of the free water isotropic diffusion. Default is set to 3e-3
         $mm^{2}.s^{-1}$. Please adjust this value if you are assuming different
@@ -1073,12 +890,19 @@ def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         parameters are set to zero). Default md_reg is 2.7e-3 $mm^{2}.s^{-1}$
         (corresponding to 90% of the free water diffusion value).
     min_signal : float
-        The minimum signal value. Needs to be a strictly positive
-        number. Default: minimal signal in the data provided to `fit`.
+        The minimum signal value. Needs to be a strictly positive number.
+        Default: minimal signal in the data provided to `fit`.
     Dtmin : float
         Minimum diffusivity expected for the tissue compartment signal.
     Dtmax : float
         Maximum diffusivity expected for the tissue compartment signal.
+    MDt : float
+        Prior for mean diffusivity expected in healthy tissue.
+    method : str
+        Choice of estimation method, can be one of the following: - 's0' for
+        estimation based on unweighted signal information - 'md' for estimation
+        based on mean diffusivity information - 'hy' for a hybrid approach (both
+        S0 and MD are used)
 
     Returns
     -------
@@ -1313,11 +1137,11 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
 
     Returns
     -------
-    All parameters estimated from the free water tensor model.
-    Parameters are ordered as follows:
+    All parameters estimated from the free water tensor model. Parameters are
+    ordered as follows:
         1) Three diffusion tensor's eigenvalues
-        2) Three lines of the eigenvector matrix each containing the
-           first, second and third coordinates of the eigenvector
+        2) Three lines of the eigenvector matrix each containing the first,
+           second and third coordinates of the eigenvector
         3) The volume fraction of the free water compartment
 
     Notes
@@ -1329,17 +1153,17 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
 
         f_{S0} = 1 - \frac{log(S_0 / S_t)}{log(S_w / S_t)}
 
-    The lower and upper bounds for $f_{S0}$ presented exactly as in [2]
-    resulted in values outside of the interval [0, 1] (possibily due to an
-    error), thus a correction in [1] was used.
+    The lower and upper bounds for $f_{S0}$ presented exactly as in [1] resulted
+    in values outside of the interval [0, 1] (possibily due to an error), thus a
+    correction in [2] was used.
 
-    In order to optimize this method, the priors $S_t$ and $S_w$ should be
-    given by the user, by handpicking them directly from the $S_0$ image
-    or performing WM and CSF segmentation and computing the average
-    (or maximum?) unweighted signal in those regions. Perfroming bias
-    correction on the data can also improve results. If no $S_t$ and $S_w$
-    are passed to the function, these values will be chosen based on the 75th
-    and 95th percentiles of the $S_0$ image, respectively.
+    In order to optimize this method, the priors $S_t$ and $S_w$ should be given
+    by the user, by handpicking them directly from the $S_0$ image or performing
+    WM and CSF segmentation and computing the average (or maximum?) unweighted
+    signal in those regions. Perfroming bias correction on the data can also
+    improve results. If no $S_t$ and $S_w$ are passed to the function, these
+    values will be chosen based on the 75th and 95th percentiles of the $S_0$
+    image, respectively.
 
     The initial guess estimate for the tissue compartment free water fraction,
     based on MD information is given by:
@@ -1364,15 +1188,18 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
 
     References
     ----------
-    .. [1] Golub, M., Neto Henriques, R., & Gouveia Nunes, R. (2021).
-           Free‐water DTI estimates from single b‐value data might seem
-           plausible but must be interpreted with care.
-           Magnetic Resonance in Medicine, 85(5), 2537-2551.
-    .. [2] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander,
-           S., Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
+    .. [1] Parker, D., Ould Ismail, A. A., Wolf, R., Brem, S., Alexander, S.,
+           Hodges, W., ... & Verma, R. (2020). Freewater estimatoR using
            iNtErpolated iniTialization (FERNET): Characterizing peritumoral
-           edema using clinically feasible diffusion MRI data. Plos one,
-           15(5), e0233645.
+           edema using clinically feasible diffusion MRI data. Plos one, 15(5),
+           e0233645.
+
+    .. [2] Golub M, Neto Henriques R, Gouveia Nunes R. Free-water DTI estimates
+           from single b-value data might seem plausible but must be interpreted
+           with care. Magn Reson Med. 2021;85(5):2537-2551.
+
+
+
     """
     W = design_matrix
 

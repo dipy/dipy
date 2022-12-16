@@ -1,22 +1,16 @@
 import numpy as np
-import fwdti as fwdti
+import dipy.reconst.fwdti as fwdti
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
-from dipy.data import fetch_cenir_multib
-from dipy.data import read_cenir_multib
+from dipy.data import fetch_cenir_multib, fetch_stanford_hardi
+from dipy.data import read_cenir_multib, read_stanford_hardi
 from dipy.segment.mask import median_otsu
 
-fetch_cenir_multib(with_raw=False)
+fetch_stanford_hardi()
+img, gtab = read_stanford_hardi()
+data = np.asarray(img.dataobj)
 
-# single-shell data
-bvals = [1000]
-img, gtab_single = read_cenir_multib(bvals)
-data_single = np.asarray(img.dataobj)
-
-# multi-shell data
-bvals = [1000, 2000]
-img, gtab_multi = read_cenir_multib(bvals)
-data_multi = np.asarray(img.dataobj)
+affine = img.affine
 
 # masking
 maskdata_s, mask = median_otsu(data_single, vol_idx=[0, 1],
@@ -41,9 +35,16 @@ plt.hist(S0[mask_roi], bins=50)
 plt.show()
 
 # Running routine
+<<<<<<< HEAD
 # single-shell FW-DTI
 fwdtimodel = fwdti.FreeWaterTensorModel(gtab_multi, fit_method='HY', St=3000, Sw=15000)
 fwdtifit = fwdtimodel.fit(maskdata_m, mask=mask_roi)
+=======
+# FW-DTI
+fwdtimodel = fwdti.FreeWaterTensorModel(gtab, St=5000, Sw=14000, method='hy',
+                                        single_shell=True)
+fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
+>>>>>>> 638cc3214 (`single_shell_flag` => `single_shell`)
 FA = fwdtifit.fa
 MD = fwdtifit.md
 F = fwdtifit.f
