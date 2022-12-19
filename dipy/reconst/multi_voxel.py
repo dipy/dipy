@@ -50,13 +50,15 @@ def multi_voxel_fit(single_voxel_fit):
         engine = kwargs.get("engine", "serial")
         if engine == "serial":
             bar = tqdm(total=np.sum(mask), position=0)
+            bar.set_description(f"Fitting reconstruction model",
+                                 "using serial execution")
             for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
                     fit_array[ijk] = single_voxel_fit(self, data[ijk])
                 bar.update()
             bar.close()
         else:
-            data_to_fit = data[mask]
+            data_to_fit = data[np.where(mask)]
             single_voxel_with_self = partial(single_voxel_fit, self)
             n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
             vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
