@@ -1785,9 +1785,9 @@ def fetch_hcp(subjects,
     return data_files, pjoin(my_path, study)
 
 
-def fetch_hbn_preproc(subjects, path=None):
+def fetch_hbn(subjects, path=None):
     """
-    Fetches data from the Healthy Brain Network POD2 study [1, 2]_.
+    Fetches preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
 
     Parameters
     ----------
