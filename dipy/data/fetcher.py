@@ -1855,12 +1855,16 @@ def fetch_hbn(subjects, path=None):
             local = op.join(dipy_home, full)
             data_files[local] = remote
 
-    with tqdm(total=len(data_files.keys())) as pbar:
-        for k in data_files.keys():
-            pbar.set_description_str(f"Downloading {k}")
-            if not op.exists(k):
-                client.download_file("fcp-indi", data_files[k], k)
-            pbar.update()
+    download_files = {}
+    for k in data_files.keys():
+        if not op.exists(k):
+            download_files[k] = data_files[k]
+    if len(download_files.keys()):
+        with tqdm(total=len(download_files.keys())) as pbar:
+            for k in download_files.keys():
+                pbar.set_description_str(f"Downloading {k}")
+                bucket.download_file(data_files[k], k)
+                pbar.update()
 
     # Create the BIDS dataset description file text
     to_bids_description(op.join(my_path, "HBN"),
