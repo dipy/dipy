@@ -61,7 +61,9 @@ def multi_voxel_fit(single_voxel_fit):
             data_to_fit = data[np.where(mask)]
             single_voxel_with_self = partial(single_voxel_fit, self)
             n_jobs = kwargs.get("n_jobs", multiprocessing.cpu_count() - 1)
-            vox_per_chunk = np.max([data_to_fit.shape[0] // n_jobs, 1])
+            vox_per_chunk = kwargs.get(
+                "vox_per_chunk",
+                np.max([data_to_fit.shape[0] // n_jobs, 1])
             chunks = [data_to_fit[ii:ii + vox_per_chunk]
                     for ii in range(0, data_to_fit.shape[0], vox_per_chunk)]
             fit_array[mask] = np.concatenate((
