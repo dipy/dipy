@@ -1831,6 +1831,11 @@ def fetch_hbn(subjects, path=None):
 
     data_files = {}
 
+    # If user provided incorrect input, these are typical failures that
+    # are easy to recover from:
+    if isinstance(subjects, int) or isinstance(subjects, str):
+        subjects = [subjects]
+
     for subject in subjects:
         initial_query = client.list_objects(
             Bucket="fcp-indi",
