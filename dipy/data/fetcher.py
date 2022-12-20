@@ -20,7 +20,7 @@ from dipy.core.gradients import (gradient_table,
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.streamline import load_trk
-from dipy.utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package, TripWire
 
 
 from urllib.request import urlopen
@@ -1814,6 +1814,14 @@ def fetch_hbn(subjects, path=None):
         Scientific Data. 2022;9(1):1-27.
 
     """
+
+    if has_boto3:
+        from botocore import UNSIGNED
+        from botocore.client import Config
+    else:
+        TripWire("The `fetch_hbn` function requires the boto3",
+                 "library, but that is not installed.")
+
     # Anonymous access:
     client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
 
@@ -1863,7 +1871,7 @@ def fetch_hbn(subjects, path=None):
         with tqdm(total=len(download_files.keys())) as pbar:
             for k in download_files.keys():
                 pbar.set_description_str(f"Downloading {k}")
-                bucket.download_file(data_files[k], k)
+                client.download_file("fcp-indi", download_files[k], k)
                 pbar.update()
 
     # Create the BIDS dataset description file text
