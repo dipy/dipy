@@ -1769,7 +1769,7 @@ def fetch_hcp(subjects,
         with tqdm(total=len(download_files.keys())) as pbar:
             for k in download_files.keys():
                 pbar.set_description_str(f"Downloading {k}")
-                bucket.download_file(data_files[k], k)
+                bucket.download_file(download_files[k], k)
                 pbar.update()
 
     # Create the BIDS dataset description file text
