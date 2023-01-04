@@ -10,6 +10,7 @@ import scipy.special as sps
 from scipy import ndimage
 cimport cython
 cimport numpy as cnp
+from warnings import warn
 
 # Try to get the SVD through direct API to lapack:
 try:
@@ -26,7 +27,7 @@ except ImportError:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
-                       smooth=2):
+                       smooth=2, images_as_samples=True):
     """ PCA based local noise estimation.
 
     Parameters
@@ -47,6 +48,9 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     smooth : int
         Radius of a Gaussian smoothing filter to apply to the noise estimate
         before returning. Default: 2.
+    image_as_samples : bool
+        Whether to use images as rows (samples) for PCA (algorithm in [1]_) or
+        to use images as columns (features). Default: True (images as samples).
 
     Returns
     -------
@@ -72,6 +76,10 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         data0 = data[..., ~gtab.b0s_mask]
         sibe = True
 
+    if patch_radius < 1:
+        warn("Minimum patch radius must be 1, setting to 1", UserWarning)
+        patch_radius = 1
+
     data0 = data0.astype(np.float64)
     cdef:
         cnp.npy_intp dsm = np.min(data0.shape[0:-1])
@@ -92,18 +100,32 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     if (dsm != 1) and (dsm < 2 * patch_radius + 1):
         raise ValueError("Array 'data' is incorrect shape")
 
-    X = data0.reshape(nsamples, n3)
+    if images_as_samples:
+        X = data0.reshape(nsamples, n3).T
+    else:
+        X = data0.reshape(nsamples, n3)
+
     # Demean:
     M = np.mean(X, axis=0)
     X = X - M
     U, S, Vt = svd(X, *svd_args)[:3]
     # Rows of Vt are the eigenvectors, in ascending eigenvalue order:
     W = Vt.T
-    # Project into the data space
-    V = X.dot(W)
 
-    # Grab the column corresponding to the smallest eigen-vector/-value:
-    I = V[:, -1].reshape(n0, n1, n2)
+    if images_as_samples:
+        # use second-to-last eigenvector, because of X is centered
+        W = W.astype('double')
+        V = W[:, n3-2].reshape(n0, n1, n2)
+
+        # eigenvalue = variance gives scale (ref [1]_ method is ambigious)
+        I = V * S[n3-2]
+    else:
+        # Project into the data space
+        V = X.dot(W)
+        
+        # Grab the column corresponding to the smallest eigen-vector/-value:
+        I = V[:, -1].reshape(n0, n1, n2)
+
     del V, W, X, U, S, Vt
 
     cdef:
@@ -157,3 +179,4 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
       sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
 
     return np.sqrt(sigma_corr)
+
