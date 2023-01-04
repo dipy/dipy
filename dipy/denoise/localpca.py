@@ -290,8 +290,9 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         return denoised_arr.astype(out_dtype)
 
 
-def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
-             tau_factor=2.3, out_dtype=None, suppress_warning=False):
+def localpca(arr, sigma=None, mask=None, patch_radius=2, patch_radius_sigma=1,
+             pca_method='eig', tau_factor=2.3, return_sigma=False,
+             out_dtype=None, suppress_warning=False):
     r""" Performs local PCA denoising according to Manjon et al. [1]_.
 
     Parameters
@@ -299,8 +300,9 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
         are the diffusion gradient directions.
-    sigma : float or 3D array
-        Standard deviation of the noise estimated from the data.
+    sigma : float or 3D array (optional)
+        Standard deviation of the noise estimated from the data. If not given,
+        calculate using method in [1]_.
     mask : 3D boolean array (optional)
         A mask with voxels that are true inside the brain and false outside of
         it. The function denoises within the true part and returns zeros
@@ -308,6 +310,9 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
     patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    patch_radius_sigma : int (optional)
+        The radius of the local patch to be taken around each voxel (in
+        voxels) for estimating sigma. Default: 1 (estimate in blocks of 3x3x3 voxels).
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
@@ -326,6 +331,10 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
         set to None, it will be automatically calculated using the
         Marcenko-Pastur distribution [2]_.
         Default: 2.3 (according to [1]_)
+    return_sigma : bool (optional)
+        If true, a noise standard deviation estimate based on the
+        Marcenko-Pastur distribution is returned [2]_.
+        Default: False.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -350,9 +359,18 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
            theory. Neuroimage 142:394-406.
            doi: 10.1016/j.neuroimage.2016.08.016
     """
+    # calculate sigma 
+    if sigma is None:
+        sigma = pca_noise_estimate(data.astype(dtype), gtab,
+                                   correct_bias=correct_bias,
+                                   patch_radius=patch_radius_sigma,
+                                   images_as_samples=True)
+    else:
+        warn("Canonical lpca algorithm does not require sigma to be provided", UserWarning)
+
     return genpca(arr, sigma=sigma, mask=mask, patch_radius=patch_radius,
                   pca_method=pca_method, tau_factor=tau_factor,
-                  return_sigma=False, out_dtype=out_dtype,
+                  return_sigma=return_sigma, out_dtype=out_dtype,
                   suppress_warning=suppress_warning)
 
 
