@@ -40,14 +40,22 @@ def _pca_classifier(L, nvoxels):
            theory. Neuroimage 142:394-406.
            doi: 10.1016/j.neuroimage.2016.08.016
     """
+
+    # if num_samples - 1 (to correct for mean subtraction) is less than number
+    # of features, discard the zero eigenvalues
+    if L.size > nvoxels - 1:
+        L = L[-(nvoxels - 1):] 
+
     var = np.mean(L)
     c = L.size - 1
-    r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / nvoxels) * var
+    # NOTE: data is centered, at most (nvoxels - 1) non-zero eigenvalues
+    r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / (nvoxels - 1)) * var
     while r > 0:
         var = np.mean(L[:c])
         c = c - 1
-        r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / nvoxels) * var
+        r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / (nvoxels - 1)) * var
     ncomps = c + 1
+
     return var, ncomps
 
 
@@ -162,7 +170,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     if num_samples == 1:
         raise ValueError("Cannot have only 1 sample,\
                           please increase patch_radius.")
-    if num_samples < arr.shape[-1] and not suppress_warning:
+    # NOTE: account for mean substraction by testing #samples - 1
+    if num_samples - 1 < arr.shape[-1] and not suppress_warning:
         tmp = np.sum(patch_size == 1)  # count spatial dimensions with size 1
         if tmp == 0:
             root = np.ceil(arr.shape[-1] ** (1./3))  # 3D
@@ -172,7 +181,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
             root = arr.shape[-1]  # 1D
         root = root + 1 if (root % 2) == 0 else root  # make odd
         spr = int((root - 1) / 2)  # suggested patch_radius
-        e_s = "Number of samples {1} < Dimensionality {0}. "\
+        e_s = "Number of samples {1} - 1 < Dimensionality {0}. "\
               .format(arr.shape[-1], num_samples)
         e_s += "This might have a performance impact. "
         e_s += "Increase patch_radius to {0} to avoid this warning, "\
@@ -193,7 +202,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
     dim = arr.shape[-1]
     if tau_factor is None:
-        tau_factor = 1 + np.sqrt(dim / num_samples)
+        tau_factor = 1 + np.sqrt(dim / (num_samples - 1)) # NOTE: account for mean subtraction
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
@@ -218,7 +227,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
                                 num_samples, dim)
-                # compute the mean and normalize
+                # compute the mean
                 M = np.mean(X, axis=0)
                 # Upcast the dtype for precision in the SVD
                 X = X - M
@@ -242,7 +251,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 if sigma is None:
                     # Random matrix theory
-                    this_var, ncomps = _pca_classifier(d, num_samples)
+                    this_var, ncomps = _pca_classifier(d, num_samples)  # NOTE: ncomps not usable as index if num_samples < num_features, but is recalculated below anyway 
                 else:
                     # Predefined variance
                     this_var = var[i, j, k]
@@ -251,7 +260,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                 tau = tau_factor ** 2 * this_var
 
                 # Update ncomps according to tau_factor
-                ncomps = np.sum(d < tau)
+                ncomps = np.sum(d < tau)  # NOTE: since we recalcuate ncomps based on variance, ncomps now correct for num_samples < num_features
                 W[:, :ncomps] = 0
 
                 # This is equations 1 and 2 in Manjon 2013:
@@ -260,7 +269,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                                     patch_size[1],
                                     patch_size[2], dim)
                 # This is equation 3 in Manjon 2013:
-                this_theta = 1.0 / (1.0 + dim - ncomps)
+                this_theta = 1.0 / (1.0 + dim - ncomps)  # NOTE: counting number of non-noise components, no correction needed for num_samples < num_features
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
                 if return_sigma is True and sigma is None:
