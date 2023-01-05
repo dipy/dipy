@@ -111,7 +111,8 @@ fwdtifit = fwdtimodel.fit(data_small, mask=mask_small)
 This 2-steps procedure will create a FreeWaterTensorFit object which contains
 all the diffusion tensor statistics free for free water contamination. Below
 we extract the fractional anisotropy (FA) and the mean diffusivity (MD) of the
-free water diffusion tensor."""
+free water diffusion tensor.
+"""
 
 FA = fwdtifit.fa
 MD = fwdtifit.md
