@@ -21,8 +21,10 @@ from dipy.core.gradients import gradient_table
 
 """
 Download and read the data for this tutorial. Our implementation of FORECAST
-requires multi-shell `data. fetch_hbn()` provides data acquired using b-values
-of 1000 and 2000 (see MAPMRI example for more information on this dataset).
+requires multi-shell `data.fetch_hbn()` provides data that was acquired using
+b-values of 1000 and 2000 as part of the Healthy Brain Network study
+[Alexander2017]_ and was preprocessed and quality controlled in the HBN-POD2
+dataset [RichieHalford2022]_.
 """
 
 data_path = fetch_hbn(["NDARAA948VFH"])[1]
@@ -156,12 +158,21 @@ References
        Resonance in Medicine, 2005.
 
 .. [Kaden2016] Kaden E. et al., "Quantitative Mapping of the Per-Axon Diffusion
-       Coefficients in Brain White Matter", Magnetic Resonance in
-       Medicine, 2016.
+       Coefficients in Brain White Matter", Magnetic Resonance in Medicine,
+       2016.
 
 .. [Zucchelli2017] Zucchelli E. et al., "A generalized SMT-based framework for
-       Diffusion MRI microstructural model estimation", MICCAI Workshop
-       on Computational DIFFUSION MRI (CDMRI), 2017.
+       Diffusion MRI microstructural model estimation", MICCAI Workshop on
+       Computational DIFFUSION MRI (CDMRI), 2017.
+
+.. [Alexander2017] Alexander LM, Escalera J, Ai L, et al. An open resource for
+       transdiagnostic research in pediatric mental health and learning
+       disorders. Sci Data. 2017;4:170181.
+
+.. [RichieHalford2022] Richie-Halford A, Cieslak M, Ai L, et al. An
+       analysis-ready and quality controlled resource for pediatric brain
+       white-matter research. Scientific Data. 2022;9(1):1-27.
+
 
 .. include:: ../links_names.inc
 
