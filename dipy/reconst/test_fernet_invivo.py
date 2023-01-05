@@ -14,9 +14,9 @@ affine = img.affine
 
 # masking
 maskdata_s, mask = median_otsu(data_single, vol_idx=[0, 1],
-                             autocrop=False)
+                               autocrop=False)
 maskdata_m, mask = median_otsu(data_multi, vol_idx=[0, 1],
-                             autocrop=False)
+                               autocrop=False)
 
 axial_slice = 40
 
@@ -34,17 +34,10 @@ plt.subplot(122)
 plt.hist(S0[mask_roi], bins=50)
 plt.show()
 
-# Running routine
-<<<<<<< HEAD
-# single-shell FW-DTI
-fwdtimodel = fwdti.FreeWaterTensorModel(gtab_multi, fit_method='HY', St=3000, Sw=15000)
-fwdtifit = fwdtimodel.fit(maskdata_m, mask=mask_roi)
-=======
 # FW-DTI
 fwdtimodel = fwdti.FreeWaterTensorModel(gtab, St=5000, Sw=14000, method='hy',
                                         single_shell=True)
 fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
->>>>>>> 638cc3214 (`single_shell_flag` => `single_shell`)
 FA = fwdtifit.fa
 MD = fwdtifit.md
 F = fwdtifit.f
