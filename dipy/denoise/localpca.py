@@ -13,6 +13,7 @@ except ImportError:
     from scipy.linalg import svd
     svd_args = [False]
 from scipy.linalg import eigh
+from dipy.denoise.pca_noise_estimate import pca_noise_estimate
 
 
 def _pca_classifier(L, nvoxels):
@@ -296,8 +297,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         return denoised_arr.astype(out_dtype)
 
 
-def localpca(arr, sigma=None, mask=None, patch_radius=2, patch_radius_sigma=1,
-             pca_method='eig', tau_factor=2.3, return_sigma=False,
+def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius_sigma=1,
+             pca_method='eig', tau_factor=2.3, return_sigma=False, correct_bias=True,
              out_dtype=None, suppress_warning=False):
     r""" Performs local PCA denoising according to Manjon et al. [1]_.
 
@@ -316,6 +317,10 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, patch_radius_sigma=1,
     patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+    gtab: gradient table object (optional if sigma is provided)
+        gradient information for the data gives us the bvals and bvecs of
+        diffusion data, which is needed to calculate noise level if sigma is
+        not provided.
     patch_radius_sigma : int (optional)
         The radius of the local patch to be taken around each voxel (in
         voxels) for estimating sigma. Default: 1 (estimate in blocks of 3x3x3 voxels).
@@ -341,6 +346,9 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, patch_radius_sigma=1,
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned [2]_.
         Default: False.
+    correct_bias : bool
+        Whether to correct for bias due to Rician noise. This is an
+        implementation of equation 8 in [1]_.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
@@ -365,14 +373,16 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, patch_radius_sigma=1,
            theory. Neuroimage 142:394-406.
            doi: 10.1016/j.neuroimage.2016.08.016
     """
+    # check gtab is given, if sigma is not given
+    if sigma is None and gtab is None:
+        raise ValueError("gtab must be provided if sigma is not given")
+
     # calculate sigma 
     if sigma is None:
-        sigma = pca_noise_estimate(data.astype(dtype), gtab,
+        sigma = pca_noise_estimate(arr, gtab,
                                    correct_bias=correct_bias,
                                    patch_radius=patch_radius_sigma,
                                    images_as_samples=True)
-    else:
-        warn("Canonical lpca algorithm does not require sigma to be provided", UserWarning)
 
     return genpca(arr, sigma=sigma, mask=mask, patch_radius=patch_radius,
                   pca_method=pca_method, tau_factor=tau_factor,
