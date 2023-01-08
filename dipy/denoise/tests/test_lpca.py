@@ -260,6 +260,11 @@ def test_lpca_sigma_wrong_shape():
     assert_raises(ValueError, localpca, DWI, sigma)
 
 
+def test_lpca_no_gtab_no_sigma():
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    assert_raises(ValueError, localpca, DWI, None, None)
+
+
 def test_pca_classifier():
     # Produce small phantom with well aligned single voxels and ground truth
     # snr = 50, i.e signal std = 0.02 (Gaussian noise)
