@@ -1,8 +1,9 @@
-import numpy.testing as npt
 import sys
 from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import TemporaryDirectory
+import numpy.testing as npt
+
 from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
