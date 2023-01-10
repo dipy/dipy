@@ -96,7 +96,8 @@ def exfile2rst(filename):
 
         # if we have something that should go into the text
         if indocs \
-           or (cleanline.startswith('"""') or cleanline.startswith("'''")):
+           or (cleanline.startswith('"""') or cleanline.startswith("'''") or
+               cleanline.startswith('r"""') or cleanline.startswith("r'''")):
             # handle doc start
             if not indocs:
                 # guarenteed to start with """
