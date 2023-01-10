@@ -1,9 +1,11 @@
 import os
+from tempfile import TemporaryDirectory
+
 import pytest
 import numpy as np
 import numpy.testing as npt
 from dipy.utils.optpkg import optional_package
-from nibabel.tmpdirs import TemporaryDirectory
+
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti, load_nifti_data
 

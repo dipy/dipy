@@ -1,11 +1,10 @@
 from os.path import join as pjoin
 import os.path
+from tempfile import TemporaryDirectory
 
 import numpy.testing as npt
 import numpy as np
-
 import nibabel as nib
-from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.align.tests.test_imwarp import get_synthetic_warped_circle
 from dipy.align.tests.test_parzenhist import setup_random_transform

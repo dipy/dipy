@@ -1,6 +1,5 @@
 from os.path import join as pjoin
-
-from nibabel.tmpdirs import TemporaryDirectory
+from tempfile import TemporaryDirectory
 
 import numpy as np
 

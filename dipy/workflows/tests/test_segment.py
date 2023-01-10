@@ -1,19 +1,20 @@
+from os.path import join as pjoin
+from tempfile import TemporaryDirectory
+
 import numpy.testing as npt
-from os.path import join
-import nibabel as nib
 import numpy as np
-from nibabel.tmpdirs import TemporaryDirectory
+import nibabel as nib
+
+from dipy.align.streamlinear import BundleMinDistanceMetric
 from dipy.data import get_fnames
 from dipy.segment.mask import median_otsu
 from dipy.tracking.streamline import Streamlines
-from dipy.workflows.segment import MedianOtsuFlow
-from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
 from dipy.io.image import load_nifti_data
-from os.path import join as pjoin
 from dipy.tracking.streamline import set_number_of_points
-from dipy.align.streamlinear import BundleMinDistanceMetric
+from dipy.workflows.segment import MedianOtsuFlow
+from dipy.workflows.segment import RecoBundlesFlow, LabelsBundlesFlow
 
 
 def test_median_otsu_flow():
@@ -41,10 +42,10 @@ def test_median_otsu_flow():
                                    numpass=numpass,
                                    autocrop=autocrop, dilate=dilate)
 
-        result_mask_data = load_nifti_data(join(out_dir, mask_name))
+        result_mask_data = load_nifti_data(pjoin(out_dir, mask_name))
         npt.assert_array_equal(result_mask_data.astype(np.uint8), mask)
 
-        result_masked = nib.load(join(out_dir, masked_name))
+        result_masked = nib.load(pjoin(out_dir, masked_name))
         result_masked_data = np.asanyarray(result_masked.dataobj)
 
         npt.assert_array_equal(np.round(result_masked_data), masked)
