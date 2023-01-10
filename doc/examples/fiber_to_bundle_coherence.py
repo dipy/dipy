@@ -235,7 +235,7 @@ from dipy.viz import window, actor
 scene = window.Scene()
 
 # Original lines colored by LFBC
-lineactor = actor.line(fbc_sl_orig, clrs_orig, linewidth=0.2)
+lineactor = actor.line(fbc_sl_orig, np.vstack(clrs_orig), linewidth=0.2)
 scene.add(lineactor)
 
 # Horizontal (axial) slice of T1 data
@@ -258,7 +258,7 @@ if interactive:
 
 # Show thresholded fibers
 scene.rm(lineactor)
-scene.add(actor.line(fbc_sl_thres, clrs_thres, linewidth=0.2))
+scene.add(actor.line(fbc_sl_thres, np.vstack(clrs_thres), linewidth=0.2))
 window.record(scene, n_frames=1, out_path='OR_after.png', size=(900, 900))
 if interactive:
     window.show(scene)
