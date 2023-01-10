@@ -1,5 +1,6 @@
 import json
 import os
+from tempfile import TemporaryDirectory
 
 from dipy.data import fetch_gold_standard_io
 from dipy.io.streamline import (load_tractogram, save_tractogram,
@@ -11,7 +12,6 @@ from dipy.tracking.streamline import Streamlines
 import numpy as np
 import numpy.testing as npt
 import pytest
-from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.utils.optpkg import optional_package
 fury, have_fury, setup_module = optional_package('fury')
@@ -153,8 +153,9 @@ streamlines = Streamlines([streamline[[0, 10]], streamline,
 
 
 def io_tractogram(extension):
-    with InTemporaryDirectory():
+    with TemporaryDirectory() as tmpdir:
         fname = 'test.{}'.format(extension)
+        fpath = os.path.join(tmpdir, fname)
 
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
@@ -162,14 +163,14 @@ def io_tractogram(extension):
         nii_header = create_nifti_header(in_affine, in_dimensions,
                                          in_voxel_sizes)
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
-        save_tractogram(sft, fname, bbox_valid_check=False)
+        save_tractogram(sft, fpath, bbox_valid_check=False)
 
         if extension == 'trk':
             reference = 'same'
         else:
             reference = nii_header
 
-        sft = load_tractogram(fname, reference, bbox_valid_check=False)
+        sft = load_tractogram(fpath, reference, bbox_valid_check=False)
         affine, dimensions, voxel_sizes, _ = sft.space_attributes
 
         npt.assert_array_equal(in_affine, affine)
@@ -204,8 +205,8 @@ def test_io_dpy():
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_low_io_vtk():
-    with InTemporaryDirectory():
-        fname = 'test.fib'
+    with TemporaryDirectory() as tmpdir:
+        fname = os.path.join(tmpdir, 'test.fib')
 
         # Test save
         save_vtk_streamlines(streamlines, fname, binary=True)
@@ -216,8 +217,8 @@ def test_low_io_vtk():
 
 def trk_loader(filename):
     try:
-        with InTemporaryDirectory():
-            load_trk(filename, filepath_dix['gs.nii'])
+        with TemporaryDirectory() as tmpdir:
+            load_trk(os.path.join(tmpdir, filename), filepath_dix['gs.nii'])
         return True
     except ValueError:
         return False
@@ -227,8 +228,8 @@ def trk_saver(filename):
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
 
     try:
-        with InTemporaryDirectory():
-            save_trk(sft, filename)
+        with TemporaryDirectory() as tmpdir:
+            save_trk(sft, os.path.join(tmpdir, filename))
         return True
     except ValueError:
         return False
