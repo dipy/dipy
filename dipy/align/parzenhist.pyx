@@ -107,10 +107,14 @@ class ParzenJointHistogram(object):
         self.mmin = np.min(moving[mmask != 0])
         self.mmax = np.max(moving[mmask != 0])
 
-        self.sdelta = (self.smax - self.smin) / (self.nbins - 2 * self.padding)
-        self.mdelta = (self.mmax - self.mmin) / (self.nbins - 2 * self.padding)
-        self.smin = self.smin / self.sdelta - self.padding
-        self.mmin = self.mmin / self.mdelta - self.padding
+        divider = self.nbins - 2 * self.padding
+        self.sdelta = ((self.smax - self.smin) / divider) if divider else 0
+        self.mdelta = ((self.mmax - self.mmin) / divider) if divider else 0
+
+        divider = self.sdelta - self.padding
+        self.smin = (self.smin / divider) if divider else 0
+        divider = self.mdelta - self.padding
+        self.mmin = (self.mmin / divider) if divider else 0
 
         self.joint_grad = None
         self.metric_grad = None
