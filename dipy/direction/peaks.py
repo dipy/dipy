@@ -481,7 +481,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     peak_dirs = np.zeros((shape + (npeaks, 3)))
     peak_values = np.zeros((shape + (npeaks,)))
-    peak_indices = np.zeros((shape + (npeaks,)), dtype='int')
+    peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
     peak_indices.fill(-1)
 
     if return_sh:
