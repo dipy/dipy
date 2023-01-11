@@ -1,5 +1,6 @@
 from os.path import join as pjoin
 from tempfile import TemporaryDirectory
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -37,10 +38,15 @@ def reconst_mmri_core(flow, lap, pos):
         volume = load_nifti_data(data_path)
 
         mmri_flow = flow()
-        mmri_flow.run(data_files=data_path, bvals_files=bval_path,
-                      bvecs_files=bvec_path, small_delta=0.0129,
-                      big_delta=0.0218, laplacian=lap,
-                      positivity=pos, out_dir=out_dir)
+
+        msg = "Optimization did not find a solution"
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            mmri_flow.run(data_files=data_path, bvals_files=bval_path,
+                          bvecs_files=bvec_path, small_delta=0.0129,
+                          big_delta=0.0218, laplacian=lap,
+                          positivity=pos, out_dir=out_dir)
 
         for out_name in ['out_rtop', 'out_lapnorm', 'out_msd', 'out_qiv',
                          'out_rtap', 'out_rtpp', 'out_ng', 'out_parng',
