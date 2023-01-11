@@ -24,7 +24,6 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 def test_rumba():
 
     # Test fODF results from ideal examples.
-
     sphere = default_sphere  # repulsion 724
     sphere2 = get_sphere('symmetric362')
 
@@ -37,8 +36,13 @@ def test_rumba():
                                               fractions=[50, 50], snr=None)
 
     # Testing input validation
-    gtab_broken = gradient_table(
-        bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+    msg = "b0_threshold .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg,
+                                category=UserWarning)
+        gtab_broken = gradient_table(bvals[~gtab.b0s_mask],
+                                     bvecs[~gtab.b0s_mask])
+
     assert_raises(ValueError, RumbaSDModel, gtab_broken)
 
     with warnings.catch_warnings(record=True) as w:
@@ -186,8 +190,12 @@ def test_mvoxel_rumba():
                              sphere=sphere)
     model_list = [rumba_smf, rumba_sos]
 
+    msg = "There is overlap in clustering of b-value.*"
     for model in model_list:
-        model_fit = model.fit(data)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            model_fit = model.fit(data)
 
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso
@@ -197,10 +205,14 @@ def test_mvoxel_rumba():
         combined = model_fit.combined_odf_iso
 
         # Verify prediction properties
-        pred_sig_1 = model_fit.predict()
-        pred_sig_2 = model_fit.predict(S0=1)
-        pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
-        pred_sig_4 = model_fit.predict(gtab=gtab)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            pred_sig_1 = model_fit.predict()
+            pred_sig_2 = model_fit.predict(S0=1)
+            pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
+            pred_sig_4 = model_fit.predict(gtab=gtab)
 
         assert_equal(pred_sig_1, pred_sig_2)
         assert_equal(pred_sig_3, pred_sig_4)
@@ -319,7 +331,11 @@ def test_mvoxel_global_fit():
 
     # Test each model with/without TV regularization
     for model in model_list:
-        model_fit = model.fit(data)
+        msg = "There is overlap in clustering of b-value.*"
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            model_fit = model.fit(data)
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
