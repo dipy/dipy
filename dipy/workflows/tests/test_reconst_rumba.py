@@ -1,18 +1,15 @@
 import logging
-import warnings
 from os.path import join as pjoin
+from tempfile import TemporaryDirectory
+import warnings
 
 import numpy as np
-import numpy.testing as npt
-from nibabel.tmpdirs import TemporaryDirectory
 
-from dipy.core.gradients import generate_bvecs
 from dipy.data import get_fnames
-from dipy.io.peaks import load_peaks
-from dipy.io.gradients import read_bvals_bvecs
-from dipy.io.image import load_nifti, save_nifti, load_nifti_data
+from dipy.io.image import load_nifti, save_nifti
 from dipy.workflows.reconst import ReconstRUMBAFlow
-from dipy.reconst.shm import descoteaux07_legacy_msg, sph_harm_ind_list
+from dipy.reconst.shm import descoteaux07_legacy_msg
+
 logging.getLogger().setLevel(logging.INFO)
 
 

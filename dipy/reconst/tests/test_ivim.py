@@ -62,8 +62,12 @@ def setup_module():
     ivim_params_trr[0, 0, 0] = ivim_params_trr[0, 1, 0] = params_trr
     ivim_params_trr[1, 0, 0] = ivim_params_trr[1, 1, 0] = params_trr
 
-    ivim_model_trr = IvimModel(gtab, fit_method='trr')
-    ivim_model_one_stage = IvimModel(gtab, fit_method='trr')
+    msg = "Bounds for this fit have been set from experiments .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        ivim_model_trr = IvimModel(gtab, fit_method='trr')
+        ivim_model_one_stage = IvimModel(gtab, fit_method='trr')
+
     ivim_fit_single = ivim_model_trr.fit(data_single)
     ivim_fit_multi = ivim_model_trr.fit(data_multi)
 
@@ -100,7 +104,10 @@ def setup_module():
         1, 0, 0] = noisy_multi[1, 1, 0] = noisy_single
     noisy_multi[0, 0, 0] = data_single
 
-    ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
+    msg = "Bounds for this fit have been set from experiments .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        ivim_model_VP = IvimModel(gtab, fit_method='VarPro')
     f_VP, D_star_VP, D_VP = 0.13, 0.0088, 0.000921
     # params for a single voxel
     params_VP = np.array([f, D_star, D])
@@ -321,7 +328,11 @@ def test_multiple_b0():
     # Single voxel data
     data_single = signal[0]
 
-    ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0, fit_method='trr')
+    msg = "Bounds for this fit have been set from experiments .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        ivim_model_multiple_b0 = IvimModel(gtab_with_multiple_b0,
+                                           fit_method='trr')
 
     ivim_model_multiple_b0.fit(data_single)
     # Test if all signals are positive
@@ -340,7 +351,11 @@ def test_noisy_fit():
     around 135 and D and D_star values are equal. Hence doing a test based on
     Scipy version.
     """
-    model_one_stage = IvimModel(gtab, fit_method='trr')
+    msg = "Bounds for this fit have been set from experiments .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        model_one_stage = IvimModel(gtab, fit_method='trr')
+
     with warnings.catch_warnings(record=True) as w:
         fit_one_stage = model_one_stage.fit(noisy_single)
         assert_equal(len(w), 3)
@@ -423,7 +438,11 @@ def test_fit_one_stage():
     """
     Test to check the results for the one_stage linear fit.
     """
-    model = IvimModel(gtab, two_stage=False)
+    msg = "Bounds for this fit have been set from experiments .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        model = IvimModel(gtab, two_stage=False)
+
     fit = model.fit(data_single)
     linear_fit_params = [9.88834140e+02, 1.19707191e-01, 7.91176970e-03,
                          9.30095210e-04]

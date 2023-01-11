@@ -107,10 +107,22 @@ class ParzenJointHistogram(object):
         self.mmin = np.min(moving[mmask != 0])
         self.mmax = np.max(moving[mmask != 0])
 
-        self.sdelta = (self.smax - self.smin) / (self.nbins - 2 * self.padding)
-        self.mdelta = (self.mmax - self.mmin) / (self.nbins - 2 * self.padding)
-        self.smin = self.smin / self.sdelta - self.padding
-        self.mmin = self.mmin / self.mdelta - self.padding
+        numerator = self.smax - self.smin
+        denominator = self.nbins - 2 * self.padding
+        self.sdelta = np.divide(numerator, denominator,
+                                out=np.zeros_like(numerator, dtype=np.float64),
+                                where=denominator!=0)
+        numerator = self.mmax - self.mmin
+        self.mdelta = np.divide(numerator, denominator,
+                                out=np.zeros_like(numerator, dtype=np.float64),
+                                where=denominator!=0)
+
+        self.smin = np.divide(self.smin, self.sdelta,
+                              out=np.zeros_like(self.smin, dtype=np.float64),
+                              where=self.sdelta!=0) - self.padding
+        self.mmin = np.divide(self.mmin, self.mdelta,
+                              out=np.zeros_like(self.mmin, dtype=np.float64),
+                              where=self.mdelta!=0) - self.padding
 
         self.joint_grad = None
         self.metric_grad = None
@@ -449,6 +461,8 @@ cdef inline double _bin_normalize(double x, double mval, double delta) nogil:
     padding, padding+1, ..., nbins - 1 - padding (i.e., nbins - 2*padding bins)
 
     """
+    if delta == 0:
+        return 0
     return x / delta - mval
 
 

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from dipy.denoise import patch2self as p2s
 from dipy.testing import (assert_greater, assert_less,
@@ -26,16 +28,21 @@ def test_patch2self_random_noise():
     assert_less_equal(np.round(S0den_shift.mean()), 30)
 
     # clip = True
-    S0den_clip = p2s.patch2self(S0, bvals, model='ols',
-                                clip_negative_vals=True)
+    msg = "Both `clip_negative_vals` and `shift_intensity` .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        S0den_clip = p2s.patch2self(S0, bvals, model='ols',
+                                    clip_negative_vals=True)
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
 
     # both clip and shift = True, and int patch_radius
-    S0den_clip = p2s.patch2self(S0, bvals, patch_radius=0, model='ols',
-                                clip_negative_vals=True,
-                                shift_intensity=True)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        S0den_clip = p2s.patch2self(S0, bvals, patch_radius=0, model='ols',
+                                    clip_negative_vals=True,
+                                    shift_intensity=True)
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
@@ -47,6 +54,7 @@ def test_patch2self_random_noise():
 
     assert_greater(S0den_clip.min(), S0.min())
     assert_equal(np.round(S0den_clip.mean()), 30)
+
 
 @needs_sklearn
 def test_patch2self_boundary():

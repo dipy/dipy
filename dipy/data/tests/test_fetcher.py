@@ -3,7 +3,6 @@ import os.path as op
 import sys
 import os
 import numpy.testing as npt
-from nibabel.tmpdirs import TemporaryDirectory
 import dipy.data.fetcher as fetcher
 from dipy.data import SPHERE_FILES
 from threading import Thread
@@ -29,7 +28,7 @@ def test_check_md5():
 
 def test_make_fetcher():
     symmetric362 = SPHERE_FILES['symmetric362']
-    with TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir:
         stored_md5 = fetcher._get_file_md5(symmetric362)
 
         # create local HTTP Server
@@ -73,7 +72,7 @@ def test_make_fetcher():
 
 def test_fetch_data():
     symmetric362 = SPHERE_FILES['symmetric362']
-    with TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir:
         md5 = fetcher._get_file_md5(symmetric362)
         bad_md5 = '8' * len(md5)
 

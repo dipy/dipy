@@ -1,6 +1,7 @@
 import sys
 import numpy as np
 import pytest
+import warnings
 
 from numpy.testing import assert_equal, assert_almost_equal
 from dipy.data import get_fnames
@@ -43,7 +44,10 @@ def test_rb_check_defaults():
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[rec_labels])
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[rec_labels])
 
     # check if the bundle is recognized correctly
     if len(f2) == len(rec_labels):
@@ -55,7 +59,9 @@ def test_rb_check_defaults():
                                             model_clust_thr=5.,
                                             reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[refine_labels])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[refine_labels])
 
     # check if the bundle is recognized correctly
     for row in D:
@@ -73,7 +79,10 @@ def test_rb_disable_slr():
                                          reduction_thr=10,
                                          slr=False)
 
-    D = bundles_distances_mam(f2, f[rec_labels])
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[rec_labels])
 
     # check if the bundle is recognized correctly
     if len(f2) == len(rec_labels):
@@ -85,7 +94,9 @@ def test_rb_disable_slr():
                                             model_clust_thr=5.,
                                             reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[refine_labels])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[refine_labels])
 
     # check if the bundle is recognized correctly
     for row in D:
@@ -113,7 +124,11 @@ def test_rb_slr_threads():
                                                      slr=True,
                                                      num_threads=1)
 
-    D = bundles_distances_mam(rec_trans_multi_threads, rec_trans_single_thread)
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(rec_trans_multi_threads,
+                                  rec_trans_single_thread)
 
     # check if the bundle is recognized correctly
     # multi-threading prevent an exact match
@@ -133,7 +148,10 @@ def test_rb_no_verbose_and_mam():
                                          slr=True,
                                          pruning_distance='mam')
 
-    D = bundles_distances_mam(f2, f[rec_labels])
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[rec_labels])
 
     # check if the bundle is recognized correctly
     if len(f2) == len(rec_labels):
@@ -145,7 +163,9 @@ def test_rb_no_verbose_and_mam():
                                             model_clust_thr=5.,
                                             reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[refine_labels])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[refine_labels])
 
     # check if the bundle is recognized correctly
     for row in D:
@@ -164,7 +184,10 @@ def test_rb_clustermap():
                                          model_clust_thr=5.,
                                          reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[rec_labels])
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[rec_labels])
 
     # check if the bundle is recognized correctly
     if len(f2) == len(rec_labels):
@@ -176,7 +199,9 @@ def test_rb_clustermap():
                                             model_clust_thr=5.,
                                             reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[refine_labels])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[refine_labels])
 
     # check if the bundle is recognized correctly
     for row in D:
@@ -233,7 +258,10 @@ def test_rb_reduction_mam():
                                          slr_metric='asymmetric',
                                          pruning_distance='mam')
 
-    D = bundles_distances_mam(f2, f[rec_labels])
+    msg = "Streamlines do not have the same number of points. *"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[rec_labels])
 
     # check if the bundle is recognized correctly
     if len(f2) == len(rec_labels):
@@ -245,7 +273,9 @@ def test_rb_reduction_mam():
                                             model_clust_thr=5.,
                                             reduction_thr=10)
 
-    D = bundles_distances_mam(f2, f[refine_labels])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+        D = bundles_distances_mam(f2, f[refine_labels])
 
     # check if the bundle is recognized correctly
     for row in D:

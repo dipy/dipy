@@ -609,7 +609,7 @@ class BundleShapeAnalysis(Workflow):
             logging.info("saving BA score matrix")
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
-            cmap = matplt.cm.get_cmap('Blues')
+            cmap = matplt.colormaps['Blues']
             plt.title(bun[:-4])
             plt.imshow(ba_matrix, cmap=cmap)
             plt.colorbar()

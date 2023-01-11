@@ -339,8 +339,9 @@ def patch2self(data, bvals, patch_radius=(0, 0, 0), model='ols',
         denoised_arr.clip(min=0, out=denoised_arr)
 
     elif clip_negative_vals and shift_intensity:
-        warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
-        warn('Defaulting to `clip_negative_bvals`...')
+        msg = 'Both `clip_negative_vals` and `shift_intensity` cannot be True.'
+        msg += ' Defaulting to `clip_negative_vals`...'
+        warn(msg)
         denoised_arr.clip(min=0, out=denoised_arr)
 
     return np.array(denoised_arr, dtype=out_dtype)

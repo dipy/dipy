@@ -569,6 +569,12 @@ def test_spherical_l1_increases_sparsity(radial_order=4, time_order=2):
         warnings.filterwarnings(
             "ignore", message=descoteaux07_legacy_msg,
             category=PendingDeprecationWarning)
+        warnings.filterwarnings(
+            "ignore", message="cvxpy optimization resulted in .*",
+            category=UserWarning)
+        warnings.filterwarnings(
+            "ignore", message="Solution may be inaccurate..*",
+            category=UserWarning)
         qtdmri_fit_no_l1 = qtdmri_mod_no_l1.fit(S)
         qtdmri_fit_l1 = qtdmri_mod_l1.fit(S)
 
