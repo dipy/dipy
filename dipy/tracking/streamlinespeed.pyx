@@ -574,7 +574,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
 
     Examples
     --------
-    >>> from dipy.tracking.streamline import compress_streamlines
+    >>> from dipy.tracking.streamlinespeed import compress_streamlines
     >>> import numpy as np
     >>> # One streamline: a wiggling line
     >>> rng = np.random.RandomState(42)

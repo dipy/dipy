@@ -163,12 +163,13 @@ def search_descending(cython.floating[::1] a, double relative_threshold):
     Examples
     --------
     >>> a = np.arange(10, 0, -1, dtype=float)
-    >>> a
-    array([ 10.,   9.,   8.,   7.,   6.,   5.,   4.,   3.,   2.,   1.])
+    >>> np.allclose(a, np.array([10., 9., 8., 7., 6., 5., 4., 3., 2., 1.]))
+    True
     >>> search_descending(a, 0.5)
     6
-    >>> a < 10 * 0.5
-    array([False, False, False, False, False, False,  True,  True,  True,  True], dtype=bool)
+    >>> np.allclose(a < 10 * 0.5, np.array([False, False, False, False, False,
+    ... False,  True,  True,  True,  True]))
+    True
     >>> search_descending(a, 1)
     1
     >>> search_descending(a, 2)
