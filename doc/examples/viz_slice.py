@@ -110,12 +110,7 @@ fname_fa = os.path.join(os.path.expanduser('~'), '.dipy',
 
 fa = load_nifti_data(fname_fa)
 
-"""
-Notice here how the scale range is (0, 255) and not (0, 1) which is the usual
-range of FA values.
-"""
-
-lut = actor.colormap_lookup_table(scale_range=(0, 255),
+lut = actor.colormap_lookup_table(scale_range=(fa.min(), fa.max()*0.8),
                                   hue_range=(0.4, 1.),
                                   saturation_range=(1, 1.),
                                   value_range=(0., 1.))
