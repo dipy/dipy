@@ -28,6 +28,10 @@ DIPY 1.5.0 changes
     - The parent class ``PmfGen`` has new mandatory parameter ``sphere``. The sphere vertices correspond to the spherical distribution of the pmf values.
     - The parent class ``PmfGen`` has new function ``get_pmf_value(point, xyz)`` which return the pmf value at location ``point`` and orientation ``xyz``.
 
+**Segment**
+
+- The deprecated ``from dipy.segment.metric import ResampleFeature`` was removed and replaced by ``from dipy.segment.featurespeed import ResampleFeature``.
+
 
 DIPY 1.4.1 changes
 ------------------
