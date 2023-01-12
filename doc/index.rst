@@ -16,31 +16,30 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.5.0** is now available. New features include:
+**DIPY 1.6.0** is now available. New features include:
 
-- New reconstruction model added: Q-space Trajectory Imaging (QTI).
-- New reconstruction model added: Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD).
-- New reconstruction model added: Residual block Deep Neural Network (ResDNN).
-- Masking management in Affine Registration added.
-- Multiple Workflows updated (DTIFlow, DKIFlow, ImageRegistrationFlow) and added (MotionCorrectionFlow).
-- Compatibility with Python 3.10 added.
-- Migrations from Azure Pipeline to Github Actions.
+- NF: Unbiased groupwise linear bundle registration
+- NF: MAP+ constraints
+- Generalized PCA to less than 3 spatial dimsAdd positivity constraints to QTI
+- Generalized PCA to less than 3 spatial dims
+- Allow to apply on points/Streamlines the Symmetric Diffeormorphic Registration
+- New Human Connectome Project (HCP) data fetcher added.
+- New Healthy Brain Network (HBN) data fetcher added.
+- Multiple Workflows updated (DTIFlow, LPCAFlow, MPPCA) and added (RUMBAFlow).
+- Handle save VTP
 - Large codebase cleaning.
-- New parallelisation module added.
-- ``dipy.io.bvectxt`` module deprecated.
-- New DIPY Horizon features (ROI Visualizer, random colors flag).
 - Large documentation update.
 - Closed 129 issues and merged 72 pull requests.
-
 
 See :ref:`Older Highlights <old_highlights>`.
 
 *************
 Announcements
 *************
+- :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 13, 2023.
 - :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 11, 2022.
 - :doc:`DIPY 1.4.1 <release_notes/release1.4.1>` released May 6, 2021.
-- :doc:`DIPY 1.4.0 <release_notes/release1.4>` released March 13, 2021.
+
 
 
 
