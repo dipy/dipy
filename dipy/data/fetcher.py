@@ -1787,7 +1787,7 @@ def fetch_hcp(subjects,
 
 def fetch_hbn(subjects, path=None):
     """
-    Fetches preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
+    Fetch preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
 
     Parameters
     ----------
@@ -1795,7 +1795,7 @@ def fetch_hbn(subjects, path=None):
         Identifiers of the subjects to download.
         For example: ["NDARAA112DMH", "NDARAA117NEJ"].
     path : string, optional
-        Path to save files into. Default: '~/AFQ_data'
+        Path to save files into. Default: '~/.dipy'
 
     Returns
     -------
