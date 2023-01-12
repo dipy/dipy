@@ -1849,7 +1849,12 @@ def fetch_hbn(subjects, path=None):
         initial_query = client.list_objects(
             Bucket="fcp-indi",
             Prefix=f"data/Projects/HBN/BIDS_curated/sub-{subject}/")
-        ses = initial_query['Contents'][0]["Key"].split('/')[5]
+        ses = initial_query.get('Contents', None)
+        if ses is None:
+            raise ValueError(f"Could not find data for subject {subject}")
+        else:
+            ses = ses[0]["Key"].split('/')[5]
+
         query = client.list_objects(
             Bucket="fcp-indi",
             Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
