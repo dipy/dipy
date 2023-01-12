@@ -1793,7 +1793,8 @@ def fetch_hbn(subjects, path=None):
     ----------
     subjects : list
         Identifiers of the subjects to download.
-        For example: ["NDARAA112DMH", "NDARAA117NEJ"].
+        For example: ["NDARAA948VFH", "NDAREK918EC2"].
+
     path : string, optional
         Path to save files into. Default: '~/.dipy'
 
@@ -1819,8 +1820,8 @@ def fetch_hbn(subjects, path=None):
         from botocore import UNSIGNED
         from botocore.client import Config
     else:
-        TripWire("The `fetch_hbn` function requires the boto3",
-                 "library, but that is not installed.")
+        TripWire("The `fetch_hbn` function requires the boto3" +
+                 " library, but that is not installed.")
 
     # Anonymous access:
     client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
