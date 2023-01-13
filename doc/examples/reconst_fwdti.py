@@ -3,14 +3,14 @@
 Using the free water elimination model to remove DTI free water contamination
 =============================================================================
 
-As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor
-model is a simple way to characterize diffusion anisotropy. However, in regions
-near the cerebral ventricle and parenchyma can be underestimated by partial
-volume effects of the cerebral spinal fluid (CSF). This free water
-contamination can particularly corrupt Diffusion Tensor Imaging analysis of
-microstructural changes when different groups of subjects show different brain
-morphology (e.g. brain ventricle enlargement associated with brain tissue
-atrophy that occurs in several brain pathologies and ageing).
+As shown previously (see :ref:`example_reconst_dti`), the diffusion tensor model
+is a simple way to characterize diffusion anisotropy. However, in regions near
+the ventricles and parenchyma, anisotropy can be underestimated by partial
+volume effects of the cerebral spinal fluid (CSF). This free water contamination
+can particularly corrupt Diffusion Tensor Imaging analysis of microstructural
+changes when different groups of subjects show different brain morphology (e.g.
+brain ventricle enlargement associated with brain tissue atrophy that occurs in
+several brain pathologies and aging).
 
 A way to remove this free water influences is to expand the DTI model to take
 into account an extra compartment representing the contributions of free water
@@ -22,15 +22,15 @@ below:
     S(\mathbf{g}, b) = S_0(1-f)e^{-b\mathbf{g}^T \mathbf{D}
     \mathbf{g}}+S_0fe^{-b D_{iso}}
 
-where $\mathbf{g}$ and $b$ are diffusion gradient direction and weighted
-(more information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
-diffusion-weighted signal measured, $S_0$ is the signal in a measurement with
-no diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
+where $\mathbf{g}$ and $b$ are diffusion gradient direction and weighted (more
+information see :ref:`example_reconst_dti`), $S(\mathbf{g}, b)$ is the
+diffusion-weighted signal measured, $S_0$ is the signal in a measurement with no
+diffusion weighting, $\mathbf{D}$ is the diffusion tensor, $f$ the volume
 fraction of the free water component, and $D_{iso}$ is the isotropic value of
 the free water diffusion (normally set to $3.0 \times 10^{-3} mm^{2}s^{-1}$).
 
-In this example, we show how to process a diffusion weighting dataset using
-an adapted version of the free water elimination proposed by [Hoy2014]_.
+In this example, we show how to process a diffusion weighting dataset using an
+adapted version of the free water elimination proposed by [Hoy2014]_.
 
 The full details of Dipy's free water DTI implementation was published in
 [Henriques2017]_. Please cite this work if you use this algorithm.
@@ -42,50 +42,55 @@ import numpy as np
 import dipy.reconst.fwdti as fwdti
 import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
-from dipy.data import fetch_cenir_multib
-from dipy.data import read_cenir_multib
+from dipy.data import fetch_hbn
 from dipy.segment.mask import median_otsu
+import os.path as op
+import nibabel as nib
+from dipy.core.gradients import gradient_table
 
 """
 Without spatial constrains the free water elimination model cannot be solved
 in data acquired from one non-zero b-value [Hoy2014]_. Therefore, here we
-download a dataset that was required from multiple b-values.
+download a dataset that was acquired with multiple b-values.
 """
 
-fetch_cenir_multib(with_raw=False)
+data_path = fetch_hbn(["NDARAA948VFH"])[1]
+dwi_path = op.join(
+       data_path, "derivatives", "qsiprep", "sub-NDARAA948VFH",
+       "ses-HBNsiteRU", "dwi")
 
-"""
-From the downloaded data, we read only the data acquired with b-values up to
-2000 $s/mm^2$ to decrease the influence of non-Gaussian diffusion
-effects of the tissue which are not taken into account by the free water
-elimination model [Hoy2014]_.
-"""
+img = nib.load(op.join(
+       dwi_path,
+       "sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.nii.gz"))
 
-bvals = [200, 400, 1000, 2000]
-
-img, gtab = read_cenir_multib(bvals)
+gtab = gradient_table(
+       op.join(dwi_path,
+"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bval"),
+       op.join(dwi_path,
+"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-preproc_dwi.bvec"))
 
 data = np.asarray(img.dataobj)
 
-affine = img.affine
 
 """
 The free water DTI model can take some minutes to process the full data set.
-Thus, we remove the background of the image to avoid unnecessary calculations.
+Thus, we use a brain mask that was calculated during pre-processing, to remove
+the background of the image and avoid unnecessary calculations.
 """
 
-maskdata, mask = median_otsu(data, vol_idx=[0, 1], median_radius=4, numpass=2,
-                             autocrop=False, dilate=1)
+mask_img = nib.load(
+       op.join(dwi_path,
+"sub-NDARAA948VFH_ses-HBNsiteRU_acq-64dir_space-T1w_desc-brain_mask.nii.gz"))
+
 
 """
-Moreover, for illustration purposes we process only an axial slice of the
-data.
+Moreover, for illustration purposes we process only one slice of the data.
 """
 
-axial_slice = 40
+mask = mask_img.get_fdata()
 
-mask_roi = np.zeros(data.shape[:-1], dtype=bool)
-mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
+data_small = data[:, :, 50:51]
+mask_small = mask[:, :, 50:51]
 
 """
 The free water elimination model fit can then be initialized by instantiating
@@ -99,14 +104,15 @@ The data can then be fitted using the ``fit`` function of the defined model
 object:
 """
 
-fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
+fwdtifit = fwdtimodel.fit(data_small, mask=mask_small)
 
 
 """
 This 2-steps procedure will create a FreeWaterTensorFit object which contains
 all the diffusion tensor statistics free for free water contamination. Below
 we extract the fractional anisotropy (FA) and the mean diffusivity (MD) of the
-free water diffusion tensor."""
+free water diffusion tensor.
+"""
 
 FA = fwdtifit.fa
 MD = fwdtifit.md
@@ -118,7 +124,7 @@ standard DTI model
 
 dtimodel = dti.TensorModel(gtab)
 
-dtifit = dtimodel.fit(data, mask=mask_roi)
+dtifit = dtimodel.fit(data_small, mask=mask_small)
 
 dti_FA = dtifit.fa
 dti_MD = dtifit.md
@@ -136,33 +142,33 @@ fig1, ax = plt.subplots(2, 4, figsize=(12, 6),
                         subplot_kw={'xticks': [], 'yticks': []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
-ax.flat[0].imshow(FA[:, :, axial_slice].T, origin='lower',
+ax.flat[0].imshow(FA[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=1)
 ax.flat[0].set_title('A) fwDTI FA')
-ax.flat[1].imshow(dti_FA[:, :, axial_slice].T, origin='lower',
+ax.flat[1].imshow(dti_FA[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=1)
 ax.flat[1].set_title('B) standard DTI FA')
 
-FAdiff = abs(FA[:, :, axial_slice] - dti_FA[:, :, axial_slice])
+FAdiff = abs(FA[:, :, 0] - dti_FA[:, :, 0])
 ax.flat[2].imshow(FAdiff.T, cmap='gray', origin='lower', vmin=0, vmax=1)
 ax.flat[2].set_title('C) FA difference')
 
 ax.flat[3].axis('off')
 
-ax.flat[4].imshow(MD[:, :, axial_slice].T, origin='lower',
+ax.flat[4].imshow(MD[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=2.5e-3)
 ax.flat[4].set_title('D) fwDTI MD')
-ax.flat[5].imshow(dti_MD[:, :, axial_slice].T, origin='lower',
+ax.flat[5].imshow(dti_MD[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=2.5e-3)
 ax.flat[5].set_title('E) standard DTI MD')
 
-MDdiff = abs(MD[:, :, axial_slice] - dti_MD[:, :, axial_slice])
+MDdiff = abs(MD[:, :, 0] - dti_MD[:, :, 0])
 ax.flat[6].imshow(MDdiff.T, origin='lower', cmap='gray', vmin=0, vmax=2.5e-3)
 ax.flat[6].set_title('F) MD difference')
 
 F = fwdtifit.f
 
-ax.flat[7].imshow(F[:, :, axial_slice].T, origin='lower',
+ax.flat[7].imshow(F[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=1)
 ax.flat[7].set_title('G) free water volume')
 
@@ -204,14 +210,14 @@ fig1, ax = plt.subplots(1, 3, figsize=(9, 3),
                         subplot_kw={'xticks': [], 'yticks': []})
 
 fig1.subplots_adjust(hspace=0.3, wspace=0.05)
-ax.flat[0].imshow(FA[:, :, axial_slice].T, origin='lower',
+ax.flat[0].imshow(FA[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=1)
 ax.flat[0].set_title('A) fwDTI FA')
-ax.flat[1].imshow(dti_FA[:, :, axial_slice].T, origin='lower',
+ax.flat[1].imshow(dti_FA[:, :, 0].T, origin='lower',
                   cmap='gray', vmin=0, vmax=1)
 ax.flat[1].set_title('B) standard DTI FA')
 
-FAdiff = abs(FA[:, :, axial_slice] - dti_FA[:, :, axial_slice])
+FAdiff = abs(FA[:, :, 0] - dti_FA[:, :, 0])
 ax.flat[2].imshow(FAdiff.T, cmap='gray', origin='lower', vmin=0, vmax=1)
 ax.flat[2].set_title('C) FA difference')
 
@@ -233,10 +239,12 @@ References
 .. [Pasternak2009] Pasternak, O., Sochen, N., Gur, Y., Intrator, N., Assaf, Y.,
    2009. Free water elimination and mapping from diffusion MRI. Magn. Reson.
    Med. 62(3): 717-30. doi: 10.1002/mrm.22055.
+
 .. [Hoy2014] Hoy, A.R., Koay, C.G., Kecskemeti, S.R., Alexander, A.L., 2014.
    Optimization of a free water elimination two-compartmental model for
    diffusion tensor imaging. NeuroImage 103, 323-333. doi:
    10.1016/j.neuroimage.2014.09.053
+
 .. [Henriques2017] Henriques, R.N., Rokem, A., Garyfallidis, E., St-Jean, S.,
    Peterson E.T., Correia, M.M., 2017. [Re] Optimization of a free water
    elimination two-compartment model for diffusion tensor imaging.

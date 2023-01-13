@@ -20,7 +20,7 @@ from dipy.core.gradients import (gradient_table,
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.image import load_nifti, load_nifti_data, save_nifti
 from dipy.io.streamline import load_trk
-from dipy.utils.optpkg import optional_package
+from dipy.utils.optpkg import optional_package, TripWire
 
 
 from urllib.request import urlopen
@@ -1742,22 +1742,19 @@ def fetch_hcp(subjects,
         subjects = [subjects]
 
     for subject in subjects:
-        # We make a single session folder per subject for this case, because
-        # AFQ api expects session structure:
         sub_dir = pjoin(base_dir, f'sub-{subject}')
-        sess_dir = pjoin(sub_dir, "ses-01")
         if not op.exists(sub_dir):
-            os.makedirs(pjoin(sess_dir, 'dwi'), exist_ok=True)
-            os.makedirs(pjoin(sess_dir, 'anat'), exist_ok=True)
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bval')] =\
+            os.makedirs(pjoin(sub_dir, 'dwi'), exist_ok=True)
+            os.makedirs(pjoin(sub_dir, 'anat'), exist_ok=True)
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.bval')] =\
             f'{study}/{subject}/T1w/Diffusion/bvals'
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.bvec')] =\
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.bvec')] =\
             f'{study}/{subject}/T1w/Diffusion/bvecs'
-        data_files[pjoin(sess_dir, 'dwi', f'sub-{subject}_dwi.nii.gz')] =\
+        data_files[pjoin(sub_dir, 'dwi', f'sub-{subject}_dwi.nii.gz')] =\
             f'{study}/{subject}/T1w/Diffusion/data.nii.gz'
-        data_files[pjoin(sess_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
+        data_files[pjoin(sub_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
             f'{study}/{subject}/T1w/T1w_acpc_dc.nii.gz'
-        data_files[pjoin(sess_dir, 'anat',
+        data_files[pjoin(sub_dir, 'anat',
                            f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
             f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
 
@@ -1786,3 +1783,111 @@ def fetch_hcp(subjects,
                            "PipelineDescription": {'Name': 'hcp_pipeline'}})
 
     return data_files, pjoin(my_path, study)
+
+
+def fetch_hbn(subjects, path=None):
+    """
+    Fetch preprocessed data from the Healthy Brain Network POD2 study [1, 2]_.
+
+    Parameters
+    ----------
+    subjects : list
+        Identifiers of the subjects to download.
+        For example: ["NDARAA948VFH", "NDAREK918EC2"].
+
+    path : string, optional
+        Path to save files into. Default: '~/.dipy'
+
+    Returns
+    -------
+    dict with remote and local names of these files,
+    path to BIDS derivative dataset
+
+    Notes
+    -----
+
+    .. [1] Alexander LM, Escalera J, Ai L, et al. An open resource for
+        transdiagnostic research in pediatric mental health and learning
+        disorders. Sci Data. 2017;4:170181.
+
+    .. [2] Richie-Halford A, Cieslak M, Ai L, et al. An analysis-ready and
+        quality controlled resource for pediatric brain white-matter research.
+        Scientific Data. 2022;9(1):1-27.
+
+    """
+
+    if has_boto3:
+        from botocore import UNSIGNED
+        from botocore.client import Config
+    else:
+        TripWire("The `fetch_hbn` function requires the boto3" +
+                 " library, but that is not installed.")
+
+    # Anonymous access:
+    client = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+
+    if path is None:
+        if not op.exists(dipy_home):
+            os.mkdir(dipy_home)
+        my_path = dipy_home
+    else:
+        my_path = path
+
+    base_dir = op.join(my_path, "HBN", 'derivatives', 'qsiprep')
+
+    if not os.path.exists(base_dir):
+        os.makedirs(base_dir, exist_ok=True)
+
+    data_files = {}
+
+    # If user provided incorrect input, these are typical failures that
+    # are easy to recover from:
+    if isinstance(subjects, int) or isinstance(subjects, str):
+        subjects = [subjects]
+
+    for subject in subjects:
+        initial_query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/sub-{subject}/")
+        ses = initial_query.get('Contents', None)
+        if ses is None:
+            raise ValueError(f"Could not find data for subject {subject}")
+        else:
+            ses = ses[0]["Key"].split('/')[5]
+
+        query = client.list_objects(
+            Bucket="fcp-indi",
+            Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+        file_list = [kk["Key"] for kk in query["Contents"]]
+        sub_dir = op.join(base_dir, f'sub-{subject}')
+        ses_dir = op.join(sub_dir, ses)
+        if not os.path.exists(sub_dir):
+            os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
+            os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
+        for remote in file_list:
+            full = remote.split("Projects")[-1][1:].replace("/BIDS_curated", "")
+            local = op.join(dipy_home, full)
+            data_files[local] = remote
+
+    download_files = {}
+    for k in data_files.keys():
+        if not op.exists(k):
+            download_files[k] = data_files[k]
+    if len(download_files.keys()):
+        with tqdm(total=len(download_files.keys())) as pbar:
+            for k in download_files.keys():
+                pbar.set_description_str(f"Downloading {k}")
+                client.download_file("fcp-indi", download_files[k], k)
+                pbar.update()
+
+    # Create the BIDS dataset description file text
+    to_bids_description(op.join(my_path, "HBN"),
+                        **{"Name": "HBN",
+                           "Subjects": subjects})
+
+    # Create the BIDS derivatives description file text
+    to_bids_description(base_dir,
+                        **{"Name": "HBN",
+                           "PipelineDescription": {'Name': 'qsiprep'}})
+
+    return data_files, pjoin(my_path, "HBN")
