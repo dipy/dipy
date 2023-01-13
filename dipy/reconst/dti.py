@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-from packagin.version import Version
+from packaging.version import Version
 import warnings
 
 import functools
