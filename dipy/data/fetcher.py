@@ -1858,6 +1858,9 @@ def fetch_hbn(subjects, path=None):
         query = client.list_objects(
             Bucket="fcp-indi",
             Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
+        query_content = query.get('Contents', None)
+        if query_content is None:
+            raise ValueError(f"Could not find derivatives data for subject {subject}")
         file_list = [kk["Key"] for kk in query["Contents"]]
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
