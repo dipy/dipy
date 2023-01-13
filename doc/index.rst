@@ -20,7 +20,8 @@ Highlights
 
 - NF: Unbiased groupwise linear bundle registration added.
 - NF: MAP+ constraints added.
-- Generalized PCA to less than 3 spatial dimsAdd positivity constraints to QTI
+- Generalized PCA to less than 3 spatial dims.
+- Add positivity constraints to QTI.
 - Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
 - New Human Connectome Project (HCP) data fetcher added.
 - New Healthy Brain Network (HBN) data fetcher added.

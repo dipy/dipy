@@ -37,7 +37,7 @@ Current information can always be found from the DIPY website - http://dipy.org
 Mailing Lists
 =============
 
-Please see the DIPY community' list at
+Please see the DIPY community list at
 https://mail.python.org/mailman3/lists/dipy.python.org/
 
 Please see the users' forum at
