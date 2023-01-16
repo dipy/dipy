@@ -7,8 +7,8 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 1
-_version_minor = 6
-_version_micro = 1
+_version_minor = 7
+_version_micro = 0
 _version_extra = 'dev0'
 # _version_extra = ''
 
