@@ -21,8 +21,10 @@ class Patch2SelfFlow(Workflow):
     def get_short_name(cls):
         return 'patch2self'
 
-    def run(self, input_files, bval_files, model='ols', verbose=False,
-            out_dir='', out_denoised='dwi_patch2self.nii.gz'):
+    def run(self, input_files, bval_files, model='ols',
+            b0_threshold=50, alpha=1.0, verbose=False, b0_denoising=True,
+            clip_negative_vals=False, shift_intensity=True, out_dir='',
+            out_denoised='dwi_patch2self.nii.gz'):
         """Workflow for Patch2Self denoising method.
 
         It applies patch2self denoising on each file found by 'globing'
@@ -47,8 +49,19 @@ class Patch2SelfFlow(Workflow):
             `sklearn.linear_model.Lasso` or `sklearn.linear_model.Ridge`
             and other objects that inherit from `sklearn.base.RegressorMixin`.
             Default: 'ols'.
+        b0_threshold : int, optional
+            Threshold for considering volumes as b0.
+        alpha : float, optional
+            Regularization parameter only for ridge regression model.
         verbose : bool, optional
             Show progress of Patch2Self and time taken.
+        b0_denoising : bool, optional
+            Skips denoising b0 volumes if set to False.
+        clip_negative_vals : bool, optional
+            Sets negative values after denoising to 0 using `np.clip`.
+        shift_intensity : bool, optional
+            Shifts the distribution of intensities per volume to give
+            non-negative values
         out_dir : string, optional
             Output directory (default current directory)
         out_denoised : string, optional
@@ -72,8 +85,12 @@ class Patch2SelfFlow(Workflow):
                 data, affine, image = load_nifti(fpath, return_img=True)
                 bvals = np.loadtxt(bvalpath)
 
-                denoised_data = patch2self(data, bvals, model=model,
-                                           verbose=verbose)
+                denoised_data = patch2self(
+                    data, bvals, model=model, b0_threshold=b0_threshold,
+                    alpha=alpha, verbose=verbose, b0_denoising=b0_denoising,
+                    clip_negative_vals=clip_negative_vals,
+                    shift_intensity=shift_intensity,
+                )
                 save_nifti(odenoised, denoised_data, affine, image.header)
 
                 logging.info('Denoised volumes saved as %s', odenoised)
@@ -218,6 +235,8 @@ class LPCAFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
         for dwi, bval, bvec, odenoised in io_it:
             logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
@@ -288,6 +307,9 @@ class MPPCAFlow(Workflow):
 
         """
         io_it = self.get_io_iterator()
+        if isinstance(patch_radius, list) and len(patch_radius) == 1:
+            patch_radius = int(patch_radius[0])
+
         for dwi, odenoised, osigma in io_it:
             logging.info('Denoising %s', dwi)
             data, affine, image = load_nifti(dwi, return_img=True)
@@ -311,7 +333,7 @@ class GibbsRingingFlow(Workflow):
     @deprecated_params('num_threads', 'num_processes', since='1.4',
                        until='1.5')
     def run(self, input_files, slice_axis=2, n_points=3, num_processes=1,
-            out_dir='', out_unring='dwi_unrig.nii.gz'):
+            out_dir='', out_unring='dwi_unring.nii.gz'):
         r"""Workflow for applying Gibbs Ringing method.
 
         Parameters
@@ -332,7 +354,7 @@ class GibbsRingingFlow(Workflow):
             use as many cores as possible). 0 raises an error.
         out_dir : string, optional
             Output directory. (default current directory)
-        out_unrig : string, optional
+        out_unring : string, optional
             Name of the resulting denoised volume.
 
         References

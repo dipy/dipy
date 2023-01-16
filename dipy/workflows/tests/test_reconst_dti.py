@@ -1,6 +1,5 @@
 from os.path import join
-
-from nibabel.tmpdirs import TemporaryDirectory
+from tempfile import TemporaryDirectory
 
 import numpy as np
 from numpy.testing import assert_equal

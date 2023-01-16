@@ -27,7 +27,7 @@ class Timer(object):
     def __enter__(self):
         self.__start = time.time()
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exception_type, value, traceback):
         # Error handling here
         self.__finish = time.time()
 

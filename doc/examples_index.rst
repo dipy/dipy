@@ -39,10 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Reslice
-~~~~~~~
+Reslice & Motion Correction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reslice_datasets`
+- :ref:`example_motion_correction`
+
 
 ---------
 Denoising
@@ -226,6 +228,7 @@ Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_registration`
+- :ref:`example_bundle_group_registration`
 - :ref:`example_streamline_registration`
 
 ------------

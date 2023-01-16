@@ -1,5 +1,9 @@
+from packaging.version import Version
 from warnings import warn
+
 import numpy as np
+import scipy
+
 try:
     from scipy.linalg.lapack import dgesvd as svd
     svd_args = [1, 0]
@@ -202,6 +206,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
+    SCIPY_LESS_1_5_0 = Version(scipy.__version__) < Version('1.5.0')
+    kw_eigh = {'turbo': True} if SCIPY_LESS_1_5_0 else {}  # {'driver': 'gvd'}
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius[2], arr.shape[2] - patch_radius[2]):
         for j in range(patch_radius[1], arr.shape[1] - patch_radius[1]):
@@ -238,7 +244,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                     # PCA using an Eigenvalue decomposition
                     C = np.transpose(X).dot(X)
                     C = C / X.shape[0]
-                    [d, W] = eigh(C, turbo=True)
+                    [d, W] = eigh(C, **kw_eigh)
 
                 if sigma is None:
                     # Random matrix theory

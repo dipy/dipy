@@ -20,7 +20,8 @@ import dipy.reconst.dti as dti
 from warnings import warn
 from dipy.core.gradients import gradient_table
 from dipy.utils.optpkg import optional_package
-from dipy.core.optimize import Optimizer
+from dipy.core.optimize import Optimizer, PositiveDefiniteLeastSquares
+from dipy.data import load_sdp_constraints
 
 cvxpy, have_cvxpy, _ = optional_package("cvxpy")
 
@@ -72,6 +73,10 @@ class MapmriModel(ReconstModel, Cache):
     .. [8] Avram et al. "Clinical feasibility of using mean apparent
            propagator (MAP) MRI to characterize brain tissue microstructure".
            NeuroImage 2015, in press.
+
+    .. [9] Dela Haije et al. "Enforcing necessary non-negativity constraints
+           for common diffusion MRI models using sum of squares programming".
+           NeuroImage 209, 2020, 116405.
     """
 
     def __init__(self,
@@ -80,6 +85,7 @@ class MapmriModel(ReconstModel, Cache):
                  laplacian_regularization=True,
                  laplacian_weighting=0.2,
                  positivity_constraint=False,
+                 global_constraints=False,
                  pos_grid=15,
                  pos_radius='adaptive',
                  anisotropic_scaling=True,
@@ -105,14 +111,14 @@ class MapmriModel(ReconstModel, Cache):
         q-space indices, the PDF and the ODF.
 
         The fitting procedure can be constrained using the positivity
-        constraint proposed in [1]_ and/or the laplacian regularization
-        proposed in [4]_.
+        constraint proposed in [1]_ or [4]_ and/or the laplacian regularization
+        proposed in [5]_.
 
         For the estimation of q-space indices we recommend using the 'regular'
         anisotropic implementation of MAPMRI. However, it has been shown that
         the ODF estimation in this implementation has a bias which
         'squeezes together' the ODF peaks when there is a crossing at an angle
-        smaller than 90 degrees [4]_. When you want to estimate ODFs for
+        smaller than 90 degrees [5]_. When you want to estimate ODFs for
         tractography we therefore recommend using the isotropic implementation
         (which is equivalent to [3]_).
 
@@ -136,13 +142,19 @@ class MapmriModel(ReconstModel, Cache):
             optimal weight from the values in the array.
         positivity_constraint : bool,
             Constrain the propagator to be positive.
+        global_constraints : bool, optional
+            If set to False, positivity is enforced on a grid determined by
+            pos_grid and pos_radius. If set to True, positivity is enforced
+            everywhere using the constraints of [6]_. Global constraints are
+            currently supported for anisotropic_scaling=True and for
+            radial_order <= 10. Default: False.
         pos_grid : integer,
-            The number of points in the grid that is used in the positivity
-            constraint.
+            The number of points in the grid that is used in the local
+            positivity constraint.
         pos_radius : float or string,
-            If set to a float, the maximum distance the the positivity
+            If set to a float, the maximum distance the local positivity
             constraint constrains to posivity is that value. If set to
-            `adaptive', the maximum distance is dependent on the estimated
+            'adaptive', the maximum distance is dependent on the estimated
             tissue diffusivity.
         anisotropic_scaling : bool,
             If True, uses the standard anisotropic MAP-MRI basis. If False,
@@ -188,11 +200,15 @@ class MapmriModel(ReconstModel, Cache):
                reconstruction and estimation for three-dimensional q-space
                mri", ISMRM 2009.
 
-        .. [4] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [4] Dela Haije et al. "Enforcing necessary non-negativity
+               constraints for common diffusion MRI models using sum of squares
+               programming". NeuroImage 209, 2020, 116405.
+
+        .. [5] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
                using Laplacian-regularized MAP-MRI and its application to HCP
                data." NeuroImage (2016).
 
-        .. [5] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
+        .. [6] Merlet S. et al., "Continuous diffusion signal, EAP and ODF
                estimation via Compressive Sensing in diffusion MRI", Medical
                Image Analysis, 2013.
 
@@ -231,11 +247,11 @@ class MapmriModel(ReconstModel, Cache):
             msg = "radial_order must be a positive, even number."
             raise ValueError(msg)
         self.radial_order = radial_order
+
         self.bval_threshold = bval_threshold
         self.dti_scale_estimation = dti_scale_estimation
 
-        self.laplacian_regularization = laplacian_regularization
-        if self.laplacian_regularization:
+        if laplacian_regularization:
             msg = "Laplacian Regularization weighting must be 'GCV', "
             msg += "a positive float or an array of positive floats."
             if isinstance(laplacian_weighting, str):
@@ -246,42 +262,62 @@ class MapmriModel(ReconstModel, Cache):
                 if np.sum(laplacian_weighting < 0) > 0:
                     raise ValueError(msg)
             self.laplacian_weighting = laplacian_weighting
+        self.laplacian_regularization = laplacian_regularization
 
-        self.positivity_constraint = positivity_constraint
-        if self.positivity_constraint:
+        if positivity_constraint:
             if not have_cvxpy:
-                raise ValueError(
-                    'CVXPY package needed to enforce constraints')
-            msg = "pos_radius must be 'adaptive' or a positive float"
+                raise ValueError('CVXPY package needed to enforce constraints.')
             if cvxpy_solver is not None:
                 if cvxpy_solver not in cvxpy.installed_solvers():
                     msg = "Input `cvxpy_solver` was set to %s." % cvxpy_solver
                     msg += " One of %s" % ', '.join(cvxpy.installed_solvers())
                     msg += " was expected."
                     raise ValueError(msg)
-            if isinstance(pos_radius, str):
-                if pos_radius != 'adaptive':
-                    raise ValueError(msg)
-            elif isinstance(pos_radius, float) or isinstance(pos_radius, int):
-                if pos_radius <= 0:
-                    raise ValueError(msg)
-                self.constraint_grid = create_rspace(pos_grid, pos_radius)
+            self.cvxpy_solver = cvxpy_solver
+            if global_constraints:
                 if not anisotropic_scaling:
-                    self.pos_K_independent = mapmri_isotropic_K_mu_independent(
-                        radial_order, self.constraint_grid)
+                    msg = 'Global constraints only available for'
+                    msg += ' anistropic_scaling=True.'
+                    raise ValueError(msg)
+                if radial_order > 10:
+                    self.sdp_constraints = load_sdp_constraints('hermite', 10)
+                    msg = 'Global constraints are currently supported for'
+                    msg += ' radial_order <= 10.'
+                    warn(msg)
+                else:
+                    self.sdp_constraints = load_sdp_constraints('hermite',
+                                                                radial_order)
+                m = (2 + radial_order)*(4 + radial_order)*(3 + 2*radial_order)
+                m = m//24
+                self.sdp = PositiveDefiniteLeastSquares(m,
+                                                        A=self.sdp_constraints)
             else:
-                raise ValueError(msg)
-            self.pos_grid = pos_grid
-            self.pos_radius = pos_radius
-
+                msg = "pos_radius must be 'adaptive' or a positive float."
+                if isinstance(pos_radius, str):
+                    if pos_radius != 'adaptive':
+                        raise ValueError(msg)
+                elif isinstance(pos_radius, (float, int)):
+                    if pos_radius <= 0:
+                        raise ValueError(msg)
+                    self.constraint_grid = create_rspace(pos_grid, pos_radius)
+                    if not anisotropic_scaling:
+                        self.pos_K_independent = \
+                            mapmri_isotropic_K_mu_independent(
+                                radial_order, self.constraint_grid)
+                else:
+                    raise ValueError(msg)
+                self.pos_grid = pos_grid
+                self.pos_radius = pos_radius
+            self.global_constraints = global_constraints
+        self.positivity_constraint = positivity_constraint
         self.anisotropic_scaling = anisotropic_scaling
+
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
         self.eigenvalue_threshold = eigenvalue_threshold
 
-        self.cvxpy_solver = cvxpy_solver
         self.cutoff = gtab.bvals < self.bval_threshold
         gtab_cutoff = gradient_table(bvals=self.gtab.bvals[self.cutoff],
                                      bvecs=self.gtab.bvecs[self.cutoff])
@@ -379,61 +415,65 @@ class MapmriModel(ReconstModel, Cache):
                                         self.ind_mat.shape[0]))
 
         if self.positivity_constraint:
-            if self.pos_radius == 'adaptive':
-                # custom constraint grid based on scale factor [Avram2015]
-                constraint_grid = create_rspace(self.pos_grid,
-                                                np.sqrt(5) * mu_max)
-            else:
-                constraint_grid = self.constraint_grid
-            if self.anisotropic_scaling:
-                K = mapmri_psi_matrix(self.radial_order, mu, constraint_grid)
-            else:
-                if self.pos_radius == 'adaptive':
-                    # grid changes per voxel. Recompute entire K matrix.
-                    K = mapmri_isotropic_psi_matrix(self.radial_order, mu[0],
-                                                    constraint_grid)
-                else:
-                    # grid is static. Only compute mu-dependent part of K.
-                    K_dependent = mapmri_isotropic_K_mu_dependent(
-                        self.radial_order, mu[0], constraint_grid)
-                    K = K_dependent * self.pos_K_independent
-
             data_norm = np.asarray(data / data[self.gtab.b0s_mask].mean())
-            c = cvxpy.Variable(M.shape[1])
-            if Version(cvxpy.__version__) < Version('1.1'):
-                design_matrix = cvxpy.Constant(M) * c
+            if self.global_constraints:
+                coef = self.sdp.solve(M, data_norm, solver=self.cvxpy_solver)
             else:
-                design_matrix = cvxpy.Constant(M) @ c
-            # workaround for the bug on cvxpy 1.0.15 when lopt = 0
-            # See https://github.com/cvxgrp/cvxpy/issues/672
-            if not lopt:
-                objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix - data_norm))
-            else:
-                objective = cvxpy.Minimize(
-                    cvxpy.sum_squares(design_matrix - data_norm) +
-                    lopt * cvxpy.quad_form(c, laplacian_matrix)
-                )
-            M0 = M[self.gtab.b0s_mask, :]
-            if Version(cvxpy.__version__) < Version('1.1'):
-                constraints = [(M0[0] * c) == 1,
-                               (K * c) >= -0.1]
-            else:
-                constraints = [(M0[0] @ c) == 1,
-                               (K @ c) >= -0.1]
-            prob = cvxpy.Problem(objective, constraints)
-            try:
-                prob.solve(solver=self.cvxpy_solver)
-                coef = np.asarray(c.value).squeeze()
-            except Exception:
-                errorcode = 2
-                warn('Optimization did not find a solution')
+                c = cvxpy.Variable(M.shape[1])
+                if Version(cvxpy.__version__) < Version('1.1'):
+                    design_matrix = cvxpy.Constant(M) * c
+                else:
+                    design_matrix = cvxpy.Constant(M) @ c
+                # workaround for the bug on cvxpy 1.0.15 when lopt = 0
+                # See https://github.com/cvxgrp/cvxpy/issues/672
+                if not lopt:
+                    objective = cvxpy.Minimize(
+                        cvxpy.sum_squares(design_matrix - data_norm))
+                else:
+                    objective = cvxpy.Minimize(
+                        cvxpy.sum_squares(design_matrix - data_norm) +
+                        lopt * cvxpy.quad_form(c, laplacian_matrix)
+                    )
+                if self.pos_radius == 'adaptive':
+                    # custom constraint grid based on scale factor [Avram2015]
+                    constraint_grid = create_rspace(self.pos_grid,
+                                                    np.sqrt(5) * mu_max)
+                else:
+                    constraint_grid = self.constraint_grid
+                if self.anisotropic_scaling:
+                    K = mapmri_psi_matrix(self.radial_order, mu,
+                                          constraint_grid)
+                else:
+                    if self.pos_radius == 'adaptive':
+                        # grid changes per voxel. Recompute entire K matrix.
+                        K = mapmri_isotropic_psi_matrix(self.radial_order,
+                                                        mu[0], constraint_grid)
+                    else:
+                        # grid is static. Only compute mu-dependent part of K.
+                        K_dependent = mapmri_isotropic_K_mu_dependent(
+                            self.radial_order, mu[0], constraint_grid)
+                        K = K_dependent * self.pos_K_independent
+
+                M0 = M[self.gtab.b0s_mask, :]
+                if Version(cvxpy.__version__) < Version('1.1'):
+                    constraints = [(M0[0] * c) == 1,
+                                   (K * c) >= -0.1]
+                else:
+                    constraints = [(M0[0] @ c) == 1,
+                                   (K @ c) >= -0.1]
+                prob = cvxpy.Problem(objective, constraints)
                 try:
-                    coef = np.dot(np.linalg.pinv(M), data)  # least squares
-                except np.linalg.linalg.LinAlgError:
-                    errorcode = 3
-                    coef = np.zeros(M.shape[1])
-                    return MapmriFit(self, coef, mu, R, lopt, errorcode)
+                    prob.solve(solver=self.cvxpy_solver)
+                    coef = np.asarray(c.value).squeeze()
+                except Exception:
+                    errorcode = 2
+                    warn('Optimization did not find a solution')
+                    try:
+                        coef = np.dot(np.linalg.pinv(M), data)  # least squares
+                    except np.linalg.linalg.LinAlgError:
+                        errorcode = 3
+                        coef = np.zeros(M.shape[1])
+                        return MapmriFit(self, coef, mu, R, lopt, errorcode)
         else:
             try:
                 pseudoInv = np.dot(
@@ -549,7 +589,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -578,7 +618,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -631,7 +671,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -682,7 +722,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
 
-        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -711,7 +751,7 @@ class MapmriFit(ReconstFit):
         .. [1] Cheng, J., 2014. Estimation and Processing of Ensemble Average
         Propagator and Its Features in Diffusion MRI. Ph.D. Thesis.
 
-        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -755,7 +795,7 @@ class MapmriFit(ReconstFit):
         diffusion imaging and computation of q-space indices. NeuroImage 64,
         2013, 650-670.
 
-        .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -904,7 +944,7 @@ class MapmriFit(ReconstFit):
 
         References
         ----------
-        .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+        .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
         using Laplacian-regularized MAP-MRI and its application to HCP data."
         NeuroImage (2016).
         """
@@ -915,8 +955,9 @@ class MapmriFit(ReconstFit):
         else:
             laplacian_matrix = self.mu[0] * self.model.laplacian_matrix
 
-        norm_of_laplacian = np.dot(np.dot(self._mapmri_coef, laplacian_matrix),
-                                   self._mapmri_coef)
+        norm_of_laplacian = np.linalg.multi_dot([self._mapmri_coef,
+                                                laplacian_matrix,
+                                                self._mapmri_coef])
         return norm_of_laplacian
 
     def fitted_signal(self, gtab=None):
@@ -1596,7 +1637,7 @@ def mapmri_isotropic_odf_matrix(radial_order, mu, s, vertices):
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
-    .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1655,7 +1696,7 @@ def mapmri_isotropic_odf_sh_matrix(radial_order, mu, s):
     diffusion imaging method for mapping tissue microstructure",
     NeuroImage, 2013.
 
-    .. [2]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [2] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1702,7 +1743,7 @@ def mapmri_isotropic_laplacian_reg_matrix(radial_order, mu):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1731,7 +1772,7 @@ def mapmri_isotropic_laplacian_reg_matrix_from_index_matrix(ind_mat, mu):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1856,7 +1897,7 @@ def map_laplace_u(n, m):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1879,7 +1920,7 @@ def map_laplace_t(n, m):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1905,7 +1946,7 @@ def map_laplace_s(n, m):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1939,7 +1980,7 @@ def mapmri_STU_reg_matrices(radial_order):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -1983,7 +2024,7 @@ def mapmri_laplacian_reg_matrix(ind_mat, mu, S_mat, T_mat, U_mat):
 
     References
     ----------
-    .. [1]_ Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
+    .. [1] Fick, Rutger HJ, et al. "MAPL: Tissue microstructure estimation
     using Laplacian-regularized MAP-MRI and its application to HCP data."
     NeuroImage (2016).
 
@@ -2050,7 +2091,7 @@ def generalized_crossvalidation_array(data, M, LR, weights_array=None):
     while gcvold >= gcvnew and i < samples - 2:
         gcvold = gcvnew
         i = i + 1
-        S = np.dot(np.dot(M, np.linalg.pinv(MMt + lrange[i] * LR)), M.T)
+        S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + lrange[i] * LR), M.T])
         trS = np.trace(S)
         normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
         gcvnew = normyytilde / (K - trS)
@@ -2081,7 +2122,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 
     References
     ----------
-    .. [1]_ Craven et al. "Smoothing Noisy Data with Spline Functions."
+    .. [1] Craven et al. "Smoothing Noisy Data with Spline Functions."
         NUMER MATH 31.4 (1978): 377-403.
 
     """
@@ -2100,7 +2141,7 @@ def generalized_crossvalidation(data, M, LR, gcv_startpoint=5e-2):
 def gcv_cost_function(weight, args):
     """The GCV cost function that is iterated [4]."""
     data, M, MMt, K, LR = args
-    S = np.dot(np.dot(M, np.linalg.pinv(MMt + weight * LR)), M.T)
+    S = np.linalg.multi_dot([M, np.linalg.pinv(MMt + weight * LR), M.T])
     trS = np.trace(S)
     normyytilde = np.linalg.norm(data - np.dot(S, data), 2)
     gcv_value = normyytilde / (K - trS)

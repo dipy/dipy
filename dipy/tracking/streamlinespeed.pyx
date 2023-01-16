@@ -442,8 +442,8 @@ cdef double c_norm_of_cross_product(double bx, double by, double bz,
     return sqrt(ax*ax + ay*ay + az*az)
 
 
-cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp prev,
-                           cnp.npy_intp next, cnp.npy_intp curr) nogil:
+cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp p1,
+                           cnp.npy_intp p2, cnp.npy_intp p0) nogil:
     """ Computes the shortest Euclidean distance between a point `curr` and
         the line passing through `prev` and `next`. """
 
@@ -452,17 +452,17 @@ cdef double c_dist_to_line(Streamline streamline, cnp.npy_intp prev,
         cnp.npy_intp D = streamline.shape[1]
 
     # Compute cross product of next-prev and curr-next
-    norm1 = c_norm_of_cross_product(streamline[next, 0]-streamline[prev, 0],
-                                    streamline[next, 1]-streamline[prev, 1],
-                                    streamline[next, 2]-streamline[prev, 2],
-                                    streamline[curr, 0]-streamline[next, 0],
-                                    streamline[curr, 1]-streamline[next, 1],
-                                    streamline[curr, 2]-streamline[next, 2])
+    norm1 = c_norm_of_cross_product(streamline[p2, 0]-streamline[p1, 0],
+                                    streamline[p2, 1]-streamline[p1, 1],
+                                    streamline[p2, 2]-streamline[p1, 2],
+                                    streamline[p0, 0]-streamline[p2, 0],
+                                    streamline[p0, 1]-streamline[p2, 1],
+                                    streamline[p0, 2]-streamline[p2, 2])
 
     # Norm of next-prev
     norm2 = 0.0
     for d in range(D):
-        dn = streamline[next, d]-streamline[prev, d]
+        dn = streamline[p2, d]-streamline[p1, d]
         norm2 += dn*dn
     norm2 = sqrt(norm2)
 
@@ -574,7 +574,7 @@ def compress_streamlines(streamlines, tol_error=0.01, max_segment_length=10):
 
     Examples
     --------
-    >>> from dipy.tracking.streamline import compress_streamlines
+    >>> from dipy.tracking.streamlinespeed import compress_streamlines
     >>> import numpy as np
     >>> # One streamline: a wiggling line
     >>> rng = np.random.RandomState(42)

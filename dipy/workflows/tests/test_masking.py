@@ -1,7 +1,7 @@
+from tempfile import TemporaryDirectory
+
 import numpy.testing as npt
 from dipy.testing import assert_false
-
-from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
 from dipy.io.image import load_nifti

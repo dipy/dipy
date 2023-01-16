@@ -18,7 +18,8 @@ pd, have_pd, _ = optional_package("pandas")
 _, have_tables, _ = optional_package("tables")
 
 
-def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir):
+def peak_values(
+        bundle, peaks, dt, pname, bname, subject, group_id, ind, dir_name):
     """ Peak_values function finds the generalized fractional anisotropy (gfa)
         and quantitative anisotropy (qa) values from peaks object (eg: csa) for
         every point on a streamline used while tracking and saves it in hd5
@@ -42,22 +43,22 @@ def peak_values(bundle, peaks, dt, pname, bname, subject, group_id, ind, dir):
         which group subject belongs to 1 patient and 0 for control
     ind : integer list
         ind tells which disk number a point belong.
-    dir : string
+    dir_name : string
         path of output directory
 
     """
 
     gfa = peaks.gfa
     anatomical_measures(bundle, gfa, dt, pname+'_gfa', bname, subject, group_id,
-                        ind, dir)
+                        ind, dir_name)
 
     qa = peaks.qa[...,0]
     anatomical_measures(bundle, qa, dt, pname+'_qa', bname, subject, group_id,
-                        ind, dir)
+                        ind, dir_name)
 
 
 def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
-                        ind, dir):
+                        ind, dir_name):
     """ Calculates dti measure (eg: FA, MD) per point on streamlines and
         save it in hd5 file.
 
@@ -79,7 +80,7 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
         which group subject belongs to 1 for patient and 0 control
     ind : integer list
         ind tells which disk number a point belong.
-    dir : string
+    dir_name : string
         path of output directory
 
     """
@@ -104,7 +105,7 @@ def anatomical_measures(bundle, metric, dt, pname, bname, subject, group_id,
 
     file_name = bname + "_" + pname
 
-    save_buan_profiles_hdf5(os.path.join(dir, file_name), dt)
+    save_buan_profiles_hdf5(os.path.join(dir_name, file_name), dt)
 
 
 def assignment_map(target_bundle, model_bundle, no_disks):
@@ -159,6 +160,13 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     n_points : int, optional
         The number of points to resample to. *If the `bundle` is an array, this
         input is ignored*. Default: 100.
+    return_mahalanobis : bool, optional
+        Whether to return the Mahalanobis distance instead of the weights.
+        Default: False.
+    stat : callable, optional.
+        The statistic used to calculate the central tendency of streamlines in
+        each node. Can be one of {`np.mean`, `np.median`} or other functions
+        that have similar API. Default: `np.mean`
 
     Returns
     -------

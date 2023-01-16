@@ -1,13 +1,13 @@
 import os
 import time
 from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import TemporaryDirectory
+import numpy.testing as npt
 
 from dipy.data import get_fnames
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
-import numpy.testing as npt
 
 
 def test_force_overwrite():
@@ -53,13 +53,13 @@ def test_missing_file():
 
     class TestMissingFile(Workflow):
 
-        def run(self, input, out_dir=''):
+        def run(self, filename, out_dir=''):
             """Dummy Workflow used to test if input file is absent.
 
             Parameters
             ----------
 
-            input : string, positional
+            filename : string
                 path of the first input file.
             out_dir: string, optional
                 folder path to save the results.
