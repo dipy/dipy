@@ -24,11 +24,12 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
-* 1.6.0 (Monday, January 13, 2023)
+* 1.6.0 (Monday, January 16, 2023)
 
 - NF: Unbiased groupwise linear bundle registration added.
 - NF: MAP+ constraints added.
-- Generalized PCA to less than 3 spatial dimsAdd positivity constraints to QTI
+- Generalized PCA to less than 3 spatial dims.
+- Add positivity constraints to QTI.
 - Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
 - New Human Connectome Project (HCP) data fetcher added.
 - New Healthy Brain Network (HBN) data fetcher added.

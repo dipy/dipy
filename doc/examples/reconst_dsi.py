@@ -116,7 +116,7 @@ import matplotlib.pyplot as plt
 fig_hist, ax = plt.subplots(1)
 ax.set_axis_off()
 plt.imshow(GFA.T)
-plt.savefig('dsi_gfa.png', bbox_inches='tight', origin='lower', cmap='gray')
+plt.savefig('dsi_gfa.png', bbox_inches='tight')
 
 """
 .. figure:: dsi_gfa.png
