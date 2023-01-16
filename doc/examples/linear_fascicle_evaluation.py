@@ -186,7 +186,7 @@ optimized group of streamlines:
 
 """
 
-optimized_sl = list(np.array(candidate_sl)[np.where(fiber_fit.beta > 0)[0]])
+optimized_sl = [np.row_stack(candidate_sl)[np.where(fiber_fit.beta > 0)[0]]]
 scene = window.Scene()
 scene.add(actor.streamtube(optimized_sl, cmap.line_colors(optimized_sl)))
 scene.add(cc_ROI_actor)
