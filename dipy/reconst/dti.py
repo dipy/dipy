@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-
+from packaging.version import Version
 import warnings
 
 import functools
@@ -1410,7 +1410,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     w = np.exp(fit_result @ design_matrix.T)
 
     # the weighted problem design_matrix * w is much larger (differs per voxel)
-    if np.__version__ < '1.14':
+    if Version(np.__version__) < Version('1.14'):
         fit_result = np.einsum('...ij,...j',
                                pinv(design_matrix * w[..., None]),
                                w * log_s)

@@ -216,10 +216,11 @@ def cut_plane(tracks, ref):
     >>> res = cut_plane(bundlex,refx)
     >>> len(res)
     2
-    >>> print(res[0])
-    [[ 1.          1.5         0.          0.70710683  0.        ]]
-    >>> print(res[1])
-    [[ 2.          2.5         0.          0.70710677  0.        ]]
+    >>> np.allclose(res[0], np.array([[1., 1.5, 0., 0.70710683, 0. ]]))
+    True
+    >>> np.allclose(res[1], np.array([[2., 2.5, 0., 0.70710677, 0. ]]))
+    True
+
     """
     cdef:
         cnp.npy_intp n_hits, hit_no, max_hit_len

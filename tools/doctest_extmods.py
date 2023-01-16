@@ -12,7 +12,7 @@ Examples
 
 import sys
 import os
-from os.path import dirname, relpath, sep, join as pjoin, splitext, abspath
+from os.path import dirname, relpath, sep, join as pjoin, abspath
 
 from distutils.sysconfig import get_config_vars
 
@@ -32,12 +32,12 @@ def get_ext_modules(pkg_name):
         if reldir == '.':
             reldir = ''
         for filename in filenames:
-            froot, ext = splitext(filename)
-            if ext == EXT_EXT:
+            if filename.endswith(EXT_EXT):
+                froot = filename[:-len(EXT_EXT)]
                 mod_path = pjoin(reldir, froot)
                 mod_uri = pkg_name + '.' + mod_path.replace(sep, '.')
-                # fromlist=[''] results in submodule being returned, rather than the
-                # top level module.  See help(__import__)
+                # fromlist=[''] results in submodule being returned, rather
+                # than the top level module.  See help(__import__)
                 mod = __import__(mod_uri, fromlist=[''])
                 ext_modules.append(mod)
     return ext_modules
@@ -54,7 +54,7 @@ def main():
     mods = get_ext_modules(mod_name)
     for mod in mods:
         print("Testing module: " + mod.__name__)
-        doctest.testmod(mod)
+        doctest.testmod(mod, optionflags=doctest.NORMALIZE_WHITESPACE)
 
 
 if __name__ == '__main__':
