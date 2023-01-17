@@ -10,6 +10,7 @@ include version_helpers.py
 include cythexts.py
 recursive-include dipy *.pxd
 recursive-include fake_pyrex *
+recursive-include . meson.build
 # put this stuff back into setup.py (package_data) once I'm enlightened
 # enough to accomplish this herculean task
 recursive-include dipy/data *
