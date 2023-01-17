@@ -41,6 +41,7 @@ extensions = [
     "prepare_gallery",
     "math_dollar",  # has to go before numpydoc
     "sphinx_gallery.gen_gallery",
+    "sphinxcontrib.bibtex",
     # 'numpydoc',
     "github",
     "sphinx_design",
@@ -48,6 +49,10 @@ extensions = [
 
 numpydoc_show_class_members = True
 numpydoc_class_members_toctree = False
+
+# Sphinx extension for BibTeX style citations.
+# https://github.com/mcmtroffaes/sphinxcontrib-bibtex
+bibtex_bibfiles = ['diffusion.bib']
 
 # ghissue config
 github_project_url = "https://github.com/dipy/dipy"
