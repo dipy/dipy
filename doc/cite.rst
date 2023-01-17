@@ -45,3 +45,9 @@ A note on citing our work
 * If you are using Generalized Q-sampling please also cite [7].
 
 * If you are using Diffusional Kurtosis Imaging, please also cite [13]
+
+
+Citing other algorithms
+-----------------------
+
+Depending on your research topic, it may also be appropriate to cite related method papers, some of which are listed in the documentation strings of the relevant functions or methods. All references cited in the DIPY codebase and documentation are collected in the :ref:`general_bibliography`.
