@@ -10,7 +10,7 @@ keywords = ["dipy", "diffusionimaging", "dti", "tracking", "tractography",
             "diffusionmri", "mri", "tractometry", "connectomics", "brain",
             "dipymri", "microstructure", "deeplearning", "registration",
             "segmentations", "simulation", "medical", "imaging", "brain",
-            "machinelearning", "signalprocessing]
+            "machinelearning", "signalprocessing"]
 requires-python = ">=3.8"
 dependencies = [
     "cython>=0.29.24, !=0.29.29",
