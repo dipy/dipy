@@ -542,6 +542,14 @@ def test_transform_streamlines_dtype():
     assert_equal(offsets_dtype, streamlines._offsets.dtype)
 
 
+def test_transform_empty_streamlines():
+    identity = np.eye(4)
+    streamlines = Streamlines([])
+
+    streamlines = transform_streamlines(streamlines, identity, in_place=False)
+    assert_equal(len(streamlines), 0)
+
+
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
