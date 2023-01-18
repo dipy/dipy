@@ -57,7 +57,7 @@ if is_windows
       '_build_utils/gcc_build_bitness.py',
       check: true
     ).stdout().strip()
-    if bitness == '64'
+    if target_machine.cpu_family().to_lower().contains('64')
       add_project_arguments('-DMS_WIN64', language: ['c', 'cpp'])
     endif
     # Silence warnings emitted by PyOS_snprintf for (%zd), see

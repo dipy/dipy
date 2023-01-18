@@ -6,6 +6,11 @@ authors = [{ name = "Elefterios Garyfallidis", email = "neuroimaging@python.org"
 maintainers = [
     {name = "dipy developers", email="dipy@python.org"},
 ]
+keywords = ["dipy", "diffusionimaging", "dti", "tracking", "tractography",
+            "diffusionmri", "mri", "tractometry", "connectomics", "brain",
+            "dipymri", "microstructure", "deeplearning", "registration",
+            "segmentations", "simulation", "medical", "imaging", "brain",
+            "machinelearning", "signalprocessing]
 requires-python = ">=3.8"
 dependencies = [
     "cython>=0.29.24, !=0.29.29",
@@ -147,5 +152,6 @@ package = 'dipy'
 [tool.devpy.commands]
 "Build" = ["devpy.build", "devpy.test"]
 "Environments" = ["devpy.shell", "devpy.ipython", "devpy.python"]
-"Documentation" = [".devpy/cmds.py:docs"]
-"Metrics" = [".devpy/cmds.py:asv", ".devpy/cmds.py:coverage"]
+# TODO: Add custom commands
+#"Documentation" = [".devpy/cmds.py:docs"]
+#"Metrics" = [".devpy/cmds.py:asv", ".devpy/cmds.py:coverage"]
