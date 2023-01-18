@@ -6,8 +6,8 @@ cython_sources = [
 foreach ext: cython_sources
   py3.extension_module(ext,
     cython_gen.process(ext + '.pyx'),
-    cpp_args: cython_c_args,
-    include_directories: [incdir_numpy, ],
+    c_args: cython_c_args,
+    include_directories: [incdir_numpy, inc_local],
     install: true,
     subdir: 'dipy/utils'
   )

@@ -42,3 +42,4 @@ tmp/
 venv
 build-install
 .mesonpy-native-file.ini
+build-install

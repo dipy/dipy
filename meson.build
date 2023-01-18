@@ -3,13 +3,16 @@ project(
   'c', 'cpp',
   version: '1.7.0dev0',
   license: 'BSD-3',
-  meson_version: '>= 0.63.0',
+  meson_version: '>= 0.64.0',
   default_options: [
     'buildtype=debugoptimized',
     'c_std=c99',
     'cpp_std=c++14',
   ],
 )
+
+# filesystem Module to manage files and directories
+fs = import('fs')
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
@@ -60,7 +63,7 @@ if not cc.links('', name: '-Wl,--version-script', args: ['-shared', version_link
 endif
 
 cython = find_program('cython')
-# copier = find_program(['cp', 'skimage/_build_utils/copyfiles.py'])
+
 
 # https://mesonbuild.com/Python-module.html
 py_mod = import('python')

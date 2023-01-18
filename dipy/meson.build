@@ -7,7 +7,8 @@ is_mingw = is_windows and cc.get_id() == 'gcc'
 # Preprocessor flags
 # ------------------------------------------------------------------------
 
-numpy_nodepr_api = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
+numpy_nodepr_api_1_9 = '-DNPY_NO_DEPRECATED_API=NPY_1_9_API_VERSION'
+numpy_nodepr_api_1_7 = '-DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION'
 
 # ------------------------------------------------------------------------
 # Compiler flags
@@ -85,6 +86,24 @@ incdir_numpy = run_command(py3,
 
 inc_np = include_directories(incdir_numpy)
 
+# ------------------------------------------------------------------------
+#  include openmp
+# Copy the main __init__.py and pxd files to the build dir.
+# Needed to trick Cython, it won't do a relative import outside a package
+# ------------------------------------------------------------------------
+
+_cython_tree = [
+  fs.copyfile('__init__.py'),
+  fs.copyfile('../src/conditional_omp.h'),
+  fs.copyfile('../src/cythonutils.h'),
+  fs.copyfile('../src/dpy_math.h'),
+  fs.copyfile('../src/safe_openmp.pxd'),
+]
+
+# include some local folder
+# Todo: need more explicit name
+incdir_local = meson.current_build_dir()
+inc_local = include_directories('.')
 
 # ------------------------------------------------------------------------
 # Include Python Sources
@@ -106,15 +125,20 @@ py3.install_sources(
 # Custom Meson Command line tools
 # ------------------------------------------------------------------------
 
-# cython_cli = find_program('_build_utils/cythoner.py')
+cython_args = ['-3', '--fast-fail', '--output-file', '@OUTPUT@',
+               '--include-dir', incdir_local,
+               '@INPUT@']
+cython_cplus_args = ['--cplus'] + cython_args
 
 cython_gen = generator(cython,
-  arguments : ['@INPUT@', '@OUTPUT@'],
-  output : '@BASENAME@.c')
+  arguments : cython_args,
+  output : '@BASENAME@.c',
+  depends : _cython_tree)
 
 cython_gen_cpp = generator(cython,
-  arguments : ['@INPUT@', '@OUTPUT@', '--cplus'],
-  output : '@BASENAME@.cpp')
+  arguments : cython_cplus_args,
+  output : '@BASENAME@.cpp',
+  depends : [_cython_tree])
 
 
 # ------------------------------------------------------------------------
