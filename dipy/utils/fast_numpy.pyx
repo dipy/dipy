@@ -47,7 +47,7 @@ cdef void scalar_muliplication_point(
         a[i] *= scalar
 
 
-cdef double random():
+cpdef double random() nogil:
     """Sample a random number between 0 and 1.
 
     Returns
@@ -58,7 +58,7 @@ cdef double random():
     return rand() / float(INT_MAX)
 
 
-cdef double norm(double[:] v):
+cpdef double norm(double[:] v) nogil:
     """Compute the vector norm.
 
     Parameters
@@ -74,7 +74,7 @@ cdef double norm(double[:] v):
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 
-cdef double dot(double[:] v1, double[:] v2):
+cpdef double dot(double[:] v1, double[:] v2) nogil:
     """Compute vectors dot product.
 
     Parameters
@@ -92,7 +92,7 @@ cdef double dot(double[:] v1, double[:] v2):
     return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
 
 
-cdef void normalize(double[:] v):
+cpdef void normalize(double[:] v) nogil:
     """Normalize the vector.
 
     Parameters
@@ -111,7 +111,7 @@ cdef void normalize(double[:] v):
     v[2] = v[2] * scale
 
 
-cdef void cross(double[:] out, double[:] v1, double[:] v2):
+cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
     """Compute vectors cross product. 
 
     Parameters

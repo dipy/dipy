@@ -30,20 +30,20 @@ cdef void scalar_muliplication_point(
         double * a,
         double scalar) nogil
 
-cdef double random()
+cpdef double random() nogil
 
-cdef double norm(
-        double[:] v)
+cpdef double norm(
+        double[:] v) nogil
 
-cdef double dot(
+cpdef double dot(
         double[:] v1, 
-        double[:] v2)
+        double[:] v2) nogil
 
-cdef void normalize(
-        double[:] v)
+cpdef void normalize(
+        double[:] v) nogil
 
-cdef void cross(
+cpdef void cross(
         double[:] out, 
         double[:] v1, 
-        double[:] v2)
+        double[:] v2) nogil
     
