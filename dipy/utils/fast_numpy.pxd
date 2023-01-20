@@ -4,6 +4,13 @@
 
 cimport numpy as np
 
+from libc.stdlib cimport rand
+from libc.math cimport sqrt, fabs, M_PI, pow, sin, cos
+
+
+cdef extern from "limits.h":
+    int INT_MAX
+
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(
         np.float_t* arr,
@@ -22,3 +29,21 @@ cdef void copy_point(
 cdef void scalar_muliplication_point(
         double * a,
         double scalar) nogil
+
+cdef double random()
+
+cdef double norm(
+        double[:] v)
+
+cdef double dot(
+        double[:] v1, 
+        double[:] v2)
+
+cdef void normalize(
+        double[:] v)
+
+cdef void cross(
+        double[:] out, 
+        double[:] v1, 
+        double[:] v2)
+    
