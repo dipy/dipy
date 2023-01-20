@@ -22,23 +22,12 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                PYERROR,
                                                NODATASUPPORT)
 from dipy.tracking.direction_getter cimport _fixed_step, _step_to_boundary
+from dipy.utils.fast_numpy cimport random, norm, normalize, dot, cross
 
 
-from libc.stdlib cimport rand
 from libc.math cimport sqrt, fabs, M_PI, pow, sin, cos
 
-cdef extern from "limits.h":
-    int INT_MAX
 
-cdef double uniform_01():
-    """Picks a random number between 0 and 1
-
-    Returns
-    -------
-    double
-        random number
-    """
-    return rand() / float(INT_MAX)
 
 cdef double unidis_m1_p1():
     """Picks a random number between -1 and 1
@@ -48,74 +37,8 @@ cdef double unidis_m1_p1():
     double
         random number
     """
-    return 2.0 * uniform_01() - 1.0
+    return 2.0 * random() - 1.0
 
-cdef double norm(double[:] v):
-    """Vector norm
-
-    Parameters
-    ----------
-    v : double[3]
-        input vector
-
-    Returns
-    -------
-    double
-        norm of the vector
-    """
-    return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-
-cdef void normalize(double[:] v):
-    """Vector normalization
-
-    Parameters
-    ----------
-    v : double[3]
-        input vector
-
-    Notes
-    -----
-    Overwrites the input vector
-    """
-    cdef double scale = 1.0 / sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-    v[0] = v[0] * scale
-    v[1] = v[1] * scale
-    v[2] = v[2] * scale
-
-cdef double dot(double[:] v1, double[:] v2):
-    """Dot product
-
-    Parameters
-    ----------
-    v1 : double[3]
-        input vector 1
-    v2 : double[3]
-        input vector 2
-
-    Returns
-    -------
-    double
-        dot product of input vectors
-    """
-    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]
-
-cdef void cross(double[:] out, double[:] v1, double[:] v2):
-    """Cross product
-
-    Parameters
-    ----------
-    v1 : double[3]
-        input vector 1
-    v2 : double[3]
-        input vector 2
-
-    Notes
-    -----
-    Overwrites the first argument
-    """
-    out[0] = v1[1] * v2[2] - v1[2] * v2[1]
-    out[1] = v1[2] * v2[0] - v1[0] * v2[2]
-    out[2] = v1[0] * v2[1] - v1[1] * v2[0]
 
 cdef void getAUnitRandomVector(double[:] out):
     """Generate a unit random vector
@@ -590,7 +513,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initialization is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if uniform_01()*posteriorMax <= self.get_initial_candidate(_seed_direction):
+            if random() * posteriorMax <= self.get_initial_candidate(_seed_direction):
 
                 self.last_val = self.last_val_cand
 
@@ -630,7 +553,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
-            if uniform_01() * posteriorMax <= self.get_candidate():
+            if random() * posteriorMax <= self.get_candidate():
                 self.last_val = self.last_val_cand
                 return TRACKPOINT
 
