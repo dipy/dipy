@@ -59,7 +59,7 @@ cdef double random():
 
 
 cdef double norm(double[:] v):
-    """Vector norm.
+    """Compute the vector norm.
 
     Parameters
     ----------
@@ -69,13 +69,13 @@ cdef double norm(double[:] v):
     Returns
     -------
     _ : double
-        norm of the vector.
+        norm of the input vector.
     """
     return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
 
 
 cdef double dot(double[:] v1, double[:] v2):
-    """Dot product.
+    """Compute vectors dot product.
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ cdef double dot(double[:] v1, double[:] v2):
 
 
 cdef void normalize(double[:] v):
-    """Vector normalization.
+    """Normalize the vector.
 
     Parameters
     ----------
@@ -111,16 +111,13 @@ cdef void normalize(double[:] v):
     v[2] = v[2] * scale
 
 
-
-
-
 cdef void cross(double[:] out, double[:] v1, double[:] v2):
-    """Cross product. 
+    """Compute vectors cross product. 
 
     Parameters
     ----------
     out : double[3]
-        output.
+        output vector.
     v1 : double[3]
         input vector 1.
     v2 : double[3]
@@ -129,9 +126,9 @@ cdef void cross(double[:] out, double[:] v1, double[:] v2):
     Notes
     -----
     Overwrites the first argument.
-
     
     """
     out[0] = v1[1] * v2[2] - v1[2] * v2[1]
     out[1] = v1[2] * v2[0] - v1[0] * v2[2]
     out[2] = v1[0] * v2[1] - v1[1] * v2[0]
+    
