@@ -72,4 +72,3 @@ def test_cross():
     time_cross = timeit.timeit(__cross, number=number)
     time_npcross = timeit.timeit(__npcross, number=number)
     assert_(time_cross < time_npcross)
-    print(time_cross, time_npcross)
