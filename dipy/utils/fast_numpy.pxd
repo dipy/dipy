@@ -5,7 +5,7 @@
 cimport numpy as np
 
 from libc.stdlib cimport rand
-from libc.math cimport sqrt, fabs, M_PI, pow, sin, cos
+from libc.math cimport sqrt
 
 
 cdef extern from "limits.h":
