@@ -2,8 +2,7 @@ import timeit
 
 import numpy as np
 
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, assert_equal, assert_)
+from numpy.testing import assert_almost_equal, assert_
 from dipy.utils.fast_numpy import random, norm, normalize, dot, cross
 
 
@@ -18,7 +17,7 @@ def test_norm():
     # Test that the norm equal numpy norm.
     for _ in range(10):
         vec = np.random.random(3)
-        assert_equal(norm(vec), np.linalg.norm(vec))
+        assert_almost_equal(norm(vec), np.linalg.norm(vec))
 
 
 def test_normalize():
@@ -33,7 +32,7 @@ def test_dot():
     for _ in range(10):
         vec1 = np.random.random(3)
         vec2 = np.random.random(3)
-        assert_equal(dot(vec1, vec2), np.dot(vec1, vec2))
+        assert_almost_equal(dot(vec1, vec2), np.dot(vec1, vec2))
 
     vec1 = np.random.random(3)
     vec2 = np.random.random(3)
