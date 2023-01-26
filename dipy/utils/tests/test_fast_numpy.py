@@ -1,8 +1,7 @@
 import timeit
 
 import numpy as np
-
-from numpy.testing import assert_almost_equal, assert_
+from numpy.testing import assert_, assert_almost_equal, assert_array_equal 
 from dipy.utils.fast_numpy import random, norm, normalize, dot, cross
 
 
