@@ -138,6 +138,9 @@ class StatefulTractogram(object):
             raise ValueError('Origin MUST be from Origin enum, '
                              'e.g Origin.NIFTI.')
         self._origin = origin
+
+        self._dtype_dict = {'positions': np.float32,
+                            'offsets': np.uint32}
         logger.debug(self)
 
     @staticmethod
@@ -198,6 +201,7 @@ class StatefulTractogram(object):
                                      origin=sft.origin,
                                      data_per_point=data_per_point,
                                      data_per_streamline=data_per_streamline)
+        new_sft.dtype_dict = sft.dtype_dict
         return new_sft
 
     def __str__(self):
@@ -294,6 +298,11 @@ class StatefulTractogram(object):
         return self.value
 
     @property
+    def dtype_dict(self):
+        """ Getter for dtype_dict """
+        return self._dtype_dict
+
+    @property
     def space_attributes(self):
         """ Getter for spatial attribute """
         return self._affine, self._dimensions, self._voxel_sizes, \
@@ -333,6 +342,18 @@ class StatefulTractogram(object):
     def streamlines(self):
         """ Partially safe getter for streamlines """
         return self._tractogram.streamlines
+
+    @dtype_dict.setter
+    def dtype_dict(self, dtype_dict):
+        """ Modify dtype_dict.
+
+        Parameters
+        ----------
+        dtype_dict : dict
+            Dictionary containing the desired datatype for positions, offsets
+            and all dpv and dps keys. (To use with TRX file format):
+        """
+        self._dtype_dict = dtype_dict
 
     def get_streamlines_copy(self):
         """ Safe getter for streamlines (for slicing) """
