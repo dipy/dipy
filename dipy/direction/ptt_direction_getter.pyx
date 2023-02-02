@@ -3,7 +3,7 @@
 # cython: wraparound=False
 
 """
-Implementation of parallel transport tractography (PTT)
+Implementation of parallel transport tractography (PTT).
 """
 
 import numpy as np
@@ -25,8 +25,7 @@ from dipy.tracking.direction_getter cimport _fixed_step, _step_to_boundary
 from dipy.utils.fast_numpy cimport random, norm, normalize, dot, cross
 
 
-from libc.math cimport sqrt, fabs, M_PI, pow, sin, cos
-
+from libc.math cimport M_PI, pow, sin, cos
 
 
 cdef double unidis_m1_p1():
@@ -57,7 +56,8 @@ cdef void getAUnitRandomVector(double[:] out):
     out[2] = unidis_m1_p1()
     normalize(out)
 
-cdef void getAUnitRandomPerpVector(double[:] out,double[:] inp):
+
+cdef void getAUnitRandomPerpendicularVector(double[:] out,double[:] inp):
     """Generate a unit random perpendicular vector
 
     Parameters
@@ -76,6 +76,7 @@ cdef void getAUnitRandomPerpVector(double[:] out,double[:] inp):
     getAUnitRandomVector(tmp)
     cross(out,inp,tmp)
     normalize(out)
+
 
 cdef (double,double) getARandomPointWithinDisk(double r):
     """Generate a random point within a disk
@@ -101,16 +102,6 @@ cdef (double,double) getARandomPointWithinDisk(double r):
         y = unidis_m1_p1()
     return (r * x, r * y)
 
-    """PTT tracking parameters
-    """
-cdef struct TP:
-    double step_size
-    double min_radius_curvature
-    double probe_length
-    double probe_radius
-    double probe_quality
-    double probe_count
-    double data_support_exponent
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
@@ -123,7 +114,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     set to 0 and the result is normalized.
     """
 
-    cdef TP           params                # Tracking parameters for this frame.
     cdef double[3]    p                     # Last position
     cdef double[3][3] F                     # Frame
     cdef double       k1                    # k1 value of the current frame
@@ -146,6 +136,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       last_val
     cdef double       last_val_cand
     cdef double       init_last_val
+    cdef double       min_radius_curvature
+    cdef double       probe_length
+    cdef double       probe_radius
+    cdef double       probe_quality
+    cdef double       probe_count
+    cdef double       data_support_exponent
+    cdef double       step_size
 
     # For each streamline, create a new PTF object with tracking parameters
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
@@ -196,23 +193,20 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
 
-        # Set this PTF's parameters
-        self.params = TP()
-
         # TODO: review max_angle vs min_radius_curvature.
-        self.params.min_radius_curvature = min_radius_curvature
-        self.params.probe_length = probe_length
-        self.params.probe_radius = probe_radius
-        self.params.probe_quality = probe_quality
-        self.params.probe_count = probe_count
-        self.params.data_support_exponent = data_support_exponent
+        self.min_radius_curvature = min_radius_curvature
+        self.probe_length = probe_length
+        self.probe_radius = probe_radius
+        self.probe_quality = probe_quality
+        self.probe_count = probe_count
+        self.data_support_exponent = data_support_exponent
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
 
         # Initialize this PTF's internal tracking parameters
-        self.angular_separation = 2.0 * M_PI / float(self.params.probe_count)
-        self.probe_step_size = self.params.probe_length / (self.params.probe_quality - 1)
-        self.probe_normalizer = 1.0 / float(self.params.probe_quality * self.params.probe_count)
+        self.angular_separation = 2.0 * M_PI / float(self.probe_count)
+        self.probe_step_size = self.probe_length / (self.probe_quality - 1)
+        self.probe_normalizer = 1.0 / float(self.probe_quality * self.probe_count)
 
 
     # First set the (initial) position of the parallel transport frame (PTF), i.e. set the seed point
@@ -248,24 +242,24 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double[3] pp
 
         self.getARandomFrame(init_dir)
-        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.params.min_radius_curvature)
+        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.min_radius_curvature)
 
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
 
         self.last_val = 0
 
-        if self.params.probe_count == 1:
+        if self.probe_count == 1:
             fod_amp = self.pmf_gen.get_pmf_value(self.p, self.F[0])
             self.last_val = fod_amp
         else:
-            for c in range(self.params.probe_count):
+            for c in range(self.probe_count):
                 for i in range(3):
                     pp[i] = (self.p[i] +
-                             self.F[1][i] * self.params.probe_radius *
-                             cos(c * self.params.angular_separation) +
-                             self.F[2][i] * self.params.probe_radius *
-                             sin(c * self.params.angular_separation))
+                             self.F[1][i] * self.probe_radius *
+                             cos(c * self.angular_separation) +
+                             self.F[2][i] * self.probe_radius *
+                             sin(c * self.angular_separation))
 
                 fod_amp = self.pmf_gen.get_pmf_value(pp, self.F[0])
                 self.last_val += fod_amp
@@ -273,6 +267,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.init_last_val = self.last_val
 
         return self.calcDataSupport()
+
 
     cdef void walk(self):
         """Propagates the last position (p) by step_size amount.
@@ -304,6 +299,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.likelihood = 0.0
 
+
     cdef double get_candidate(self):
         """Pick a random curve parametrization by using current position.
 
@@ -313,8 +309,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         randomly picked candidate.
 
         """
-        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.params.min_radius_curvature)
+        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.min_radius_curvature)
         return self.calcDataSupport()
+
 
     cdef void flip(self):
         """"Copy PTF parameters then flips the curve.
@@ -334,6 +331,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.last_val = self.init_last_val
 
         return
+
 
     cdef void getARandomFrame(self,double[:] _dir):
         """Randomly generate 3 unit vectors that are orthogonal to each other.
@@ -355,7 +353,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.F[0][1] = _dir[1]
             self.F[0][2] = _dir[2]
 
-        getAUnitRandomPerpVector(self.F[2],self.F[0])
+        getAUnitRandomPerpendicularVector(self.F[2],self.F[0])
         cross(self.F[1],self.F[2],self.F[0])
 
 
@@ -422,7 +420,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.likelihood = self.last_val
 
-        for q in range(1, int(self.params.probe_quality)):
+        for q in range(1, int(self.probe_quality)):
 
             for i in range(3):
                 _p[i] = (self.PP[0] * _F[0][i] +  self.PP[1] * _F[1][i] +
@@ -432,7 +430,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
             normalize(_T)
 
-            if q < (self.params.probe_quality - 1):
+            if q < (self.probe_quality - 1):
 
                 for i in range(3):
                     _N2[i] = (self.PP[6] * _F[0][i] +  self.PP[7]*_F[1][i] +
@@ -446,26 +444,26 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     _F[2][i] = _N2[i]
 
 
-            if self.params.probe_count == 1:
+            if self.probe_count == 1:
                 fod_amp = self.pmf_gen.get_pmf_value(_p, _T)
                 self.last_val_cand = fod_amp
                 self.likelihood += self.last_val_cand
             else:
                 self.last_val_cand = 0
 
-                if q == self.params.probe_quality-1:
+                if q == self.probe_quality-1:
                     for i in range(3):
                         _N2[i] = (self.PP[6] * _F[0][i] +
                                   self.PP[7] * _F[1][i] + self.PP[8] * _F[2][i])
                     cross(_N1,_N2,_T)
 
-                for c in range(int(self.params.probe_count)):
+                for c in range(int(self.probe_count)):
 
                     for i in range(3):
-                        pp[i] = (_p[i] + _N1[i] * self.params.probe_radius *
-                                 cos(c*self.params.angular_separation) +
-                                 _N2[i] * self.params.probe_radius *
-                                 sin(c * self.params.angular_separation))
+                        pp[i] = (_p[i] + _N1[i] * self.probe_radius *
+                                 cos(c * self.angular_separation) +
+                                 _N2[i] * self.probe_radius *
+                                 sin(c * self.angular_separation))
 
                     fod_amp = self.pmf_gen.get_pmf_value(pp, _T)
                     self.last_val_cand += fod_amp
@@ -473,8 +471,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.likelihood += self.last_val_cand
 
         self.likelihood *= self.probe_normalizer
-        if self.params.data_support_exponent != 1:
-            self.likelihood  = pow(self.likelihood, self.params.data_support_exponent)
+        if self.data_support_exponent != 1:
+            self.likelihood  = pow(self.likelihood, self.data_support_exponent)
 
         return self.likelihood
 
@@ -509,7 +507,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 posteriorMax = dataSupport
 
         # Compensation for underestimation of max posterior estimate
-        posteriorMax = pow(2.0*posteriorMax,self.params.data_support_exponent)
+        posteriorMax = pow(2.0*posteriorMax, self.data_support_exponent)
 
         # Initialization is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
@@ -533,7 +531,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef StreamlineStatus propagate(self):
         """Takes a step forward along the chosen candidate"""
 
-        self.prepare_propagator(self.params.step_size)
+        self.prepare_propagator(self.step_size)
 
         self.walk()
 
@@ -549,7 +547,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Compensation for underestimation of max posterior estimate
         posteriorMax = pow(2.0 * posteriorMax,
-                           self.params.data_support_exponent)
+                           self.data_support_exponent)
 
         # Propagation is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
@@ -583,7 +581,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             double voxdir[3]
             void (*step)(double*, double*, double) nogil
 
-        self.params.step_size = step_size
+        self.step_size = step_size
 
         copy_point(&seed[0], point)
         copy_point(&seed[0], &streamline[0,0])
