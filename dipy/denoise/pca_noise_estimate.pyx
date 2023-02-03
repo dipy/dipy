@@ -27,7 +27,11 @@ except ImportError:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
+<<<<<<< HEAD
                        smooth=2, images_as_samples=False):
+=======
+                       smooth=2, images_as_samples=True):
+>>>>>>> 92be877c247c2d33ea7604fe324e0e307ec897d4
     """ PCA based local noise estimation.
 
     Parameters
@@ -50,7 +54,11 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         before returning. Default: 2.
     image_as_samples : bool
         Whether to use images as rows (samples) for PCA (algorithm in [1]_) or
+<<<<<<< HEAD
         to use images as columns (features).
+=======
+        to use images as columns (features). Default: True (images as samples).
+>>>>>>> 92be877c247c2d33ea7604fe324e0e307ec897d4
 
     Returns
     -------
@@ -123,6 +131,7 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     W = Vt.T
 
     if images_as_samples:
+<<<<<<< HEAD
         W = W.astype('double')
         # #vox(features) >> # img(samples), last eigval zero (X is centered)
         idx = n3 - 2  # use second-to-last eigvec
@@ -137,6 +146,19 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
 
         # Grab the column corresponding to the smallest eigen-vector/-value:
         # #vox(samples) >> #img(features), last eigenvector is meaningful
+=======
+        # use second-to-last eigenvector, because of X is centered
+        W = W.astype('double')
+        V = W[:, n3-2].reshape(n0, n1, n2)
+
+        # eigenvalue = variance gives scale (ref [1]_ method is ambigious)
+        I = V * S[n3-2]
+    else:
+        # Project into the data space
+        V = X.dot(W)
+        
+        # Grab the column corresponding to the smallest eigen-vector/-value:
+>>>>>>> 92be877c247c2d33ea7604fe324e0e307ec897d4
         I = V[:, -1].reshape(n0, n1, n2)
 
     del V, W, X, U, S, Vt
@@ -193,3 +215,4 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
 
     return np.sqrt(sigma_corr)
+
