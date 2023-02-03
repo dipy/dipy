@@ -185,4 +185,3 @@ def test_pca_noise_estimate():
                           images_as_samples=images_as_samples)))
 
         assert_warns(UserWarning, pca_noise_estimate, data, gtab, patch_radius=0)
-

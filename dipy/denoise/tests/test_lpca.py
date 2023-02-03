@@ -350,4 +350,3 @@ def test_mppca_returned_sigma():
         rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
         rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
         assert_(rmse_den < rmse_ref)
-
