@@ -27,7 +27,7 @@ except ImportError:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
-                       smooth=2, images_as_samples=True):
+                       smooth=2, images_as_samples=False):
     """ PCA based local noise estimation.
 
     Parameters
@@ -50,12 +50,22 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
         before returning. Default: 2.
     image_as_samples : bool
         Whether to use images as rows (samples) for PCA (algorithm in [1]_) or
-        to use images as columns (features). Default: True (images as samples).
+        to use images as columns (features).
 
     Returns
     -------
     sigma_corr: 3D array
         The local noise standard deviation estimate.
+
+    Notes
+    -----
+        In [1]_, images are used as samples, so voxels are features, therefore
+        eigenvectors are image-shaped. However, [1]_ is not clear on how to use
+        these eigenvectors to determine the noise level, so here eigenvalues
+        (variance over samples explained by eigenvectors) are used to scale
+        the eigenvectors. Use images_as_samples=True to use this algorithm.
+        Alternatively, voxels can be used as samples using
+        images_as_samples=False. This is not the canonical algorithm of [1]_.
 
     References
     ----------
@@ -113,26 +123,29 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
     W = Vt.T
 
     if images_as_samples:
-        # use second-to-last eigenvector, because of X is centered
         W = W.astype('double')
-        V = W[:, n3-2].reshape(n0, n1, n2)
+        # #vox(features) >> # img(samples), last eigval zero (X is centered)
+        idx = n3 - 2  # use second-to-last eigvec
+        V = W[:, idx].reshape(n0, n1, n2)
 
-        # eigenvalue = variance gives scale (ref [1]_ method is ambigious)
-        I = V * S[n3-2]
+        # ref [1]_ method is ambigious on how to use image-shaped eigvec
+        # since eigvec is normalized, used eigval=variance for scale
+        I = V * S[idx]
     else:
         # Project into the data space
         V = X.dot(W)
-        
+
         # Grab the column corresponding to the smallest eigen-vector/-value:
+        # #vox(samples) >> #img(features), last eigenvector is meaningful
         I = V[:, -1].reshape(n0, n1, n2)
 
     del V, W, X, U, S, Vt
 
     cdef:
-      double[:, :, :] count = np.zeros((n0, n1, n2))
-      double[:, :, :] mean = np.zeros((n0, n1, n2))
-      double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
-      double[:, :, :, :] data0temp = data0
+        double[:, :, :] count = np.zeros((n0, n1, n2))
+        double[:, :, :] mean = np.zeros((n0, n1, n2))
+        double[:, :, :] sigma_sq = np.zeros((n0, n1, n2))
+        double[:, :, :, :] data0temp = data0
 
     with nogil:
         for i in range(prx, n0 - prx):
@@ -145,38 +158,38 @@ def pca_noise_estimate(data, gtab, patch_radius=1, correct_bias=True,
                             for k0 in range(-prz, prz + 1):
                                 sum_reg += I[i + i0, j + j0, k + k0] / norm
                                 for l0 in range(n3):
-                                    temp1 += (data0temp[i + i0, j+ j0, k + k0, l0]) / (norm * n3)
+                                    temp1 += (data0temp[i + i0, j + j0, k + k0, l0])\
+                                             / (norm * n3)
 
                     for i0 in range(-prx, prx + 1):
                         for j0 in range(-pry, pry + 1):
                             for k0 in range(-prz, prz + 1):
-                                sigma_sq[i + i0, j +j0, k + k0] += (
+                                sigma_sq[i + i0, j + j0, k + k0] += (
                                     I[i + i0, j + j0, k + k0] - sum_reg) ** 2
                                 mean[i + i0, j + j0, k + k0] += temp1
-                                count[i + i0, j +j0, k + k0] += 1
+                                count[i + i0, j + j0, k + k0] += 1
 
     sigma_sq = np.divide(sigma_sq, count)
 
     # find the SNR and make the correction for bias due to Rician noise:
     if correct_bias:
-      mean = np.divide(mean, count)
-      snr = np.divide(mean, np.sqrt(sigma_sq))
-      snr_sq = (snr ** 2)
-      # xi is practically equal to 1 above 37.4, and we overflow, raising
-      # warnings and creating ot-a-numbers.
-      # Instead, we will replace these values with 1 below
-      with np.errstate(over='ignore', invalid='ignore'):
-          xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
+        mean = np.divide(mean, count)
+        snr = np.divide(mean, np.sqrt(sigma_sq))
+        snr_sq = (snr ** 2)
+        # xi is practically equal to 1 above 37.4, and we overflow, raising
+        # warnings and creating ot-a-numbers.
+        # Instead, we will replace these values with 1 below
+        with np.errstate(over='ignore', invalid='ignore'):
+            xi = (2 + snr_sq - (np.pi / 8) * np.exp(-snr_sq / 2) *
                   ((2 + snr_sq) * sps.iv(0, snr_sq / 4) +
                   snr_sq * sps.iv(1, snr_sq / 4)) ** 2).astype(float)
-      xi[snr > 37.4] = 1
-      sigma_corr = sigma_sq / xi
-      sigma_corr[np.isnan(sigma_corr)] = 0
+        xi[snr > 37.4] = 1
+        sigma_corr = sigma_sq / xi
+        sigma_corr[np.isnan(sigma_corr)] = 0
     else:
-      sigma_corr = sigma_sq
+        sigma_corr = sigma_sq
 
     if smooth is not None:
-      sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
+        sigma_corr = ndimage.gaussian_filter(sigma_corr, smooth)
 
     return np.sqrt(sigma_corr)
-

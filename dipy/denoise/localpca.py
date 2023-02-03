@@ -36,7 +36,13 @@ def _pca_classifier(L, nvoxels):
 
     Notes
     -----
-    This is based on the algorithm described in [1]_.
+    This is based on the algorithm described in [1]_. Note that the
+    condition expressed in the while-loop is expressed in terms of the
+    variance of equation (12), not equation (11) as in [1]_. Also,
+    this code implements ascending eigenvalues, unlike [1]_.
+    Also unlike [1]_, the data matrix X is assumed to be centered,
+    therefore nvoxels has been replaced with nvoxels - 1 to account
+    for the lost degree of freedom.
 
     References
     ----------
@@ -49,11 +55,10 @@ def _pca_classifier(L, nvoxels):
     # if num_samples - 1 (to correct for mean subtraction) is less than number
     # of features, discard the zero eigenvalues
     if L.size > nvoxels - 1:
-        L = L[-(nvoxels - 1):] 
+        L = L[-(nvoxels - 1):]
 
     var = np.mean(L)
     c = L.size - 1
-    # NOTE: data is centered, at most (nvoxels - 1) non-zero eigenvalues
     r = L[c] - L[0] - 4 * np.sqrt((c + 1.0) / (nvoxels - 1)) * var
     while r > 0:
         var = np.mean(L[:c])
@@ -85,7 +90,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         outside of those voxels.
     patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+        voxels). E.g. patch_radius=2 gives 5x5x5 patches.
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
@@ -102,16 +107,13 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         \tau_{factor} can be set to a predefined values (e.g. \tau_{factor} =
         2.3 [3]_), or automatically calculated using random matrix theory
         (in case that \tau_{factor} is set to None).
-        Default: None.
     return_sigma : bool (optional)
         If true, the Standard deviation of the noise will be returned.
-        Default: False.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
     suppress_warning : bool (optional)
         If true, suppress warning caused by patch_size < arr.shape[-1].
-        Default: False.
 
     Returns
     -------
@@ -175,8 +177,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     if num_samples == 1:
         raise ValueError("Cannot have only 1 sample,\
                           please increase patch_radius.")
-    # NOTE: account for mean substraction by testing #samples - 1
-    if num_samples - 1 < arr.shape[-1] and not suppress_warning:
+    # account for mean substraction by testing #samples - 1
+    if (num_samples - 1) < arr.shape[-1] and not suppress_warning:
         tmp = np.sum(patch_size == 1)  # count spatial dimensions with size 1
         if tmp == 0:
             root = np.ceil(arr.shape[-1] ** (1./3))  # 3D
@@ -207,7 +209,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
     dim = arr.shape[-1]
     if tau_factor is None:
-        tau_factor = 1 + np.sqrt(dim / (num_samples - 1)) # NOTE: account for mean subtraction
+        tau_factor = 1 + np.sqrt(dim / num_samples)
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
@@ -258,7 +260,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
                 if sigma is None:
                     # Random matrix theory
-                    this_var, ncomps = _pca_classifier(d, num_samples)  # NOTE: ncomps not usable as index if num_samples < num_features, but is recalculated below anyway 
+                    this_var, _ = _pca_classifier(d, num_samples)
                 else:
                     # Predefined variance
                     this_var = var[i, j, k]
@@ -267,7 +269,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                 tau = tau_factor ** 2 * this_var
 
                 # Update ncomps according to tau_factor
-                ncomps = np.sum(d < tau)  # NOTE: since we recalcuate ncomps based on variance, ncomps now correct for num_samples < num_features
+                ncomps = np.sum(d < tau)
                 W[:, :ncomps] = 0
 
                 # This is equations 1 and 2 in Manjon 2013:
@@ -276,7 +278,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                                     patch_size[1],
                                     patch_size[2], dim)
                 # This is equation 3 in Manjon 2013:
-                this_theta = 1.0 / (1.0 + dim - ncomps)  # NOTE: counting number of non-noise components, no correction needed for num_samples < num_features
+                this_theta = 1.0 / (1.0 + dim - ncomps)
                 theta[ix1:ix2, jx1:jx2, kx1:kx2] += this_theta
                 thetax[ix1:ix2, jx1:jx2, kx1:kx2] += Xest * this_theta
                 if return_sigma is True and sigma is None:
@@ -297,9 +299,10 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         return denoised_arr.astype(out_dtype)
 
 
-def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius_sigma=1,
-             pca_method='eig', tau_factor=2.3, return_sigma=False, correct_bias=True,
-             out_dtype=None, suppress_warning=False):
+def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None,
+             patch_radius_sigma=1, pca_method='eig', tau_factor=2.3,
+             return_sigma=False, correct_bias=True, out_dtype=None,
+             suppress_warning=False):
     r""" Performs local PCA denoising according to Manjon et al. [1]_.
 
     Parameters
@@ -316,14 +319,15 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius
         outside of those voxels.
     patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+        voxels). E.g. patch_radius=2 gives 5x5x5 patches.
     gtab: gradient table object (optional if sigma is provided)
         gradient information for the data gives us the bvals and bvecs of
         diffusion data, which is needed to calculate noise level if sigma is
         not provided.
     patch_radius_sigma : int (optional)
         The radius of the local patch to be taken around each voxel (in
-        voxels) for estimating sigma. Default: 1 (estimate in blocks of 3x3x3 voxels).
+        voxels) for estimating sigma. E.g. patch_radius_sigma=2 gives
+        5x5x5 patches.
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
@@ -340,13 +344,11 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius
         \tau_{factor} can be change to adjust the relationship between the
         noise standard deviation and the threshold \tau. If \tau_{factor} is
         set to None, it will be automatically calculated using the
-        Marcenko-Pastur distribution [2]_.
-        Default: 2.3 (according to [1]_)
+        Marcenko-Pastur distribution [2]_. Default: 2.3 according to [1]_.
     return_sigma : bool (optional)
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned [2]_.
-        Default: False.
-    correct_bias : bool
+    correct_bias : bool (optional)
         Whether to correct for bias due to Rician noise. This is an
         implementation of equation 8 in [1]_.
     out_dtype : str or dtype (optional)
@@ -354,7 +356,6 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius
         the input.
     suppress_warning : bool (optional)
         If true, suppress warning caused by patch_size < arr.shape[-1].
-        Default: False.
 
     Returns
     -------
@@ -377,7 +378,7 @@ def localpca(arr, sigma=None, mask=None, patch_radius=2, gtab=None, patch_radius
     if sigma is None and gtab is None:
         raise ValueError("gtab must be provided if sigma is not given")
 
-    # calculate sigma 
+    # calculate sigma
     if sigma is None:
         sigma = pca_noise_estimate(arr, gtab,
                                    correct_bias=correct_bias,
@@ -406,7 +407,7 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
         outside of those voxels.
     patch_radius : int or 1D array (optional)
         The radius of the local patch to be taken around each voxel (in
-        voxels). Default: 2 (denoise in blocks of 5x5x5 voxels).
+        voxels). E.g. patch_radius=2 gives 5x5x5 patches.
     pca_method : 'eig' or 'svd' (optional)
         Use either eigenvalue decomposition (eig) or singular value
         decomposition (svd) for principal component analysis. The default
@@ -415,13 +416,11 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
     return_sigma : bool (optional)
         If true, a noise standard deviation estimate based on the
         Marcenko-Pastur distribution is returned [2]_.
-        Default: False.
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
     suppress_warning : bool (optional)
         If true, suppress warning caused by patch_size < arr.shape[-1].
-        Default: False.
 
     Returns
     -------
