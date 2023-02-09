@@ -223,11 +223,14 @@ def test_deprecated_argument():
         # One positional, one keyword
         npt.assert_raises(TypeError, method, 1, scale=2)
 
-    with pytest.warns(None) as w_record:
+    with warnings.catch_warnings(record=True) as w_record:
         res = CustomActor().test5(4)
 
-    npt.assert_equal(len(w_record), 0)
-    npt.assert_equal(res, 4)
+        # Select only UserWarning
+        selected_w = [w for w in w_record
+                      if issubclass(w.category, UserWarning)]
+        npt.assert_equal(len(selected_w), 0)
+        npt.assert_equal(res, 4)
 
 
 def test_deprecated_argument_in_kwargs():
@@ -274,10 +277,10 @@ def test_deprecated_argument_multi_deprecation():
     with pytest.warns(ArgsDeprecationWarning) as w:
         npt.assert_equal(test(x=1, y=2, z=3), (1, 2, 3))
         npt.assert_equal(test2(x=1, y=2, z=3), (1, 2, 3))
-    npt.assert_equal(len(w), 6)
+        npt.assert_equal(len(w), 6)
 
-    npt.assert_raises(TypeError, test, x=1, y=2, z=3, b=3)
-    npt.assert_raises(TypeError, test, x=1, y=2, z=3, a=3)
+        npt.assert_raises(TypeError, test, x=1, y=2, z=3, b=3)
+        npt.assert_raises(TypeError, test, x=1, y=2, z=3, a=3)
 
 
 def test_deprecated_argument_not_allowed_use():

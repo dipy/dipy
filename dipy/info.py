@@ -7,7 +7,7 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 1
-_version_minor = 6
+_version_minor = 7
 _version_micro = 0
 _version_extra = 'dev0'
 # _version_extra = ''
@@ -129,6 +129,8 @@ EXTRAS_REQUIRE = {
         "scikit-learn",
         "scikit-image",
         "statsmodels",
+        "boto3"
+
     ],
     "viz": [
         "fury>=0.8.0",
@@ -141,7 +143,6 @@ EXTRAS_REQUIRE = {
         "tables",
         "tensorflow"
     ]
-
 }
 
 EXTRAS_REQUIRE["all"] = list(set([a[i] for a in list(EXTRAS_REQUIRE.values())

@@ -146,6 +146,10 @@ def gen_dirac(m, n, theta, phi, legacy=True):
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
+    legacy: bool, optional
+        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        is used for m < 0). Else, implements the basis as defined in
+        Descoteaux et al. 2007 (without the absolute value).
 
     See Also
     --------
@@ -615,7 +619,7 @@ def sph_harm_ind_list(sh_order, full_basis=False):
         offset = offset + 2 * ii + 1
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
-    return (m_list, n_list)
+    return m_list, n_list
 
 
 def order_from_ncoef(ncoef, full_basis=False):
@@ -713,7 +717,7 @@ def _gfa_sh(coef, sh0_index=0):
     """
     coef_sq = coef**2
     numer = coef_sq[..., sh0_index]
-    denom = (coef_sq).sum(-1)
+    denom = coef_sq.sum(-1)
     # The sum of the square of the coefficients being zero is the same as all
     # the coefficients being zero
     allzero = denom == 0

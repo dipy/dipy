@@ -56,7 +56,7 @@ def get_test_data():
     mask = np.where(tissues == 0, 1, 0)
     response = (evals_list[0], s0[0])
     fa = fractional_anisotropy(evals)
-    return (gtab, data, mask, response, fa)
+    return gtab, data, mask, response, fa
 
 
 def test_auto_response_deprecated():

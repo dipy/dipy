@@ -10,12 +10,12 @@ from numpy.testing import (assert_array_equal, assert_raises,
                            assert_almost_equal, assert_equal)
 
 
-def norm(x, ord=None, axis=None):
+def norm(x, order=None, axis=None):
     if axis is not None:
         return np.apply_along_axis(np.linalg.norm, axis,
-                                   x.astype(np.float64), ord)
+                                   x.astype(np.float64), order)
 
-    return np.linalg.norm(x.astype(np.float64), ord=ord)
+    return np.linalg.norm(x.astype(np.float64), ord=order)
 
 
 dtype = "float32"

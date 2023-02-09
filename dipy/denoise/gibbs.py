@@ -47,7 +47,7 @@ def _image_tv(x, axis=0, n_points=3):
     ptv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
                       xs[:, (n_points+2):(-n_points)])
     ntv = np.absolute(xs[:, (n_points+1):(-n_points-1)] -
-                      xs[:, (n_points):(-n_points-2)])
+                      xs[:, n_points:(-n_points-2)])
     for n in range(1, n_points):
         ptv = ptv + np.absolute(xs[:, (n_points+1+n):(-n_points-1+n)] -
                                 xs[:, (n_points+2+n):(-n_points+n)])

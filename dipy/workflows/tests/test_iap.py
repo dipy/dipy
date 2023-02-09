@@ -1,8 +1,9 @@
-import numpy.testing as npt
 import sys
 from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import TemporaryDirectory
+import numpy.testing as npt
+
 from dipy.workflows.base import IntrospectiveArgumentParser, none_or_dtype
 from dipy.workflows.flow_runner import run_flow
 from dipy.workflows.tests.workflow_tests_utils import (
@@ -107,7 +108,7 @@ def test_optional_str():
         npt.assert_equal(args[k], v)
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow.run(**args)
-    npt.assert_array_equal(return_values, all_results + ['default'])
+    npt.assert_equal(return_values, all_results + ['default'])
 
     # Test optional and variable str argument exists and has a value
     sys.argv = [sys.argv[0]]
@@ -124,7 +125,7 @@ def test_optional_str():
         npt.assert_equal(args[k], v)
     # Test if **args really fits dummy_flow's arguments
     return_values = dummy_flow.run(**args)
-    npt.assert_array_equal(return_values, all_results + ['default'])
+    npt.assert_equal(return_values, all_results + ['default'])
 
     # Test optional str empty arguments
     sys.argv = [sys.argv[0]]

@@ -3,7 +3,8 @@ import scipy.special as sps
 from numpy.testing import (assert_,
                            assert_equal,
                            assert_raises,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_warns)
 from dipy.denoise.localpca import (localpca, mppca, genpca, _pca_classifier)
 from dipy.sims.voxel import multi_tensor
 from dipy.core.gradients import gradient_table, generate_bvecs
@@ -241,7 +242,7 @@ def test_phantom():
 def test_lpca_ill_conditioned():
     DWI, sigma = rfiw_phantom(gtab, snr=30)
     for patch_radius in [1, [1, 1, 1]]:
-        assert_raises(ValueError, localpca, DWI, sigma,
+        assert_warns(UserWarning, localpca, DWI, sigma,
                       patch_radius=patch_radius)
 
 

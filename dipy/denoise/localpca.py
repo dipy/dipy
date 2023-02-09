@@ -1,4 +1,9 @@
+from packaging.version import Version
+from warnings import warn
+
 import numpy as np
+import scipy
+
 try:
     from scipy.linalg.lapack import dgesvd as svd
     svd_args = [1, 0]
@@ -51,14 +56,16 @@ def _pca_classifier(L, nvoxels):
 
 
 def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
-           tau_factor=None, return_sigma=False, out_dtype=None):
+           tau_factor=None, return_sigma=False, out_dtype=None,
+           suppress_warning=False):
     r"""General function to perform PCA-based denoising of diffusion datasets.
 
     Parameters
     ----------
     arr : 4D array
         Array of data to be denoised. The dimensions are (X, Y, Z, N), where N
-        are the diffusion gradient directions.
+        are the diffusion gradient directions. The first 3 dimension must have
+        size >= 2 * patch_radius + 1 or size = 1.
     sigma : float or 3D array (optional)
         Standard deviation of the noise estimated from the data. If no sigma
         is given, this will be estimated based on random matrix theory
@@ -93,12 +100,15 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
+    suppress_warning : bool (optional)
+        If true, suppress warning caused by patch_size < arr.shape[-1].
+        Default: False.
 
     Returns
     -------
     denoised_arr : 4D array
         This is the denoised array of the same size as that of the input data,
-        clipped to non-negative values
+        clipped to non-negative values.
 
     References
     ----------
@@ -145,16 +155,34 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         raise ValueError("patch_radius should have length 3")
     else:
         patch_radius = np.asarray(patch_radius).astype(int)
+    patch_radius[arr.shape[0:3] == np.ones(3)] = 0  # account for dim of size 1
     patch_size = 2 * patch_radius + 1
 
-    if np.prod(patch_size) < arr.shape[-1]:
-        e_s = "You asked for PCA denoising with a "
-        e_s += "patch_radius of {0} ".format(patch_radius)
-        e_s += "with total patch size of {0}".format(np.prod(patch_size))
-        e_s += "for data with {0} directions. ".format(arr.shape[-1])
-        e_s += "This would result in an ill-conditioned PCA matrix. "
-        e_s += "Please increase the patch_radius."
-        raise ValueError(e_s)
+    ash = arr.shape[0:3]
+    if np.any((ash != np.ones(3)) * (ash < patch_size)):
+        raise ValueError("Array 'arr' is incorrect shape")
+
+    num_samples = np.prod(patch_size)
+    if num_samples == 1:
+        raise ValueError("Cannot have only 1 sample,\
+                          please increase patch_radius.")
+    if num_samples < arr.shape[-1] and not suppress_warning:
+        tmp = np.sum(patch_size == 1)  # count spatial dimensions with size 1
+        if tmp == 0:
+            root = np.ceil(arr.shape[-1] ** (1./3))  # 3D
+        if tmp == 1:
+            root = np.ceil(arr.shape[-1] ** (1./2))  # 2D
+        if tmp == 2:
+            root = arr.shape[-1]  # 1D
+        root = root + 1 if (root % 2) == 0 else root  # make odd
+        spr = int((root - 1) / 2)  # suggested patch_radius
+        e_s = "Number of samples {1} < Dimensionality {0}. "\
+              .format(arr.shape[-1], num_samples)
+        e_s += "This might have a performance impact. "
+        e_s += "Increase patch_radius to {0} to avoid this warning, "\
+               .format(spr)
+        e_s += "or supply suppress_warning=True to your function call."
+        warn(e_s, UserWarning)
 
     if isinstance(sigma, np.ndarray):
         var = sigma ** 2
@@ -169,7 +197,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
     dim = arr.shape[-1]
     if tau_factor is None:
-        tau_factor = 1 + np.sqrt(dim / np.prod(patch_size))
+        tau_factor = 1 + np.sqrt(dim / num_samples)
 
     theta = np.zeros(arr.shape, dtype=calc_dtype)
     thetax = np.zeros(arr.shape, dtype=calc_dtype)
@@ -178,6 +206,8 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
         var = np.zeros(arr.shape[:-1], dtype=calc_dtype)
         thetavar = np.zeros(arr.shape[:-1], dtype=calc_dtype)
 
+    SCIPY_LESS_1_5_0 = Version(scipy.__version__) < Version('1.5.0')
+    kw_eigh = {'turbo': True} if SCIPY_LESS_1_5_0 else {}  # {'driver': 'gvd'}
     # loop around and find the 3D patch for each direction at each pixel
     for k in range(patch_radius[2], arr.shape[2] - patch_radius[2]):
         for j in range(patch_radius[1], arr.shape[1] - patch_radius[1]):
@@ -193,7 +223,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                 kx2 = k + patch_radius[2] + 1
 
                 X = arr[ix1:ix2, jx1:jx2, kx1:kx2].reshape(
-                                np.prod(patch_size), dim)
+                                num_samples, dim)
                 # compute the mean and normalize
                 M = np.mean(X, axis=0)
                 # Upcast the dtype for precision in the SVD
@@ -214,11 +244,11 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
                     # PCA using an Eigenvalue decomposition
                     C = np.transpose(X).dot(X)
                     C = C / X.shape[0]
-                    [d, W] = eigh(C, turbo=True)
+                    [d, W] = eigh(C, **kw_eigh)
 
                 if sigma is None:
                     # Random matrix theory
-                    this_var, ncomps = _pca_classifier(d, np.prod(patch_size))
+                    this_var, ncomps = _pca_classifier(d, num_samples)
                 else:
                     # Predefined variance
                     this_var = var[i, j, k]
@@ -258,7 +288,7 @@ def genpca(arr, sigma=None, mask=None, patch_radius=2, pca_method='eig',
 
 
 def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
-             tau_factor=2.3, out_dtype=None):
+             tau_factor=2.3, out_dtype=None, suppress_warning=False):
     r""" Performs local PCA denoising according to Manjon et al. [1]_.
 
     Parameters
@@ -296,6 +326,9 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
+    suppress_warning : bool (optional)
+        If true, suppress warning caused by patch_size < arr.shape[-1].
+        Default: False.
 
     Returns
     -------
@@ -316,11 +349,12 @@ def localpca(arr, sigma, mask=None, patch_radius=2, pca_method='eig',
     """
     return genpca(arr, sigma=sigma, mask=mask, patch_radius=patch_radius,
                   pca_method=pca_method, tau_factor=tau_factor,
-                  return_sigma=False, out_dtype=out_dtype)
+                  return_sigma=False, out_dtype=out_dtype,
+                  suppress_warning=suppress_warning)
 
 
 def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
-          return_sigma=False, out_dtype=None):
+          return_sigma=False, out_dtype=None, suppress_warning=False):
     r"""Performs PCA-based denoising using the Marcenko-Pastur
     distribution [1]_.
 
@@ -348,6 +382,9 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
     out_dtype : str or dtype (optional)
         The dtype for the output array. Default: output has the same dtype as
         the input.
+    suppress_warning : bool (optional)
+        If true, suppress warning caused by patch_size < arr.shape[-1].
+        Default: False.
 
     Returns
     -------
@@ -369,4 +406,5 @@ def mppca(arr, mask=None, patch_radius=2, pca_method='eig',
     """
     return genpca(arr, sigma=None, mask=mask, patch_radius=patch_radius,
                   pca_method=pca_method, tau_factor=None,
-                  return_sigma=return_sigma, out_dtype=out_dtype)
+                  return_sigma=return_sigma, out_dtype=out_dtype,
+                  suppress_warning=suppress_warning)

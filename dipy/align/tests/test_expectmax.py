@@ -428,9 +428,9 @@ def test_compute_masked_class_stats_2d():
         [values[labels == i].var() for i in range(2, 10)]
 
     mask = np.ones(shape, dtype=np.int32)
-    means, vars = em.compute_masked_class_stats_2d(mask, values, 10, labels)
+    means, std_dev = em.compute_masked_class_stats_2d(mask, values, 10, labels)
     assert_array_almost_equal(means, expected_means, decimal=4)
-    assert_array_almost_equal(vars, expected_vars, decimal=4)
+    assert_array_almost_equal(std_dev, expected_vars, decimal=4)
 
 
 def test_compute_masked_class_stats_3d():
@@ -456,6 +456,6 @@ def test_compute_masked_class_stats_3d():
         [values[labels == i].var() for i in range(2, 10)]
 
     mask = np.ones(shape, dtype=np.int32)
-    means, vars = em.compute_masked_class_stats_3d(mask, values, 10, labels)
+    means, std_dev = em.compute_masked_class_stats_3d(mask, values, 10, labels)
     assert_array_almost_equal(means, expected_means, decimal=4)
-    assert_array_almost_equal(vars, expected_vars, decimal=4)
+    assert_array_almost_equal(std_dev, expected_vars, decimal=4)

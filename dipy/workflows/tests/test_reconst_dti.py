@@ -1,6 +1,5 @@
 from os.path import join
-
-from nibabel.tmpdirs import TemporaryDirectory
+from tempfile import TemporaryDirectory
 
 import numpy as np
 from numpy.testing import assert_equal
@@ -23,7 +22,11 @@ def test_reconst_dti_alt_tensor():
                       extra_kwargs={'nifti_tensor': False})
 
 
-def reconst_flow_core(flow, extra_args=[], extra_kwargs={}):
+def reconst_flow_core(flow, extra_args=None, extra_kwargs=None):
+
+    extra_args = extra_args or []
+    extra_kwargs = extra_kwargs or {}
+
     with TemporaryDirectory() as out_dir:
         data_path, bval_path, bvec_path = get_fnames('small_25')
         volume, affine = load_nifti(data_path)

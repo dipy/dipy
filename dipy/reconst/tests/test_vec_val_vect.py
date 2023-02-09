@@ -6,7 +6,7 @@ from dipy.reconst.vec_val_sum import vec_val_vect
 
 
 def make_vecs_vals(shape):
-    return randn(*(shape)), randn(*(shape[:-2] + shape[-1:]))
+    return randn(*shape), randn(*(shape[:-2] + shape[-1:]))
 
 
 def test_vec_val_vect():

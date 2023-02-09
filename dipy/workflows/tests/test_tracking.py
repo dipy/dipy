@@ -1,12 +1,12 @@
+from os.path import join
+from tempfile import TemporaryDirectory
 import warnings
 
+import nibabel as nib
 import numpy as np
 from numpy.testing import assert_equal
 from dipy.testing import assert_false, assert_true
-from os.path import join
 
-import nibabel as nib
-from nibabel.tmpdirs import TemporaryDirectory
 
 from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti

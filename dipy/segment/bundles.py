@@ -154,7 +154,7 @@ def cluster_bundle(bundle, clust_thr, rng, nb_pts=20, select_randomly=500000):
     return centroids
 
 
-def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
+def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=(5, 3, 1.5),
                             threshold=6):
     """ Calculates bundle shape similarity between two given bundles using
     bundle adjacency (BA) metric
@@ -166,9 +166,9 @@ def bundle_shape_similarity(bundle1, bundle2, rng, clust_thr=[5, 3, 1.5],
     bundle2 : Streamlines
         White matter tract from another subject (eg: AF_L)
     rng : RandomState
-    clust_thr : list of float (default [5, 3, 1.5])
+    clust_thr : array-like, optional
         list of clustering thresholds used in quickbundlesX
-    threshold : float (default 6)
+    threshold : float, optional
         Threshold used for in computing bundle adjacency. Threshold controls
         how much strictness user wants while calculating shape similarity
         between two bundles. Smaller threshold means bundles should be strictly

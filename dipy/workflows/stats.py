@@ -46,7 +46,7 @@ class SNRinCCFlow(Workflow):
         return 'snrincc'
 
     def run(self, data_files, bvals_files, bvecs_files, mask_file,
-            bbox_threshold=[0.6, 1, 0, 0.1, 0, 0.1], out_dir='',
+            bbox_threshold=(0.6, 1, 0, 0.1, 0, 0.1), out_dir='',
             out_file='product.json', out_mask_cc='cc.nii.gz',
             out_mask_noise='mask_noise.nii.gz'):
         """Compute the signal-to-noise ratio in the corpus callosum.
@@ -164,14 +164,13 @@ class SNRinCCFlow(Workflow):
                     SNR = mean_signal[direction]/noise_std if noise_std else 0
                 SNR_output.append(SNR)
 
-            data = []
-            data.append({
-                        'data': str(SNR_output[0]) + ' ' + str(SNR_output[1]) +
+            data = [{
+                'data': str(SNR_output[0]) + ' ' + str(SNR_output[1]) +
                         ' ' + str(SNR_output[2]) + ' ' + str(SNR_output[3]),
-                        'directions': 'b0' + ' ' + str(SNR_directions[0]) +
-                        ' ' + str(SNR_directions[1]) + ' ' +
-                        str(SNR_directions[2])
-                        })
+                'directions': 'b0' + ' ' + str(SNR_directions[0]) +
+                              ' ' + str(SNR_directions[1]) + ' ' +
+                              str(SNR_directions[2])
+            }]
 
             with open(os.path.join(out_dir, out_path), 'w') as myfile:
                 json.dump(data, myfile)
@@ -523,7 +522,7 @@ class BundleShapeAnalysis(Workflow):
     def get_short_name(cls):
         return 'BS'
 
-    def run(self, subject_folder, clust_thr=[5, 3, 1.5], threshold=6,
+    def run(self, subject_folder, clust_thr=(5, 3, 1.5), threshold=6,
             out_dir=''):
         """Workflow of bundle analytics.
 
@@ -610,7 +609,7 @@ class BundleShapeAnalysis(Workflow):
             logging.info("saving BA score matrix")
             np.save(os.path.join(out_dir, bun[:-4]+".npy"), ba_matrix)
 
-            cmap = matplt.cm.get_cmap('Blues')
+            cmap = matplt.colormaps['Blues']
             plt.title(bun[:-4])
             plt.imshow(ba_matrix, cmap=cmap)
             plt.colorbar()

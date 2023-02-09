@@ -1,4 +1,9 @@
 import os
+from tempfile import TemporaryDirectory
+
+import numpy as np
+import numpy.testing as npt
+import pytest
 
 from dipy.io.image import save_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
@@ -7,10 +12,6 @@ from dipy.io.utils import create_nifti_header
 from dipy.tracking.streamline import Streamlines
 from dipy.testing.decorators import use_xvfb
 from dipy.utils.optpkg import optional_package
-from nibabel.tmpdirs import TemporaryDirectory
-import numpy as np
-import numpy.testing as npt
-import pytest
 
 fury, has_fury, setup_module = optional_package('fury')
 

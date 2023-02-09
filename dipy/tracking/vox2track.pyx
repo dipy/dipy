@@ -230,7 +230,7 @@ cdef cnp.npy_intp _streamline_in_mask(
         cnp.double_t[:,:] streamline,
         cnp.uint8_t[:,:,:] mask) nogil:
     """
-    Check if a single streamline is passing through a mask. This ia an utility
+    Check if a single streamline is passing through a mask. This is an utility
     function to make streamlines_in_mask() more readable.
     """
     cdef cnp.double_t *current_pt = [0.0, 0.0, 0.0]

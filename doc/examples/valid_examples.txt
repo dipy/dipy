@@ -24,6 +24,7 @@
  reconst_shore.py
  reconst_shore_metrics.py
  reconst_qti.py
+ reconst_qtiplus.py
  kfold_xval.py
  reslice_datasets.py
  segment_quickbundles.py
@@ -61,6 +62,7 @@
  syn_registration_3d.py
  tissue_classification.py
  bundle_registration.py
+ bundle_group_registration.py
  streamline_registration.py
 # piesno.py
  viz_advanced.py

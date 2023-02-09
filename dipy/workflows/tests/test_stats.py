@@ -2,22 +2,25 @@
 
 import os
 from os.path import join
-from dipy.utils.optpkg import optional_package
+from tempfile import TemporaryDirectory
+
 import numpy.testing as npt
 import pytest
-from nibabel.tmpdirs import TemporaryDirectory
 import numpy as np
-from dipy.tracking.streamline import Streamlines
-from dipy.testing import assert_true
+
+from dipy.data import get_fnames
 from dipy.io.image import save_nifti, load_nifti
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import load_tractogram, save_tractogram
-from dipy.data import get_fnames
+from dipy.testing import assert_true
+from dipy.tracking.streamline import Streamlines
+from dipy.utils.optpkg import optional_package
 from dipy.workflows.stats import SNRinCCFlow
 from dipy.workflows.stats import BundleAnalysisTractometryFlow
 from dipy.workflows.stats import LinearMixedModelsFlow
 from dipy.workflows.stats import BundleShapeAnalysis
 from dipy.workflows.stats import buan_bundle_profiles
+
 pd, have_pandas, _ = optional_package("pandas")
 _, have_statsmodels, _ = optional_package("statsmodels")
 _, have_tables, _ = optional_package("tables")
@@ -186,7 +189,7 @@ def test_bundle_analysis_tractometry_flow():
 
         # assert_true(dft.bundle.unique() == "temp")
 
-        assert_true(set(dft.subject.unique()) == set(['10001', '20002']))
+        assert_true(set(dft.subject.unique()) == {'10001', '20002'})
 
 
 @pytest.mark.skipif(not have_pandas or not have_statsmodels or not have_tables

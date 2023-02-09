@@ -162,7 +162,7 @@ def _extract_3d_patches(arr, patch_radius):
     return np.array(all_patches).T
 
 
-def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
+def patch2self(data, bvals, patch_radius=(0, 0, 0), model='ols',
                b0_threshold=50, out_dtype=None, alpha=1.0, verbose=False,
                b0_denoising=True, clip_negative_vals=False,
                shift_intensity=True):
@@ -201,23 +201,19 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
 
     alpha : float, optional
         Regularization parameter only for ridge regression model.
-        Default: 1.0
 
     verbose : bool, optional
         Show progress of Patch2Self and time taken.
 
     b0_denoising : bool, optional
         Skips denoising b0 volumes if set to False.
-        Default: True
 
     clip_negative_vals : bool, optional
         Sets negative values after denoising to 0 using `np.clip`.
-        Default: True
 
     shift_intensity : bool, optional
         Shifts the distribution of intensities per volume to give
         non-negative values
-        Default: False
 
 
     Returns
@@ -265,10 +261,10 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
     data_dwi = np.squeeze(np.take(data, dwi_idx, axis=3))
 
     # create empty arrays
-    denoised_b0s = np.empty((data_b0s.shape), dtype=calc_dtype)
-    denoised_dwi = np.empty((data_dwi.shape), dtype=calc_dtype)
+    denoised_b0s = np.empty(data_b0s.shape, dtype=calc_dtype)
+    denoised_dwi = np.empty(data_dwi.shape, dtype=calc_dtype)
 
-    denoised_arr = np.empty((data.shape), dtype=calc_dtype)
+    denoised_arr = np.empty(data.shape, dtype=calc_dtype)
 
     if verbose is True:
         t1 = time.time()
@@ -343,8 +339,9 @@ def patch2self(data, bvals, patch_radius=[0, 0, 0], model='ols',
         denoised_arr.clip(min=0, out=denoised_arr)
 
     elif clip_negative_vals and shift_intensity:
-        warn('Both `clip_negative_vals` and `shift_intensity` cannot be True.')
-        warn('Defaulting to `clip_negative_bvals`...')
+        msg = 'Both `clip_negative_vals` and `shift_intensity` cannot be True.'
+        msg += ' Defaulting to `clip_negative_vals`...'
+        warn(msg)
         denoised_arr.clip(min=0, out=denoised_arr)
 
     return np.array(denoised_arr, dtype=out_dtype)

@@ -34,7 +34,7 @@ def none_or_dtype(dtype):
 class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
     def __init__(self, prog=None, usage=None, description=None, epilog=None,
-                 parents=[], formatter_class=argparse.RawTextHelpFormatter,
+                 parents=(), formatter_class=argparse.RawTextHelpFormatter,
                  prefix_chars='-', fromfile_prefix_chars=None,
                  argument_default=None, conflict_handler='resolve',
                  add_help=True):
@@ -244,11 +244,9 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                 help_msg = ''.join(_doc[i][2])
 
                 _args = ['{0}{1}'.format(prefix, arg_name)]
-                _kwargs = {'help': help_msg,
-                           'type': dtype,
-                           'action': 'store'}
+                _kwargs = {'help': help_msg, 'type': dtype, 'action': 'store',
+                           'metavar': dtype.__name__}
 
-                _kwargs['metavar'] = dtype.__name__
                 if dtype is bool:
                     _kwargs['action'] = 'store_true'
                     default_ = dict()

@@ -38,3 +38,5 @@ dipy/.idea/
 .vscode
 .pytest_cache/*
 tmp/
+venv
+build-install

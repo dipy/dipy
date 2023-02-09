@@ -84,8 +84,8 @@ original SH basis, the modified SH bases have the properties of being both
 orthogonal and real. Moreover, due to the presence of the $\sqrt{2}$ factor,
 the basis proposed by Descoteaux *et al.* is orthonormal.
 
-The SH bases implemented in DIPY for versions 1.2 and below differ slighly
-from the litterature. Their implementation is given below.
+The SH bases implemented in DIPY for versions 1.2 and below differ slightly
+from the literature. Their implementation is given below.
 
 - The ``descoteaux07`` basis is based on the one proposed by Descoteaux *et al.*
   [1]_ and is given by:

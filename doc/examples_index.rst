@@ -39,10 +39,12 @@ Basic SNR estimation
 
 - :ref:`example_snr_in_cc`
 
-Reslice
-~~~~~~~
+Reslice & Motion Correction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reslice_datasets`
+- :ref:`example_motion_correction`
+
 
 ---------
 Denoising
@@ -163,6 +165,12 @@ Q-space Trajectory Imaging
 - :ref:`example_reconst_qti`
 
 
+Q-space Trajectory Imaging with positivity constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_qtiplus`
+
+
 Robust and Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -220,6 +228,7 @@ Streamline-based Registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_bundle_registration`
+- :ref:`example_bundle_group_registration`
 - :ref:`example_streamline_registration`
 
 ------------

@@ -542,6 +542,14 @@ def test_transform_streamlines_dtype():
     assert_equal(offsets_dtype, streamlines._offsets.dtype)
 
 
+def test_transform_empty_streamlines():
+    identity = np.eye(4)
+    streamlines = Streamlines([])
+
+    streamlines = transform_streamlines(streamlines, identity, in_place=False)
+    assert_equal(len(streamlines), 0)
+
+
 def test_deform_streamlines():
     # Create Random deformation field
     deformation_field = np.random.randn(200, 200, 200, 3)
@@ -623,12 +631,12 @@ def compress_streamlines_python(streamline, tol_error=0.01,
         return streamline.copy()
 
     # Euclidean distance
-    def segment_length(prev, next):
-        return np.sqrt(((prev-next)**2).sum())
+    def segment_length(p1, p2):
+        return np.sqrt(((p1-p2)**2).sum())
 
     # Projection of a 3D point on a 3D line, minimal distance
-    def dist_to_line(prev, next, curr):
-        return norm(np.cross(next-prev, curr-next)) / norm(next-prev)
+    def dist_to_line(p1, p2, p0):
+        return norm(np.cross(p2-p1, p0-p2)) / norm(p2-p1)
 
     nb_points = 0
     compressed_streamline = np.zeros_like(streamline)
@@ -636,27 +644,26 @@ def compress_streamlines_python(streamline, tol_error=0.01,
     # Copy first point since it is always kept.
     compressed_streamline[0, :] = streamline[0, :]
     nb_points += 1
-    prev = streamline[0]
+    p1 = streamline[0]
     prev_id = 0
 
-    for next_id, next in enumerate(streamline[2:], start=2):
+    for next_id, p2 in enumerate(streamline[2:], start=2):
         # Euclidean distance between last added point and current point.
-        if segment_length(prev, next) > max_segment_length:
+        if segment_length(p1, p2) > max_segment_length:
             compressed_streamline[nb_points, :] = streamline[next_id-1, :]
             nb_points += 1
-            prev = streamline[next_id-1]
+            p1 = streamline[next_id-1]
             prev_id = next_id-1
             continue
 
         # Check that each point is not offset by more than `tol_error` mm.
-        for o, curr in enumerate(streamline[prev_id+1:next_id],
-                                 start=prev_id+1):
-            dist = dist_to_line(prev, next, curr)
+        for o, p0 in enumerate(streamline[prev_id+1:next_id], start=prev_id+1):
+            dist = dist_to_line(p1, p2, p0)
 
             if np.isnan(dist) or dist > tol_error:
                 compressed_streamline[nb_points, :] = streamline[next_id-1, :]
                 nb_points += 1
-                prev = streamline[next_id-1]
+                p1 = streamline[next_id-1]
                 prev_id = next_id-1
                 break
 

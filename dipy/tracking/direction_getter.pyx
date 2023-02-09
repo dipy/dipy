@@ -92,7 +92,7 @@ cdef class DirectionGetter:
     @cython.cdivision(True)
     cpdef tuple generate_streamline(self,
                                     double[::1] seed,
-                                    double[::1] dir,
+                                    double[::1] direction,
                                     double[::1] voxel_size,
                                     double step_size,
                                     StoppingCriterion stopping_criterion,
@@ -117,10 +117,10 @@ cdef class DirectionGetter:
 
        stream_status = TRACKPOINT
        for i in range(1, len_streamlines):
-           if self.get_direction_c(point, &dir[0]):
+           if self.get_direction_c(point, &direction[0]):
                break
            for j in range(3):
-               voxdir[j] = dir[j] / voxel_size[j]
+               voxdir[j] = direction[j] / voxel_size[j]
            step(point, voxdir, step_size)
            copy_point(point, &streamline[i, 0])
            stream_status = stopping_criterion.check_point_c(point)

@@ -1,4 +1,6 @@
 
+from packaging.version import Version
+
 import nibabel as nib
 import numpy as np
 
@@ -77,7 +79,7 @@ def load_nifti(fname, return_img=False, return_voxsize=False,
     return tuple(ret_val)
 
 
-def save_nifti(fname, data, affine, hdr=None):
+def save_nifti(fname, data, affine, hdr=None, dtype=None):
     """Save a data array into a nifti file.
 
     Parameters
@@ -99,7 +101,28 @@ def save_nifti(fname, data, affine, hdr=None):
     None
 
     """
-    result_img = nib.Nifti1Image(data, affine, header=hdr)
+    NIBABEL_4_0_0_PLUS = Version(nib.__version__) >= Version('4.0.0')
+    # See GitHub issues
+    #  * https://github.com/nipy/nibabel/issues/1046
+    #  * https://github.com/nipy/nibabel/issues/1089
+    # This only applies to NIfTI because the parent Analyze formats did
+    # not support 64-bit integer data, so `set_data_dtype(int64)` would
+    # already fail.
+    danger_dts = (np.dtype('int64'), np.dtype('uint64'))
+    if hdr is None and dtype is None and data.dtype in danger_dts and \
+       NIBABEL_4_0_0_PLUS:
+        msg = f"Image data has type {data.dtype}, which may cause "
+        msg += "incompatibilities with other tools. Indeed, Analyze formats "
+        msg += "did not support 64-bit integer data.\n\n"
+        msg += "To silent this, please specify the `header` or `dtype` "
+        msg += "You could also use `np.asarray(data, dtype=np.int32)`. "
+        msg += "This cast will make sure that you data is compatible with "
+        msg += "other software."
+
+        raise ValueError(msg)
+
+    kwargs = {'dtype': dtype} if NIBABEL_4_0_0_PLUS else {}
+    result_img = nib.Nifti1Image(data, affine, header=hdr, **kwargs)
     result_img.to_filename(fname)
 
 

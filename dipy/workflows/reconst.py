@@ -8,7 +8,7 @@ from warnings import warn
 import nibabel as nib
 
 from dipy.core.gradients import gradient_table
-from dipy.data import default_sphere
+from dipy.data import default_sphere, get_sphere
 from dipy.io.gradients import read_bvals_bvecs
 from dipy.io.peaks import save_peaks, peaks_to_niftis
 from dipy.io.image import load_nifti, save_nifti, load_nifti_data
@@ -24,6 +24,7 @@ from dipy.reconst.shm import CsaOdfModel
 from dipy.workflows.workflow import Workflow
 from dipy.reconst.dki import DiffusionKurtosisModel, split_dki_param
 from dipy.reconst.ivim import IvimModel
+from dipy.reconst.rumba import RumbaSDModel
 
 from dipy.reconst import mapmri
 
@@ -37,7 +38,7 @@ class ReconstMAPMRIFlow(Workflow):
 
     def run(self, data_files, bvals_files, bvecs_files, small_delta, big_delta,
             b0_threshold=50.0, laplacian=True, positivity=True,
-            bval_threshold=2000, save_metrics=[],
+            bval_threshold=2000, save_metrics=(),
             laplacian_weighting=0.05, radial_order=6, out_dir='',
             out_rtop='rtop.nii.gz', out_lapnorm='lapnorm.nii.gz',
             out_msd='msd.nii.gz', out_qiv='qiv.nii.gz',
@@ -224,7 +225,7 @@ class ReconstDtiFlow(Workflow):
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
             fit_method='WLS', b0_threshold=50, bvecs_tol=0.01, sigma=None,
-            save_metrics=[], out_dir='', out_tensor='tensors.nii.gz',
+            save_metrics=None, out_dir='', out_tensor='tensors.nii.gz',
             out_fa='fa.nii.gz', out_ga='ga.nii.gz', out_rgb='rgb.nii.gz',
             out_md='md.nii.gz', out_ad='ad.nii.gz', out_rd='rd.nii.gz',
             out_mode='mode.nii.gz', out_evec='evecs.nii.gz',
@@ -255,14 +256,14 @@ class ReconstDtiFlow(Workflow):
             'LS' or 'OLS' for ordinary least squares
             'NLLS' for non-linear least-squares
             'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting
-        sigma : float, optional
-            An estimate of the variance. [5]_ recommend to use
-            1.5267 * std(background_noise), where background_noise is estimated
-            from some part of the image known to contain no signal (only noise)
         b0_threshold : float, optional
             Threshold used to find b0 volumes.
         bvecs_tol : float, optional
             Threshold used to check that norm(bvec) = 1 +/- bvecs_tol
+        sigma : float, optional
+            An estimate of the variance. [5]_ recommend to use
+            1.5267 * std(background_noise), where background_noise is estimated
+            from some part of the image known to contain no signal (only noise)
             b-vectors are unit vectors.
         save_metrics : variable string, optional
             List of metrics to save.
@@ -324,6 +325,8 @@ class ReconstDtiFlow(Workflow):
            estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
         """
+        save_metrics = save_metrics or []
+
         io_it = self.get_io_iterator()
 
         for dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad, \
@@ -397,12 +400,10 @@ class ReconstDtiFlow(Workflow):
             if 'eval' in save_metrics:
                 save_nifti(oevals, tenfit.evals.astype(np.float32), affine)
 
-            dname_ = os.path.dirname(oevals)
-            if dname_ == '':
-                logging.info('DTI metrics saved in current directory')
-            else:
-                logging.info(
-                        'DTI metrics saved in {0}'.format(dname_))
+            if save_metrics:
+                logging.info('DTI metrics saved to')
+                for metric in save_metrics:
+                    logging.info(self.last_generated_outputs["out_" + metric])
 
     def get_fitted_tensor(self, data, mask, bval, bvec, b0_threshold=50,
                           bvecs_tol=0.01, fit_method='WLS',
@@ -513,7 +514,7 @@ class ReconstCSDFlow(Workflow):
             data, affine = load_nifti(dwi)
 
             bvals, bvecs = read_bvals_bvecs(bval, bvec)
-            print(b0_threshold, bvals.min())
+
             if b0_threshold < bvals.min():
                 warn("b0_threshold (value: {0}) is too low, increase your "
                      "b0_threshold. It should be higher than the first b0 value "
@@ -730,7 +731,7 @@ class ReconstDkiFlow(Workflow):
         return 'dki'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=[],
+            fit_method='WLS', b0_threshold=50.0, sigma=None, save_metrics=None,
             out_dir='', out_dt_tensor='dti_tensors.nii.gz', out_fa='fa.nii.gz',
             out_ga='ga.nii.gz', out_rgb='rgb.nii.gz', out_md='md.nii.gz',
             out_ad='ad.nii.gz', out_rd='rd.nii.gz', out_mode='mode.nii.gz',
@@ -815,6 +816,8 @@ class ReconstDkiFlow(Workflow):
            estimation of tensors by outlier rejection. MRM, 53: 1088-95.
 
         """
+        save_metrics = save_metrics or []
+
         io_it = self.get_io_iterator()
 
         for (dwi, bval, bvec, mask, otensor, ofa, oga, orgb, omd, oad, orad,
@@ -922,7 +925,7 @@ class ReconstIvimFlow(Workflow):
         return 'ivim'
 
     def run(self, input_files, bvalues_files, bvectors_files, mask_files,
-            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=[],
+            split_b_D=400, split_b_S0=200, b0_threshold=0, save_metrics=None,
             out_dir='', out_S0_predicted='S0_predicted.nii.gz',
             out_perfusion_fraction='perfusion_fraction.nii.gz',
             out_D_star='D_star.nii.gz', out_D='D.nii.gz'):
@@ -979,6 +982,7 @@ class ReconstIvimFlow(Workflow):
                        and perfusion in intravoxel incoherent motion MR
                        imaging." Radiology 168.2 (1988): 497-505.
         """
+        save_metrics = save_metrics or []
 
         io_it = self.get_io_iterator()
 
@@ -1029,3 +1033,198 @@ class ReconstIvimFlow(Workflow):
         ivimfit = ivimmodel.fit(data, mask)
 
         return ivimfit, gtab
+
+
+class ReconstRUMBAFlow(Workflow):
+    @classmethod
+    def get_short_name(cls):
+        return 'rumba'
+
+    def run(self, input_files, bvalues_files, bvectors_files, mask_files,
+            b0_threshold=50.0, bvecs_tol=0.01, roi_center=None, roi_radii=10,
+            fa_thr=0.7, extract_pam_values=False, sh_order=8,
+            odf_to_sh_order=8, parallel=True, num_processes=None,
+            gm_response=0.8e-3, csf_response=3.0e-3, n_iter=600,
+            recon_type='smf', n_coils=1, R=1, voxelwise=True, use_tv=False,
+            sphere_name='repulsion724', verbose=False,
+            relative_peak_threshold=0.5, min_separation_angle=25, npeaks=5,
+            out_dir='', out_pam='peaks.pam5', out_shm='shm.nii.gz',
+            out_peaks_dir='peaks_dirs.nii.gz',
+            out_peaks_values='peaks_values.nii.gz',
+            out_peaks_indices='peaks_indices.nii.gz', out_gfa='gfa.nii.gz'):
+        """Reconstruct the fiber local orientations using the Robust and
+        Unbiased Model-BAsed Spherical Deconvolution (RUMBA-SD) [1]_ model. The
+        fiber response function (FRF) is computed using the single-shell,
+        single-tissue model, and the voxel-wise fitting procedure is used for
+        RUMBA-SD.
+
+        Parameters
+        ----------
+        input_files : string
+            Path to the input volumes. This path may contain wildcards to
+            process multiple inputs at once.
+        bvalues_files : string
+            Path to the bvalues files. This path may contain wildcards to use
+            multiple bvalues files at once.
+        bvectors_files : string
+            Path to the bvectors files. This path may contain wildcards to use
+            multiple bvectors files at once.
+        mask_files : string
+            Path to the input masks. This path may contain wildcards to use
+            multiple masks at once.
+        b0_threshold : float, optional
+            Threshold used to find b0 volumes.
+        bvecs_tol : float, optional
+            Bvecs should be unit vectors.
+        roi_center : variable int, optional
+            Center of ROI in data. If center is None, it is assumed that it is
+            the center of the volume with shape `data.shape[:3]`.
+        roi_radii : int or array-like, optional
+            radii of cuboid ROI in voxels.
+        fa_thr : float, optional
+            FA threshold to compute the WM response function.
+        extract_pam_values : bool, optional
+            Save or not to save pam volumes as single nifti files.
+        sh_order : int, optional
+            Spherical harmonics order used in the CSA fit.
+        odf_to_sh_order : int, optional
+            Spherical harmonics order used for peak_from_model to compress
+            the ODF to spherical harmonics coefficients.
+        parallel : bool, optional
+            Whether to use parallelization in peak-finding during the
+            calibration procedure.
+        num_processes : int, optional
+            If `parallel` is True, the number of subprocesses to use
+            (default multiprocessing.cpu_count()). If < 0 the maximal number
+            of cores minus ``num_processes + 1`` is used (enter -1 to use as
+            many cores as possible). 0 raises an error.
+        gm_response : float, optional
+            Mean diffusivity for GM compartment. If `None`, then grey
+            matter volume fraction is not computed.
+        csf_response : float, optional
+            Mean diffusivity for CSF compartment. If `None`, then CSF
+            volume fraction is not computed.
+        n_iter : int, optional
+            Number of iterations for fODF estimation. Must be a positive int.
+        recon_type : str, optional
+            MRI reconstruction method type: spatial matched filter (`smf`) or
+            sum-of-squares (`sos`). SMF reconstruction generates Rician noise
+            while SoS reconstruction generates Noncentral Chi noise.
+        n_coils : int, optional
+            Number of coils in MRI scanner -- only relevant in SoS
+            reconstruction. Must be a positive int. Default: 1
+        R : int, optional
+            Acceleration factor of the acquisition. For SIEMENS,
+            R = iPAT factor. For GE, R = ASSET factor. For PHILIPS,
+            R = SENSE factor. Typical values are 1 or 2. Must be a positive
+            integer.
+        voxelwise : bool, optional
+            If true, performs a voxelwise fit. If false, performs a global fit
+            on the entire brain at once. The global fit requires a 4D brain
+            volume in `fit`.
+        use_tv : bool, optional
+            If true, applies total variation regularization. This only takes
+            effect in a global fit (`voxelwise` is set to `False`). TV can only
+            be applied to 4D brain volumes with no singleton dimensions.
+        sphere_name : str, optional
+            Sphere name on which to reconstruct the fODFs.
+        verbose : bool, optional
+            If true, logs updates on estimated signal-to-noise ratio after each
+            iteration. This only takes effect in a global fit (`voxelwise` is
+            set to `False`).
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+             where m is the largest peak.
+        min_separation_angle : float, optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        npeaks : int, optional
+            Maximum number of peaks returned for a given voxel.
+        out_dir : string, optional
+            Output directory. (default current directory)
+        out_pam : string, optional
+            Name of the peaks volume to be saved.
+        out_shm : string, optional
+            Name of the spherical harmonics volume to be saved.
+        out_peaks_dir : string, optional
+            Name of the peaks directions volume to be saved.
+        out_peaks_values : string, optional
+            Name of the peaks values volume to be saved.
+        out_peaks_indices : string, optional
+            Name of the peaks indices volume to be saved.
+        out_gfa : string, optional
+            Name of the generalized FA volume to be saved.
+
+        References
+        ----------
+        .. [1] Canales-Rodríguez, E. J., Daducci, A., Sotiropoulos, S. N.,
+               Caruyer, E., Aja-Fernández, S., Radua, J., Mendizabal, J. M. Y.,
+               Iturria-Medina, Y., Melie-García, L., Alemán-Gómez, Y.,
+               Thiran, J.-P., Sarró, S., Pomarol-Clotet, E., & Salvador, R.
+               (2015). Spherical Deconvolution of Multichannel Diffusion MRI
+               Data with Non-Gaussian Noise Models and Spatial Regularization.
+               PLOS ONE, 10(10), e0138910.
+               https://doi.org/10.1371/journal.pone.0138910
+        """
+
+        io_it = self.get_io_iterator()
+
+        for (dwi, bval, bvec, maskfile, opam, oshm, opeaks_dir, opeaks_values,
+             opeaks_indices, ogfa) in io_it:
+
+            # Read the data
+            logging.info('Loading {0}'.format(dwi))
+            data, affine = load_nifti(dwi)
+
+            bvals, bvecs = read_bvals_bvecs(bval, bvec)
+
+            mask_vol = load_nifti_data(maskfile).astype(bool)
+
+            if b0_threshold < bvals.min():
+                warn("b0_threshold (value: {0}) is too low, increase your "
+                     "b0_threshold. It should be higher than the first b0 value "
+                     "({1}).".format(b0_threshold, bvals.min()))
+
+            gtab = gradient_table(
+                bvals, bvecs, b0_threshold=b0_threshold, atol=bvecs_tol)
+
+            sphere = get_sphere(sphere_name)
+
+            # Compute the FRF
+            wm_response, _ = auto_response_ssst(
+                gtab, data, roi_center=roi_center, roi_radii=roi_radii,
+                fa_thr=fa_thr)
+
+            # Instantiate the RUMBA-SD reconstruction model
+            rumba = RumbaSDModel(
+                gtab, wm_response=wm_response[0], gm_response=gm_response,
+                csf_response=csf_response, n_iter=n_iter,
+                recon_type=recon_type, n_coils=n_coils, R=R,
+                voxelwise=voxelwise, use_tv=use_tv, sphere=sphere,
+                verbose=verbose)
+
+            rumba_peaks = peaks_from_model(
+                model=rumba, data=data, sphere=sphere,
+                relative_peak_threshold=relative_peak_threshold,
+                min_separation_angle=min_separation_angle, mask=mask_vol,
+                return_sh=True, sh_order=sh_order, normalize_peaks=True,
+                parallel=parallel, num_processes=num_processes)
+
+            logging.info('Peak computation completed.')
+
+            rumba_peaks.affine = affine
+
+            save_peaks(opam, rumba_peaks)
+
+            if extract_pam_values:
+                peaks_to_niftis(rumba_peaks, oshm, opeaks_dir, opeaks_values,
+                                opeaks_indices, ogfa, reshape_dirs=True)
+
+            dname_ = os.path.dirname(opam)
+            if dname_ == '':
+                logging.info('Pam5 file saved in current directory')
+            else:
+                logging.info(
+                        'Pam5 file saved in {0}'.format(dname_))
+
+            return io_it
