@@ -16,11 +16,4 @@ jobs:
     uses: ./.github/workflows/test_template.yml
     with:
       runs-on: '["ubuntu-latest", "macos-latest", "windows-latest"]'
-      python-version: '["3.8", "3.9"]'
-  pip-last:
-    uses: ./.github/workflows/test_template.yml
-    with:
-      # "windows-latest" Does not run on window + python 3.10 due to qdldl package compilation issue (no wheels)
-      # https://github.com/osqp/qdldl-python
-      runs-on: '["ubuntu-latest", "macos-latest", ]'
-      python-version: '["3.10"]'
+      python-version: '["3.8", "3.9", "3.10"]'

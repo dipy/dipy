@@ -1,7 +1,7 @@
 if [ -e venv/bin/activate ]; then
     source venv/bin/activate
 elif [ -e venv/Scripts/activate ]; then
-    source virtenv/Scripts/activate
+    source venv/Scripts/activate
 elif [ "$INSTALL_TYPE" == "conda" ]; then
     conda init bash
     source $CONDA/etc/profile.d/conda.sh
