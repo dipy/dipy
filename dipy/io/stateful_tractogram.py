@@ -139,8 +139,6 @@ class StatefulTractogram(object):
                              'e.g Origin.NIFTI.')
         self._origin = origin
 
-        self._dtype_dict = {'positions': np.float32,
-                            'offsets': np.uint32}
         logger.debug(self)
 
     @staticmethod
@@ -300,7 +298,20 @@ class StatefulTractogram(object):
     @property
     def dtype_dict(self):
         """ Getter for dtype_dict """
-        return self._dtype_dict
+
+        dtype_dict = {'positions': self.streamlines._data.dtype,
+                      'offsets': self.streamlines._offsets.dtype}
+        if self.data_per_point is not None:
+            dtype_dict['dpp'] = {}
+            for key in self.data_per_point.keys():
+                if key in self.data_per_point:
+                    dtype_dict['dpp'][key] = self.data_per_point[key]._data.dtype
+        if self.data_per_streamline is not None:
+            dtype_dict['dps'] = {}
+            for key in self.data_per_streamline.keys():
+                if key in self.data_per_streamline:
+                    dtype_dict['dps'][key] = self.data_per_streamline[key].dtype
+        return dtype_dict
 
     @property
     def space_attributes(self):
@@ -351,9 +362,31 @@ class StatefulTractogram(object):
         ----------
         dtype_dict : dict
             Dictionary containing the desired datatype for positions, offsets
-            and all dpv and dps keys. (To use with TRX file format):
+            and all dpp and dps keys. (To use with TRX file format):
         """
-        self._dtype_dict = dtype_dict
+        if 'offsets' in dtype_dict:
+            self.streamlines._offsets = self.streamlines._offsets.astype(
+                dtype_dict['offsets'])
+        if 'positions' in dtype_dict:
+            self.streamlines._data = self.streamlines._data.astype(
+                dtype_dict['positions'])
+
+        if 'dpp' not in dtype_dict:
+            dtype_dict['dpp'] = {}
+        if 'dps' not in dtype_dict:
+            dtype_dict['dps'] = {}
+
+        for key in self.data_per_point:
+            if key in dtype_dict['dpp']:
+                dtype_to_use = dtype_dict['dpp'][key]
+                self.data_per_point[key]._data = \
+                    self.data_per_point[key]._data.astype(dtype_to_use)
+
+        for key in self.data_per_streamline:
+            if key in dtype_dict['dps']:
+                dtype_to_use = dtype_dict['dps'][key]
+                self.data_per_streamline[key] = \
+                    self.data_per_streamline[key].astype(dtype_to_use)
 
     def get_streamlines_copy(self):
         """ Safe getter for streamlines (for slicing) """
