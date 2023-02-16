@@ -1,4 +1,5 @@
 from bisect import bisect
+from collections import OrderedDict
 from copy import deepcopy
 import enum
 from itertools import product
@@ -311,7 +312,7 @@ class StatefulTractogram(object):
             for key in self.data_per_streamline.keys():
                 if key in self.data_per_streamline:
                     dtype_dict['dps'][key] = self.data_per_streamline[key].dtype
-        return dtype_dict
+        return OrderedDict(dtype_dict)
 
     @property
     def space_attributes(self):
