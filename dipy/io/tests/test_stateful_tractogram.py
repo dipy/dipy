@@ -812,6 +812,7 @@ def test_init_dtype_dict_attributes():
                           'color_y': np.float32,
                           'color_z': np.float32},
                   'dps': {'random_coord': np.float32}}
+
     assert_(dtype_dict == sft.dtype_dict)
 
 
@@ -870,4 +871,21 @@ def test_from_sft_dtype_dict_attributes():
     new_sft = StatefulTractogram.from_sft(sft.streamlines, sft,
                                           data_per_point=sft.data_per_point,
                                           data_per_streamline=sft.data_per_streamline)
-    assert_(new_sft.dtype_dict == sft.dtype_dict)
+    assert_(new_sft.dtype_dict == dtype_dict)
+    assert_(sft.dtype_dict == dtype_dict)
+
+
+def test_slicing_dtype_dict_attributes():
+    sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
+    dtype_dict = {'positions': np.float16,
+                  'offsets': np.int32,
+                  'dpp': {'color_x': np.uint8,
+                          'color_y': np.uint8,
+                          'color_z': np.uint8},
+                  'dps': {'random_coord': np.float64}}
+
+    sft.dtype_dict = dtype_dict
+
+    new_sft = sft[::2]
+    assert_(new_sft.dtype_dict == dtype_dict)
+    assert_(sft.dtype_dict == dtype_dict)
