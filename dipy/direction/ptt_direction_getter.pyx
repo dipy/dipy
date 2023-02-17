@@ -23,6 +23,7 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                NODATASUPPORT)
 from dipy.tracking.direction_getter cimport _fixed_step, _step_to_boundary
 from dipy.utils.fast_numpy cimport random, norm, normalize, dot, cross
+from dipy.tracking.utils import min_radius_curvature_from_angle
 
 
 from libc.math cimport M_PI, pow, sin, cos
@@ -39,7 +40,7 @@ cdef double unidis_m1_p1():
     return 2.0 * random() - 1.0
 
 
-cdef void getAUnitRandomVector(double[:] out):
+cdef void sample_unit_random_vector(double[:] out):
     """Generate a unit random vector
 
     Parameters
@@ -57,7 +58,7 @@ cdef void getAUnitRandomVector(double[:] out):
     normalize(out)
 
 
-cdef void getAUnitRandomPerpendicularVector(double[:] out,double[:] inp):
+cdef void sample_unit_random_perpendicular_vector(double[:] out,double[:] inp):
     """Generate a unit random perpendicular vector
 
     Parameters
@@ -73,12 +74,12 @@ cdef void getAUnitRandomPerpendicularVector(double[:] out,double[:] inp):
     Overwrites the first argument
     """
     cdef double[3] tmp
-    getAUnitRandomVector(tmp)
+    sample_unit_random_vector(tmp)
     cross(out,inp,tmp)
     normalize(out)
 
 
-cdef (double,double) getARandomPointWithinDisk(double r):
+cdef (double, double) sample_random_point_within_disk(double r):
     """Generate a random point within a disk
 
     Parameters
@@ -136,6 +137,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       last_val
     cdef double       last_val_cand
     cdef double       init_last_val
+    cdef double       max_angle
     cdef double       min_radius_curvature
     cdef double       probe_length
     cdef double       probe_radius
@@ -146,8 +148,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
     # For each streamline, create a new PTF object with tracking parameters
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
-                 min_radius_curvature=1/2, probe_length=1/2, probe_radius=0,
-                 probe_quality=3, probe_count=1, data_support_exponent=1,
+                 probe_length=1/2, probe_radius=0, probe_quality=3, 
+                 probe_count=1, data_support_exponent=1,
                  **kwargs):
         """Direction getter from a pmf generator.
 
@@ -156,8 +158,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         pmf_gen : PmfGen
             Used to get probability mass function for selecting tracking
             directions.
-        max_angle : None
-            Not used for PTT
+        max_angle : float, [0, 90]
+            The maximum allowed angle between incoming direction and new
+            direction.
         sphere : Sphere
             The set of directions to be used for tracking.
         pmf_threshold : None
@@ -194,7 +197,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         """
 
         # TODO: review max_angle vs min_radius_curvature.
-        self.min_radius_curvature = min_radius_curvature
+        self.max_angle = max_angle
+        self.min_radius_curvature = 0
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality
@@ -241,8 +245,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double fod_amp
         cdef double[3] pp
 
-        self.getARandomFrame(init_dir)
-        (self.k1_cand,self.k2_cand) = getARandomPointWithinDisk(self.min_radius_curvature)
+        self.get_random_frame(init_dir)
+        (self.k1_cand, self.k2_cand) = sample_random_point_within_disk(self.min_radius_curvature)
 
         self.k1 = self.k1_cand
         self.k2 = self.k2_cand
@@ -266,7 +270,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.init_last_val = self.last_val
 
-        return self.calcDataSupport()
+        return self.calculate_data_support()
 
 
     cdef void walk(self):
@@ -309,8 +313,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         randomly picked candidate.
 
         """
-        self.k1_cand, self.k2_cand = getARandomPointWithinDisk(self.min_radius_curvature)
-        return self.calcDataSupport()
+        self.k1_cand, self.k2_cand = sample_random_point_within_disk(self.min_radius_curvature)
+        return self.calculate_data_support()
 
 
     cdef void flip(self):
@@ -333,7 +337,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return
 
 
-    cdef void getARandomFrame(self,double[:] _dir):
+    cdef void get_random_frame(self,double[:] _dir):
         """Randomly generate 3 unit vectors that are orthogonal to each other.
 
         This is used for initializing the moving frame of the tracker
@@ -347,13 +351,13 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
         if norm(_dir) == 0:
-            getAUnitRandomVector(self.F[0])
+            sample_unit_random_vector(self.F[0])
         else:
             self.F[0][0] = _dir[0]
             self.F[0][1] = _dir[1]
             self.F[0][2] = _dir[2]
 
-        getAUnitRandomPerpendicularVector(self.F[2],self.F[0])
+        sample_unit_random_perpendicular_vector(self.F[2],self.F[0])
         cross(self.F[1],self.F[2],self.F[0])
 
 
@@ -400,7 +404,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.PP[7] = -self.k1_cand * self.k2_cand * tto2
             self.PP[8] = 1 - self.k2_cand * self.k2_cand * tto2
 
-    cdef double calcDataSupport(self):
+    cdef double calculate_data_support(self):
         """Calculates data support for the candidate probe"""
 
         cdef double fod_amp
@@ -512,7 +516,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         # Initialization is successful if a suitable candidate can be sampled within the trial limit
         for tries in range(1000):
             if random() * posteriorMax <= self.get_initial_candidate(_seed_direction):
-
                 self.last_val = self.last_val_cand
 
                 for i in range(3):
@@ -522,7 +525,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     self.init_F[2][i] = self.F[2][i]
 
                 self.init_k1 = -self.k1
-                self.init_k2 =  self.k2
+                self.init_k2 = self.k2
                 self.initialized = True
 
                 return TRACKPOINT
@@ -582,6 +585,8 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             void (*step)(double*, double*, double) nogil
 
         self.step_size = step_size
+        self.min_radius_curvature = min_radius_curvature_from_angle(
+            np.deg2rad(self.max_angle), self.step_size)
 
         copy_point(&seed[0], point)
         copy_point(&seed[0], &streamline[0,0])
