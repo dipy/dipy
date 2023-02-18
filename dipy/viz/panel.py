@@ -1,13 +1,15 @@
-import warnings
-import numpy as np
-from dipy.utils.optpkg import optional_package
 import itertools
+import warnings
+
+import numpy as np
+
+from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
 fury, have_fury, setup_module = optional_package('fury')
 
 if have_fury:
-    from dipy.viz import actor, ui, colormap
+    from dipy.viz import actor, colormap, ui
 
 
 def build_label(text, font_size=18, bold=False):
@@ -54,10 +56,8 @@ def _color_dslider(slider):
     slider.handles[1].color = (1, 0.5, 0)
 
 
-def slicer_panel(scene, iren,
-                 data=None, affine=None,
-                 world_coords=False,
-                 pam=None, mask=None, mem=GlobalHorizon()):
+def slicer_panel(scene, iren, data=None, affine=None, world_coords=False,
+                 mask=None, mem=GlobalHorizon()):
     """ Slicer panel with slicer included
 
     Parameters
@@ -68,9 +68,7 @@ def slicer_panel(scene, iren,
     affine : 4x4 ndarray
     world_coords : bool
         If True then the affine is applied.
-
-    peaks : PeaksAndMetrics
-        Default None
+    mask :
     mem :
 
     Returns
@@ -120,12 +118,6 @@ def slicer_panel(scene, iren,
 
     shape = tmp_new.shape
 
-    if pam is not None:
-
-        peaks_actor_z = actor.peak_slicer(pam.peak_dirs, None,
-                                          mask=mask, affine=affine,
-                                          colors=None)
-
     slicer_opacity = 1.
     image_actor_z.opacity(slicer_opacity)
 
@@ -150,9 +142,6 @@ def slicer_panel(scene, iren,
     scene.add(image_actor_x)
     scene.add(image_actor_y)
 
-    if pam is not None:
-        scene.add(peaks_actor_z)
-
     line_slider_z = ui.LineSlider2D(min_value=0,
                                     max_value=shape[2] - 1,
                                     initial_value=shape[2] / 2,
@@ -165,9 +154,6 @@ def slicer_panel(scene, iren,
         z = int(np.round(slider.value))
         mem.slicer_curr_actor_z.display_extent(0, shape[0] - 1,
                                                0, shape[1] - 1, z, z)
-        if pam is not None:
-            mem.slicer_peaks_actor_z.display_extent(0, shape[0] - 1,
-                                                    0, shape[1] - 1, z, z)
         mem.slicer_curr_z = z
         scene.reset_clipping_range()
 
@@ -306,9 +292,6 @@ def slicer_panel(scene, iren,
         mem.slicer_curr_actor_z = image_actor_z
         mem.slicer_curr_actor_x = image_actor_z.copy()
 
-        if pam is not None:
-            mem.slicer_peaks_actor_z = peaks_actor_z
-
         x = mem.slicer_curr_x
         mem.slicer_curr_actor_x.display_extent(x,
                                                x, 0,
@@ -334,9 +317,6 @@ def slicer_panel(scene, iren,
         scene.add(mem.slicer_curr_actor_z)
         scene.add(mem.slicer_curr_actor_x)
         scene.add(mem.slicer_curr_actor_y)
-
-        if pam is not None:
-            scene.add(mem.slicer_peaks_actor_z)
 
         r1, r2 = double_slider._values
         apply_colormap(r1, r2)
@@ -365,10 +345,6 @@ def slicer_panel(scene, iren,
     mem.slicer_curr_actor_y = image_actor_y
     mem.slicer_curr_actor_z = image_actor_z
 
-    if pam is not None:
-        # change_volume.peaks_actor_z = peaks_actor_z
-        mem.slicer_peaks_actor_z = peaks_actor_z
-
     mem.slicer_curr_actor_x.AddObserver('LeftButtonPressEvent',
                                         left_click_picker_callback,
                                         1.0)
@@ -378,11 +354,6 @@ def slicer_panel(scene, iren,
     mem.slicer_curr_actor_z.AddObserver('LeftButtonPressEvent',
                                         left_click_picker_callback,
                                         1.0)
-
-    if pam is not None:
-        mem.slicer_peaks_actor_z.AddObserver('LeftButtonPressEvent',
-                                             left_click_picker_callback,
-                                             1.0)
 
     mem.slicer_curr_x = int(np.round(shape[0] / 2))
     mem.slicer_curr_y = int(np.round(shape[1] / 2))
