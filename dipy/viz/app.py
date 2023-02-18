@@ -1,18 +1,20 @@
 import numpy as np
-from dipy.segment.clustering import qbx_and_merge
-from dipy.tracking.streamline import length, Streamlines
-from dipy.utils.optpkg import optional_package
+
 from dipy import __version__ as horizon_version
-from dipy.viz.gmem import GlobalHorizon
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
 from dipy.io.streamline import save_tractogram
+from dipy.segment.clustering import qbx_and_merge
+from dipy.tracking.streamline import Streamlines, length
+from dipy.utils.optpkg import optional_package
+from dipy.viz.gmem import GlobalHorizon
 
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from dipy.viz import actor, window, ui, shaders
-    from dipy.viz.panel import slicer_panel, build_label, _color_slider
     from fury.colormap import distinguishable_colormap
+
+    from dipy.viz import actor, shaders, ui, window
+    from dipy.viz.panel import _color_slider, build_label, slicer_panel
 
 
 def apply_shader(hz, act):
@@ -537,26 +539,20 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
-
-                            if len(self.pams) > 0:
-                                pam = self.pams[0]
-                            else:
-                                pam = None
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
-                                self.world_coords, pam=pam, mem=self.mem)
+                                self.world_coords, mem=self.mem)
                             first_img = False
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
-
-                if len(self.pams) > 0:
-                    pam = self.pams[0]
-                else:
-                    pam = None
-                self.panel = slicer_panel(scene, self.show_m.iren, data,
-                                          affine, self.world_coords, pam=pam,
-                                          mem=self.mem)
+                self.panel = slicer_panel(
+                    scene, self.show_m.iren, data, affine, self.world_coords,
+                    mem=self.mem)
+        if len(self.pams) > 0:
+            pam = self.pams[0]
+            peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
+            scene.add(peak_actor)
         else:
             data = None
             affine = None
