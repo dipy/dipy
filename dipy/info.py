@@ -125,7 +125,7 @@ EXTRAS_REQUIRE = {
         "pandas",
         "tables",
         "matplotlib",
-        "fury>=0.8.0"
+        "fury>=0.8.0",
         "scikit-learn",
         "scikit-image",
         "statsmodels",
@@ -139,7 +139,7 @@ EXTRAS_REQUIRE = {
     "ml": [
         "scikit_learn",
         "pandas",
-        "statsmodels"
+        "statsmodels",
         "tables",
         "tensorflow"
     ]
