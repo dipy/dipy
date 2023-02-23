@@ -9,7 +9,7 @@ from dipy.direction import peaks_from_model
 from dipy.data import default_sphere
 from dipy.io.streamline import save_trk
 from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.data import small_sphere
+from dipy.data import get_sphere
 from dipy.direction import PTTDirectionGetter
 from dipy.reconst.shm import CsaOdfModel
 from dipy.core.gradients import gradient_table
@@ -57,11 +57,12 @@ stopping_criterion = ThresholdStoppingCriterion(gfa, .25)
 
 """
 
+sphere = get_sphere(name='repulsion724')
 
-fod = csd_fit.odf(small_sphere)
+fod = csd_fit.odf(sphere)
 pmf = fod.clip(min=0)
-ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=5,
-                                     sphere=small_sphere)
+ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=45,
+                                     sphere=sphere)
 
 streamline_generator = LocalTracking(direction_getter=ptt_dg,
                                      stopping_criterion=stopping_criterion,
