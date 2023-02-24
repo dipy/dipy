@@ -813,7 +813,10 @@ def test_init_dtype_dict_attributes():
                           'color_z': np.float32},
                   'dps': {'random_coord': np.float32}}
 
-    assert_(dtype_dict == sft.dtype_dict)
+    try:
+        recursive_compare(dtype_dict, sft.dtype_dict)
+    except ValueError:
+        assert_(False, msg='dtype_dict should be identical at initialisation.')
 
 
 def test_set_dtype_dict_attributes():
@@ -826,7 +829,10 @@ def test_set_dtype_dict_attributes():
                   'dps': {'random_coord': np.float64}}
 
     sft.dtype_dict = dtype_dict
-    assert_(dtype_dict == sft.dtype_dict)
+    try:
+        recursive_compare(dtype_dict, sft.dtype_dict)
+    except ValueError:
+        assert_(False, msg='dtype_dict should be identical after set.')
 
 
 def test_set_partial_dtype_dict_attributes():
@@ -838,11 +844,17 @@ def test_set_partial_dtype_dict_attributes():
                               'color_z': np.float32}}
     dps_dtype_dict = {'dps': {'random_coord': np.float32}}
 
+    # Set only positions and offsets
     sft.dtype_dict = dtype_dict
-    assert_(dtype_dict['positions'] == sft.dtype_dict['positions'])
-    assert_(dtype_dict['offsets'] == sft.dtype_dict['offsets'])
-    assert_(dpp_dtype_dict['dpp'] == sft.dtype_dict['dpp'])
-    assert_(dps_dtype_dict['dps'] == sft.dtype_dict['dps'])
+
+    try:
+        recursive_compare(dtype_dict['positions'], sft.dtype_dict['positions'])
+        recursive_compare(dtype_dict['offsets'], sft.dtype_dict['offsets'])
+        recursive_compare(dpp_dtype_dict['dpp'], sft.dtype_dict['dpp'])
+        recursive_compare(dps_dtype_dict['dps'], sft.dtype_dict['dps'])
+    except ValueError:
+        assert_(False, msg='Partial use of dtype_dict should apply only to the '
+                          'relevant portions.')
 
 
 def test_non_existing_dtype_dict_attributes():
@@ -854,7 +866,12 @@ def test_non_existing_dtype_dict_attributes():
                   'dps2': {'random_coord': np.float64}}       # Fake
 
     sft.dtype_dict = dtype_dict
-    assert_(dtype_dict != sft.dtype_dict)
+    try:
+        recursive_compare(sft.dtype_dict, dtype_dict)
+        assert_(False, msg='Fake entries in dtype_dict should not work.')
+    except ValueError:
+        assert_(True)
+        
 
 
 def test_from_sft_dtype_dict_attributes():
@@ -867,12 +884,14 @@ def test_from_sft_dtype_dict_attributes():
                   'dps': {'random_coord': np.float64}}
 
     sft.dtype_dict = dtype_dict
-
     new_sft = StatefulTractogram.from_sft(sft.streamlines, sft,
                                           data_per_point=sft.data_per_point,
                                           data_per_streamline=sft.data_per_streamline)
-    assert_(new_sft.dtype_dict == dtype_dict)
-    assert_(sft.dtype_dict == dtype_dict)
+    try:
+        recursive_compare(new_sft.dtype_dict, dtype_dict)
+        recursive_compare(sft.dtype_dict, dtype_dict)
+    except ValueError:
+        assert_(False, msg='from_sft() should not modify the dtype_dict.')
 
 
 def test_slicing_dtype_dict_attributes():
@@ -885,7 +904,38 @@ def test_slicing_dtype_dict_attributes():
                   'dps': {'random_coord': np.float64}}
 
     sft.dtype_dict = dtype_dict
-
     new_sft = sft[::2]
-    assert_(new_sft.dtype_dict == dtype_dict)
-    assert_(sft.dtype_dict == dtype_dict)
+
+    try:
+        recursive_compare(new_sft.dtype_dict, dtype_dict)
+        recursive_compare(sft.dtype_dict, dtype_dict)
+    except ValueError:
+        assert_(False, msg='Slicing should not modify the dtype_dict.')
+
+
+def recursive_compare(d1, d2, level='root'):
+    if isinstance(d1, dict) and isinstance(d2, dict):
+        if d1.keys() != d2.keys():
+            s1 = set(d1.keys())
+            s2 = set(d2.keys())
+            common_keys = s1 & s2
+            if s1 - s2:
+                raise ValueError('Keys {} in d1 but not in d2'.format(s1 - s2))
+        else:
+            common_keys = set(d1.keys())
+
+        for k in common_keys:
+            recursive_compare(d1[k], d2[k], level='{}.{}'.format(level, k))
+
+    elif isinstance(d1, list) and isinstance(d2, list):
+        if len(d1) != len(d2):
+            raise ValueError('Lists do not have the same length at level {}'.format(
+                level))
+        common_len = min(len(d1), len(d2))
+
+        for i in range(common_len):
+            recursive_compare(d1[i], d2[i], level='{}[{}]'.format(level, i))
+
+    else:
+        if d1 != d2:
+            raise ValueError('Values do not match at level {}'.format(level))
