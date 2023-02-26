@@ -701,10 +701,14 @@ class SynRegistrationFlow(Workflow):
 
             mapping_data = np.array([mapping.forward.T, mapping.backward.T]).T
             warped_moving = mapping.transform(moving_image)
+            mapping.is_inverse = True
+            inv_static = mapping.transform(static_image)
 
             # Saving
             logging.info('Saving warped {0}'.format(owarped_file))
             save_nifti(owarped_file, warped_moving, static_grid2world)
+            logging.info('Saving inverse transformes static {0}'.format(out_inv_static))
+            save_nifti(out_inv_static, inv_static, static_grid2world)
             logging.info('Saving Diffeomorphic map {0}'.format(omap_file))
             save_nifti(omap_file, mapping_data, mapping.codomain_world2grid)
 
