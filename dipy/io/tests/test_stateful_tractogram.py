@@ -806,12 +806,12 @@ def test_create_from_sft():
 
 def test_init_dtype_dict_attributes():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
-    dtype_dict = {'positions': np.float64,
-                  'offsets': np.int64,
-                  'dpp': {'color_x': np.float32,
-                          'color_y': np.float32,
-                          'color_z': np.float32},
-                  'dps': {'random_coord': np.float32}}
+    dtype_dict = {'positions': np.double,
+                  'offsets': np.int_,
+                  'dpp': {'color_x': np.single,
+                          'color_y': np.single,
+                          'color_z': np.single},
+                  'dps': {'random_coord': np.single}}
 
     try:
         recursive_compare(dtype_dict, sft.dtype_dict)
