@@ -6,6 +6,7 @@ from scipy.spatial import cKDTree
 
 from dipy.tracking.streamline import set_number_of_points
 from dipy.segment.metric import mean_euclidean_distance
+from dipy.io.stateful_tractogram import StatefulTractogram
 
 
 class FastStreamlineSearch:
@@ -55,6 +56,9 @@ class FastStreamlineSearch:
 
         if resampling % nb_mpts != 0:
             raise ValueError("nb_mpts needs to be a factor of resampling")
+
+        if isinstance(ref_streamlines, StatefulTractogram):
+            ref_streamlines = ref_streamlines.streamlines
 
         self.nb_mpts = nb_mpts
         self.bin_size = bin_size
@@ -139,6 +143,9 @@ class FastStreamlineSearch:
         if radius > self.max_radius:
             raise ValueError("radius should be smaller or equal to the given"
                              "\n 'max_radius' in FastStreamlineSearch init")
+
+        if isinstance(streamlines, StatefulTractogram):
+            streamlines = streamlines.streamlines
 
         # Resample query streamlines
         q_slines = self._resample(streamlines)

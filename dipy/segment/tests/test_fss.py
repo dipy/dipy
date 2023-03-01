@@ -19,7 +19,9 @@ def setup_module():
     global f1, f2
     fname = get_fnames('fornix')
     fornix = load_tractogram(fname, 'same', bbox_valid_check=False)
-    f1 = fornix.streamlines[:200]
+
+    # Should work with both StatefulTractogram and streamlines (list of array)
+    f1 = fornix[:200]
     f2 = fornix.streamlines[200:]
 
 
