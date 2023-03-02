@@ -100,6 +100,7 @@ class StatefulTractogram(object):
 
         if isinstance(streamlines, Streamlines):
             streamlines = streamlines.copy()
+
         self._tractogram = Tractogram(streamlines,
                                       data_per_point=data_per_point,
                                       data_per_streamline=data_per_streamline)
@@ -129,7 +130,7 @@ class StatefulTractogram(object):
 
         (self._affine, self._dimensions,
          self._voxel_sizes, self._voxel_order) = space_attributes
-        self._inv_affine = np.linalg.inv(self._affine)
+        self._inv_affine = np.linalg.inv(self._affine).astype(np.float32)
 
         if space not in Space:
             raise ValueError('Space MUST be from Space enum, e.g Space.VOX.')
@@ -243,7 +244,8 @@ class StatefulTractogram(object):
             return False
 
         streamlines_equal = np.allclose(self.streamlines.get_data(),
-                                        other.streamlines.get_data())
+                                        other.streamlines.get_data(),
+                                        rtol=1e-3)
         if not streamlines_equal:
             return False
 
@@ -251,7 +253,8 @@ class StatefulTractogram(object):
         for key in self.data_per_point:
             dpp_equal = dpp_equal and np.allclose(
                 self.data_per_point[key].get_data(),
-                other.data_per_point[key].get_data())
+                other.data_per_point[key].get_data(),
+                rtol=1e-3)
         if not dpp_equal:
             return False
 
@@ -259,7 +262,8 @@ class StatefulTractogram(object):
         for key in self.data_per_streamline:
             dps_equal = dps_equal and np.allclose(
                 self.data_per_streamline[key],
-                other.data_per_streamline[key])
+                other.data_per_streamline[key],
+                rtol=1e-3)
         if not dps_equal:
             return False
 

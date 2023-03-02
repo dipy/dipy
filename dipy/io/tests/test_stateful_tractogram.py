@@ -596,7 +596,7 @@ def test_basic_slicing():
     first_streamline_sft = sft[0]
 
     npt.assert_allclose(first_streamline_sft.streamlines[0][0],
-                        [11.149319, 21.579943, 37.600685],
+                        [11.149319, 21.579943, 37.600685], rtol=1e-6,
                         err_msg='streamlines were not sliced correctly')
     rgb = np.array([first_streamline_sft.data_per_point['color_x'][0][0],
                     first_streamline_sft.data_per_point['color_y'][0][0],
@@ -604,7 +604,7 @@ def test_basic_slicing():
     npt.assert_allclose(np.squeeze(rgb), [220., 20., 60.],
                         err_msg='data_per_point were not sliced correctly')
     rand_coord = first_streamline_sft.data_per_streamline['random_coord']
-    npt.assert_allclose(np.squeeze(rand_coord), [7., 1., 5.],
+    npt.assert_allclose(np.squeeze(rand_coord), [7., 1., 5.], rtol=1e-3,
                         err_msg='data_per_streamline were not sliced correctly')
 
 
@@ -615,12 +615,13 @@ def test_space_side_effect_slicing():
     first_streamline_sft = sft[0]
     sft.to_vox()
     npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        rtol=1e-6,
                         err_msg='Side effect, modifying a StatefulTractogram '
                                 'after slicing should not modify the slice')
     # Testing it both ways
     sft.to_rasmm()
     first_streamline_sft.to_vox()
-    npt.assert_allclose(sft.streamlines[0], first_streamline,
+    npt.assert_allclose(sft.streamlines[0], first_streamline, rtol=1e-6,
                         err_msg='Side effect, modifying a StatefulTractogram '
                                 'after slicing should not modify the slice')
 
@@ -632,12 +633,13 @@ def test_origin_side_effect_slicing():
     first_streamline_sft = sft[0]
     sft.to_corner()
     npt.assert_allclose(first_streamline_sft.streamlines[0], first_streamline,
+                        rtol=1e-6,
                         err_msg='Side effect, modifying a StatefulTractogram '
                                 'after slicing should not modify the slice')
     # Testing it both ways
     sft.to_center()
     first_streamline_sft.to_corner()
-    npt.assert_allclose(sft.streamlines[0], first_streamline,
+    npt.assert_allclose(sft.streamlines[0], first_streamline, rtol=1e-6,
                         err_msg='Side effect, modifying a StatefulTractogram '
                                 'after slicing should not modify the slice')
 
@@ -647,7 +649,7 @@ def test_advanced_slicing():
     last_streamline_sft = sft[::-1][0]
 
     npt.assert_allclose(last_streamline_sft.streamlines[0][0],
-                        [14.389803, 27.857153, 39.3602],
+                        [14.389803, 27.857153, 39.3602], rtol=1e-6,
                         err_msg='streamlines were not sliced correctly')
     rgb = np.array([last_streamline_sft.data_per_point['color_x'][0][0],
                     last_streamline_sft.data_per_point['color_y'][0][0],
@@ -808,10 +810,10 @@ def test_init_dtype_dict_attributes():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
     dtype_dict = {'positions': np.float32,
                   'offsets': np.int64,
-                  'dpp': {'color_x': np.single,
-                          'color_y': np.single,
-                          'color_z': np.single},
-                  'dps': {'random_coord': np.single}}
+                  'dpp': {'color_x': np.float32,
+                          'color_y': np.float32,
+                          'color_z': np.float32},
+                  'dps': {'random_coord': np.float32}}
 
     try:
         recursive_compare(dtype_dict, sft.dtype_dict)

@@ -299,7 +299,7 @@ def get_reference_info(reference):
     # Run this function to logging the warning from it
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
-    return affine, dimensions, voxel_sizes, voxel_order
+    return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
 
 
 def is_header_compatible(reference_1, reference_2):
