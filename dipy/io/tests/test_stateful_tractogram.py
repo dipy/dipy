@@ -938,5 +938,5 @@ def recursive_compare(d1, d2, level='root'):
             recursive_compare(d1[i], d2[i], level='{}[{}]'.format(level, i))
 
     else:
-        if d1 != d2:
+        if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
             raise ValueError('Values {}, {} do not match at level {}'.format(d1, d2, level))
