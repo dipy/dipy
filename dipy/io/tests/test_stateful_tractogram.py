@@ -806,8 +806,8 @@ def test_create_from_sft():
 
 def test_init_dtype_dict_attributes():
     sft = load_tractogram(filepath_dix['gs.trk'], filepath_dix['gs.nii'])
-    dtype_dict = {'positions': np.double,
-                  'offsets': np.int_,
+    dtype_dict = {'positions': float,
+                  'offsets': int,
                   'dpp': {'color_x': np.single,
                           'color_y': np.single,
                           'color_z': np.single},
