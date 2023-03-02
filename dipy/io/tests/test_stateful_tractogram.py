@@ -817,7 +817,7 @@ def test_init_dtype_dict_attributes():
         recursive_compare(dtype_dict, sft.dtype_dict)
     except ValueError as e:
         print(e)
-        assert_(False, msg='dtype_dict should be identical at initialisation.')
+        assert_(False, msg=e)
 
 
 def test_set_dtype_dict_attributes():
