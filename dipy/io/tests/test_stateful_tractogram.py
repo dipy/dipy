@@ -939,4 +939,4 @@ def recursive_compare(d1, d2, level='root'):
 
     else:
         if d1 != d2:
-            raise ValueError('Values do not match at level {}'.format(level))
+            raise ValueError('Values {}, {} do not match at level {}'.format(d1, d2, level))
