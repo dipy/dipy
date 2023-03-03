@@ -1371,7 +1371,11 @@ def iter_fit_tensor(step=1e4):
                                   return_S0_hat=return_S0_hat,
                                   *args, **kwargs)
             data = data.reshape(-1, data.shape[-1])
-            dtiparams = np.empty((size, 12), dtype=np.float64)
+            if 'return_lower_triangular' in kwargs:
+                sz = 7 if kwargs['return_lower_triangular'] else 12
+            else:
+                sz = 12
+            dtiparams = np.empty((size, sz), dtype=np.float64)
             if return_S0_hat:
                 S0params = np.empty(size, dtype=np.float64)
             extra = np.empty(data.shape)
@@ -1389,10 +1393,10 @@ def iter_fit_tensor(step=1e4):
                                      data[i:i + step],
                                      *args, **kwargs)
             if return_S0_hat:
-                return (dtiparams.reshape(shape + (12, )),
+                return (dtiparams.reshape(shape + (sz, )),
                         S0params.reshape(shape + (1, ))), extra.reshape(shape + (-1,))
             else:
-                return dtiparams.reshape(shape + (12, )), extra.reshape(shape + (-1,))
+                return dtiparams.reshape(shape + (sz, )), extra.reshape(shape + (-1,))
 
         return wrapped_fit_tensor
 
@@ -1468,7 +1472,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
     log_s = np.log(data)
 
     # calculate weights
-    fit_result = ols_fit_tensor(design_matrix, data,
+    fit_result, _ = ols_fit_tensor(design_matrix, data,
                                 return_lower_triangular=True)
     w = np.exp(fit_result @ design_matrix.T)
 
@@ -1548,7 +1552,7 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
                            np.log(data))
 
     if return_lower_triangular:
-        return fit_result
+        return fit_result, None
 
     if return_S0_hat:
         return (eig_from_lo_tri(fit_result,
@@ -1789,7 +1793,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     flat_data = data.reshape((-1, data.shape[-1]))
 
     # Use the OLS method parameters as the starting point for the optimization:
-    D = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -1928,7 +1932,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             sigma = np.reshape(sigma, (-1, 1))
 
     # calculate OLS solution
-    D = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
+    D, _ = ols_fit_tensor(design_matrix, flat_data, return_lower_triangular=True)
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
@@ -2007,7 +2011,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                     robust[vox] = (cond == False)
 
                     # recalculate OLS solution with clean data
-                    new_start = ols_fit_tensor(clean_design, clean_data,
+                    new_start, _ = ols_fit_tensor(clean_design, clean_data,
                                                return_lower_triangular=True)
 
                     if np.iterable(sigma_vox):
