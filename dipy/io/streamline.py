@@ -162,15 +162,15 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
                              data_per_point=data_per_point,
                              data_per_streamline=data_per_streamline)
 
-    sft.to_space(to_space)
-    sft.to_origin(to_origin)
-
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
         raise ValueError('Bounding box is not valid in voxel space, cannot '
                          'load a valid file if some coordinates are invalid.\n'
                          'Please set bbox_valid_check to False and then use '
                          'the function remove_invalid_streamlines to discard '
                          'invalid streamlines.')
+
+    sft.to_space(to_space)
+    sft.to_origin(to_origin)
 
     return sft
 
