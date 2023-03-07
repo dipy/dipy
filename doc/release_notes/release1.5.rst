@@ -48,7 +48,7 @@ Pull Requests (72):
 * :ghpull:`2556`: [FIX] Update `dipy.segment` tutorials
 * :ghpull:`2554`: Support .vtp files
 * :ghpull:`2555`: Limit `peaks_from_model` number of processes in examples
-* :ghpull:`2539`: Adds utilities for embarassingly parallel loops.
+* :ghpull:`2539`: Adds utilities for embarrassingly parallel loops.
 * :ghpull:`2545`: Stateful Tractogram DPS and DPP keys ordering
 * :ghpull:`2548`: Add timeout + concurrency to GHA
 * :ghpull:`2549`: [ENH] Clarify reconst_sh tutorial
@@ -126,7 +126,7 @@ Issues (128):
 * :ghissue:`2554`: Support .vtp files
 * :ghissue:`2525`: Support Opening `.vtp` files
 * :ghissue:`2555`: Limit `peaks_from_model` number of processes in examples
-* :ghissue:`2539`: Adds utilities for embarassingly parallel loops.
+* :ghissue:`2539`: Adds utilities for embarrassingly parallel loops.
 * :ghissue:`2509`: Easy robustness for streamline_near_roi and near_roi for empty streamlines?
 * :ghissue:`2543`: StatefulTractogram.are_compatible compare data_per_point keys as list instead of set
 * :ghissue:`2545`: Stateful Tractogram DPS and DPP keys ordering

@@ -131,7 +131,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
         if curr_dot < 0: #abs check
             curr_dot = -curr_dot
         # maximum dot means minimum angle
-        # store tha maximum dot and the corresponding index from the
+        # store the maximum dot and the corresponding index from the
         # neighboring voxel in maxdoti
         if curr_dot > max_dot:
             max_dot=curr_dot

@@ -43,7 +43,7 @@ def test_diffeomorphic_map_2d():
     input image to an output image. First a discrete random assignment
     between the images is generated, then each pair of mapped points are
     transformed to the physical space by assigning a pair of arbitrary,
-    fixed affine matrices to input and output images, and finaly the
+    fixed affine matrices to input and output images, and finally the
     difference between their positions is taken as the displacement vector.
     The resulting displacement, although operating in physical space,
     maps the points exactly (up to numerical precision).
