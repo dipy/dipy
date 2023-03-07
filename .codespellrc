@@ -1,3 +1,8 @@
 [codespell]
-skip = .git,*.pdf,*.svg
-# ignore-words-list = 
+skip = .git,*.pdf,*.svg,*.bib
+# reson -- abbreviation from Resonance frequently used
+# nd -- import shortening etc
+# te -- the TE 
+# ue,lod -- short variable names
+# Hart -- name
+ignore-words-list = reson,nd,te,ue,lod,hart
