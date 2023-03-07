@@ -11,6 +11,7 @@ if have_tf:
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_1CNN_sequential():
     # Create dummy data
+    
     normal_img = np.random.rand(10, 10, 10, 30)
     nos_img = normal_img + np.random.normal(loc=0.0, scale=0.1, size=normal_img.shape)
     x = np.random.rand(10, 10, 10, 30)
