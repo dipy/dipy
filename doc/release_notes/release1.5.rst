@@ -53,7 +53,7 @@ Pull Requests (72):
 * :ghpull:`2548`: Add timeout + concurrency to GHA
 * :ghpull:`2549`: [ENH] Clarify reconst_sh tutorial
 * :ghpull:`2550`: [ENH] Add sigma to DTI/DKI RESTORE workflow
-* :ghpull:`2551`: [MNT] Update mininal dependencies version
+* :ghpull:`2551`: [MNT] Update minimal dependencies version
 * :ghpull:`2536`: Random colors fix in horizon
 * :ghpull:`2533`: [FIX] Docstring cleaning: wrong underline length...
 * :ghpull:`2342`: NF:  q-space trajectory imaging
@@ -135,7 +135,7 @@ Issues (128):
 * :ghissue:`2546`: Confusing import in 'reconst_sh`
 * :ghissue:`2550`: [ENH] Add sigma to DTI/DKI RESTORE workflow
 * :ghissue:`2542`: DTI workflow should allow user-defined fitting method
-* :ghissue:`2551`: [MNT] Update mininal dependencies version
+* :ghissue:`2551`: [MNT] Update minimal dependencies version
 * :ghissue:`2477`: Numpy min dependency update
 * :ghissue:`2541`: Issue with coverage and pytests for numpy.min()
 * :ghissue:`2507`: kernel died when use dipy.viz
@@ -171,7 +171,7 @@ Issues (128):
 * :ghissue:`2305`: [WIP] Brain Tumor Image Segmentation Code
 * :ghissue:`2499`: Problem generating Connectivity Matrix: "Slice step cannot be zero"
 * :ghissue:`2510`: Optimize sfm (reboot)
-* :ghissue:`2488`: Minimize memory footprint whereever possible, add joblib support for …
+* :ghissue:`2488`: Minimize memory footprint wherever possible, add joblib support for …
 * :ghissue:`2504`: Why are there many small dots on the fwdwi image?
 * :ghissue:`2502`: Can i read specific b-values from my own multishell data?
 * :ghissue:`2500`: MAP issue

@@ -231,7 +231,7 @@ class Sphere(object):
         Parameters
         ----------
         n : int, optional
-            The number of subdivisions to preform.
+            The number of subdivisions to perform.
 
         Returns
         -------

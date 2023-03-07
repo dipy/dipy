@@ -121,7 +121,7 @@ References
    estimation via Compressive Sensing in diffusion MRI", Medical Image
    Analysis, 2013.
 
-.. [Cheng2011] Cheng J. et al., "Theoretical Analysis and Pratical Insights on
+.. [Cheng2011] Cheng J. et al., "Theoretical Analysis and Practical Insights on
    EAP Estimation via Unified HARDI Framework", MICCAI workshop on
    Computational Diffusion MRI, 2011.
 

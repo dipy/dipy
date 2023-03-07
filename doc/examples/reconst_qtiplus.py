@@ -132,7 +132,7 @@ Here we show how metrics derived from the
 QTI model parameters compare when the fit is performed with and without
 applying the positivity constraints.
 
-In DIPY, the constrained estimation routine is avaiable as part of the
+In DIPY, the constrained estimation routine is available as part of the
 `dipy.reconst.qti` module.
 First we import all the necessary modules to perform the QTI fit:
 """

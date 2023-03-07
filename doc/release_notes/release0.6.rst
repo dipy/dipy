@@ -57,7 +57,7 @@ Pull Requests (100):
 * :ghpull:`116`: RF: common dtype for squash without result_type
 * :ghpull:`117`: Fix directions on TensorFit and add getitem
 * :ghpull:`119`: RF: raise errors for Python version dependencies
-* :ghpull:`118`: Seperate fa
+* :ghpull:`118`: Separate fa
 * :ghpull:`111`: RF - clean up _squash in multi_voxel and related code
 * :ghpull:`112`: RF: fix vec_val_vect logic, generalize for shape
 * :ghpull:`114`: BF: fix face and edge byte order for sphere load
@@ -98,7 +98,7 @@ Pull Requests (100):
 * :ghpull:`60`: NF - Add key-value cache for use in models.
 * :ghpull:`63`: TST - Disable reconstruction methods that break the test suite.
 * :ghpull:`62`: BF - Fix missing import in peak finding tests.
-* :ghpull:`37`: cleanup refrences in the code to E1381S6_edcor* (these were removed from...
+* :ghpull:`37`: cleanup references in the code to E1381S6_edcor* (these were removed from...
 * :ghpull:`55`: Ravel multi index
 * :ghpull:`58`: TST - skip doctest when matplotlib is not available
 * :ghpull:`59`: optional_traits is not needed anymore
@@ -167,7 +167,7 @@ Issues (125):
 * :ghissue:`116`: RF: common dtype for squash without result_type
 * :ghissue:`117`: Fix directions on TensorFit and add getitem
 * :ghissue:`119`: RF: raise errors for Python version dependencies
-* :ghissue:`118`: Seperate fa
+* :ghissue:`118`: Separate fa
 * :ghissue:`113`: RF - use min_diffusivity relative to 1 / max(bval)
 * :ghissue:`111`: RF - clean up _squash in multi_voxel and related code
 * :ghissue:`112`: RF: fix vec_val_vect logic, generalize for shape
@@ -192,7 +192,7 @@ Issues (125):
 * :ghissue:`91`: Shm new api
 * :ghissue:`88`: NF - wrapper function for multi voxel models
 * :ghissue:`86`: DOC: Fixed some typos, etc in the FAQ
-* :ghissue:`89`: Consisten ndindex behaviour
+* :ghissue:`89`: Consistent ndindex behaviour
 * :ghissue:`90`: A simpler ndindex using generators.
 * :ghissue:`87`: RF - Provide shape as argument to ndindex.
 * :ghissue:`85`: Add fast ndindex.
@@ -217,7 +217,7 @@ Issues (125):
 * :ghissue:`60`: NF - Add key-value cache for use in models.
 * :ghissue:`63`: TST - Disable reconstruction methods that break the test suite.
 * :ghissue:`62`: BF - Fix missing import in peak finding tests.
-* :ghissue:`37`: cleanup refrences in the code to E1381S6_edcor* (these were removed from...
+* :ghissue:`37`: cleanup references in the code to E1381S6_edcor* (these were removed from...
 * :ghissue:`55`: Ravel multi index
 * :ghissue:`46`: BF: Trying to fix test failures.
 * :ghissue:`57`: TST: Reverted back to optional definition of the function to make TB hap...

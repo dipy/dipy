@@ -1055,7 +1055,7 @@ def read_tissue_data(contrast='T1'):
 
     Parameters
     ----------
-    constrast : str
+    contrast : str
         'T1', 'T1 denoised' or 'Anisotropic Power'
 
     Returns

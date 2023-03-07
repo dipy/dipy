@@ -134,7 +134,7 @@ Pull Requests (97):
 
 Issues (192):
 
-* :ghissue:`1798`: ploting denoised img
+* :ghissue:`1798`: plotting denoised img
 * :ghissue:`1924`: Some updates in Horizon fixing some issues for upcoming release
 * :ghissue:`1946`: Fix empty tractogram loading saving
 * :ghissue:`1947`: DOC: fixing examples links

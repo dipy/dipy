@@ -19,7 +19,7 @@ def detect_corresponding_tracks(indices, tracks1, tracks2):
     Returns
     -------
     track2track : array (N,2) where N is len(indices) of int
-       it shows the correspondance in the following way:
+       it shows the correspondence in the following way:
        the first column is the current index in tracks1
        the second column is the corresponding index in tracks2
 
@@ -74,8 +74,8 @@ def detect_corresponding_tracks_plus(indices, tracks1, indices2, tracks2):
     Returns
     -------
     track2track : array (N,2) where N is len(indices)
-       of int showing the correspondance in th following way
-       the first colum is the current index of tracks1
+       of int showing the correspondence in th following way
+       the first column is the current index of tracks1
        the second column is the corresponding index in tracks2
 
     Examples

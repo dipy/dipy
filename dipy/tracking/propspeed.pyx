@@ -103,7 +103,7 @@ cdef cnp.npy_intp _nearest_direction(double* dx,
     Returns
     -------
     delta : bool
-        Delta funtion: if 1 we give it weighting, if it is 0 we don't give any
+        Delta function: if 1 we give it weighting, if it is 0 we don't give any
         weighting.
     """
     cdef:

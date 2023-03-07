@@ -1645,7 +1645,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     #holds number of clusters
     lenC = 1
 
-    #store memmory for the hid variable
+    #store memory for the hid variable
     hid=<float *>realloc(NULL,dim*sizeof(float))
 
     #Work with the rest of the tracks

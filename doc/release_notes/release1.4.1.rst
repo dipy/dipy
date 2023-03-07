@@ -86,7 +86,7 @@ Issues (61):
 * :ghissue:`1672`: Dipy Segmentation fault when visualizing
 * :ghissue:`1444`: Move general registration tools into own package?
 * :ghissue:`562`: Multiprocessing the tensor reconstruction
-* :ghissue:`13`: Cordinate maps stuff
+* :ghissue:`13`: Coordinate maps stuff
 * :ghissue:`2324`: Dipy for VR/AR
 * :ghissue:`2345`: Saving and/or importing nonlinear warps
 * :ghissue:`2349`: [ENH] Allow for other statistics, like median, in afq_profile

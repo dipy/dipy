@@ -82,9 +82,9 @@ def bounding_box(vol):
     Returns
     -------
     npmins : list
-        Array containg minimum index of each dimension
+        Array containing minimum index of each dimension
     npmaxs : list
-        Array containg maximum index of each dimension
+        Array containing maximum index of each dimension
     """
     # Find bounds on first dimension
     temp = vol

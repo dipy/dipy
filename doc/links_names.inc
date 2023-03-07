@@ -174,7 +174,7 @@
 .. _`wikipedia affine`: http://en.wikipedia.org/wiki/Affine_transformation
 .. _`wikipedia linear transform`: http://en.wikipedia.org/wiki/Linear_transformation
 .. _`wikipedia rotation matrix`: http://en.wikipedia.org/wiki/Rotation_matrix
-.. _`wikipedia homogenous coordinates`: http://en.wikipedia.org/wiki/Homogeneous_coordinates
+.. _`wikipedia homogeneous coordinates`: http://en.wikipedia.org/wiki/Homogeneous_coordinates
 .. _`wikipedia axis angle`: http://en.wikipedia.org/wiki/Axis_angle
 .. _`wikipedia Euler angles`: http://en.wikipedia.org/wiki/Euler_angles
 .. _`Mathworld Euler angles`: http://mathworld.wolfram.com/EulerAngles.html

@@ -319,7 +319,7 @@ def test_single_tensor_btens():
     gtab_lte = gradient_table(gtab.bvals, gtab.bvecs, btens='LTE')
     gtab_ste = gradient_table(gtab.bvals, gtab.bvecs, btens='STE')
 
-    # Check if Signals producted with LTE btensor gives same results as
+    # Check if Signals produced with LTE btensor gives same results as
     # previous simulations not specifying b-tensor
     evecs = np.eye(3)
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)

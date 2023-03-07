@@ -243,7 +243,7 @@ Issues (233):
 * :ghissue:`383`: typo in multi tensor fit example
 * :ghissue:`350`: typo in SNR example
 * :ghissue:`424`: test more python versions with travis
-* :ghissue:`493`: BF - older C compliers do not have round in math.h, uisng dpy_math instead
+* :ghissue:`493`: BF - older C compilers do not have round in math.h, using dpy_math instead
 * :ghissue:`494`: Fix round
 * :ghissue:`503`: Fixed compatibility issues between vtk 5 and 6
 * :ghissue:`500`: SHORE hyp2F1
@@ -257,7 +257,7 @@ Issues (233):
 * :ghissue:`484`: Clear tabs from examples for website
 * :ghissue:`490`: DOC: corrected typos in the tracking PR
 * :ghissue:`341`: Traco Redesign
-* :ghissue:`410`: Faster spherical harmonics implemenation
+* :ghissue:`410`: Faster spherical harmonics implementation
 * :ghissue:`483`: NF: Find the closest vertex on a sphere for an input vector.
 * :ghissue:`487`: Travis Problem
 * :ghissue:`488`: BF: fix travis version setting

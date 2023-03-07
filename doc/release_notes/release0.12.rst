@@ -126,9 +126,9 @@ Pull Requests (169):
 * :ghpull:`1151`: Define fmin() for Visual Studio
 * :ghpull:`1149`: Change DKI_signal to dki_signal
 * :ghpull:`1137`: Small fix to insure that fwDTI non-linear procedure does not crash
-* :ghpull:`942`: NF: Added support to colorize each line points indivdually
+* :ghpull:`942`: NF: Added support to colorize each line points individually
 * :ghpull:`1141`: Do not cover files related to benchmarks.
-* :ghpull:`1098`: Adding custom interactor for vizualisation
+* :ghpull:`1098`: Adding custom interactor for visualisation
 * :ghpull:`1136`: Update deprecated function.
 * :ghpull:`1113`: TST: Test for invariance of model_params to splitting of the data.
 * :ghpull:`1134`: Rebase of https://github.com/dipy/dipy/pull/993
@@ -184,7 +184,7 @@ Pull Requests (169):
 * :ghpull:`1035`: Fix for fetcher files in Windows
 * :ghpull:`974`: Minor change in `tools/github_stats.py`
 * :ghpull:`1021`: Added warning for VTK not installed
-* :ghpull:`1024`: Documnetation fix for reconst_dsid.py
+* :ghpull:`1024`: Documentation fix for reconst_dsid.py
 * :ghpull:`981`: Fixes #979 : No figures in DKI example - Add new line after figure
 * :ghpull:`958`: FIX: PEP8 in testing
 * :ghpull:`1005`: FIX: Use absolute imports in io
@@ -364,9 +364,9 @@ Issues (342):
 * :ghissue:`1149`: Change DKI_signal to dki_signal
 * :ghissue:`1137`: Small fix to insure that fwDTI non-linear procedure does not crash
 * :ghissue:`827`: Free Water Elimination DTI
-* :ghissue:`942`: NF: Added support to colorize each line points indivdually
+* :ghissue:`942`: NF: Added support to colorize each line points individually
 * :ghissue:`1141`: Do not cover files related to benchmarks.
-* :ghissue:`1098`: Adding custom interactor for vizualisation
+* :ghissue:`1098`: Adding custom interactor for visualisation
 * :ghissue:`1136`: Update deprecated function.
 * :ghissue:`1113`: TST: Test for invariance of model_params to splitting of the data.
 * :ghissue:`1134`: Rebase of https://github.com/dipy/dipy/pull/993
@@ -475,7 +475,7 @@ Issues (342):
 * :ghissue:`888`: PEP8 in tracking benchmarks/tests
 * :ghissue:`885`: PEP8 in testing
 * :ghissue:`902`: fix typo
-* :ghissue:`1024`: Documnetation fix for reconst_dsid.py
+* :ghissue:`1024`: Documentation fix for reconst_dsid.py
 * :ghissue:`979`: No figures in DKI example
 * :ghissue:`981`: Fixes #979 : No figures in DKI example - Add new line after figure
 * :ghissue:`958`: FIX: PEP8 in testing
@@ -558,7 +558,7 @@ Issues (342):
 * :ghissue:`945`: FIX: PEP8 in test_scalespace
 * :ghissue:`937`: BF : Clamping of the value of v in winding function
 * :ghissue:`930`: pep8 fix issue  #896 - "continuation line over-indented for visual indent"
-* :ghissue:`943`: BF: Removed unsused code in slicer
+* :ghissue:`943`: BF: Removed unused code in slicer
 * :ghissue:`907`: DOC: switch to using mathjax for maths
 * :ghissue:`931`: dipy/tracking/streamlinespeed set_number_of_points crash when nb_points=0
 * :ghissue:`932`: Fixes #931 : checks if nb_points=0

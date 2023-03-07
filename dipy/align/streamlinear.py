@@ -1195,7 +1195,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
 
     select_random : int, optional
         Maximum number of streamlines for each bundle. If None, all the
-        streamlines are used. Deafult: 10000.
+        streamlines are used. Default: 10000.
 
     verbose : bool, optional
         If True, logs information. Default: False.
@@ -1264,7 +1264,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
     d = group_distance(centroids, n_bundle)
 
     if verbose:
-        logging.info(f"Intial group distance: {np.mean(d)}.")
+        logging.info(f"Initial group distance: {np.mean(d)}.")
 
     # Make pairs and start iterating
     pairs, excluded = get_unique_pairs(n_bundle)
@@ -1324,7 +1324,7 @@ def groupwise_slr(bundles, x0='affine', tol=0, max_iter=20, qbx_thr=[4],
 def get_unique_pairs(n_bundle, pairs=None):
     """ Make unique pairs from n_bundle bundles.
 
-    The function allows to input a previous pairs asignment so that the new
+    The function allows to input a previous pairs assignment so that the new
     pairs are different.
 
     Parameters
