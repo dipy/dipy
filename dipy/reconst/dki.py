@@ -2247,7 +2247,7 @@ def ls_fit_dki(design_matrix, data, inverse_design_matrix, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params
+    return dki_params, None
 
 
 def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
@@ -2312,7 +2312,7 @@ def cls_fit_dki(design_matrix, data, inverse_design_matrix, sdp, weights=True,
     # Write output
     dki_params = params_to_dki_params(result, min_diffusivity=min_diffusivity)
 
-    return dki_params
+    return dki_params, None
 
 
 def Wrotate(kt, Basis):
