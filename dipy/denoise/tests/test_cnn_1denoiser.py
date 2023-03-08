@@ -5,7 +5,7 @@ from dipy.utils.optpkg import optional_package
 tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
-    from dipy.denoise.CNN_1Denoiser import CNN_1Denoiser
+    from dipy.denoise.cnn_1denoiser import cnn_1denoiser
 
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
@@ -17,7 +17,7 @@ def test_default_1CNN_sequential():
     x = np.random.rand(10, 10, 10, 30)
 
     # Test 1D denoiser
-    model = CNN_1Denoiser(30)
+    model = cnn_1denoiser(30)
     model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
     epochs = 1
     hist = model.fit(nos_img, normal_img, epochs=epochs)
@@ -35,7 +35,7 @@ def test_default_1CNN_flow(pytestconfig):
     x = np.random.rand(10, 10, 10, 30)
 
     # Test 1D denoiser with flow API
-    model = CNN_1Denoiser(30)
+    model = cnn_1denoiser(30)
     if pytestconfig.getoption('verbose') > 0:
         model.summary()
 

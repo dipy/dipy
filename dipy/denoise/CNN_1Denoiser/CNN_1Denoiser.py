@@ -43,7 +43,7 @@ Ref Code : https://github.com/huchengMRI/DWI-SoS-denoising
 
 
 
-class CNN_1Denoiser(object):
+class cnn_1denoiser(object):
     def __init__(self,sigLength,optimizer='adam', loss='mean_squared_error', metrics=['accuracy'], loss_weights=None):
         
         

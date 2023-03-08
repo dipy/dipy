@@ -8,4 +8,4 @@ if have_tf:
     if LooseVersion(tf.__version__) < LooseVersion('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
-    from dipy.denoise.CNN_1Denoiser.CNN_1Denoiser import CNN_1Denoiser
+    from dipy.denoise.cnn_1denoiser.cnn_1denoiser import cnn_1denoiser
