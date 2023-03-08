@@ -535,7 +535,7 @@ def intersect_sphere(xyz, center, radius):
 
 def inside_sphere(xyz, center, radius):
     r""" If any point of the track is inside a sphere of a specified
-    center and radius return True otherwise False.  Mathematicaly this
+    center and radius return True otherwise False.  Mathematically this
     can be simply described by $|x-c|\le r$ where $x$ a point $c$ the
     center of the sphere and $r$ the radius of the sphere.
 
@@ -568,7 +568,7 @@ def inside_sphere(xyz, center, radius):
 def inside_sphere_points(xyz, center, radius):
     r""" If a track intersects with a sphere of a specified center and
     radius return the points that are inside the sphere otherwise False.
-    Mathematicaly this can be simply described by $|x-c| \le r$ where $x$
+    Mathematically this can be simply described by $|x-c| \le r$ where $x$
     a point $c$ the center of the sphere and $r$ the radius of the
     sphere.
 

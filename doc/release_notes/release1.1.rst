@@ -52,7 +52,7 @@ Pull Requests (52):
 * :ghpull:`2011`: BF: Use the `sklearn.base` interface, instead of deprecated `sklearn.linear_model.base`
 * :ghpull:`2002`: BUG: Fix workflows IO `FetchFlow` `all` dataset fetching
 * :ghpull:`2000`: NF: SplitFlow
-* :ghpull:`1999`: add cenir_multib to dipy_fetch worflows
+* :ghpull:`1999`: add cenir_multib to dipy_fetch workflows
 * :ghpull:`1998`: [DOC] Workflows Tutorial
 * :ghpull:`1988`: DOC: Multi-Shell Multi-Tissue CSD Example
 * :ghpull:`1975`: Azure CI
@@ -114,7 +114,7 @@ Issues (81):
 * :ghissue:`2002`: BUG: Fix workflows IO `FetchFlow` `all` dataset fetching
 * :ghissue:`1995`: ModuleNotFoundError: No module named 'numpy.testing.decorators' (Numpy 1.18)
 * :ghissue:`2000`: NF: SplitFlow
-* :ghissue:`1999`: add cenir_multib to dipy_fetch worflows
+* :ghissue:`1999`: add cenir_multib to dipy_fetch workflows
 * :ghissue:`1998`: [DOC] Workflows Tutorial
 * :ghissue:`1993`: [ENH][BF] Error handling for IVIM VarPro NLLS
 * :ghissue:`1870`: Documentation example  of MSMT CSD

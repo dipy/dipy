@@ -80,3 +80,4 @@
  bundle_assignment_maps.py
  bundle_shape_similarity.py
  motion_correction.py
+ fast_streamline_search.py

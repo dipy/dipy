@@ -56,7 +56,7 @@ cdef class BinaryStoppingCriterion(StoppingCriterion):
 
 cdef class ThresholdStoppingCriterion(StoppingCriterion):
     """
-    # Declarations from stopping_criterion.pxd bellow
+    # Declarations from stopping_criterion.pxd below
     cdef:
         double threshold, interp_out_double[1]
         double[:]  interp_out_view = interp_out_view

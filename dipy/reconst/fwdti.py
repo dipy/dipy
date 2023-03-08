@@ -770,7 +770,7 @@ def lower_triangular_to_cholesky(tensor_elements):
 
 
 def cholesky_to_lower_triangular(R):
-    """ Convert Cholesky decompostion elements to the diffusion tensor elements
+    """ Convert Cholesky decomposition elements to the diffusion tensor elements
 
     Parameters
     ----------

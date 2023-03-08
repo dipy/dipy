@@ -273,7 +273,7 @@ def test_global_fit():
     rumba_broken = RumbaSDModel(gtab, recon_type='test', voxelwise=False)
     assert_raises(ValueError, rumba_broken.fit, data)
 
-    # Test on repulsion 724 sphere, with/wihout TV regularization
+    # Test on repulsion 724 sphere, with/without TV regularization
     for ix, model in enumerate([rumba, rumba_tv]):
 
         if ix:

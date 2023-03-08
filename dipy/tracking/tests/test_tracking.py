@@ -145,7 +145,7 @@ def test_stop_conditions():
     npt.assert_equal(len(sl), 2)
 
     # The streamline should contain only one point, the seed point,
-    # because no valid inital direction was returned.
+    # because no valid initial direction was returned.
     y = 6
     sl = next(streamlines_all)
     npt.assert_equal(sl[0], seeds[y])

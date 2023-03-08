@@ -53,7 +53,7 @@ def upper_bound_by_rate(data, rate=0.05):
     data : float
         Input intensity value data
     rate : float
-        representing the threshold whether a spicific histogram bin that should
+        representing the threshold whether a specific histogram bin that should
         be count in the normalization range
 
     Returns

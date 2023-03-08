@@ -306,7 +306,7 @@ cdef class Clusters:
     """ Provides Cython functionalities to interact with clustering outputs.
 
     This class allows to create clusters and assign elements to them.
-    Assignements of a cluster are represented as a list of element indices.
+    Assignments of a cluster are represented as a list of element indices.
     """
     def __init__(Clusters self):
         self._nb_clusters = 0

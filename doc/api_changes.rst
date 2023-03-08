@@ -368,7 +368,7 @@ in the 0.11 release cycle.
 
 **Registration**
 
-The following utilty functions from ``vector_fields`` module were renamed:
+The following utility functions from ``vector_fields`` module were renamed:
 
 ``warp_2d_affine`` is now ``transform_2d_affine``
 ``warp_2d_affine_nn`` is now ``transform_2d_affine_nn``

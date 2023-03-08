@@ -59,7 +59,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     ----------
     model : Model class instance
         The type of the model to use for prediction. The corresponding Fit
-        object must have a `predict` function implementd One of the following:
+        object must have a `predict` function implemented One of the following:
         `reconst.dti.TensorModel` or
         `reconst.csdeconv.ConstrainedSphericalDeconvModel`.
     data : ndarray

@@ -36,7 +36,7 @@ from dipy.denoise.localpca import mppca
 # load functions to fetch data for this example
 from dipy.data import get_fnames
 
-# load other dipy's functions that will be used for auxiliar analysis
+# load other dipy's functions that will be used for auxiliary analysis
 from dipy.core.gradients import gradient_table
 from dipy.io.image import load_nifti
 from dipy.io.gradients import read_bvals_bvecs

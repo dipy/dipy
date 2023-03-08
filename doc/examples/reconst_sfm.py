@@ -156,7 +156,7 @@ if interactive:
     window.show(scene)
 
 """
-Finally, we plot both the peaks and the ODFs, overlayed:
+Finally, we plot both the peaks and the ODFs, overlaid:
 """
 
 fodf_spheres.GetProperty().SetOpacity(0.4)
