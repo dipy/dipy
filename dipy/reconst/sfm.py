@@ -254,7 +254,7 @@ def sfm_design_matrix(gtab, sphere, response, mode='signal'):
         fascicles oriented along the vertices of the sphere. Otherwise, choose
         'odf' for an odf convolution matrix, with values of the odf calculated
         from a tensor with the provided response eigenvalues, evaluated at the
-        b-vectors in the gradient table, for the tensors with prinicipal
+        b-vectors in the gradient table, for the tensors with principal
         diffusion directions along the vertices of the sphere.
 
     Returns
@@ -368,7 +368,7 @@ class SparseFascicleModel(ReconstModel, Cache):
             Default: 'ElasticNet'.
 
         l1_ratio : float, optional
-            Sets the balance betwee L1 and L2 regularization in ElasticNet
+            Sets the balance between L1 and L2 regularization in ElasticNet
             [Zou2005]_. Default: 0.5
 
         alpha : float, optional
@@ -583,7 +583,7 @@ class SparseFascicleFit(ReconstFit):
 
     def __init__(self, model, beta, S0, iso):
         """
-        Initalize a SparseFascicleFit class instance
+        Initialize a SparseFascicleFit class instance
 
         Parameters
         ----------

@@ -232,7 +232,7 @@ bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 gtab = gradient_table(bvals, bvecs)
 
 """
-Before fitting the data, we preform some data pre-processing. For illustration,
+Before fitting the data, we perform some data pre-processing. For illustration,
 we only mask the data to avoid unnecessary calculations on the background of
 the image; however, you could also apply other pre-processing techniques.
 For example, some state of the art denoising algorithms are available in DIPY_
@@ -342,7 +342,7 @@ DI = msdki_fit.smt2di
 uFA2 = msdki_fit.smt2uFA
 
 """
-The SMT2 model parameters extracted from MSDKI are displayed bellow: """
+The SMT2 model parameters extracted from MSDKI are displayed below: """
 
 fig3, ax = plt.subplots(1, 3, figsize=(9, 2.5),
                         subplot_kw={'xticks': [], 'yticks': []})

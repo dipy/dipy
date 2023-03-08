@@ -42,7 +42,7 @@ def test_make_fetcher():
         os.chdir(testfile_folder)
         server = HTTPServer(('localhost', 8000), SimpleHTTPRequestHandler)
         server_thread = Thread(target=server.serve_forever)
-        server_thread.deamon = True
+        server_thread.daemon = True
         server_thread.start()
 
         # test make_fetcher
@@ -89,7 +89,7 @@ def test_fetch_data():
         # use different port as shutdown() takes time to release socket.
         server = HTTPServer(('localhost', 8001), SimpleHTTPRequestHandler)
         server_thread = Thread(target=server.serve_forever)
-        server_thread.deamon = True
+        server_thread.daemon = True
         server_thread.start()
 
         files = {"testfile.txt": (test_server_url, md5)}

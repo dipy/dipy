@@ -621,7 +621,7 @@ def kurtosis_element(D_comps, frac, ind_i, ind_j, ind_k, ind_l, DT=None,
 
 def dki_signal(gtab, dt, kt, S0=150, snr=None):
     r""" Simulated signal based on the diffusion and diffusion kurtosis
-    tensors of a single voxel. Simulations are preformed assuming the DKI
+    tensors of a single voxel. Simulations are performed assuming the DKI
     model.
 
     Parameters

@@ -174,7 +174,7 @@ print("The comparison result saved in ascm_comparison.png")
 """
 From the above figure, we can observe that the information of two pre-denoised
 versions of the raw data, ASCM outperforms standard non-local means in
-supressing noise and preserving feature sharpness.
+suppressing noise and preserving feature sharpness.
 
 References
 ----------

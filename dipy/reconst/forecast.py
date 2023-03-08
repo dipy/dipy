@@ -186,7 +186,7 @@ class ForecastModel(OdfModel, Cache):
                 self.wls = False
                 self.pos = True
             else:
-                msg = 'cvxpy is needed to inforce positivity constraints.'
+                msg = 'cvxpy is needed to enforce positivity constraints.'
                 raise ValueError(msg)
 
         if dec_alg.upper() == 'CSD':

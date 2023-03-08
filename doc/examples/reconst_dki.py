@@ -92,7 +92,7 @@ Function ``get_fnames`` downloads and outputs the paths of the data,
 b-values and b-vectors. These later arrays are converted to the GradientTable
 object required for Dipy_'s data reconstruction.
 
-Before fitting the data, we preform some data pre-processing. We first compute
+Before fitting the data, we perform some data pre-processing. We first compute
 a brain mask to avoid unnecessary calculations on the background of the image.
 """
 
@@ -311,7 +311,7 @@ As pointed by previous studies [Hansen2013]_, axial, radial and mean kurtosis
 depends on the information of both diffusion and kurtosis tensor. DKI measures
 that only depend on the kurtosis tensor include the mean of the kurtosis tensor
 [Hansen2013]_, and the kurtosis fractional anisotropy [GlennR2015]_. This
-measures are computed and illustrated bellow:
+measures are computed and illustrated below:
 """
 
 MKT = dkifit.mkt(0, 3)

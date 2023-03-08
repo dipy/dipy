@@ -192,7 +192,7 @@ class FastStreamlineSearch:
                         list_id_ref.append(id_ref)
                         list_dist.append(d[in_dist_max])
 
-        # Combine all results in a coo sparse matrix
+        # Combine all results in a coup sparse matrix
         if len(list_id) > 0:
             ids_in = np.hstack(list_id)
             ids_ref = np.hstack(list_id_ref)
@@ -247,7 +247,7 @@ class FastStreamlineSearch:
 
 def nearest_from_matrix_row(coo_matrix):
     """
-    Return the nearest (smallest) for each row given an coo sparse matrix
+    Return the nearest (smallest) for each row given an coup sparse matrix
 
     Parameters
     ----------
@@ -274,7 +274,7 @@ def nearest_from_matrix_row(coo_matrix):
 
 def nearest_from_matrix_col(coo_matrix):
     """
-    Return the nearest (smallest) for each column given an coo sparse matrix
+    Return the nearest (smallest) for each column given an coup sparse matrix
 
     Parameters
     ----------

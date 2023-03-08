@@ -28,7 +28,7 @@ def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('globber', type=str,
-                        help='glob to serch for build mpkgs')
+                        help='glob to search for build mpkgs')
     parser.add_argument('--out-path', type=str, default='mpkg-dist',
                         help='path for output files (default="mpkg-dist")',
                         metavar='OUTPATH')
