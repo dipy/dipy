@@ -380,13 +380,17 @@ def solve_qp(P, Q, G, H):
     """
     x = cvxpy.Variable(Q.shape[0])
     P = cvxpy.Constant(P)
-    if Version(cvxpy.__version__) < Version('1.1'):
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P) + Q * x)
-        constraints = [G * x <= H]
-    else:
-        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P) + Q @ x)
+    if Version(cvxpy.__version__) >= Version('1.3'):
+        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P, True) + Q @ x)
         constraints = [G @ x <= H]
-
+    elif Version(cvxpy.__version__) >= Version('1.2'):
+        P_psd = cvxpy.atoms.affine.wraps.psd_wrap(P)
+        objective = cvxpy.Minimize(0.5 * cvxpy.quad_form(x, P_psd) + Q @ x)
+        constraints = [G @ x <= H]
+    elif Version(cvxpy.__version__) < Version('1.2'):
+        msg = """Dipy does not support versions of cvxpy below 1.2."""
+        raise ValueError(msg)
+    
     # setting up the problem
     prob = cvxpy.Problem(objective, constraints)
     try:
