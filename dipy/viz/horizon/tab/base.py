@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
@@ -7,13 +9,23 @@ if has_fury:
     from fury import ui
 
 
+class HorizonTab(ABC):
+    @abstractmethod
+    def build(self, tab_id, tab_ui):
+        pass
+    
+    @abstractmethod
+    @property
+    def name(self):
+        pass
+
 class TabManager:
-    def __init__(self, size):
-        # TODO: Dynamically determine the number of tabs
+    def __init__(self, tabs):
         # TODO: Handle size dynamically
-        num_tabs = 1
+        num_tabs = len(tabs)
+        
         self.tab_ui = ui.TabUI(
-            position=(0, 0), size=size, nb_tabs=num_tabs,
+            position=(-25, 5), size=(320, 240), nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
             draggable=False
         )
