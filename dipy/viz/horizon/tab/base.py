@@ -25,7 +25,7 @@ class TabManager:
         num_tabs = len(tabs)
         
         self.__tab_ui = ui.TabUI(
-            position=(-25, 5), size=(320, 240), nb_tabs=num_tabs,
+            position=(5, 5), size=(320, 240), nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
             draggable=False
         )
