@@ -144,7 +144,6 @@ class PeaksTab(HorizonTab):
         self.__actor.display_cross_section(cs[0], cs[1], value)
     
     def __change_interaction_mode_callback(self, obj, event):
-        #global iren, panel, scene
         if self.__actor.is_range:
             self.__interaction_mode_label.message = 'Planes'
             self.__actor.display_cross_section(
