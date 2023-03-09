@@ -1686,11 +1686,34 @@ class DiffusionKurtosisModel(ReconstModel):
             'sdp': self.sdp,
             }
 
+<<<<<<< HEAD
         params = self.fit_method(self.design_matrix, data_thres,
                                  self.inverse_design_matrix,
                                  weights=self.weights,
                                  min_diffusivity=self.min_diffusivity,
                                  **extra_args)
+=======
+        if self.min_signal is None:
+            min_signal = MIN_POSITIVE_SIGNAL
+        else:
+            min_signal = self.min_signal
+
+        data_in_mask = np.maximum(data_in_mask, min_signal)
+        params_in_mask, extra = self.fit_method(self.design_matrix, data_in_mask,
+                                                *self.args, **self.kwargs)
+
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            dki_params = params_in_mask.reshape(out_shape)
+            if extra is not None:
+                self.extra = extra.reshape(data.shape)
+        else:
+            dki_params = np.zeros(data.shape[:-1] + (27,))
+            dki_params[mask, :] = params_in_mask
+            if extra is not None:
+                self.extra = np.zeros(data.shape)
+                self.extra[mask, :] = extra
+>>>>>>> fix for dki_micro
 
         return DiffusionKurtosisFit(self, params)
 

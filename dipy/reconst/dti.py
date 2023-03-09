@@ -708,14 +708,14 @@ def adjacency_calc(img_shape, mask):
             if flat_mask[idx]:
                 cond = dists[idx, :]
                 cond = cond * flat_mask
-                cond = cond[flat_mask]  # so indices will match masked array 
+                cond = cond[flat_mask]  # so indices will match masked array
                 adj.append(np.argwhere(cond).flatten().tolist())
     else:
         for idx in range(dists.shape[0]):
             cond = dists[idx, :]
             adj.append(np.argwhere(cond).flatten().tolist())
 
-    return adj   
+    return adj
 
 
 class TensorModel(ReconstModel):
@@ -814,7 +814,7 @@ class TensorModel(ReconstModel):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[:-1]
 
-        adjacency : bool
+        adjacency : bool, optional
             Boolean to calculate voxel adjacency accounting for mask.
         """
 
@@ -828,7 +828,8 @@ class TensorModel(ReconstModel):
             mask = np.array(mask, dtype=bool, copy=False)
         data_in_mask = np.reshape(data[mask], (-1, data.shape[-1]))
 
-        # NOTE: build adjacency list, if required - could make a list somewhere that notes whether this is required for a particular algorithm
+        # build adjacency list, if required
+        # NOTE: could make a list somewhere that notes whether this is required for a particular algorithm
         if adjacency:
             self.kwargs["adjacency"] = adjacency_calc(img_shape, mask)
 
@@ -1382,7 +1383,7 @@ def iter_fit_tensor(step=1e4):
             for i in range(0, size, step):
                 if return_S0_hat:
                     (dtiparams[i:i + step], S0params[i:i + step]),\
-                    extra[i:i + step]\
+                     extra[i:i + step]\
                         = fit_tensor(design_matrix,
                                      data[i:i + step],
                                      return_S0_hat=return_S0_hat,
@@ -1419,7 +1420,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
         dimension should contain the data. It makes no copies of data.
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-    adjacency : list
+    adjacency : list, optional
         Adjacency list matching the flattened and masked array data array.
 
     Returns
@@ -1473,7 +1474,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
 
     # calculate weights
     fit_result, _ = ols_fit_tensor(design_matrix, data,
-                                return_lower_triangular=True)
+                                   return_lower_triangular=True)
     w = np.exp(fit_result @ design_matrix.T)
 
     # the weighted problem design_matrix * w is much larger (differs per voxel)
@@ -1512,7 +1513,7 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
         dimension should contain the data. It makes no copies of data.
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-    adjacency : list
+    adjacency : list, optional
         Adjacency list matching the flattened and masked array data array.
     return_lower_triangular : bool
         Boolean to return (True) or not (False) the coefficients of the fit.
@@ -1771,7 +1772,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
 
-    adjacency : list
+    adjacency : list, optional
         Adjacency list matching the flattened and masked array data array.
 
     fail_is_nan : bool
@@ -1902,7 +1903,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
 
-    adjacency : list
+    adjacency : list, optional
         Adjacency list matching the flattened and masked array data array.
 
     fail_is_nan : bool
