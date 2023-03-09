@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.tab import HorizonTab
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -8,7 +9,7 @@ if has_fury:
     from fury import ui
 
 
-class PeaksTab:
+class PeaksTab(HorizonTab):
     def __init__(self, peak_actor):
         self.__actor = peak_actor
         self.__name = 'Peaks'
