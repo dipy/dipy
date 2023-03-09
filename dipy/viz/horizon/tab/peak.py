@@ -8,28 +8,22 @@ if has_fury:
     from fury import ui
 
 
-class PeakTab:
-    def __init__(self, tab_ui, tab_id, peak_actor):
-        self.__tab_ui = tab_ui
-        self.__tab_id = tab_id
-        
+class PeaksTab:
+    def __init__(self, peak_actor):
         self.__actor = peak_actor
-        self.__name = 'Peak'
+        self.__name = 'Peaks'
+        
+        self.__tab_ui = None
+        self.__tab_id = 0
         
         self.__interaction_mode_label = ui.TextBlock2D(
             text='Planes', font_size=18, bold=True)
-        slider_label_x = ui.TextBlock2D(text='Sagittal', font_size=16)
-        slider_label_y = ui.TextBlock2D(text='Coronal', font_size=16)
-        slider_label_z = ui.TextBlock2D(text='Axial', font_size=16)
+        self.__slider_label_x = ui.TextBlock2D(text='Sagittal', font_size=16)
+        self.__slider_label_y = ui.TextBlock2D(text='Coronal', font_size=16)
+        self.__slider_label_z = ui.TextBlock2D(text='Axial', font_size=16)
         
         self.__interaction_mode_label.actor.AddObserver(
             'LeftButtonPressEvent', self.change_interaction_mode_callback, 1.)
-        
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__interaction_mode_label, (.03, .85))
-        self.__tab_ui.add_element(self.__tab_id, slider_label_x, (.06, .68))
-        self.__tab_ui.add_element(self.__tab_id, slider_label_y, (.06, .43))
-        self.__tab_ui.add_element(self.__tab_id, slider_label_z, (.06, .18))
         
         # Initializing sliders
         min_centers = self.__actor.min_centers
@@ -96,20 +90,39 @@ class PeakTab:
         self.add_cross_section_sliders()
     
     def add_cross_section_sliders(self, x_pos=.33):
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_x, (x_pos, .68))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_y, (x_pos, .43))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_slice_z, (x_pos, .18))
+        if self.__tab_ui is not None:
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_x, (x_pos, .68))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_y, (x_pos, .43))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_z, (x_pos, .18))
+        else:
+            raise ValueError('')
     
     def add_range_sliders(self, x_pos=.33):
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_range_x, (x_pos, .68))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_range_y, (x_pos, .43))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_range_z, (x_pos, .18))
+        if self.__tab_ui is not None:
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_range_x, (x_pos, .68))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_range_y, (x_pos, .43))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_range_z, (x_pos, .18))
+        else:
+            raise ValueError('')
+    
+    def build(self):
+        if self.__tab_ui is not None:
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__interaction_mode_label, (.03, .85))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_label_x, (.06, .68))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_label_y, (.06, .43))
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_label_z, (.06, .18))
+        else:
+            raise ValueError('')
     
     def change_range_x(self, slider):
         val1 = slider.left_disk_value
@@ -155,8 +168,8 @@ class PeakTab:
                 self.__actor.cross_section[0], self.__actor.cross_section[1],
                 self.__actor.cross_section[2])
             #scene.clear()
-            remove_range_sliders()
-            add_cross_section_sliders()
+            self.remove_range_sliders()
+            self.add_cross_section_sliders()
             #scene.add(self.__actor)
             #scene.add(panel)
         else:
@@ -166,22 +179,36 @@ class PeakTab:
                 self.__actor.low_ranges[1], self.__actor.high_ranges[1],
                 self.__actor.low_ranges[2], self.__actor.high_ranges[2])
             #scene.clear()
-            remove_cross_section_sliders()
-            add_range_sliders()
+            self.remove_cross_section_sliders()
+            self.add_range_sliders()
             #scene.add(self.__actor)
             #scene.add(panel)
         #iren.Render()
     
     def remove_cross_section_sliders(self):
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_x)
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_y)
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_z)
+        if self.__tab_ui is not None:
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_x)
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_y)
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_z)
+        else:
+            raise ValueError('')
     
     def remove_range_sliders(self):
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_x)
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_y)
-        self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_z)
+        if self.__tab_ui is not None:
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_x)
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_y)
+            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_z)
+        else:
+            raise ValueError('')
     
     @property
     def name(self):
         return self.__name
+    
+    @tab_id.setter
+    def tab_id(self, tab_id):
+        self.__tab_id = tab_id
+    
+    @tab_ui.setter
+    def tab_ui(self, tab_ui):
+        self.__tab_ui = tab_ui
