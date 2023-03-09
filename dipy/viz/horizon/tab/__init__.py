@@ -1,4 +1,4 @@
-from dipy.viz.horizon.tab.base import TabManager
+from dipy.viz.horizon.tab.base import HorizonTab, TabManager
 from dipy.viz.horizon.tab.peak import PeaksTab
 
-__all__ = ['TabManager', 'PeaksTab']
+__all__ = ['HorizonTab', 'TabManager', 'PeaksTab']
