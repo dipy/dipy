@@ -7,13 +7,14 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
+from dipy.viz.horizon.tab import PeaksTab, TabManager
 
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
+    from fury import actor, shaders, ui, window
     from fury.colormap import distinguishable_colormap
 
-    from dipy.viz import actor, shaders, ui, window
     from dipy.viz.panel import _color_slider, build_label, slicer_panel
 
 
@@ -196,6 +197,8 @@ class Horizon(object):
                 self.random_colors = ['tracts', 'rois']
         else:
             self.random_colors = []
+        
+        self.__tabs = []
 
     def build_scene(self):
 
@@ -552,11 +555,16 @@ class Horizon(object):
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
+            self.__tabs.append(PeaksTab(peak_actor))
             scene.add(peak_actor)
         else:
             data = None
             affine = None
             pam = None
+        
+        if len(self.__tabs) > 0:
+            tab_mgr = TabManager(self.__tabs)
+            scene.add(tab_mgr.tab_ui)
 
         self.win_size = scene.GetSize()
 
