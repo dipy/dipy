@@ -14,8 +14,8 @@ class HorizonTab(ABC):
     def build(self, tab_id, tab_ui):
         pass
     
-    @abstractmethod
     @property
+    @abstractmethod
     def name(self):
         pass
 
