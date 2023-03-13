@@ -67,3 +67,10 @@ def build_label(text, font_size=18, bold=False):
     label.color = (0.7, 0.7, 0.7)
 
     return label
+
+
+def color_slider(slider):
+    slider.default_color = (1, 0.5, 0)
+    slider.track.color = (0.8, 0.3, 0)
+    slider.active_color = (0.9, 0.4, 0)
+    slider.handle.color = (1, 0.5, 0)
