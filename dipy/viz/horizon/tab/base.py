@@ -11,7 +11,7 @@ if has_fury:
 
 class HorizonTab(ABC):
     @abstractmethod
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, tab_ui_size):
         pass
     
     @property
@@ -20,7 +20,7 @@ class HorizonTab(ABC):
         pass
 
 class TabManager:
-    def __init__(self, tabs):
+    def __init__(self, tabs, win_size):
         # TODO: Handle size dynamically
         num_tabs = len(tabs)
         
@@ -70,7 +70,7 @@ def build_label(text, font_size=18, bold=False):
 
 
 def color_slider(slider):
-    slider.default_color = (1, 0.5, 0)
-    slider.track.color = (0.8, 0.3, 0)
-    slider.active_color = (0.9, 0.4, 0)
-    slider.handle.color = (1, 0.5, 0)
+    slider.default_color = (1., .5, .0)
+    slider.track.color = (.8, .3, .0)
+    slider.active_color = (.9, .4, .0)
+    slider.handle.color = (1., .5, .0)
