@@ -37,3 +37,33 @@ class TabManager:
     @property
     def tab_ui(self):
         return self.__tab_ui
+
+
+def build_label(text, font_size=18, bold=False):
+    """
+    Simple utility function to build labels
+
+    Parameters
+    ----------
+    text : str
+    font_size : int
+    bold : bool
+
+    Returns
+    -------
+    label : TextBlock2D
+    """
+
+    label = ui.TextBlock2D()
+    label.message = text
+    label.font_size = font_size
+    label.font_family = 'Arial'
+    label.justification = 'left'
+    label.bold = bold
+    label.italic = False
+    label.shadow = False
+    label.actor.GetTextProperty().SetBackgroundColor(0, 0, 0)
+    label.actor.GetTextProperty().SetBackgroundOpacity(0.0)
+    label.color = (0.7, 0.7, 0.7)
+
+    return label
