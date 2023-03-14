@@ -349,10 +349,8 @@ class Horizon(object):
 
         title = 'Horizon ' + horizon_version
         self.show_m = window.ShowManager(
-            scene, title=title,
-            size=(1200, 900),
-            order_transparent=self.order_transparent,
-            reset_camera=False)
+            scene, title=title, size=(1920, 1080), reset_camera=False,
+            order_transparent=self.order_transparent)
         self.show_m.initialize()
 
         if self.cluster and self.tractograms:
@@ -561,10 +559,6 @@ class Horizon(object):
             data = None
             affine = None
             pam = None
-        
-        if len(self.__tabs) > 0:
-            tab_mgr = TabManager(self.__tabs)
-            scene.add(tab_mgr.tab_ui)
 
         self.win_size = scene.GetSize()
 
@@ -580,6 +574,10 @@ class Horizon(object):
                     self.help_panel.re_align(size_change)
                 if self.roi_images:
                     self.panel3.re_align(size_change)
+        
+        if len(self.__tabs) > 0:
+            tab_mgr = TabManager(self.__tabs, self.win_size)
+            scene.add(tab_mgr.tab_ui)
 
         self.show_m.initialize()
 
