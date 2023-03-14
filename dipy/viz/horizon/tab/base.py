@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 
@@ -21,18 +23,21 @@ class HorizonTab(ABC):
 
 class TabManager:
     def __init__(self, tabs, win_size):
-        # TODO: Handle size dynamically
         num_tabs = len(tabs)
+        win_width, win_height = win_size
+        
+        tab_size = (np.rint(win_width / 1.5), np.rint(win_height / 4.5))
+        x_pad = np.rint((win_width - tab_size[0]) / 2)
         
         self.__tab_ui = ui.TabUI(
-            position=(5, 5), size=(320, 240), nb_tabs=num_tabs,
+            position=(x_pad, 5), size=tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
             draggable=False
         )
         
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
-            tab.build(id, self.__tab_ui)
+            tab.build(id, self.__tab_ui, tab_size)
     
     @property
     def tab_ui(self):
