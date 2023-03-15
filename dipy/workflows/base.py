@@ -1,23 +1,44 @@
+import itertools
 import sys
 import inspect
 
 import argparse
+import collections
 from dipy.workflows.docstring_parser import NumpyDocString
 
 
+Param = collections.namedtuple(
+    "Param", ("name", "type", "description", "default"))
+
+if sys.version_info[0] >= 3:
+    Empty = inspect.Parameter.empty
+else:
+    class Empty:
+        """Marker object for args with no default values
+        (as opposed to args defaulting to None).
+
+        Copied from the `inspect._empty` class in Python 3.
+        """
+
+
 def get_args_default(func):
+    """Return a dict mapping function parameter names to their default values
+    or :class:`Empty` if no default value is specified."""
+    arg_defaults = {}
     if sys.version_info[0] >= 3:
         sig_object = inspect.signature(func)
-        params = sig_object.parameters.values()
-        names = [param.name for param in params if param.name != 'self']
-        defaults = [param.default for param in params
-                    if param.default is not inspect._empty]
+        for param in sig_object.parameters.values():
+            if param.name != "self":
+                arg_defaults[param.name] = param.default
     else:
         specs = inspect.getargspec(func)
-        names = specs.args[1:]
-        defaults = specs.defaults
+        names = reversed(specs.args[1:])
+        defaults = reversed(specs.defaults)
+        params = itertools.zip_longest(names, defaults, fillvalue=Empty)
+        for name, default in params:
+            arg_defaults[name] = default
 
-    return names, defaults
+    return arg_defaults
 
 
 def none_or_dtype(dtype):
@@ -86,7 +107,13 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
                                   conflict_handler=conflict_handler,
                                   add_help=add_help)
 
-        self.doc = None
+        self._output_params = None
+        self._positional_params = None
+        self._optional_params = None
+
+        # Flag to keep track of whether a variable
+        # required arg is already present.
+        self._variable_arg_present = None
 
     def add_workflow(self, workflow):
         """Take a workflow object and use introspection to extract the
@@ -104,100 +131,139 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         -------
         sub_flow_optionals : dictionary of all sub workflow optional parameters
         """
+        # get the args from the doc string
+        # doc_parameters will be a list of tuples of (arg name, type, description)
+        npds = NumpyDocString(inspect.getdoc(workflow.run))
+        self.description = "{0}\n\n{1}".format(
+            " ".join(npds["Summary"]),
+            " ".join(npds["Extended Summary"]))
 
-        doc = inspect.getdoc(workflow.run)
-        npds = NumpyDocString(doc)
-        self.doc = npds['Parameters']
-        self.description = '{0}\n\n{1}'.format(
-            ' '.join(npds['Summary']),
-            ' '.join(npds['Extended Summary']))
+        # get the arg default values from the actual function definition
+        arg_defaults = get_args_default(workflow.run)
 
-        if npds['References']:
-            ref_text = [text if text else "\n" for text in npds['References']]
-            ref_idx = self.epilog.find('References: \n') + \
-                len('References: \n')
-            self.epilog = "{0}{1}\n{2}".format(self.epilog[:ref_idx],
-                                               ''.join(ref_text),
-                                               self.epilog[ref_idx:])
+        self._compile_args(npds["Parameters"], arg_defaults)
 
-        self._output_params = [param for param in npds['Parameters']
-                               if 'out_' in param[0]]
-        self._positional_params = [param for param in npds['Parameters']
-                                   if 'optional' not in param[1] and
-                                      'out_' not in param[0]]
-        self._optional_params = [param for param in npds['Parameters']
-                                 if 'optional' in param[1]]
-
-        args, defaults = get_args_default(workflow.run)
-
-        output_args = self.add_argument_group('output arguments(optional)')
-
-        len_args = len(args)
-        len_defaults = len(defaults)
-        nb_positional_variable = 0
-
-        if len_args != len(self.doc):
-            raise ValueError(
-                    self.prog + ": Number of parameters in the "
-                    "doc string and run method does not match. "
-                    "Please ensure that the number of parameters "
-                    "in the run method is same as the doc string.")
-
-        for i, arg in enumerate(args):
-            prefix = ''
-            is_optional = i >= len_args - len_defaults
-            if is_optional:
-                prefix = '--'
-
-            typestr = self.doc[i][1]
-            dtype, isnarg = self._select_dtype(typestr)
-            help_msg = ' '.join(self.doc[i][2])
-
-            _args = ['{0}{1}'.format(prefix, arg)]
-            _kwargs = {'help': help_msg,
-                       'type': dtype,
-                       'action': 'store'}
-
-            if is_optional:
-                _kwargs['metavar'] = dtype.__name__
-                if dtype is bool:
-                    _kwargs['action'] = 'store_true'
-                    default_ = dict()
-                    default_[arg] = False
-                    self.set_defaults(**default_)
-                    del _kwargs['type']
-                    del _kwargs['metavar']
-            elif dtype is bool:
-                _kwargs['type'] = int
-                _kwargs['choices'] = [0, 1]
-
-            if dtype is tuple:
-                _kwargs['type'] = str
-
-            if isnarg:
-                if is_optional:
-                    _kwargs['nargs'] = '*'
-                else:
-                    _kwargs['nargs'] = '+'
-                    nb_positional_variable += 1
-
-            if 'out_' in arg:
-                output_args.add_argument(*_args, **_kwargs)
+        # insert any references into "References" section of the epilog
+        if npds["References"]:
+            ref_header = "References: \n"
+            ref_text = ''.join((text or "\n" for text in npds['References']))
+            if ref_header not in self.epilog:
+                self.epilog += ref_header + ref_text
             else:
-                if _kwargs['action'] != 'store_true':
-                    _kwargs['type'] = none_or_dtype(_kwargs['type'])
-                self.add_argument(*_args, **_kwargs)
+                epilog_parts = self.epilog.split(ref_header, 1)
+                self.epilog = ''.join((
+                    epilog_parts[0], ref_header, ref_text, "\n", epilog_parts[0]
+                ))
 
-        if nb_positional_variable > 1:
-            raise ValueError(self.prog + " : All positional arguments present"
-                             " are gathered into a list. It does not make"
-                             "much sense to have more than one positional"
-                             " argument with 'variable string' as dtype."
-                             " Please, ensure that 'variable (type)'"
-                             " appears only once as a positional argument."
-                             )
+        # add required parameters
+        self._variable_arg_present = False
+        for param in self._positional_params:
+            self._add_positional_arg(param, self)
 
-        return self.add_sub_flow_args(workflow.get_sub_runs())
+        # add optional parameters
+        for param in self._optional_params:
+            self._add_optional_arg(param, self)
+
+        # add output parameters
+        if self._output_params:
+            output_args = self.add_argument_group('output arguments (optional)')
+            for param in self._output_params:
+                self._add_optional_arg(param, output_args)
+
+        # TODO refactor add_sub_flow_args
+        # return self.add_sub_flow_args(workflow.get_sub_runs())
+        return {}
+
+    def _compile_args(self, docstring_parameters, arg_defaults):
+        """Sort the parameters into positional args, optional args, and outputs
+        based on the parameter names and default values."""
+        self._positional_params = []
+        self._optional_params = []
+        self._output_params = []
+        for param_name, param_type, param_desc in docstring_parameters:
+            if param_name not in arg_defaults:
+                raise ValueError(
+                    f"Argument '{param_name}' not present "
+                    f"in function signature.")
+
+            description = " ".join(param_desc)
+            default_value = arg_defaults.pop(param_name)
+            # TODO remove for backwards compatibility?
+            param = Param(param_name, param_type, description, default_value)
+
+            if param_name.startswith("out_"):
+                if default_value is Empty:
+                    raise ValueError(
+                        f"Required argument '{param_name}' "
+                        f"starts with reserved keyword 'out'.")
+                self._output_params.append(param)
+            elif "optional" in param_type:
+                if default_value is Empty:
+                    raise ValueError(
+                        f"Required argument '{param_name}' "
+                        f"marked as optional in docstring.")
+                self._optional_params.append(param)
+            elif default_value is Empty:
+                self._positional_params.append(param)
+            else:
+                raise ValueError(
+                    f"Arg '{param_name}' has default value but is not "
+                    f"not marked as output or optional in docstring.")
+
+        # Ensure that number of function parameters match
+        # the arguments in the doc strings
+        if arg_defaults:
+            raise ValueError(
+                f"Arguments are missing from docstring: {list(arg_defaults)}")
+
+    def _add_positional_arg(self, param, arg_group):
+        """Add a new positional argument to the parser."""
+        dtype, isnarg = self._select_dtype(param.type)
+        _kwargs = {"help": param.description, "action": "store"}
+
+        if dtype is bool:
+            _kwargs["type"] = none_or_dtype(int)
+            _kwargs["choices"] = [0, 1]
+        elif dtype is tuple:
+            _kwargs["type"] = none_or_dtype(str)
+        else:
+            _kwargs["type"] = none_or_dtype(dtype)
+
+        if isnarg:
+            if self._variable_arg_present:
+                raise ValueError(
+                    f"{self.prog}: All positional arguments present "
+                    "are gathered into a list. It does not make "
+                    "much sense to have more than one positional "
+                    "argument with 'variable string' as dtype. "
+                    "Please, ensure that 'variable (type)' "
+                    "appears only once as a positional argument. ")
+            _kwargs["nargs"] = "+"
+            self._variable_arg_present = True
+
+        # arg_name = f"{param.name}".replace("_", "-")
+        arg_name = param.name
+        arg_group.add_argument(arg_name, **_kwargs)
+
+    def _add_optional_arg(self, param, arg_group):
+        """Add a new optional argument to the parser."""
+        dtype, isnarg = self._select_dtype(param.type)
+        _kwargs = {"help": param.description, "action": "store"}
+
+        if dtype is bool:
+            _kwargs["action"] = "store_true" if param.default else "store_false"
+        else:
+            if dtype is tuple:
+                dtype = str
+            _kwargs["type"] = none_or_dtype(dtype)
+            _kwargs["metavar"] = dtype.__name__
+
+        if isnarg:
+            _kwargs["nargs"] = '*'
+
+        # arg_name = f"--{param.name}".replace("_", "-")
+        arg_name = f"--{param.name}"
+        arg_group.add_argument(arg_name, **_kwargs)
 
     def add_sub_flow_args(self, sub_flows):
         """ Take an array of workflow objects and use introspection to extract
@@ -270,37 +336,39 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         return sub_flow_optionals
 
-    def _select_dtype(self, text):
-        """ Analyses a docstring parameter line and returns the good argparser
-        type.
+    @staticmethod
+    def _select_dtype(arg_type_str):
+        """ Analyses a docstring parameter line and returns the corresponding
+        data type for the argparse argument.
 
         Parameters
         ----------
-        text : string
+        arg_type_str : string
             Parameter text line to inspect.
 
         Returns
         -------
         arg_type : The type found by inspecting the text line.
 
-        is_nargs : Whether or not this argument is nargs
+        is_nargs : Whether this argument is nargs
         (arparse's multiple values argument)
         """
-        text = text.lower()
-        nargs_str = 'variable'
-        is_nargs = nargs_str in text
-        arg_type = None
+        arg_type_str = arg_type_str.lower()
+        is_nargs = "variable" in arg_type_str
 
-        if 'str' in text:
+        if "str" in arg_type_str:
             arg_type = str
-        if 'int' in text:
+        elif "int" in arg_type_str:
             arg_type = int
-        if 'float' in text:
+        elif "float" in arg_type_str:
             arg_type = float
-        if 'bool' in text:
+        elif "bool" in arg_type_str:
             arg_type = bool
-        if 'tuple' in text:
+        elif "tuple" in arg_type_str:
             arg_type = tuple
+        else:
+            raise ValueError(
+                f"Unable to determine data type from docstring: {arg_type_str}")
 
         return arg_type, is_nargs
 
@@ -308,12 +376,13 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         """Return the parsed arguments as a dictionary that will be used
         as a workflow's run method arguments.
         """
-
         ns_args = self.parse_args(args, namespace)
-        dct = vars(ns_args)
-        res = dict((k, v) for k, v in dct.items() if v is not None)
-        res.update(dict((k, None) for k, v in res.items() if v == 'None'))
-        return res
+        flow_args = {
+            arg_name: value if value != "None" else None
+            for arg_name, value in vars(ns_args).items()
+            if value is not None
+        }
+        return flow_args
 
     def update_argument(self, *args, **kargs):
         self.add_argument(*args, **kargs)
