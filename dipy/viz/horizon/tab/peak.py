@@ -21,13 +21,14 @@ class PeaksTab(HorizonTab):
         
         self.__interaction_mode_label = build_label(
             text='Planes', font_size=20, bold=True)
-        self.__slider_label_x = build_label(text='X Slice')
-        self.__slider_label_y = build_label(text='Y Slice')
-        self.__slider_label_z = build_label(text='Z Slice')
         
         self.__interaction_mode_label.actor.AddObserver(
             'LeftButtonPressEvent', self.__change_interaction_mode_callback,
             1.)
+        
+        self.__slider_label_x = build_label(text='X Slice')
+        self.__slider_label_y = build_label(text='Y Slice')
+        self.__slider_label_z = build_label(text='Z Slice')
         
         # Initializing sliders
         min_centers = self.__actor.min_centers
