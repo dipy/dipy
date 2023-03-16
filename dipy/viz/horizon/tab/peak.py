@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab
+from dipy.viz.horizon.tab import HorizonTab, build_label, color_slider
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -19,11 +19,11 @@ class PeaksTab(HorizonTab):
         
         self.__panel = None
         
-        self.__interaction_mode_label = ui.TextBlock2D(
-            text='Planes', font_size=18, bold=True)
-        self.__slider_label_x = ui.TextBlock2D(text='Sagittal', font_size=16)
-        self.__slider_label_y = ui.TextBlock2D(text='Coronal', font_size=16)
-        self.__slider_label_z = ui.TextBlock2D(text='Axial', font_size=16)
+        self.__interaction_mode_label = build_label(
+            text='Planes', font_size=20, bold=True)
+        self.__slider_label_x = build_label(text='X Slice')
+        self.__slider_label_y = build_label(text='Y Slice')
+        self.__slider_label_z = build_label(text='Z Slice')
         
         self.__interaction_mode_label.actor.AddObserver(
             'LeftButtonPressEvent', self.__change_interaction_mode_callback,
@@ -56,6 +56,10 @@ class PeaksTab(HorizonTab):
             initial_value=cross_section[2], min_value=min_centers[2],
             max_value=max_centers[2], length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
+        
+        color_slider(self.__slider_slice_x)
+        color_slider(self.__slider_slice_y)
+        color_slider(self.__slider_slice_z)
         
         self.__slider_slice_x.on_change = self.__change_slice_x
         self.__slider_slice_y.on_change = self.__change_slice_y
