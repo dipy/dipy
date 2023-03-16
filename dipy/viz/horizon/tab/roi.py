@@ -17,7 +17,7 @@ class RoIsTab(HorizonTab):
         
         self.__panel = None
         
-        self.__slider_label_opacity = build_label(text="Opacity")
+        self.__slider_label_opacity = build_label(text='Opacity')
         
         opacity = 1
         
