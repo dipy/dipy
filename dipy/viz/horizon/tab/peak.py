@@ -17,8 +17,6 @@ class PeaksTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__panel = None
-        
         self.__interaction_mode_label = build_label(
             text='Planes', font_size=20, bold=True)
         
@@ -190,22 +188,18 @@ class PeaksTab(HorizonTab):
         else:
             raise ValueError('')
     
-    def build(self, tab_id, tab_ui, tab_ui_size):
+    def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
         
-        tab_ui_width, tab_ui_height = tab_ui_size
-        panel_size = (tab_ui_width - 10, (tab_ui_height * .9) - 10)
-        
-        self.__panel = ui.Panel2D(
-            panel_size, color=(1, 1, 1), opacity=.1, align='center')
-        
-        self.__panel.add_element(self.__interaction_mode_label, (.03, .85))
-        self.__panel.add_element(self.__slider_label_x, (.06, .68))
-        self.__panel.add_element(self.__slider_label_y, (.06, .43))
-        self.__panel.add_element(self.__slider_label_z, (.06, .18))
-        
-        self.__tab_ui.add_element(self.__tab_id, self.__panel, (5, 5))
+        self.__tab_ui.add_element(
+            slef.__tab_id, self.__interaction_mode_label, (.03, .85))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_label_x, (.06, .68))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_label_y, (.06, .43))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_label_z, (.06, .18))
         
         # Default view of Peak Actor is range
         # self.__add_range_sliders()
