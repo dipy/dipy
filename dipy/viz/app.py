@@ -7,7 +7,7 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.tab import PeaksTab, TabManager
+from dipy.viz.horizon.tab import PeaksTab, RoIsTab, TabManager
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -486,9 +486,9 @@ class Horizon(object):
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
             first_img = True
-            first_roi = True
             if self.roi_images:
                 roi_color = self.roi_colors
+                roi_actors = []
                 for img in self.images:
                     img_data, img_affine = img
                     dim = np.unique(img_data).shape[0]
@@ -500,42 +500,7 @@ class Horizon(object):
                             color=roi_color, opacity=self.mem.roi_opacity)
                         self.mem.slicer_roi_actor.append(roi_actor)
                         scene.add(roi_actor)
-
-                        if first_roi:
-                            self.panel3 = ui.Panel2D(
-                                size=(320, 100), position=(870, 730),
-                                color=(1, 1, 1), opacity=0.1, align="right")
-
-                            rois_panel_label = build_label(text="ROIs panel",
-                                                           bold=True)
-
-                            slider_label_opacity = build_label(text="Opacity")
-                            slider_opacity = ui.LineSlider2D(
-                                min_value=0.0, max_value=1.0,
-                                initial_value=self.mem.roi_opacity, length=140,
-                                text_template="{ratio:.0%}")
-                            _color_slider(slider_opacity)
-
-                            def change_opacity(slider):
-                                roi_opacity = slider.value
-                                self.mem.roi_opacity = roi_opacity
-                                for contour in self.mem.slicer_roi_actor:
-                                    contour.GetProperty().SetOpacity(
-                                        roi_opacity)
-
-                            slider_opacity.on_change = change_opacity
-
-                            self.panel3.add_element(slider_label_opacity,
-                                                    coords=(0.1, 0.3))
-                            self.panel3.add_element(slider_opacity,
-                                                    coords=(0.42, 0.3))
-
-                            self.panel3.add_element(rois_panel_label,
-                                                    coords=(0.05, 0.7))
-
-                            scene.add(self.panel3)
-
-                            first_roi = False
+                        roi_actors.append(roi_actor)
                     else:
                         if first_img:
                             data, affine = img
@@ -544,6 +509,8 @@ class Horizon(object):
                                 scene, self.show_m.iren, data, affine,
                                 self.world_coords, mem=self.mem)
                             first_img = False
+                if len(roi_actors) > 0:
+                    self.__tabs.append(RoIsTab(roi_actors))
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
@@ -572,8 +539,6 @@ class Horizon(object):
                 if self.cluster:
                     self.panel2.re_align(size_change)
                     self.help_panel.re_align(size_change)
-                if self.roi_images:
-                    self.panel3.re_align(size_change)
         
         if len(self.__tabs) > 0:
             tab_mgr = TabManager(self.__tabs, self.win_size)
