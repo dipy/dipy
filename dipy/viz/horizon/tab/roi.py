@@ -1,5 +1,3 @@
-import numpy as np
-
 from dipy.utils.optpkg import optional_package
 from dipy.viz.horizon.tab import HorizonTab, build_label, color_slider
 
