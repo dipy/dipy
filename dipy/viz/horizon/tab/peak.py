@@ -193,9 +193,7 @@ class PeaksTab(HorizonTab):
         panel_size = (tab_ui_width - 10, (tab_ui_height * .9) - 10)
         
         self.__panel = ui.Panel2D(
-            panel_size, color=(0.1, 0.1, 0.1), opacity=0.7,
-            align='left', border_color=(1, 1, 1), border_width=0,
-            has_border=False)
+            panel_size, color=(1, 1, 1), opacity=.1, align='center')
         
         self.__panel.add_element(self.__interaction_mode_label, (.03, .85))
         self.__panel.add_element(self.__slider_label_x, (.06, .68))
