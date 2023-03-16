@@ -13,7 +13,7 @@ if has_fury:
 
 class HorizonTab(ABC):
     @abstractmethod
-    def build(self, tab_id, tab_ui, tab_ui_size):
+    def build(self, tab_id, tab_ui):
         pass
     
     @property
@@ -32,12 +32,11 @@ class TabManager:
         self.__tab_ui = ui.TabUI(
             position=(x_pad, 5), size=tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
-            draggable=False
-        )
+            draggable=False)
         
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
-            tab.build(id, self.__tab_ui, tab_size)
+            tab.build(id, self.__tab_ui)
     
     @property
     def tab_ui(self):
