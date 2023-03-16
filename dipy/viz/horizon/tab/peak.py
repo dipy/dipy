@@ -193,7 +193,7 @@ class PeaksTab(HorizonTab):
         self.__tab_ui = tab_ui
         
         self.__tab_ui.add_element(
-            slef.__tab_id, self.__interaction_mode_label, (.03, .85))
+            self.__tab_id, self.__interaction_mode_label, (.03, .85))
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_x, (.06, .68))
         self.__tab_ui.add_element(
