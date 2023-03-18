@@ -9,13 +9,9 @@ from datetime import datetime
 now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
 root_logdir = "tf_logs"
 logdir = "{}/run-{}/".format(root_logdir, now)
-
-
-
-
-
-
 '''
+Title : Denoising diffusion weighted imaging data using CNN
+=====
 
 we constructed a simple 1D-CNN model that has five layers, including two convolutional layers, each
 followed by a max-pooling layer, and a dense layer (Figure 1). The first convolutional layer was given an
@@ -25,40 +21,34 @@ activation function was used in both convolutional layers. There was 1 max-pooli
 size of 2 with stride 2. In the dense layer, the extracted features of the high-noise image were mapped to
 the low-noise reference image.
 
+reference:
+---------
+Denoising diffusion weighted imaging data using convolutional neural networks
+Hu Cheng, Sophia Vinci-Booher, Jian Wang, Bradley Caron, Qiuting Wen, Sharlene Newman, Franco Pestilli
+bioRxiv 2022.01.17.476708; doi: https://doi.org/10.1101/2022.01.17.476708
 
-
-
-Contributed by :
-Hu Chenga,b Sophia Vinci-Boohera, Jian Wangc, Bradley Carona, Qiuting Wend, Sharlene Newmane,Franco Pestillif
-
-Ref:Denoising diffusion weighted imaging data using convolutional neural networks( https://www.biorxiv.org/content/10.1101/2022.01.17.476708v1.abstract )
-Ref Code : https://github.com/huchengMRI/DWI-SoS-denoising
-
-
-
-
+Contributors:
+------------
+-Rahul Suresh Ubale :implemented the cnn_1denoiser model and tested the code.
+-Hu Cheng :provided guidance and support for the project.
+-Eleftherios Garyfallidis :provided guidance and support for the project.
 '''
-
-
-
-
-
-class cnn_1denoiser(object):
-    def __init__(self,sigLength,optimizer='adam', loss='mean_squared_error', metrics=['accuracy'], loss_weights=None):
-        
-        
+class cnn_1denoiser:
+    def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error', metrics=('accuracy',),
+         loss_weights=None): 
         '''
         Parameters
         ----------
-        sigLength : Int
+        sig_length : Int
             Shape of data(Time) 
-        optimizer : String  
+        optimizer : str, optional  
             Adam (Default) optimization algorithm name
-        loss : string ,mean_squared_error(Default)[fixed]
-            Select loss function for measuring accuracy.Computes the mean of squares of errors between labels and predictions
+        loss : str, optional ,mean_squared_error(Default)[fixed]
+            Select loss function for measuring accuracy.
+            Computes the mean of squares of errors between labels and predictions
         metrics : Funtion name 
             accuracy (Default) ,judge the performance of your model
-        optimizer : String
+        optimizer : str, optional
             Select optimizer. Default adam.
         loss : floats
             Optional list or dictionary specifying scalar coefficients to weight.
@@ -70,10 +60,7 @@ class cnn_1denoiser(object):
     #           Pooling
     #           Flatten
     #           Dense 
-    
-
-
-        input_layer = Input(shape=(sigLength, 1))
+        input_layer = Input(shape=(sig_length, 1))
         x = Conv1D(filters=16, kernel_size=16, kernel_initializer='Orthogonal',
                 padding='same', name=f'Conv1')(input_layer)
         x = Activation('relu', name=f'ReLU1')(x)
@@ -83,7 +70,7 @@ class cnn_1denoiser(object):
         x = Activation('relu', name=f'ReLU2')(x)
         pool2 = max_pool_1d(x)
         pool2_flat = tf.keras.layers.Flatten()(pool2)
-        logits = tf.keras.layers.Dense(units=sigLength, activation='relu')(pool2_flat)
+        logits = tf.keras.layers.Dense(units=sig_length, activation='relu')(pool2_flat)
         model = Model(inputs=input_layer, outputs=logits)
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics,loss_weights=loss_weights)
         self.model = model
@@ -93,7 +80,6 @@ class cnn_1denoiser(object):
                            loss_weights=loss_weights)
 
     def summary(self):
-
         """
         Get the summary of the model.
 
@@ -115,7 +101,6 @@ class cnn_1denoiser(object):
         x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         sz = y.shape
         y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-
         return train_test_split(x,y)
 
     def fit(self, x=None, y=None, batch_size=None, epochs=1, verbose=1,
@@ -124,21 +109,20 @@ class cnn_1denoiser(object):
         validation_steps=None, validation_batch_size=None,
         validation_freq=1, max_queue_size=10, workers=1,
         use_multiprocessing=False):
-
         """
         Train the model on train dataset.
 
         The fit method will train the model for a fixed
-        number of epochs (iterations) on a dataset.If given data 
+        number of epochs (iterations) on a dataset. If given data 
         is  4D it will convert it into 1D
 
         Parameters
         ----------
         x_train         : ndarray
-            the x_train is the train dataset
+            the x_train is the train dataset(noise-free data)
         y_train         : ndarray shape=(BatchSize,)
-            the y_train is the labels of the train dataset
-        epochs          : int (Default = 5)
+            the y_train is the labels of the train dataset(noise-added data)
+        epochs          : Int (Default = 5)
             the number of epochs
         verbose         :'auto', 0, 1, or 2. 
             Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch
@@ -161,15 +145,12 @@ class cnn_1denoiser(object):
            Only relevant if validation_data is provided and is a tf.data dataset.
         validation_freq	  :
            Only relevant if validation data is provided.
-        max_queue_size	  :Integer. 
+        max_queue_size	  :Integer 
            Used for generator or keras.utils.Sequence input only.
         workers	Integer  : Int
            Used for generator or keras.utils.Sequence input only.
         use_multiprocessing	Boolean :
            Used for generator or keras.utils.Sequence input only.
-
-
-        
 
         Returns
         -------
@@ -178,16 +159,12 @@ class cnn_1denoiser(object):
             training loss values and metrics values at successive epochs
 
         """
-
-
-
         sz = x.shape
         if len(sz) == 4:
             x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         sz = y.shape
         if len(sz) == 4:
             y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-        
         return self.model.fit(x=x, y=y, batch_size=batch_size,
                             epochs=epochs, verbose=verbose,
                             callbacks=callbacks,
@@ -214,29 +191,25 @@ class cnn_1denoiser(object):
         Parameters
         ----------
         x_test : ndarray
-            the x_test is the test dataset
+            the x_test is the test dataset.
         y_test : ndarray shape=(BatchSize,)
-            the y_test is the labels of the test dataset
-        verbose : int (Default = 2)
+            the y_test is the labels of the test dataset.
+        verbose : Int (Default = 2)
             By setting verbose 0, 1 or 2 you just say how do you want to
             'see' the training progress for each epoch.
 
         Returns
         -------
         evaluate : List
-            return list of loss value and accuracy value on test dataset
+            return list of loss value and accuracy value on test dataset.
 
         """
-
-
         sz = x.shape
         if len(sz) == 4:
             x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         sz = y.shape
         if len(sz) == 4:
             y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-
-
         return self.model.evaluate(x=x, y=y, batch_size=batch_size,
                                 verbose=verbose, steps=steps,
                                 callbacks=callbacks,
@@ -248,9 +221,6 @@ class cnn_1denoiser(object):
     def predict(self, x, batch_size=None, verbose=0,
                 steps=None, callbacks=None, max_queue_size=10, workers=1,
                 use_multiprocessing=False):
-
-
-
         """
         Predict the output from input samples.
 
@@ -260,7 +230,7 @@ class cnn_1denoiser(object):
         Parameters
         ----------
         x_train : ndarray
-            the x_test is the test dataset or input samples
+            the x_test is the test dataset or input samples.
 
         Returns
         -------
@@ -268,7 +238,6 @@ class cnn_1denoiser(object):
             Numpy array(s) of predictions.
 
         """        
-
         sz = x.shape
         x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         predicted_img = self.model.predict(x=x, batch_size=batch_size,
@@ -281,21 +250,18 @@ class cnn_1denoiser(object):
         img_denoised = x_img
         return img_denoised
 
-
-
     def save_weights(self, filepath, overwrite=True):
         '''
-        save_weights()  saves the weights to HDF5 
+        save_weights()  saves the weights to HDF5. 
 
         Parameters
         ----------
-        filepath : String
-            File path
+        filepath : str, optional
+            File path.
         overwrite: Boolean
-            True or False
+            True or False.
 
         '''
-        
         self.model.save_weights(filepath=filepath, overwrite=overwrite,
                                 save_format=None)
 
@@ -306,8 +272,8 @@ class cnn_1denoiser(object):
 
         Parameters
         ----------
-        filepath : String
-            File path
+        filepath : str, optional
+            File path.
 
         '''
         self.model.load_weights(filepath)
