@@ -12,26 +12,21 @@ logdir = "{}/run-{}/".format(root_logdir, now)
 '''
 Title : Denoising diffusion weighted imaging data using CNN
 =====
+Obtaining tissue microstructure measurements from diffusion weighted imaging (DWI) with multiple,
+high b-values is crucial. However, the high noise levels present in these images can adversely affect
+the accuracy of the microstructural measurements. In this context, we suggest a straightforward denoising technique that
+can be applied to any DWI dataset as long as a low-noise, single-subject dataset is obtained using the same DWI sequence.
+We created a simple 1D-CNN model with five layers, based on the 1D CNN for denoising speeches.
+The model consists of two convolutional layers followed by max-pooling layers, and a dense layer.
+The first convolutional layer has 16 one-dimensional filters of size 16, and the second layer has 32 filters of size 8.
+ReLu activation function is applied to both convolutional layers. The max-pooling layer has a kernel
+size of 2 and a stride of 2. 
+The dense layer maps the features extracted from the noisy image to the low-noise reference image.
 
-we constructed a simple 1D-CNN model that has five layers, including two convolutional layers, each
-followed by a max-pooling layer, and a dense layer (Figure 1). The first convolutional layer was given an
-input of the ‘noisy’ high-noise image and consisted of 16 one-dimensional filtering kernels of size 16. The
-second convolutional layer consisted of 32 one-dimensional filtering kernels of size 8. The ReLu
-activation function was used in both convolutional layers. There was 1 max-pooling layer that had a kernel
-size of 2 with stride 2. In the dense layer, the extracted features of the high-noise image were mapped to
-the low-noise reference image.
-
-reference:
+Reference:
 ---------
 Denoising diffusion weighted imaging data using convolutional neural networks
 Hu Cheng, Sophia Vinci-Booher, Jian Wang, Bradley Caron, Qiuting Wen, Sharlene Newman, Franco Pestilli
-bioRxiv 2022.01.17.476708; doi: https://doi.org/10.1101/2022.01.17.476708
-
-Contributors:
-------------
--Rahul Suresh Ubale :implemented the cnn_1denoiser model and tested the code.
--Hu Cheng :provided guidance and support for the project.
--Eleftherios Garyfallidis :provided guidance and support for the project.
 '''
 class cnn_1denoiser:
     def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error', metrics=('accuracy',),
@@ -40,14 +35,14 @@ class cnn_1denoiser:
         Parameters
         ----------
         sig_length : Int
-            Shape of data(Time) 
+            Length of DWI signal 
         optimizer : str, optional  
             Adam (Default) optimization algorithm name
         loss : str, optional ,mean_squared_error(Default)[fixed]
             Select loss function for measuring accuracy.
             Computes the mean of squares of errors between labels and predictions
         metrics : Funtion name 
-            accuracy (Default) ,judge the performance of your model
+            Accuracy (Default) ,judge the performance of your model
         optimizer : str, optional
             Select optimizer. Default adam.
         loss : floats
@@ -96,12 +91,48 @@ class cnn_1denoiser:
         return self.model.summary()
     
 
-    def train_test_split(self,x=None,y=None):
+    def train_test_split(self, x=None, y=None, test_size=None,
+        train_size=None, random_state=None, shuffle=True, stratify=None):
+        """
+        Splits the input data into random train and test subsets.
+
+        Parameters:
+        -----------
+        x: numpy array, input data.
+        y: numpy array, target data.
+        test_size: float or int, optional (default=None)
+            If float, should be between 0.0 and 1.0 and 
+            represent the proportion of the dataset to include in the test split.
+            If int, represents the absolute number of test samples.
+            If None, the value is set to the complement of the train size.
+            If train_size is also None, it will be set to 0.25.
+        train_size: float or int, optional (default=None)
+            If float, should be between 0.0 and 1.0 and
+            represent the proportion of the dataset to include in the train split.
+            If int, represents the absolute number of train samples.
+            If None, the value is automatically set to the complement of the test size.
+        random_state: int, RandomState instance or None, optional (default=None)
+            Controls the shuffling applied to the data before applying the split.
+            Pass an int for reproducible output across multiple function calls. See Glossary.
+        shuffle: bool, optional (default=True)
+            Whether or not to shuffle the data before splitting.
+            If shuffle=False then stratify must be None.
+        stratify: array-like, optional (default=None)
+            If not None, data is split in a stratified fashion,
+            using this as the class labels. Read more in the User Guide.
+
+        Returns:
+        Tuple of four numpy arrays: x_train, x_test, y_train, y_test.
+        """
         sz = x.shape
-        x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
+        if len(sz) == 4:
+            x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
         sz = y.shape
-        y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
-        return train_test_split(x,y)
+        if len(sz) == 4:
+            y = np.reshape(y, (sz[0]*sz[1]*sz[2], sz[3]))
+        return train_test_split(x, y, test_size=test_size, train_size=train_size, 
+                                random_state=random_state, shuffle=shuffle,
+                                stratify=stratify)
 
     def fit(self, x=None, y=None, batch_size=None, epochs=1, verbose=1,
         callbacks=None, validation_split=0.0, validation_data=None,
@@ -114,16 +145,16 @@ class cnn_1denoiser:
 
         The fit method will train the model for a fixed
         number of epochs (iterations) on a dataset. If given data 
-        is  4D it will convert it into 1D
+        is  4D it will convert it into 1D.
 
         Parameters
         ----------
         x_train         : ndarray
-            the x_train is the train dataset(noise-free data)
+            The x_train is the train dataset(noise-free data)
         y_train         : ndarray shape=(BatchSize,)
-            the y_train is the labels of the train dataset(noise-added data)
+            The y_train is the labels of the train dataset(noise-added data)
         epochs          : Int (Default = 5)
-            the number of epochs
+            The number of epochs
         verbose         :'auto', 0, 1, or 2. 
             Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch
         callbacks       : List of keras.callbacks.Callback instances
@@ -178,7 +209,6 @@ class cnn_1denoiser:
                             max_queue_size=max_queue_size, workers=workers,
                             use_multiprocessing=use_multiprocessing)
 
-
     def evaluate(self, x=None, y=None, batch_size=None, verbose=1,
                 steps=None, callbacks=None, max_queue_size=10, workers=1,
                 use_multiprocessing=False, return_dict=False):
@@ -186,14 +216,14 @@ class cnn_1denoiser:
         Evaluate the model on test dataset.
 
         The evaluate method will evaluate the model on a test
-        dataset.If Data is 4D it is converted into 1D.
+        dataset. If data is 4D it is converted into 1D.
 
         Parameters
         ----------
         x_test : ndarray
-            the x_test is the test dataset.
+            The x_test is the test dataset.
         y_test : ndarray shape=(BatchSize,)
-            the y_test is the labels of the test dataset.
+            The y_test is the labels of the test dataset.
         verbose : Int (Default = 2)
             By setting verbose 0, 1 or 2 you just say how do you want to
             'see' the training progress for each epoch.
@@ -201,7 +231,7 @@ class cnn_1denoiser:
         Returns
         -------
         evaluate : List
-            return list of loss value and accuracy value on test dataset.
+            Return list of loss value and accuracy value on test dataset.
 
         """
         sz = x.shape
@@ -224,19 +254,19 @@ class cnn_1denoiser:
         """
         Predict the output from input samples.
 
-        The predict method will generates output predictions
+        The predict method will generate output predictions
         for the input samples.
 
         Parameters
         ----------
         x_train : ndarray
-            the x_test is the test dataset or input samples.
+            The x_test is the test dataset or input samples.
 
         Returns
         -------
         predict : ndarray shape(TestSize,OutputSize)
             Numpy array(s) of predictions.
-
+            
         """        
         sz = x.shape
         x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
@@ -252,13 +282,13 @@ class cnn_1denoiser:
 
     def save_weights(self, filepath, overwrite=True):
         '''
-        save_weights()  saves the weights to HDF5. 
+        Saves the weights to HDF5. 
 
         Parameters
         ----------
-        filepath : str, optional
+        Filepath : str, optional
             File path.
-        overwrite: Boolean
+        Overwrite: Boolean
             True or False.
 
         '''
@@ -266,18 +296,13 @@ class cnn_1denoiser:
                                 save_format=None)
 
     def load_weights(self, filepath):
-
         '''
-        loads the weights
+        Loads the weights
 
         Parameters
         ----------
-        filepath : str, optional
+        Filepath : str, optional
             File path.
 
         '''
         self.model.load_weights(filepath)
-
-        
-
-    
