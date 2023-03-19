@@ -1,9 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Conv1D, Activation
-from tensorflow.keras.models import *
+from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
-#from patchify import patchify, unpatchify
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
@@ -28,7 +27,7 @@ Reference:
 Denoising diffusion weighted imaging data using convolutional neural networks
 Hu Cheng, Sophia Vinci-Booher, Jian Wang, Bradley Caron, Qiuting Wen, Sharlene Newman, Franco Pestilli
 '''
-class cnn_1denoiser:
+class Cnn1DDenoiser:
     def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error', metrics=('accuracy',),
          loss_weights=None): 
         '''
@@ -46,8 +45,7 @@ class cnn_1denoiser:
         optimizer : str, optional
             Select optimizer. Default adam.
         loss : floats
-            Optional list or dictionary specifying scalar coefficients to weight.
-            
+            Optional list or dictionary specifying scalar coefficients to weight.    
         '''
     # Layer 1 - Convolutional Layer(16*1*16) + ReLU activation
     #           Pooling
@@ -70,9 +68,25 @@ class cnn_1denoiser:
         model.compile(optimizer=optimizer, loss=loss, metrics=metrics,loss_weights=loss_weights)
         self.model = model
 
-    def compile(self, optimizer='adam', loss=None, metrics=None,loss_weights=None):
-        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
-                           loss_weights=loss_weights)
+    def compile(self, optimizer='adam', loss=None, metrics=None, loss_weights=None):
+        """
+        Configures the model for training.
+
+        Parameters:
+        -----------
+        optimizer - String (name of optimizer) or optimizer instance. Defaults to 'adam'.
+        loss - String (name of objective function) or objective function. If 'None', the
+                model will be compiled without any loss function and can only be used to
+                predict output. Defaults to `None`.
+        metrics - List of metrics to be evaluated by the model during training and testing.
+        loss_weights - Optional list or dictionary specifying scalar coefficients (Python
+                        floats) to weight the loss contributions of different model outputs.
+                        The loss value that will be minimized by the model will then be the
+                        weighted sum of all individual losses. If a list, it is expected to
+                        have a 1:1 mapping to the model's outputs. If a dict, it is expected
+                        to map output names (strings) to scalar coefficients. Defaults to `None`.
+        """
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics, loss_weights=loss_weights)
 
     def summary(self):
         """
