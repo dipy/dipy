@@ -1,6 +1,5 @@
 import pytest
 import numpy as np
-import nibabel as nib
 from dipy.utils.optpkg import optional_package
 tf, have_tf, _ = optional_package('tensorflow')
 

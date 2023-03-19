@@ -4,10 +4,6 @@ from tensorflow.keras.layers import Conv1D, Activation
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
 from sklearn.model_selection import train_test_split
-from datetime import datetime
-now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
-root_logdir = "tf_logs"
-logdir = "{}/run-{}/".format(root_logdir, now)
 '''
 Title : Denoising diffusion weighted imaging data using CNN
 =====
@@ -100,7 +96,6 @@ class Cnn1DDenoiser:
         -------
         summary : NoneType
             the summary of the model
-
         """
         return self.model.summary()
     
@@ -202,7 +197,6 @@ class Cnn1DDenoiser:
         hist : object
             A History object. Its History.history attribute is a record of
             training loss values and metrics values at successive epochs
-
         """
         sz = x.shape
         if len(sz) == 4:
@@ -246,7 +240,6 @@ class Cnn1DDenoiser:
         -------
         evaluate : List
             Return list of loss value and accuracy value on test dataset.
-
         """
         sz = x.shape
         if len(sz) == 4:
@@ -279,8 +272,7 @@ class Cnn1DDenoiser:
         Returns
         -------
         predict : ndarray shape(TestSize,OutputSize)
-            Numpy array(s) of predictions.
-            
+            Numpy array(s) of predictions.          
         """        
         sz = x.shape
         x = np.reshape(x, (sz[0]*sz[1]*sz[2], sz[3]))
@@ -304,7 +296,6 @@ class Cnn1DDenoiser:
             File path.
         Overwrite: Boolean
             True or False.
-
         '''
         self.model.save_weights(filepath=filepath, overwrite=overwrite,
                                 save_format=None)
@@ -317,6 +308,5 @@ class Cnn1DDenoiser:
         ----------
         Filepath : str, optional
             File path.
-
         '''
         self.model.load_weights(filepath)
