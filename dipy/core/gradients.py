@@ -210,7 +210,26 @@ class GradientTable(object):
         denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
-
+    
+    def __getitem__(self, idx):
+        # Create a mask for selecting b-values greater than threshold
+        if isinstance(idx, int):
+            idx = [idx]
+        elif isinstance(idx, slice):
+            idx = range(*idx.indices(len(self.bvals)))
+        mask = self.bvals[idx] > 200
+        
+        # Apply the mask to select the desired b-values and b-vectors
+        bvals_selected = self.bvals[idx][mask]
+        bvecs_selected = self.bvecs[:, idx][:, mask]
+        
+        # Create a new MyGradientTable object with the selected b-values and b-vectors
+        return gradient_table_from_bvals_bvecs(bvals_selected, bvecs_selected, big_delta=0.03,
+                                           small_delta=0.01,
+                                           b0_threshold=50,
+                                           atol=1e-2, btens=None)
+    #gave default value for small_delta, big_delta and b0_threshold
+    
     @property
     def info(self, use_logging=False):
         show = logging.info if use_logging else print
