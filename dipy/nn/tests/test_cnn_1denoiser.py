@@ -5,8 +5,7 @@ from dipy.utils.optpkg import optional_package
 tf, have_tf, _ = optional_package('tensorflow')
 
 if have_tf:
-    from dipy.nn.cnn_1denoiser import Cnn1DDenoiser
-
+    from dipy.nn.cnn_1d_denoising import Cnn1DDenoiser
 
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_1CNN_sequential():
