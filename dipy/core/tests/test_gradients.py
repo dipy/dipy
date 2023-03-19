@@ -460,6 +460,26 @@ def test_generate_bvecs():
     cos_theta = np.dot(bvecs_2[0], bvecs_2[1])
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
+def test_getitem(): 
+	# Create a GradientTable object with some test b-values and b-vectors
+	bvals = np.array([0, 100, 200, 300, 400])
+	bvecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [1, 0, 1]])
+	gtab = GradientTable(bvals, bvecs)
+
+	# Test slicing with a single index
+	gtab_slice1 = gtab[2]
+	assert np.array_equal(gtab_slice1.bvals, np.array([200]))
+	assert np.array_equal(gtab_slice1.bvecs, np.array([[0., 0., 1.]]))
+
+	# Test slicing with a range
+	gtab_slice2 = gtab[1:4]
+	assert np.array_equal(gtab_slice2.bvals, np.array([100, 200, 300]))
+	assert np.array_equal(gtab_slice2.bvecs, np.array([[0., 1., 0.], [0., 0., 1.], [1., 1., 0.]]))
+
+	# Test slicing with a boolean mask
+	gtab_slice3 = gtab[gtab.bvals > 200]
+	assert np.array_equal(gtab_slice3.bvals, np.array([300, 400]))
+	assert np.array_equal(gtab_slice3.bvecs, np.array([[1., 1., 0.], [1., 0., 1.]]))
 
 def test_round_bvals():
     bvals_gt = np.array([1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 0])
