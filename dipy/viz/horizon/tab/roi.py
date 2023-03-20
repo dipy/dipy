@@ -19,9 +19,15 @@ class ROIsTab(HorizonTab):
         
         opacity = 1
         
+        length = 185
+        lw = 3
+        radius = 8
+        fs = 16
+        tt = '{ratio:.0%}'
+        
         self.__slider_opacity = ui.LineSlider2D(
-            min_value=.0, max_value=1., initial_value=opacity, length=140, 
-            text_template="{ratio:.0%}")
+            initial_value=opacity, min_value=.0, max_value=1., length=length,
+            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
         color_slider(self.__slider_opacity)
         
