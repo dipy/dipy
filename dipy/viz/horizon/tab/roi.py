@@ -10,7 +10,7 @@ if has_fury:
 class ROIsTab(HorizonTab):
     def __init__(self, contour_actors):
         self.__actors = contour_actors
-        self.__name = 'RoIs'
+        self.__name = 'ROIs'
         
         self.__tab_id = 0
         self.__tab_ui = None
