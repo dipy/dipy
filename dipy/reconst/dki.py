@@ -10,7 +10,8 @@ from dipy.reconst.dti import (TensorFit, mean_diffusivity,
                               MIN_POSITIVE_SIGNAL, nlls_fit_tensor,
                               restore_fit_tensor)
 from dipy.reconst.utils import dki_design_matrix as design_matrix
-from dipy.reconst.recspeed import local_maxima
+from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
+                                   search_descending)
 from dipy.reconst.base import ReconstModel
 from dipy.core.ndindex import ndindex
 from dipy.core.geometry import (sphere2cart, cart2sphere,
@@ -18,6 +19,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
 from dipy.data import get_sphere, get_fnames
 from dipy.reconst.vec_val_sum import vec_val_vect
 from dipy.core.gradients import check_multi_b
+from dipy.direction.peaks import PeaksAndMetrics
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
@@ -2074,7 +2076,105 @@ class DiffusionKurtosisFit(TensorFit):
         """
         return kurtosis_fractional_anisotropy(self.model_params)
 
-    def predict(self, gtab, S0=1.):
+    def dki_odf(self, sphere, alpha=4):
+        """
+        The diffusion kurtosis estimate of the orientation distribution
+        function (DKI-ODF). This estimates the DKI-ODF in every direction of
+        the given sphere in every voxel of the input data.
+
+        Parameters
+        ----------
+        sphere : Sphere class instance.
+            The DKI-ODF is calculated in the vertices of this input.
+        alpha : float, optional
+            radial weighting power. Default is 4 according to [Jen2014]_ and
+            [Raf2015]_
+
+        Returns
+        -------
+        dki_odf : ndarray
+            The DKI-ODF sampled in every direction of the sphere in every
+            voxel of the input data.
+
+        Notes
+        -----
+        This is based on the DKI-ODF estimate proposed by [Jen2014]_.
+        More information about this method can be found in [Raf2015]_.
+
+        .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+            non-Gaussian corrections for diffusion orientation distribution
+            function. NMR Biomed. 27, 202-211.
+            http://dx.doi.org/10.1002/nbm.3053.
+
+        .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+            H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+            tensor - Impact on the development of robust tractography
+            procedures and novel biomarkers. NeuroImage 111: 85-99.
+            doi:10.1016/j.neuroimage.2015.02.004
+        """
+        return diffusion_kurtosis_odf(self.model_params, sphere, alpha)
+
+    def dki_directions(self, sphere, alpha=4, relative_peak_threshold=0.1,
+                       min_separation_angle=20, mask=None, return_odf=False,
+                       normalize_peaks=False, npeaks=3, gtol=1e-5):
+        """ Estimation of fiber directions based on diffusion kurtosis imaging
+        (DKI). Fiber directions are estimated as the maxima of the DKI
+        orientation distribution function [Jen2014]_. This function is based on
+        the work done by [Raf2015]_.
+
+        Parameters
+        ----------
+        sphere : Sphere class instance, optional
+            The sphere providing sample directions for initial evaluation of
+            the DKI-ODF.
+        alpha : float, optional
+            Radial weighting power of the orientation distribution function.
+            Default is 4 according to [Jen2014]_ and [Raf2015]_.
+        relative_peak_threshold : float, optional
+            Only return peaks greater than ``relative_peak_threshold * m``
+            where m is the largest peak.
+        min_separation_angle : float in [0, 90], optional
+            The minimum distance between directions. If two peaks are too close
+            only the larger of the two is returned.
+        mask : array, optional
+            If `mask` is provided, voxels that are False in `mask` are skipped
+            and no peaks are returned.
+        return_odf : bool, optional
+            If True, the odfs sampled on sphere directions are returned.
+        normalize_peaks : bool, optional
+            If true, all peak values are calculated relative to `max(odf)`.
+        npeaks : int, optional
+            Maximum number of peaks found (default 3 peaks).
+        gtol : float, optional
+            Degree gradient must be less than gtol before succesful
+            termination. If gtol is None, fiber direction is directly taken
+            from the initial sampled directions of the given sphere object.
+
+        Returns
+        -------
+        pam : PeaksAndMetrics
+            An object with ``peak_directions``, ``peak_values``,
+            ``peak_indices``, ``odf`` as attributes
+
+        .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+            non-Gaussian corrections for diffusion orientation distribution
+            function. NMR Biomed. 27, 202-211.
+            http://dx.doi.org/10.1002/nbm.3053.
+
+        .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+            H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+            tensor - Impact on the development of robust tractography
+            procedures and novel biomarkers. NeuroImage 111: 85-99.
+            doi:10.1016/j.neuroimage.2015.02.004
+        """
+        return dki_directions(self.model_params, sphere, alpha=alpha,
+                              relative_peak_threshold=relative_peak_threshold,
+                              min_separation_angle=min_separation_angle,
+                              mask=mask, return_odf=return_odf,
+                              normalize_peaks=normalize_peaks,
+                              npeaks=npeaks, gtol=gtol)
+
+    def predict(self, gtab, S0=1):
         r""" Given a DKI model fit, predict the signal on the vertices of a
         gradient table
 
@@ -2527,6 +2627,172 @@ def split_dki_param(dki_params):
     return evals, evecs, kt
 
 
+def diffusion_kurtosis_odf(dki_params, sphere, alpha=4):
+    """ The diffusion kurtosis estimate of the orientation distribution
+    function (DKI-ODF). This estimates the DKI-ODF in every direction of the
+    given sphere in every voxel of the input data.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance.
+        The DKI-ODF is calculated in the vertices of this input.
+    alpha : float, optional
+        Radial weighting power. Default is 4 according to [Jen2014]_ and
+        [Raf2015]_.
+
+    Returns
+    -------
+    kODF : ndarray (x, y, z, g) or (n, g)
+        The DKI-ODF sampled for every voxel of the input data and every g
+        directions of the sphere.
+
+    Notes
+    -----
+    This is based on the DKI-ODF estimate proposed by [Jen2014]_. More
+    information about this method can be found in [Raf2015]_.
+
+    .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+        non-Gaussian corrections for diffusion orientation distribution
+        function. NMR Biomed. 27, 202-211. http://dx.doi.org/10.1002/nbm.3053.
+
+    .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+        H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+        tensor - Impact on the development of robust tractography procedures
+        and novel biomarkers. NeuroImage 111: 85-99.
+        doi:10.1016/j.neuroimage.2015.02.004
+    """
+    # flat data
+    outshape = dki_params.shape[:-1]
+    dki_params = dki_params.reshape((-1, dki_params.shape[-1]))
+
+    # Split data
+    evals, evecs, kt = split_dki_param(dki_params)
+
+    # Initialize AKC matrix
+    V = sphere.vertices
+    kODF = np.zeros((len(kt), len(V)))
+
+    rel_i = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    kt = kt[rel_i]
+    evecs = evecs[rel_i]
+    evals = evals[rel_i]
+    kODFi = kODF[rel_i]
+
+    # loop over all relevant voxels
+    for vox in range(len(kt)):
+        # Compute dimensionless tensor U
+        R = evecs[vox]
+        dt = np.dot(np.dot(R, np.diag(evals[vox])), R.T)
+        MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
+        U = np.linalg.pinv(dt) * MD
+
+        # loop over all directions
+        sampledODF = np.zeros(len(V))
+        for i in range(len(V)):
+            sampledODF[i] = _dki_odf_core(V[i], kt[vox], U, alpha)
+
+        kODFi[vox] = sampledODF
+
+    # reshape data according to input data
+    kODF[rel_i] = kODFi
+    kODF = kODF.reshape((outshape + (len(V),)))
+    return kODF
+
+
+def _dki_odf_core(n, kt, U, alpha=4):
+    r""" Helper function thar compute the DKI based ODF estimation of a voxel
+    along the given directions n
+
+    Parameters
+    ----------
+    n : array (3,)
+        arrays containing the three cartesian coordinates of direction n
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    U : array (3, 3)
+        dimensionless tensor defined by $U = \overline{D} \times DT^{-1}$,
+        where \overline{D} is the mean diffusivity and DT the diffusion tensor
+    alpha : float, optional
+        Radial weighting power. Default is 4.
+
+    Returns
+    -------
+    dki_odf : float
+        The DKI-ODF value for direction n.
+    """
+    # Compute elements of matrix V
+    Un = np.dot(U, n)
+    nUn = np.dot(n, Un)
+    V00 = Un[0]**2 / nUn
+    V11 = Un[1]**2 / nUn
+    V22 = Un[2]**2 / nUn
+    V01 = Un[0]*Un[1] / nUn
+    V02 = Un[0]*Un[2] / nUn
+    V12 = Un[1]*Un[2] / nUn
+
+    # diffusion ODF
+    ODFg = (1./nUn) ** ((alpha+1.)/2.)
+
+    # Estimate ODF
+    ODF = \
+        (ODFg *
+         (1. + 1/24. *
+          (kt[0] * (3*U[0, 0]*U[0, 0] - 6*(alpha+1)*U[0, 0]*V00 +
+                    (alpha+1)*(alpha+3)*V00*V00) +
+           kt[1] * (3*U[1, 1]*U[1, 1] - 6*(alpha+1)*U[1, 1]*V11 +
+                    (alpha+1) * (alpha + 3)*V11*V11) +
+           kt[2] * (3*U[2, 2]*U[2, 2] - 6*(alpha+1)*U[2, 2]*V22 +
+                    (alpha+1)*(alpha+3)*V22*V22) +
+           kt[3] * (12*U[0, 0]*U[0, 1] - 12*(alpha+1)*U[0, 0]*V01 -
+                    12*(alpha+1)*U[0, 1]*V00 + 4*(alpha+1)*(alpha+3)*V00*V01) +
+           kt[4] * (12*U[0, 0]*U[0, 2] - 12*(alpha+1)*U[0, 0]*V02 -
+                    12*(alpha+1)*U[0, 2]*V00 + 4*(alpha+1)*(alpha+3)*V00*V02) +
+           kt[5] * (12*U[0, 1]*U[1, 1] - 12*(alpha+1)*U[0, 1]*V11 -
+                    12*(alpha+1)*U[1, 1]*V01 + 4*(alpha+1)*(alpha+3)*V01*V11) +
+           kt[6] * (12*U[1, 1]*U[1, 2] - 12*(alpha+1)*U[1, 1]*V12 -
+                    12*(alpha+1)*U[1, 2]*V11 + 4*(alpha+1)*(alpha+3)*V11*V12) +
+           kt[7] * (12*U[0, 2]*U[2, 2] - 12*(alpha+1)*U[0, 2]*V22 -
+                    12*(alpha+1)*U[2, 2]*V02 + 4*(alpha+1)*(alpha+3)*V02*V22) +
+           kt[8] * (12*U[1, 2]*U[2, 2] - 12*(alpha+1)*U[1, 2]*V22 -
+                    12*(alpha+1)*U[2, 2]*V12 + 4*(alpha+1)*(alpha+3)*V12*V22) +
+           kt[9] * (6*U[0, 0]*U[1, 1] + 12*U[0, 1]*U[0, 1] -
+                    6*(alpha+1)*U[0, 0]*V11 - 6*(alpha+1)*U[1, 1]*V00 -
+                    24*(alpha+1)*U[0, 1]*V01 + 2*(alpha+1)*(alpha+3)*V00*V11 +
+                    4*(alpha+1)*(alpha+3)*V01*V01) +
+           kt[10] * (6*U[0, 0]*U[2, 2] + 12*U[0, 2]*U[0, 2] -
+                     6*(alpha+1)*U[0, 0]*V22 - 6*(alpha+1)*U[2, 2]*V00 -
+                     24*(alpha+1)*U[0, 2]*V02 + 2*(alpha+1)*(alpha+3)*V00*V22 +
+                     4*(alpha+1)*(alpha+3)*V02*V02) +
+           kt[11] * (6*U[1, 1]*U[2, 2] + 12*U[1, 2]*U[1, 2] -
+                     6*(alpha+1)*U[1, 1]*V22 - 6*(alpha+1)*U[2, 2]*V11 -
+                     24*(alpha+1)*U[1, 2]*V12 + 2*(alpha+1)*(alpha+3)*V11*V22 +
+                     4*(alpha+1)*(alpha+3)*V12*V12) +
+           kt[12] * (12*U[0, 0]*U[1, 2] + 24*U[0, 1]*U[0, 2] -
+                     12*(alpha+1)*U[0, 0]*V12 - 12*(alpha+1)*U[1, 2]*V00 -
+                     24*(alpha+1)*U[0, 1]*V02 - 24*(alpha+1)*U[0, 2]*V01 +
+                     4*(alpha+1)*(alpha+3)*V00*V12 +
+                     8*(alpha+1)*(alpha+3)*V01*V02) +
+           kt[13] * (12*U[1, 1]*U[0, 2] + 24*U[1, 0]*U[1, 2] -
+                     12*(alpha+1)*U[1, 1]*V02 - 12*(alpha+1)*U[0, 2]*V11 -
+                     24*(alpha+1)*U[0, 1]*V12 - 24*(alpha+1)*U[1, 2]*V01 +
+                     4*(alpha+1)*(alpha+3)*V11*V02 +
+                     8*(alpha+1)*(alpha+3)*V01*V12) +
+           kt[14] * (12*U[2, 2]*U[0, 1] + 24*U[2, 0]*U[2, 1] -
+                     12*(alpha+1)*U[2, 2]*V01 - 12*(alpha+1)*U[0, 1]*V22 -
+                     24*(alpha+1)*U[0, 2]*V12 - 24*(alpha+1)*U[1, 2]*V02 +
+                     4*(alpha+1)*(alpha+3)*V22*V01 +
+                     8*(alpha+1)*(alpha+3)*V02*V12))))
+
+    return ODF
+
+
 common_fit_methods = {'WLS': wls_fit_dki,
                       'OLS': ols_fit_dki,
                       'NLS': nlls_fit_tensor,
@@ -2539,3 +2805,212 @@ common_fit_methods = {'WLS': wls_fit_dki,
                       'restore': restore_fit_tensor,
                       'RESTORE': restore_fit_tensor
                       }
+
+ind_ele = {1: 0, 16: 1, 81: 2, 2: 3, 3: 4, 8: 5, 24: 6, 27: 7, 54: 8, 4: 9,
+           9: 10, 36: 11, 6: 12, 12: 13, 18: 14}
+
+
+def dki_directions(dki_params, sphere, alpha=4, relative_peak_threshold=0.1,
+                   min_separation_angle=20, mask=None, return_odf=False,
+                   normalize_peaks=False, npeaks=3, gtol=1e-5):
+    """ Estimation of fiber direction based on diffusion kurtosis imaging
+    (DKI). Fiber directions are estimated as the maxima of the orientation
+    distribution function [Jen2014]_. This function is based on the work done by
+    [Raf2015]_.
+
+    Parameters
+    ----------
+    dki_params : ndarray (x, y, z, 27) or (n, 27)
+        All parameters estimated from the diffusion kurtosis model.
+        Parameters are ordered as follow:
+            1) Three diffusion tensor's eingenvalues
+            2) Three lines of the eigenvector matrix each containing the first,
+               second and third coordinates of the eigenvector
+            3) Fifteen elements of the kurtosis tensor
+    sphere : Sphere class instance, optional
+        The sphere providing sample directions for initial evaluation of the
+        DKI-ODF.
+    alpha : float, optional
+        Radial weighting power of the orientation distribution function.
+        Default is 4 according to [Jen2014]_ and [Raf2015]_.
+    relative_peak_threshold : float, optional
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90], optional
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
+    mask : array, optional
+        If `mask` is provided, voxels that are False in `mask` are skipped and
+        no peaks are returned.
+    return_odf : bool, optional
+        If True, the odfs sampled on sphere directions are returned.
+    normalize_peaks : bool, optional
+        If true, all peak values are calculated relative to `max(odf)`.
+    npeaks : int, optional
+        Maximum number of peaks found (default 3 peaks).
+    gtol : float, optional
+        Degree gradient must be less than gtol before succesful termination. If
+        gtol is None, fiber direction is directly taken from the initial
+        sampled directions of the given sphere object
+
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        An object with ``peak_directions``, ``peak_values``, ``peak_indices``,
+        ``odf`` as attributes
+
+    .. [Jen2014] Jensen, J.H., Helpern, J.A., Tabesh, A., (2014). Leading
+        non-Gaussian corrections for diffusion orientation distribution
+        function. NMR Biomed. 27, 202-211. http://dx.doi.org/10.1002/nbm.3053.
+
+    .. [Raf2015] Neto Henriques, R., Correia, M.M., Nunes, R.G., Ferreira,
+        H.A. (2015). Exploring the 3D geometry of the diffusion kurtosis
+        tensor - Impact on the development of robust tractography procedures
+        and novel biomarkers. NeuroImage 111: 85-99.
+        doi:10.1016/j.neuroimage.2015.02.004
+    """
+    shape = dki_params.shape[:-1]
+
+    # select voxels where to find fiber directions
+    if mask is None:
+        mask = np.ones(shape, dtype='bool')
+    else:
+        if mask.shape != shape:
+            raise ValueError("Mask is not the same shape as data.")
+    evals, evecs, kt = split_dki_param(dki_params)
+    # select non-zero voxels
+    pos_evals = _positive_evals(evals[..., 0], evals[..., 1], evals[..., 2])
+    mask = np.logical_and(mask, pos_evals)
+
+    # initialize parameters for pam
+    qa_array = np.zeros((shape + (npeaks,)))
+    peak_dirs = np.zeros((shape + (npeaks, 3)))
+    peak_values = np.zeros((shape + (npeaks,)))
+    peak_indices = np.zeros((shape + (npeaks,)), dtype='int')
+    if return_odf:
+        odf_array = np.zeros((shape + (len(sphere.vertices),)))
+
+    # for all voxels:
+    global_max = -np.inf
+    for idx in ndindex(shape):
+        if not mask[idx]:
+            continue
+
+        # Compute dimensionless tensor U
+        dt = np.dot(np.dot(evecs[idx], np.diag(evals[idx])), evecs[idx].T)
+        MD = (dt[0, 0] + dt[1, 1] + dt[2, 2]) / 3
+        U = np.linalg.pinv(dt) * MD
+
+        # First sample of the DKI-ODF
+        odf = np.zeros(len(sphere.vertices))
+        for i in range(len(sphere.vertices)):
+            odf[i] = _dki_odf_core(sphere.vertices[i], kt[idx], U, alpha)
+        if return_odf:
+            odf_array[idx] = odf
+
+        # First estimate of the fiber direction from sphere vertices
+        pk, ind = local_maxima(odf, sphere.edges)
+        n = len(pk)
+
+        if n != 0:
+            di = sphere.vertices[ind]
+
+            # To remove possible peak duplicates in opposite directions, we
+            # first remove all peaks closer than 10% of the selected
+            # relative_peak_threshold
+            odf_min = odf.min()
+            odf_min = odf_min if (odf_min >= 0.) else 0.
+            values_norm = (pk - odf_min)
+            n = search_descending(values_norm, relative_peak_threshold * 0.1)
+            if n != 0:
+                ind = ind[:n]
+                di = di[:n]
+                pk = pk[:n]
+
+                # Direction convergence
+                if gtol is not None:
+                    for p in range(n):
+                        r, theta, phi = cart2sphere(di[p, 0],
+                                                    di[p, 1],
+                                                    di[p, 2])
+                        ang = np.array([theta, phi])
+                        ang[:] = opt.fmin_bfgs(_dki_odf_converge, ang,
+                                               args=(kt[idx], U, alpha),
+                                               gtol=gtol, disp=False,
+                                               retall=False)
+                        di[p] = np.array(sphere2cart(1., ang[0], ang[1]))
+                        pk[p] = _dki_odf_core(di[p], kt[idx], U, alpha)
+
+                # remove small peaks
+                values_norm = (pk - odf_min)
+                n = search_descending(values_norm, relative_peak_threshold)
+                ind = ind[:n]
+                di = di[:n]
+                pk = pk[:n]
+
+                # Remove peaks too close together
+                di, uniq = remove_similar_vertices(di, min_separation_angle,
+                                                   return_index=True)
+                pk = pk[uniq]
+                ind = ind[uniq]
+
+                n = min(npeaks, len(pk))
+
+                # Saving directions
+                global_max = max(global_max, pk[0])
+                qa_array[idx][:n] = pk[:n] - odf.min()
+                peak_dirs[idx][:n] = di[:n]
+                peak_indices[idx][:n] = ind[:n]
+                peak_values[idx][:n] = pk[:n]
+
+                if normalize_peaks:
+                    peak_values[idx][:n] /= pk[0]
+                    peak_dirs[idx] *= peak_values[idx][:, None]
+            else:
+                global_max = max(global_max, odf.max())
+
+    qa_array /= global_max
+    pam = PeaksAndMetrics()
+    pam.sphere = sphere
+    pam.peak_dirs = peak_dirs
+    pam.peak_values = peak_values
+    pam.peak_indices = peak_indices
+    pam.qa = qa_array
+    if return_odf:
+        pam.odf = odf_array
+
+    return pam
+
+
+def _dki_odf_converge(ang, kt, U, alpha=4):
+    r""" Helper function that computes the negate of the DKI based ODF
+    estimation of a voxel along a given directions in polar coordinates.
+
+    Parameters
+    ----------
+    ang : array (2,)
+        arrays containing the two polar angles
+    kt : array (15,)
+        elements of the kurtosis tensor of the voxel.
+    U : array (3, 3)
+        dimensionless tensor defined by $U = \overline{D} \times DT^{-1}$,
+        where \overline{D} is the mean diffusivity and DT the diffusion tensor
+    alpha : float, optional
+        Radial weighting power. Default is 4.
+
+    Returns
+    -------
+    dki_odf : float
+        The negated DKI-ODF value for the given direction.
+
+    Notes
+    -----
+    This function is used to refine the ODF maxima directions beyond the
+    precision of the directions samples in a given sphere object
+
+    See also
+    --------
+    dipy.reconst.dki.dki_directions
+    """
+    n = np.array(sphere2cart(1, ang[0], ang[1]))
+    return - _dki_odf_core(n, kt, U, alpha=alpha)
