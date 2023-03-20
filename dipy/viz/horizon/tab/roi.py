@@ -7,7 +7,7 @@ if has_fury:
     from fury import ui
 
 
-class RoIsTab(HorizonTab):
+class ROIsTab(HorizonTab):
     def __init__(self, contour_actors):
         self.__actors = contour_actors
         self.__name = 'RoIs'

@@ -34,9 +34,14 @@ class TabManager:
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
             draggable=False)
         
+        #self.__tab_ui.parent_panel.color = (1., 1., 1.)
+        #self.__tab_ui.parent_panel.opacity = 1.
+        
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
             tab.build(id, self.__tab_ui)
+            self.__tab_ui.tabs[id].color = (1., 1., 1.)
+            #self.__tab_ui.tabs[id].opacity = .1
     
     @property
     def tab_ui(self):
