@@ -14,7 +14,8 @@ from dipy.align import (syn_registration, register_series, register_dwi_series,
                         center_of_mass, translation, rigid_isoscaling,
                         rigid_scaling, rigid, affine, motion_correction,
                         affine_registration, streamline_registration,
-                        write_mapping, read_mapping, register_dwi_to_template)
+                        write_mapping, read_mapping, register_dwi_to_template,
+                        resample)
 
 from dipy.align.imwarp import DiffeomorphicMap
 
@@ -208,7 +209,12 @@ def test_single_transforms():
                                    static_affine, level_iters=[5, 5],
                                    sigmas=[3, 1], factors=[2, 1])
         # We don't ask for much:
+
         npt.assert_almost_equal(affine_mat[:3, :3], np.eye(3), decimal=1)
+
+    # test resample code
+    resample(moving, static, moving_affine, static_affine, None)
+    npt.assert_equal(moving, static)
 
 
 def test_register_series():
@@ -242,6 +248,18 @@ def test_register_dwi_series_and_motion_correction():
 
         npt.assert_array_equal(reg_img.get_fdata(), reg_img_2.get_fdata())
         npt.assert_array_equal(reg_affines, reg_affines_2)
+
+        # slicewise test
+        reg_img_2d, reg_affines_2d = \
+            register_dwi_series(data, gtab, img.affine, slice_index=1)
+        npt.assert_(isinstance(reg_img_2d, nib.Nifti1Image))
+
+        # test series registration when several b0 images in dataset
+        bvals[0:4] = bvals.min()
+        np.savetxt(op.join(tmpdir, 'bvals.txt'), bvals[:10])
+        gtab = dpg.gradient_table(op.join(tmpdir, 'bvals.txt'),
+                                  op.join(tmpdir, 'bvecs.txt'))
+        reg_img, reg_affines = register_dwi_series(data, gtab, img.affine)
 
 
 def test_streamline_registration():
