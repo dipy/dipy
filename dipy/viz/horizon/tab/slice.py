@@ -23,7 +23,7 @@ class SlicesTab(HorizonTab):
         
         opacity = 1
         
-        length = 185
+        length = 485
         lw = 3
         radius = 8
         fs = 16
@@ -91,23 +91,27 @@ class SlicesTab(HorizonTab):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
         
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_opacity, (.06, .85))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_x, (.06, .68))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_y, (.06, .43))
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_z, (.06, .18))
+        x_pos = .02
         
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_opacity, (.33, .85))
+            self.__tab_id, self.__slider_label_opacity, (x_pos, .85))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_x, (.33, .68))
+            self.__tab_id, self.__slider_label_x, (x_pos, .62))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_y, (.33, .43))
+            self.__tab_id, self.__slider_label_y, (x_pos, .38))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_z, (.33, .18))
+            self.__tab_id, self.__slider_label_z, (x_pos, .15))
+        
+        x_pos = .08
+        
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_opacity, (x_pos, .85))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_x, (x_pos, .62))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_y, (x_pos, .38))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_slice_z, (x_pos, .15))
     
     @property
     def name(self):

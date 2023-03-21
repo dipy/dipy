@@ -32,7 +32,7 @@ class PeaksTab(HorizonTab):
         min_centers = self.__actor.min_centers
         max_centers = self.__actor.max_centers
         
-        length = 185
+        length = 485
         lw = 3
         radius = 8
         fs = 16
@@ -90,25 +90,25 @@ class PeaksTab(HorizonTab):
         self.__slider_range_y.on_change = self.__change_range_y
         self.__slider_range_z.on_change = self.__change_range_z
     
-    def __add_cross_section_sliders(self, x_pos=.33):
+    def __add_cross_section_sliders(self, x_pos=.08):
         if self.__tab_ui is not None:
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_x, (x_pos, .68))
+                self.__tab_id, self.__slider_slice_x, (x_pos, .62))
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_y, (x_pos, .43))
+                self.__tab_id, self.__slider_slice_y, (x_pos, .38))
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_z, (x_pos, .18))
+                self.__tab_id, self.__slider_slice_z, (x_pos, .15))
         else:
             raise ValueError('')
     
-    def __add_range_sliders(self, x_pos=.33):
+    def __add_range_sliders(self, x_pos=.08):
         if self.__tab_ui is not None:
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_x, (x_pos, .68))
+                self.__tab_id, self.__slider_range_x, (x_pos, .62))
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_y, (x_pos, .43))
+                self.__tab_id, self.__slider_range_y, (x_pos, .38))
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_z, (x_pos, .18))
+                self.__tab_id, self.__slider_range_z, (x_pos, .15))
         else:
             raise ValueError('')
     
@@ -192,14 +192,16 @@ class PeaksTab(HorizonTab):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
         
+        x_pos = .02
+        
         self.__tab_ui.add_element(
-            self.__tab_id, self.__interaction_mode_label, (.03, .85))
+            self.__tab_id, self.__interaction_mode_label, (x_pos, .85))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_x, (.06, .68))
+            self.__tab_id, self.__slider_label_x, (x_pos, .62))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_y, (.06, .43))
+            self.__tab_id, self.__slider_label_y, (x_pos, .38))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_label_z, (.06, .18))
+            self.__tab_id, self.__slider_label_z, (x_pos, .15))
         
         # Default view of Peak Actor is range
         # self.__add_range_sliders()
