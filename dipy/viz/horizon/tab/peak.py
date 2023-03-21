@@ -33,7 +33,7 @@ class PeaksTab(HorizonTab):
         min_centers = self.__actor.min_centers
         max_centers = self.__actor.max_centers
         
-        length = 485
+        length = 450
         lw = 3
         radius = 8
         fs = 16
@@ -95,7 +95,7 @@ class PeaksTab(HorizonTab):
         self.__slider_range_y.on_change = self.__change_range_y
         self.__slider_range_z.on_change = self.__change_range_z
     
-    def __add_cross_section_sliders(self, x_pos=.08):
+    def __add_cross_section_sliders(self, x_pos=.1):
         if self.__tab_ui is not None:
             self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_slice_x, (x_pos, .62))
@@ -106,7 +106,7 @@ class PeaksTab(HorizonTab):
         else:
             raise ValueError('')
     
-    def __add_range_sliders(self, x_pos=.08):
+    def __add_range_sliders(self, x_pos=.1):
         if self.__tab_ui is not None:
             self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_range_x, (x_pos, .62))

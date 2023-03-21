@@ -25,11 +25,11 @@ class SlicesTab(HorizonTab):
         self.__ranges = img_value_ranges
         self.__data = adjusted_data
         
-        self.__slider_label_opacity = build_label(text="Opacity")
+        self.__slider_label_opacity = build_label(text='Opacity')
         
         opacity = 1
         
-        length = 485
+        length = 450
         lw = 3
         radius = 8
         fs = 16
@@ -73,14 +73,14 @@ class SlicesTab(HorizonTab):
         self.__slider_slice_y.on_change = self.__change_slice_y
         self.__slider_slice_z.on_change = self.__change_slice_z
         
-        slider_shape = 'square'
+        self.__slider_label_intensities = build_label(text='Intensities')
         
-        self.__slider_colormap = ui.LineDoubleSlider2D(
-            line_width=lw, length=length, initial_values=self.__ranges,
-            min_value=self.__data.min(), max_value=self.__data.max(),
-            font_size=fs, text_template=tt, shape=slider_shape)
+        self.__slider_intensities = ui.LineDoubleSlider2D(
+            initial_values=self.__ranges, min_value=self.__data.min(),
+            max_value=self.__data.max(), length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
-        color_double_slider(self.__slider_colormap)
+        color_double_slider(self.__slider_intensities)
     
     def __change_opacity(self, slider):
         opacity = slider.value
@@ -117,7 +117,7 @@ class SlicesTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_z, (x_pos, .15))
         
-        x_pos = .08
+        x_pos = .1
         
         self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_opacity, (x_pos, .85))
@@ -127,6 +127,16 @@ class SlicesTab(HorizonTab):
                 self.__tab_id, self.__slider_slice_y, (x_pos, .38))
         self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_slice_z, (x_pos, .15))
+        
+        x_pos = .52
+        
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
+        
+        x_pos = .60
+        
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_intensities, (x_pos, .85))
     
     @property
     def name(self):
