@@ -1,7 +1,7 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_slider
+from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -10,7 +10,10 @@ if has_fury:
 
 
 class SlicesTab(HorizonTab):
-    def __init__(self, slice_actors, img_shape):
+    def __init__(
+        self, slice_actors, img_shape, img_value_ranges, adjusted_data
+        ):
+        
         self.__actors = slice_actors
         self.__name = 'Slices'
         
@@ -18,6 +21,8 @@ class SlicesTab(HorizonTab):
         self.__tab_ui = None
         
         self.__shape = img_shape
+        self.__ranges = img_value_ranges
+        self.__data = adjusted_data
         
         self.__slider_label_opacity = build_label(text="Opacity")
         
@@ -34,7 +39,7 @@ class SlicesTab(HorizonTab):
             initial_value=opacity, min_value=.0, max_value=1., length=length,
             line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
-        color_slider(self.__slider_opacity)
+        color_single_slider(self.__slider_opacity)
         
         self.__slider_opacity.on_change = self.__change_opacity
         
@@ -59,13 +64,20 @@ class SlicesTab(HorizonTab):
             max_value=self.__shape[2] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
-        color_slider(self.__slider_slice_x)
-        color_slider(self.__slider_slice_y)
-        color_slider(self.__slider_slice_z)
+        color_single_slider(self.__slider_slice_x)
+        color_single_slider(self.__slider_slice_y)
+        color_single_slider(self.__slider_slice_z)
         
         self.__slider_slice_x.on_change = self.__change_slice_x
         self.__slider_slice_y.on_change = self.__change_slice_y
         self.__slider_slice_z.on_change = self.__change_slice_z
+        
+        slider_shape = 'square'
+        
+        self.__slider_colormap = ui.LineDoubleSlider2D(
+            line_width=lw, length=length, initial_values=self.__ranges,
+            min_value=self.__data.min(), max_value=self.__data.max(),
+            font_size=fs, text_template=tt, shape=slider_shape)
     
     def __change_opacity(self, slider):
         opacity = slider.value

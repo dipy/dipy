@@ -78,8 +78,15 @@ def build_label(text, font_size=18, bold=False):
     return label
 
 
-def color_slider(slider):
+def color_single_slider(slider):
     slider.default_color = (1., .5, .0)
     slider.track.color = (.8, .3, .0)
     slider.active_color = (.9, .4, .0)
     slider.handle.color = (1., .5, .0)
+
+def _color_dslider(slider):
+    slider.default_color = (1, 0.5, 0)
+    slider.track.color = (0.8, 0.3, 0)
+    slider.active_color = (0.9, 0.4, 0)
+    slider.handles[0].color = (1, 0.5, 0)
+    slider.handles[1].color = (1, 0.5, 0)

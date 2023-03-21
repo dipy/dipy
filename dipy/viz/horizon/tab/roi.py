@@ -1,5 +1,5 @@
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_slider
+from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -29,7 +29,7 @@ class ROIsTab(HorizonTab):
             initial_value=opacity, min_value=.0, max_value=1., length=length,
             line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
         
-        color_slider(self.__slider_opacity)
+        color_single_slider(self.__slider_opacity)
         
         self.__slider_opacity.on_change = self.__change_opacity
     
