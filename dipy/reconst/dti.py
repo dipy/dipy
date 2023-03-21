@@ -1688,8 +1688,144 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
 
     """
     pred = np.exp(np.dot(design_matrix, tensor))
+    # NOTE: minus sign, because derivative of residuals = data - y
     return -pred[:, None] * design_matrix
 
+
+class _nlls_class():
+    r"""Class with member functions to return nlls error and derivative.
+    """
+
+    def err_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+        r"""
+        Error function for the non-linear least-squares fit of the tensor.
+
+        Parameters
+        ----------
+        tensor : array (3,3)
+            The 3-by-3 tensor matrix
+
+        design_matrix : array
+            The design matrix
+
+        data : array
+            The voxel signal in all gradient directions
+
+        weighting : str (optional).
+             Whether to use the Geman-McClure weighting criterion (see [1]_
+             for details)
+
+        sigma : float or float array (optional)
+            If 'sigma' weighting is used, we will weight the error function
+            according to the background noise estimated either in aggregate over
+            all directions (when a float is provided), or to an estimate of the
+            noise in each diffusion-weighting direction (if an array is
+            provided). If 'gmm', the Geman-Mclure M-estimator is used for
+            weighting (see below).
+
+        Notes
+        -----
+        The Geman-McClure M-estimator is described as follows [1]_ (page 1089):
+        "The scale factor C affects the shape of the GMM
+        [Geman-McClure M-estimator] weighting function and represents the expected
+        spread of the residuals (i.e., the SD of the residuals) due to Gaussian
+        distributed noise. The scale factor C can be estimated by many robust scale
+        estimators. We used the median absolute deviation (MAD) estimator because
+        it is very robust to outliers having a 50% breakdown point (6,7).
+        The explicit formula for C using the MAD estimator is:
+
+        .. math ::
+
+                C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
+
+        where $\hat{r} = median{r_1, r_2, ..., r_3}$ and n is the number of data
+        points. The multiplicative constant 1.4826 makes this an approximately
+        unbiased estimate of scale when the error model is Gaussian."
+
+
+        References
+        ----------
+        .. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust
+        estimation of tensors by outlier rejection. MRM, 53: 1088-95.
+        """
+        # This is the predicted signal given the params:
+        y = np.exp(np.dot(design_matrix, tensor))
+        self.y = y  # NOTE: cache the results
+
+        # Compute the residuals
+        residuals = data - y
+        self.residuals = residuals  # NOTE: cache the results
+
+        # If we don't want to weight the residuals, we are basically done:
+        if weighting is None:
+            self.sqrt_w = 1  # NOTE: cache the weights for the non-squared RESIDUALS
+            # And we return the SSE:
+            return residuals
+
+        # FIXME: sigma must be an array or None, otherwise no point in providing it
+        if weighting == 'sigma':
+            # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
+            # suggested by Chang et al.) we will use it:
+            if sigma is None:
+                e_s = "Must provide sigma value as input to use this weighting"
+                e_s += " method"
+                raise ValueError(e_s)
+            w = 1 / (sigma**2)  # NOTE: should normalize? Or no need?
+
+        elif weighting == 'gmm':
+            # We use the Geman-McClure M-estimator to compute the weights on the
+            # residuals:
+            # NOTE: testing a different approach - if GMM is used, assume 'sigma' is C, then we can test out if the gradients are okay
+            #C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+            if sigma is None:
+                e_s = "Must provide sigma value, used as C in Geman-McClure M-estimator, as input to use this weighting"
+                e_s += " method"
+                raise ValueError(e_s)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                #w = 1 / (se + C**2)
+                w = 1 / (residuals**2 + sigma**2)
+                # The weights are normalized to the mean weight (see p. 1089):
+                #w = w / np.mean(w)  # NOTE: no need to normalize
+
+        self.sqrt_w = np.sqrt(w)  # NOTE: cache the weights for the non-squared RESIDUALS
+
+        # Return the weighted residuals:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            #return np.sqrt(w * se)
+            return self.sqrt_w * residuals  # NOTE: must be this to get the signs correct
+
+
+    #def jacobian_func(self, tensor, design_matrix, data, *arg, **kwargs):                      
+    def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
+        """The Jacobian is the first derivative of the error function [1]_.
+
+        Notes
+        -----
+        This is an implementation of equation 14 in [1]_.
+
+        References
+        ----------
+        .. [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
+            A unifying theoretical and algorithmic framework for least squares
+            methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
+
+        """
+        #pred = np.exp(np.dot(design_matrix, tensor))
+        #return -pred[:, None] * design_matrix
+        # NOTE: minus sign, because derivative of residuals = data - y
+        # NOTE: sqrt(w) because w coresponds to the squared residuals
+        if weighting is None:
+            return -self.y[:, None] * design_matrix
+        if weighting == 'sigma':
+            return -self.y[:, None] * design_matrix * self.sqrt_w[:, None]
+        if weighting == 'gmm':  # NOTE: this assumes that 'C' is constant
+            return -self.y[:, None] * design_matrix * \
+                    (self.sqrt_w[:, None] - self.residuals[:, None]**2 * self.sqrt_w[:, None]**3)
+            #return -self.y[:, None] * design_matrix * self.sqrt_w[:, None] * \
+            #        (1 - self.residuals[:, None]**2 * self.sqrt_w[:, None]**2)
+        
 
 def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
     """ Helper function that expands the function decompose_tensor to deal
@@ -1805,6 +1941,9 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
     # For warnings
     resort_to_OLS = False
 
+    # Instance of _nlls_class, need for nlls error func and jacobian
+    nlls = _nlls_class()
+
     if return_S0_hat:
         model_S0 = np.empty((flat_data.shape[0], 1))
     for vox in range(flat_data.shape[0]):
@@ -1817,12 +1956,12 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
             # Do the optimization in this voxel:
             if jac:
-                this_param, status = opt.leastsq(_nlls_err_func, start_params,
+                this_param, status = opt.leastsq(nlls.err_func, start_params,
                                                  args=(design_matrix,
                                                        flat_data[vox],
                                                        weighting,
                                                        sigma),
-                                                 Dfun=_nlls_jacobian_func)
+                                                 Dfun=nlls.jacobian_func)
             else:
                 this_param, status = opt.leastsq(_nlls_err_func, start_params,
                                                  args=(design_matrix,

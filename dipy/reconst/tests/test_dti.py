@@ -511,37 +511,54 @@ def test_mask():
                                     dtifit.S0_hat[0, 0, 0])
 
 
-def test_nnls_jacobian_fucn():
+def test_nnls_jacobian_func():
     b0 = 1000.
     bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
     gtab = grad.gradient_table(bval, bvecs)
     B = bval[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
-    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    D_orig = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
 
     # Design Matrix
     X = dti.design_matrix(gtab)
 
     # Signals
-    Y = np.exp(np.dot(X, D))
+    Y = np.exp(np.dot(X, D_orig))
+    # NOTE: added error here - maybe remove later
+    error = np.random.normal(scale=10, size=Y.shape)
+    Y = Y + error
 
-    # Test Jacobian at D
-    args = [X, Y]
-    analytical = dti._nlls_jacobian_func(D, *args)
-    for i in range(len(X)):
-        args = [X[i], Y[i]]
-        approx = opt.approx_fprime(D, dti._nlls_err_func, 1e-8, *args)
-        assert np.allclose(approx, analytical[i])
 
-    # Test Jacobian at zero
-    D = np.zeros_like(D)
-    args = [X, Y]
-    analytical = dti._nlls_jacobian_func(D, *args)
-    for i in range(len(X)):
-        args = [X[i], Y[i]]
-        approx = opt.approx_fprime(D, dti._nlls_err_func, 1e-8, *args)
-        assert np.allclose(approx, analytical[i])
+    # FIXME: when using sigma, I need to provide an array - MUST GENERALIZE THAT FUNCTION
+    #for weighting in ["uniform", "sigma", "gmm"]:
+    for weighting in [None, "gmm"]:  # NOTE:  although gmm gradients seem correct, they are not accurate enough to pass the tests
+        # NOTE: new, initialize class
+        nlls = dti._nlls_class()
+
+        for D in [D_orig, np.zeros_like(D_orig)]:
+
+            if weighting is None:
+                sigma = None
+            # FIXME: need to sort the case for "sigma" weighting
+            if weighting == "gmm":
+                sigma = 1.4826 * np.median(np.abs(error - np.median(error)))
+            
+            # Test Jacobian at D
+            args = [D, X, Y, weighting, sigma]  # FIXME: add other weightings "sigma" and "gmm" (need to generalize "sigma" to float, before doing this)
+            nlls.err_func(*args)  # NOTE: need to call this first, to set internal stuff in the class
+            analytical = nlls.jacobian_func(*args)  # NOTE: call this again with D (to ensure cached variables are for D, rather than D + epsilon or something...)
+            for i in range(len(X)):
+                args = [X[i], Y[i], weighting, sigma]
+                approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
+
+                # NOTE: good reason we don't normalize, or we couldn't check the gradients one at a time... is it related to something like this?
+                # any way that doing it one point at a time could be changing the solution somehow? Doesn't happen for weighting: None
+
+                print("i:", i)
+                print(approx)
+                print(analytical[i])
+                assert np.allclose(approx, analytical[i])
 
 
 def test_nlls_fit_tensor():
