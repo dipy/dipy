@@ -1,7 +1,8 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
+                                  color_single_slider)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -78,6 +79,8 @@ class SlicesTab(HorizonTab):
             line_width=lw, length=length, initial_values=self.__ranges,
             min_value=self.__data.min(), max_value=self.__data.max(),
             font_size=fs, text_template=tt, shape=slider_shape)
+        
+        color_double_slider(self.__slider_colormap)
     
     def __change_opacity(self, slider):
         opacity = slider.value

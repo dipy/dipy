@@ -1,7 +1,8 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.tab import HorizonTab, build_label, color_single_slider
+from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
+                                  color_single_slider)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -85,6 +86,10 @@ class PeaksTab(HorizonTab):
             initial_values=(low_ranges[2], high_ranges[2]),
             min_value=min_centers[2], max_value=max_centers[2], font_size=fs,
             text_template=tt)
+        
+        color_double_slider(self.__slider_range_x)
+        color_double_slider(self.__slider_range_y)
+        color_double_slider(self.__slider_range_z)
         
         self.__slider_range_x.on_change = self.__change_range_x
         self.__slider_range_y.on_change = self.__change_range_y
