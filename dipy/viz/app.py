@@ -506,12 +506,17 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
-                            slice_actors, shape = nifti_to_slice_actors(
+                            loader_data = nifti_to_slice_actors(
                                 data, affine=affine,
                                 world_coords=self.world_coords)
+                            slice_actors = loader_data[0]
+                            shape = loader_data[1]
+                            range = loader_data[2]
+                            adjusted_data = loader_data[3]
                             for slice in slice_actors:
                                 scene.add(slice)
-                            self.__tabs.append(SlicesTab(slice_actors, shape))
+                            self.__tabs.append(SlicesTab(
+                                slice_actors, shape, range, adjusted_data))
                             """
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
@@ -523,11 +528,16 @@ class Horizon(object):
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
-                slice_actors, shape = nifti_to_slice_actors(
+                loader_data = nifti_to_slice_actors(
                     data, affine=affine, world_coords=self.world_coords)
+                slice_actors = loader_data[0]
+                shape = loader_data[1]
+                range = loader_data[2]
+                adjusted_data = loader_data[3]
                 for slice in slice_actors:
                     scene.add(slice)
-                self.__tabs.append(SlicesTab(slice_actors, shape))
+                self.__tabs.append(SlicesTab(
+                    slice_actors, shape, range, adjusted_data))
                 """
                 self.panel = slicer_panel(
                     scene, self.show_m.iren, data, affine, self.world_coords,
