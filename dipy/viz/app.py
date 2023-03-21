@@ -7,7 +7,8 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.tab import PeaksTab, ROIsTab, TabManager
+from dipy.viz.horizon.loader import nifti_to_slice_actors
+from dipy.viz.horizon.tab import PeaksTab, ROIsTab, SlicesTab, TabManager
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -505,18 +506,33 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
+                            slice_actors, shape = nifti_to_slice_actors(
+                                data, affine=affine,
+                                world_coords=self.world_coords)
+                            for slice in slice_actors:
+                                scene.add(slice)
+                            self.__tabs.append(SlicesTab(slice_actors, shape))
+                            """
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
                                 self.world_coords, mem=self.mem)
+                            """
                             first_img = False
                 if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
+                slice_actors, shape = nifti_to_slice_actors(
+                    data, affine=affine, world_coords=self.world_coords)
+                for slice in slice_actors:
+                    scene.add(slice)
+                self.__tabs.append(SlicesTab(slice_actors, shape))
+                """
                 self.panel = slicer_panel(
                     scene, self.show_m.iren, data, affine, self.world_coords,
                     mem=self.mem)
+                """
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
