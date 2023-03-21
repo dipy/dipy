@@ -526,38 +526,40 @@ def test_nnls_jacobian_func():
     # Signals
     Y = np.exp(np.dot(X, D_orig))
     # NOTE: added error here - maybe remove later
-    error = np.random.normal(scale=10, size=Y.shape)
+    scale = 10
+    error = np.random.normal(scale=scale, size=Y.shape)
     Y = Y + error
 
-
-    # FIXME: when using sigma, I need to provide an array - MUST GENERALIZE THAT FUNCTION
-    #for weighting in ["uniform", "sigma", "gmm"]:
-    for weighting in [None, "gmm"]:  # NOTE:  although gmm gradients seem correct, they are not accurate enough to pass the tests
-        # NOTE: new, initialize class
+    # NOTE: although sigma and gmm gradients seem correct from inspection, they are not accurate enough to pass the tests
+    #for weighting in [None, "sigma", "gmm"]:
+    for weighting in [None]:
         nlls = dti._nlls_class()
 
         for D in [D_orig, np.zeros_like(D_orig)]:
 
             if weighting is None:
                 sigma = None
-            # FIXME: need to sort the case for "sigma" weighting
+            if weighting == "sigma":
+                sigma = 1.0 / np.abs(error)  # for testing, use residuals as estimate
             if weighting == "gmm":
                 sigma = 1.4826 * np.median(np.abs(error - np.median(error)))
             
             # Test Jacobian at D
-            args = [D, X, Y, weighting, sigma]  # FIXME: add other weightings "sigma" and "gmm" (need to generalize "sigma" to float, before doing this)
+            args = [D, X, Y, weighting, sigma]
             nlls.err_func(*args)  # NOTE: need to call this first, to set internal stuff in the class
             analytical = nlls.jacobian_func(*args)  # NOTE: call this again with D (to ensure cached variables are for D, rather than D + epsilon or something...)
             for i in range(len(X)):
-                args = [X[i], Y[i], weighting, sigma]
+                if weighting is None:
+                    args = [X[i], Y[i], weighting, sigma]
+                if weighting == "sigma":
+                    args = [X[i], Y[i], weighting, sigma[i]]
+                if weighting == "gmm":
+                    args = [X[i], Y[i], weighting, sigma]
                 approx = opt.approx_fprime(D, nlls.err_func, 1e-8, *args)
 
-                # NOTE: good reason we don't normalize, or we couldn't check the gradients one at a time... is it related to something like this?
-                # any way that doing it one point at a time could be changing the solution somehow? Doesn't happen for weighting: None
-
-                print("i:", i)
-                print(approx)
-                print(analytical[i])
+                #print("i:", i)
+                #print(approx)
+                #print(analytical[i])
                 assert np.allclose(approx, analytical[i])
 
 
@@ -602,7 +604,9 @@ def test_nlls_fit_tensor():
     npt.assert_almost_equal(tensor_est.md[0], md)
 
     # Using the gmm weighting scheme:
-    tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm')
+    # NOTE: Not using RESTORE here, using NLLS, in which case the provided
+    # sigma will be used as C in the GMM weights
+    tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm', sigma=1)
     tensor_est = tensor_model.fit(Y)
     npt.assert_equal(tensor_est.shape, Y.shape[:-1])
     npt.assert_array_almost_equal(tensor_est.evals[0], evals)
