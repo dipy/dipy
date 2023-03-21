@@ -134,17 +134,17 @@ class PeaksTab(HorizonTab):
         self.__actor.display_extent(lr[0], hr[0], lr[1], hr[1], val1, val2)
     
     def __change_slice_x(self, slider):
-        value = np.rint(slider.value)
+        value = int(np.rint(slider.value))
         cs = self.__actor.cross_section
         self.__actor.display_cross_section(value, cs[1], cs[2])
     
     def __change_slice_y(self, slider):
-        value = np.rint(slider.value)
+        value = int(np.rint(slider.value))
         cs = self.__actor.cross_section
         self.__actor.display_cross_section(cs[0], value, cs[2])
     
     def __change_slice_z(self, slider):
-        value = np.rint(slider.value)
+        value = int(np.rint(slider.value))
         cs = self.__actor.cross_section
         self.__actor.display_cross_section(cs[0], cs[1], value)
     
