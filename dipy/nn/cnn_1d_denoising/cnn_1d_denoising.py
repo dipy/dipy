@@ -11,7 +11,7 @@ Obtaining tissue microstructure measurements from diffusion weighted imaging (DW
 high b-values is crucial. However, the high noise levels present in these images can adversely affect
 the accuracy of the microstructural measurements. In this context, we suggest a straightforward denoising technique that
 can be applied to any DWI dataset as long as a low-noise, single-subject dataset is obtained using the same DWI sequence.
-We created a simple 1D-CNN model with five layers, based on the 1D CNN for denoising speeches.
+We created a simple 1D-CNN model with five layers, based on the 1D CNN for denoising speech.
 The model consists of two convolutional layers followed by max-pooling layers, and a dense layer.
 The first convolutional layer has 16 one-dimensional filters of size 16, and the second layer has 32 filters of size 8.
 ReLu activation function is applied to both convolutional layers. The max-pooling layer has a kernel
