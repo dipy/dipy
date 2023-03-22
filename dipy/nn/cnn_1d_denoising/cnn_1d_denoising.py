@@ -229,7 +229,7 @@ class Cnn1DDenoiser:
         Parameters
         ----------
         x_test : ndarray
-            The x_test is the test dataset.
+            The x_test is the test dataset (high-noise data).
         y_test : ndarray shape=(BatchSize,)
             The y_test is the labels of the test dataset.
         verbose : Int (Default = 2)
