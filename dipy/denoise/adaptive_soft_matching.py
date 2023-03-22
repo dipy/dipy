@@ -3,7 +3,7 @@ import numpy as np
 from dipy.core import wavelet
 
 
-def adaptive_soft_matching(ima, fimau, fimao, sigma):
+def adaptive_soft_matching(ima, fimau, fimao, sigma):6
     r"""Adaptive Soft Coefficient Matching
 
     Combines two filtered 3D-images at different resolutions and the original
@@ -42,10 +42,7 @@ def adaptive_soft_matching(ima, fimau, fimao, sigma):
     """
 
     s = fimau.shape
-    p = [0, 0, 0]
-    p[0] = int(2**math.ceil(math.log(s[0], 2)))
-    p[1] = int(2**math.ceil(math.log(s[1], 2)))
-    p[2] = int(2**math.ceil(math.log(s[2], 2)))
+    p = [int(2**math.ceil(math.log(s[i], 2))) for i in range(3)]
     pad1 = np.zeros((p[0], p[1], p[2]))
     pad2 = np.zeros((p[0], p[1], p[2]))
     pad3 = np.zeros((p[0], p[1], p[2]))
