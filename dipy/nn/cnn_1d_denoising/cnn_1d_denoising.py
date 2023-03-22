@@ -185,7 +185,7 @@ class Cnn1DDenoiser:
            Only relevant if validation_data is provided and is a tf.data dataset.
         validation_freq	  :
            Only relevant if validation data is provided.
-        max_queue_size	  :Integer 
+        max_queue_size	  : Integer 
            Used for generator or keras.utils.Sequence input only.
         workers	Integer  : Int
            Used for generator or keras.utils.Sequence input only.
