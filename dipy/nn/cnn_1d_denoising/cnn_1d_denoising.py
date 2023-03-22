@@ -189,7 +189,7 @@ class Cnn1DDenoiser:
            Used for generator or keras.utils.Sequence input only.
         workers	Integer  : Int
            Used for generator or keras.utils.Sequence input only.
-        use_multiprocessing	Boolean :
+        use_multiprocessing	 : Boolean
            Used for generator or keras.utils.Sequence input only.
 
         Returns
