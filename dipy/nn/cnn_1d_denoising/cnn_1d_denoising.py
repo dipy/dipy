@@ -231,7 +231,7 @@ class Cnn1DDenoiser:
         x_test : ndarray
             The x_test is the test dataset (high-noise data).
         y_test : ndarray shape=(BatchSize,)
-            The y_test is the labels of the test dataset.
+            The y_test is the labels of the test dataset (low-noise data) 
         verbose : Int (Default = 2)
             By setting verbose 0, 1 or 2 you just say how do you want to
             'see' the training progress for each epoch.
