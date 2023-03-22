@@ -20,8 +20,9 @@ The dense layer maps the features extracted from the noisy image to the low-nois
 
 Reference:
 ---------
-Denoising diffusion weighted imaging data using convolutional neural networks
-Hu Cheng, Sophia Vinci-Booher, Jian Wang, Bradley Caron, Qiuting Wen, Sharlene Newman, Franco Pestilli
+Cheng H, Vinci-Booher S, Wang J, Caron B, Wen Q, Newman S, et al.
+(2022) Denoising diffusion weighted imaging data using convolutional neural networks.
+PLoS ONE 17(9): e0274396. https://doi.org/10.1371/journal.pone.0274396
 '''
 class Cnn1DDenoiser:
     def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error', metrics=('accuracy',),
@@ -163,7 +164,7 @@ class Cnn1DDenoiser:
         y_train         : ndarray shape=(BatchSize,)
             The y_train is the labels of the train dataset(noise-added data)
         epochs          : Int (Default = 5)
-            The number of epochs
+            The number of epochs.
         verbose         :'auto', 0, 1, or 2. 
             Verbosity mode. 0 = silent, 1 = progress bar, 2 = one line per epoch
         callbacks       : List of keras.callbacks.Callback instances
@@ -174,18 +175,20 @@ class Cnn1DDenoiser:
             Data on which to evaluate the loss and any model metrics at the end of each epoch
         shuffle : Boolean 
            This argument is ignored when x is a generator or an object of tf.data.Dataset.
-        initial_epoch   :	Integer. 
+        initial_epoch   :	Int. 
            Epoch at which to start training
-        steps_per_epoch :	Integer or None.
+        steps_per_epoch :	Int or None.
            Total number of steps (batches of samples) before declaring one epoch
            finished and starting the next epoch.
-        validation_batch_size :Integer or None. 
+        validation_batch_size :Int or None. 
            Number of samples per validation batch.
         validation_steps  :	Int
            Only relevant if validation_data is provided and is a tf.data dataset.
-        validation_freq	  :
-           Only relevant if validation data is provided.
-        max_queue_size	  : Integer 
+        validation_freq	  : Int or list/tuple/set. 
+           Only relevant if validation data is provided. If an integer, specifies how many training epochs
+           to run before a new validation run is performed. If a list, tuple, or set, specifies the epochs
+           on which to run validation. 
+        max_queue_size	  : Int
            Used for generator or keras.utils.Sequence input only.
         workers	Integer  : Int
            Used for generator or keras.utils.Sequence input only.
