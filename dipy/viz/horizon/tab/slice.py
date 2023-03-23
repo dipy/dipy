@@ -7,7 +7,7 @@ from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
 fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
-    from fury import ui
+    from fury import colormap, ui
 
 
 class SlicesTab(HorizonTab):
@@ -81,11 +81,39 @@ class SlicesTab(HorizonTab):
             outer_radius=radius, font_size=fs, text_template=tt)
         
         color_double_slider(self.__slider_intensities)
+        
+        self.__slider_intensities.on_change = self.__change_intensity
+        
+        self.__colormap = 'gray'
     
     def __change_opacity(self, slider):
         opacity = slider.value
         for slice in self.__actors:
             slice.GetProperty().SetOpacity(opacity)
+    
+    def __change_intensity(self, slider):
+        val1 = slider.left_disk_value
+        val2 = slider.right_disk_value
+        if self.__colormap == 'disting':
+            rgb = colormap.distinguishable_colormap(nb_colors=256)
+            rgb = np.asarray(rgb)
+        else:
+            rgb = colormap.create_colormap(
+                np.linspace(val1, val2, 256), name=self.__colormap, auto=True)
+        num_lut = rgb.shape[0]
+
+        lut = colormap.LookupTable()
+        lut.SetNumberOfTableValues(num_lut)
+        lut.SetRange(val1, val2)
+        for i in range(num_lut):
+            r, g, b = rgb[i]
+            lut.SetTableValue(i, r, g, b)
+        lut.SetRampToLinear()
+        lut.Build()
+        
+        for slice in self.__actors:
+            slice.output.SetLookupTable(lut)
+            slice.output.Update()
     
     def __change_slice_x(self, slider):
         value = int(np.rint(slider.value))
