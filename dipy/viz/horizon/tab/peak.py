@@ -18,12 +18,20 @@ class PeaksTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__interaction_mode_label = build_label(
-            text='Planes', font_size=20, bold=True)
+        self.__toggler_label_view_mode = build_label(text='View Mode')
         
+        """
         self.__interaction_mode_label.actor.AddObserver(
             'LeftButtonPressEvent', self.__change_interaction_mode_callback,
             1.)
+        """
+        
+        self.__view_modes = {'Cross section': 0, 'Range': 1}
+        self.__view_mode_toggler = ui.RadioButton(
+            list(self.__view_modes), ['Cross section'], padding=1.5,
+            font_size=16, font_family='Arial')
+        
+        self.__view_mode_toggler.on_change = self.__toggle_view_mode
         
         self.__slider_label_x = build_label(text='X Slice')
         self.__slider_label_y = build_label(text='Y Slice')
@@ -96,26 +104,20 @@ class PeaksTab(HorizonTab):
         self.__slider_range_z.on_change = self.__change_range_z
     
     def __add_cross_section_sliders(self, x_pos=.1):
-        if self.__tab_ui is not None:
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_x, (x_pos, .62))
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_y, (x_pos, .38))
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_z, (x_pos, .15))
-        else:
-            raise ValueError('')
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_x, (x_pos, .62))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_y, (x_pos, .38))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_z, (x_pos, .15))
     
     def __add_range_sliders(self, x_pos=.1):
-        if self.__tab_ui is not None:
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_x, (x_pos, .62))
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_y, (x_pos, .38))
-            self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_range_z, (x_pos, .15))
-        else:
-            raise ValueError('')
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_range_x, (x_pos, .62))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_range_y, (x_pos, .38))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_range_z, (x_pos, .15))
     
     def __change_range_x(self, slider):
         val1 = slider.left_disk_value
@@ -153,45 +155,42 @@ class PeaksTab(HorizonTab):
         cs = self.__actor.cross_section
         self.__actor.display_cross_section(cs[0], cs[1], value)
     
-    def __change_interaction_mode_callback(self, obj, event):
-        if self.__actor.is_range:
-            self.__interaction_mode_label.message = 'Planes'
-            self.__actor.display_cross_section(
-                self.__actor.cross_section[0], self.__actor.cross_section[1],
-                self.__actor.cross_section[2])
-            #scene.clear()
-            self.__remove_range_sliders()
-            self.__add_cross_section_sliders()
-            #scene.add(self.__actor)
-            #scene.add(panel)
-        else:
-            self.__interaction_mode_label.message = 'Range'
+    def __hide_cross_section_sliders(self):
+        self.__slider_slice_x.set_visibility(False)
+        self.__slider_slice_y.set_visibility(False)
+        self.__slider_slice_z.set_visibility(False)
+    
+    def __hide_range_sliders(self):
+        self.__slider_range_x.set_visibility(False)
+        self.__slider_range_y.set_visibility(False)
+        self.__slider_range_z.set_visibility(False)
+    
+    def __show_cross_section_sliders(self):
+        self.__slider_slice_x.set_visibility(True)
+        self.__slider_slice_y.set_visibility(True)
+        self.__slider_slice_z.set_visibility(True)
+    
+    def __show_range_sliders(self):
+        self.__slider_range_x.set_visibility(True)
+        self.__slider_range_y.set_visibility(True)
+        self.__slider_range_z.set_visibility(True)
+    
+    def __toggle_view_mode(self, radio):
+        view_mode = self.__view_modes[radio.checked_labels[0]]
+        # view_mode==0: Cross section - view_mode==1: Range
+        if view_mode:
             self.__actor.display_extent(
                 self.__actor.low_ranges[0], self.__actor.high_ranges[0],
                 self.__actor.low_ranges[1], self.__actor.high_ranges[1],
                 self.__actor.low_ranges[2], self.__actor.high_ranges[2])
-            #scene.clear()
-            self.__remove_cross_section_sliders()
-            self.__add_range_sliders()
-            #scene.add(self.__actor)
-            #scene.add(panel)
-        #iren.Render()
-    
-    def __remove_cross_section_sliders(self):
-        if self.__tab_ui is not None:
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_x)
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_y)
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_slice_z)
+            self.__hide_cross_section_sliders()
+            self.__show_range_sliders()
         else:
-            raise ValueError('')
-    
-    def __remove_range_sliders(self):
-        if self.__tab_ui is not None:
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_x)
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_y)
-            self.__tab_ui.remove_element(self.__tab_id, self.__slider_range_z)
-        else:
-            raise ValueError('')
+            self.__actor.display_cross_section(
+                self.__actor.cross_section[0], self.__actor.cross_section[1],
+                self.__actor.cross_section[2])
+            self.__hide_range_sliders()
+            self.__show_cross_section_sliders()
     
     def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
@@ -200,7 +199,7 @@ class PeaksTab(HorizonTab):
         x_pos = .02
         
         self.__tab_ui.add_element(
-            self.__tab_id, self.__interaction_mode_label, (x_pos, .85))
+            self.__tab_id, self.__toggler_label_view_mode, (x_pos, .85))
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_x, (x_pos, .62))
         self.__tab_ui.add_element(
@@ -208,8 +207,14 @@ class PeaksTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_z, (x_pos, .15))
         
+        x_pos=.1
+        
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__view_mode_toggler, (x_pos, .80))
+        
         # Default view of Peak Actor is range
-        # self.__add_range_sliders()
+        self.__add_range_sliders()
+        self.__hide_range_sliders()
         
         # Changing initial view to cross section
         cross_section = self.__actor.cross_section
