@@ -75,9 +75,12 @@ class SlicesTab(HorizonTab):
         
         self.__slider_label_intensities = build_label(text='Intensities')
         
+        self.__min_intensity = self.__data.min()
+        self.__max_intensity = self.__data.max()
+        
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=self.__ranges, min_value=self.__data.min(),
-            max_value=self.__data.max(), length=length, line_width=lw,
+            initial_values=self.__ranges, min_value=self.__min_intensity,
+            max_value=self.__max_intensity, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         color_double_slider(self.__slider_intensities)
@@ -85,6 +88,26 @@ class SlicesTab(HorizonTab):
         self.__slider_intensities.on_change = self.__change_intensity
         
         self.__colormap = 'gray'
+        
+        self.__combobox_label_colormap = build_label(text='Colormap')
+        
+        colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
+        
+        self.__combobox_colormap = ui.ComboBox2D(
+            items=colormaps, position=(0, -200), size=(450, 200),
+            placeholder='Select colormap...', draggable=False,
+            selection_text_color=(.0, .0, .0), selection_bg_color=(1., 1., 1.),
+            menu_text_color=(.2, .2, .2), selected_color=(.9, .6, .6),
+            unselected_color=(.6, .6, .6),
+            scroll_bar_active_color=(.6, .2, .2), 
+            scroll_bar_inactive_color=(1., .5, .0), menu_opacity=1.,
+            reverse_scrolling=False, font_size=20, line_spacing=1.4)
+        
+        self.__combobox_colormap.on_change = self.__change_colormap
+    
+    def __change_colormap(self, combobox):
+        self.__colormap = combobox.selected_text
+        self.__update_colormap()
     
     def __change_opacity(self, slider):
         opacity = slider.value
@@ -92,28 +115,9 @@ class SlicesTab(HorizonTab):
             slice.GetProperty().SetOpacity(opacity)
     
     def __change_intensity(self, slider):
-        val1 = slider.left_disk_value
-        val2 = slider.right_disk_value
-        if self.__colormap == 'disting':
-            rgb = colormap.distinguishable_colormap(nb_colors=256)
-            rgb = np.asarray(rgb)
-        else:
-            rgb = colormap.create_colormap(
-                np.linspace(val1, val2, 256), name=self.__colormap, auto=True)
-        num_lut = rgb.shape[0]
-
-        lut = colormap.LookupTable()
-        lut.SetNumberOfTableValues(num_lut)
-        lut.SetRange(val1, val2)
-        for i in range(num_lut):
-            r, g, b = rgb[i]
-            lut.SetTableValue(i, r, g, b)
-        lut.SetRampToLinear()
-        lut.Build()
-        
-        for slice in self.__actors:
-            slice.output.SetLookupTable(lut)
-            slice.output.Update()
+        self.__min_intensity = slider.left_disk_value
+        self.__max_intensity = slider.right_disk_value
+        self.__update_colormap()
     
     def __change_slice_x(self, slider):
         value = int(np.rint(slider.value))
@@ -129,6 +133,29 @@ class SlicesTab(HorizonTab):
         value = int(np.rint(slider.value))
         self.__actors[2].display_extent(
             0, self.__shape[0] - 1, 0, self.__shape[1] - 1, value, value)
+    
+    def __update_colormap(self):
+        if self.__colormap == 'disting':
+            rgb = colormap.distinguishable_colormap(nb_colors=256)
+            rgb = np.asarray(rgb)
+        else:
+            rgb = colormap.create_colormap(
+                np.linspace(self.__min_intensity, self.__max_intensity, 256),
+                name=self.__colormap, auto=True)
+        num_lut = rgb.shape[0]
+
+        lut = colormap.LookupTable()
+        lut.SetNumberOfTableValues(num_lut)
+        lut.SetRange(self.__min_intensity, self.__max_intensity)
+        for i in range(num_lut):
+            r, g, b = rgb[i]
+            lut.SetTableValue(i, r, g, b)
+        lut.SetRampToLinear()
+        lut.Build()
+        
+        for slice in self.__actors:
+            slice.output.SetLookupTable(lut)
+            slice.output.Update()
     
     def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
@@ -160,11 +187,15 @@ class SlicesTab(HorizonTab):
         
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__combobox_label_colormap, (x_pos, .62))
         
         x_pos = .60
         
         self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_intensities, (x_pos, .85))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__combobox_colormap, (x_pos, .62))
     
     @property
     def name(self):
