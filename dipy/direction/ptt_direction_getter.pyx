@@ -125,7 +125,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
     cdef double       last_val_cand
     cdef double       init_last_val
     cdef double       max_angle
-    cdef double       min_radius_curvature
+    cdef double       max_curvature
     cdef double       probe_length
     cdef double       probe_radius
     cdef double       probe_quality
@@ -147,7 +147,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             directions.
         max_angle : float, [0, 90]
             Is used to set the upper limits for the k1 and k2 parameters
-            of parallel transport frame (min_radius_curvature)
+            of parallel transport frame (max_curvature)
         sphere : Sphere
             The set of directions to be used for tracking.
         pmf_threshold : None
@@ -179,10 +179,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         dipy.direction.peaks.peak_directions
 
         """
-
-        # TODO: review max_angle vs min_radius_curvature.
+        
         self.max_angle = max_angle
-        self.min_radius_curvature = 0
+        self.max_curvature = 0  # 1 / minimum radius of curvature
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality
@@ -223,7 +222,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.get_random_frame(init_dir)
         (self.k1_candidate, self.k2_candidate)\
-                = sample_random_point_within_disk(self.min_radius_curvature)
+                = sample_random_point_within_disk(self.max_curvature)
 
         self.k1 = self.k1_candidate
         self.k2 = self.k2_candidate
@@ -293,7 +292,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
         (self.k1_candidate, self.k2_candidate)\
-                = sample_random_point_within_disk(self.min_radius_curvature)
+                = sample_random_point_within_disk(self.max_curvature)
         return self.calculate_data_support()
 
 
@@ -568,7 +567,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             void (*step)(double*, double*, double) nogil
 
         self.step_size = step_size
-        self.min_radius_curvature = min_radius_curvature_from_angle(
+        self.max_curvature = 1 / min_radius_curvature_from_angle(
             np.deg2rad(self.max_angle), self.step_size)
 
         copy_point(&seed[0], &streamline[0,0]) 
