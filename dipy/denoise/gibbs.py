@@ -240,8 +240,7 @@ def _gibbs_removal_2d(image, n_points=3, G0=None, G1=None):
 
 
 @deprecated_params('num_threads', 'num_processes', since='1.4', until='1.5')
-def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
-                  num_processes=1):
+def gibbs_removal(vol, slice_axis=2, n_points=3, num_processes=1):
     """Suppresses Gibbs ringing artefacts of images volumes.
 
     Parameters
@@ -254,10 +253,6 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
     n_points : int, optional
         Number of neighbour points to access local TV (see note).
         Default is set to 3.
-    inplace : bool, optional
-        If True, the input data is replaced with results. Otherwise, returns
-        a new array.
-        Default is set to True.
     num_processes : int or None, optional
         Split the calculation to a pool of children processes. This only
         applies to 3D or 4D `data` arrays. Default is 1. If < 0 the maximal
@@ -319,9 +314,6 @@ def gibbs_removal(vol, slice_axis=2, n_points=3, inplace=True,
     shap = vol.shape
     G0, G1 = _weights(shap[-2:])
 
-    # Copy data if not inplace
-    if not inplace:
-        vol = vol.copy()
 
     # Run Gibbs removal of 2D images
     if nd == 2:
