@@ -1405,7 +1405,7 @@ def iter_fit_tensor(step=1e4):
 
 
 @iter_fit_tensor()
-def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
+def wls_fit_tensor(design_matrix, data, return_S0_hat=False):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1420,8 +1420,6 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
         dimension should contain the data. It makes no copies of data.
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-    adjacency : list, optional
-        Adjacency list matching the flattened and masked array data array.
 
     Returns
     -------
@@ -1498,7 +1496,7 @@ def wls_fit_tensor(design_matrix, data, return_S0_hat=False, adjacency=None):
 
 @iter_fit_tensor()
 def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
-                   adjacency=None, return_lower_triangular=False):
+                   return_lower_triangular=False):
     r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
@@ -1513,8 +1511,6 @@ def ols_fit_tensor(design_matrix, data, return_S0_hat=False,
         dimension should contain the data. It makes no copies of data.
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-    adjacency : list, optional
-        Adjacency list matching the flattened and masked array data array.
     return_lower_triangular : bool
         Boolean to return (True) or not (False) the coefficients of the fit.
 
@@ -1760,7 +1756,7 @@ def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
 
 def nlls_fit_tensor(design_matrix, data, weighting=None,
                     sigma=None, jac=True, return_S0_hat=False,
-                    adjacency=None, fail_is_nan=False):
+                    fail_is_nan=False):
     """
     Fit the cumulant expansion params (e.g. DTI, DKI) using non-linear
     least-squares.
@@ -1792,9 +1788,6 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-
-    adjacency : list, optional
-        Adjacency list matching the flattened and masked array data array.
 
     fail_is_nan : bool
         Boolean to set failed NL fitting to NaN (True) or LS (False, default).
@@ -1895,7 +1888,7 @@ def nlls_fit_tensor(design_matrix, data, weighting=None,
 
 
 def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
-                       return_S0_hat=False, adjacency=None,
+                       return_S0_hat=False,
                        fail_is_nan=False):
     """
     Use the RESTORE algorithm [1]_ to calculate a robust tensor fit
@@ -1926,9 +1919,6 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
 
     return_S0_hat : bool
         Boolean to return (True) or not (False) the S0 values for the fit.
-
-    adjacency : list, optional
-        Adjacency list matching the flattened and masked array data array.
 
     fail_is_nan : bool
         Boolean to set failed NL fitting to NaN (True) or LS (False, default).
