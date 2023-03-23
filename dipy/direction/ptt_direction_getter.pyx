@@ -10,9 +10,7 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.probabilistic_direction_getter cimport ProbabilisticDirectionGetter
-from dipy.direction.peaks import peak_directions, default_sphere
-from dipy.direction.pmf cimport PmfGen, SimplePmfGen, SHCoeffPmfGen
-from dipy.utils.fast_numpy cimport cumsum, where_to_insert, copy_point
+from dipy.utils.fast_numpy cimport copy_point, random, norm, normalize, cross
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
                                                TRACKPOINT,
@@ -21,8 +19,6 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                INVALIDPOINT,
                                                PYERROR,
                                                NODATASUPPORT)
-from dipy.tracking.direction_getter cimport _fixed_step, _step_to_boundary
-from dipy.utils.fast_numpy cimport random, norm, normalize, dot, cross
 from dipy.tracking.utils import min_radius_curvature_from_angle
 
 from libc.math cimport M_PI, pow, sin, cos
@@ -396,10 +392,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double fod_amp
         cdef double[3] position
         cdef double[3][3] frame
-        cdef double[3] _T = [0,0,0]
-        cdef double[3] _N1 = [0,0,0]
-        cdef double[3] _N2 = [0,0,0]
-        cdef double[3] pp
+        cdef double[3] tangent = [0,0,0]
+        cdef double[3] normal = [0,0,0]
+        cdef double[3] binormal = [0,0,0]
+        cdef double[3] new_position
 
         self.prepare_propagator(self.probe_step_size)
 
@@ -415,50 +411,48 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             for i in range(3):
                 position[i] = (self.propagator[0] * frame[0][i] 
                                + self.propagator[1] * frame[1][i] 
-                               + self.propagator[2] * frame[2][i] + position[i])
-                _T[i] = (self.propagator[3] * frame[0][i]
-                         + self.propagator[4] * frame[1][i]
-                         + self.propagator[5] * frame[2][i])
+                               + self.propagator[2] * frame[2][i] 
+                               + position[i])
+                tangent[i] = (self.propagator[3] * frame[0][i]
+                              + self.propagator[4] * frame[1][i]
+                              + self.propagator[5] * frame[2][i])
 
-            normalize(_T)
+            normalize(tangent)
 
             if q < (self.probe_quality - 1):
                 for i in range(3):
-                    _N2[i] = (self.propagator[6] * frame[0][i] +  
-                              self.propagator[7] * frame[1][i] +
-                              self.propagator[8] * frame[2][i])
+                    binormal[i] = (self.propagator[6] * frame[0][i]
+                                   + self.propagator[7] * frame[1][i]
+                                   + self.propagator[8] * frame[2][i])
 
-                cross(_N1,_N2,_T)
+                cross(normal, binormal, tangent)
 
                 for i in range(3):
-                    frame[0][i] =  _T[i]
-                    frame[1][i] = _N1[i]
-                    frame[2][i] = _N2[i]
+                    frame[0][i] = tangent[i]
+                    frame[1][i] = normal[i]
+                    frame[2][i] = binormal[i]
 
             if self.probe_count == 1:
-                fod_amp = self.pmf_gen.get_pmf_value(position, _T)
+                fod_amp = self.pmf_gen.get_pmf_value(position, tangent)
                 self.last_val_cand = fod_amp
                 self.likelihood += self.last_val_cand
             else:
                 self.last_val_cand = 0
-
                 if q == self.probe_quality-1:
                     for i in range(3):
-                        _N2[i] = (self.propagator[6] * frame[0][i] 
-                                  + self.propagator[7] * frame[1][i]
-                                  + self.propagator[8] * frame[2][i])
-                    cross(_N1,_N2,_T)
+                        binormal[i] = (self.propagator[6] * frame[0][i] 
+                                      + self.propagator[7] * frame[1][i]
+                                      + self.propagator[8] * frame[2][i])
+                    cross(normal, binormal, tangent)
 
                 for c in range(int(self.probe_count)):
-
                     for i in range(3):
-                        pp[i] = (position[i] 
-                                 + _N1[i] * self.probe_radius
-                                 * cos(c * self.angular_separation)
-                                 + _N2[i] * self.probe_radius
-                                 * sin(c * self.angular_separation))
-
-                    fod_amp = self.pmf_gen.get_pmf_value(pp, _T)
+                        new_position[i] = (position[i] 
+                                           + normal[i] * self.probe_radius
+                                           * cos(c * self.angular_separation)
+                                           + binormal[i] * self.probe_radius
+                                           * sin(c * self.angular_separation))
+                    fod_amp = self.pmf_gen.get_pmf_value(new_position, tangent)
                     self.last_val_cand += fod_amp
 
                 self.likelihood += self.last_val_cand
@@ -530,23 +524,23 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         # Initial max estimate
         cdef double data_support = 0
-        cdef double posteriorMax = 0
+        cdef double max_posterior = 0
 
         cdef int tries
         # This is adaptively set in Trekker. But let's ignore it for now since
         # implementation of that is challenging.
         for tries in range(20): 
             data_support = self.set_candidate()
-            if data_support > posteriorMax:
-                posteriorMax = data_support
+            if data_support > max_posterior:
+                max_posterior = data_support
 
         # Compensation for underestimation of max posterior estimate
-        posteriorMax = pow(2.0 * posteriorMax, self.data_support_exponent)
+        max_posterior = pow(2.0 * max_posterior, self.data_support_exponent)
 
         # Propagation is successful if a suitable candidate can be sampled 
         # within the trial limit
         for tries in range(1000):
-            if random() * posteriorMax <= self.set_candidate():
+            if random() * max_posterior <= self.set_candidate():
                 self.last_val = self.last_val_cand
                 return TRACKPOINT
 
