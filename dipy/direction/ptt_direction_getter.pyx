@@ -497,7 +497,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         for tries in range(1000):
             data_support = self.set_initial_candidate(seed_direction)
             if data_support > max_posterior:
-                posteriorMax = data_support
+                max_posterior = data_support
 
         # Compensation for underestimation of max posterior estimate
         max_posterior = pow(2.0 * max_posterior, self.data_support_exponent)
