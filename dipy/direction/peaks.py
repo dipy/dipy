@@ -113,7 +113,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
         The minimum distance between directions. If two peaks are too close
         only the larger of the two is returned.
     is_symmetric : bool
-        When True, vertices v and -v are considered the same
+        If True, v is considered equal to -v.
 
     Returns
     -------
@@ -154,7 +154,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     directions, uniq = remove_similar_vertices(directions,
                                                min_separation_angle,
                                                return_index=True,
-                                               is_symmetric=is_symmetric)
+                                               remove_antipodal=is_symmetric)
     values = values[uniq]
     indices = indices[uniq]
     return directions, values, indices
