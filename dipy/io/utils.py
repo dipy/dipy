@@ -264,7 +264,7 @@ def get_reference_info(reference):
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
+        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
@@ -444,12 +444,7 @@ def read_img_arr_or_path(data, affine=None):
         Must be provided for `data` provided as an array. If provided together
         with Nifti1Image or str `data`, this input will over-ride the affine
         that is stored in the `data` input. Default: use the affine stored
-        in `data`.
-
-    Returns
-    -------
-    data, affine : ndarray and 4x4 array
-    """
+        in `data`.ori_dtype
     if isinstance(data, np.ndarray) and affine is None:
         raise ValueError("If data is provided as an array, an affine has ",
                          "to be provided as well")
