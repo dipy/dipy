@@ -112,7 +112,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     min_separation_angle : float in [0, 90]
         The minimum distance between directions. If two peaks are too close
         only the larger of the two is returned.
-    is_symmetric : bool
+    is_symmetric : bool, optional
         If True, v is considered equal to -v.
 
     Returns
