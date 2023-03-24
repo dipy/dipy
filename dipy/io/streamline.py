@@ -76,7 +76,6 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         dpy_obj.close()
     elif extension in ['.trx']:
         trx = tmm.TrxFile.from_sft(sft)
-        print(trx)
         tmm.save(trx, filename)
 
     logging.debug('Save %s with %s streamlines in %s seconds.',

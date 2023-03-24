@@ -444,7 +444,12 @@ def read_img_arr_or_path(data, affine=None):
         Must be provided for `data` provided as an array. If provided together
         with Nifti1Image or str `data`, this input will over-ride the affine
         that is stored in the `data` input. Default: use the affine stored
-        in `data`.ori_dtype
+        in `data`.
+
+    Returns
+    -------
+    data, affine : ndarray and 4x4 array
+    """
     if isinstance(data, np.ndarray) and affine is None:
         raise ValueError("If data is provided as an array, an affine has ",
                          "to be provided as well")
