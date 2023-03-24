@@ -10,6 +10,7 @@ from dipy.core.geometry import vector_norm, vec2vec_rotmat
 from dipy.core.sphere import disperse_charges, HemiSphere
 
 from dipy.utils.deprecator import deprecate_with_version
+from dipy.utils.deprecator import deprecated_params
 
 
 WATER_GYROMAGNETIC_RATIO = 267.513e6  # 1/(sT)
@@ -211,10 +212,12 @@ class GradientTable(object):
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
     
-    def __getitem__(self,bmin=0, bmax=np.inf):
-        # Create a mask for selecting b-values within the given range
+    @deprecated_params('threshold', None, since='1.17', until='1.19')
+    def getitem(self, bmin=0, bmax=np.inf, threshold=0):
+        if threshold and not bmin:
+            bmin = threshold
+        # priority to bmin in all other cases
         mask = (self.bvals >= bmin) & (self.bvals <= bmax)
-        
         # Apply the mask to select the desired b-values and b-vectors
         bvals_selected = self.bvals[mask]
         bvecs_selected = self.bvecs[:, mask]
