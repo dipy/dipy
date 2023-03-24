@@ -46,6 +46,14 @@ def test_tck_equal_in_vox_space():
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
+def test_trx_equal_in_vox_space():
+    sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
+                          to_space=Space.VOX)
+    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_vox_space.txt'])
+    assert_allclose(tmp_points_rasmm,
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
+
+
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_fib_equal_in_vox_space():
     if not have_fury:
@@ -81,6 +89,14 @@ def test_tck_equal_in_rasmm_space():
                     sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
 
 
+def test_trx_equal_in_rasmm_space():
+    sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
+                          to_space=Space.RASMM)
+    tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
+    assert_allclose(tmp_points_rasmm,
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
+
+
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
 def test_fib_equal_in_rasmm_space():
     if not have_fury:
@@ -110,6 +126,14 @@ def test_trk_equal_in_voxmm_space():
 
 def test_tck_equal_in_voxmm_space():
     sft = load_tractogram(filepath_dix['gs.tck'], filepath_dix['gs.nii'],
+                          to_space=Space.VOXMM)
+    tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
+    assert_allclose(tmp_points_voxmm,
+                    sft.streamlines.get_data(), atol=1e-3, rtol=1e-6)
+
+
+def test_trx_equal_in_voxmm_space():
+    sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
                           to_space=Space.VOXMM)
     tmp_points_voxmm = np.loadtxt(filepath_dix['gs_voxmm_space.txt'])
     assert_allclose(tmp_points_voxmm,
@@ -281,6 +305,22 @@ def test_tck_iterative_saving_loading():
                             sft_iter.streamlines.get_data(),
                             atol=1e-3, rtol=1e-6)
             save_tractogram(sft_iter, pjoin(tmpdir, 'gs_iter.tck'))
+
+
+def test_trx_iterative_saving_loading():
+    sft = load_tractogram(filepath_dix['gs.trx'], filepath_dix['gs.nii'],
+                          to_space=Space.RASMM)
+    with InTemporaryDirectory():
+        save_tractogram(sft, 'gs_iter.trx')
+        tmp_points_rasmm = np.loadtxt(filepath_dix['gs_rasmm_space.txt'])
+
+        for _ in range(100):
+            sft_iter = load_tractogram('gs_iter.trx', filepath_dix['gs.nii'],
+                                       to_space=Space.RASMM)
+            assert_allclose(tmp_points_rasmm,
+                            sft_iter.streamlines.get_data(),
+                            atol=1e-3, rtol=1e-6)
+            save_tractogram(sft_iter, 'gs_iter.trx')
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")
@@ -880,7 +920,7 @@ def test_set_partial_dtype_dict_attributes():
         recursive_compare(dps_dtype_dict['dps'], sft.dtype_dict['dps'])
     except ValueError:
         assert_(False, msg='Partial use of dtype_dict should apply only to the '
-                          'relevant portions.')
+                'relevant portions.')
 
 
 def test_non_existing_dtype_dict_attributes():
@@ -963,4 +1003,5 @@ def recursive_compare(d1, d2, level='root'):
 
     else:
         if np.dtype(d1).itemsize != np.dtype(d2).itemsize:
-            raise ValueError('Values {}, {} do not match at level {}'.format(d1, d2, level))
+            raise ValueError(
+                'Values {}, {} do not match at level {}'.format(d1, d2, level))
