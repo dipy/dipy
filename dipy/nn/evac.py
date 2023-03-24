@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-Class and helper functions for fitting the Synb0 model.
+Class and helper functions for fitting the EVAC+ model.
 """
 
 
@@ -12,13 +12,11 @@ from dipy.utils.optpkg import optional_package
 import numpy as np
 
 tf, have_tf, _ = optional_package('tensorflow')
-tfa, have_tfa, _ = optional_package('tensorflow_addons')
-if have_tf and have_tfa:
+if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
-    from tensorflow.keras.layers import Conv3D, LeakyReLU
-    from tensorflow.keras.layers import Concatenate, Layer
-    from tensorflow_addons.layers import InstanceNormalization
+    from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
+    from tensorflow.keras.layers import Concatenate, Layer, Dropout
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 else:
@@ -29,7 +27,7 @@ else:
         pass
 
 logging.basicConfig()
-logger = logging.getLogger('synb0')
+logger = logging.getLogger('evac')
 
 
 def set_logger_level(log_level):
@@ -39,7 +37,7 @@ def set_logger_level(log_level):
     Parameters
     ----------
     log_level : str
-        Log level for the Synb0 only
+        Log level for the EVAC+ only
     """
     logger.setLevel(level=log_level)
 
@@ -103,19 +101,19 @@ def unnormalize(image, norm_min, norm_max, min_v, max_v):
     return (image-norm_min)/(norm_max-norm_min)*(max_v-min_v) + min_v
 
 class EncoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
+    def __init__(self, out_channels, kernel_size, padding):
         super(EncoderBlock, self).__init__()
         self.conv3d = Conv3D(out_channels,
                              kernel_size,
-                             strides=strides,
-                             padding=padding,
-                             use_bias=False)
-        self.instnorm = InstanceNormalization()
-        self.activation = LeakyReLU(0.01)
+                             padding=padding)
+        self.norm = LayerNormalization()
+        self.dropout = Dropout(0.2)
+        self.activation = ReLU()
 
     def call(self, input):
         x = self.conv3d(input)
-        x = self.instnorm(x)
+        x = self.
+        x = self.norm(x)
         x = self.activation(x)
 
         return x
@@ -362,8 +360,8 @@ class Synb0:
         # Normalize the data.
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = normalize(T1[i], 0, 150, -1, 1)
-            b0[i] = self.normalize(b0[i], 0, p99[i], -1, 1)
+            T1[i] = self.__normalize(T1[i], 150, 0)
+            b0[i] = self.__normalize(b0[i], p99[i], 0)
 
         if dim == 3:
             if batch_size is not None:
@@ -390,7 +388,7 @@ class Synb0:
                     temp_pred = self.__predict(input_data[-remainder:])
                     prediction[-remainder:] = temp_pred
                 for j in range(shape[0]):
-                    temp_pred = unnormalize(prediction[j], -1, 1, 0, p99[j])
+                    temp_pred = self.__unnormalize(prediction[j], p99[j], 0)
                     prediction[j] = temp_pred
 
                 prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
@@ -411,7 +409,7 @@ class Synb0:
                 temp_pred = self.__predict(input_data[-remainder:])
                 prediction[-remainder:] = temp_pred
             for j in range(shape[0]):
-                prediction[j] = unnormalize(prediction[j], -1, 1, 0, p99[j])
+                prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
 
             prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
             prediction = np.moveaxis(prediction, 1, -1)
