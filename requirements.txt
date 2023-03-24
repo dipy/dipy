@@ -6,3 +6,4 @@ nibabel>=3.0.0
 h5py>=2.8.0
 packaging>=19.0
 tqdm>=4.30.0
+trx-python==0.1

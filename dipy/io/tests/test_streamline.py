@@ -160,12 +160,14 @@ def io_tractogram(extension):
         in_affine = np.eye(4)
         in_dimensions = np.array([50, 50, 50])
         in_voxel_sizes = np.array([2, 1.5, 1.5])
+        in_affine = np.dot(in_affine, np.diag(np.r_[in_voxel_sizes, 1]))
         nii_header = create_nifti_header(in_affine, in_dimensions,
                                          in_voxel_sizes)
+
         sft = StatefulTractogram(streamlines, nii_header, space=Space.RASMM)
         save_tractogram(sft, fpath, bbox_valid_check=False)
 
-        if extension == 'trk':
+        if extension in ['trk', 'trx']:
             reference = 'same'
         else:
             reference = nii_header
@@ -187,6 +189,10 @@ def test_io_trk():
 
 def test_io_tck():
     io_tractogram('tck')
+
+
+def test_io_trx():
+    io_tractogram('trx')
 
 
 @pytest.mark.skipif(not have_fury, reason="Requires FURY")

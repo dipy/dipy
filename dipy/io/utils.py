@@ -8,6 +8,8 @@ import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel import Nifti1Image
 import numpy as np
+from trx import trx_file_memmap
+
 pd, have_pd, _ = optional_package("pandas")
 
 if have_pd:
@@ -223,19 +225,46 @@ def is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order):
     return all_valid
 
 
+def split_name_with_gz(filename):
+    """
+    Returns the clean basename and extension of a file.
+    Means that this correctly manages the ".nii.gz" extensions.
+
+    Parameters
+    ----------
+    filename: str
+        The filename to clean
+
+    Returns
+    -------
+        base, ext : tuple(str, str)
+        Clean basename and the full extension
+    """
+    base, ext = os.path.splitext(filename)
+
+    if ext == ".gz":
+        # Test if we have a .nii additional extension
+        temp_base, add_ext = os.path.splitext(base)
+
+        if add_ext == ".nii" or add_ext == ".trk":
+            ext = add_ext + ext
+            base = temp_base
+
+    return base, ext
+
+
 def get_reference_info(reference):
-    """ Will compare the spatial attribute of 2 references
+    """ Will compare the spatial attribute of 2 references.
 
     Parameters
     ----------
     reference : Nifti or Trk filename, Nifti1Image or TrkFile, Nifti1Header or
-        trk.header (dict)
+        trk.header (dict), TrxFile or trx.header (dict)
         Reference that provides the spatial attribute.
-
     Returns
     -------
     output : tuple
-        - affine ndarray (4,4), np.float32, transformation of VOX to RASMM
+        - affine ndarray (4,4), np.float32, tranformation of VOX to RASMM
         - dimensions ndarray (3,), int16, volume shape for each axis
         - voxel_sizes  ndarray (3,), float32, size of voxel for each axis
         - voxel_order, string, Typically 'RAS' or 'LPS'
@@ -244,19 +273,21 @@ def get_reference_info(reference):
     is_nifti = False
     is_trk = False
     is_sft = False
+    is_trx = False
     if isinstance(reference, str):
-        try:
+        _, ext = split_name_with_gz(reference)
+        if ext in ['.nii', '.nii.gz']:
             header = nib.load(reference).header
             is_nifti = True
-        except nib.filebasedimages.ImageFileError:
-            pass
-        try:
+        elif ext == '.trk':
             header = nib.streamlines.load(reference, lazy_load=True).header
-            _, extension = os.path.splitext(reference)
-            if extension == '.trk':
-                is_trk = True
-        except ValueError:
-            pass
+            is_trk = True
+        elif ext == '.trx':
+            header = trx_file_memmap.load(reference).header
+            is_trx = True
+    elif isinstance(reference, trx_file_memmap.TrxFile):
+        header = reference.header
+        is_trx = True
     elif isinstance(reference, nib.nifti1.Nifti1Image):
         header = reference.header
         is_nifti = True
@@ -269,6 +300,9 @@ def get_reference_info(reference):
     elif isinstance(reference, dict) and 'magic_number' in reference:
         header = reference
         is_trk = True
+    elif isinstance(reference, dict) and 'NB_VERTICES' in reference:
+        header = reference
+        is_trx = True
     elif isinstance(reference, dipy.io.stateful_tractogram.StatefulTractogram):
         is_sft = True
 
@@ -289,14 +323,18 @@ def get_reference_info(reference):
         voxel_order = header['voxel_order']
     elif is_sft:
         affine, dimensions, voxel_sizes, voxel_order =\
-             reference.space_attributes
+            reference.space_attributes
+    elif is_trx:
+        affine = header['VOXEL_TO_RASMM']
+        dimensions = header['DIMENSIONS']
+        voxel_sizes = nib.affines.voxel_sizes(affine)
+        voxel_order = ''.join(nib.aff2axcodes(affine))
     else:
         raise TypeError('Input reference is not one of the supported format')
 
     if isinstance(voxel_order, np.bytes_):
         voxel_order = voxel_order.decode('utf-8')
 
-    # Run this function to logging the warning from it
     is_reference_info_valid(affine, dimensions, voxel_sizes, voxel_order)
 
     return affine.astype(np.float32), dimensions, voxel_sizes, voxel_order
@@ -366,6 +404,8 @@ def create_nifti_header(affine, dimensions, voxel_sizes):
     new_header.set_sform(affine)
     new_header['dim'][1:4] = dimensions
     new_header['pixdim'][1:4] = voxel_sizes
+
+    new_header.affine = new_header.get_best_affine()
 
     return new_header
 

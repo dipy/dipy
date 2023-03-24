@@ -81,6 +81,7 @@ NIBABEL_MIN_VERSION = '3.0.0'
 H5PY_MIN_VERSION = '2.8.0'
 PACKAGING_MIN_VERSION = '19.0'
 TQDM_MIN_VERSION = '4.30.0'
+TRX_MIN_VERSION = '0.1'
 
 # Main setup parameters
 NAME                = 'dipy'
@@ -106,7 +107,8 @@ REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
                        "nibabel (>=%s)" % NIBABEL_MIN_VERSION,
                        "h5py (>=%s)" % H5PY_MIN_VERSION,
                        "packaging (>=%s)" % PACKAGING_MIN_VERSION,
-                       "tqdm"]
+                       "tqdm (>=%s)" % TQDM_MIN_VERSION,
+                       "trx (>=%s)" % TRX_MIN_VERSION]
 EXTRAS_REQUIRE = {
     "test": [
         "pytest",

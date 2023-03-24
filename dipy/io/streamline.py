@@ -7,6 +7,7 @@ import nibabel as nib
 from nibabel.streamlines import detect_format
 from nibabel.streamlines.tractogram import Tractogram
 import numpy as np
+import trx.trx_file_memmap as tmm
 
 from dipy.io.stateful_tractogram import Origin, Space, StatefulTractogram
 from dipy.io.vtk import save_vtk_streamlines, load_vtk_streamlines
@@ -35,7 +36,7 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
     """
 
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
         raise TypeError('Output filename is not one of the supported format.')
 
     if bbox_valid_check and not sft.is_bbox_in_vox_valid():
@@ -73,6 +74,10 @@ def save_tractogram(sft, filename, bbox_valid_check=True):
         dpy_obj = Dpy(filename, mode='w')
         dpy_obj.write_tracks(sft.streamlines)
         dpy_obj.close()
+    elif extension in ['.trx']:
+        trx = tmm.TrxFile.from_sft(sft)
+        print(trx)
+        tmm.save(trx, filename)
 
     logging.debug('Save %s with %s streamlines in %s seconds.',
                   filename, len(sft), round(time.time() - timer, 3))
@@ -116,7 +121,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         The tractogram to load (must have been saved properly)
     """
     _, extension = os.path.splitext(filename)
-    if extension not in ['.trk', '.tck', '.vtk', '.vtp', '.fib', '.dpy']:
+    if extension not in ['.trk', '.tck', '.trx', '.vtk', '.vtp', '.fib', '.dpy']:
         logging.error('Output filename is not one of the supported format.')
         return False
 
@@ -125,7 +130,7 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         return False
 
     if reference == 'same':
-        if extension == '.trk':
+        if extension in ['.trk', '.trx']:
             reference = filename
         else:
             logging.error('Reference must be provided, "same" is only '
@@ -154,6 +159,12 @@ def load_tractogram(filename, reference, to_space=Space.RASMM,
         dpy_obj = Dpy(filename, mode='r')
         streamlines = list(dpy_obj.read_tracks())
         dpy_obj.close()
+    elif extension in ['.trx']:
+        trx_obj = tmm.load(filename)
+        streamlines = trx_obj.streamlines
+        data_per_point = trx_obj.data_per_vertex
+        data_per_streamline = trx_obj.data_per_streamline
+
     logging.debug('Load %s with %s streamlines in %s seconds.',
                   filename, len(streamlines), round(time.time() - timer, 3))
 
