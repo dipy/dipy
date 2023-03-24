@@ -617,7 +617,8 @@ class StatefulTractogram(object):
         tmp_dpp = self._tractogram.data_per_point[indices_to_keep]
         tmp_dps = self._tractogram.data_per_streamline[indices_to_keep]
 
-        self._tractogram = Tractogram(tmp_streamlines.copy(),
+        ori_dtype = self._tractogram.streamlines._data.dtype
+        self._tractogram = Tractogram(tmp_streamlines.copy().astype(ori_dtype),
                                       data_per_point=tmp_dpp,
                                       data_per_streamline=tmp_dps,
                                       affine_to_rasmm=np.eye(4))
