@@ -469,17 +469,17 @@ def test_getitem_threshold():
     gtab = GradientTable(bvals, bvecs)
 
     # Test with a bmin of 200 and no threshold
-    gtab_slice1 = gtab[bmin=200]
+    gtab_slice1 = gtab.getitem(bmin=200)
     assert np.array_equal(gtab_slice1.bvals, np.array([200, 300, 400]))
     assert np.array_equal(gtab_slice1.bvecs, np.array([[0., 0., 1.], [1., 1., 0.], [1., 0., 1.]]))
 
     # Test with a bmax of 200 and a threshold of 100
-    gtab_slice2 = gtab[bmax=200, threshold=100]
+    gtab_slice2 = gtab.getitem(bmax=200, threshold=100)
     assert np.array_equal(gtab_slice2.bvals, np.array([0, 100, 200]))
     assert np.array_equal(gtab_slice2.bvecs, np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
     # Test with a bmin of 100, bmax of 300, and a threshold of 200
-    gtab_slice3 = gtab[bmin=100, bmax=300, threshold=200]
+    gtab_slice3 = gtab.getitem(bmin=100, bmax=300, threshold=200)
     assert np.array_equal(gtab_slice3.bvals, np.array([200]))
     assert np.array_equal(gtab_slice3.bvecs, np.array([[0., 0., 1.]]))
 
