@@ -12,7 +12,7 @@ on:
         description: "Select Python version"
         type: string
         required: false
-        default: '["3.9", ]'
+        default: '["3.10", ]'
       use-pre:
         description: "bal"
         type: boolean
