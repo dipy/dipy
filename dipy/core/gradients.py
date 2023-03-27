@@ -220,7 +220,7 @@ class GradientTable(object):
         mask = (self.bvals >= bmin) & (self.bvals <= bmax)
         # Apply the mask to select the desired b-values and b-vectors
         bvals_selected = self.bvals[mask]
-        bvecs_selected = self.bvecs[:, mask]
+        bvecs_selected = self.bvecs[mask, :]#since bvecs has shape:(N,3)
     
         # Create a new MyGradientTable object with the selected b-values and b-vectors
         return gradient_table_from_bvals_bvecs(bvals_selected, 
@@ -228,8 +228,8 @@ class GradientTable(object):
                                                big_delta=self.big_delta,
                                                small_delta=self.small_delta,
                                                b0_threshold=self.b0_threshold,
-                                               atol=self.atol, 
                                                btens=self.btens)
+        #removing atol parameter as it's not in the constructor of GradientTable.
     
     @property
     def info(self, use_logging=False):
