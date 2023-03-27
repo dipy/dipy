@@ -16,7 +16,7 @@ if have_tf:
     from tensorflow.keras.models import Model
     from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
     from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
-    from tensorflow.keras.layers import Concatenate, Layer, Dropout
+    from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 else:
@@ -101,22 +101,34 @@ def unnormalize(image, norm_min, norm_max, min_v, max_v):
     return (image-norm_min)/(norm_max-norm_min)*(max_v-min_v) + min_v
 
 class EncoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, padding):
+    def __init__(self, out_channels, kernel_size, strides, padding, drop_r, n_layers):
         super(EncoderBlock, self).__init__()
-        self.conv3d = Conv3D(out_channels,
-                             kernel_size,
-                             padding=padding)
-        self.norm = LayerNormalization()
-        self.dropout = Dropout(0.2)
+        self.layer_list = []
+        self.n_layers = n_layers
+        for _ in range(n_layers):
+            self.layer_list.append(Conv3D(out_channels,
+                                          kernel_size,
+                                          strides=strides,
+                                          padding=padding))
+            self.layer_list.append(LayerNormalization())
+            self.layer_list.append(Dropout(drop_r))
+            self.layer_list.append(ReLU())
+        self.down = Conv3D(1, 2, strides=2, padding='same')
         self.activation = ReLU()
+        self.channel_sum = ChannelSum()
+        self.add = Add()
 
     def call(self, input):
-        x = self.conv3d(input)
-        x = self.
-        x = self.norm(x)
+        x = input
+        for layer in self.layer_list:
+            x = layer(x)
+        
+        x = self.channel_sum(x)
+        fwd = self.add(x)
+        x = self.down(fwd)
         x = self.activation(x)
 
-        return x
+        return fwd, x
 
 class DecoderBlock(Layer):
     def __init__(self, out_channels, kernel_size, strides, padding):
@@ -124,23 +136,38 @@ class DecoderBlock(Layer):
         self.conv3d = Conv3DTranspose(out_channels,
                                       kernel_size,
                                       strides=strides,
-                                      padding=padding,
-                                      use_bias=False)
-        self.instnorm = InstanceNormalization()
-        self.activation = LeakyReLU(0.01)
+                                      padding=padding)
+        self.norm = LayerNormalization()
+        self.dropout = Dropout(0.2)
+        self.activation = ReLU()
 
     def call(self, input):
         x = self.conv3d(input)
-        x = self.instnorm(x)
+        x = self.dropout(x)
+        x = self.norm(x)
         x = self.activation(x)
 
         return x
+    
+class ChannelSum(Layer):
+    def __init__(self):
+        super(ChannelSum, self).__init__()
+
+    def call(self, inputs):
+        return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
 def UNet3D(input_shape):
     inputs = tf.keras.Input(input_shape)
+    raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
+    raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
+    raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1))
+    raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1))
     # Encode
-    x = EncoderBlock(32, kernel_size=3,
-                     strides=1, padding='same')(inputs)
+    fwd, x = EncoderBlock(16, kernel_size=5,
+                          strides=1, padding='same',
+                          drop_r=0.2, n_layers=1)(inputs)
+    
+    x = Concatenate()([x, raw_input_2])
     syn0 = EncoderBlock(64, kernel_size=3,
                         strides=1, padding='same')(x)
     
