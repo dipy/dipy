@@ -1,7 +1,7 @@
 import numpy as np
 
 from numpy.testing import (assert_almost_equal, assert_equal, assert_,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal, assert_warns)
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
 from dipy.denoise.noise_estimate import _piesno_3D
 from dipy.denoise.pca_noise_estimate import pca_noise_estimate
@@ -152,27 +152,36 @@ def test_pca_noise_estimate():
     bvecs2 = np.concatenate([np.zeros((1, 3)), np.eye(3)])
     gtab2 = dpg.gradient_table(bvals2, bvecs2)
 
-    for patch_radius in [1, 2]:
-        for gtab in [gtab1, gtab2]:
-            for dtype in [np.int16, np.float64]:
-                signal = np.ones((20, 20, 20, gtab.bvals.shape[0]))
-                for correct_bias in [True, False]:
-                    if not correct_bias:
-                        # High signal for no bias correction
-                        signal = signal * 100
+    for images_as_samples in [True, False]:
 
-                    sigma = 1
-                    noise1 = np.random.normal(0, sigma, size=signal.shape)
-                    noise2 = np.random.normal(0, sigma, size=signal.shape)
+        for patch_radius in [1, 2]:
+            for gtab in [gtab1, gtab2]:
+                for dtype in [np.int16, np.float64]:
+                    signal = np.ones((20, 20, 20, gtab.bvals.shape[0]))
+                    for correct_bias in [True, False]:
+                        if not correct_bias:
+                            # High signal for no bias correction
+                            signal = signal * 100
 
-                    # Rician noise:
-                    data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
+                        sigma = 1
+                        noise1 = np.random.normal(0, sigma, size=signal.shape)
+                        noise2 = np.random.normal(0, sigma, size=signal.shape)
 
-                    sigma_est = pca_noise_estimate(data.astype(dtype), gtab,
-                                                   correct_bias=correct_bias,
-                                                   patch_radius=patch_radius)
-                    assert_array_almost_equal(np.mean(sigma_est), sigma,
-                                              decimal=1)
+                        # Rician noise:
+                        data = np.sqrt((signal + noise1) ** 2 + noise2 ** 2)
 
-    assert_(np.mean(pca_noise_estimate(data, gtab, correct_bias=True)) >
-            np.mean(pca_noise_estimate(data, gtab, correct_bias=False)))
+                        sigma_est = pca_noise_estimate(data.astype(dtype), gtab,
+                                                       correct_bias=correct_bias,
+                                                       patch_radius=patch_radius,
+                                                       images_as_samples=images_as_samples)
+                        #print("sigma_est:", sigma_est)
+                        assert_array_almost_equal(np.mean(sigma_est), sigma,
+                                                  decimal=1)
+
+        # check that Rician corrects produces larger noise estimate
+        assert_(np.mean(pca_noise_estimate(data, gtab, correct_bias=True,
+                          images_as_samples=images_as_samples)) >
+                np.mean(pca_noise_estimate(data, gtab, correct_bias=False,
+                          images_as_samples=images_as_samples)))
+
+        assert_warns(UserWarning, pca_noise_estimate, data, gtab, patch_radius=0)
