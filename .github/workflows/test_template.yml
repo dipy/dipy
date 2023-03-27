@@ -50,7 +50,7 @@ defaults:
     shell: bash
 
 concurrency:
-  group: build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: build-${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
