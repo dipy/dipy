@@ -16,17 +16,9 @@ perfusion and structural imaging.
 Highlights
 **********
 
-**DIPY 1.6.0** is now available. New features include:
+**DIPY 1.7.0** is now available. New features include:
 
-- NF: Unbiased groupwise linear bundle registration added.
-- NF: MAP+ constraints added.
-- Generalized PCA to less than 3 spatial dims.
-- Add positivity constraints to QTI.
-- Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
-- New Human Connectome Project (HCP) data fetcher added.
-- New Healthy Brain Network (HBN) data fetcher added.
-- Multiple Workflows updated (DTIFlow, LPCAFlow, MPPCA) and added (RUMBAFlow).
-- Ability to handle VTP files.
+
 - Large codebase cleaning.
 - Large documentation update.
 - Closed 75 issues and merged 41 pull requests.
@@ -36,9 +28,9 @@ See :ref:`Older Highlights <old_highlights>`.
 *************
 Announcements
 *************
+- :doc:`DIPY 1.7.0 <release_notes/release1.7>` released April , 2023.
 - :doc:`DIPY 1.6.0 <release_notes/release1.6>` released January 16, 2023.
 - :doc:`DIPY 1.5.0 <release_notes/release1.5>` released March 11, 2022.
-- :doc:`DIPY 1.4.1 <release_notes/release1.4.1>` released May 6, 2021.
 
 
 
