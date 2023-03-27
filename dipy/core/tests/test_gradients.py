@@ -1,13 +1,9 @@
-import sys 
-sys.path.append('Documents/dipy_/')
-
 import warnings
 
 import numpy as np
 import numpy.testing as npt
 
 from dipy.data import get_fnames 
-from dipy.core.gradients import gradient_table
 from dipy.core.gradients import (gradient_table, GradientTable,
                                  gradient_table_from_bvals_bvecs,
                                  gradient_table_from_qvals_bvecs,
