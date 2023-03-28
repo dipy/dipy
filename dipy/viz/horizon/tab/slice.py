@@ -8,6 +8,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from fury import colormap, ui
+    from fury.data import read_viz_icons
 
 
 class SlicesTab(HorizonTab):
@@ -87,27 +88,73 @@ class SlicesTab(HorizonTab):
         
         self.__slider_intensities.on_change = self.__change_intensity
         
-        self.__colormap = 'gray'
-        
         self.__combobox_label_colormap = build_label(text='Colormap')
         
-        colormaps = ['gray', 'magma', 'viridis', 'jet', 'Pastel1', 'disting']
+        self.__supported_colormaps = {
+            'Gray': 'gray', 'Bone': 'bone', 'Cividis': 'cividis',
+            'Inferno': 'inferno', 'Magma': 'magma', 'Viridis': 'viridis',
+            'Jet': 'jet', 'Pastel 1': 'Pastel1', 'Distinguishable': 'dist'}
+        
+        self.__selected_colormap_idx = 0
+        selected_colormap = list(self.__supported_colormaps)[
+            self.__selected_colormap_idx]
+        self.__colormap = self.__supported_colormaps[selected_colormap]
         
         self.__combobox_colormap = ui.ComboBox2D(
-            items=colormaps, position=(0, -200), size=(450, 200),
-            placeholder='Select colormap...', draggable=False,
+            items=list(self.__supported_colormaps.keys()), position=(0, -200),
+            size=(450, 200), placeholder='Select colormap...', draggable=False,
             selection_text_color=(.0, .0, .0), selection_bg_color=(1., 1., 1.),
             menu_text_color=(.2, .2, .2), selected_color=(.9, .6, .6),
             unselected_color=(.6, .6, .6),
-            scroll_bar_active_color=(.6, .2, .2), 
+            scroll_bar_active_color=(.6, .2, .2),
             scroll_bar_inactive_color=(1., .5, .0), menu_opacity=1.,
             reverse_scrolling=False, font_size=20, line_spacing=1.4)
         
         self.__combobox_colormap.on_change = self.__change_colormap
+        
+        self.__label_selected_colormap = build_label(text=selected_colormap)
+        
+        self.__button_previous_colormap = ui.Button2D(
+            icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
+            size=(30, 30))
+        
+        self.__button_next_colormap = ui.Button2D(
+            icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
+            size=(30, 30))
+        
+        self.__button_previous_colormap.on_left_mouse_button_clicked = (
+            self.__change_colormap_previous)
+        self.__button_next_colormap.on_left_mouse_button_clicked = (
+            self.__change_colormap_next)
     
     def __change_colormap(self, combobox):
-        self.__colormap = combobox.selected_text
+        colormap = combobox.selected_text
+        self.__colormap = self.__supported_colormaps[colormap]
         self.__update_colormap()
+    
+    def __change_colormap_previous(self, i_ren, _obj, _button):
+        selected_colormap_idx = self.__selected_colormap_idx - 1
+        if selected_colormap_idx < 0:
+            selected_colormap_idx = len(self.__supported_colormaps) - 1
+        self.__selected_colormap_idx = selected_colormap_idx
+        selected_colormap = list(self.__supported_colormaps)[
+            self.__selected_colormap_idx]
+        self.__label_selected_colormap.message = selected_colormap
+        self.__colormap = self.__supported_colormaps[selected_colormap]
+        self.__update_colormap()
+        i_ren.force_render()
+    
+    def __change_colormap_next(self, i_ren, _obj, _button):
+        selected_color_idx = self.__selected_colormap_idx + 1
+        if selected_color_idx >= len(self.__supported_colormaps):
+            selected_color_idx = 0
+        self.__selected_colormap_idx = selected_color_idx
+        selected_colormap = list(self.__supported_colormaps)[
+            self.__selected_colormap_idx]
+        self.__label_selected_colormap.message = selected_colormap
+        self.__colormap = self.__supported_colormaps[selected_colormap]
+        self.__update_colormap()
+        i_ren.force_render()
     
     def __change_opacity(self, slider):
         opacity = slider.value
@@ -135,7 +182,7 @@ class SlicesTab(HorizonTab):
             0, self.__shape[0] - 1, 0, self.__shape[1] - 1, value, value)
     
     def __update_colormap(self):
-        if self.__colormap == 'disting':
+        if self.__colormap == 'dist':
             rgb = colormap.distinguishable_colormap(nb_colors=256)
             rgb = np.asarray(rgb)
         else:
@@ -188,14 +235,22 @@ class SlicesTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__combobox_label_colormap, (x_pos, .62))
+            self.__tab_id, self.__combobox_label_colormap, (x_pos, .55))
         
         x_pos = .60
         
         self.__tab_ui.add_element(
                 self.__tab_id, self.__slider_intensities, (x_pos, .85))
         self.__tab_ui.add_element(
+                self.__tab_id, self.__button_previous_colormap, (x_pos, .52))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__label_selected_colormap, (.63, .55))
+        self.__tab_ui.add_element(
+                self.__tab_id, self.__button_next_colormap, (.73, .52))
+        """
+        self.__tab_ui.add_element(
                 self.__tab_id, self.__combobox_colormap, (x_pos, .62))
+        """
     
     @property
     def name(self):
