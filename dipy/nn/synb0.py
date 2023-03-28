@@ -44,6 +44,168 @@ def set_logger_level(log_level):
     logger.setLevel(level=log_level)
 
 
+def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
+    r"""
+    normalization function
+
+    Parameters
+    ----------
+    image : np.ndarray
+    min_v : int or float (optional)
+        minimum value range for normalization
+        intensities below min_v will be clipped
+        if None it is set to min value of image
+        Default : None
+    max_v : int or float (optional)
+        maximum value range for normalization
+        intensities above max_v will be clipped
+        if None it is set to max value of image
+        Default : None
+    new_min : int or float (optional)
+        new minimum value after normalization
+        Default : 0
+    new_max : int or float (optional)
+        new maximum value after normalization
+        Default : 1
+
+    Returns
+    -------
+    np.ndarray
+        Normalized image from range new_min to new_max
+    """
+    if min_v is None:
+        min_v = np.min(image)
+    if max_v is None:
+        max_v = np.max(image)
+    return np.interp(image, (min_v, max_v), (new_min, new_max))
+
+def unnormalize(image, norm_min, norm_max, min_v, max_v):
+    r"""
+    unnormalization function
+
+    Parameters
+    ----------
+    image : np.ndarray
+    norm_min : int or float
+        minimum value of normalized image
+    norm_max : int or float
+        maximum value of normalized image
+    min_v : int or float
+        minimum value of unnormalized image
+    max_v : int or float
+        maximum value of unnormalized image
+
+    Returns
+    -------
+    np.ndarray
+        unnormalized image from range min_v to max_v
+    """
+    return (image-norm_min)/(norm_max-norm_min)*(max_v-min_v) + min_v
+
+class EncoderBlock(Layer):
+    def __init__(self, out_channels, kernel_size, strides, padding):
+        super(EncoderBlock, self).__init__()
+        self.conv3d = Conv3D(out_channels,
+                             kernel_size,
+                             strides=strides,
+                             padding=padding,
+                             use_bias=False)
+        self.instnorm = InstanceNormalization()
+        self.activation = LeakyReLU(0.01)
+
+    def call(self, input):
+        x = self.conv3d(input)
+        x = self.instnorm(x)
+        x = self.activation(x)
+
+        return x
+
+class DecoderBlock(Layer):
+    def __init__(self, out_channels, kernel_size, strides, padding):
+        super(DecoderBlock, self).__init__()
+        self.conv3d = Conv3DTranspose(out_channels,
+                                      kernel_size,
+                                      strides=strides,
+                                      padding=padding,
+                                      use_bias=False)
+        self.instnorm = InstanceNormalization()
+        self.activation = LeakyReLU(0.01)
+
+    def call(self, input):
+        x = self.conv3d(input)
+        x = self.instnorm(x)
+        x = self.activation(x)
+
+        return x
+
+def UNet3D(input_shape):
+    inputs = tf.keras.Input(input_shape)
+    # Encode
+    x = EncoderBlock(32, kernel_size=3,
+                     strides=1, padding='same')(inputs)
+    syn0 = EncoderBlock(64, kernel_size=3,
+                        strides=1, padding='same')(x)
+    
+    x = MaxPool3D()(syn0)
+    x = EncoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+    syn1 = EncoderBlock(128, kernel_size=3,
+                        strides=1, padding='same')(x)
+
+    x = MaxPool3D()(syn1)
+    x = EncoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    syn2 = EncoderBlock(256, kernel_size=3,
+                        strides=1, padding='same')(x)
+
+    x = MaxPool3D()(syn2)
+    x = EncoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = EncoderBlock(512, kernel_size=3,
+                     strides=1, padding='same')(x)
+
+    # Last layer without relu
+    x = Conv3D(512, kernel_size=1,
+               strides=1, padding='same')(x)
+    
+    x = DecoderBlock(512, kernel_size=2,
+                     strides=2, padding='valid')(x)
+
+    x = Concatenate()([x, syn2])
+
+    x = DecoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(256, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(256, kernel_size=2,
+                     strides=2, padding='valid')(x)
+    
+    x = Concatenate()([x, syn1])
+
+    x = DecoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(128, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(128, kernel_size=2,
+                     strides=2, padding='valid')(x)
+
+    x = Concatenate()([x, syn0])
+
+    x = DecoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+    x = DecoderBlock(64, kernel_size=3,
+                     strides=1, padding='same')(x)
+
+    x = DecoderBlock(1, kernel_size=1,
+                     strides=1, padding='valid')(x)
+
+    # Last layer without relu
+    out = Conv3DTranspose(1, kernel_size=1,
+                          strides=1, padding='valid')(x)
+
+    return Model(inputs, out)
+
+
 class Synb0:
     """
     This class is intended for the Synb0 model.
@@ -93,138 +255,8 @@ class Synb0:
 
         # Synb0 network load
 
-        self.model = self.UNet3D()
-        self.model.build(input_shape=(None, 80, 80, 96, 2))
+        self.model = UNet3D(input_shape=(80, 80, 96, 2))
 
-    class UNet3D(Model):
-        def __init__(self):
-            super(Synb0.UNet3D, self).__init__()
-
-            # Encoder
-            self.ec0 = self.EncoderBlock(32, kernel_size=3,
-                                          strides=1, padding='same')
-            self.ec1 = self.EncoderBlock(64, kernel_size=3,
-                                          strides=1, padding='same')
-            self.pool0 = MaxPool3D()
-            self.ec2 = self.EncoderBlock(64, kernel_size=3,
-                                          strides=1, padding='same')
-            self.ec3 = self.EncoderBlock(128, kernel_size=3,
-                                          strides=1, padding='same')
-            self.pool1 = MaxPool3D()
-            self.ec4 = self.EncoderBlock(128, kernel_size=3,
-                                          strides=1, padding='same')
-            self.ec5 = self.EncoderBlock(256, kernel_size=3,
-                                          strides=1, padding='same')
-            self.pool2 = MaxPool3D()
-            self.ec6 = self.EncoderBlock(256, kernel_size=3,
-                                          strides=1, padding='same')
-            self.ec7 = self.EncoderBlock(512, kernel_size=3,
-                                          strides=1, padding='same')
-            self.pool2 = MaxPool3D()
-            self.el = Conv3D(512, kernel_size=1,
-                             strides=1, padding='same')
-
-            # Decoder
-            self.dc9 = self.DecoderBlock(512, kernel_size=2,
-                                          strides=2, padding='valid')
-            self.dc8 = self.DecoderBlock(256, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc7 = self.DecoderBlock(256, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc6 = self.DecoderBlock(256, kernel_size=2,
-                                          strides=2, padding='valid')
-            self.dc5 = self.DecoderBlock(128, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc4 = self.DecoderBlock(128, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc3 = self.DecoderBlock(128, kernel_size=2,
-                                          strides=2, padding='valid')
-            self.dc2 = self.DecoderBlock(64, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc1 = self.DecoderBlock(64, kernel_size=3,
-                                          strides=1, padding='same')
-            self.dc0 = self.DecoderBlock(1, kernel_size=1,
-                                          strides=1, padding='valid')
-            self.dl = Conv3DTranspose(1, kernel_size=1,
-                                      strides=1, padding='valid')
-
-        def call(self, input):
-            # Encode
-            x = self.ec0(input)
-            syn0 = self.ec1(x)
-
-            x = self.pool0(syn0)
-            x = self.ec2(x)
-            syn1 = self.ec3(x)
-
-            x = self.pool1(syn1)
-            x = self.ec4(x)
-            syn2 = self.ec5(x)
-
-            x = self.pool2(syn2)
-            x = self.ec6(x)
-            x = self.ec7(x)
-
-            # Last layer without relu
-            x = self.el(x)
-
-            x = Concatenate()([self.dc9(x), syn2])
-
-            x = self.dc8(x)
-            x = self.dc7(x)
-
-            x = Concatenate()([self.dc6(x), syn1])
-
-            x = self.dc5(x)
-            x = self.dc4(x)
-
-            x = Concatenate()([self.dc3(x), syn0])
-
-            x = self.dc2(x)
-            x = self.dc1(x)
-
-            x = self.dc0(x)
-
-            # Last layer without relu
-            out = self.dl(x)
-
-            return out
-
-        class EncoderBlock(Layer):
-            def __init__(self, out_channels, kernel_size, strides, padding):
-                super(Synb0.UNet3D.EncoderBlock, self).__init__()
-                self.conv3d = Conv3D(out_channels,
-                                     kernel_size,
-                                     strides=strides,
-                                     padding=padding,
-                                     use_bias=False)
-                self.instnorm = InstanceNormalization()
-                self.activation = LeakyReLU(0.01)
-
-            def call(self, input):
-                x = self.conv3d(input)
-                x = self.instnorm(x)
-                x = self.activation(x)
-
-                return x
-
-        class DecoderBlock(Layer):
-            def __init__(self, out_channels, kernel_size, strides, padding):
-                super(Synb0.UNet3D.DecoderBlock, self).__init__()
-                self.conv3d = Conv3DTranspose(out_channels,
-                                              kernel_size,
-                                              strides=strides,
-                                              padding=padding,
-                                              use_bias=False)
-                self.instnorm = InstanceNormalization()
-                self.activation = LeakyReLU(0.01)
-
-            def call(self, input):
-                x = self.conv3d(input)
-                x = self.instnorm(x)
-                x = self.activation(x)
-
-                return x
 
     def fetch_default_weights(self, idx):
         r"""
@@ -272,36 +304,6 @@ class Synb0:
         """
 
         return self.model.predict(x_test)
-
-    def __normalize(self, image, max_img, min_img):
-        r"""
-        Internal normalization function
-
-        Parameters
-        ----------
-        image : np.ndarray
-
-        Returns
-        -------
-        np.ndarray
-            Normalized image from range -1 to 1
-        """
-        return ((image - min_img)/(max_img - min_img))*2-1
-
-    def __unnormalize(self, image, max_img, min_img):
-        r"""
-        Internal unnormalization function
-
-        Parameters
-        ----------
-        image : np.ndarray
-
-        Returns
-        -------
-        np.ndarray
-            unnormalized image from range min_img to max_img
-        """
-        return (image+1)/2*(max_img-min_img) + min_img
 
     def predict(self, b0, T1, batch_size=None, average=True):
         r"""
@@ -360,8 +362,8 @@ class Synb0:
         # Normalize the data.
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
-            T1[i] = self.__normalize(T1[i], 150, 0)
-            b0[i] = self.__normalize(b0[i], p99[i], 0)
+            T1[i] = normalize(T1[i], 0, 150, -1, 1)
+            b0[i] = normalize(b0[i], 0, p99[i], -1, 1)
 
         if dim == 3:
             if batch_size is not None:
@@ -388,7 +390,7 @@ class Synb0:
                     temp_pred = self.__predict(input_data[-remainder:])
                     prediction[-remainder:] = temp_pred
                 for j in range(shape[0]):
-                    temp_pred = self.__unnormalize(prediction[j], p99[j], 0)
+                    temp_pred = unnormalize(prediction[j], -1, 1, 0, p99[j])
                     prediction[j] = temp_pred
 
                 prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
@@ -402,14 +404,15 @@ class Synb0:
             prediction = np.zeros((shape[0], 80, 80, 96, 1),
                                   dtype=np.float32)
             for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                temp_pred = self.__predict(input_data[:batch_idx])
+                temp_input = input_data[batch_idx-batch_size:batch_idx]
+                temp_pred = self.__predict(temp_input)
                 prediction[:batch_idx] = temp_pred
             remainder = np.mod(shape[0], batch_size)
             if remainder != 0:
                 temp_pred = self.__predict(input_data[-remainder:])
                 prediction[-remainder:] = temp_pred
             for j in range(shape[0]):
-                prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
+                prediction[j] = unnormalize(prediction[j], -1, 1, 0, p99[j])
 
             prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
             prediction = np.moveaxis(prediction, 1, -1)
