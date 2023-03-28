@@ -203,7 +203,7 @@ def UNet3D(input_shape):
     out = Conv3DTranspose(1, kernel_size=1,
                           strides=1, padding='valid')(x)
 
-    return tf.keras.Model(inputs, out)
+    return Model(inputs, out)
 
 
 class Synb0:

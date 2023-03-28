@@ -9,12 +9,16 @@ import logging
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
+from dipy.io.image import load_nifti
 import numpy as np
+from scipy.ndimage import affine_transform
+from dipy.align.reslice import reslice
+from PIL import Image
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
     from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import MaxPool3D, Conv3DTranspose
+    from tensorflow.keras.layers import Softmax, Conv3DTranspose
     from tensorflow.keras.layers import Conv3D, LayerNormalization, ReLU
     from tensorflow.keras.layers import Concatenate, Layer, Dropout, Add
     if Version(tf.__version__) < Version('2.0.0'):
@@ -31,7 +35,7 @@ logger = logging.getLogger('evac')
 
 
 def set_logger_level(log_level):
-    """ Change the logger of the Synb0 to one on the following:
+    """ Change the logger of the EVAC+ to one on the following:
     DEBUG, INFO, WARNING, CRITICAL, ERROR
 
     Parameters
@@ -41,6 +45,51 @@ def set_logger_level(log_level):
     """
     logger.setLevel(level=log_level)
 
+def transform_img(image, affine, voxsize):
+    r"""
+    Function to reshape image as an input to the model
+
+    Parameters
+    ----------
+    image : np.ndarray
+    affine : np.ndarray
+    voxsize : tuple
+
+    Returns
+    -------
+    transformed_img : np.ndarray
+    """
+    new_img, new_affine = reslice(image, affine,
+                                  voxsize, (2, 2, 2))
+    
+    affine2 = new_affine.copy()
+    shape = new_img.shape
+    affine2[:3, 3] += np.array([64, 64, 64])
+    inv_affine = np.linalg.inv(affine2)
+    transformed_img = affine_transform(new_img, inv_affine, output_shape=(128, 128, 128))
+    return transformed_img, affine2
+    
+def recover_img(image, affine, voxsize, ori_shape):
+    r"""
+    Function to recover image back to its original shape
+
+    Parameters
+    ----------
+    image : np.ndarray
+    affine : np.ndarray
+    voxsize : tuple
+    ori_shape : tuple
+
+    Returns
+    -------
+    recovered_img : np.ndarray
+    """
+    new_image = affine_transform(image, affine, output_shape=ori_shape)
+    new_affine = affine.copy()
+    new_affine[:3, 3] -= np.array([128, 128, 128])
+    recovered_img, _ = reslice(new_image, new_affine, (2, 2, 2), voxsize)
+    return recovered_img
+    
 
 def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
     r"""
@@ -77,33 +126,13 @@ def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
         max_v = np.max
     return np.interp(image, (min_v, max_v), (new_min, new_max))
 
-def unnormalize(image, norm_min, norm_max, min_v, max_v):
-    r"""
-    unnormalization function
 
-    Parameters
-    ----------
-    image : np.ndarray
-    norm_min : int or float
-        minimum value of normalized image
-    norm_max : int or float
-        maximum value of normalized image
-    min_v : int or float
-        minimum value of unnormalized image
-    max_v : int or float
-        maximum value of unnormalized image
-
-    Returns
-    -------
-    np.ndarray
-        unnormalized image from range min_v to max_v
-    """
-    return (image-norm_min)/(norm_max-norm_min)*(max_v-min_v) + min_v
-
-class EncoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding, drop_r, n_layers):
-        super(EncoderBlock, self).__init__()
+class Block(Layer):
+    def __init__(self, out_channels, kernel_size, strides,
+                 padding, drop_r, n_layers, layer_type='down'):
+        super(Block, self).__init__()
         self.layer_list = []
+        self.layer_list2 = []
         self.n_layers = n_layers
         for _ in range(n_layers):
             self.layer_list.append(Conv3D(out_channels,
@@ -113,42 +142,29 @@ class EncoderBlock(Layer):
             self.layer_list.append(LayerNormalization())
             self.layer_list.append(Dropout(drop_r))
             self.layer_list.append(ReLU())
-        self.down = Conv3D(1, 2, strides=2, padding='same')
-        self.activation = ReLU()
+        if layer_type=='down':
+            self.layer_list2.append(Conv3D(1, 2, strides=2, padding='same'))
+            self.layer_list2.append(ReLU())
+        elif layer_type=='up':
+            self.layer_list2.append(Conv3DTranspose(1, 2, strides=2, padding='same'))
+            self.layer_list2.append(ReLU())
+
         self.channel_sum = ChannelSum()
         self.add = Add()
 
-    def call(self, input):
+    def call(self, input, passed):
         x = input
         for layer in self.layer_list:
             x = layer(x)
         
         x = self.channel_sum(x)
-        fwd = self.add(x)
-        x = self.down(fwd)
-        x = self.activation(x)
+        fwd = self.add([x, passed])
+
+        for layer in self.layer_list2:
+            x = layer(x)
 
         return fwd, x
 
-class DecoderBlock(Layer):
-    def __init__(self, out_channels, kernel_size, strides, padding):
-        super(DecoderBlock, self).__init__()
-        self.conv3d = Conv3DTranspose(out_channels,
-                                      kernel_size,
-                                      strides=strides,
-                                      padding=padding)
-        self.norm = LayerNormalization()
-        self.dropout = Dropout(0.2)
-        self.activation = ReLU()
-
-    def call(self, input):
-        x = self.conv3d(input)
-        x = self.dropout(x)
-        x = self.norm(x)
-        x = self.activation(x)
-
-        return x
-    
 class ChannelSum(Layer):
     def __init__(self):
         super(ChannelSum, self).__init__()
@@ -156,100 +172,95 @@ class ChannelSum(Layer):
     def call(self, inputs):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
-def UNet3D(input_shape):
-    inputs = tf.keras.Input(input_shape)
+def init_model():
+    inputs = tf.keras.Input(shape=(128, 128, 128, 1))
     raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
     raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
     raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1))
     raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1))
     # Encode
-    fwd, x = EncoderBlock(16, kernel_size=5,
-                          strides=1, padding='same',
-                          drop_r=0.2, n_layers=1)(inputs)
+    fwd1, x = Block(8, kernel_size=5,
+                   strides=1, padding='same',
+                   drop_r=0.2, n_layers=1)(inputs, inputs)
     
     x = Concatenate()([x, raw_input_2])
-    syn0 = EncoderBlock(64, kernel_size=3,
-                        strides=1, padding='same')(x)
+
+    fwd2, x = Block(16, kernel_size=5,
+                    strides=1, padding='same',
+                    drop_r=0.5, n_layers=2)(x, x)
     
-    x = MaxPool3D()(syn0)
-    x = EncoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn1 = EncoderBlock(128, kernel_size=3,
-                        strides=1, padding='same')(x)
+    x = Concatenate()([x, raw_input_3])
 
-    x = MaxPool3D()(syn1)
-    x = EncoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    syn2 = EncoderBlock(256, kernel_size=3,
-                        strides=1, padding='same')(x)
-
-    x = MaxPool3D()(syn2)
-    x = EncoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = EncoderBlock(512, kernel_size=3,
-                     strides=1, padding='same')(x)
-
-    # Last layer without relu
-    x = Conv3D(512, kernel_size=1,
-               strides=1, padding='same')(x)
+    fwd3, x = Block(32, kernel_size=5,
+                    strides=1, padding='same',
+                    drop_r=0.5, n_layers=3)(x, x)
     
-    x = DecoderBlock(512, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    x = Concatenate()([x, raw_input_4])
 
-    x = Concatenate()([x, syn2])
+    fwd4, x = Block(64, kernel_size=5,
+                    strides=1, padding='same',
+                    drop_r=0.5, n_layers=3)(x, x)
 
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(256, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    x = Concatenate()([x, raw_input_5])
+
+    _, up = Block(128, kernel_size=5,
+                  strides=1, padding='same',
+                  drop_r=0.5, n_layers=3,
+                  layer_type='up')(x, x)
     
-    x = Concatenate()([x, syn1])
+    x = Concatenate()([fwd4, up])
 
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(128, kernel_size=2,
-                     strides=2, padding='valid')(x)
+    _, up = Block(64, kernel_size=5,
+                  strides=1, padding='same',
+                  drop_r=0.5, n_layers=3,
+                  layer_type='up')(x, up)
+    
+    x = Concatenate()([fwd3, up])
 
-    x = Concatenate()([x, syn0])
+    _, up = Block(32, kernel_size=5,
+                  strides=1, padding='same',
+                  drop_r=0.5, n_layers=3,
+                  layer_type='up')(x, up)
+    
+    x = Concatenate()([fwd2, up])
 
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
-    x = DecoderBlock(64, kernel_size=3,
-                     strides=1, padding='same')(x)
+    _, up = Block(16, kernel_size=5,
+                  strides=1, padding='same',
+                  drop_r=0.5, n_layers=2,
+                  layer_type='up')(x, up)
+    
+    x = Concatenate()([fwd1, up])
 
-    x = DecoderBlock(1, kernel_size=1,
-                     strides=1, padding='valid')(x)
+    _, pred = Block(8, kernel_size=5,
+                    strides=1, padding='same',
+                    drop_r=0.5, n_layers=1,
+                    layer_type='up')(x, up)
+    
+    pred = Conv3D(2, 1, padding='same')(pred)
+    output = Softmax(axis=-1)(pred)
 
-    # Last layer without relu
-    out = Conv3DTranspose(1, kernel_size=1,
-                          strides=1, padding='valid')(x)
+    model = Model({"input_1":inputs,
+                   "input_2":raw_input_2,
+                   "input_3":raw_input_3,
+                   "input_4":raw_input_4,
+                   "input_5":raw_input_5},
+                  output[..., 0])
+    return model
 
-    return tf.keras.Model(inputs, out)
 
-
-class Synb0:
+class EVAC:
     """
-    This class is intended for the Synb0 model.
-    The model is the deep learning part of the Synb0-Disco
-    pipeline, thus stand-alone usage is not
-    recommended.
+    This class is intended for the EVAC model.
     """
 
     @doctest_skip_parser
     def __init__(self, verbose=False):
         r"""
-        The model was pre-trained for usage on pre-processed images
-        following the synb0-disco pipeline.
-        One can load their own weights using load_model_weights.
+        The model was pre-trained for usage on
+        brain extraction of T1 images.
 
         This model is designed to take as input
-        a b0 image and a T1 weighted image.
-
-        It was designed to predict a b-inf image.
+        a T1 weighted image.
 
         Parameters
         ----------
@@ -259,44 +270,31 @@ class Synb0:
 
         References
         ----------
-        ..  [1] Schilling, K. G., Blaber, J., Huo, Y., Newton, A.,
-            Hansen, C., Nath, V., ... & Landman, B. A. (2019).
-            Synthesized b0 for diffusion distortion correction (Synb0-DisCo).
-            Magnetic resonance imaging, 64, 62-70.
-        ..  [2] Schilling, K. G., Blaber, J., Hansen, C., Cai, L.,
-            Rogers, B., Anderson, A. W., ... & Landman, B. A. (2020).
-            Distortion correction of diffusion weighted MRI without reverse
-            phase-encoding scans or field-maps.
-            PloS one, 15(7), e0236418.
+        ..  [1] Park, J.S., Fadnavis, S., & Garyfallidis, E. (2022).
+                EVAC+: Multi-scale V-net with Deep Feature
+                CRF Layers for Brain Extraction.
         """
 
         if not have_tf:
             raise tf()
-        if not have_tfa:
-            raise tfa()
 
         log_level = 'INFO' if verbose else 'CRITICAL'
         set_logger_level(log_level)
 
-        # Synb0 network load
+        # EVAC+ network load
 
-        self.model = UNet3D(input_shape=(None, 80, 80, 96, 2))
+        self.model = init_model()
 
 
-    def fetch_default_weights(self, idx):
+    def fetch_default_weights(self):
         r"""
         Load the model pre-training weights to use for the fitting.
         While the user can load different weights, the function
         is mainly intended for the class function 'predict'.
-
-        Parameters
-        ----------
-        idx : int
-            The idx of the default weights. It can be from 0~4.
         """
-        fetch_model_weights_path = get_fnames('synb0_default_weights')
-        print('fetched ' + fetch_model_weights_path[idx])
-        self.load_model_weights(fetch_model_weights_path[idx])
+        fetch_model_weights_path = get_fnames('evac_default_weights')
+        print('fetched ' + fetch_model_weights_path)
+        self.load_model_weights(fetch_model_weights_path)
 
     def load_model_weights(self, weights_path):
         r"""
@@ -319,18 +317,18 @@ class Synb0:
 
         Parameters
         ----------
-        x_test : np.ndarray (batch, 80, 80, 96, 2)
+        x_test : np.ndarray (batch, 128, 128, 128, 1)
             Image should match the required shape of the model.
 
         Returns
         -------
-        np.ndarray (...) or (batch, ...)
-            Reconstructed b-inf image(s)
+        np.ndarray (batch, ...)
+            Predicted brain mask
         """
 
         return self.model.predict(x_test)
 
-    def predict(self, b0, T1, batch_size=None, average=True):
+    def predict(self, T1, affine=None, voxsize=(1, 1, 1), batch_size=None):
         r"""
         Wrapper function to faciliate prediction of larger dataset.
         The function will pad the data to meet the required shape of image.
@@ -338,13 +336,23 @@ class Synb0:
 
         Parameters
         ----------
-        b0 : np.ndarray (batch, 77, 91, 77) or (77, 91, 77)
-            For a single image, input should be a 3D array. If multiple images,
-            there should also be a batch dimension.
+        T1 : np.ndarray or str or list of np.ndarrys
+            For a single image, input should be a 3D array or file path.
+            If multiple images, it should be a 4D array or a list.
 
-        T1 : np.ndarray (batch, 77, 91, 77) or (77, 91, 77)
-            For a single image, input should be a 3D array. If multiple images,
-            there should also be a batch dimension.
+        affine : np.ndarray (4, 4) or (batch, 4, 4)
+            or list of np.ndarrays with len of batch
+            Affine matrix for the T1 image. Should have
+            batch dimension if T1 has one.
+            Unused if T1 is a file path.
+            Default is None
+        
+        voxsize : np.ndarray or list or tuple
+            (3,) or (batch, 3)
+            voxel size of the T1 image.
+            Unused if T1 is a file path.
+            Default is (1, 1, 1)
+
 
         batch_size : int
             Number of images per prediction pass. Only available if data
@@ -355,93 +363,64 @@ class Synb0:
             has a batch dimension.
             Default is None
 
-        average : bool
-            Whether the function follows the Synb0-Disco pipeline and
-            averages the prediction of 5 different models.
-            If False, it uses the loaded weights for prediction.
-            Default is True.
         Returns
         -------
         pred_output : np.ndarray (...) or (batch, ...)
-            Reconstructed b-inf image(s)
+            Predicted brain mask
 
         """
-        # Check if shape is as intended
-        if all([b0.shape[1:] != (77, 91, 77), b0.shape != (77, 91, 77)]) or \
-                b0.shape != T1.shape:
-            raise ValueError('Expected shape (batch, 77, 91, 77) or \
-                             (77, 91, 77) for both inputs')
 
-        dim = len(b0.shape)
-
-        # Add batch dimension if not provided
-        if dim == 3:
-            T1 = np.expand_dims(T1, 0)
-            b0 = np.expand_dims(b0, 0)
-        shape = b0.shape
-
-        # Pad the data to match the model's input shape
-        T1 = np.pad(T1, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
-        b0 = np.pad(b0, ((0, 0), (2, 1), (3, 2), (2, 1)), 'constant')
-
-        # Normalize the data.
-        p99 = np.percentile(b0, 99, axis=(1, 2, 3))
-        for i in range(shape[0]):
-            T1[i] = self.__normalize(T1[i], 150, 0)
-            b0[i] = self.__normalize(b0[i], p99[i], 0)
-
-        if dim == 3:
+        if type(T1) is str:
+            T1, affine, voxsize = load_nifti(T1, return_voxsize=True)
+        
+        voxsize = np.array(voxsize)
+        affine = np.array(affine)
+        
+        if type(T1) is list or type(T1) is tuple or len(T1.shape) == 4:
+            dim = 4
+        else:
+            dim = 3
             if batch_size is not None:
                 logger.warning('Batch size specified, but not used',
-                               'due to the input not having \
-                               a batch dimension')
+                            'due to the input not having \
+                            a batch dimension')
             batch_size = 1
 
+            T1 = np.expand_dims(T1, 0)
+            affine = np.expand_dims(affine, 0)
+            voxsize = np.expand_dims(voxsize, 0)
+            
+
+        input_data = np.zeros((len(T1), 128, 128, 128, 1))
+        rev_affine = np.zeros((len(T1), 4, 4))
+
+        # Normalize the data.
+
+        for i in range(len(T1)):
+            T1[i] = normalize(T1[i], new_min=0, new_max=1)
+            t_img, t_affine = transform_img(T1[i], affine[i], voxsize[i])
+            input_data[i] = t_img
+            rev_affine[i] = t_affine
+
         # Prediction stage
-        if average:
-            mean_pred = np.zeros(shape+(5,), dtype=np.float32)
-            for i in range(5):
-                self.fetch_default_weights(i)
-                temp = np.stack([b0, T1], -1)
-                input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
-                prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                      dtype=np.float32)
-                for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                    temp_input = input_data[batch_idx-batch_size:batch_idx]
-                    temp_pred = self.__predict(temp_input)
-                    prediction[batch_idx-batch_size:batch_idx] = temp_pred
-                remainder = np.mod(shape[0], batch_size)
-                if remainder != 0:
-                    temp_pred = self.__predict(input_data[-remainder:])
-                    prediction[-remainder:] = temp_pred
-                for j in range(shape[0]):
-                    temp_pred = self.__unnormalize(prediction[j], p99[j], 0)
-                    prediction[j] = temp_pred
+        prediction = np.zeros((len(T1), 128, 128, 128),
+                               dtype=np.float32)
+        for batch_idx in range(batch_size, len(T1)+1, batch_size):
+            temp_pred = self.__predict(input_data[:batch_idx])
+            prediction[:batch_idx] = temp_pred
+        remainder = np.mod(len(T1), batch_size)
+        if remainder != 0:
+            temp_pred = self.__predict(input_data[-remainder:])
+            prediction[-remainder:] = temp_pred
 
-                prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
-                prediction = np.moveaxis(prediction, 1, -1)
-
-                mean_pred[..., i] = prediction
-            prediction = np.mean(mean_pred, axis=-1)
-        else:
-            temp = np.stack([b0, T1], -1)
-            input_data = np.moveaxis(temp, 3, 1).astype(np.float32)
-            prediction = np.zeros((shape[0], 80, 80, 96, 1),
-                                  dtype=np.float32)
-            for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                temp_pred = self.__predict(input_data[:batch_idx])
-                prediction[:batch_idx] = temp_pred
-            remainder = np.mod(shape[0], batch_size)
-            if remainder != 0:
-                temp_pred = self.__predict(input_data[-remainder:])
-                prediction[-remainder:] = temp_pred
-            for j in range(shape[0]):
-                prediction[j] = self.__unnormalize(prediction[j], p99[j], 0)
-
-            prediction = prediction[:, 2:-1, 2:-1, 3:-2, 0]
-            prediction = np.moveaxis(prediction, 1, -1)
+        output_mask = []
+        for i in range(len(T1)):
+            output_mask.append(recover_img(prediction[i],
+                                           rev_affine[i],
+                                           voxsize[i],
+                                           T1[i].shape))
 
         if dim == 3:
-            prediction = prediction[0]
+            output_mask = output_mask[0]
 
-        return prediction
+        return output_mask
