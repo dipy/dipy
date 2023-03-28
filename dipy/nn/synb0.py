@@ -307,7 +307,7 @@ class Synb0:
 
     def predict(self, b0, T1, batch_size=None, average=True):
         r"""
-        Wrapper function to faciliate prediction of larger dataset.
+        Wrapper function to facilitate prediction of larger dataset.
         The function will pad the data to meet the required shape of image.
         Note that the b0 and T1 image should have the same shape
 
