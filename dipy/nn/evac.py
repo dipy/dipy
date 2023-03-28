@@ -67,7 +67,7 @@ def transform_img(image, affine, voxsize):
     affine2[:3, 3] += np.array([64, 64, 64])
     inv_affine = np.linalg.inv(affine2)
     transformed_img = affine_transform(new_img, inv_affine, output_shape=(128, 128, 128))
-    return transformed_img, affine2
+    return transformed_img, affine2, shape
     
 def recover_img(image, affine, voxsize, ori_shape):
     r"""
@@ -86,10 +86,53 @@ def recover_img(image, affine, voxsize, ori_shape):
     """
     new_image = affine_transform(image, affine, output_shape=ori_shape)
     new_affine = affine.copy()
-    new_affine[:3, 3] -= np.array([128, 128, 128])
+    new_affine[:3, 3] -= np.array([64, 64, 64])
     recovered_img, _ = reslice(new_image, new_affine, (2, 2, 2), voxsize)
     return recovered_img
+
+def prepare_img(image):
+    r"""
+    Function to prepare image
+    for model input
     
+    Parameters
+    ----------
+    image : np.ndarray
+
+    Returns
+    -------
+    input_data : dict
+    """
+    input1 = np.moveaxis(image, -1, 0)
+    input1 = np.expand_dims(input1, -1)
+
+    input2, _ = reslice(image, np.eye(4),
+                        (1, 1, 1), (2, 2, 2))
+    input2 = np.moveaxis(input2, -1, 0)
+    input2 = np.expand_dims(input2, -1)
+
+    input3, _ = reslice(image, np.eye(4),
+                        (1, 1, 1), (4, 4, 4))
+    input3 = np.moveaxis(input3, -1, 0)
+    input3 = np.expand_dims(input3, -1)
+
+    input4, _ = reslice(image, np.eye(4),
+                        (1, 1, 1), (8, 8, 8))
+    input4 = np.moveaxis(input4, -1, 0)
+    input4 = np.expand_dims(input4, -1)
+
+    input5, _ = reslice(image, np.eye(4),
+                        (1, 1, 1), (16, 16, 16))
+    input5 = np.moveaxis(input5, -1, 0)
+    input5 = np.expand_dims(input5, -1)
+
+    input_data = {"input_1":input1,
+                  "input_2":input2,
+                  "input_3":input3,
+                  "input_4":input4,
+                  "input_5":input5}
+    
+    return input_data
 
 def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
     r"""
@@ -123,7 +166,7 @@ def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
     if min_v is None:
         min_v = np.min(image)
     if max_v is None:
-        max_v = np.max
+        max_v = np.max(image)
     return np.interp(image, (min_v, max_v), (new_min, new_max))
 
 
@@ -159,6 +202,7 @@ class Block(Layer):
         
         x = self.channel_sum(x)
         fwd = self.add([x, passed])
+        x = fwd
 
         for layer in self.layer_list2:
             x = layer(x)
@@ -234,7 +278,7 @@ def init_model():
     _, pred = Block(8, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=1,
-                    layer_type='up')(x, up)
+                    layer_type='none')(x, up)
     
     pred = Conv3D(2, 1, padding='same')(pred)
     output = Softmax(axis=-1)(pred)
@@ -391,36 +435,46 @@ class EVAC:
             voxsize = np.expand_dims(voxsize, 0)
             
 
-        input_data = np.zeros((len(T1), 128, 128, 128, 1))
+        input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))
+        ori_shape = np.zeros((len(T1), 3), dtype=np.int32)
 
         # Normalize the data.
 
         for i in range(len(T1)):
             T1[i] = normalize(T1[i], new_min=0, new_max=1)
-            t_img, t_affine = transform_img(T1[i], affine[i], voxsize[i])
-            input_data[i] = t_img
+            t_img, t_affine, t_shape = transform_img(T1[i],
+                                                     affine[i],
+                                                     voxsize[i])
+            input_data[..., i] = t_img
             rev_affine[i] = t_affine
+            ori_shape[i] = t_shape
 
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128),
                                dtype=np.float32)
         for batch_idx in range(batch_size, len(T1)+1, batch_size):
-            temp_pred = self.__predict(input_data[:batch_idx])
+            batch = input_data[..., batch_idx-batch_size:batch_idx]
+            temp_input = prepare_img(batch)
+            temp_pred = self.__predict(temp_input)
             prediction[:batch_idx] = temp_pred
         remainder = np.mod(len(T1), batch_size)
         if remainder != 0:
-            temp_pred = self.__predict(input_data[-remainder:])
+            temp_input = prepare_img(input_data[..., -remainder:])
+            temp_pred = self.__predict(temp_input)
             prediction[-remainder:] = temp_pred
 
         output_mask = []
         for i in range(len(T1)):
-            output_mask.append(recover_img(prediction[i],
-                                           rev_affine[i],
-                                           voxsize[i],
-                                           T1[i].shape))
+            output = recover_img(prediction[i],
+                                 rev_affine[i],
+                                 voxsize[i],
+                                 ori_shape[i])
+            output = np.where(output >= 0.5, 1, 0)
+            output_mask.append(output)
 
         if dim == 3:
             output_mask = output_mask[0]
+            affine = affine[0]
 
-        return output_mask
+        return output_mask, affine

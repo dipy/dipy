@@ -10,7 +10,7 @@ tf, have_tf, _ = optional_package('tensorflow')
 tfa, have_tfa, _ = optional_package('tensorflow_addons')
 
 if have_tf and have_tfa:
-    from dipy.nn.synb0 import EVAC
+    from dipy.nn.evac import EVAC
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 

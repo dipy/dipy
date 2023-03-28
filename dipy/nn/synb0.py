@@ -76,7 +76,7 @@ def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
     if min_v is None:
         min_v = np.min(image)
     if max_v is None:
-        max_v = np.max
+        max_v = np.max(image)
     return np.interp(image, (min_v, max_v), (new_min, new_max))
 
 def unnormalize(image, norm_min, norm_max, min_v, max_v):
@@ -255,7 +255,7 @@ class Synb0:
 
         # Synb0 network load
 
-        self.model = UNet3D(input_shape=(None, 80, 80, 96, 2))
+        self.model = UNet3D(input_shape=(80, 80, 96, 2))
 
 
     def fetch_default_weights(self, idx):
@@ -363,7 +363,7 @@ class Synb0:
         p99 = np.percentile(b0, 99, axis=(1, 2, 3))
         for i in range(shape[0]):
             T1[i] = normalize(T1[i], 0, 150, -1, 1)
-            b0[i] = self.normalize(b0[i], 0, p99[i], -1, 1)
+            b0[i] = normalize(b0[i], 0, p99[i], -1, 1)
 
         if dim == 3:
             if batch_size is not None:
@@ -404,7 +404,8 @@ class Synb0:
             prediction = np.zeros((shape[0], 80, 80, 96, 1),
                                   dtype=np.float32)
             for batch_idx in range(batch_size, shape[0]+1, batch_size):
-                temp_pred = self.__predict(input_data[:batch_idx])
+                temp_input = input_data[batch_idx-batch_size:batch_idx]
+                temp_pred = self.__predict(temp_input)
                 prediction[:batch_idx] = temp_pred
             remainder = np.mod(shape[0], batch_size)
             if remainder != 0:

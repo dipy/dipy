@@ -320,6 +320,30 @@ fetch_synb0_test = _make_fetcher(
      '515544fbcafd9769785502821b47b661'],
     doc="Download Synb0 test data for Schilling et. al 2019")
 
+fetch_evac_weights = _make_fetcher(
+    "fetch_evac_weights",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['36379914', '36379917', '36379920', '36379923', '36379926'],
+    ['eva_default_weights.h5'],
+    ['a9362c75bc28616167a11a42fe5d004e',
+     '9dc9353d6ff741d8e22b8569f157c56e',
+     'e548f341e4f12d63dfbed306233fddce',
+     '8cb7a3492d08e4c9b8938277d6fd9b75',
+     '5e796f892605b3bdb9cb9678f1c6ac11'],
+    doc="Download EVAC+ model weights for Park et. al 2022")
+
+fetch_evac_test = _make_fetcher(
+    "fetch_evac_test",
+    pjoin(dipy_home, 'evac'),
+    'https://ndownloader.figshare.com/files/',
+    ['36379911', '36671850'],
+    ['test_input_evac.npz',
+     'test_output_evac.npz'],
+    ['987203aa73de2dac8770f39ed506dc0c',
+     '515544fbcafd9769785502821b47b661'],
+    doc="Download EVAC+ test data for Park et. al 2022")
+
 fetch_stanford_t1 = _make_fetcher(
     "fetch_stanford_t1",
     pjoin(dipy_home, 'stanford_hardi'),
