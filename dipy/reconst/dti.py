@@ -1636,39 +1636,37 @@ class _nlls_class():
         """
         # This is the predicted signal given the params:
         y = np.exp(np.dot(design_matrix, tensor))
-        self.y = y  # NOTE: cache the results
+        self.y = y  # cache the results
 
         # Compute the residuals
         residuals = data - y
-        self.residuals = residuals  # NOTE: cache the results
+        self.residuals = residuals  # cache the results
 
         # If we don't want to weight the residuals, we are basically done:
         if weighting is None:
-            self.sqrt_w = 1  # NOTE: cache the weights for the non-squared RESIDUALS
+            self.sqrt_w = 1  # cache weights for the *non-squared* residuals
             # And we return the SSE:
             return residuals
 
-        # FIXME: sigma must be an array or None, otherwise no point in providing it
         if weighting == 'sigma':
-            if sigma is None: # or not(np.iterable(sigma)):
+            if sigma is None:
                 e_s = "Must provide sigma float / array as input to use this weighting"
                 e_s += " method"
                 raise ValueError(e_s)
-            w = 1 / (sigma**2)  # NOTE: no need to normalize the weights
+            w = 1 / (sigma**2)
+            # no need to normalize the weights
 
         elif weighting == 'gmm':
-            # We use the Geman-McClure M-estimator to compute the weights on the
-            # residuals:
+            # We use the Geman-McClure M-estimator to compute the weights
             if sigma is None:
-                e_s = "Must provide sigma value, used as C in Geman-McClure M-estimator, as input to use this weighting"
-                e_s += " method"
+                e_s = "Must provide Geman-McClure M-estimator weights for"
+                e_s += " squared residuals as sigma values to use this"
+                e_s += " weighting method"
                 raise ValueError(e_s)
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                #w = 1 / (se + C**2)
-                w = 1 / (residuals**2 + sigma**2)  # NOTE: sigma is set to 'C'
-                # The weights are normalized to the mean weight (see p. 1089):
-                #w = w / np.mean(w)  # NOTE: no need to normalize (makes checking Jacobian 1 data-point at a time more difficult)
+                w = 1 / sigma  # sigma should be 'C^2 + initial_residuals^2'
+                # no need to normalize
 
         # Return the weighted residuals:
         with warnings.catch_warnings():
@@ -1676,11 +1674,10 @@ class _nlls_class():
             self.sqrt_w = np.sqrt(w)
             ans = self.sqrt_w * residuals
             if np.iterable(w):
-                self.sqrt_w = np.sqrt(w)[:, None]  # NOTE: cache the weights for the *non-squared* residuals
+                # cache the weights for the *non-squared* residuals
+                self.sqrt_w = np.sqrt(w)[:, None]
             return ans
 
-
-    #def jacobian_func(self, tensor, design_matrix, data, *arg, **kwargs):                      
     def jacobian_func(self, tensor, design_matrix, data, weighting=None, sigma=None):
         """The Jacobian is the first derivative of the error function [1]_.
 
@@ -1704,10 +1701,9 @@ class _nlls_class():
         if weighting == 'sigma':
             return -self.y[:, None] * design_matrix * self.sqrt_w
 
-        if weighting == 'gmm':  # assumes that 'C' is constant
-            return -self.y[:, None] * design_matrix * \
-                    (self.sqrt_w - self.residuals[:, None]**2 * self.sqrt_w**3)
-        
+        if weighting == 'gmm':
+            return -self.y[:, None] * design_matrix * self.sqrt_w
+
 
 def _decompose_tensor_nan(tensor, tensor_alternative, min_diffusivity=0):
     """ Helper function that expands the function decompose_tensor to deal
@@ -2003,14 +1999,10 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
             # criterion following Chang et al., e.g page 1089):
             if np.any(np.abs(residuals) > 3 * sigma_vox):
 
-                # 1. robustly estimate C from current residuals
-                # 2. Use NLLS with GMM weighting. Weights are updated during optimization based on residuals at each step in opt.leastsq, using fixed C,
-                #    which means that derivative of the loss function is continuous (not true if C is recalculated at each step).
-                # 3. calculate difference in new vs old parameter estimate, and return to 1 if not converged.
-                # (NOTE: this implementation is in contrast to completely fixing the weights in step 1)
                 rdx = 1
                 while rdx <= 10:  # NOTE: capped at 10 iterations
                     C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
+                    gmm = C**2 + residuals**2
 
                     # Do nlls with GMM-weighting:
                     if jac:
@@ -2019,7 +2011,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                                                          args=(design_matrix,
                                                                flat_data[vox],
                                                                'gmm',
-                                                               C),
+                                                               gmm),
                                                          Dfun=nlls.jacobian_func)
                     else:
                         this_param, status = opt.leastsq(nlls.err_func,
@@ -2027,16 +2019,13 @@ def restore_fit_tensor(design_matrix, data, sigma=None, jac=True,
                                                          args=(design_matrix,
                                                                flat_data[vox],
                                                                'gmm',
-                                                               C))
+                                                               gmm))
 
                     # Recalculate residuals given gmm fit
                     pred_sig = np.exp(np.dot(design_matrix, this_param))
                     residuals = flat_data[vox] - pred_sig
                     perc = 100 * np.linalg.norm(this_param - start_params) / np.linalg.norm(this_param)
                     start_params = this_param
-                    #print("rdx:", rdx, this_param)
-                    #print("percentage difference:", perc, "%")
-                    #print(status)
                     if perc < 0.1: break
                     rdx = rdx + 1
 

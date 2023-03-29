@@ -644,6 +644,15 @@ def test_nlls_fit_tensor():
     tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
     npt.assert_equal(tmf[0].S0_hat, np.nan)
 
+    # Test sigma with an array
+    sigma = np.ones(Y_less.shape[-1])
+    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS', weighting='sigma', sigma=sigma)
+
+    # Test sigma with an array of wrong size
+    sigma = np.ones(Y_less.shape[-1] + 10)
+    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS', weighting='sigma', sigma=sigma)
+    tmf = npt.assert_raises(ValueError, tensor_model.fit, Y_less)
+
 
 def test_restore():
     """
