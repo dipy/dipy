@@ -74,6 +74,27 @@ class SlicesTab(HorizonTab):
         self.__slider_slice_y.on_change = self.__change_slice_y
         self.__slider_slice_z.on_change = self.__change_slice_z
         
+        self.__button_slice_x = ui.Button2D(
+            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
+            size=(25, 25))
+        self.__button_slice_y = ui.Button2D(
+            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
+            size=(25, 25))
+        self.__button_slice_z = ui.Button2D(
+            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
+            size=(25, 25))
+        
+        self.__slice_x_visibility = True
+        self.__slice_y_visibility = True
+        self.__slice_z_visibility = True
+        
+        self.__button_slice_x.on_left_mouse_button_clicked = (
+            self.__change_slice_x_visibility)
+        self.__button_slice_y.on_left_mouse_button_clicked = (
+            self.__change_slice_y_visibility)
+        self.__button_slice_z.on_left_mouse_button_clicked = (
+            self.__change_slice_z_visibility)
+        
         self.__slider_label_intensities = build_label(text='Intensities')
         
         self.__min_intensity = self.__data.min()
@@ -88,7 +109,7 @@ class SlicesTab(HorizonTab):
         
         self.__slider_intensities.on_change = self.__change_intensity
         
-        self.__combobox_label_colormap = build_label(text='Colormap')
+        self.__buttons_label_colormap = build_label(text='Colormap')
         
         self.__supported_colormaps = {
             'Gray': 'gray', 'Bone': 'bone', 'Cividis': 'cividis',
@@ -116,11 +137,11 @@ class SlicesTab(HorizonTab):
         
         self.__button_previous_colormap = ui.Button2D(
             icon_fnames=[('left', read_viz_icons(fname='circle-left.png'))],
-            size=(30, 30))
+            size=(25, 25))
         
         self.__button_next_colormap = ui.Button2D(
             icon_fnames=[('right', read_viz_icons(fname='circle-right.png'))],
-            size=(30, 30))
+            size=(25, 25))
         
         self.__button_previous_colormap.on_left_mouse_button_clicked = (
             self.__change_colormap_previous)
@@ -181,6 +202,24 @@ class SlicesTab(HorizonTab):
         self.__actors[2].display_extent(
             0, self.__shape[0] - 1, 0, self.__shape[1] - 1, value, value)
     
+    def __change_slice_x_visibility(self, i_ren, _obj, _button):
+        self.__slice_x_visibility = not self.__slice_x_visibility
+        self.__slider_slice_x.set_visibility(self.__slice_x_visibility)
+        self.__actors[0].SetVisibility(self.__slice_x_visibility)
+        i_ren.force_render()
+    
+    def __change_slice_y_visibility(self, i_ren, _obj, _button):
+        self.__slice_y_visibility = not self.__slice_y_visibility
+        self.__slider_slice_y.set_visibility(self.__slice_y_visibility)
+        self.__actors[1].SetVisibility(self.__slice_y_visibility)
+        i_ren.force_render()
+    
+    def __change_slice_z_visibility(self, i_ren, _obj, _button):
+        self.__slice_z_visibility = not self.__slice_z_visibility
+        self.__slider_slice_z.set_visibility(self.__slice_z_visibility)
+        self.__actors[2].SetVisibility(self.__slice_z_visibility)
+        i_ren.force_render()
+    
     def __update_colormap(self):
         if self.__colormap == 'dist':
             rgb = colormap.distinguishable_colormap(nb_colors=256)
@@ -222,34 +261,43 @@ class SlicesTab(HorizonTab):
         x_pos = .1
         
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_opacity, (x_pos, .85))
+            self.__tab_id, self.__button_slice_x, (x_pos, .60))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_x, (x_pos, .62))
+            self.__tab_id, self.__button_slice_y, (x_pos, .36))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_y, (x_pos, .38))
+            self.__tab_id, self.__button_slice_z, (x_pos, .13))
+        
+        x_pos = .12
+        
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_slice_z, (x_pos, .15))
+            self.__tab_id, self.__slider_opacity, (x_pos, .85))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_x, (x_pos, .62))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_y, (x_pos, .38))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__slider_slice_z, (x_pos, .15))
         
         x_pos = .52
         
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__combobox_label_colormap, (x_pos, .55))
+            self.__tab_id, self.__buttons_label_colormap, (x_pos, .56))
         
         x_pos = .60
         
         self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_intensities, (x_pos, .85))
+            self.__tab_id, self.__slider_intensities, (x_pos, .85))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__button_previous_colormap, (x_pos, .52))
+            self.__tab_id, self.__button_previous_colormap, (x_pos, .54))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__label_selected_colormap, (.63, .55))
+            self.__tab_id, self.__label_selected_colormap, (.63, .56))
         self.__tab_ui.add_element(
-                self.__tab_id, self.__button_next_colormap, (.73, .52))
+            self.__tab_id, self.__button_next_colormap, (.73, .54))
         """
         self.__tab_ui.add_element(
-                self.__tab_id, self.__combobox_colormap, (x_pos, .62))
+            self.__tab_id, self.__combobox_colormap, (x_pos, .62))
         """
     
     @property
