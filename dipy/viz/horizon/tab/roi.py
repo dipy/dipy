@@ -45,7 +45,7 @@ class ROIsTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_opacity, (.02, .85))
         self.__tab_ui.add_element(
-            self.__tab_id, self.__slider_opacity, (.1, .85))
+            self.__tab_id, self.__slider_opacity, (.12, .85))
     
     @property
     def name(self):

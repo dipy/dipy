@@ -207,7 +207,7 @@ class PeaksTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_z, (x_pos, .15))
         
-        x_pos=.1
+        x_pos=.12
         
         self.__tab_ui.add_element(
             self.__tab_id, self.__view_mode_toggler, (x_pos, .80))
