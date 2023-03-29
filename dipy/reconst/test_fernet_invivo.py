@@ -1,16 +1,10 @@
 import numpy as np
 import dipy.reconst.fwdti as fwdti
-import dipy.reconst.dti as dti
 import matplotlib.pyplot as plt
-from dipy.data import fetch_cenir_multib, fetch_stanford_hardi
-from dipy.data import read_cenir_multib, read_stanford_hardi
+from dipy.data import fetch_cenir_multib
+from dipy.data import read_cenir_multib
 from dipy.segment.mask import median_otsu
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
-data = np.asarray(img.dataobj)
-
-affine = img.affine
 fetch_cenir_multib(with_raw=False)
 
 # single-shell data
@@ -46,9 +40,10 @@ plt.hist(S0[mask_roi], bins=50)
 plt.show()
 
 # FW-DTI
-fwdtimodel = fwdti.FreeWaterTensorModel(gtab, St=5000, Sw=14000, method='hy',
-                                        single_shell=True)
-fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
+fwdtimodel = fwdti.FreeWaterTensorModel(gtab_single, St=5000, Sw=14000,
+                                        fit_method='hy')
+
+fwdtifit = fwdtimodel.fit(data_single, mask=mask_roi)
 
 FA = fwdtifit.fa
 MD = fwdtifit.md

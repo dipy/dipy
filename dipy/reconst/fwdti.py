@@ -116,7 +116,7 @@ class FreeWaterTensorModel(ReconstModel):
 
         if not callable(fit_method):
             try:
-                fit_method = common_fit_methods[fit_method]
+                fit_method = common_fit_methods[fit_method.upper()]
             except KeyError:
                 e_s = '"' + str(fit_method) + '" is not a known fit '
                 e_s += 'method, the fit method should either be a '
@@ -133,18 +133,18 @@ class FreeWaterTensorModel(ReconstModel):
                 St = self.kwargs.get('St', None)
                 Sw = self.kwargs.get('Sw', None)
                 if St is None or Sw is None:
-                    e_s = 'To use the single-shell methods, provide "St" anf "Sw" '
-                    e_s += 'keyword arguments to FreeWaterTensorModel, these '
-                    e_s += 'values should represent typical tissue and CSF '
-                    e_s += 'intensities in your S0 image respectively, '
-                    e_s += 'see fernet_iter function for more details'
+                    e_s = 'To use the single-shell methods, provide "St" and'
+                    e_s += ' "Sw" keyword arguments to FreeWaterTensorModel,'
+                    e_s += ' these values should represent typical tissue and'
+                    e_s += ' CSF intensities in your S0 image respectively,'
+                    e_s += ' see fernet_iter function for more details'
                     raise ValueError(e_s)
 
         # Check if at least three b-values are given
         enough_b = check_multi_b(self.gtab, 3, non_zero=False)
         if not enough_b and self.fit_method in (wls_iter, nls_iter):
-            mes = "fwDTI NLS requires at least 3 b-values (which can include b=0)"
-            raise ValueError(mes)
+            raise ValueError("fwDTI NLS requires at least 3 b-values",
+                             "(which can include b=0)")
 
     @multi_voxel_fit
     def fit(self, data, mask=None):
