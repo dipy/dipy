@@ -11,6 +11,17 @@ img, gtab = read_stanford_hardi()
 data = np.asarray(img.dataobj)
 
 affine = img.affine
+fetch_cenir_multib(with_raw=False)
+
+# single-shell data
+bvals = [1000]
+img, gtab_single = read_cenir_multib(bvals)
+data_single = np.asarray(img.dataobj)
+
+# multi-shell data
+bvals = [1000, 2000]
+img, gtab_multi = read_cenir_multib(bvals)
+data_multi = np.asarray(img.dataobj)
 
 # masking
 maskdata_s, mask = median_otsu(data_single, vol_idx=[0, 1],
@@ -38,6 +49,7 @@ plt.show()
 fwdtimodel = fwdti.FreeWaterTensorModel(gtab, St=5000, Sw=14000, method='hy',
                                         single_shell=True)
 fwdtifit = fwdtimodel.fit(data, mask=mask_roi)
+
 FA = fwdtifit.fa
 MD = fwdtifit.md
 F = fwdtifit.f
