@@ -984,7 +984,7 @@ def fmd_init(design_matrix, sig, bvals, Diso, md_tissue, min_signal):
     max_bval_inds = get_bval_indices(bvals, max_bval)
     zero_bval_inds = get_bval_indices(bvals, 0)
     bval_inds = np.hstack((zero_bval_inds, max_bval_inds))
-    
+
     W = design_matrix[bval_inds, :]
 
     log_s = np.log(np.maximum(sig[bval_inds], min_signal))
@@ -1095,7 +1095,7 @@ def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
            edema using clinically feasible diffusion MRI data. Plos one,
            15(5), e0233645.
     """
-    
+
     W = design_matrix
 
     # DTI ordinary linear least square solution
@@ -1116,7 +1116,7 @@ def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         f, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax)
         f = np.clip(f, fmin, fmax)
         fw = 1 - f
-    
+
         # Tissue signal corrected for FW
         tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
                         np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
@@ -1213,7 +1213,7 @@ def fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax):
     """
 
     zero_inds = get_bval_indices(bvals, 0)
-    non_zero_mask = np.ones(bvals.shape, dtype=bool) 
+    non_zero_mask = np.ones(bvals.shape, dtype=bool)
     non_zero_mask[zero_inds] = False
 
     # Signal normalized by S0
@@ -1223,7 +1223,7 @@ def fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax):
     fwsig = np.exp(np.dot(design_matrix[non_zero_mask],
                           np.array([Diso, 0, Diso, 0, 0, Diso, 0])))
 
-    # Min and Max expected tissue signal contribution 
+    # Min and Max expected tissue signal contribution
     Atmin = np.exp(np.dot(design_matrix[non_zero_mask],
                           np.array([Dtmax, 0, Dtmax, 0, 0, Dtmax, 0])))
 
@@ -1368,7 +1368,7 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
     if md < mdreg and np.mean(sig) > min_signal and S0 > min_signal:
         fmd = fmd_init(design_matrix, sig, bvals, Diso, md_tissue, min_signal)
         fmd = np.clip(fmd, 0, 1)
-    
+
         fs0, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax)
         alpha = np.clip(fs0, 0, 1)  # unconstrained by fmin and fmax
 
@@ -1395,7 +1395,6 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         fw_params[12] = 1.0
 
     return fw_params
-
 
 
 common_fit_methods = {'WLLS': wls_iter,

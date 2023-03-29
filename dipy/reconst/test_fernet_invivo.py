@@ -20,9 +20,9 @@ data_multi = np.asarray(img.dataobj)
 
 # masking
 maskdata_s, mask = median_otsu(data_single, vol_idx=[0, 1],
-                             autocrop=False)
+                               autocrop=False)
 maskdata_m, mask = median_otsu(data_multi, vol_idx=[0, 1],
-                             autocrop=False)
+                               autocrop=False)
 
 axial_slice = 40
 
