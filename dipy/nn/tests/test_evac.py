@@ -7,9 +7,8 @@ import numpy as np
 from numpy.testing import assert_almost_equal
 
 tf, have_tf, _ = optional_package('tensorflow')
-tfa, have_tfa, _ = optional_package('tensorflow_addons')
 
-if have_tf and have_tfa:
+if have_tf:
     from dipy.nn.evac import EVAC
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')

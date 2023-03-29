@@ -6,14 +6,13 @@ Class and helper functions for fitting the EVAC+ model.
 
 from packaging.version import Version
 import logging
+import numpy as np
+from scipy.ndimage import affine_transform
 from dipy.data import get_fnames
 from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
-import numpy as np
-from scipy.ndimage import affine_transform
 from dipy.align.reslice import reslice
-from PIL import Image
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -45,7 +44,7 @@ def set_logger_level(log_level):
     """
     logger.setLevel(level=log_level)
 
-def transform_img(image, affine, voxsize):
+def transform_img(image, affine):
     r"""
     Function to reshape image as an input to the model
 
@@ -59,17 +58,14 @@ def transform_img(image, affine, voxsize):
     -------
     transformed_img : np.ndarray
     """
-    new_img, new_affine = reslice(image, affine,
-                                  voxsize, (2, 2, 2))
-    
-    affine2 = new_affine.copy()
-    shape = new_img.shape
-    affine2[:3, 3] += np.array([64, 64, 64])
+    affine2 = affine.copy()
+    affine2[:3, 3] += np.array([128, 128, 128])
     inv_affine = np.linalg.inv(affine2)
-    transformed_img = affine_transform(new_img, inv_affine, output_shape=(128, 128, 128))
-    return transformed_img, affine2, shape
+    transformed_img = affine_transform(image, inv_affine, output_shape=(256, 256, 256))
+    transformed_img, _ = reslice(transformed_img, np.eye(4), (1, 1, 1), (2, 2, 2))
+    return transformed_img, affine2
     
-def recover_img(image, affine, voxsize, ori_shape):
+def recover_img(image, affine, ori_shape):
     r"""
     Function to recover image back to its original shape
 
@@ -84,10 +80,8 @@ def recover_img(image, affine, voxsize, ori_shape):
     -------
     recovered_img : np.ndarray
     """
-    new_image = affine_transform(image, affine, output_shape=ori_shape)
-    new_affine = affine.copy()
-    new_affine[:3, 3] -= np.array([64, 64, 64])
-    recovered_img, _ = reslice(new_image, new_affine, (2, 2, 2), voxsize)
+    new_image, _ = reslice(image, np.eye(4), (2, 2, 2), (1, 1, 1))
+    recovered_img = affine_transform(new_image, affine, output_shape=ori_shape)
     return recovered_img
 
 def prepare_img(image):
@@ -443,12 +437,10 @@ class EVAC:
 
         for i in range(len(T1)):
             T1[i] = normalize(T1[i], new_min=0, new_max=1)
-            t_img, t_affine, t_shape = transform_img(T1[i],
-                                                     affine[i],
-                                                     voxsize[i])
+            t_img, t_affine = transform_img(T1[i],
+                                            affine[i])
             input_data[..., i] = t_img
             rev_affine[i] = t_affine
-            ori_shape[i] = t_shape
 
         # Prediction stage
         prediction = np.zeros((len(T1), 128, 128, 128),
@@ -468,8 +460,7 @@ class EVAC:
         for i in range(len(T1)):
             output = recover_img(prediction[i],
                                  rev_affine[i],
-                                 voxsize[i],
-                                 ori_shape[i])
+                                 T1[i].shape)
             output = np.where(output >= 0.5, 1, 0)
             output_mask.append(output)
 
