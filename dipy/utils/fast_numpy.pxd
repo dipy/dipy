@@ -46,4 +46,14 @@ cpdef void cross(
         double[:] out, 
         double[:] v1, 
         double[:] v2) nogil
-    
+
+cpdef void random_vector(
+        double[:] out)
+
+cpdef void random_perpendicular_vector(
+        double[:] out,
+        double[:] v)
+
+cpdef (double, double) random_point_within_circle(
+        double r)
+
