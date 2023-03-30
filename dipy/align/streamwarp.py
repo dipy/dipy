@@ -12,8 +12,10 @@ from dipy.segment.metricspeed import MinimumAverageDirectFlipMetric
 from dipy.segment.metricspeed import dist
 
 pycpd, have_pycpd, _ = optional_package("pycpd")
+matplt, have_matplotlib, _ = optional_package("matplotlib")
 
-from pycpd import DeformableRegistration
+if have_pycpd:
+    from pycpd import DeformableRegistration
 
 def mdf(s1, s2):
 
@@ -39,6 +41,40 @@ def find_missing(lst, cb):
 
 
 def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affine=True, precomputed=False):
+    """ Function for registering two bundles.
+
+
+    Parameters
+    ----------
+    static : Streamlines
+    moving : Streamlines
+
+    dist : float, optional.
+        Precomputed distance matrix (default None)
+
+    alpha : float, optional
+        Represents the rade-off between regularizing the deformation and having
+        points match very closely. Lower value of alpha means high deformations
+        (default 0.3)
+
+    beta : int, optional
+        Represents the strength of the interaction between points
+        Gaussian kernel size (default 20)
+
+    affine : boolean, optional
+        If False, use rigid registration as starting point (default True)
+
+    Precomputed : boolean, optional
+        If True, must provide precomputed distance matrix 'dist'
+        (default False)
+
+
+
+    References
+    ----------
+    .. [Chandio2023] Chandio et al. "BundleWarp, streamline-based nonlinear
+            registration of white matter tracts." bioRxiv (2023): 2023-01.
+    """
 
     if affine:
         moving_aligned, _, _, _ = slr_with_qbx(static, moving, rm_small_clusters=0)
@@ -98,6 +134,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15, affin
 
     deformed_bundle = Streamlines([])
     warp = []
+
     # iterate over each pair of streamlines and deform them
     # append in deformed_bundle
     for i in range(len(matched_pairs)):
