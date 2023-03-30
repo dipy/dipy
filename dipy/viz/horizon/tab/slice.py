@@ -13,8 +13,7 @@ if has_fury:
 
 class SlicesTab(HorizonTab):
     def __init__(
-        self, slice_actors, img_shape, img_value_ranges, adjusted_data
-        ):
+        self, slice_actors, data_shape, data_min, data_max, intensities_range):
         
         self.__actors = slice_actors
         self.__name = 'Slices'
@@ -22,9 +21,9 @@ class SlicesTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__shape = img_shape
-        self.__ranges = img_value_ranges
-        self.__data = adjusted_data
+        self.__shape = data_shape
+        self.__min_intensity = data_min
+        self.__max_intensity = data_max
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -97,11 +96,8 @@ class SlicesTab(HorizonTab):
         
         self.__slider_label_intensities = build_label(text='Intensities')
         
-        self.__min_intensity = self.__data.min()
-        self.__max_intensity = self.__data.max()
-        
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=self.__ranges, min_value=self.__min_intensity,
+            initial_values=intensities_range, min_value=self.__min_intensity,
             max_value=self.__max_intensity, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         

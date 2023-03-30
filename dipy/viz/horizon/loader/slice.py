@@ -64,5 +64,5 @@ def nifti_to_slice_actors(data, affine=None, world_coords=False):
     slice_actor_y.display_extent(
         0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
     
-    return ([slice_actor_x, slice_actor_y, slice_actor_z], shape, value_range,
-            tmp)
+    return ([slice_actor_x, slice_actor_y, slice_actor_z], shape, tmp.min(),
+            tmp.max(), value_range)
