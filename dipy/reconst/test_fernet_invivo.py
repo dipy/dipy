@@ -44,7 +44,7 @@ plt.subplot(122)
 plt.hist(S0[mask_roi], bins=50)
 
 # FW-DTI
-fwdtimodel = fwdti.FreeWaterTensorModel(gtab_single, St=5000, Sw=14000,
+fwdtimodel = fwdti.FreeWaterTensorModel(gtab_single, St=1000, Sw=15000,
                                         fit_method='hy')
 
 fwdtifit = fwdtimodel.fit(data_single, mask=mask_roi)

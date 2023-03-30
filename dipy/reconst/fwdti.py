@@ -136,8 +136,8 @@ class FreeWaterTensorModel(ReconstModel):
                     e_s = 'To use the single-shell methods, provide "St" and'
                     e_s += ' "Sw" keyword arguments to FreeWaterTensorModel,'
                     e_s += ' these values should represent typical tissue and'
-                    e_s += ' CSF intensities in your S0 image respectively,'
-                    e_s += ' see fernet_iter function for more details'
+                    e_s += ' CSF intensities in your S0 image, respectively.'
+                    e_s += ' See `fernet_iter` function for more details'
                     raise ValueError(e_s)
 
         # Check if at least three b-values are given
@@ -1113,13 +1113,15 @@ def fws0_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
     # Process voxel if it has significant signal from tissue
     md = (params[0] + params[2] + params[5]) / 3
     if md < mdreg and np.mean(sig) > min_signal and S0 > min_signal:
-        f, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax)
+        f, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso,
+                                 Dtmin, Dtmax)
         f = np.clip(f, fmin, fmax)
         fw = 1 - f
 
         # Tissue signal corrected for FW
-        tissue_sig = (sig - S0 * fw * np.exp(np.dot(design_matrix,
-                        np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
+        tissue_sig = (sig - S0 * fw *
+                      np.exp(np.dot(design_matrix,
+                                    np.array([Diso, 0, Diso, 0, 0, Diso, 0]))))
 
         # Estimating the tissue tensor after FW correction
         log_s = np.log(np.maximum(tissue_sig, min_signal))
