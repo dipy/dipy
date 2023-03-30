@@ -1369,7 +1369,8 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         fmd = fmd_init(design_matrix, sig, bvals, Diso, md_tissue, min_signal)
         fmd = np.clip(fmd, 0, 1)
 
-        fs0, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw, Diso, Dtmin, Dtmax)
+        fs0, fmin, fmax = fs0_init(design_matrix, sig, S0, bvals, St, Sw,
+                                   Diso, Dtmin, Dtmax)
         alpha = np.clip(fs0, 0, 1)  # unconstrained by fmin and fmax
 
         fs0 = np.clip(fs0, fmin, fmax)
@@ -1395,6 +1396,7 @@ def fwhy_iter(design_matrix, sig, S0, bvals, St=50, Sw=100,
         fw_params[12] = 1.0
 
     return fw_params
+
 
 common_fit_methods = {'WLLS': wls_iter,
                       'WLS': wls_iter,

@@ -30,14 +30,18 @@ mask_roi[:, :, axial_slice] = mask[:, :, axial_slice]
 
 S0 = np.mean(data_multi[..., gtab_multi.b0s_mask], axis=-1) * mask_roi
 
-# checking S0 to choose St and Sw for FERNET method, sometimes choosing the right
-# vaules is hard, is there a better way?
+# checking S0 to choose St and Sw for FERNET method, sometimes choosing the
+# right values is hard, is there a better way?
 plt.figure()
 plt.subplot(121)
-plt.imshow(S0[:, :, axial_slice].T, origin='lower', cmap='gray', vmin=0, vmax=15000)
+plt.imshow(S0[:, :, axial_slice].T,
+           origin='lower',
+           cmap='gray',
+           vmin=0,
+           vmax=15000)
+
 plt.subplot(122)
 plt.hist(S0[mask_roi], bins=50)
-plt.show()
 
 # FW-DTI
 fwdtimodel = fwdti.FreeWaterTensorModel(gtab_single, St=5000, Sw=14000,
