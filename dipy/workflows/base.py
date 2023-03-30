@@ -3,6 +3,7 @@ import sys
 import inspect
 
 import argparse
+import click
 import collections
 from dipy.workflows.docstring_parser import NumpyDocString
 
@@ -19,6 +20,49 @@ else:
 
         Copied from the `inspect._empty` class in Python 3.
         """
+
+
+class CustomGroupOption(click.Option):
+    def __init__(self, *args, **kwargs):
+        self.is_output = kwargs.pop("is_output", False)
+        super(CustomGroupOption, self).__init__(*args, **kwargs)
+
+
+class CustomCommand(click.Command):
+    def __init__(self, *args, **kwargs):
+        super(CustomCommand, self).__init__(*args, **kwargs)
+
+        self.references = (
+            "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,"
+            " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a"
+            " library for the analysis of diffusion MRI data. Frontiers"
+            " in Neuroinformatics, 1-18, 2014.")
+
+    def format_options(self, ctx, formatter):
+        """Writes all the options into the formatter if they exist."""
+        options = {
+            "Options": [],
+            "Output": [],
+            "Built-in": [],
+        }
+        for param in self.get_params(ctx):
+            help_record = param.get_help_record(ctx)
+            if help_record is None:
+                continue
+            if isinstance(param, CustomGroupOption):
+                group_name = "Output" if param.is_output else "Options"
+            else:
+                group_name = "Built-in"
+            options[group_name].append(help_record)
+
+        for group_name, param_help in options.items():
+            if param_help:
+                with formatter.section(group_name):
+                    formatter.write_dl(param_help)
+
+        if self.references:
+            with formatter.section("References"):
+                formatter.write_text(self.references)
 
 
 def get_args_default(func):
@@ -52,13 +96,9 @@ def none_or_dtype(dtype):
     return inner
 
 
-class IntrospectiveArgumentParser(argparse.ArgumentParser):
+class IntrospectiveArgumentParser:
 
-    def __init__(self, prog=None, usage=None, description=None, epilog=None,
-                 parents=(), formatter_class=argparse.RawTextHelpFormatter,
-                 prefix_chars='-', fromfile_prefix_chars=None,
-                 argument_default=None, conflict_handler='resolve',
-                 add_help=True):
+    def __init__(self, command):
         """ Augmenting the argument parser to allow automatic creation of
         arguments from workflows
 
@@ -87,25 +127,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         add_help : bool
             Add a -h/-help option.
         """
-
-        iap = IntrospectiveArgumentParser
-        if epilog is None:
-            epilog =\
-                ("References: \n"
-                 "Garyfallidis, E., M. Brett, B. Amirbekian, A. Rokem,"
-                 " S. Van Der Walt, M. Descoteaux, and I. Nimmo-Smith. Dipy, a"
-                 " library for the analysis of diffusion MRI data. Frontiers"
-                 " in Neuroinformatics, 1-18, 2014.")
-
-        super(iap, self).__init__(prog=prog, usage=usage,
-                                  description=description,
-                                  epilog=epilog, parents=parents,
-                                  formatter_class=formatter_class,
-                                  prefix_chars=prefix_chars,
-                                  fromfile_prefix_chars=fromfile_prefix_chars,
-                                  argument_default=argument_default,
-                                  conflict_handler=conflict_handler,
-                                  add_help=add_help)
+        self.command = command
 
         self._output_params = None
         self._positional_params = None
@@ -134,7 +156,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
         # get the args from the doc string
         # doc_parameters will be a list of tuples of (arg name, type, description)
         npds = NumpyDocString(inspect.getdoc(workflow.run))
-        self.description = "{0}\n\n{1}".format(
+        self.command.help = "{0}\n\n{1}".format(
             " ".join(npds["Summary"]),
             " ".join(npds["Extended Summary"]))
 
@@ -145,30 +167,21 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
 
         # insert any references into "References" section of the epilog
         if npds["References"]:
-            ref_header = "References: \n"
             ref_text = ''.join((text or "\n" for text in npds['References']))
-            if ref_header not in self.epilog:
-                self.epilog += ref_header + ref_text
-            else:
-                epilog_parts = self.epilog.split(ref_header, 1)
-                self.epilog = ''.join((
-                    epilog_parts[0], ref_header, ref_text, "\n", epilog_parts[0]
-                ))
+            self.command.references = ref_text + self.command.references
 
         # add required parameters
         self._variable_arg_present = False
         for param in self._positional_params:
-            self._add_positional_arg(param, self)
+            self._add_positional_arg(param)
 
         # add optional parameters
         for param in self._optional_params:
-            self._add_optional_arg(param, self)
+            self._add_optional_arg(param, is_output=False)
 
         # add output parameters
-        if self._output_params:
-            output_args = self.add_argument_group('output arguments (optional)')
-            for param in self._output_params:
-                self._add_optional_arg(param, output_args)
+        for param in self._output_params:
+            self._add_optional_arg(param, is_output=True)
 
         # TODO refactor add_sub_flow_args
         # return self.add_sub_flow_args(workflow.get_sub_runs())
@@ -216,7 +229,7 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             raise ValueError(
                 f"Arguments are missing from docstring: {list(arg_defaults)}")
 
-    def _add_positional_arg(self, param, arg_group):
+    def _add_positional_arg(self, param):
         """Add a new positional argument to the parser."""
         dtype, isnarg = self._select_dtype(param.type)
         _kwargs = {"help": param.description, "action": "store"}
@@ -241,11 +254,13 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             _kwargs["nargs"] = "+"
             self._variable_arg_present = True
 
+        # TODO add help
+        # TODO add nargs
         # arg_name = f"{param.name}".replace("_", "-")
-        arg_name = param.name
-        arg_group.add_argument(arg_name, **_kwargs)
+        arg = click.Argument([param.name])
+        self.command.params.append(arg)
 
-    def _add_optional_arg(self, param, arg_group):
+    def _add_optional_arg(self, param, is_output):
         """Add a new optional argument to the parser."""
         dtype, isnarg = self._select_dtype(param.type)
         _kwargs = {"help": param.description, "action": "store"}
@@ -262,8 +277,10 @@ class IntrospectiveArgumentParser(argparse.ArgumentParser):
             _kwargs["nargs"] = '*'
 
         # arg_name = f"--{param.name}".replace("_", "-")
-        arg_name = f"--{param.name}"
-        arg_group.add_argument(arg_name, **_kwargs)
+        opt = CustomGroupOption(
+            [f"--{param.name}"], help=param.description, is_output=is_output,
+        )
+        self.command.params.append(opt)
 
     def add_sub_flow_args(self, sub_flows):
         """ Take an array of workflow objects and use introspection to extract
