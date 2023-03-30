@@ -156,6 +156,9 @@ class SlicesTab(HorizonTab):
                 font_size=fs, text_template=tt)
             
             color_single_slider(self.__slider_volume)
+            
+            self.__slider_volume.on_left_mouse_button_released = (
+                self.__change_volume)
     
     def __change_colormap(self, combobox):
         colormap = combobox.selected_text
@@ -199,17 +202,20 @@ class SlicesTab(HorizonTab):
     def __change_slice_x(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[0].display_extent(
-            value, value, 0, self.__data_shape[1] - 1, 0, self.__data_shape[2] - 1)
+            value, value, 0, self.__data_shape[1] - 1, 0,
+            self.__data_shape[2] - 1)
     
     def __change_slice_y(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[1].display_extent(
-            0, self.__data_shape[0] - 1, value, value, 0, self.__data_shape[2] - 1)
+            0, self.__data_shape[0] - 1, value, value, 0,
+            self.__data_shape[2] - 1)
     
     def __change_slice_z(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[2].display_extent(
-            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1, value, value)
+            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1, value,
+            value)
     
     def __change_slice_x_visibility(self, i_ren, _obj, _button):
         self.__slice_x_visibility = not self.__slice_x_visibility
@@ -229,9 +235,9 @@ class SlicesTab(HorizonTab):
         self.__actors[2].SetVisibility(self.__slice_z_visibility)
         i_ren.force_render()
     
-    def __change_volume(self, slider):
+    def __change_volume(self, istyle, obj, slider):
         value = int(np.rint(slider.value))
-        pass
+        new_img = self.__data[..., value]
     
     def __update_colormap(self):
         if self.__colormap == 'dist':
