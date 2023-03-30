@@ -10,7 +10,9 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.probabilistic_direction_getter cimport ProbabilisticDirectionGetter
-from dipy.utils.fast_numpy cimport copy_point, random, norm, normalize, cross
+from dipy.utils.fast_numpy cimport (copy_point, random, norm, normalize, cross,
+                                    random_vector, random_perpendicular_vector,
+                                    random_point_within_circle)
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
                                                TRACKPOINT,
@@ -23,45 +25,33 @@ from dipy.tracking.utils import min_radius_curvature_from_angle
 
 from libc.math cimport M_PI, pow, sin, cos
 
-
-cdef double unidis_m1_p1():
-    """Picks a random number between -1 and 1
-
-    Returns
-    -------
-    double
-        random number
-    """
-    return 2.0 * random() - 1.0
-
-
-cdef void sample_unit_random_vector(double[:] out):
+cpdef void random_vector(double[:] out):
     """Generate a unit random vector
 
     Parameters
     ----------
     out : double[3]
-        input vector
+        output vector
 
     Notes
     -----
     Overwrites the input
     """
-    out[0] = unidis_m1_p1()
-    out[1] = unidis_m1_p1()
-    out[2] = unidis_m1_p1()
+    out[0] = 2.0 * random() - 1.0
+    out[1] = 2.0 * random() - 1.0
+    out[2] = 2.0 * random() - 1.0
     normalize(out)
 
 
-cdef void sample_unit_random_perpendicular_vector(double[:] out,double[:] inp):
-    """Generate a unit random perpendicular vector
+cpdef void random_perpendicular_vector(double[:] out,double[:] vec):
+    """Generate a random perpendicular vector
 
     Parameters
     ----------
     out : double[3]
-        input vector
+        output vector
 
-    inp : double[3]
+    vec : double[3]
         input vector
 
     Notes
@@ -69,18 +59,18 @@ cdef void sample_unit_random_perpendicular_vector(double[:] out,double[:] inp):
     Overwrites the first argument
     """
     cdef double[3] tmp
-    sample_unit_random_vector(tmp)
-    cross(out,inp,tmp)
+    random_vector(tmp)
+    cross(out, vec, tmp)
     normalize(out)
 
 
-cdef (double, double) sample_random_point_within_disk(double r):
-    """Generate a random point within a disk
+cpdef (double, double) random_point_within_circle(double r):
+    """Generate a random point within a circle
 
     Parameters
     ----------
     r : double
-        The radius of the disk
+        The radius of the circle
 
     Returns
     -------
@@ -91,11 +81,12 @@ cdef (double, double) sample_random_point_within_disk(double r):
         y coordinate of the random point
 
     """
-    cdef double x = 1
-    cdef double y = 1
+    cdef double x = 1.0
+    cdef double y = 1.0
+
     while ((x * x + y * y) > 1):
-        x = unidis_m1_p1()
-        y = unidis_m1_p1()
+        x = 2.0 * random() - 1.0
+        y = 2.0 * random() - 1.0
     return (r * x, r * y)
 
 
@@ -222,7 +213,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         self.get_random_frame(init_dir)
         (self.k1_candidate, self.k2_candidate)\
-                = sample_random_point_within_disk(self.max_curvature)
+                = random_point_within_circle(self.max_curvature)
 
         self.k1 = self.k1_candidate
         self.k2 = self.k2_candidate
@@ -292,7 +283,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
         (self.k1_candidate, self.k2_candidate)\
-                = sample_random_point_within_disk(self.max_curvature)
+                = random_point_within_circle(self.max_curvature)
         return self.calculate_data_support()
 
 
@@ -330,14 +321,14 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         """
         if norm(_dir) == 0:
-            sample_unit_random_vector(self.frame[0])
+            random_vector(self.frame[0])
         else:
             self.frame[0][0] = _dir[0]
             self.frame[0][1] = _dir[1]
             self.frame[0][2] = _dir[2]
 
-        sample_unit_random_perpendicular_vector(self.frame[2],self.frame[0])
-        cross(self.frame[1],self.frame[2],self.frame[0])
+        random_perpendicular_vector(self.frame[2], self.frame[0])
+        cross(self.frame[1], self.frame[2], self.frame[0])
 
 
     cdef void prepare_propagator(self, double arclength):
