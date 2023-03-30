@@ -20,7 +20,6 @@ PLoS ONE 17(9): e0274396. https://doi.org/10.1371/journal.pone.0274396
 """
 from packaging.version import Version
 from dipy.utils.optpkg import optional_package
-from sklearn.model_selection import train_test_split
 import numpy as np
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -28,7 +27,12 @@ if have_tf:
     from tensorflow.keras.layers import Input, Conv1D, Activation
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
-        
+sklearn, have_sklearn, _ = optional_package('sklearn.model_selection')
+if not have_sklearn:
+    raise ImportError('scikit-learn is not available. Please install scikit-learn.')
+else:
+    from sklearn.model_selection import train_test_split
+
 class Cnn1DDenoiser:
     def __init__(self, sig_length, optimizer='adam', loss='mean_squared_error', metrics=('accuracy',),
                  loss_weights=None): 
@@ -109,7 +113,7 @@ class Cnn1DDenoiser:
         """
         return self.model.summary()
     
-    def train_test_split(self, x=None, y=None, test_size=None,
+    def train_test_split(self, x, y, test_size=None,
                          train_size=None, random_state=None, shuffle=True, stratify=None):
         """
         Splits the input data into random train and test subsets.
@@ -155,7 +159,7 @@ class Cnn1DDenoiser:
                                 random_state=random_state, shuffle=shuffle,
                                 stratify=stratify)
 
-    def fit(self, x=None, y=None, batch_size=None, epochs=1, verbose=1,
+    def fit(self, x, y, batch_size=None, epochs=1, verbose=1,
             callbacks=None, validation_split=0.0, validation_data=None,
             shuffle=True, initial_epoch=0, steps_per_epoch=None,
             validation_steps=None, validation_batch_size=None,
@@ -232,7 +236,7 @@ class Cnn1DDenoiser:
                               max_queue_size=max_queue_size, workers=workers,
                               use_multiprocessing=use_multiprocessing)
 
-    def evaluate(self, x=None, y=None, batch_size=None, verbose=1,
+    def evaluate(self, x, y, batch_size=None, verbose=1,
                 steps=None, callbacks=None, max_queue_size=10, workers=1,
                 use_multiprocessing=False, return_dict=False):
         """
