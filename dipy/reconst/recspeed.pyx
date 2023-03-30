@@ -37,13 +37,15 @@ def remove_similar_vertices(
     cython.floating[:, :] vertices,
     double theta,
     bint return_mapping=False,
-    bint return_index=False):
+    bint return_index=False,
+    bint remove_antipodal=True):
     """Remove vertices that are less than `theta` degrees from any other
 
     Returns vertices that are at least theta degrees from any other vertex.
     Vertex v and -v are considered the same so if v and -v are both in
     `vertices` only one is kept. Also if v and w are both in vertices, w must
-    be separated by theta degrees from both v and -v to be unique.
+    be separated by theta degrees from both v and -v to be unique. To disable
+    this, set `remove_antipodal` to False to keep both directions.
 
     Parameters
     ----------
@@ -57,6 +59,8 @@ def remove_similar_vertices(
     return_indices : {False, True}, optional
         If True, return `indices` as well as `vertices` and maybe `mapping`
         (see below).
+    remove_antipodal : {False, True}, optional
+        If True, v and -v are considered equal, and only one will be kept.
 
     Returns
     -------
@@ -105,9 +109,11 @@ def remove_similar_vertices(
         c = vertices[i, 2]
         # Check all other accepted vertices for similarity to this one
         for j in range(n_unique):
-            sim = fabs(a * unique_vertices[j, 0] +
-                       b * unique_vertices[j, 1] +
-                       c * unique_vertices[j, 2])
+            sim = (a * unique_vertices[j, 0] +
+                   b * unique_vertices[j, 1] +
+                   c * unique_vertices[j, 2])
+            if remove_antipodal:
+                sim = fabs(sim)
             if sim > cos_similarity:  # too similar, drop
                 pass_all = 0
                 if return_mapping:
