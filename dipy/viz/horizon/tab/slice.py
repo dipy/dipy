@@ -13,7 +13,7 @@ if has_fury:
 
 class SlicesTab(HorizonTab):
     def __init__(
-        self, slice_actors, data_shape, data_min, data_max, intensities_range):
+        self, slice_actors, data, intensities_range):
         
         self.__actors = slice_actors
         self.__name = 'Slices'
@@ -21,9 +21,10 @@ class SlicesTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__shape = data_shape
-        self.__min_intensity = data_min
-        self.__max_intensity = data_max
+        self.__data = data
+        self.__data_shape = self.__data.shape
+        self.__min_intensity = self.__data.min()
+        self.__max_intensity = self.__data.max()
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -37,8 +38,8 @@ class SlicesTab(HorizonTab):
         tt = '{ratio:.0%}'
         
         self.__slider_opacity = ui.LineSlider2D(
-            initial_value=opacity, min_value=.0, max_value=1., length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=opacity, max_value=1., length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_opacity)
         
@@ -51,18 +52,18 @@ class SlicesTab(HorizonTab):
         tt = '{value:.0f}'
         
         self.__slider_slice_x = ui.LineSlider2D(
-            initial_value=self.__shape[0] / 2, min_value=0,
-            max_value=self.__shape[0] - 1, length=length, line_width=lw,
+            initial_value=self.__data_shape[0] / 2, min_value=0,
+            max_value=self.__data_shape[0] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         self.__slider_slice_y = ui.LineSlider2D(
-            initial_value=self.__shape[1] / 2, min_value=0,
-            max_value=self.__shape[1] - 1, length=length, line_width=lw,
+            initial_value=self.__data_shape[1] / 2, min_value=0,
+            max_value=self.__data_shape[1] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         self.__slider_slice_z = ui.LineSlider2D(
-            initial_value=self.__shape[2] / 2, min_value=0,
-            max_value=self.__shape[2] - 1, length=length, line_width=lw,
+            initial_value=self.__data_shape[2] / 2, min_value=0,
+            max_value=self.__data_shape[2] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_slice_x)
@@ -143,6 +144,18 @@ class SlicesTab(HorizonTab):
             self.__change_colormap_previous)
         self.__button_next_colormap.on_left_mouse_button_clicked = (
             self.__change_colormap_next)
+        
+        data_ndim = len(self.__data_shape)
+        
+        if data_ndim == 4:
+            self.__slider_label_volume = build_label(text='Volume')
+            
+            self.__slider_volume = ui.LineSlider2D(
+                initial_value=0, max_value=self.__data_shape[-1] - 1,
+                length=length, line_width=lw, outer_radius=radius,
+                font_size=fs, text_template=tt)
+            
+            color_single_slider(self.__slider_volume)
     
     def __change_colormap(self, combobox):
         colormap = combobox.selected_text
@@ -186,17 +199,17 @@ class SlicesTab(HorizonTab):
     def __change_slice_x(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[0].display_extent(
-            value, value, 0, self.__shape[1] - 1, 0, self.__shape[2] - 1)
+            value, value, 0, self.__data_shape[1] - 1, 0, self.__data_shape[2] - 1)
     
     def __change_slice_y(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[1].display_extent(
-            0, self.__shape[0] - 1, value, value, 0, self.__shape[2] - 1)
+            0, self.__data_shape[0] - 1, value, value, 0, self.__data_shape[2] - 1)
     
     def __change_slice_z(self, slider):
         value = int(np.rint(slider.value))
         self.__actors[2].display_extent(
-            0, self.__shape[0] - 1, 0, self.__shape[1] - 1, value, value)
+            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1, value, value)
     
     def __change_slice_x_visibility(self, i_ren, _obj, _button):
         self.__slice_x_visibility = not self.__slice_x_visibility
@@ -215,6 +228,10 @@ class SlicesTab(HorizonTab):
         self.__slider_slice_z.set_visibility(self.__slice_z_visibility)
         self.__actors[2].SetVisibility(self.__slice_z_visibility)
         i_ren.force_render()
+    
+    def __change_volume(self, slider):
+        value = int(np.rint(slider.value))
+        pass
     
     def __update_colormap(self):
         if self.__colormap == 'dist':
@@ -295,6 +312,17 @@ class SlicesTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__combobox_colormap, (x_pos, .62))
         """
+        
+        data_ndim = len(self.__data_shape)
+        
+        if data_ndim == 4:
+            x_pos = .52
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_label_volume, (x_pos, .38))
+            
+            x_pos = .60
+            self.__tab_ui.add_element(
+                self.__tab_id, self.__slider_volume, (x_pos, .38))
     
     @property
     def name(self):

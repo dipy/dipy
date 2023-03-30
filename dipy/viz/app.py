@@ -510,15 +510,12 @@ class Horizon(object):
                                 data, affine=affine,
                                 world_coords=self.world_coords)
                             slice_actors = loader_data[0]
-                            shape = loader_data[1]
-                            data_min = loader_data[2]
-                            data_max = loader_data[3]
-                            range = loader_data[4]
+                            proc_data = loader_data[1]
+                            range = loader_data[2]
                             for slice in slice_actors:
                                 scene.add(slice)
                             self.__tabs.append(SlicesTab(
-                                slice_actors, shape, data_min, data_max,
-                                range))
+                                slice_actors, proc_data, range))
                             """
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
@@ -533,14 +530,11 @@ class Horizon(object):
                 loader_data = nifti_to_slice_actors(
                     data, affine=affine, world_coords=self.world_coords)
                 slice_actors = loader_data[0]
-                shape = loader_data[1]
-                data_min = loader_data[2]
-                data_max = loader_data[3]
-                range = loader_data[4]
+                proc_data = loader_data[1]
+                range = loader_data[2]
                 for slice in slice_actors:
                     scene.add(slice)
-                self.__tabs.append(SlicesTab(
-                    slice_actors, shape, data_min, data_max, range))
+                self.__tabs.append(SlicesTab(slice_actors, proc_data, range))
                 """
                 self.panel = slicer_panel(
                     scene, self.show_m.iren, data, affine, self.world_coords,
