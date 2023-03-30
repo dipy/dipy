@@ -28,6 +28,7 @@ For a full list of the features implemented in the most recent release cycle, ch
 .. toctree::
    :maxdepth: 1
 
+   release_notes/release1.6
    release_notes/release1.5
    release_notes/release1.4.1
    release_notes/release1.4

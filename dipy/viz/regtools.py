@@ -313,7 +313,7 @@ def plot_slices(V, slice_indices=None, fname=None, **fig_kwargs):
     V : array, shape (S, R, C)
         the 3D volume to extract the slices from
     slice_indices : array, shape (3,) (optional)
-        the indices of the sagital (slice_indices[0]), coronal
+        the indices of the sagittal (slice_indices[0]), coronal
         (slice_indices[1])
         and axial (slice_indices[2]) slices to be displayed. If None, the
         middle slices along each direction are displayed.

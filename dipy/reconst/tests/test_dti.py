@@ -474,27 +474,10 @@ def test_all_zeros():
 
 def test_mask():
     data, gtab = dsi_voxels()
-    dm = dti.TensorModel(gtab, 'LS')
-    mask = np.zeros(data.shape[:-1], dtype=bool)
-    mask[0, 0, 0] = True
-    dtifit = dm.fit(data)
-    dtifit_w_mask = dm.fit(data, mask=mask)
-    # Without a mask it has some value
-    assert not np.isnan(dtifit.fa[0, 0, 0])
-    # Where mask is False, evals, evecs and fa should all be 0
-    npt.assert_array_equal(dtifit_w_mask.evals[~mask], 0)
-    npt.assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
-    npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
-    # Except for the one voxel that was selected by the mask:
-    npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
-
-    # Test with returning S0_hat
-    dm = dti.TensorModel(gtab, 'LS', return_S0_hat=True)
-    mask = np.zeros(data.shape[:-1], dtype=bool)
-    mask[0, 0, 0] = True
-    for mask_more in [True, False]:
-        if mask_more:
-            mask[0, 0, 1] = True
+    for fit_type in ['LS', 'NLLS']:
+        dm = dti.TensorModel(gtab, fit_type)
+        mask = np.zeros(data.shape[:-1], dtype=bool)
+        mask[0, 0, 0] = True
         dtifit = dm.fit(data)
         dtifit_w_mask = dm.fit(data, mask=mask)
         # Without a mask it has some value
@@ -503,11 +486,29 @@ def test_mask():
         npt.assert_array_equal(dtifit_w_mask.evals[~mask], 0)
         npt.assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
         npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
-        npt.assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
         # Except for the one voxel that was selected by the mask:
         npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
-        npt.assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0],
-                                dtifit.S0_hat[0, 0, 0])
+
+        # Test with returning S0_hat
+        dm = dti.TensorModel(gtab, fit_type, return_S0_hat=True)
+        mask = np.zeros(data.shape[:-1], dtype=bool)
+        mask[0, 0, 0] = True
+        for mask_more in [True, False]:
+            if mask_more:
+                mask[0, 0, 1] = True
+            dtifit = dm.fit(data)
+            dtifit_w_mask = dm.fit(data, mask=mask)
+            # Without a mask it has some value
+            assert not np.isnan(dtifit.fa[0, 0, 0])
+            # Where mask is False, evals, evecs and fa should all be 0
+            npt.assert_array_equal(dtifit_w_mask.evals[~mask], 0)
+            npt.assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
+            npt.assert_array_equal(dtifit_w_mask.fa[~mask], 0)
+            npt.assert_array_equal(dtifit_w_mask.S0_hat[~mask], 0)
+            # Except for the one voxel that was selected by the mask:
+            npt.assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+            npt.assert_almost_equal(dtifit_w_mask.S0_hat[0, 0, 0],
+                                    dtifit.S0_hat[0, 0, 0])
 
 
 def test_nnls_jacobian_fucn():
@@ -549,9 +550,9 @@ def test_nlls_fit_tensor():
     """
 
     b0 = 1000.
-    bval, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
-    gtab = grad.gradient_table(bval, bvecs)
-    B = bval[1]
+    bvals, bvecs = read_bvals_bvecs(*get_fnames('55dir_grad'))
+    gtab = grad.gradient_table(bvals, bvecs)
+    B = bvals[1]
 
     # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
@@ -606,6 +607,22 @@ def test_nlls_fit_tensor():
 
     npt.assert_array_almost_equal(tf1.fa, tf2.fa, decimal=1)
 
+    # Reduce amount of data, to cause NLLS to fail
+    gtab_less = grad.gradient_table(gtab.bvals[0:3], gtab.bvecs[0:3, :])
+    Y_less = Y[..., 0:3].copy()
+
+    # Test warning for failure of NLLS method, resort to OLS result
+    # (reason for failure: too few data points for NLLS)
+    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS', sigma=1.0,
+                                   return_S0_hat=True)
+    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+
+    # Test fail_is_nan=True, failed NLLS method gives NaN
+    tensor_model = dti.TensorModel(gtab_less, fit_method='NLLS', sigma=1.0,
+                                   return_S0_hat=True, fail_is_nan=True)
+    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y_less)
+    npt.assert_equal(tmf[0].S0_hat, np.nan)
+
 
 def test_restore():
     """
@@ -626,16 +643,18 @@ def test_restore():
 
     # Signals
     Y = np.exp(np.dot(X, D))
-    Y.shape = (-1,) + Y.shape
+    Y = np.vstack([Y[None, :], Y[None, :]])  # two voxels
     for drop_this in range(1, Y.shape[-1]):
         for jac in [True, False]:
             # RESTORE estimates should be robust to dropping
             this_y = Y.copy()
             this_y[:, drop_this] = 1.0
-            for _ in [67.0, np.ones(this_y.shape[-1]) * 67.0]:
+            for sigma in [67.0, np.array([67.0]),
+                          np.ones(this_y.shape[-1]) * 67.0,
+                          np.array([66.0, 67.0]).reshape((-1, 1))]:
                 tensor_model = dti.TensorModel(gtab, fit_method='restore',
                                                jac=jac,
-                                               sigma=67.0)
+                                               sigma=sigma)
 
                 tensor_est = tensor_model.fit(this_y)
                 npt.assert_array_almost_equal(tensor_est.evals[0], evals,
@@ -652,6 +671,18 @@ def test_restore():
                                    return_S0_hat=True)
     tmf = tensor_model.fit(Y.copy())
     npt.assert_almost_equal(tmf[0].S0_hat, b0)
+
+    # Test warning for failure of NLLS method, resort to OLS result
+    # (reason for failure: too few data points for NLLS, due to negative sigma)
+    tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=-1.0,
+                                   return_S0_hat=True)
+    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+
+    # Test fail_is_nan=True, failed NLLS method gives NaN
+    tensor_model = dti.TensorModel(gtab, fit_method='restore', sigma=-1.0,
+                                   return_S0_hat=True, fail_is_nan=True)
+    tmf = npt.assert_warns(UserWarning, tensor_model.fit, Y.copy())
+    npt.assert_equal(tmf[0].S0_hat, np.nan)
 
 
 def test_adc():

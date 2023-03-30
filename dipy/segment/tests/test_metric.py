@@ -255,3 +255,24 @@ def test_distance_matrix():
             for j in range(len(data2)):
                 assert_equal(D[i, j], dipysmetric.dist(metric, data[i],
                                                        data2[j]))
+
+
+def test_mean_distances():
+    nb_slines = 10
+    nb_pts = 22
+    dim = 3
+    a = np.random.rand(nb_slines, nb_pts, dim)
+    b = np.random.rand(nb_slines, nb_pts, dim)
+    diff = a - b
+
+    # Test Euclidean distance (L2)
+    mean_l2_dist = dipymetric.mean_euclidean_distance(a, b)
+    diff_norm = np.linalg.norm(diff.reshape((-1, dim)), ord=2, axis=-1)
+    mean_norm = np.mean(diff_norm.reshape((nb_slines, -1)), axis=-1)
+    assert_almost_equal(mean_l2_dist, mean_norm)
+
+    # Test Manhattan distance (L1)
+    mean_l1_dist = dipymetric.mean_manhattan_distance(a, b)
+    diff_norm = np.linalg.norm(diff.reshape((-1, dim)), ord=1, axis=-1)
+    mean_norm = np.mean(diff_norm.reshape((nb_slines, -1)), axis=-1)
+    assert_almost_equal(mean_l1_dist, mean_norm)

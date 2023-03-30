@@ -92,7 +92,7 @@ Function ``get_fnames`` downloads and outputs the paths of the data,
 b-values and b-vectors. These later arrays are converted to the GradientTable
 object required for Dipy_'s data reconstruction.
 
-Before fitting the data, we preform some data pre-processing. We first compute
+Before fitting the data, we perform some data pre-processing. We first compute
 a brain mask to avoid unnecessary calculations on the background of the image.
 """
 

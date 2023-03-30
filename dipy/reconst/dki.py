@@ -24,7 +24,7 @@ from dipy.core.gradients import check_multi_b
 
 
 def _positive_evals(L1, L2, L3, er=2e-7):
-    """ Helper function that indentifies which voxels in a array have all
+    """ Helper function that identifies which voxels in a array have all
     eigenvalues significantly larger than zero
 
     Parameters
@@ -434,7 +434,7 @@ def directional_diffusion_variance(kt, V, min_kurtosis=-3/7):
     V : array (g, 3)
         g directions of a Sphere in Cartesian coordinates
     min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physicaly
+        Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
@@ -502,7 +502,7 @@ def directional_kurtosis(dt, md, kt, V, min_diffusivity=0, min_kurtosis=-3/7,
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physicaly
+        Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
@@ -569,7 +569,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         values smaller than `min_diffusivity` are replaced with
         `min_diffusivity`. Default = 0
     min_kurtosis : float (optional)
-        Because high-amplitude negative values of kurtosis are not physicaly
+        Because high-amplitude negative values of kurtosis are not physically
         and biologicaly pluasible, and these cause artefacts in
         kurtosis-based measures, directional kurtosis values smaller than
         `min_kurtosis` are replaced with `min_kurtosis`. Default = -3./7
@@ -592,7 +592,7 @@ def apparent_kurtosis_coef(dki_params, sphere, min_diffusivity=0,
         \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
 
     where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
-    diffusivity and ADC the apparent diffusion coefficent computed as:
+    diffusivity and ADC the apparent diffusion coefficient computed as:
 
     .. math ::
 
@@ -1465,18 +1465,42 @@ def kurtosis_fractional_anisotropy(dki_params):
     W = 1.0/5.0 * (Wxxxx + Wyyyy + Wzzzz + 2*Wxxyy + 2*Wxxzz + 2*Wyyzz)
 
     # Compute's equation numerator
-    A = (Wxxxx - W) ** 2 + (Wyyyy - W) ** 2 + (Wzzzz - W) ** 2 + \
-        4 * Wxxxy ** 2 + 4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + \
-        4 * Wxzzz ** 2 + 4 * Wyzzz ** 2 + \
-        6 * (Wxxyy - W/3) ** 2 + 6 * (Wxxzz - W/3) ** 2 + \
-        6 * (Wyyzz - W/3) ** 2 + \
-        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+    A = (\
+          (Wxxxx - W) ** 2 + \
+          (Wyyyy - W) ** 2 + \
+          (Wzzzz - W) ** 2 + \
+          4 * (Wxxxy ** 2 +  \
+               Wxxxz ** 2 +  \
+               Wxyyy ** 2 +  \
+               Wyyyz ** 2 +  \
+               Wxzzz ** 2 +  \
+               Wyzzz ** 2) + \
+          6 * ((Wxxyy - W/3) ** 2  + \
+               (Wxxzz - W/3) ** 2  + \
+               (Wyyzz - W/3) ** 2) + \
+          12 * (Wxxyz ** 2 + \
+                Wxyyz ** 2 + \
+                Wxyzz ** 2)  \
+      )
 
     # Compute's equation denominator
-    B = Wxxxx ** 2 + Wyyyy ** 2 + Wzzzz ** 2 + 4 * Wxxxy ** 2 + \
-        4 * Wxxxz ** 2 + 4 * Wxyyy ** 2 + 4 * Wyyyz ** 2 + 4 * Wxzzz ** 2 + \
-        4 * Wyzzz ** 2 + 6 * Wxxyy ** 2 + 6 * Wxxzz ** 2 + 6 * Wyyzz ** 2 + \
-        12 * Wxxyz ** 2 + 12 * Wxyyz ** 2 + 12 * Wxyzz ** 2
+    B = (\
+          Wxxxx ** 2 + \
+          Wyyyy ** 2 + \
+          Wzzzz ** 2 + \
+          4 * (Wxxxy ** 2 + \
+               Wxxxz ** 2 + \
+               Wxyyy ** 2 + \
+               Wyyyz ** 2 + \
+               Wxzzz ** 2 + \
+               Wyzzz ** 2) + \
+          6 * (Wxxyy ** 2 + \
+               Wxxzz ** 2 + \
+               Wyyzz ** 2) + \
+          12 * (Wxxyz ** 2 + \
+                Wxyyz ** 2 + \
+                Wxyzz ** 2)  \
+      )
 
     # Compute KFA
     KFA = np.zeros(A.shape)
@@ -1742,7 +1766,7 @@ class DiffusionKurtosisFit(TensorFit):
             \sum_{k=1}^{3}\sum_{l=1}^{3}n_{i}n_{j}n_{k}n_{l}W_{ijkl}
 
         where $W_{ijkl}$ are the elements of the kurtosis tensor, MD the mean
-        diffusivity and ADC the apparent diffusion coefficent computed as:
+        diffusivity and ADC the apparent diffusion coefficient computed as:
 
         .. math ::
 

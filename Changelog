@@ -24,6 +24,21 @@ Dipy
 
 The code found in Dipy was created by the people found in the AUTHOR file.
 
+* 1.6.0 (Monday, January 16, 2023)
+
+- NF: Unbiased groupwise linear bundle registration added.
+- NF: MAP+ constraints added.
+- Generalized PCA to less than 3 spatial dims.
+- Add positivity constraints to QTI.
+- Ability to apply Symmetric Diffeomorphic Registration to points/streamlines.
+- New Human Connectome Project (HCP) data fetcher added.
+- New Healthy Brain Network (HBN) data fetcher added.
+- Multiple Workflows updated (DTIFlow, LPCAFlow, MPPCA) and added (RUMBAFlow).
+- Ability to handle VTP files.
+- Large codebase cleaning.
+- Large documentation update.
+- Closed 75 issues and merged 41 pull requests.
+
 * 1.5.0 (Friday, March 11, 2022)
 
 - New reconstruction model added: Q-space Trajectory Imaging (QTI).

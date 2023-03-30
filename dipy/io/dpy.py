@@ -1,7 +1,7 @@
 """ A class for handling large tractography datasets.
 
     It is built using the h5py which in turn implement
-    key features of the HDF5 (hierachical data format) API [1]_.
+    key features of the HDF5 (hierarchical data format) API [1]_.
 
     References
     ----------

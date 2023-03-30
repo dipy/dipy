@@ -105,7 +105,7 @@ cdef class BootPmfGen(PmfGen):
                  double tol=1e-2):
         cdef:
             double b_range
-            np.ndarray x, y, z, r
+            cnp.ndarray x, y, z, r
             double[:] theta, phi
             double[:, :] B
 

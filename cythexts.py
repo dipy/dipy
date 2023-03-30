@@ -80,7 +80,7 @@ def cyproc_exts(exts, cython_min_version,
         If we already have good c files for any pyx or py sources, we replace
         the pyx or py files with their compiled up c versions inplace.
     cython_min_version : str
-        Minimum cython version neede for compile
+        Minimum cython version needed for compile
     hash_stamps_fname : str, optional
         filename with hashes for pyx/py and c files known to be in sync. Default
         is 'pyx-stamps'

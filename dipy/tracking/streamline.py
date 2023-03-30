@@ -123,7 +123,7 @@ def deform_streamlines(streamlines,
                                        np.eye(4))
     stream_in_world = transform_streamlines(stream_in_curr_grid,
                                             current_grid_to_world)
-    new_streams_in_world = [sum(d, s) for d, s in zip(displacements,
+    new_streams_in_world = [np.add(d, s) for d, s in zip(displacements,
                                                       stream_in_world)]
     new_streams_grid = transform_streamlines(new_streams_in_world,
                                              np.linalg.inv(ref_grid_to_world))
@@ -161,8 +161,9 @@ def transform_streamlines(streamlines, mat, in_place=False):
         new_streamlines = streamlines.copy()
         new_streamlines._offsets = new_streamlines._offsets.astype(
             old_offsets_dtype)
-        new_streamlines._data = apply_affine(
-            mat, new_streamlines._data).astype(old_data_dtype)
+        if new_streamlines._data.size:
+            new_streamlines._data = apply_affine(
+                mat, new_streamlines._data).astype(old_data_dtype)
         return new_streamlines
     # supporting old data structure of streamlines
     return [apply_affine(mat, s) for s in streamlines]

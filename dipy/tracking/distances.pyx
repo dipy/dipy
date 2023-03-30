@@ -216,10 +216,11 @@ def cut_plane(tracks, ref):
     >>> res = cut_plane(bundlex,refx)
     >>> len(res)
     2
-    >>> print(res[0])
-    [[ 1.          1.5         0.          0.70710683  0.        ]]
-    >>> print(res[1])
-    [[ 2.          2.5         0.          0.70710677  0.        ]]
+    >>> np.allclose(res[0], np.array([[1., 1.5, 0., 0.70710683, 0. ]]))
+    True
+    >>> np.allclose(res[1], np.array([[2., 2.5, 0., 0.70710677, 0. ]]))
+    True
+
     """
     cdef:
         cnp.npy_intp n_hits, hit_no, max_hit_len
@@ -1644,7 +1645,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     #holds number of clusters
     lenC = 1
 
-    #store memmory for the hid variable
+    #store memory for the hid variable
     hid=<float *>realloc(NULL,dim*sizeof(float))
 
     #Work with the rest of the tracks

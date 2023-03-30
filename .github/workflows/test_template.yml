@@ -12,7 +12,7 @@ on:
         description: "Select Python version"
         type: string
         required: false
-        default: '["3.9", ]'
+        default: '["3.10", ]'
       use-pre:
         description: "bal"
         type: boolean
@@ -49,10 +49,6 @@ defaults:
   run:
     shell: bash
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -75,10 +71,10 @@ jobs:
       TEST_WITH_XVFB: ${{ inputs.enable-viz-tests }}
       PRE_WHEELS: "https://pypi.anaconda.org/scipy-wheels-nightly/simple"
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
       if: ${{ matrix.install-type != 'conda' }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up Virtualenv

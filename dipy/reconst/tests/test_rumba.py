@@ -12,7 +12,7 @@ from numpy.testing import assert_
 from dipy.reconst.rumba import RumbaSDModel, generate_kernel
 from dipy.reconst.csdeconv import AxSymShResponse
 from dipy.data import get_fnames, dsi_voxels, default_sphere, get_sphere
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, unique_bvals_tolerance
 from dipy.core.geometry import cart2sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
@@ -24,7 +24,6 @@ from dipy.reconst.shm import descoteaux07_legacy_msg
 def test_rumba():
 
     # Test fODF results from ideal examples.
-
     sphere = default_sphere  # repulsion 724
     sphere2 = get_sphere('symmetric362')
 
@@ -37,8 +36,13 @@ def test_rumba():
                                               fractions=[50, 50], snr=None)
 
     # Testing input validation
-    gtab_broken = gradient_table(
-        bvals[~gtab.b0s_mask], bvecs[~gtab.b0s_mask])
+    msg = "b0_threshold .*"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=msg,
+                                category=UserWarning)
+        gtab_broken = gradient_table(bvals[~gtab.b0s_mask],
+                                     bvecs[~gtab.b0s_mask])
+
     assert_raises(ValueError, RumbaSDModel, gtab_broken)
 
     with warnings.catch_warnings(record=True) as w:
@@ -158,7 +162,9 @@ def test_multishell_rumba():
                                               angles=[(0, 0), (90, 0)],
                                               fractions=[50, 50], snr=None)
 
-    wm_response = np.tile(np.array([1.7E-3, 0.2E-3, 0.2E-3]), (22, 1))
+    ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
+    wm_response = np.tile(
+        np.array([1.7E-3, 0.2E-3, 0.2E-3]), (ms_eigenval_count, 1))
     model = RumbaSDModel(gtab, wm_response, n_iter=20, sphere=sphere)
     model_fit = model.fit(data)
 
@@ -184,8 +190,12 @@ def test_mvoxel_rumba():
                              sphere=sphere)
     model_list = [rumba_smf, rumba_sos]
 
+    msg = "There is overlap in clustering of b-value.*"
     for model in model_list:
-        model_fit = model.fit(data)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            model_fit = model.fit(data)
 
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso
@@ -195,10 +205,14 @@ def test_mvoxel_rumba():
         combined = model_fit.combined_odf_iso
 
         # Verify prediction properties
-        pred_sig_1 = model_fit.predict()
-        pred_sig_2 = model_fit.predict(S0=1)
-        pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
-        pred_sig_4 = model_fit.predict(gtab=gtab)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            pred_sig_1 = model_fit.predict()
+            pred_sig_2 = model_fit.predict(S0=1)
+            pred_sig_3 = model_fit.predict(S0=np.ones(odf.shape[:-1]))
+            pred_sig_4 = model_fit.predict(gtab=gtab)
 
         assert_equal(pred_sig_1, pred_sig_2)
         assert_equal(pred_sig_3, pred_sig_4)
@@ -259,7 +273,7 @@ def test_global_fit():
     rumba_broken = RumbaSDModel(gtab, recon_type='test', voxelwise=False)
     assert_raises(ValueError, rumba_broken.fit, data)
 
-    # Test on repulsion 724 sphere, with/wihout TV regularization
+    # Test on repulsion 724 sphere, with/without TV regularization
     for ix, model in enumerate([rumba, rumba_tv]):
 
         if ix:
@@ -317,7 +331,11 @@ def test_mvoxel_global_fit():
 
     # Test each model with/without TV regularization
     for model in model_list:
-        model_fit = model.fit(data)
+        msg = "There is overlap in clustering of b-value.*"
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=msg,
+                                    category=UserWarning)
+            model_fit = model.fit(data)
         odf = model_fit.odf(sphere)
         f_iso = model_fit.f_iso
         f_wm = model_fit.f_wm
@@ -381,7 +399,8 @@ def test_generate_kernel():
     assert_almost_equal(kernel[:, 0], S)
 
     # Multi-shell version
-    wm_response_multi = np.tile(wm_response, (22, 1))
+    ms_eigenval_count = len(unique_bvals_tolerance(gtab.bvals)) - 1
+    wm_response_multi = np.tile(wm_response, (ms_eigenval_count, 1))
     kernel_multi = generate_kernel(
         gtab, sphere, wm_response_multi, gm_response, csf_response)
     assert_equal(kernel.shape, (len(gtab.bvals), len(sphere.vertices) + 2))

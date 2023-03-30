@@ -160,6 +160,13 @@ def gaussian_weights(bundle, n_points=100, return_mahalnobis=False,
     n_points : int, optional
         The number of points to resample to. *If the `bundle` is an array, this
         input is ignored*. Default: 100.
+    return_mahalanobis : bool, optional
+        Whether to return the Mahalanobis distance instead of the weights.
+        Default: False.
+    stat : callable, optional.
+        The statistic used to calculate the central tendency of streamlines in
+        each node. Can be one of {`np.mean`, `np.median`} or other functions
+        that have similar API. Default: `np.mean`
 
     Returns
     -------

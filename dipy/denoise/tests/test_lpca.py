@@ -260,6 +260,11 @@ def test_lpca_sigma_wrong_shape():
     assert_raises(ValueError, localpca, DWI, sigma)
 
 
+def test_lpca_no_gtab_no_sigma():
+    DWI, sigma = rfiw_phantom(gtab, snr=30)
+    assert_raises(ValueError, localpca, DWI, None, None)
+
+
 def test_pca_classifier():
     # Produce small phantom with well aligned single voxels and ground truth
     # snr = 50, i.e signal std = 0.02 (Gaussian noise)
@@ -302,12 +307,16 @@ def test_mppca_in_phantom():
     std_gt = 0.02
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
-    DWIden = mppca(DWInoise, patch_radius=2)
 
-    # Test if denoised data is closer to ground truth than noisy data
-    rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
-    rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
-    assert_(rmse_den < rmse_noisy)
+    # patch radius (2: #samples > #features, 1: #samples < #features)
+    for PR in [2, 1]:
+
+        DWIden = mppca(DWInoise, patch_radius=PR)
+
+        # Test if denoised data is closer to ground truth than noisy data
+        rmse_den = np.sum(np.abs(DWIgt - DWIden)) / np.sum(np.abs(DWIgt))
+        rmse_noisy = np.sum(np.abs(DWIgt - DWInoise)) / np.sum(np.abs(DWIgt))
+        assert_(rmse_den < rmse_noisy)
 
 
 def test_mppca_returned_sigma():
@@ -316,19 +325,28 @@ def test_mppca_returned_sigma():
     noise = std_gt*np.random.standard_normal(DWIgt.shape)
     DWInoise = DWIgt + noise
 
-    # Case that sigma is estimated using mpPCA
-    DWIden0, sigma = mppca(DWInoise, patch_radius=2, return_sigma=True)
-    msigma = np.mean(sigma)
-    std_error = abs(msigma - std_gt)/std_gt * 100
-    assert_(std_error < 5)
+    # patch radius (2: #samples > #features, 1: #samples < #features)
+    for PR in [2, 1]:
 
-    # Case that sigma is inputted (sigma outputted should be the same as the
-    # one inputted)
-    DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
-                             patch_radius=2, return_sigma=True)
-    assert_array_almost_equal(rsigma, sigma)
+        # Case that sigma is estimated using mpPCA
+        DWIden0, sigma = mppca(DWInoise, patch_radius=PR, return_sigma=True)
+        msigma = np.mean(sigma)
+        std_error = abs(msigma - std_gt)/std_gt * 100
 
-    # DWIden1 should be very similar to DWIden0
-    rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
-    rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
-    assert_(rmse_den < rmse_ref)
+        # if #noise_eigenvals >> #signal_eigenvals, variance should be well estimated 
+        # this is more likely achieved if #samples > #features
+        if PR > 1:
+            assert_(std_error < 5)
+        else: # otherwise, variance estimate may be wrong
+            pass
+
+        # Case that sigma is inputted (sigma outputted should be the same as the
+        # one inputted)
+        DWIden1, rsigma = genpca(DWInoise, sigma=sigma, tau_factor=None,
+                                 patch_radius=PR, return_sigma=True)
+        assert_array_almost_equal(rsigma, sigma)
+
+        # DWIden1 should be very similar to DWIden0
+        rmse_den = np.sum(np.abs(DWIden1 - DWIden0)) / np.sum(np.abs(DWIden0))
+        rmse_ref = np.sum(np.abs(DWIden1 - DWIgt)) / np.sum(np.abs(DWIgt))
+        assert_(rmse_den < rmse_ref)

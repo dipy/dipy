@@ -73,7 +73,7 @@ Pull Requests (93):
 * :ghpull:`1650`: Increase codecov tolerance
 * :ghpull:`1649`: Path Length Map example rebase
 * :ghpull:`1556`: RecoBundles and SLR workflows
-* :ghpull:`1645`: Fix worflows creation tutorial error
+* :ghpull:`1645`: Fix workflows creation tutorial error
 * :ghpull:`1647`: DOC: Fix duplicate link and AppVeyor badge.
 * :ghpull:`1644`: Adds an Appveyor badge
 * :ghpull:`1643`: Add hash for SCIL b0 file
@@ -117,7 +117,7 @@ Pull Requests (93):
 * :ghpull:`1555`: Fix bug in actor.label
 * :ghpull:`1522`: Image element in dipy.viz.ui
 * :ghpull:`1355`: WIP: ENH: UI Listbox
-* :ghpull:`1540`: fix potential zero division in demon regist.
+* :ghpull:`1540`: fix potential zero division in demon register.
 * :ghpull:`1548`: Fixed references per request of @garyfallidis.
 * :ghpull:`1542`: fix for using cvxpy solver
 * :ghpull:`1546`: References to reference
@@ -125,7 +125,7 @@ Pull Requests (93):
 * :ghpull:`1492`: Enh ui components positioning (with code refactoring)
 * :ghpull:`1538`: Explanation that is mistakenly rendered as code fixed in example of DKI
 * :ghpull:`1536`: DOC: Update Rafael's current institution.
-* :ghpull:`1537`: removed unncessary importd from sims example
+* :ghpull:`1537`: removed unnecessary imported from sims example
 * :ghpull:`1530`: Wrong default value for parameter 'symmetric' connectivity_matrix function
 * :ghpull:`1529`: minor typo fix in quickstart
 * :ghpull:`1520`: Updating the documentation for the workflow creation tutorial.
@@ -178,7 +178,7 @@ Issues (194):
 * :ghissue:`1670`: fixed RecoBundle workflow, SLR reference, and updated fetcher.py
 * :ghissue:`1669`: Flow csd sh order
 * :ghissue:`1668`: One issue on handling HCP data -- HCP b vectors raise NaN in the gradient table
-* :ghissue:`1662`: Remove the points added oustide of a mask. Fix the related tests.
+* :ghissue:`1662`: Remove the points added outside of a mask. Fix the related tests.
 * :ghissue:`1659`: From dipy.viz to FURY
 * :ghissue:`1621`: workflows : warn user for strange b0 threshold 
 * :ghissue:`1657`: DOC: Add spherical harmonics basis documentation.
@@ -200,7 +200,7 @@ Issues (194):
 * :ghissue:`1631`: Path Length Map example
 * :ghissue:`1649`: Path Length Map example rebase
 * :ghissue:`1556`: RecoBundles and SLR workflows
-* :ghissue:`1645`: Fix worflows creation tutorial error
+* :ghissue:`1645`: Fix workflows creation tutorial error
 * :ghissue:`1647`: DOC: Fix duplicate link and AppVeyor badge.
 * :ghissue:`1644`: Adds an Appveyor badge
 * :ghissue:`1638`: Fetcher downloads data every time it is called
@@ -304,7 +304,7 @@ Issues (194):
 * :ghissue:`1355`: WIP: ENH: UI Listbox
 * :ghissue:`1562`: Should we retire our Python 3.5 travis builds?
 * :ghissue:`1550`: Memory error when running rigid transform
-* :ghissue:`1540`: fix potential zero division in demon regist.
+* :ghissue:`1540`: fix potential zero division in demon register.
 * :ghissue:`1548`: Fixed references per request of @garyfallidis.
 * :ghissue:`1527`: New version of CVXPY changes API
 * :ghissue:`1542`: fix for using cvxpy solver
@@ -317,7 +317,7 @@ Issues (194):
 * :ghissue:`1487`: Commit for updated check_scratch.py script.
 * :ghissue:`1486`: Parichit dipy flows
 * :ghissue:`1539`: Changing the default behavior of the workflows to create the output file(s) in the current working directory.
-* :ghissue:`1537`: removed unncessary importd from sims example
+* :ghissue:`1537`: removed unnecessary imported from sims example
 * :ghissue:`1535`: removed some unnecessary imports from sims example
 * :ghissue:`1530`: Wrong default value for parameter 'symmetric' connectivity_matrix function
 * :ghissue:`1529`: minor typo fix in quickstart

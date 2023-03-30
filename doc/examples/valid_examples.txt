@@ -62,6 +62,7 @@
  syn_registration_3d.py
  tissue_classification.py
  bundle_registration.py
+ bundle_group_registration.py
  streamline_registration.py
 # piesno.py
  viz_advanced.py
@@ -79,3 +80,4 @@
  bundle_assignment_maps.py
  bundle_shape_similarity.py
  motion_correction.py
+ fast_streamline_search.py

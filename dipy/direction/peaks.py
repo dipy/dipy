@@ -90,7 +90,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 
 def peak_directions(odf, sphere, relative_peak_threshold=.5,
-                    min_separation_angle=25):
+                    min_separation_angle=25, is_symmetric=True):
     """Get the directions of odf peaks.
 
     Peaks are defined as points on the odf that are greater than at least one
@@ -112,6 +112,8 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     min_separation_angle : float in [0, 90]
         The minimum distance between directions. If two peaks are too close
         only the larger of the two is returned.
+    is_symmetric : bool, optional
+        If True, v is considered equal to -v.
 
     Returns
     -------
@@ -151,7 +153,8 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     # Remove peaks too close together
     directions, uniq = remove_similar_vertices(directions,
                                                min_separation_angle,
-                                               return_index=True)
+                                               return_index=True,
+                                               remove_antipodal=is_symmetric)
     values = values[uniq]
     indices = indices[uniq]
     return directions, values, indices
@@ -481,7 +484,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     peak_dirs = np.zeros((shape + (npeaks, 3)))
     peak_values = np.zeros((shape + (npeaks,)))
-    peak_indices = np.zeros((shape + (npeaks,)), dtype='int')
+    peak_indices = np.zeros((shape + (npeaks,)), dtype=np.int32)
     peak_indices.fill(-1)
 
     if return_sh:

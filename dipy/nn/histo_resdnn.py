@@ -169,7 +169,7 @@ class HistoResDNN:
         return self.model.predict(x_test)
 
     def predict(self, data, gtab, mask=None, chunk_size=1000):
-        """ Wrapper function to faciliate prediction of larger dataset.
+        """ Wrapper function to facilitate prediction of larger dataset.
         The function will mask, normalize, split, predict and 're-assemble'
         the data as a volume.
 

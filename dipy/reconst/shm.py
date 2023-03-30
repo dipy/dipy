@@ -146,6 +146,10 @@ def gen_dirac(m, n, theta, phi, legacy=True):
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
+    legacy: bool, optional
+        If true, uses DIPY's legacy descoteaux07 implementation (where |m|
+        is used for m < 0). Else, implements the basis as defined in
+        Descoteaux et al. 2007 (without the absolute value).
 
     See Also
     --------
@@ -1068,7 +1072,7 @@ class ResidualBootstrapWrapper(object):
 
     Wraps a signal_object, this signal object can be an interpolator. When
     indexed, the the wrapper indexes the signal_object to get the signal.
-    There wrapper than samples the residual boostrap distribution of signal and
+    There wrapper than samples the residual bootstrap distribution of signal and
     returns that sample.
     """
     def __init__(self, signal_object, B, where_dwi, min_signal=1e-5):

@@ -5,6 +5,18 @@ API changes
 Here we provide information about functions or classes that have been removed,
 renamed or are deprecated (not recommended) during different release circles.
 
+DIPY 1.7.0 changes
+------------------
+
+**Denoising**
+
+- Change in ``dipy.denoise.localpca``, function ``genpca`` can use fewer images than patch voxels.
+- Change in ``dipy.denoise.pca_noise_estimate``, function ``pca_noise_estimate`` has new argument ``images_as_samples``
+
+DIPY 1.6.0 changes
+------------------
+
+
 DIPY 1.5.0 changes
 ------------------
 **General**
@@ -22,6 +34,10 @@ DIPY 1.5.0 changes
 - Change in ``dipy.tracking.pmf``
     - The parent class ``PmfGen`` has new mandatory parameter ``sphere``. The sphere vertices correspond to the spherical distribution of the pmf values.
     - The parent class ``PmfGen`` has new function ``get_pmf_value(point, xyz)`` which return the pmf value at location ``point`` and orientation ``xyz``.
+
+**Segment**
+
+- The deprecated ``from dipy.segment.metric import ResampleFeature`` was removed and replaced by ``from dipy.segment.featurespeed import ResampleFeature``.
 
 
 DIPY 1.4.1 changes
@@ -359,7 +375,7 @@ in the 0.11 release cycle.
 
 **Registration**
 
-The following utilty functions from ``vector_fields`` module were renamed:
+The following utility functions from ``vector_fields`` module were renamed:
 
 ``warp_2d_affine`` is now ``transform_2d_affine``
 ``warp_2d_affine_nn`` is now ``transform_2d_affine_nn``

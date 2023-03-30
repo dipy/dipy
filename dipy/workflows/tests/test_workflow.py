@@ -1,13 +1,13 @@
 import os
 import time
 from os.path import join as pjoin
+from tempfile import TemporaryDirectory
 
-from nibabel.tmpdirs import TemporaryDirectory
+import numpy.testing as npt
 
 from dipy.data import get_fnames
 from dipy.workflows.segment import MedianOtsuFlow
 from dipy.workflows.workflow import Workflow
-import numpy.testing as npt
 
 
 def test_force_overwrite():
