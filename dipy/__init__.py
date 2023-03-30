@@ -21,6 +21,7 @@ Subpackages
                   diffusion spectrum, etc.)
  segment       -- Tractography segmentation
  sims          -- MRI phantom signal simulation
+ stats         -- Tractometry
  tracking      -- Tractography, metrics for streamlines
  viz           -- Visualization and GUIs
 

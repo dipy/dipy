@@ -1,17 +1,19 @@
 import matplotlib.pyplot as plt
-from pycpd import DeformableRegistration
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from dipy.align.streamlinear import slr_with_qbx
 from dipy.tracking.streamline import (unlist_streamlines,
                                       Streamlines)
 from dipy.stats.analysis import assignment_map
+from dipy.utils.optpkg import optional_package
 
 from dipy.segment.metricspeed import MinimumAverageDirectFlipMetric
 
 from dipy.segment.metricspeed import dist
 
+pycpd, have_pycpd, _ = optional_package("pycpd")
 
+from pycpd import DeformableRegistration
 
 def mdf(s1, s2):
 
