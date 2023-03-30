@@ -146,6 +146,17 @@ print(rpt_sft.is_bbox_in_vox_valid())
 save_tractogram(rpt_sft, 'rpt.trk')
 
 """
+Any StatefulTractogram instance consists of clusters of streamlines. Cluster 
+based information such as number of cluster label, streamlines within each cluster
+can be added through a setter function.
+"""
+
+data = {}
+for i in range(len(cc_sft.streamlines)):
+  data[f'cluster_{i}'] = cc_sft.streamlines.shape[0]
+cc_sft.data_per_streamline = data
+
+"""
 Some functions in DIPY require streamlines to be in voxel space so computation
 can be performed on a grid (connectivity matrix, ROIs masking, density map).
 The stateful tractogram class provides safe functions for such manipulation.
