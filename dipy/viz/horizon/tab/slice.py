@@ -74,15 +74,16 @@ class SlicesTab(HorizonTab):
         self.__slider_slice_y.on_change = self.__change_slice_y
         self.__slider_slice_z.on_change = self.__change_slice_z
         
+        icon_files = []
+        icon_files.append(('minus', read_viz_icons(fname='minus.png')))
+        icon_files.append(('plus', read_viz_icons(fname='plus.png')))
+        
         self.__button_slice_x = ui.Button2D(
-            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
-            size=(25, 25))
+            icon_fnames=icon_files, size=(25, 25))
         self.__button_slice_y = ui.Button2D(
-            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
-            size=(25, 25))
+            icon_fnames=icon_files, size=(25, 25))
         self.__button_slice_z = ui.Button2D(
-            icon_fnames=[('square', read_viz_icons(fname='stop2.png'))],
-            size=(25, 25))
+            icon_fnames=icon_files, size=(25, 25))
         
         self.__slice_x_visibility = True
         self.__slice_y_visibility = True
@@ -221,18 +222,21 @@ class SlicesTab(HorizonTab):
         self.__slice_x_visibility = not self.__slice_x_visibility
         self.__slider_slice_x.set_visibility(self.__slice_x_visibility)
         self.__actors[0].SetVisibility(self.__slice_x_visibility)
+        _button.next_icon()
         i_ren.force_render()
     
     def __change_slice_y_visibility(self, i_ren, _obj, _button):
         self.__slice_y_visibility = not self.__slice_y_visibility
         self.__slider_slice_y.set_visibility(self.__slice_y_visibility)
         self.__actors[1].SetVisibility(self.__slice_y_visibility)
+        _button.next_icon()
         i_ren.force_render()
     
     def __change_slice_z_visibility(self, i_ren, _obj, _button):
         self.__slice_z_visibility = not self.__slice_z_visibility
         self.__slider_slice_z.set_visibility(self.__slice_z_visibility)
         self.__actors[2].SetVisibility(self.__slice_z_visibility)
+        _button.next_icon()
         i_ren.force_render()
     
     def __change_volume(self, istyle, obj, slider):
