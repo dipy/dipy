@@ -10,20 +10,17 @@ import numpy as np
 cimport numpy as cnp
 
 from dipy.direction.probabilistic_direction_getter cimport ProbabilisticDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, random, norm, normalize, cross,
-                                    random_vector, random_perpendicular_vector,
-                                    random_point_within_circle)
+from dipy.utils.fast_numpy cimport (copy_point, random, norm, normalize, cross)
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
                                                TRACKPOINT,
                                                ENDPOINT,
                                                OUTSIDEIMAGE,
-                                               INVALIDPOINT,
-                                               PYERROR,
-                                               NODATASUPPORT)
+                                               INVALIDPOINT)
 from dipy.tracking.utils import min_radius_curvature_from_angle
 
 from libc.math cimport M_PI, pow, sin, cos
+
 
 cpdef void random_vector(double[:] out):
     """Generate a unit random vector
@@ -91,45 +88,42 @@ cpdef (double, double) random_point_within_circle(double r):
 
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
-    """Parallel Transport Tractography direction getter.
+    """Parallel Transport Tractography (PTT) direction getter.
     """
-
-    cdef double[3]    position              # Last position
-    cdef double[3][3] frame                 
-    cdef double       k1                    # k1 value of the current frame
-    cdef double       k2                    # k2 value of the current frame
-    cdef double       k1_candidate          
-    cdef double       k2_candidate          
-    cdef double       likelihood            # Likelihood of the next candidate frame constructed with k1_candidate and k2_candidate
-
-    cdef double[3]    init_position         
+    cdef double       angular_separation
+    cdef double       data_support_exponent
+    cdef double[3][3] frame     
     cdef double[3][3] init_frame            
     cdef double       init_k1               
-    cdef double       init_k2               
-
-    # The following variables are mainly used for code optimization
-    cdef double[9]    propagator
-    cdef double       angular_separation
-    cdef double       probe_step_size
-    cdef double       probe_normalizer
+    cdef double       init_k2  
+    cdef double       init_last_val
+    cdef double[3]    init_position
+    cdef double       k1                    
+    cdef double       k2                    
+    cdef double       k1_candidate          
+    cdef double       k2_candidate  
     cdef double       last_val
     cdef double       last_val_cand
-    cdef double       init_last_val
+    cdef double       likelihood 
     cdef double       max_angle
     cdef double       max_curvature
+    cdef double[3]    position 
+    cdef int          probe_count
     cdef double       probe_length
+    cdef double       probe_normalizer
+    cdef int          probe_quality
     cdef double       probe_radius
-    cdef double       probe_quality
-    cdef double       probe_count
-    cdef double       data_support_exponent
+    cdef double       probe_step_size
+    cdef double[9]    propagator
     cdef double       step_size
 
-    # For each streamline, create a new PTF object with tracking parameters
+
     def __init__(self, pmf_gen, max_angle, sphere, pmf_threshold=None,
-                 probe_length=1/2, probe_radius=0, probe_quality=3, 
-                 probe_count=1, data_support_exponent=1,
-                 **kwargs):
-        """Direction getter from a pmf generator.
+                 double probe_length=0.5, double probe_radius=0, 
+                 int probe_quality=3, int probe_count=1, 
+                 double data_support_exponent=1, **kwargs):
+        """PTT used probe for estimating future propagation steps. A probe is a
+        short, cylinderical model of the connecting segment.
 
         Parameters
         ----------
@@ -138,41 +132,41 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             directions.
         max_angle : float, [0, 90]
             Is used to set the upper limits for the k1 and k2 parameters
-            of parallel transport frame (max_curvature)
+            of parallel transport frame (max_curvature).
         sphere : Sphere
             The set of directions to be used for tracking.
-        pmf_threshold : None
-            Not used for PTT
+        pmf_threshold : float, [0., 1.]
+            Used to remove direction from the probability mass function for
+            selecting the tracking direction.
         probe_length : double
-            ptt uses probes for estimating future propagation steps.
-            A probe is a short, cylinderical model of the connecting segment.
-            Shorter probe_length yields more dispersed fibers.
+            The length of the probes. Shorter probe_length yields more
+            dispersed fibers.
         probe_radius : double
-            ptt uses probes for estimating future propagation steps.
-            A probe is a short, cylinderical model of the connecting segment.
-            A large probe_radius helps mitigate noise in the fODF
-            but it might make it harder to sample thin and intricate connections,
-            also the boundary of fiber bundles might be eroded.
-        probe_quality : integer
-            ptt uses probes for estimating future propagation steps.
-            A probe is a short, cylinderical model of the connecting segment.
-            This parameter sets the number of segments to split the cylinder
-            along the length of the probe.
+            The radius of the probe. A large probe_radius helps mitigate noise 
+            in the pmf but it might make it harder to sample thin and intricate 
+            connections, also the boundary of fiber bundles might be eroded.
+        probe_quality : integer, 
+            The quality of the probe. This parameter sets the number of 
+            segments to split the cylinder along the length of the 
+            probe (minimum=2).
         probe_count : integer
-            ptt uses probes for estimating future propagation steps.
-            A probe is a short, cylinderical model of the connecting segment.
-            This parameter sets the number of parallel lines used to model the cylinder.
+            The number of probes. This parameter sets the number of parallel 
+            lines used to model the cylinder (minimum=1). 
         data_support_exponent : double
-            Data support to the power dataSupportExponent is used for rejection sampling.
+            Data support to the power dataSupportExponent is used for 
+            rejection sampling.
 
-        See also
-        --------
-        dipy.direction.peaks.peak_directions
+         """
+        if probe_length <= 0:
+            raise ValueError("probe_length must be greater than 0.")
+        if probe_radius < 0:
+            raise ValueError("probe_radius must be greater or equal to 0.")
+        if probe_quality < 2:
+            raise ValueError("probe_quality must be greater than 2.")
+        if probe_count < 1:
+            raise ValueError("probe_count must be greater than 1.")
 
-        """
-        
         self.max_angle = max_angle
-        self.max_curvature = 0  # 1 / minimum radius of curvature
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality
@@ -181,10 +175,10 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
 
-        # Initialize this PTF's internal tracking parameters
         self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.probe_step_size = self.probe_length / (self.probe_quality - 1)
-        self.probe_normalizer = 1.0 / float(self.probe_quality * self.probe_count)
+        self.probe_normalizer = 1.0 / float(self.probe_quality 
+                                            * self.probe_count)
 
 
     cdef double set_initial_candidate(self, double[:] init_dir):
@@ -282,29 +276,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         randomly picked candidate.
 
         """
-        (self.k1_candidate, self.k2_candidate)\
+        self.k1_candidate, self.k2_candidate\
                 = random_point_within_circle(self.max_curvature)
         return self.calculate_data_support()
-
-
-    cdef void flip(self):
-        """"Copy PTF parameters then flips the curve.
-
-        This function can be used after the initial curve is picked in order
-        to save a copy of the curve for tracking towards the other side.
-
-        """
-
-        for i in range(3):
-            self.position[i] = self.init_position[i]
-            for j in range(3):
-                self.frame[i][j] = self.init_frame[i][j]
-
-        self.k1_candidate = self.init_k1
-        self.k2_candidate = self.init_k2
-        self.last_val = self.init_last_val
-
-        return
 
 
     cdef void get_random_frame(self,double[:] _dir):
@@ -373,8 +347,12 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             self.propagator[4] = self.k1_candidate * arclength
             self.propagator[5] = self.k2_candidate * arclength
             self.propagator[6] = -self.k2_candidate * arclength
-            self.propagator[7] = -self.k1_candidate * self.k2_candidate * tmp_arclength
-            self.propagator[8] = 1 - self.k2_candidate * self.k2_candidate * tmp_arclength
+            self.propagator[7] = (-self.k1_candidate 
+                                  * self.k2_candidate 
+                                  * tmp_arclength)
+            self.propagator[8] = (1 - self.k2_candidate 
+                                  * self.k2_candidate 
+                                  * tmp_arclength)
 
     cdef double calculate_data_support(self):
         """Calculates data support for the candidate probe"""
@@ -424,6 +402,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
             if self.probe_count == 1:
                 fod_amp = self.pmf_gen.get_pmf_value(position, tangent)
+                fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                 self.last_val_cand = fod_amp
                 self.likelihood += self.last_val_cand
             else:
@@ -443,6 +422,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                            + binormal[i] * self.probe_radius
                                            * sin(c * self.angular_separation))
                     fod_amp = self.pmf_gen.get_pmf_value(new_position, tangent)
+                    fod_amp = fod_amp if fod_amp > self.pmf_threshold else 0
                     self.last_val_cand += fod_amp
 
                 self.likelihood += self.last_val_cand
@@ -454,9 +434,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return self.likelihood
 
 
-    cdef StreamlineStatus initialize(self, 
-                                       double[:] seed_point, 
-                                       double[:] seed_direction):
+    cdef int initialize(self, 
+                        double[:] seed_point, 
+                        double[:] seed_direction):
         """Sample an initial curve by rejection sampling.
 
         Parameters
@@ -466,14 +446,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         seed_direction : double[3]
             Initial direction
 
+        Returns
+        -------
+        status : int
+            Returns 0 if the initialization was successful, or
+            1 otherwise.
         """
 
-        # Set initial position
         self.position[0] = seed_point[0]
         self.position[1] = seed_point[1]
         self.position[2] = seed_point[2]
 
-        # Initial max estimate
         cdef double data_support = 0
         cdef double max_posterior = 0
 
@@ -502,11 +485,17 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                 self.init_k1 = -self.k1
                 self.init_k2 = self.k2
 
-                return TRACKPOINT
-        return NODATASUPPORT
+                return 0
+        return 1
 
-    cdef StreamlineStatus propagate(self):
-        """Takes a step forward along the chosen candidate"""
+    cdef int propagate(self):
+        """Takes a step forward along the chosen candidate
+        Returns
+        -------
+        status : int
+            Returns 0 if the propagation was successful, or
+            1 otherwise.
+        """
 
         self.prepare_propagator(self.step_size)
 
@@ -517,8 +506,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         cdef double max_posterior = 0
 
         cdef int tries
-        # This is adaptively set in Trekker. But let's ignore it for now since
-        # implementation of that is challenging.
+        # This is adaptively set in Trekker. 
         for tries in range(20): 
             data_support = self.set_candidate()
             if data_support > max_posterior:
@@ -532,9 +520,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         for tries in range(1000):
             if random() * max_posterior <= self.set_candidate():
                 self.last_val = self.last_val_cand
-                return TRACKPOINT
+                return 0
 
-        return NODATASUPPORT
+        return 1
 
 
     # @cython.boundscheck(False)
@@ -563,22 +551,11 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
 
         copy_point(&seed[0], &streamline[0,0]) 
         i = 0
-        stream_status = self.initialize(seed, dir)
-        # If initialization is successful than the tracker propagates.
-        # Propagation first pushes the moving frame forward.
-        # Then the propagator sets the frame for the next propagation step 
-        # (here data support for the next frame is checked)
-        # i.e. self.positon is always supported by data (to be be added to the 
-        # streamline unless there is another reason such a termination ROI etc.)
-        # If propagator returns NODATASUPPORT, further propagation is impossible
-        # If propagator returns TRACKPOINT, self.position can be pushed forward
-        # Propagator works like this because it does not check termination 
-        # conditions. If self.position reaches a termination ROI, 
-        # then it should not be appended to the streamline.
-        if stream_status == TRACKPOINT:
+        stream_status = TRACKPOINT
+
+        if not self.initialize(seed, dir):
             for i in range(1, len_streamlines):
-                stream_status = self.propagate()
-                if stream_status == NODATASUPPORT:
+                if self.propagate():                                     
                     break
                 copy_point(<double *>&self.position[0], &streamline[i, 0])
                 stream_status = stopping_criterion.check_point_c(<double * > &self.position[0])
@@ -589,6 +566,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                     stream_status == OUTSIDEIMAGE):
                     break
             else:
-                # maximum length of streamline has been reached, return everything
+                # maximum length has been reached, return everything
                 i = streamline.shape[0]
         return i, stream_status

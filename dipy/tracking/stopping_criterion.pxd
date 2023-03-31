@@ -1,6 +1,5 @@
 
 cpdef enum StreamlineStatus:
-    NODATASUPPORT = -3
     PYERROR = -2
     OUTSIDEIMAGE = -1
     INVALIDPOINT = 0

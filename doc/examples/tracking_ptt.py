@@ -63,7 +63,7 @@ Start the local tractography using PTT direction getter.
 sphere = get_sphere(name='repulsion724')
 fod = csd_fit.odf(sphere)
 pmf = fod.clip(min=0)
-ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=20, probe_length=0.2,
+ptt_dg = PTTDirectionGetter.from_pmf(pmf, max_angle=15, probe_length=0.5,
                                      sphere=sphere)
 
 # Parallele Transport Tractography
