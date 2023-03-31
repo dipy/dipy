@@ -24,7 +24,15 @@ class HorizonFlow(Workflow):
     @classmethod
     def get_short_name(cls):
         return 'horizon'
-
+    
+    def manage_output_overwrite_helper(self):
+        '''
+        Overriding parent function to stump warnings of over writing existing
+        files as interactive mode of HorizonFlow doesn't attempt to write any 
+        output files
+        '''
+        return True
+    
     def run(self, input_files, cluster=False, cluster_thr=15.,
             random_colors=None, length_gt=0, length_lt=1000,
             clusters_gt=0, clusters_lt=10**8, native_coords=False,
@@ -140,6 +148,9 @@ class HorizonFlow(Workflow):
         emergency_ref = create_nifti_header(hdr['affine'], hdr['dims'],
                                             hdr['vox_size'])
 
+        if interactive:
+            self.manage_output_overwrite = self.manage_output_overwrite_helper
+            
         io_it = self.get_io_iterator()
 
         for input_output in io_it:
