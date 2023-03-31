@@ -176,8 +176,8 @@ class Block(Layer):
                                           kernel_size,
                                           strides=strides,
                                           padding=padding))
-            self.layer_list.append(LayerNormalization())
             self.layer_list.append(Dropout(drop_r))
+            self.layer_list.append(LayerNormalization())
             self.layer_list.append(ReLU())
         if layer_type=='down':
             self.layer_list2.append(Conv3D(1, 2, strides=2, padding='same'))
@@ -210,66 +210,66 @@ class ChannelSum(Layer):
     def call(self, inputs):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
-def init_model():
+def init_model(model_scale=16):
     inputs = tf.keras.Input(shape=(128, 128, 128, 1))
     raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
     raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
     raw_input_4 = tf.keras.Input(shape=(16, 16, 16, 1))
     raw_input_5 = tf.keras.Input(shape=(8, 8, 8, 1))
     # Encode
-    fwd1, x = Block(8, kernel_size=5,
+    fwd1, x = Block(model_scale, kernel_size=5,
                    strides=1, padding='same',
                    drop_r=0.2, n_layers=1)(inputs, inputs)
     
     x = Concatenate()([x, raw_input_2])
 
-    fwd2, x = Block(16, kernel_size=5,
+    fwd2, x = Block(model_scale*2, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=2)(x, x)
     
     x = Concatenate()([x, raw_input_3])
 
-    fwd3, x = Block(32, kernel_size=5,
+    fwd3, x = Block(model_scale*4, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=3)(x, x)
     
     x = Concatenate()([x, raw_input_4])
 
-    fwd4, x = Block(64, kernel_size=5,
+    fwd4, x = Block(model_scale*8, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=3)(x, x)
 
     x = Concatenate()([x, raw_input_5])
 
-    _, up = Block(128, kernel_size=5,
+    _, up = Block(model_scale*16, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, x)
     
     x = Concatenate()([fwd4, up])
 
-    _, up = Block(64, kernel_size=5,
+    _, up = Block(model_scale*8, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, up)
     
     x = Concatenate()([fwd3, up])
 
-    _, up = Block(32, kernel_size=5,
+    _, up = Block(model_scale*4, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=3,
                   layer_type='up')(x, up)
     
     x = Concatenate()([fwd2, up])
 
-    _, up = Block(16, kernel_size=5,
+    _, up = Block(model_scale*2, kernel_size=5,
                   strides=1, padding='same',
                   drop_r=0.5, n_layers=2,
                   layer_type='up')(x, up)
     
     x = Concatenate()([fwd1, up])
 
-    _, pred = Block(8, kernel_size=5,
+    _, pred = Block(model_scale, kernel_size=5,
                     strides=1, padding='same',
                     drop_r=0.5, n_layers=1,
                     layer_type='none')(x, up)
