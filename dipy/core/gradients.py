@@ -212,10 +212,10 @@ class GradientTable(object):
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
     
-    @deprecated_params('threshold', None, since='1.17', until='1.19')
-    def getitem(self, bmin=0, bmax=np.inf, threshold=0):
-        if threshold and not bmin:
-            bmin = threshold
+    def getitem(self, bmin=0, bmax=np.inf):
+        if bmin != self.b0_threshold:
+            self.b0_threshold = bmin
+            warn("Updating b0_threshold to {} for slicing.".format(bmin), UserWarning, stacklevel=2)
         # priority to bmin in all other cases
         mask = (self.bvals >= bmin) & (self.bvals <= bmax)
         # Apply the mask to select the desired b-values and b-vectors
