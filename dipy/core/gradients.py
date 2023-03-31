@@ -212,15 +212,24 @@ class GradientTable(object):
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
     
-    def getitem(self, bmin=0, bmax=np.inf):
-        if bmin != self.b0_threshold:
-            self.b0_threshold = bmin
-            warn("Updating b0_threshold to {} for slicing.".format(bmin), UserWarning, stacklevel=2)
-        # priority to bmin in all other cases
-        mask = (self.bvals >= bmin) & (self.bvals <= bmax)
+    def __get_item__(self, idx):
+        if isinstance(idx, int):
+            idx = [idx]#convert in a list if integer.
+            
+        elif isinstance(idx, slice):
+        # Get the lower bound of the slice
+            slice_start = idx.start if idx.start is not None else 0
+        # Check if it is different from b0_threshold
+            if slice_start != self.b0_threshold:
+                # Update b0_threshold and warn the user
+                self.b0_threshold = slice_start
+                warn("Updating b0_threshold to {} for slicing.".format(slice_start), UserWarning, stacklevel=2)
+                idx = range(*idx.indices(len(self.bvals)))
+
+        mask = self.bvals[idx] > self.b0_threshold
         # Apply the mask to select the desired b-values and b-vectors
-        bvals_selected = self.bvals[mask]
-        bvecs_selected = self.bvecs[mask, :]#since bvecs has shape:(N,3)
+        bvals_selected = self.bvals[idx][mask]
+        bvecs_selected = self.bvecs[idx, :][mask, :]
     
         # Create a new MyGradientTable object with the selected b-values and b-vectors
         return gradient_table_from_bvals_bvecs(bvals_selected, 

@@ -460,7 +460,7 @@ def test_generate_bvecs():
     npt.assert_almost_equal(cos_theta, 0., decimal=6)
 
 
-def test_getitem_threshold():
+def test_getitem_idx():
     # Create a GradientTable object with some test b-values and b-vectors
     bvals = np.array([0, 100, 200, 300, 400])
     #value should be in increasing order as b-value affects the diffusion weighting of the image, and the amount of diffusion weighting increases with increasing b-value.
@@ -469,20 +469,15 @@ def test_getitem_threshold():
     gradients = bvals[:, None] * bvecs
     gtab = GradientTable(gradients) 
 
-    # Test with a bmin of 200 and no threshold
-    gtab_slice1 = gtab.getitem(bmin = 200)
-    assert np.array_equal(gtab_slice1.bvals, np.array([200., 300., 400.]))
-    assert np.array_equal(gtab_slice1.bvecs, np.array([[0., 1., 0.],[0., 0., 1.],[1.,0.,0.]]))
+    # Test with a single index
+    gtab_slice1 = gtab.__get_item__(1)
+    assert np.array_equal(gtab_slice1.bvals, np.array([100.]))
+    assert np.array_equal(gtab_slice1.bvecs, np.array([[1., 0., 0.]]))
 
-    # Test with a bmax of 200 and a threshold of 100
-    gtab_slice2 = gtab.getitem(bmax=200, threshold=100)
-    assert np.array_equal(gtab_slice2.bvals, np.array([100, 200]))
-    assert np.array_equal(gtab_slice2.bvecs, np.array([[1.,0.,0.], [0., 1., 0.]]))
-
-    # Test with a bmin of 100, bmax of 300, and a threshold of 200
-    gtab_slice3 = gtab.getitem(bmin=100, bmax=300, threshold=200)
-    assert np.array_equal(gtab_slice3.bvals, np.array([100., 200., 300.]))
-    assert np.array_equal(gtab_slice3.bvecs, np.array([[1.,0.,0.], [0., 1., 0.],[0.,0.,1.]]))
+    # Test with a range of indices
+    gtab_slice2 = gtab.__get_item__(slice(2, 5))
+    assert np.array_equal(gtab_slice2.bvals, np.array([200., 300., 400.]))
+    assert np.array_equal(gtab_slice2.bvecs, np.array([[0., 1., 0.], [0., 0., 1.], [1., 0., 0.]]))
 
 
 def test_round_bvals():
