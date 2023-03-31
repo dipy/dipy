@@ -19,13 +19,44 @@ if have_pycpd:
 if have_matplotlib:
     import matplotlib.pyplot as plt
 
-def mdf(s1, s2):
 
+def mdf(s1, s2):
+    """
+    Calculate MDF distance between two streamlines.
+
+    Parameters
+    ----------
+    s1 : Streamline
+        Streamline 1
+    s2 : Streamline
+        Streamline 2
+
+    Returns
+    -------
+    float
+        MDF distance between s1 and s2
+
+    """
     return dist(MinimumAverageDirectFlipMetric(), s1, s2)
 
 
 def mdf_dist(cb1, cb2):
+    """
+    Construct MDF distance matrix among two bundles.
 
+    Parameters
+    ----------
+    cb1 : Streamline
+        Bundle 1
+    cb2 : Streamline
+        Bundle 2
+
+    Returns
+    -------
+    dist : float
+        distance matrix with mdf distance between streamlines of cb1 and cb2
+
+    """
     n = len(cb1)
     m = len(cb2)
     dist = np.zeros((m, n))
@@ -37,6 +68,7 @@ def mdf_dist(cb1, cb2):
             dist[i][j] = mdf(s1, s2)
 
     return dist
+
 
 def find_missing(lst, cb):
     """Function to find unmatched streamline indicies in moving bundle.
@@ -142,7 +174,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
             all_pairs.extend(matched_pairs2[:, 0])
 
             num2 = num + len(matched_pairs2)
-            if num2==len(moving):
+            if num2 == len(moving):
                 all_matched = True
                 num = num2
         else:
@@ -175,8 +207,11 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
     correspondences, and warp field '''
     return moving_aligned, deformed_bundle, dist, matched_pairs, warp
 
+
 def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
-    """Vector field computation as the difference between each streamline point
+    """Calculate vector fields.
+
+    Vector field computation as the difference between each streamline point
     in the deformed and aligned bundles
     """
     points_aligned, _ = unlist_streamlines(moving_aligned)
@@ -196,8 +231,10 @@ def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
 
 
 def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
-    """Bundle shape difference analysis using magnitude from BundleWarp
-       displacements and BUAN
+    """Calculate bundle shape difference profile.
+
+    Bundle shape difference analysis using magnitude from BundleWarp
+    displacements and BUAN
     """
     n = no_disks
     offsets, directions, colors = bundlewarp_vector_filed(moving_aligned,
@@ -219,8 +256,8 @@ def bundlewarp_shape_analysis(moving_aligned, deformed_bundle, no_disks=10):
 
     for i in range(n):
 
-        shape_profile[i] = np.mean(offsets[indx==i])
-        stdv = np.std(offsets[indx==i])
+        shape_profile[i] = np.mean(offsets[indx == i])
+        stdv = np.std(offsets[indx == i])
         std_1[i] = shape_profile[i]+stdv
         std_2[i] = shape_profile[i]-stdv
 
