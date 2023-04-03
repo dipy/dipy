@@ -7,7 +7,7 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.loader import nifti_to_slice_actors
+from dipy.viz.horizon.loader import add_slice_actors
 from dipy.viz.horizon.tab import PeaksTab, ROIsTab, SlicesTab, TabManager
 
 fury, has_fury, setup_module = optional_package('fury')
@@ -506,16 +506,16 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
-                            loader_data = nifti_to_slice_actors(
-                                data, affine=affine,
+                            loader_data = add_slice_actors(
+                                data, scene, affine=affine,
                                 world_coords=self.world_coords)
                             slice_actors = loader_data[0]
-                            proc_data = loader_data[1]
-                            range = loader_data[2]
-                            for slice in slice_actors:
-                                scene.add(slice)
+                            data_shape = loader_data[1]
+                            data_limits = loader_data[2]
+                            intensities_range = loader_data[3]
                             self.__tabs.append(SlicesTab(
-                                slice_actors, proc_data, range))
+                                slice_actors, data_shape, data_limits,
+                                intensities_range))
                             """
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
@@ -527,14 +527,14 @@ class Horizon(object):
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
-                loader_data = nifti_to_slice_actors(
-                    data, affine=affine, world_coords=self.world_coords)
+                loader_data = add_slice_actors(
+                    data, scene, affine=affine, world_coords=self.world_coords)
                 slice_actors = loader_data[0]
-                proc_data = loader_data[1]
-                range = loader_data[2]
-                for slice in slice_actors:
-                    scene.add(slice)
-                self.__tabs.append(SlicesTab(slice_actors, proc_data, range))
+                data_shape = loader_data[1]
+                data_limits = loader_data[2]
+                intensities_range = loader_data[3]
+                self.__tabs.append(SlicesTab(
+                    slice_actors, data_shape, data_limits, intensities_range))
                 """
                 self.panel = slicer_panel(
                     scene, self.show_m.iren, data, affine, self.world_coords,

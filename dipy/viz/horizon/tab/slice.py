@@ -13,7 +13,7 @@ if has_fury:
 
 class SlicesTab(HorizonTab):
     def __init__(
-        self, slice_actors, data, intensities_range):
+        self, slice_actors, data_shape, data_limits, intensities_range):
         
         self.__actors = slice_actors
         self.__name = 'Slices'
@@ -21,10 +21,9 @@ class SlicesTab(HorizonTab):
         self.__tab_id = 0
         self.__tab_ui = None
         
-        self.__data = data
-        self.__data_shape = self.__data.shape
-        self.__min_intensity = self.__data.min()
-        self.__max_intensity = self.__data.max()
+        self.__data_shape = data_shape
+        self.__min_intensity = intensities_range[0]
+        self.__max_intensity = intensities_range[1]
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -99,8 +98,8 @@ class SlicesTab(HorizonTab):
         self.__slider_label_intensities = build_label(text='Intensities')
         
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=intensities_range, min_value=self.__min_intensity,
-            max_value=self.__max_intensity, length=length, line_width=lw,
+            initial_values=intensities_range, min_value=data_limits[0],
+            max_value=data_limits[1], length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         color_double_slider(self.__slider_intensities)
@@ -224,7 +223,8 @@ class SlicesTab(HorizonTab):
     
     def __change_volume(self, istyle, obj, slider):
         value = int(np.rint(slider.value))
-        new_img = self.__data[..., value]
+        # TODO: Change actors
+        # TODO: Re-apply colormap
         self.__update_colormap()
         istyle.force_render()
     
