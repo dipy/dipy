@@ -14,6 +14,7 @@ class ROIsTab(HorizonTab):
         
         self.__tab_id = 0
         self.__tab_ui = None
+        self.__global_memory = None
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -38,9 +39,10 @@ class ROIsTab(HorizonTab):
         for contour in self.__actors:
             contour.GetProperty().SetOpacity(opacity)
     
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, gmem):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        self.__global_memory = gmem
         
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_label_opacity, (.02, .85))

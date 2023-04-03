@@ -209,6 +209,7 @@ class Horizon(object):
         self.add_cluster_actors(scene, self.tractograms,
                                 self.cluster_thr,
                                 enable_callbacks=False)
+        self.mem.scene = scene
         return scene
 
     def remove_cluster_actors(self, scene):
@@ -564,7 +565,7 @@ class Horizon(object):
                     self.help_panel.re_align(size_change)
         
         if len(self.__tabs) > 0:
-            tab_mgr = TabManager(self.__tabs, self.win_size)
+            tab_mgr = TabManager(self.__tabs, self.win_size, self.mem)
             scene.add(tab_mgr.tab_ui)
 
         self.show_m.initialize()

@@ -17,6 +17,7 @@ class PeaksTab(HorizonTab):
         
         self.__tab_id = 0
         self.__tab_ui = None
+        self.__global_memory = None
         
         self.__toggler_label_view_mode = build_label(text='View Mode')
         
@@ -103,7 +104,7 @@ class PeaksTab(HorizonTab):
         self.__slider_range_y.on_change = self.__change_range_y
         self.__slider_range_z.on_change = self.__change_range_z
     
-    def __add_cross_section_sliders(self, x_pos=.1):
+    def __add_cross_section_sliders(self, x_pos=.12):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_slice_x, (x_pos, .62))
         self.__tab_ui.add_element(
@@ -111,7 +112,7 @@ class PeaksTab(HorizonTab):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_slice_z, (x_pos, .15))
     
-    def __add_range_sliders(self, x_pos=.1):
+    def __add_range_sliders(self, x_pos=.12):
         self.__tab_ui.add_element(
             self.__tab_id, self.__slider_range_x, (x_pos, .62))
         self.__tab_ui.add_element(
@@ -192,9 +193,10 @@ class PeaksTab(HorizonTab):
             self.__hide_range_sliders()
             self.__show_cross_section_sliders()
     
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, gmem):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        self.__global_memory = gmem
         
         x_pos = .02
         

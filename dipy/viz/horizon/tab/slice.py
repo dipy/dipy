@@ -20,6 +20,7 @@ class SlicesTab(HorizonTab):
         
         self.__tab_id = 0
         self.__tab_ui = None
+        self.__global_memory = None
         
         self.__data_shape = data_shape
         self.__min_intensity = intensities_range[0]
@@ -251,9 +252,10 @@ class SlicesTab(HorizonTab):
             slice.output.SetLookupTable(lut)
             slice.output.Update()
     
-    def build(self, tab_id, tab_ui):
+    def build(self, tab_id, tab_ui, gmem):
         self.__tab_id = tab_id
         self.__tab_ui = tab_ui
+        self.__global_memory = gmem
         
         x_pos = .02
         
