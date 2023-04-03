@@ -119,18 +119,6 @@ class SlicesTab(HorizonTab):
             self.__selected_colormap_idx]
         self.__colormap = self.__supported_colormaps[selected_colormap]
         
-        self.__combobox_colormap = ui.ComboBox2D(
-            items=list(self.__supported_colormaps.keys()), position=(0, -200),
-            size=(450, 200), placeholder='Select colormap...', draggable=False,
-            selection_text_color=(.0, .0, .0), selection_bg_color=(1., 1., 1.),
-            menu_text_color=(.2, .2, .2), selected_color=(.9, .6, .6),
-            unselected_color=(.6, .6, .6),
-            scroll_bar_active_color=(.6, .2, .2),
-            scroll_bar_inactive_color=(1., .5, .0), menu_opacity=1.,
-            reverse_scrolling=False, font_size=20, line_spacing=1.4)
-        
-        self.__combobox_colormap.on_change = self.__change_colormap
-        
         self.__label_selected_colormap = build_label(text=selected_colormap)
         
         self.__button_previous_colormap = ui.Button2D(
@@ -160,11 +148,6 @@ class SlicesTab(HorizonTab):
             
             self.__slider_volume.on_left_mouse_button_released = (
                 self.__change_volume)
-    
-    def __change_colormap(self, combobox):
-        colormap = combobox.selected_text
-        self.__colormap = self.__supported_colormaps[colormap]
-        self.__update_colormap()
     
     def __change_colormap_previous(self, i_ren, _obj, _button):
         selected_colormap_idx = self.__selected_colormap_idx - 1
@@ -242,6 +225,8 @@ class SlicesTab(HorizonTab):
     def __change_volume(self, istyle, obj, slider):
         value = int(np.rint(slider.value))
         new_img = self.__data[..., value]
+        self.__update_colormap()
+        istyle.force_render()
     
     def __update_colormap(self):
         if self.__colormap == 'dist':
@@ -318,10 +303,6 @@ class SlicesTab(HorizonTab):
             self.__tab_id, self.__label_selected_colormap, (.63, .56))
         self.__tab_ui.add_element(
             self.__tab_id, self.__button_next_colormap, (.73, .54))
-        """
-        self.__tab_ui.add_element(
-            self.__tab_id, self.__combobox_colormap, (x_pos, .62))
-        """
         
         data_ndim = len(self.__data_shape)
         
