@@ -324,24 +324,18 @@ fetch_evac_weights = _make_fetcher(
     "fetch_evac_weights",
     pjoin(dipy_home, 'evac'),
     'https://ndownloader.figshare.com/files/',
-    ['36379914', '36379917', '36379920', '36379923', '36379926'],
-    ['eva_default_weights.h5'],
-    ['a9362c75bc28616167a11a42fe5d004e',
-     '9dc9353d6ff741d8e22b8569f157c56e',
-     'e548f341e4f12d63dfbed306233fddce',
-     '8cb7a3492d08e4c9b8938277d6fd9b75',
-     '5e796f892605b3bdb9cb9678f1c6ac11'],
+    ['40023211'],
+    ['evac_default_weights.h5'],
+    ['8c09a7760a31cfa51ac4a9fae3b1487a'],
     doc="Download EVAC+ model weights for Park et. al 2022")
 
 fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
     pjoin(dipy_home, 'evac'),
     'https://ndownloader.figshare.com/files/',
-    ['36379911', '36671850'],
-    ['test_input_evac.npz',
-     'test_output_evac.npz'],
-    ['987203aa73de2dac8770f39ed506dc0c',
-     '515544fbcafd9769785502821b47b661'],
+    ['40023298'],
+    ['evac_test_data.npz'],
+    ['37ee5fb4e268e73c0e6d4fba8cc10e68'],
     doc="Download EVAC+ test data for Park et. al 2022")
 
 fetch_stanford_t1 = _make_fetcher(
@@ -848,6 +842,14 @@ def get_fnames(name='small_64D'):
         input_array = pjoin(folder, 'test_input_synb0.npz')
         target_array = pjoin(folder, 'test_output_synb0.npz')
         return input_array, target_array
+    if name == 'evac_default_weights':
+        files, folder = fetch_evac_weights()
+        weight = pjoin(folder, 'evac_default_weights.h5')
+        return weight
+    if name == 'evac_test_data':
+        files, folder = fetch_evac_test()
+        test_data = pjoin(folder, 'evac_test_data.npz')
+        return test_data
     if name == 'DiB_70_lte_pte_ste':
         _, folder = fetch_DiB_70_lte_pte_ste()
         fdata = pjoin(folder, 'DiB_70_lte_pte_ste.nii.gz')

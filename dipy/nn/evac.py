@@ -13,6 +13,7 @@ from dipy.testing.decorators import doctest_skip_parser
 from dipy.utils.optpkg import optional_package
 from dipy.io.image import load_nifti
 from dipy.align.reslice import reslice
+from dipy.nn.utils import normalize
 
 tf, have_tf, _ = optional_package('tensorflow')
 if have_tf:
@@ -28,6 +29,11 @@ else:
 
     class Layer:
         pass
+    raise ImportError('This model requires Tensorflow.\
+                      Please install these packages using \
+                      pip. If using mac, please refer to this \
+                      link for installation. \
+                      https://github.com/apple/tensorflow_macos')
 
 logging.basicConfig()
 logger = logging.getLogger('evac')
@@ -128,42 +134,6 @@ def prepare_img(image):
     
     return input_data
 
-def normalize(image, min_v=None, max_v=None, new_min=-1, new_max=1):
-    r"""
-    normalization function
-
-    Parameters
-    ----------
-    image : np.ndarray
-    min_v : int or float (optional)
-        minimum value range for normalization
-        intensities below min_v will be clipped
-        if None it is set to min value of image
-        Default : None
-    max_v : int or float (optional)
-        maximum value range for normalization
-        intensities above max_v will be clipped
-        if None it is set to max value of image
-        Default : None
-    new_min : int or float (optional)
-        new minimum value after normalization
-        Default : 0
-    new_max : int or float (optional)
-        new maximum value after normalization
-        Default : 1
-
-    Returns
-    -------
-    np.ndarray
-        Normalized image from range new_min to new_max
-    """
-    if min_v is None:
-        min_v = np.min(image)
-    if max_v is None:
-        max_v = np.max(image)
-    return np.interp(image, (min_v, max_v), (new_min, new_max))
-
-
 class Block(Layer):
     def __init__(self, out_channels, kernel_size, strides,
                  padding, drop_r, n_layers, layer_type='down'):
@@ -210,7 +180,7 @@ class ChannelSum(Layer):
     def call(self, inputs):
         return tf.reduce_sum(inputs, axis=-1, keepdims=True)
 
-def init_model(model_scale=16):
+def init_model(model_scale=8):
     inputs = tf.keras.Input(shape=(128, 128, 128, 1))
     raw_input_2 = tf.keras.Input(shape=(64, 64, 64, 1))
     raw_input_3 = tf.keras.Input(shape=(32, 32, 32, 1))
@@ -366,7 +336,9 @@ class EVAC:
 
         return self.model.predict(x_test)
 
-    def predict(self, T1, affine=None, voxsize=(1, 1, 1), batch_size=None):
+    def predict(self, T1, affine=None,
+                voxsize=(1, 1, 1), batch_size=None,
+                return_affine=False):
         r"""
         Wrapper function to faciliate prediction of larger dataset.
         The function will pad the data to meet the required shape of image.
@@ -405,6 +377,10 @@ class EVAC:
         -------
         pred_output : np.ndarray (...) or (batch, ...)
             Predicted brain mask
+        
+        affine : np.ndarray (...) or (batch, ...)
+            affine matrix of mask
+            only if return_affine is True
 
         """
 
@@ -431,13 +407,12 @@ class EVAC:
 
         input_data = np.zeros((128, 128, 128, len(T1)))
         rev_affine = np.zeros((len(T1), 4, 4))
-        ori_shape = np.zeros((len(T1), 3), dtype=np.int32)
 
         # Normalize the data.
-
+        n_T1 = np.zeros(T1.shape)
         for i in range(len(T1)):
-            T1[i] = normalize(T1[i], new_min=0, new_max=1)
-            t_img, t_affine = transform_img(T1[i],
+            n_T1[i] = normalize(T1[i], new_min=0, new_max=1)
+            t_img, t_affine = transform_img(n_T1[i],
                                             affine[i])
             input_data[..., i] = t_img
             rev_affine[i] = t_affine
@@ -468,4 +443,9 @@ class EVAC:
             output_mask = output_mask[0]
             affine = affine[0]
 
-        return output_mask, affine
+        output_mask = np.array(output_mask)
+        affine = np.array(affine)
+        if return_affine:
+            return output_mask, affine
+        else:
+            return output_mask

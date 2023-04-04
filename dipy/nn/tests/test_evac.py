@@ -13,7 +13,6 @@ if have_tf:
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 
-
 @pytest.mark.skipif(not have_tf, reason='Requires TensorFlow')
 def test_default_weights():
     file_path = get_fnames('evac_test_data')
