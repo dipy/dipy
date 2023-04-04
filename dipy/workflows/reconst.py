@@ -31,6 +31,12 @@ from dipy.reconst import mapmri
 from dipy.utils.deprecator import deprecated_params
 
 
+class ReconstFlow(Workflow):
+    def get_sub_runs(self):
+        """Return No sub runs since this is a simple workflow."""
+        return [ReconstCSDFlow(), ReconstCSAFlow()]
+
+
 class ReconstMAPMRIFlow(Workflow):
     @classmethod
     def get_short_name(cls):

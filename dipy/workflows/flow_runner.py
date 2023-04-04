@@ -29,7 +29,42 @@ def run_flow(flow):
     force and output strategies. The resulting parameters are then fed to
     the workflow's run method.
     """
+    subflows = flow.get_sub_runs()
+    if subflows:
+        @click.group(invoke_without_command=True)
+        @click.option("--force", is_flag=True, help='Force overwriting output files.')
+        @click.option("--out-strat", help='Strategy to manage output creation.', default='absolute')
+        @click.option("--mix-names", is_flag=True, help='Prepend mixed input names to output names.')
+        @click.option(
+            "--log-level", help='Log messages display level.',
+            type=click.Choice(get_log_levels().keys(), case_sensitive=False))
+        @click.option("--log-file", help='Log file to be saved.', type=click.Path())
+        @click.version_option(f'DIPY {dipy_version}')
+        @click.pass_context
+        def command_group(context, **kwargs):
+            context.ensure_object(dict)
+            context.obj.update(kwargs)
+            pass
 
+        for subflow in subflows:
+            @command_group.command(cls=CustomCommand, name=subflow.get_short_name())
+            @click.pass_context
+            def subflow_command(context, **kwargs):
+                context.ensure_object(dict)
+                kwargs.update(context.obj)
+                for k, v in kwargs.items():
+                    print(k, v)
+
+            parser = IntrospectiveArgumentParser(subflow_command)
+            parser.add_workflow(subflow)
+
+        command_group()
+
+    else:
+        _run_single_command(flow)
+
+
+def _run_single_command(flow):
     @click.command(cls=CustomCommand)
     @click.option("--force", is_flag=True, help='Force overwriting output files.')
     @click.option("--out-strat", help='Strategy to manage output creation.', default='absolute')
