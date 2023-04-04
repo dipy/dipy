@@ -13,13 +13,13 @@ registration of white matter tracts [Chandio23]_.
 """
 
 from dipy.viz import window, actor
-from dipy.io.streamline import load_trk, save_trk
-from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed,
-                                   bundlewarp_shape_analysis)
+from dipy.io.streamline import load_trk
+from dipy.align.streamwarp import (bundlewarp, bundlewarp_vector_filed)
 from dipy.tracking.streamline import (set_number_of_points, unlist_streamlines,
                                       Streamlines)
+from dipy.io.stateful_tractogram import Space, StatefulTractogram
+from dipy.io.streamline import save_tractogram
 import matplotlib.pyplot as plt
-import numpy as np
 from time import time
 
 """
@@ -238,6 +238,15 @@ fname = "output/partially_deformation_magnitude_over_nonlinearly_moved.png"
 viz_displacement_mag(deformed_bundle, offsets, fname, interactive=False)
 
 """
+Saving partially warped bundle.
+"""
+
+new_tractogram = StatefulTractogram(deformed_bundle, "m_UF_L.trk", Space.RASMM)
+save_tractogram(new_tractogram, "partially_deformed_bundle.trk",
+                bbox_valid_check=False)
+
+
+"""
 Let's fully deform the moving bundle by setting alpha <= 0.01
 
 We will use MDF distances computed and returned by previous run of BundleWarp
@@ -294,3 +303,12 @@ Let's visualize the magnitude of deformations mapped over moved
 
 fname = "output/fully_deformation_magnitude_over_nonlinearly_moved.png"
 viz_displacement_mag(deformed_bundle2, offsets, fname, interactive=False)
+
+"""
+Saving fully warped bundle.
+"""
+
+new_tractogram = StatefulTractogram(deformed_bundle2, "m_UF_L.trk",
+                                    Space.RASMM)
+save_tractogram(new_tractogram, "fully_deformed_bundle.trk",
+                bbox_valid_check=False)
