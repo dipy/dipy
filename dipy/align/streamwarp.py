@@ -71,14 +71,14 @@ def mdf_dist(cb1, cb2):
 
 
 def find_missing(lst, cb):
-    """Function to find unmatched streamline indicies in moving bundle.
+    """Function to find unmatched streamline indices in moving bundle.
 
     Parameters
     ----------
     lst : int
         List containing all the streamlines indices in moving bundle.
     cb : int
-        List containing streamline indicies of the moving bundle that were not
+        List containing streamline indices of the moving bundle that were not
         matched to any streamline in static bundle.
 
     Returns
@@ -103,9 +103,9 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
         Precomputed distance matrix (default None)
 
     alpha : float, optional
-        Represents the rade-off between regularizing the deformation and having
-        points match very closely. Lower value of alpha means high deformations
-        (default 0.3)
+        Represents the trade-off between regularizing the deformation and
+        having points match very closely. Lower value of alpha means high
+        deformations (default 0.3)
 
     beta : int, optional
         Represents the strength of the interaction between points
@@ -205,7 +205,7 @@ def bundlewarp(static, moving, dist=None, alpha=0.3, beta=20, max_iter=15,
 
     '''Returns affinely moved bundle, deformed bundle, streamline
     correspondences, and warp field '''
-    return moving_aligned, deformed_bundle, dist, matched_pairs, warp
+    return deformed_bundle, moving_aligned, dist, matched_pairs, warp
 
 
 def bundlewarp_vector_filed(moving_aligned, deformed_bundle):
