@@ -26,8 +26,8 @@ class ROIsTab(HorizonTab):
         tt = '{ratio:.0%}'
         
         self.__slider_opacity = ui.LineSlider2D(
-            initial_value=opacity, min_value=.0, max_value=1., length=length,
-            line_width=lw, outer_radius=radius, font_size=fs, text_template=tt)
+            initial_value=opacity, max_value=1., length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_single_slider(self.__slider_opacity)
         
