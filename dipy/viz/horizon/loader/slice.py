@@ -35,8 +35,8 @@ class SlicesLoader:
         if self.__data_ndim == 4:
             for i in range(self.__data.shape[-1]):
                 vol_data = self.__data[..., i]
-                self.__intensities_range = np.percentile(vol_data, percentiles)
-                if np.sum(np.diff(self.__intensities_range)) != 0:
+                self.__int_range = np.percentile(vol_data, percentiles)
+                if np.sum(np.diff(self.__int_range)) != 0:
                     break
                 else:
                     if i < data.shape[-1] - 1:
@@ -45,12 +45,15 @@ class SlicesLoader:
                             'Please, check the value ranges of your data. '
                             'Moving to the next volume.')
                     else:
-                        evaluate_intensities_range(self.__intensities_range)
+                        evaluate_intensities_range(self.__int_range)
         else:
-            self.__intensities_range = np.percentile(vol_data, percentiles)
-            evaluate_intensities_range(self.__intensities_range)
+            self.__int_range = np.percentile(vol_data, percentiles)
+            evaluate_intensities_range(self.__int_range)
         
-        self.__create_and_resize_actors(vol_data, self.__intensities_range)
+        self.__vol_max = np.max(vol_data)
+        self.__vol_min = np.min(vol_data)
+        
+        self.__create_and_resize_actors(vol_data, self.__int_range)
         
         visible_slices = np.rint(
             np.asarray(self.__data_shape[:3]) / 2).astype(int)
@@ -90,24 +93,24 @@ class SlicesLoader:
         print(f'Resized to RAS shape: {self.__data_shape}')
     
     @property
-    def data_max(self):
-        return self.__data.max()
-    
-    @property
-    def data_min(self):
-        return self.__data.min()
-    
-    @property
     def data_shape(self):
         return self.__data_shape
     
     @property
     def intensities_range(self):
-        return self.__intensities_range
+        return self.__int_range
     
     @property
     def slice_actors(self):
         return self.__slice_actors
+    
+    @property
+    def volume_max(self):
+        return self.__vol_max
+    
+    @property
+    def volume_min(self):
+        return self.__vol_min
 
 
 def evaluate_intensities_range(intensities_range):

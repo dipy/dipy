@@ -15,16 +15,18 @@ if has_fury:
 class SlicesTab(HorizonTab):
     def __init__(self, slices_loader):
         
-        self.__actors = slices_loader.slice_actors
+        self.__loader = slices_loader
+        
+        self.__actors = self.__loader.slice_actors
         self.__name = 'Slices'
         
         self.__tab_id = 0
         self.__tab_ui = None
         self.__global_memory = None
         
-        self.__data_shape = slices_loader.data_shape
-        self.__min_intensity = slices_loader.intensities_range[0]
-        self.__max_intensity = slices_loader.intensities_range[1]
+        self.__data_shape = self.__loader.data_shape
+        self.__min_intensity = self.__loader.intensities_range[0]
+        self.__max_intensity = self.__loader.intensities_range[1]
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -99,10 +101,10 @@ class SlicesTab(HorizonTab):
         self.__slider_label_intensities = build_label(text='Intensities')
         
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=slices_loader.intensities_range,
-            min_value=slices_loader.data_min, max_value=slices_loader.data_max,
-            length=length, line_width=lw, outer_radius=radius, font_size=fs,
-            text_template=tt)
+            initial_values=self.__loader.intensities_range,
+            min_value=self.__loader.volume_min,
+            max_value=self.__loader.volume_max, length=length, line_width=lw,
+            outer_radius=radius, font_size=fs, text_template=tt)
         
         color_double_slider(self.__slider_intensities)
         
