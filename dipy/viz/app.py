@@ -209,7 +209,6 @@ class Horizon(object):
         self.add_cluster_actors(scene, self.tractograms,
                                 self.cluster_thr,
                                 enable_callbacks=False)
-        self.mem.scene = scene
         return scene
 
     def remove_cluster_actors(self, scene):
@@ -498,9 +497,7 @@ class Horizon(object):
                         if 'rois' in self.random_colors:
                             roi_color = next(self.color_gen)
                         roi_actor = actor.contour_from_roi(
-                            img_data, affine=img_affine,
-                            color=roi_color, opacity=self.mem.roi_opacity)
-                        self.mem.slicer_roi_actor.append(roi_actor)
+                            img_data, affine=img_affine, color=roi_color)
                         scene.add(roi_actor)
                         roi_actors.append(roi_actor)
                     else:

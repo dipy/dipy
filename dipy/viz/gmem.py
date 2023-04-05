@@ -1,10 +1,7 @@
 # Shared objects across Horizon's systems
 
 class GlobalHorizon(object):
-    def __init__(self):
-        # App level sharing
-        self.__scene = None
-        
+    def __init__(self):        
         # window level sharing
         self.window_timer_cnt = 0
 
@@ -42,15 +39,3 @@ class GlobalHorizon(object):
         self.streamline_actors = []
         self.centroid_actors = []
         self.cluster_actors = []
-
-        # roi level sharing
-        self.roi_opacity = 1
-        self.slicer_roi_actor = []
-    
-    @property
-    def scene(self):
-        return self.__scene
-    
-    @scene.setter
-    def scene(self, scene):
-        self.__scene = scene
