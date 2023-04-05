@@ -28,11 +28,11 @@ else:
 
     class Layer:
         pass
-    raise ImportError('This model requires Tensorflow and Tensorflow\
-                      -addons. Please install these packages using \
-                      pip. If using mac, please refer to this \
-                      link for installation. \
-                      https://github.com/apple/tensorflow_macos')
+    logging.warning('This model requires Tensorflow and Tensorflow\
+                    -addons. Please install these packages using \
+                    pip. If using mac, please refer to this \
+                    link for installation. \
+                    https://github.com/apple/tensorflow_macos')
 
 logging.basicConfig()
 logger = logging.getLogger('synb0')

@@ -22,11 +22,11 @@ if have_tf:
     if Version(tf.__version__) < Version('2.0.0'):
         raise ImportError('Please upgrade to TensorFlow 2+')
 else:
-    raise ImportError('This model requires Tensorflow.\
-                      Please install these packages using \
-                      pip. If using mac, please refer to this \
-                      link for installation. \
-                      https://github.com/apple/tensorflow_macos')
+    logging.warning('This model requires Tensorflow.\
+                    Please install these packages using \
+                    pip. If using mac, please refer to this \
+                    link for installation. \
+                    https://github.com/apple/tensorflow_macos')
 
 
 logging.basicConfig()
