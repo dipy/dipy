@@ -7,7 +7,7 @@ from dipy.segment.clustering import qbx_and_merge
 from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
-from dipy.viz.horizon.loader import add_slice_actors
+from dipy.viz.horizon.loader import SlicesLoader, add_slice_actors
 from dipy.viz.horizon.tab import PeaksTab, ROIsTab, SlicesTab, TabManager
 
 fury, has_fury, setup_module = optional_package('fury')
@@ -507,6 +507,11 @@ class Horizon(object):
                         if first_img:
                             data, affine = img
                             self.vox2ras = affine
+                            slices_loader = SlicesLoader(
+                                scene, data, affine=affine,
+                                world_coords=self.world_coords)
+                            self.__tabs.append(SlicesTab(slices_loader))
+                            """
                             loader_data = add_slice_actors(
                                 data, scene, affine=affine,
                                 world_coords=self.world_coords)
@@ -518,7 +523,6 @@ class Horizon(object):
                                 slice_actors, data, affine, self.world_coords,
                                 resliced_shape, data_limits,
                                 intensities_range))
-                            """
                             self.panel = slicer_panel(
                                 scene, self.show_m.iren, data, affine,
                                 self.world_coords, mem=self.mem)
@@ -529,6 +533,10 @@ class Horizon(object):
             else:
                 data, affine = self.images[0]
                 self.vox2ras = affine
+                slices_loader = SlicesLoader(
+                    scene, data, affine=affine, world_coords=self.world_coords)
+                self.__tabs.append(SlicesTab(slices_loader))
+                """
                 loader_data = add_slice_actors(
                     data, scene, affine=affine, world_coords=self.world_coords)
                 slice_actors = loader_data[0]
@@ -538,7 +546,6 @@ class Horizon(object):
                 self.__tabs.append(SlicesTab(
                     slice_actors, data, affine, self.world_coords,
                     resliced_shape, data_limits, intensities_range))
-                """
                 self.panel = slicer_panel(
                     scene, self.show_m.iren, data, affine, self.world_coords,
                     mem=self.mem)

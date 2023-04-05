@@ -13,24 +13,18 @@ if has_fury:
 
 
 class SlicesTab(HorizonTab):
-    def __init__(
-        self, slice_actors, data, affine, world_coords, resliced_shape,
-        data_limits, intensities_range):
+    def __init__(self, slices_loader):
         
-        self.__actors = slice_actors
+        self.__actors = slices_loader.slice_actors
         self.__name = 'Slices'
         
         self.__tab_id = 0
         self.__tab_ui = None
         self.__global_memory = None
         
-        self.__data = data
-        self.__affine = affine
-        self.__world_coords = world_coords
-        
-        self.__data_shape = resliced_shape
-        self.__min_intensity = intensities_range[0]
-        self.__max_intensity = intensities_range[1]
+        self.__data_shape = slices_loader.data_shape
+        self.__min_intensity = slices_loader.intensities_range[0]
+        self.__max_intensity = slices_loader.intensities_range[1]
         
         self.__slider_label_opacity = build_label(text='Opacity')
         
@@ -105,9 +99,10 @@ class SlicesTab(HorizonTab):
         self.__slider_label_intensities = build_label(text='Intensities')
         
         self.__slider_intensities = ui.LineDoubleSlider2D(
-            initial_values=intensities_range, min_value=data_limits[0],
-            max_value=data_limits[1], length=length, line_width=lw,
-            outer_radius=radius, font_size=fs, text_template=tt)
+            initial_values=slices_loader.intensities_range,
+            min_value=slices_loader.data_min, max_value=slices_loader.data_max,
+            length=length, line_width=lw, outer_radius=radius, font_size=fs,
+            text_template=tt)
         
         color_double_slider(self.__slider_intensities)
         
@@ -239,6 +234,7 @@ class SlicesTab(HorizonTab):
         # TODO: Pass current opacity
         # TODO: Pass current selected slices
         # TODO: Pass visible slices
+        """
         loader_data = replace_volume_slice_actors(
             self.__data, self.__global_memory.scene, self.__actors,
             self.__selected_volume_idx, value,
@@ -258,6 +254,7 @@ class SlicesTab(HorizonTab):
         self.__slider_intensities.initial_values = intensities_range
         self.__slider_intensities.min_value = data_limits[0]
         self.__slider_intensities.max_value = data_limits[1]
+        """
         
         self.__selected_volume_idx = value
         istyle.force_render()
