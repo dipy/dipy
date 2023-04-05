@@ -1,6 +1,7 @@
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
+from dipy.viz.horizon.loader import replace_volume_slice_actors
 from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
                                   color_single_slider)
 
@@ -13,7 +14,8 @@ if has_fury:
 
 class SlicesTab(HorizonTab):
     def __init__(
-        self, slice_actors, data_shape, data_limits, intensities_range):
+        self, slice_actors, data, affine, world_coords, resliced_shape,
+        data_limits, intensities_range):
         
         self.__actors = slice_actors
         self.__name = 'Slices'
@@ -22,7 +24,11 @@ class SlicesTab(HorizonTab):
         self.__tab_ui = None
         self.__global_memory = None
         
-        self.__data_shape = data_shape
+        self.__data = data
+        self.__affine = affine
+        self.__world_coords = world_coords
+        
+        self.__data_shape = resliced_shape
         self.__min_intensity = intensities_range[0]
         self.__max_intensity = intensities_range[1]
         
@@ -139,13 +145,18 @@ class SlicesTab(HorizonTab):
         if data_ndim == 4:
             self.__slider_label_volume = build_label(text='Volume')
             
+            self.__selected_volume_idx = 0
+            
             self.__slider_volume = ui.LineSlider2D(
-                initial_value=0, max_value=self.__data_shape[-1] - 1,
-                length=length, line_width=lw, outer_radius=radius,
-                font_size=fs, text_template=tt)
+                initial_value=self.__selected_volume_idx,
+                max_value=self.__data_shape[-1] - 1, length=length,
+                line_width=lw, outer_radius=radius, font_size=fs,
+                text_template=tt)
             
             color_single_slider(self.__slider_volume)
             
+            self.__slider_volume.handle_events(
+                self.__slider_volume.handle.actor)
             self.__slider_volume.on_left_mouse_button_released = (
                 self.__change_volume)
     
@@ -224,9 +235,31 @@ class SlicesTab(HorizonTab):
     
     def __change_volume(self, istyle, obj, slider):
         value = int(np.rint(slider.value))
-        # TODO: Change actors
-        # TODO: Re-apply colormap
+        
+        # TODO: Pass current opacity
+        # TODO: Pass current selected slices
+        # TODO: Pass visible slices
+        loader_data = replace_volume_slice_actors(
+            self.__data, self.__global_memory.scene, self.__actors,
+            self.__selected_volume_idx, value,
+            [self.__min_intensity, self.__max_intensity], affine=self.__affine,
+            world_coords=self.__world_coords)
+        self.__actors = loader_data[0]
+        resliced_shape = loader_data[1]
+        data_limits = loader_data[2]
+        intensities_range = loader_data[3]
+        
+        self.__min_intensity = intensities_range[0]
+        self.__max_intensity = intensities_range[1]
         self.__update_colormap()
+        
+        # TODO: Adjust slices sliders
+        
+        self.__slider_intensities.initial_values = intensities_range
+        self.__slider_intensities.min_value = data_limits[0]
+        self.__slider_intensities.max_value = data_limits[1]
+        
+        self.__selected_volume_idx = value
         istyle.force_render()
     
     def __update_colormap(self):

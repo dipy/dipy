@@ -2,6 +2,9 @@
 
 class GlobalHorizon(object):
     def __init__(self):
+        # App level sharing
+        self.__scene = None
+        
         # window level sharing
         self.window_timer_cnt = 0
 
@@ -43,3 +46,11 @@ class GlobalHorizon(object):
         # roi level sharing
         self.roi_opacity = 1
         self.slicer_roi_actor = []
+    
+    @property
+    def scene(self):
+        return self.__scene
+    
+    @scene.setter
+    def scene(self, scene):
+        self.__scene = scene
