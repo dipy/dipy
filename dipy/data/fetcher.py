@@ -333,9 +333,9 @@ fetch_evac_test = _make_fetcher(
     "fetch_evac_test",
     pjoin(dipy_home, 'evac'),
     'https://ndownloader.figshare.com/files/',
-    ['40023298'],
+    ['40036606'],
     ['evac_test_data.npz'],
-    ['37ee5fb4e268e73c0e6d4fba8cc10e68'],
+    ['3bef7014dcb3915db42347622dfeb6f1'],
     doc="Download EVAC+ test data for Park et. al 2022")
 
 fetch_stanford_t1 = _make_fetcher(

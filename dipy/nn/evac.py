@@ -338,7 +338,7 @@ class EVAC:
 
     def predict(self, T1, affine=None,
                 voxsize=(1, 1, 1), batch_size=None,
-                return_affine=False):
+                return_affine=False, return_prob=False):
         r"""
         Wrapper function to facilitate prediction of larger dataset.
 
@@ -361,7 +361,6 @@ class EVAC:
             Unused if T1 is a file path.
             Default is (1, 1, 1)
 
-
         batch_size : int
             Number of images per prediction pass. Only available if data
             is provided with a batch dimension.
@@ -370,6 +369,16 @@ class EVAC:
             If None, batch_size will be set to 1 if the provided image
             has a batch dimension.
             Default is None
+
+        return_affine : bool
+            Whether to return the affine matrix. Useful if the input was a
+            file path.
+            Default is False
+
+        return_prob : bool
+            Whether to return the probability map instead of a
+            binary mask. Useful for testing.
+            Default is False
 
         Returns
         -------
@@ -434,7 +443,8 @@ class EVAC:
             output = recover_img(prediction[i],
                                  rev_affine[i],
                                  T1[i].shape)
-            output = np.where(output >= 0.5, 1, 0)
+            if return_prob == False:
+                output = np.where(output >= 0.5, 1, 0)
             output_mask.append(output)
 
         if dim == 3:

@@ -21,7 +21,7 @@ def test_default_weights():
 
     evac_model = EVAC()
     evac_model.fetch_default_weights()
-    results_arr = evac_model.predict(input_arr, np.eye(4))
+    results_arr = evac_model.predict(input_arr, np.eye(4), return_prob=True)
     assert_almost_equal(results_arr, output_arr, decimal=4)
 
 
@@ -35,5 +35,5 @@ def test_default_weights_batch():
     evac_model.fetch_default_weights()
     fake_affine = np.array([np.eye(4), np.eye(4)])
     fake_voxsize = np.ones((2, 3))
-    results_arr = evac_model.predict(input_arr, fake_affine, fake_voxsize, batch_size=2)
+    results_arr = evac_model.predict(input_arr, fake_affine, fake_voxsize, batch_size=2, return_prob=True)
     assert_almost_equal(results_arr, output_arr, decimal=4)
