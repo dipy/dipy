@@ -574,7 +574,7 @@ class Horizon(object):
                     self.help_panel.re_align(size_change)
         
         if len(self.__tabs) > 0:
-            tab_mgr = TabManager(self.__tabs, self.win_size, self.mem)
+            tab_mgr = TabManager(self.__tabs, self.win_size)
             scene.add(tab_mgr.tab_ui)
 
         self.show_m.initialize()

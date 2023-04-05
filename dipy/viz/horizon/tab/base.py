@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.gmem import GlobalHorizon
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -22,7 +21,7 @@ class HorizonTab(ABC):
         pass
 
 class TabManager:
-    def __init__(self, tabs, win_size, gmem):
+    def __init__(self, tabs, win_size):
         num_tabs = len(tabs)
         win_width, win_height = win_size
         
@@ -36,7 +35,7 @@ class TabManager:
         
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
-            tab.build(id, self.__tab_ui, gmem)
+            tab.build(id, self.__tab_ui)
     
     @property
     def tab_ui(self):
