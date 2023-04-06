@@ -8,10 +8,15 @@ from dipy.utils.fast_numpy import (random, norm, normalize, dot, cross,
 
 
 def test_random():
-    # Test that random numbers are between 0 and 1.
+    # Test that random numbers are between 0 and 1 and that the mean is 0.5.
     for _ in range(10):
         vec = random()
         assert_(vec < 1 and vec > 0)
+
+    random_number_list = []
+    for _ in range(10000):
+        random_number_list.append(random())
+    assert_almost_equal(np.mean(random_number_list), 0.5, decimal=1)
 
 
 def test_norm():
