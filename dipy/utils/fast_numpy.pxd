@@ -44,7 +44,6 @@ cpdef void cross(
         double[:] v1,
         double[:] v2) nogil
 
-
 cpdef void random_vector(
         double[:] out)
 

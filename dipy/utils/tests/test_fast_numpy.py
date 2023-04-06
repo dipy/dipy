@@ -11,7 +11,7 @@ def test_random():
     # Test that random numbers are between 0 and 1.
     for _ in range(10):
         vec = random()
-        assert_(vec <= 1 and vec >= 0)
+        assert_(vec < 1 and vec > 0)
 
 
 def test_norm():
