@@ -48,6 +48,8 @@ class SlicesTab(HorizonTab):
         
         color_single_slider(self.__slider_opacity)
         
+        self.__slices_opacity = 1
+        
         self.__slider_opacity.on_change = self.__change_opacity
         
         self.__slider_label_x = build_label(text='X Slice')
@@ -185,9 +187,8 @@ class SlicesTab(HorizonTab):
         i_ren.force_render()
     
     def __change_opacity(self, slider):
-        opacity = slider.value
-        for slice in self.__actors:
-            slice.GetProperty().SetOpacity(opacity)
+        self.__slices_opacity = slider.value
+        self.__update_opacities()
     
     def __change_intensity(self, slider):
         self.__min_intensity = slider.left_disk_value
@@ -258,7 +259,8 @@ class SlicesTab(HorizonTab):
                 self.__slider_intensities.min_value = self.__loader.volume_min
                 self.__slider_intensities.max_value = self.__loader.volume_max
                 
-                # TODO: Update opacities
+                # Updating opacities
+                self.__update_opacities()
                 
                 # Updating visibilities
                 self.__update_slice_visibility_x()
@@ -290,6 +292,10 @@ class SlicesTab(HorizonTab):
         for slice in self.__actors:
             slice.output.SetLookupTable(lut)
             slice.output.Update()
+    
+    def __update_opacities(self):
+        for slice in self.__actors:
+            slice.GetProperty().SetOpacity(self.__slices_opacity)
     
     def __update_slice_visibility_x(self):
         self.__slider_slice_x.set_visibility(self.__slice_visibility_x)
