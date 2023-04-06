@@ -4,12 +4,9 @@
 
 cimport numpy as np
 
-from libc.stdlib cimport rand
+from libc.stdlib cimport rand, RAND_MAX
 from libc.math cimport sqrt
 
-
-cdef extern from "limits.h":
-    int INT_MAX
 
 # Replaces a numpy.searchsorted(arr, number, 'right')
 cdef int where_to_insert(

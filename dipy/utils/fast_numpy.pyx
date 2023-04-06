@@ -55,7 +55,7 @@ cpdef double random() nogil:
     _ : double
         random number
     """
-    return rand() / float(INT_MAX)
+    return rand() / float(RAND_MAX)
 
 
 cpdef double norm(double[:] v) nogil:
