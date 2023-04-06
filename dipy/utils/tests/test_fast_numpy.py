@@ -53,7 +53,7 @@ def test_dot():
 
 def test_cross():
     # Test that cross is faster and equal to numpy.cross.
-    out = np.zeros(3)
+    out = np.zeros(3, dtype=float)
     for _ in range(10):
         vec1 = np.random.random(3)
         vec2 = np.random.random(3)
@@ -77,7 +77,7 @@ def test_cross():
 
 def test_random_vector():
     # Test that that the random vector is of norm 1
-    test = np.zeros(3)
+    test = np.zeros(3, dtype=float)
     for _ in range(10):
         random_vector(test)
         assert_almost_equal(np.linalg.norm(test), 1)
@@ -87,8 +87,8 @@ def test_random_vector():
 
 def test_random_perpendicular_vector():
     # Test that the random vector is of norm 1 and perpendicular
-    test = np.zeros(3)
-    vec = np.zeros(3)
+    test = np.zeros(3, dtype=float)
+    vec = np.zeros(3, dtype=float)
     for _ in range(10):
         random_vector(vec)
         random_perpendicular_vector(test, vec)
