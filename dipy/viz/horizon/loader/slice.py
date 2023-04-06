@@ -1,5 +1,4 @@
 import warnings
-from logging import warning
 
 import numpy as np
 from scipy import stats
@@ -55,10 +54,10 @@ class SlicesLoader:
         
         self.__create_and_resize_actors(vol_data, self.__int_range)
         
-        visible_slices = np.rint(
+        self.__sel_slices = np.rint(
             np.asarray(self.__data_shape[:3]) / 2).astype(int)
         
-        self.__add_slice_actors_to_scene(visible_slices)
+        self.__add_slice_actors_to_scene(self.__sel_slices)
     
     def __add_slice_actors_to_scene(self, visible_slices):
         self.__slice_actors[0].display_extent(
@@ -92,6 +91,28 @@ class SlicesLoader:
             self.__data_shape = resliced_vol.shape
         print(f'Resized to RAS shape: {self.__data_shape}')
     
+    def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
+        vol_data = self.__data[..., prev_idx]
+        percentiles = stats.percentileofscore(np.ravel(vol_data), intensities)
+        vol_data = self.__data[..., next_idx]
+        value_range = np.percentile(vol_data, percentiles)
+        if np.sum(np.diff(self.__int_range)) == 0:
+            return False
+        
+        self.__int_range = value_range
+        
+        self.__vol_max = np.max(vol_data)
+        self.__vol_min = np.min(vol_data)
+        
+        for act in self.__slice_actors:
+            self.__scene.rm(act)
+        
+        self.__create_and_resize_actors(vol_data, self.__int_range)
+        
+        self.__add_slice_actors_to_scene(visible_slices)
+        
+        return True
+    
     @property
     def data_shape(self):
         return self.__data_shape
@@ -99,6 +120,10 @@ class SlicesLoader:
     @property
     def intensities_range(self):
         return self.__int_range
+    
+    @property
+    def selected_slices(self):
+        return self.__sel_slices
     
     @property
     def slice_actors(self):
@@ -118,54 +143,3 @@ def _evaluate_intensities_range(intensities_range):
         raise ValueError(
             'Your data does not have any contrast. Please, check the '
             'value range of your data.')
-
-
-def replace_volume_slice_actors(
-    data, scene, actors, prev_idx, new_idx, intensities, affine=None,
-    world_coords=False):
-    for act in actors:
-        scene.rm(act)
-        
-    tmp_data = np.ravel(data[..., prev_idx])
-    percentiles = stats.percentileofscore(tmp_data, intensities)
-    
-    tmp_data = data[..., new_idx]
-    value_range = np.percentile(tmp_data, percentiles)
-    
-    if np.sum(np.diff(value_range)) == 0:
-        warnings.warn(
-            'This volume does not have any contrast. Please, check the value '
-            'range of your data.')
-    
-    if not world_coords:
-        affine = np.eye(4)
-
-    slice_actor_z = actor.slicer(
-        tmp_data, affine=affine, value_range=value_range,
-        interpolation='nearest')
-    
-    tmp_new = slice_actor_z.resliced_array()
-    
-    ndim = data.ndim
-
-    if ndim == 4:
-        shape = tmp_new.shape + (data.shape[-1],)
-    else:
-        shape = tmp_new.shape
-    
-    slice_actor_x = slice_actor_z.copy()
-    x_midpoint = int(np.round(shape[0] / 2))
-    slice_actor_x.display_extent(
-        x_midpoint, x_midpoint, 0, shape[1] - 1, 0, shape[2] - 1)
-
-    slice_actor_y = slice_actor_z.copy()
-    y_midpoint = int(np.round(shape[1] / 2))
-    slice_actor_y.display_extent(
-        0, shape[0] - 1, y_midpoint, y_midpoint, 0, shape[2] - 1)
-    
-    scene.add(slice_actor_x)
-    scene.add(slice_actor_y)
-    scene.add(slice_actor_z)
-    
-    return ((slice_actor_x, slice_actor_y, slice_actor_z), shape,
-            (tmp_data.min(), tmp_data.max()), value_range)

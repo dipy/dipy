@@ -1,7 +1,8 @@
+import warnings
+
 import numpy as np
 
 from dipy.utils.optpkg import optional_package
-from dipy.viz.horizon.loader import replace_volume_slice_actors
 from dipy.viz.horizon.tab import (HorizonTab, build_label, color_double_slider,
                                   color_single_slider)
 
@@ -24,6 +25,9 @@ class SlicesTab(HorizonTab):
         self.__tab_ui = None
         
         self.__data_shape = self.__loader.data_shape
+        self.__selected_slice_x = self.__loader.selected_slices[0]
+        self.__selected_slice_y = self.__loader.selected_slices[1]
+        self.__selected_slice_z = self.__loader.selected_slices[2]
         self.__min_intensity = self.__loader.intensities_range[0]
         self.__max_intensity = self.__loader.intensities_range[1]
         
@@ -53,17 +57,17 @@ class SlicesTab(HorizonTab):
         tt = '{value:.0f}'
         
         self.__slider_slice_x = ui.LineSlider2D(
-            initial_value=self.__data_shape[0] / 2, min_value=0,
+            initial_value=self.__selected_slice_x,
             max_value=self.__data_shape[0] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         self.__slider_slice_y = ui.LineSlider2D(
-            initial_value=self.__data_shape[1] / 2, min_value=0,
+            initial_value=self.__selected_slice_y,
             max_value=self.__data_shape[1] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
         self.__slider_slice_z = ui.LineSlider2D(
-            initial_value=self.__data_shape[2] / 2, min_value=0,
+            initial_value=self.__selected_slice_z,
             max_value=self.__data_shape[2] - 1, length=length, line_width=lw,
             outer_radius=radius, font_size=fs, text_template=tt)
         
@@ -191,22 +195,22 @@ class SlicesTab(HorizonTab):
         self.__update_colormap()
     
     def __change_slice_x(self, slider):
-        value = int(np.rint(slider.value))
+        self.__selected_slice_x = int(np.rint(slider.value))
         self.__actors[0].display_extent(
-            value, value, 0, self.__data_shape[1] - 1, 0,
-            self.__data_shape[2] - 1)
+            self.__selected_slice_x, self.__selected_slice_x,
+            0, self.__data_shape[1] - 1, 0, self.__data_shape[2] - 1)
     
     def __change_slice_y(self, slider):
-        value = int(np.rint(slider.value))
+        self.__selected_slice_y = int(np.rint(slider.value))
         self.__actors[1].display_extent(
-            0, self.__data_shape[0] - 1, value, value, 0,
-            self.__data_shape[2] - 1)
+            0, self.__data_shape[0] - 1, self.__selected_slice_y,
+            self.__selected_slice_y, 0, self.__data_shape[2] - 1)
     
     def __change_slice_z(self, slider):
-        value = int(np.rint(slider.value))
+        self.__selected_slice_z = int(np.rint(slider.value))
         self.__actors[2].display_extent(
-            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1, value,
-            value)
+            0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1,
+            self.__selected_slice_z, self.__selected_slice_z)
     
     def __change_slice_x_visibility(self, i_ren, _obj, _button):
         self.__slice_x_visibility = not self.__slice_x_visibility
@@ -231,34 +235,37 @@ class SlicesTab(HorizonTab):
     
     def __change_volume(self, istyle, obj, slider):
         value = int(np.rint(slider.value))
-        
-        # TODO: Pass current opacity
-        # TODO: Pass current selected slices
-        # TODO: Pass visible slices
-        """
-        loader_data = replace_volume_slice_actors(
-            self.__data, self.__global_memory.scene, self.__actors,
-            self.__selected_volume_idx, value,
-            [self.__min_intensity, self.__max_intensity], affine=self.__affine,
-            world_coords=self.__world_coords)
-        self.__actors = loader_data[0]
-        resliced_shape = loader_data[1]
-        data_limits = loader_data[2]
-        intensities_range = loader_data[3]
-        
-        self.__min_intensity = intensities_range[0]
-        self.__max_intensity = intensities_range[1]
-        self.__update_colormap()
-        
-        # TODO: Adjust slices sliders
-        
-        self.__slider_intensities.initial_values = intensities_range
-        self.__slider_intensities.min_value = data_limits[0]
-        self.__slider_intensities.max_value = data_limits[1]
-        """
-        
-        self.__selected_volume_idx = value
-        istyle.force_render()
+        if value != self.__selected_volume_idx:
+            visible_slices = (
+                self.__selected_slice_x, self.__selected_slice_y,
+                self.__selected_slice_z)
+            valid_vol = self.__loader.change_volume(
+                self.__selected_volume_idx, value,
+                [self.__min_intensity, self.__max_intensity], visible_slices)
+            if not valid_vol:
+                warnings.warn(
+                    f'Volume N°{value} does not have any contrast. Please, '
+                    'check the value ranges of your data. Returning to '
+                    'previous volume.')
+                self.__slider_volume.value = self.__selected_volume_idx
+            else:
+                intensities_range = self.__loader.intensities_range
+                
+                # Updating the colormap
+                self.__min_intensity = intensities_range[0]
+                self.__max_intensity = intensities_range[1]
+                self.__update_colormap()
+                
+                # Updating intensities slider
+                self.__slider_intensities.initial_values = intensities_range
+                self.__slider_intensities.min_value = self.__loader.volume_min
+                self.__slider_intensities.max_value = self.__loader.volume_max
+                
+                # TODO: Update opacities
+                # TODO: Update visibilities
+                
+                self.__selected_volume_idx = value
+                istyle.force_render()
     
     def __update_colormap(self):
         if self.__colormap == 'dist':
