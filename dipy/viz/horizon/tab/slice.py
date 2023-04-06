@@ -144,6 +144,8 @@ class SlicesTab(HorizonTab):
         
         data_ndim = len(self.__data_shape)
         
+        self.__picker_label_voxel = build_label(text='Volume')
+        
         if data_ndim == 4:
             self.__slider_label_volume = build_label(text='Volume')
             
