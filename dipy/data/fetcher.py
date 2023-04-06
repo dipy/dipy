@@ -640,9 +640,9 @@ fetch_DiB_217_lte_pte_ste = _make_fetcher(
     data_size='166.3 MB')
 
 
-fetch_ptt_minimal_datatest = _make_fetcher(
-    "fetch_ptt_minimal_datatest",
-    pjoin(dipy_home, 'ptt_datatest'),
+fetch_ptt_minimal_dataset = _make_fetcher(
+    "fetch_ptt_minimal_dataset",
+    pjoin(dipy_home, 'ptt_dataset'),
     'https://raw.githubusercontent.com/dipy/dipy_datatest/main/',
     ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
     ['ptt_fod.nii', 'ptt_seed_coords.txt', 'ptt_seed_image.nii'],
@@ -879,7 +879,7 @@ def get_fnames(name='small_64D'):
         fmask = pjoin(folder, 'DiB_mask.nii.gz')
         return fdata_1, fdata_2, fbval, fbvec, fmask
     if name == 'ptt_minimal_dataset':
-        files, folder = fetch_ptt_minimal_datatest()
+        files, folder = fetch_ptt_minimal_dataset()
         fod_name = pjoin(folder, 'ptt_fod.nii')
         seed_coords_name = pjoin(folder, 'ptt_seed_coords.txt')
         seed_image_name = pjoin(folder, 'ptt_seed_image.nii')
@@ -1845,7 +1845,7 @@ def fetch_hcp(subjects,
         data_files[pjoin(sub_dir, 'anat', f'sub-{subject}_T1w.nii.gz')] =\
             f'{study}/{subject}/T1w/T1w_acpc_dc.nii.gz'
         data_files[pjoin(sub_dir, 'anat',
-                           f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
+                         f'sub-{subject}_aparc+aseg_seg.nii.gz')] =\
             f'{study}/{subject}/T1w/aparc+aseg.nii.gz'
 
     download_files = {}
@@ -1950,7 +1950,8 @@ def fetch_hbn(subjects, path=None):
             Prefix=f"data/Projects/HBN/BIDS_curated/derivatives/qsiprep/sub-{subject}/{ses}/")  # noqa
         query_content = query.get('Contents', None)
         if query_content is None:
-            raise ValueError(f"Could not find derivatives data for subject {subject}")
+            raise ValueError(
+                f"Could not find derivatives data for subject {subject}")
         file_list = [kk["Key"] for kk in query["Contents"]]
         sub_dir = op.join(base_dir, f'sub-{subject}')
         ses_dir = op.join(sub_dir, ses)
@@ -1958,7 +1959,8 @@ def fetch_hbn(subjects, path=None):
             os.makedirs(os.path.join(ses_dir, 'dwi'), exist_ok=True)
             os.makedirs(os.path.join(ses_dir, 'anat'), exist_ok=True)
         for remote in file_list:
-            full = remote.split("Projects")[-1][1:].replace("/BIDS_curated", "")
+            full = remote.split(
+                "Projects")[-1][1:].replace("/BIDS_curated", "")
             local = op.join(dipy_home, full)
             data_files[local] = remote
 
