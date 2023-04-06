@@ -112,7 +112,7 @@ cpdef void normalize(double[:] v) nogil:
 
 
 cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
-    """Compute vectors cross product. 
+    """Compute vectors cross product.
 
     Parameters
     ----------
@@ -126,7 +126,7 @@ cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
     Notes
     -----
     Overwrites the first argument.
-    
+
     """
     out[0] = v1[1] * v2[2] - v1[2] * v2[1]
     out[1] = v1[2] * v2[0] - v1[0] * v2[2]
@@ -167,6 +167,7 @@ cpdef void random_perpendicular_vector(double[:] out,double[:] v):
     Overwrites the first argument
     """
     cdef double[3] tmp
+
     random_vector(tmp)
     cross(out, v, tmp)
     normalize(out)
@@ -192,7 +193,7 @@ cpdef (double, double) random_point_within_circle(double r):
     cdef double x = 1.0
     cdef double y = 1.0
 
-    while ((x * x + y * y) > 1):
+    while (x * x + y * y) > 1:
         x = 2.0 * random() - 1.0
         y = 2.0 * random() - 1.0
     return (r * x, r * y)

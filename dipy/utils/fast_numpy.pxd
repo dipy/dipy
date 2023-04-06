@@ -36,16 +36,17 @@ cpdef double norm(
         double[:] v) nogil
 
 cpdef double dot(
-        double[:] v1, 
+        double[:] v1,
         double[:] v2) nogil
 
 cpdef void normalize(
         double[:] v) nogil
 
 cpdef void cross(
-        double[:] out, 
-        double[:] v1, 
+        double[:] out,
+        double[:] v1,
         double[:] v2) nogil
+
 
 cpdef void random_vector(
         double[:] out)
