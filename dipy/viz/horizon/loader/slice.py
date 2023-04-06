@@ -88,8 +88,8 @@ class SlicesLoader:
         self.__slice_actors[1] = self.__slice_actors[0].copy()
         self.__slice_actors[2] = self.__slice_actors[0].copy()
         
-        for slice in self.__slice_actors:
-            slice.AddObserver(
+        for slice_actor in self.__slice_actors:
+            slice_actor.AddObserver(
                 'LeftButtonPressEvent', self.__left_click_picker_callback, 1.)
         
         if self.__data_ndim == 4:
@@ -131,8 +131,8 @@ class SlicesLoader:
         self.__vol_max = np.max(vol_data)
         self.__vol_min = np.min(vol_data)
         
-        for act in self.__slice_actors:
-            self.__scene.rm(act)
+        for slice_actor in self.__slice_actors:
+            self.__scene.rm(slice_actor)
         
         self.__create_and_resize_actors(vol_data, self.__int_range)
         

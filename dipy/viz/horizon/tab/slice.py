@@ -291,13 +291,13 @@ class SlicesTab(HorizonTab):
         lut.SetRampToLinear()
         lut.Build()
         
-        for slice in self.__actors:
-            slice.output.SetLookupTable(lut)
-            slice.output.Update()
+        for slice_actor in self.__actors:
+            slice_actor.output.SetLookupTable(lut)
+            slice_actor.output.Update()
     
     def __update_opacities(self):
-        for slice in self.__actors:
-            slice.GetProperty().SetOpacity(self.__slices_opacity)
+        for slice_actor in self.__actors:
+            slice_actor.GetProperty().SetOpacity(self.__slices_opacity)
     
     def __update_slice_visibility_x(self):
         self.__slider_slice_x.set_visibility(self.__slice_visibility_x)
