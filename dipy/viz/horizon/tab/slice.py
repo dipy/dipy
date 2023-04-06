@@ -90,16 +90,16 @@ class SlicesTab(HorizonTab):
         self.__button_slice_z = ui.Button2D(
             icon_fnames=icon_files, size=(25, 25))
         
-        self.__slice_x_visibility = True
-        self.__slice_y_visibility = True
-        self.__slice_z_visibility = True
+        self.__slice_visibility_x = True
+        self.__slice_visibility_y = True
+        self.__slice_visibility_z = True
         
         self.__button_slice_x.on_left_mouse_button_clicked = (
-            self.__change_slice_x_visibility)
+            self.__change_slice_visibility_x)
         self.__button_slice_y.on_left_mouse_button_clicked = (
-            self.__change_slice_y_visibility)
+            self.__change_slice_visibility_y)
         self.__button_slice_z.on_left_mouse_button_clicked = (
-            self.__change_slice_z_visibility)
+            self.__change_slice_visibility_z)
         
         self.__slider_label_intensities = build_label(text='Intensities')
         
@@ -212,24 +212,21 @@ class SlicesTab(HorizonTab):
             0, self.__data_shape[0] - 1, 0, self.__data_shape[1] - 1,
             self.__selected_slice_z, self.__selected_slice_z)
     
-    def __change_slice_x_visibility(self, i_ren, _obj, _button):
-        self.__slice_x_visibility = not self.__slice_x_visibility
-        self.__slider_slice_x.set_visibility(self.__slice_x_visibility)
-        self.__actors[0].SetVisibility(self.__slice_x_visibility)
+    def __change_slice_visibility_x(self, i_ren, _obj, _button):
+        self.__slice_visibility_x = not self.__slice_visibility_x
+        self.__update_slice_visibility_x()
         _button.next_icon()
         i_ren.force_render()
     
-    def __change_slice_y_visibility(self, i_ren, _obj, _button):
-        self.__slice_y_visibility = not self.__slice_y_visibility
-        self.__slider_slice_y.set_visibility(self.__slice_y_visibility)
-        self.__actors[1].SetVisibility(self.__slice_y_visibility)
+    def __change_slice_visibility_y(self, i_ren, _obj, _button):
+        self.__slice_visibility_y = not self.__slice_visibility_y
+        self.__update_slice_visibility_y()
         _button.next_icon()
         i_ren.force_render()
     
-    def __change_slice_z_visibility(self, i_ren, _obj, _button):
-        self.__slice_z_visibility = not self.__slice_z_visibility
-        self.__slider_slice_z.set_visibility(self.__slice_z_visibility)
-        self.__actors[2].SetVisibility(self.__slice_z_visibility)
+    def __change_slice_visibility_z(self, i_ren, _obj, _button):
+        self.__slice_visibility_z = not self.__slice_visibility_z
+        self.__update_slice_visibility_z()
         _button.next_icon()
         i_ren.force_render()
     
@@ -262,7 +259,11 @@ class SlicesTab(HorizonTab):
                 self.__slider_intensities.max_value = self.__loader.volume_max
                 
                 # TODO: Update opacities
-                # TODO: Update visibilities
+                
+                # Updating visibilities
+                self.__update_slice_visibility_x()
+                self.__update_slice_visibility_y()
+                self.__update_slice_visibility_z()
                 
                 self.__selected_volume_idx = value
                 istyle.force_render()
@@ -289,6 +290,18 @@ class SlicesTab(HorizonTab):
         for slice in self.__actors:
             slice.output.SetLookupTable(lut)
             slice.output.Update()
+    
+    def __update_slice_visibility_x(self):
+        self.__slider_slice_x.set_visibility(self.__slice_visibility_x)
+        self.__actors[0].SetVisibility(self.__slice_visibility_x)
+    
+    def __update_slice_visibility_y(self):
+        self.__slider_slice_y.set_visibility(self.__slice_visibility_y)
+        self.__actors[1].SetVisibility(self.__slice_visibility_y)
+    
+    def __update_slice_visibility_z(self):
+        self.__slider_slice_z.set_visibility(self.__slice_visibility_z)
+        self.__actors[2].SetVisibility(self.__slice_visibility_z)
     
     def build(self, tab_id, tab_ui):
         self.__tab_id = tab_id
