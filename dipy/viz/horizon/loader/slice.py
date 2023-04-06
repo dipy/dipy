@@ -13,9 +13,10 @@ if has_fury:
 
 class SlicesLoader:
     def __init__(
-        self, scene, data, affine=None, world_coords=False,
+        self, interactor, scene, data, affine=None, world_coords=False,
         percentiles=[2, 98]):
         
+        self.__interactor = interactor
         self.__scene = scene
         self.__data = data
         self.__affine = affine
@@ -52,6 +53,8 @@ class SlicesLoader:
         self.__vol_max = np.max(vol_data)
         self.__vol_min = np.min(vol_data)
         
+        self.__resliced_vol = None
+        
         self.__create_and_resize_actors(vol_data, self.__int_range)
         
         self.__sel_slices = np.rint(
@@ -80,16 +83,40 @@ class SlicesLoader:
             vol_data, affine=self.__affine, value_range=value_range,
             interpolation='nearest')
         
-        resliced_vol = self.__slice_actors[0].resliced_array()
+        self.__resliced_vol = self.__slice_actors[0].resliced_array()
         
         self.__slice_actors[1] = self.__slice_actors[0].copy()
         self.__slice_actors[2] = self.__slice_actors[0].copy()
         
+        for slice in self.__slice_actors:
+            slice.AddObserver(
+                'LeftButtonPressEvent', self.__left_click_picker_callback, 1.)
+        
         if self.__data_ndim == 4:
-            self.__data_shape = resliced_vol.shape + (self.__data.shape[-1],)
+            self.__data_shape = (
+                self.__resliced_vol.shape + (self.__data.shape[-1],))
         else:
-            self.__data_shape = resliced_vol.shape
+            self.__data_shape = self.__resliced_vol.shape
         print(f'Resized to RAS shape: {self.__data_shape}')
+    
+    def __left_click_picker_callback(self, obj, ev):
+        event_pos = self.__interactor.GetEventPosition()
+
+        obj.picker.Pick(event_pos[0], event_pos[1], 0, self.__scene)
+
+        i, j, k = obj.picker.GetPointIJK()
+        res = self.__resliced_vol[i, j, k]
+        
+        try:
+            message = '%.3f' % res
+        except TypeError:
+            message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
+        print(message)
+        # TODO: Move to tab
+        """
+        picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) \
+            + ' ' + message
+        """
     
     def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
         vol_data = self.__data[..., prev_idx]

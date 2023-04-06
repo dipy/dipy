@@ -505,7 +505,7 @@ class Horizon(object):
                             data, affine = img
                             self.vox2ras = affine
                             slices_loader = SlicesLoader(
-                                scene, data, affine=affine,
+                                self.show_m.iren, scene, data, affine=affine,
                                 world_coords=self.world_coords)
                             self.__tabs.append(SlicesTab(slices_loader))
                             """
@@ -520,7 +520,8 @@ class Horizon(object):
                 data, affine = self.images[0]
                 self.vox2ras = affine
                 slices_loader = SlicesLoader(
-                    scene, data, affine=affine, world_coords=self.world_coords)
+                    self.show_m.iren, scene, data, affine=affine,
+                    world_coords=self.world_coords)
                 self.__tabs.append(SlicesTab(slices_loader))
                 """
                 self.panel = slicer_panel(
