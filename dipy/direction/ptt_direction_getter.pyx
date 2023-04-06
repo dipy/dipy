@@ -356,7 +356,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
                                       + self.propagator[8] * frame[2][i])
                     cross(normal, binormal, tangent)
 
-                for c in range(int(self.probe_count)):
+                for c in range(self.probe_count):
                     for i in range(3):
                         new_position[i] = (position[i]
                                            + normal[i] * self.probe_radius
@@ -420,7 +420,7 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         return 1
 
     cdef int propagate(self):
-        """Propagates the position by step_size amount. The progation is using
+        """Propagates the position by step_size amount. The propagation is using
         the parameters of the last candidate curve. Then, randomly generate
         curve parametrization from the current position. The walking frame
         is the same, only the k1 and k2 parameters are randomly picked.
