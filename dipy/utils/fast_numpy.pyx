@@ -194,6 +194,7 @@ cpdef (double, double) random_point_within_circle(double r):
     cdef double y = 1.0
 
     while (x * x + y * y) > 1:
+        print(x, y)
         x = 2.0 * random() - 1.0
         y = 2.0 * random() - 1.0
     return (r * x, r * y)
