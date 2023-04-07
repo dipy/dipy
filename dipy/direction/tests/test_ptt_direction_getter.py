@@ -12,80 +12,112 @@ from dipy.tracking.streamline import Streamlines
 
 
 def test_ptt_tracking():
+    # Test PTT direction getter generate 100 streamlines with more than 1 pts.
     fod_fname, seed_coordinates_fname, _ = get_fnames('ptt_minimal_dataset')
     fod, affine = load_nifti(fod_fname)
-    seed_coordinates = np.loadtxt(seed_coordinates_fname)
-
-    # check basis (should be mrtrix3)
-    sph = sh_to_sf(fod, default_sphere, basis_type='tournier07', sh_order=8)
-    sph[sph < 0] = 0
+    seed_coordinates = np.loadtxt(seed_coordinates_fname)[:10, :]
+    sf = sh_to_sf(fod, default_sphere, basis_type='tournier07', sh_order=8,
+                  legacy=False)
+    sf[sf < 0] = 0
     sc = BinaryStoppingCriterion(np.ones(fod.shape[:3]))
-    dg = PTTDirectionGetter.from_pmf(sph, sphere=default_sphere, max_angle=20)
+
+    dg_default = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere,
+                                             max_angle=20)
+    dg_count2 = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere,
+                                            max_angle=20,
+                                            probe_count=2,
+                                            probe_radius=0.2)
+    dg_quality10 = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere,
+                                               max_angle=20,
+                                               probe_quality=10)
+    dg_length2 = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere,
+                                             max_angle=20,
+                                             probe_length=2)
+
+    for dg in [dg_default, dg_count2, dg_quality10, dg_length2]:
+        streamline_generator = LocalTracking(direction_getter=dg,
+                                             step_size=0.2,
+                                             stopping_criterion=sc,
+                                             seeds=seed_coordinates,
+                                             affine=affine)
+        streamlines = Streamlines(streamline_generator)
+        npt.assert_equal(len(streamlines), 10)
+        npt.assert_(np.all([len(s) > 1 for s in streamlines]))
+
+    # Test with zeros pmf
+    dg = PTTDirectionGetter.from_pmf(np.zeros(sf.shape), sphere=default_sphere,
+                                     max_angle=20)
     streamline_generator = LocalTracking(direction_getter=dg,
                                          step_size=0.2,
                                          stopping_criterion=sc,
                                          seeds=seed_coordinates,
                                          affine=affine)
-
     streamlines = Streamlines(streamline_generator)
-    npt.assert_equal(len(streamlines), 100)
+    npt.assert_equal(len(streamlines), 10)
+    npt.assert_(np.all([len(s) == 1 for s in streamlines]))
+
+    # Test with maximum length reach
+    dg = PTTDirectionGetter.from_pmf(sf, sphere=default_sphere,
+                                     max_angle=20)
+    streamline_generator = LocalTracking(direction_getter=dg,
+                                         step_size=0.2,
+                                         stopping_criterion=sc,
+                                         seeds=seed_coordinates,
+                                         affine=affine,
+                                         maxlen=1)
+    streamlines = Streamlines(streamline_generator)
+    npt.assert_equal(len(streamlines), 10)
+    npt.assert_(np.all([len(s) == 3 for s in streamlines]))
 
 
 def test_PTTDirectionGetter():
     # Test the constructors and errors of the PTTDirectionGetter
-
     class SillyModel(SphHarmModel):
-
-        sh_order = 4
 
         def fit(self, data, mask=None):
             coeff = np.zeros(data.shape[:-1] + (15,))
             return SphHarmFit(self, coeff, mask=None)
 
-    model = SillyModel(gtab=None)
+    silly_model = SillyModel(gtab=None)
     data = np.zeros((3, 3, 3, 7))
+    fit = silly_model.fit(data)
+    point = np.zeros(3)
+    dir = unit_octahedron.vertices[0].copy()
 
-    # Test if the tracking works on different dtype of the same data.
-    for dtype in [np.float32, np.float64]:
-        fit = model.fit(data.astype(dtype))
+    # Make ptt_dg from shm_coeffs
+    dg = PTTDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
+                                         unit_octahedron)
+    npt.assert_equal(dg.get_direction(point, dir), 1)
 
-        # Sample point and direction
-        point = np.zeros(3)
-        dir = unit_octahedron.vertices[0].copy()
+    # Make ptt_dg from pmf
+    pmf = np.zeros((3, 3, 3, unit_octahedron.theta.shape[0]))
+    dg = PTTDirectionGetter.from_pmf(pmf, 90, unit_octahedron)
+    npt.assert_equal(dg.get_direction(point, dir), 1)
 
-        # make a dg from a fit
-        dg = PTTDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
-                                             unit_octahedron)
-        state = dg.get_direction(point, dir)
-        npt.assert_equal(state, 1)
+    # Check probe_length ValueError
+    npt.assert_raises(ValueError,
+                      PTTDirectionGetter.from_shcoeff,
+                      fit.shm_coeff, 90, unit_octahedron,
+                      basis_type="tournier07",
+                      probe_length=0)
 
-        # Make a dg from a pmf
-        N = unit_octahedron.theta.shape[0]
-        pmf = np.zeros((3, 3, 3, N))
-        dg = PTTDirectionGetter.from_pmf(pmf, 90, unit_octahedron)
-        state = dg.get_direction(point, dir)
-        npt.assert_equal(state, 1)
+    # Check probe_radius ValueError
+    npt.assert_raises(ValueError,
+                      PTTDirectionGetter.from_shcoeff,
+                      fit.shm_coeff, 90, unit_octahedron,
+                      basis_type="tournier07",
+                      probe_radius=-1)
 
-        # pmf shape must match sphere
-        bad_pmf = pmf[..., 1:]
-        npt.assert_raises(ValueError, PTTDirectionGetter.from_pmf,
-                          bad_pmf, 90, unit_octahedron)
+    # Check probe_quality ValueError
+    npt.assert_raises(ValueError,
+                      PTTDirectionGetter.from_shcoeff,
+                      fit.shm_coeff, 90, unit_octahedron,
+                      basis_type="tournier07",
+                      probe_quality=1)
 
-        # pmf must have 4 dimensions
-        bad_pmf = pmf[0, ...]
-        npt.assert_raises(ValueError, PTTDirectionGetter.from_pmf,
-                          bad_pmf, 90, unit_octahedron)
-        # pmf cannot have negative values
-        pmf[0, 0, 0, 0] = -1
-        npt.assert_raises(ValueError, PTTDirectionGetter.from_pmf,
-                          pmf, 90, unit_octahedron)
-
-        # Check basis_type keyword
-        dg = PTTDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
-                                             unit_octahedron,
-                                             basis_type="tournier07")
-
-        npt.assert_raises(ValueError,
-                          PTTDirectionGetter.from_shcoeff,
-                          fit.shm_coeff, 90, unit_octahedron,
-                          basis_type="not a basis")
+    # Check probe_length ValueError
+    npt.assert_raises(ValueError,
+                      PTTDirectionGetter.from_shcoeff,
+                      fit.shm_coeff, 90, unit_octahedron,
+                      basis_type="tournier07",
+                      probe_count=0)

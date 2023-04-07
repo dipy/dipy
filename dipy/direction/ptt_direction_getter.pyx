@@ -3,8 +3,14 @@
 # cython: wraparound=False
 
 """
-Implementation of parallel transport tractography (PTT).
+Implementation of the Parallel Transport Tractography (PTT) algorithm by
+Aydogan et al., (2021).
+
+Aydogan DB, Shi Y. Parallel Transport Tractography. IEEE Trans
+    Med Imaging. 2021 Feb;40(2):635-647. doi: 10.1109/TMI.2020.3034038.
+    Epub 2021 Feb 2. PMID: 33104507; PMCID: PMC7931442.
 """
+
 cimport numpy as cnp
 from libc.math cimport M_PI, pow, sin, cos
 
@@ -95,19 +101,20 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             raise ValueError("probe_count must be greater than 1.")
 
         self.max_angle = max_angle
+        self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality
         self.probe_count = probe_count
-        self.data_support_exponent = data_support_exponent
-        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
-                                       pmf_threshold, **kwargs)
-
-        self.k_small = 0.0001
-        self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.probe_step_size = self.probe_length / (self.probe_quality - 1)
         self.probe_normalizer = 1.0 / float(self.probe_quality
                                             * self.probe_count)
+        self.data_support_exponent = data_support_exponent
+        self.k_small = 0.0001
+
+
+        ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
+                                       pmf_threshold, **kwargs)
 
 
     cdef void initialize_candidate(self, double[:] init_dir):
