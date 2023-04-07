@@ -278,6 +278,7 @@ File Formats
 ------------
 
 - :ref:`example_streamline_formats`
+- :ref:`example_save_labels`
 
 -------------
 Visualization
