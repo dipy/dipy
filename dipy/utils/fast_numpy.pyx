@@ -55,7 +55,7 @@ cpdef double random() nogil:
     _ : double
         random number
     """
-    return rand() / float(INT_MAX)
+    return rand() / float(RAND_MAX)
 
 
 cpdef double norm(double[:] v) nogil:
@@ -112,7 +112,7 @@ cpdef void normalize(double[:] v) nogil:
 
 
 cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
-    """Compute vectors cross product. 
+    """Compute vectors cross product.
 
     Parameters
     ----------
@@ -126,9 +126,75 @@ cpdef void cross(double[:] out, double[:] v1, double[:] v2) nogil:
     Notes
     -----
     Overwrites the first argument.
-    
+
     """
     out[0] = v1[1] * v2[2] - v1[2] * v2[1]
     out[1] = v1[2] * v2[0] - v1[0] * v2[2]
     out[2] = v1[0] * v2[1] - v1[1] * v2[0]
-    
+
+
+cpdef void random_vector(double[:] out):
+    """Generate a unit random vector
+
+    Parameters
+    ----------
+    out : double[3]
+        output vector
+
+    Notes
+    -----
+    Overwrites the input
+    """
+    out[0] = 2.0 * random() - 1.0
+    out[1] = 2.0 * random() - 1.0
+    out[2] = 2.0 * random() - 1.0
+    normalize(out)
+
+
+cpdef void random_perpendicular_vector(double[:] out,double[:] v):
+    """Generate a random perpendicular vector
+
+    Parameters
+    ----------
+    out : double[3]
+        output vector
+
+    v : double[3]
+        input vector
+
+    Notes
+    -----
+    Overwrites the first argument
+    """
+    cdef double[3] tmp
+
+    random_vector(tmp)
+    cross(out, v, tmp)
+    normalize(out)
+
+
+cpdef (double, double) random_point_within_circle(double r):
+    """Generate a random point within a circle
+
+    Parameters
+    ----------
+    r : double
+        The radius of the circle
+
+    Returns
+    -------
+    x : double
+        x coordinate of the random point
+
+    y : double
+        y coordinate of the random point
+
+    """
+    cdef double x = 1.0
+    cdef double y = 1.0
+
+    while (x * x + y * y) > 1:
+        x = 2.0 * random() - 1.0
+        y = 2.0 * random() - 1.0
+    return (r * x, r * y)
+
