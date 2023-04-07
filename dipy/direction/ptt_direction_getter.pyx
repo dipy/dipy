@@ -101,7 +101,6 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             raise ValueError("probe_count must be greater than 1.")
 
         self.max_angle = max_angle
-        self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.probe_length = probe_length
         self.probe_radius = probe_radius
         self.probe_quality = probe_quality
@@ -109,9 +108,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
         self.probe_step_size = self.probe_length / (self.probe_quality - 1)
         self.probe_normalizer = 1.0 / float(self.probe_quality
                                             * self.probe_count)
+        self.angular_separation = 2.0 * M_PI / float(self.probe_count)
         self.data_support_exponent = data_support_exponent
         self.k_small = 0.0001
-
 
         ProbabilisticDirectionGetter.__init__(self, pmf_gen, max_angle, sphere,
                                        pmf_threshold, **kwargs)
