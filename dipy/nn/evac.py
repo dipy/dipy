@@ -36,7 +36,7 @@ else:
                     https://github.com/apple/tensorflow_macos')
 
 logging.basicConfig()
-logger = logging.getLogger('evac')
+logger = logging.getLogger('EVAC+')
 
 
 def set_logger_level(log_level):
@@ -256,9 +256,9 @@ def init_model(model_scale=8):
     return model
 
 
-class EVAC:
+class EVACplus:
     """
-    This class is intended for the EVAC model.
+    This class is intended for the EVAC+ model.
     """
 
     @doctest_skip_parser
