@@ -292,6 +292,7 @@ class EVAC:
         # EVAC+ network load
 
         self.model = init_model()
+        self.fetch_default_weights()
 
 
     def fetch_default_weights(self):
@@ -344,21 +345,19 @@ class EVAC:
 
         Parameters
         ----------
-        T1 : np.ndarray or str or list of np.ndarrys
-            For a single image, input should be a 3D array or file path.
+        T1 : np.ndarray or list of np.ndarrys
+            For a single image, input should be a 3D array.
             If multiple images, it should be a 4D array or a list.
 
         affine : np.ndarray (4, 4) or (batch, 4, 4)
             or list of np.ndarrays with len of batch
             Affine matrix for the T1 image. Should have
             batch dimension if T1 has one.
-            Unused if T1 is a file path.
             Default is None
         
         voxsize : np.ndarray or list or tuple
             (3,) or (batch, 3)
             voxel size of the T1 image.
-            Unused if T1 is a file path.
             Default is (1, 1, 1)
 
         batch_size : int
@@ -390,9 +389,6 @@ class EVAC:
             only if return_affine is True
 
         """
-
-        if type(T1) is str:
-            T1, affine, voxsize = load_nifti(T1, return_voxsize=True)
         
         voxsize = np.array(voxsize)
         affine = np.array(affine)
