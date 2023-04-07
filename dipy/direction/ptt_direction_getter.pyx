@@ -5,12 +5,14 @@
 """
 Implementation of parallel transport tractography (PTT).
 """
-
-import numpy as np
 cimport numpy as cnp
+from libc.math cimport M_PI, pow, sin, cos
 
-from dipy.direction.probabilistic_direction_getter cimport ProbabilisticDirectionGetter
-from dipy.utils.fast_numpy cimport (copy_point, random, norm, normalize, cross)
+from dipy.direction.probabilistic_direction_getter cimport \
+        ProbabilisticDirectionGetter
+from dipy.utils.fast_numpy cimport (copy_point, cross, norm, normalize, random,
+                                    random_vector, random_perpendicular_vector,
+                                    random_point_within_circle)
 from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                StoppingCriterion,
                                                TRACKPOINT,
@@ -18,73 +20,6 @@ from dipy.tracking.stopping_criterion cimport (StreamlineStatus,
                                                OUTSIDEIMAGE,
                                                INVALIDPOINT)
 from dipy.tracking.utils import min_radius_curvature_from_angle
-
-from libc.math cimport M_PI, pow, sin, cos
-
-
-cpdef void random_vector(double[:] out):
-    """Generate a unit random vector
-
-    Parameters
-    ----------
-    out : double[3]
-        output vector
-
-    Notes
-    -----
-    Overwrites the input
-    """
-    out[0] = 2.0 * random() - 1.0
-    out[1] = 2.0 * random() - 1.0
-    out[2] = 2.0 * random() - 1.0
-    normalize(out)
-
-
-cpdef void random_perpendicular_vector(double[:] out,double[:] vec):
-    """Generate a random perpendicular vector
-
-    Parameters
-    ----------
-    out : double[3]
-        output vector
-
-    vec : double[3]
-        input vector
-
-    Notes
-    -----
-    Overwrites the first argument
-    """
-    cdef double[3] tmp
-    random_vector(tmp)
-    cross(out, vec, tmp)
-    normalize(out)
-
-
-cpdef (double, double) random_point_within_circle(double r):
-    """Generate a random point within a circle
-
-    Parameters
-    ----------
-    r : double
-        The radius of the circle
-
-    Returns
-    -------
-    x : double
-        x coordinate of the random point
-
-    y : double
-        y coordinate of the random point
-
-    """
-    cdef double x = 1.0
-    cdef double y = 1.0
-
-    while ((x * x + y * y) > 1):
-        x = 2.0 * random() - 1.0
-        y = 2.0 * random() - 1.0
-    return (r * x, r * y)
 
 
 cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
@@ -501,8 +436,9 @@ cdef class PTTDirectionGetter(ProbabilisticDirectionGetter):
             void (*step)(double*, double*, double) nogil
 
         self.step_size = step_size
+        # convert max_angle from degrees to radians
         self.max_curvature = 1 / min_radius_curvature_from_angle(
-            np.deg2rad(self.max_angle), self.step_size)
+            self.max_angle * M_PI / 180.0, self.step_size)
 
         copy_point(&seed[0], &streamline[0,0])
         i = 0
