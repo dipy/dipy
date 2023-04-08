@@ -147,13 +147,14 @@ save_tractogram(rpt_sft, 'rpt.trk')
 
 """
 Any StatefulTractogram instance consists of clusters of streamlines. Cluster 
-based information such as number of cluster label, streamlines within each cluster
-can be added through a setter function.
+based information such as cluster labels, streamlines within each cluster
+can be added to the StatefulTractogram through a setter function. Here's an example
+of saving each cluster's label and number of its streamlines
 """
 
 data = {}
-for i in range(len(cc_sft.streamlines)):
-  data[f'cluster_{i}'] = cc_sft.streamlines.shape[0]
+for idx, stream in enumerate(cc_sft.streamlines)):
+  data[f'cluster_{idx}'] = stream.shape[0]
 cc_sft.data_per_streamline = data
 
 """
