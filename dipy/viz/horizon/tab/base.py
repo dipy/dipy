@@ -31,7 +31,7 @@ class TabManager:
         self.__tab_ui = ui.TabUI(
             position=(x_pad, 5), size=tab_size, nb_tabs=num_tabs,
             active_color=(1, 1, 1), inactive_color=(0.5, 0.5, 0.5),
-            draggable=False)
+            draggable=False, startup_tab_id=0)
         
         for id, tab in enumerate(tabs):
             self.__tab_ui.tabs[id].title = tab.name
