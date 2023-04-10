@@ -146,7 +146,9 @@ class SlicesTab(HorizonTab):
         
         self.__picker_label_voxel = build_label(text='Voxel')
         
-        self.__label_picked_voxel = build_label(text='Test')
+        self.__label_picked_voxel = build_label(text='')
+        
+        self.__loader.register_picker_callback(self.__change_picked_voxel)
         
         if data_ndim == 4:
             self.__slider_label_volume = build_label(text='Volume')
@@ -166,18 +168,6 @@ class SlicesTab(HorizonTab):
             self.__slider_volume.on_left_mouse_button_released = (
                 self.__change_volume)
     
-    def __change_colormap_previous(self, i_ren, _obj, _button):
-        selected_colormap_idx = self.__selected_colormap_idx - 1
-        if selected_colormap_idx < 0:
-            selected_colormap_idx = len(self.__supported_colormaps) - 1
-        self.__selected_colormap_idx = selected_colormap_idx
-        selected_colormap = list(self.__supported_colormaps)[
-            self.__selected_colormap_idx]
-        self.__label_selected_colormap.message = selected_colormap
-        self.__colormap = self.__supported_colormaps[selected_colormap]
-        self.__update_colormap()
-        i_ren.force_render()
-    
     def __change_colormap_next(self, i_ren, _obj, _button):
         selected_color_idx = self.__selected_colormap_idx + 1
         if selected_color_idx >= len(self.__supported_colormaps):
@@ -190,14 +180,29 @@ class SlicesTab(HorizonTab):
         self.__update_colormap()
         i_ren.force_render()
     
-    def __change_opacity(self, slider):
-        self.__slices_opacity = slider.value
-        self.__update_opacities()
+    def __change_colormap_previous(self, i_ren, _obj, _button):
+        selected_colormap_idx = self.__selected_colormap_idx - 1
+        if selected_colormap_idx < 0:
+            selected_colormap_idx = len(self.__supported_colormaps) - 1
+        self.__selected_colormap_idx = selected_colormap_idx
+        selected_colormap = list(self.__supported_colormaps)[
+            self.__selected_colormap_idx]
+        self.__label_selected_colormap.message = selected_colormap
+        self.__colormap = self.__supported_colormaps[selected_colormap]
+        self.__update_colormap()
+        i_ren.force_render()
     
     def __change_intensity(self, slider):
         self.__min_intensity = slider.left_disk_value
         self.__max_intensity = slider.right_disk_value
         self.__update_colormap()
+    
+    def __change_opacity(self, slider):
+        self.__slices_opacity = slider.value
+        self.__update_opacities()
+    
+    def __change_picked_voxel(self, message):
+        self.__label_picked_voxel.message = message
     
     def __change_slice_x(self, slider):
         self.__selected_slice_x = int(np.rint(slider.value))
