@@ -9,6 +9,7 @@ fury, has_fury, setup_module = optional_package('fury')
 
 if has_fury:
     from fury import actor
+    from fury.utils import apply_affine
 
 
 class SlicesLoader:
@@ -61,6 +62,9 @@ class SlicesLoader:
             np.asarray(self.__data_shape[:3]) / 2).astype(int)
         
         self.__add_slice_actors_to_scene(self.__sel_slices)
+        
+        self.__picker_callback = None
+        self.__picked_voxel_actor = None
     
     def __add_slice_actors_to_scene(self, visible_slices):
         self.__slice_actors[0].display_extent(
@@ -108,15 +112,18 @@ class SlicesLoader:
         res = self.__resliced_vol[i, j, k]
         
         try:
-            message = '%.3f' % res
+            message = f'{res:.2f}'
         except TypeError:
-            message = '%.3f %.3f %.3f' % (res[0], res[1], res[2])
-        print(message)
-        # TODO: Move to tab
-        """
-        picker_label.message = '({}, {}, {})'.format(str(i), str(j), str(k)) \
-            + ' ' + message
-        """
+            message = f'{res[0]:.2f} {res[1]:.2f} {res[2]:.2f}'
+        message = f'({i}, {j}, {k}) = {message}'
+        self.__picker_callback(message)
+        if self.__picked_voxel_actor:
+            self.__scene.rm(self.__picked_voxel_actor)
+        pnt = np.asarray([[i, j, k]])
+        pnt = apply_affine(self.__affine, pnt)
+        self.__picked_voxel_actor = actor.dot(
+            pnt, colors=(.9, .4, .0), dot_size=10)
+        self.__scene.add(self.__picked_voxel_actor)
     
     def change_volume(self, prev_idx, next_idx, intensities, visible_slices):
         vol_data = self.__data[..., prev_idx]
@@ -139,6 +146,9 @@ class SlicesLoader:
         self.__add_slice_actors_to_scene(visible_slices)
         
         return True
+    
+    def register_picker_callback(self, callback):
+        self.__picker_callback = callback
     
     @property
     def data_shape(self):
