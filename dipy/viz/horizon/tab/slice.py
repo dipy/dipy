@@ -144,7 +144,9 @@ class SlicesTab(HorizonTab):
         
         data_ndim = len(self.__data_shape)
         
-        self.__picker_label_voxel = build_label(text='Volume')
+        self.__picker_label_voxel = build_label(text='Voxel')
+        
+        self.__label_picked_voxel = build_label(text='Test')
         
         if data_ndim == 4:
             self.__slider_label_volume = build_label(text='Volume')
@@ -352,6 +354,8 @@ class SlicesTab(HorizonTab):
             self.__tab_id, self.__slider_label_intensities, (x_pos, .85))
         self.__tab_ui.add_element(
             self.__tab_id, self.__buttons_label_colormap, (x_pos, .56))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__picker_label_voxel, (x_pos, .38))
         
         x_pos = .60
         
@@ -363,17 +367,19 @@ class SlicesTab(HorizonTab):
             self.__tab_id, self.__label_selected_colormap, (.63, .56))
         self.__tab_ui.add_element(
             self.__tab_id, self.__button_next_colormap, (.73, .54))
+        self.__tab_ui.add_element(
+            self.__tab_id, self.__label_picked_voxel, (x_pos, .38))
         
         data_ndim = len(self.__data_shape)
         
         if data_ndim == 4:
             x_pos = .52
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_label_volume, (x_pos, .38))
+                self.__tab_id, self.__slider_label_volume, (x_pos, .15))
             
             x_pos = .60
             self.__tab_ui.add_element(
-                self.__tab_id, self.__slider_volume, (x_pos, .38))
+                self.__tab_id, self.__slider_volume, (x_pos, .15))
     
     @property
     def name(self):
