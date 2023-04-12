@@ -117,9 +117,12 @@ class SlicesLoader:
             message = f'{res[0]:.2f} {res[1]:.2f} {res[2]:.2f}'
         message = f'({i}, {j}, {k}) = {message}'
         self.__picker_callback(message)
+        self.__replace_picked_voxel_actor(i, j, k)
+    
+    def __replace_picked_voxel_actor(self, x, y, z):
         if self.__picked_voxel_actor:
             self.__scene.rm(self.__picked_voxel_actor)
-        pnt = np.asarray([[i, j, k]])
+        pnt = np.asarray([[x, y, z]])
         pnt = apply_affine(self.__affine, pnt)
         self.__picked_voxel_actor = actor.dot(
             pnt, colors=(.9, .4, .0), dot_size=10)
