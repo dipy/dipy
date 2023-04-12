@@ -196,7 +196,7 @@ viz_bundles(static, deformed_bundle,
 
 """
 Let's visualize linearly moved bundle in blue and nonlinearly moved bundle in
-green to see BundleWarp registartion improvement over linear SLR registration.
+green to see BundleWarp registration improvement over linear SLR registration.
 """
 
 viz_bundles(moving_aligned, deformed_bundle,
