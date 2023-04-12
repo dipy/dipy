@@ -507,11 +507,6 @@ class Horizon(object):
                                 self.show_m.iren, scene, data, affine=affine,
                                 world_coords=self.world_coords)
                             self.__tabs.append(SlicesTab(slices_loader))
-                            """
-                            self.panel = slicer_panel(
-                                scene, self.show_m.iren, data, affine,
-                                self.world_coords, mem=self.mem)
-                            """
                             first_img = False
                 if len(roi_actors) > 0:
                     self.__tabs.append(ROIsTab(roi_actors))
@@ -522,11 +517,6 @@ class Horizon(object):
                     self.show_m.iren, scene, data, affine=affine,
                     world_coords=self.world_coords)
                 self.__tabs.append(SlicesTab(slices_loader))
-                """
-                self.panel = slicer_panel(
-                    scene, self.show_m.iren, data, affine, self.world_coords,
-                    mem=self.mem)
-                """
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
@@ -544,8 +534,6 @@ class Horizon(object):
                 size_old = self.win_size
                 self.win_size = obj.GetSize()
                 size_change = [self.win_size[0] - size_old[0], 0]
-                if data is not None:
-                    self.panel.re_align(size_change)
                 if self.cluster:
                     self.panel2.re_align(size_change)
                     self.help_panel.re_align(size_change)
