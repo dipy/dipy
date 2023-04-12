@@ -8,7 +8,8 @@ from dipy.tracking.streamline import Streamlines, length
 from dipy.utils.optpkg import optional_package
 from dipy.viz.gmem import GlobalHorizon
 from dipy.viz.horizon.loader import SlicesLoader
-from dipy.viz.horizon.tab import PeaksTab, ROIsTab, SlicesTab, TabManager
+from dipy.viz.horizon.tab import (ClustersTab, PeaksTab, ROIsTab, SlicesTab,
+                                  TabManager)
 
 fury, has_fury, setup_module = optional_package('fury')
 
@@ -482,6 +483,9 @@ class Horizon(object):
 
             self.help_panel.add_element(text_block, coords=(0.05, 0.1))
             scene.add(self.help_panel)
+            self.__tabs.append(ClustersTab(
+                self.mem.centroid_actors, self.mem.cluster_actors,
+                self.cluster_thr, sizes, lengths))
 
         if len(self.images) > 0:
             # Only first non-binary image loading supported for now
@@ -520,8 +524,8 @@ class Horizon(object):
         if len(self.pams) > 0:
             pam = self.pams[0]
             peak_actor = actor.peak(pam.peak_dirs, affine=pam.affine)
-            self.__tabs.append(PeaksTab(peak_actor))
             scene.add(peak_actor)
+            self.__tabs.append(PeaksTab(peak_actor))
         else:
             data = None
             affine = None
