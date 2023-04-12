@@ -72,6 +72,41 @@ class ClustersTab(HorizonTab):
         self.__update_clusters()
         istyle.force_render()
     
+    def __change_threshold(self, istyle, obj, slider):
+        self.__selected_threshold = int(np.rint(slider.value))
+        # TODO: Add ClusterLoader and move this to it
+        """
+        self.remove_cluster_actors(scene)
+        self.add_cluster_actors(
+            scene, self.tractograms, threshold=self.__selected_threshold)
+        """
+
+        # TODO: Recalculate lengths and sizes
+        """
+        # TODO need to double check if this section is still needed
+        lengths = np.array(
+            [self.cla[c]['length'] for c in self.cla])
+        szs = [self.cla[c]['size'] for c in self.cla]
+        sizes = np.array(szs)
+        """
+        
+        # TODO: Update sliders
+        """
+        self.__selected_length = np.percentile(lengths, 25)
+        self.__slider_length.min_value = np.min(lengths)
+        self.__slider_length.max_value = np.percentile(lengths, 98)
+        self.__slider_length.value = self.__selected_length
+        self.__slider_length.update()
+
+        self.__selected_size = np.percentile(sizes, 50)
+        self.__slider_size.min_value = np.min(sizes)
+        self.__slider_size.max_value = np.percentile(sizes, 98)
+        self.__slider_size.value = self.__selected_size
+        self.__slider_size.update()
+        """
+
+        istyle.force_render()
+    
     def __update_clusters(self):
         for k in self.__cluster_actors:
             length_validation = (
